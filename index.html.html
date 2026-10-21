@@ -12,11 +12,17 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #1f2937; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #374151; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #0f172a; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+        @media print {
+            body * { visibility: hidden; }
+            #areaImpressao, #areaImpressao * { visibility: visible; }
+            #areaImpressao { position: absolute; left: 0; top: 0; width: 100%; color: #000 !important; background: #fff !important; }
+            .no-print { display: none !important; }
+        }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen">
+<body class="bg-slate-900 text-slate-100 font-sans antialiased min-h-screen custom-scrollbar">
 
     <!-- ECRÃ DE LOGIN -->
     <div id="loginPage" class="flex items-center justify-center min-h-screen p-4 bg-slate-950">
@@ -34,7 +40,7 @@
                     <label class="block text-xs font-semibold uppercase text-slate-400 mb-2">Utilizador / E-mail</label>
                     <div class="relative">
                         <i class="fa-solid fa-user absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
-                        <input type="text" id="loginUser" required placeholder="Digite seu usuário" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-11 pr-4 text-sm text-white focus:outline-none focus:border-blue-500 transition">
+                        <input type="text" id="loginUser" required placeholder="admin" value="admin" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-11 pr-4 text-sm text-white focus:outline-none focus:border-blue-500 transition">
                     </div>
                 </div>
 
@@ -42,7 +48,7 @@
                     <label class="block text-xs font-semibold uppercase text-slate-400 mb-2">Palavra-passe</label>
                     <div class="relative">
                         <i class="fa-solid fa-lock absolute left-4 top-1/2 -translate-y-1/2 text-slate-500"></i>
-                        <input type="password" id="loginPass" required placeholder="••••••••" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-11 pr-4 text-sm text-white focus:outline-none focus:border-blue-500 transition">
+                        <input type="password" id="loginPass" required placeholder="12345678" value="12345678" class="w-full bg-slate-950 border border-slate-800 rounded-xl py-3 pl-11 pr-4 text-sm text-white focus:outline-none focus:border-blue-500 transition">
                     </div>
                 </div>
 
@@ -57,7 +63,7 @@
     <!-- PAINEL PRINCIPAL (DASHBOARD) -->
     <div id="mainDashboard" class="hidden min-h-screen flex flex-col md:flex-row">
         <!-- Sidebar Navigation -->
-        <aside class="w-full md:w-64 bg-slate-950 border-r border-slate-800 flex flex-col justify-between">
+        <aside class="w-full md:w-64 bg-slate-950 border-r border-slate-800 flex flex-col justify-between shrink-0">
             <div>
                 <div class="p-6 border-b border-slate-800 flex items-center gap-3">
                     <div class="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold">
@@ -76,6 +82,12 @@
                     <button onclick="navegarPara('financeiro')" id="nav-financeiro" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition text-slate-400 hover:bg-slate-900 hover:text-white">
                         <i class="fa-solid fa-wallet w-5"></i> Financeiro
                     </button>
+                    <button onclick="navegarPara('plano-contas')" id="nav-plano-contas" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition text-slate-400 hover:bg-slate-900 hover:text-white">
+                        <i class="fa-solid fa-sitemap w-5"></i> Plano de Contas
+                    </button>
+                    <button onclick="navegarPara('bancos')" id="nav-bancos" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition text-slate-400 hover:bg-slate-900 hover:text-white">
+                        <i class="fa-solid fa-building-columns w-5"></i> Bancos & Contas
+                    </button>
                     <button onclick="navegarPara('moradores')" id="nav-moradores" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition text-slate-400 hover:bg-slate-900 hover:text-white">
                         <i class="fa-solid fa-users w-5"></i> Moradores & Unidades
                     </button>
@@ -83,10 +95,13 @@
                         <i class="fa-solid fa-truck-field w-5"></i> Fornecedores
                     </button>
                     <button onclick="navegarPara('estoque')" id="nav-estoque" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition text-slate-400 hover:bg-slate-900 hover:text-white">
-                        <i class="fa-solid fa-boxes-stacked w-5"></i> Estoque
+                        <i class="fa-solid fa-boxes-stacked w-5"></i> Estoque & Inventário
                     </button>
                     <button onclick="navegarPara('documentos')" id="nav-documentos" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition text-slate-400 hover:bg-slate-900 hover:text-white">
                         <i class="fa-solid fa-folder-open w-5"></i> Documentos
+                    </button>
+                    <button onclick="navegarPara('relatorios')" id="nav-relatorios" class="nav-item w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition text-slate-400 hover:bg-slate-900 hover:text-white">
+                        <i class="fa-solid fa-file-contract w-5"></i> Relatórios Globais
                     </button>
                 </nav>
             </div>
@@ -103,30 +118,55 @@
             <header class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-800 mb-8">
                 <div>
                     <h1 id="pageTitle" class="text-2xl font-bold text-white">Visão Geral</h1>
-                    <p class="text-xs text-slate-400 mt-1">Sistema inicializado e pronto para novos cadastros</p>
+                    <p id="pageSubTitle" class="text-xs text-slate-400 mt-1">Gestão centralizada do Condomínio Guardiões do Bravo</p>
                 </div>
                 <div class="flex items-center gap-3">
                     <span class="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-semibold flex items-center gap-2">
-                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Banco Prontos para Cadastros
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Sistema Ativo
                     </span>
                 </div>
             </header>
 
-            <!-- CONTEÚDO DINÂMICO -->
+            <!-- CONTEÚDO DINÂMICO DA PÁGINA -->
             <div id="contentArea"></div>
         </main>
     </div>
 
+    <!-- MODAL CONTAINER (GENÉRICO PARA FORMULÁRIOS) -->
+    <div id="modalContainer" class="hidden fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div id="modalBody" class="bg-slate-900 border border-slate-800 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto p-6 relative custom-scrollbar">
+            <!-- Conteúdo injetado via JS -->
+        </div>
+    </div>
+
+    <!-- LIGHTBOX DE IMAGEM -->
+    <div id="lightboxModal" class="hidden fixed inset-0 z-50 bg-black/90 flex items-center justify-center p-4 cursor-pointer" onclick="fecharLightbox()">
+        <img id="lightboxImg" class="max-w-full max-h-[90vh] rounded-lg shadow-2xl border border-slate-700" src="" alt="Ampliação">
+    </div>
+
     <script>
-        // ESTADO ZERADO (LIMPO)
+        // BANCO DE DADOS LOCAL (INICIALMENTE ZERADO OU PRONTO PARA CADASTROS)
         let dadosSistema = {
-            financeiro: [],
+            bancos: [
+                { id: 'b1', nome: 'Itaú Unibanco', agencia: '0123', conta: '45678-9', saldo: 0 },
+                { id: 'b2', nome: 'Caixa Econômica', agencia: '4321', conta: '98765-4', saldo: 0 }
+            ],
+            planoContas: [
+                { id: 'pc1', codigo: '1.01', nome: 'Taxa Condominial', tipo: 'RECEITA' },
+                { id: 'pc2', codigo: '1.02', nome: 'Uso de Salão de Festas', tipo: 'RECEITA' },
+                { id: 'pc3', codigo: '2.01', nome: 'Manutenção Preventiva / Elevadores', tipo: 'DESPESA' },
+                { id: 'pc4', codigo: '2.02', nome: 'Energia Elétrica / Água', tipo: 'DESPESA' },
+                { id: 'pc5', codigo: '2.03', nome: 'Material de Limpeza & Consumo', tipo: 'DESPESA' }
+            ],
             moradores: [],
             fornecedores: [],
+            financeiro: [],
             estoque: [],
+            historicoEstoque: [],
             documentos: []
         };
 
+        // INICIALIZAÇÃO
         function fazerLogin() {
             const user = document.getElementById('loginUser').value;
             const pass = document.getElementById('loginPass').value;
@@ -136,13 +176,27 @@
                 document.getElementById('mainDashboard').classList.remove('hidden');
                 carregarDashboard();
             } else {
-                alert('Credenciais incorretas!');
+                alert('Credenciais incorretas! Use admin / 12345678');
             }
         }
 
         function fazerLogout() {
             document.getElementById('mainDashboard').classList.add('hidden');
             document.getElementById('loginPage').classList.remove('hidden');
+        }
+
+        function fecharModal() {
+            document.getElementById('modalContainer').classList.add('hidden');
+        }
+
+        function abrirLightbox(url) {
+            if(!url) return;
+            document.getElementById('lightboxImg').src = url;
+            document.getElementById('lightboxModal').classList.remove('hidden');
+        }
+
+        function fecharLightbox() {
+            document.getElementById('lightboxModal').classList.add('hidden');
         }
 
         function navegarPara(pagina) {
@@ -157,143 +211,1285 @@
             }
 
             const title = document.getElementById('pageTitle');
+            const subTitle = document.getElementById('pageSubTitle');
 
             if(pagina === 'dashboard') {
                 title.innerText = 'Visão Geral';
+                subTitle.innerText = 'Resumo executivo do condomínio';
                 carregarDashboard();
-            } else if(pagina === 'moradores') {
-                title.innerText = 'Moradores & Unidades';
-                carregarMoradores();
-            } else if(pagina === 'fornecedores') {
-                title.innerText = 'Cadastro de Fornecedores';
-                carregarFornecedores();
             } else if(pagina === 'financeiro') {
                 title.innerText = 'Módulo Financeiro';
+                subTitle.innerText = 'Contas a Pagar, Receber e Baixas Parciais';
                 carregarFinanceiro();
-            } else {
-                title.innerText = pagina.toUpperCase();
-                document.getElementById('contentArea').innerHTML = `
-                    <div class="bg-slate-950 p-12 rounded-2xl border border-slate-800 text-center">
-                        <i class="fa-solid fa-folder-plus text-4xl text-slate-600 mb-4"></i>
-                        <h3 class="text-lg font-bold text-white mb-1">Nenhum registro encontrado</h3>
-                        <p class="text-sm text-slate-400">Módulo limpo e pronto para novos lançamentos.</p>
-                    </div>
-                `;
+            } else if(pagina === 'plano-contas') {
+                title.innerText = 'Plano de Contas';
+                subTitle.innerText = 'Categorização de Receitas e Despesas';
+                carregarPlanoContas();
+            } else if(pagina === 'bancos') {
+                title.innerText = 'Bancos & Contas';
+                subTitle.innerText = 'Gestão de contas bancárias e saldos';
+                carregarBancos();
+            } else if(pagina === 'moradores') {
+                title.innerText = 'Moradores & Unidades';
+                subTitle.innerText = 'Cadastro de proprietários e inquilinos por bloco/unidade';
+                carregarMoradores();
+            } else if(pagina === 'fornecedores') {
+                title.innerText = 'Fornecedores';
+                subTitle.innerText = 'Empresas parceiras e prestadores de serviços';
+                carregarFornecedores();
+            } else if(pagina === 'estoque') {
+                title.innerText = 'Estoque & Inventário';
+                subTitle.innerText = 'Catálogo com fotos e histórico auditado de acertos';
+                carregarEstoque();
+            } else if(pagina === 'documentos') {
+                title.innerText = 'Gestão de Documentos';
+                subTitle.innerText = 'Atas, contratos e comprovantes organizados';
+                carregarDocumentos();
+            } else if(pagina === 'relatorios') {
+                title.innerText = 'Relatórios Globais';
+                subTitle.innerText = 'Relatórios consolidadores de todos os módulos com exportação';
+                carregarRelatorios();
             }
         }
 
+        // ==========================================
+        // 1. DASHBOARD
+        // ==========================================
         function carregarDashboard() {
+            const totalReceitas = dadosSistema.financeiro.filter(f => f.tipo === 'RECEITA' && f.status === 'PAGO').reduce((a, b) => a + Number(b.valor), 0);
+            const totalDespesas = dadosSistema.financeiro.filter(f => f.tipo === 'DESPESA' && f.status === 'PAGO').reduce((a, b) => a + Number(b.valor), 0);
+            const saldoGeral = totalReceitas - totalDespesas;
+
             const content = document.getElementById('contentArea');
             content.innerHTML = `
                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                     <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800">
                         <span class="text-xs font-semibold text-slate-400 uppercase">Saldo em Conta</span>
-                        <h3 class="text-2xl font-bold text-emerald-400 mt-2">R$ 0,00</h3>
-                        <p class="text-xs text-slate-500 mt-1">Aguardando lançamentos</p>
+                        <h3 class="text-2xl font-bold ${saldoGeral >= 0 ? 'text-emerald-400' : 'text-rose-400'} mt-2">R$ ${saldoGeral.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</h3>
+                        <p class="text-xs text-slate-500 mt-1">Total consolidado</p>
                     </div>
                     <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800">
-                        <span class="text-xs font-semibold text-slate-400 uppercase">Total Moradores</span>
+                        <span class="text-xs font-semibold text-slate-400 uppercase">Moradores</span>
                         <h3 class="text-2xl font-bold text-blue-400 mt-2">${dadosSistema.moradores.length} Unidades</h3>
-                        <p class="text-xs text-slate-500 mt-1">Cadastros ativos</p>
+                        <p class="text-xs text-slate-500 mt-1">Cadastros de moradores</p>
                     </div>
                     <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800">
                         <span class="text-xs font-semibold text-slate-400 uppercase">Fornecedores</span>
                         <h3 class="text-2xl font-bold text-indigo-400 mt-2">${dadosSistema.fornecedores.length} Cadastrados</h3>
-                        <p class="text-xs text-slate-500 mt-1">Empresas e parceiros</p>
+                        <p class="text-xs text-slate-500 mt-1">Prestadores de serviço</p>
                     </div>
                     <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800">
-                        <span class="text-xs font-semibold text-slate-400 uppercase">Contas Pendentes</span>
-                        <h3 class="text-2xl font-bold text-amber-400 mt-2">0 Títulos</h3>
-                        <p class="text-xs text-slate-500 mt-1">A pagar / A receber</p>
+                        <span class="text-xs font-semibold text-slate-400 uppercase">Itens em Estoque</span>
+                        <h3 class="text-2xl font-bold text-amber-400 mt-2">${dadosSistema.estoque.length} Produtos</h3>
+                        <p class="text-xs text-slate-500 mt-1">Itens monitorados</p>
                     </div>
                 </div>
 
-                <div class="bg-slate-950 p-8 rounded-2xl border border-slate-800 text-center">
-                    <i class="fa-solid fa-circle-check text-5xl text-emerald-500 mb-4"></i>
-                    <h2 class="text-xl font-bold text-white mb-2">Sistema Resetado com Sucesso!</h2>
-                    <p class="text-sm text-slate-400 max-w-md mx-auto mb-6">Todos os dados de demonstração foram removidos. Utilize o menu lateral para iniciar o cadastro dos moradores, fornecedores e contas do condomínio.</p>
-                    <button onclick="navegarPara('moradores')" class="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-6 py-3 rounded-xl transition shadow-lg shadow-blue-600/20 inline-flex items-center gap-2">
-                        <i class="fa-solid fa-plus"></i>
-                        <span>Cadastrar Primeiros Moradores</span>
-                    </button>
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800">
+                        <h3 class="text-lg font-bold text-white mb-4">Acesso Rápido</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <button onclick="modalNovoLancamento()" class="p-4 bg-slate-900 border border-slate-800 rounded-xl hover:border-blue-500 transition text-left">
+                                <i class="fa-solid fa-plus-circle text-blue-500 text-xl mb-2"></i>
+                                <div class="font-semibold text-white text-sm">Novo Lançamento</div>
+                                <div class="text-xs text-slate-400">Pagar ou Receber</div>
+                            </button>
+                            <button onclick="modalNovoMorador()" class="p-4 bg-slate-900 border border-slate-800 rounded-xl hover:border-blue-500 transition text-left">
+                                <i class="fa-solid fa-user-plus text-emerald-500 text-xl mb-2"></i>
+                                <div class="font-semibold text-white text-sm">Novo Morador</div>
+                                <div class="text-xs text-slate-400">Cadastrar unidade</div>
+                            </button>
+                            <button onclick="modalNovoEstoque()" class="p-4 bg-slate-900 border border-slate-800 rounded-xl hover:border-blue-500 transition text-left">
+                                <i class="fa-solid fa-box text-amber-500 text-xl mb-2"></i>
+                                <div class="font-semibold text-white text-sm">Novo Item Estoque</div>
+                                <div class="text-xs text-slate-400">Com foto e quantidade</div>
+                            </button>
+                            <button onclick="navegarPara('relatorios')" class="p-4 bg-slate-900 border border-slate-800 rounded-xl hover:border-blue-500 transition text-left">
+                                <i class="fa-solid fa-chart-line text-purple-500 text-xl mb-2"></i>
+                                <div class="font-semibold text-white text-sm">Ver Relatórios</div>
+                                <div class="text-xs text-slate-400">Visão global consolidada</div>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800">
+                        <h3 class="text-lg font-bold text-white mb-4">Avisos e Estado do Sistema</h3>
+                        <div class="space-y-3">
+                            <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 flex items-center justify-between">
+                                <span class="text-sm text-slate-300"><i class="fa-solid fa-check-circle text-emerald-400 mr-2"></i> Módulo de Baixa Parcial</span>
+                                <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full font-medium">Ativo</span>
+                            </div>
+                            <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 flex items-center justify-between">
+                                <span class="text-sm text-slate-300"><i class="fa-solid fa-check-circle text-emerald-400 mr-2"></i> Acerto de Estoque Auditado</span>
+                                <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full font-medium">Ativo</span>
+                            </div>
+                            <div class="p-3 bg-slate-900 rounded-xl border border-slate-800 flex items-center justify-between">
+                                <span class="text-sm text-slate-300"><i class="fa-solid fa-check-circle text-emerald-400 mr-2"></i> Modais In-Page (Sem Prompts)</span>
+                                <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2.5 py-1 rounded-full font-medium">Ativo</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             `;
         }
 
+        // ==========================================
+        // 2. MORADORES
+        // ==========================================
         function carregarMoradores() {
             const content = document.getElementById('contentArea');
             content.innerHTML = `
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-lg font-bold text-white">Lista de Moradores & Unidades</h3>
-                    <button onclick="adicionarMorador()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2">
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <input type="text" id="filtroMorador" onkeyup="filtrarMoradores()" placeholder="🔍 Filtrar por Nome, Bloco ou Unidade..." class="bg-slate-950 border border-slate-800 rounded-xl px-4 py-2 text-sm text-white focus:outline-none focus:border-blue-500 w-full sm:w-80">
+                    <button onclick="modalNovoMorador()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2">
                         <i class="fa-solid fa-user-plus"></i> Novo Morador
                     </button>
                 </div>
-                <div class="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden p-8 text-center" id="tabelaMoradores">
-                    ${dadosSistema.moradores.length === 0 ? `
-                        <i class="fa-solid fa-users-slash text-4xl text-slate-700 mb-3"></i>
-                        <p class="text-slate-400 text-sm">Nenhum morador cadastrado até ao momento.</p>
-                    ` : ''}
+                <div class="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-900 text-slate-400 text-xs uppercase border-b border-slate-800">
+                            <tr>
+                                <th class="p-4">Morador</th>
+                                <th class="p-4">Bloco</th>
+                                <th class="p-4">Unidade/AP</th>
+                                <th class="p-4">Tipo</th>
+                                <th class="p-4">Contacto</th>
+                                <th class="p-4 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaMoradores" class="divide-y divide-slate-800 text-slate-300">
+                            ${gerarLinhasMoradores(dadosSistema.moradores)}
+                        </tbody>
+                    </table>
                 </div>
             `;
         }
 
-        function adicionarMorador() {
-            const nome = prompt("Nome completo do morador:");
-            const bloco = prompt("Bloco (ex: Bloco A, Torre 1):");
-            const ap = prompt("Número do Apartamento/Unidade (ex: 101):");
+        function gerarLinhasMoradores(lista) {
+            if(lista.length === 0) {
+                return `<tr><td colspan="6" class="p-8 text-center text-slate-500">Nenhum morador cadastrado até ao momento.</td></tr>`;
+            }
+            return lista.map((m, idx) => `
+                <tr class="hover:bg-slate-900/50 transition">
+                    <td class="p-4 font-semibold text-white">${m.nome}</td>
+                    <td class="p-4">${m.bloco}</td>
+                    <td class="p-4 font-bold text-blue-400">${m.ap}</td>
+                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${m.tipo === 'Proprietário' ? 'bg-purple-500/10 text-purple-400 border border-purple-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}">${m.tipo}</span></td>
+                    <td class="p-4 text-xs">${m.telefone || '-'} <br><span class="text-slate-500">${m.email || ''}</span></td>
+                    <td class="p-4 text-right">
+                        <button onclick="excluirMorador(${idx})" class="text-rose-400 hover:text-rose-300 p-2"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
 
-            if(nome && bloco && ap) {
-                dadosSistema.moradores.push({ nome, bloco, ap });
-                alert("Morador cadastrado com sucesso!");
+        function modalNovoMorador() {
+            document.getElementById('modalBody').innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-white">Cadastrar Novo Morador</h3>
+                    <button onclick="fecharModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                <form onsubmit="event.preventDefault(); salvarMorador();" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Nome Completo</label>
+                        <input type="text" id="mNome" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Bloco / Torre</label>
+                            <input type="text" id="mBloco" placeholder="Ex: Bloco A" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Apartamento / Unidade</label>
+                            <input type="text" id="mAp" placeholder="Ex: 101" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Tipo de Ocupante</label>
+                            <select id="mTipo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                                <option value="Proprietário">Proprietário</option>
+                                <option value="Inquilino">Inquilino</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Telefone / WhatsApp</label>
+                            <input type="text" id="mTelefone" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">E-mail</label>
+                            <input type="email" id="mEmail" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-3 pt-4">
+                        <button type="button" onclick="fecharModal()" class="px-5 py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-white text-sm font-semibold">Cancelar</button>
+                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold shadow-lg shadow-blue-600/20">Salvar Morador</button>
+                    </div>
+                </form>
+            `;
+            document.getElementById('modalContainer').classList.remove('hidden');
+        }
+
+        function salvarMorador() {
+            const m = {
+                nome: document.getElementById('mNome').value,
+                bloco: document.getElementById('mBloco').value,
+                ap: document.getElementById('mAp').value,
+                tipo: document.getElementById('mTipo').value,
+                telefone: document.getElementById('mTelefone').value,
+                email: document.getElementById('mEmail').value
+            };
+            dadosSistema.moradores.push(m);
+            fecharModal();
+            carregarMoradores();
+        }
+
+        function excluirMorador(idx) {
+            if(confirm("Deseja remover este morador?")) {
+                dadosSistema.moradores.splice(idx, 1);
                 carregarMoradores();
             }
         }
 
+        function filtrarMoradores() {
+            const termo = document.getElementById('filtroMorador').value.toLowerCase();
+            const filtrados = dadosSistema.moradores.filter(m => 
+                m.nome.toLowerCase().includes(termo) || 
+                m.bloco.toLowerCase().includes(termo) || 
+                m.ap.toLowerCase().includes(termo)
+            );
+            document.getElementById('tabelaMoradores').innerHTML = gerarLinhasMoradores(filtrados);
+        }
+
+        // ==========================================
+        // 3. FORNECEDORES
+        // ==========================================
         function carregarFornecedores() {
             const content = document.getElementById('contentArea');
             content.innerHTML = `
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-lg font-bold text-white">Fornecedores Cadastrados</h3>
-                    <button onclick="adicionarFornecedor()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2">
+                    <button onclick="modalNovoFornecedor()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2">
                         <i class="fa-solid fa-building-circle-check"></i> Novo Fornecedor
                     </button>
                 </div>
-                <div class="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden p-8 text-center">
-                    ${dadosSistema.fornecedores.length === 0 ? `
-                        <i class="fa-solid fa-truck-ramp-box text-4xl text-slate-700 mb-3"></i>
-                        <p class="text-slate-400 text-sm">Nenhum fornecedor cadastrado até ao momento.</p>
-                    ` : ''}
+                <div class="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-900 text-slate-400 text-xs uppercase border-b border-slate-800">
+                            <tr>
+                                <th class="p-4">Razão Social</th>
+                                <th class="p-4">CNPJ / CPF</th>
+                                <th class="p-4">Categoria</th>
+                                <th class="p-4">Chave PIX / Banco</th>
+                                <th class="p-4">Contacto</th>
+                                <th class="p-4 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaFornecedores" class="divide-y divide-slate-800 text-slate-300">
+                            ${gerarLinhasFornecedores(dadosSistema.fornecedores)}
+                        </tbody>
+                    </table>
                 </div>
             `;
         }
 
-        function adicionarFornecedor() {
-            const razao = prompt("Razão Social / Nome da Empresa:");
-            const cnpj = prompt("CNPJ / CPF:");
-            const servico = prompt("Serviço / Categoria (ex: Elevadores, Jardinagem):");
+        function gerarLinhasFornecedores(lista) {
+            if(lista.length === 0) {
+                return `<tr><td colspan="6" class="p-8 text-center text-slate-500">Nenhum fornecedor cadastrado até ao momento.</td></tr>`;
+            }
+            return lista.map((f, idx) => `
+                <tr class="hover:bg-slate-900/50 transition">
+                    <td class="p-4 font-semibold text-white">${f.razao}</td>
+                    <td class="p-4 text-xs font-mono">${f.cnpj}</td>
+                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-500/10 text-blue-400 border border-blue-500/20">${f.categoria}</span></td>
+                    <td class="p-4 text-xs font-mono text-emerald-400">${f.pix || '-'}</td>
+                    <td class="p-4 text-xs">${f.contato || '-'} <br><span class="text-slate-500">${f.telefone || ''}</span></td>
+                    <td class="p-4 text-right">
+                        <button onclick="excluirFornecedor(${idx})" class="text-rose-400 hover:text-rose-300 p-2"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
 
-            if(razao && cnpj) {
-                dadosSistema.fornecedores.push({ razao, cnpj, servico });
-                alert("Fornecedor cadastrado com sucesso!");
+        function modalNovoFornecedor() {
+            document.getElementById('modalBody').innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-white">Cadastrar Fornecedor</h3>
+                    <button onclick="fecharModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                <form onsubmit="event.preventDefault(); salvarFornecedor();" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Razão Social / Empresa</label>
+                            <input type="text" id="fRazao" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">CNPJ / CPF</label>
+                            <input type="text" id="fCnpj" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Categoria de Serviço</label>
+                            <input type="text" id="fCategoria" placeholder="Ex: Manutenção, Elevadores, Jardinagem" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Chave PIX / Dados Bancários</label>
+                            <input type="text" id="fPix" placeholder="Chave PIX ou Banco/Ag/Conta" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Pessoa de Contacto</label>
+                            <input type="text" id="fContato" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Telefone</label>
+                            <input type="text" id="fTelefone" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-3 pt-4">
+                        <button type="button" onclick="fecharModal()" class="px-5 py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-white text-sm font-semibold">Cancelar</button>
+                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold shadow-lg shadow-blue-600/20">Salvar Fornecedor</button>
+                    </div>
+                </form>
+            `;
+            document.getElementById('modalContainer').classList.remove('hidden');
+        }
+
+        function salvarFornecedor() {
+            const f = {
+                razao: document.getElementById('fRazao').value,
+                cnpj: document.getElementById('fCnpj').value,
+                categoria: document.getElementById('fCategoria').value,
+                pix: document.getElementById('fPix').value,
+                contato: document.getElementById('fContato').value,
+                telefone: document.getElementById('fTelefone').value
+            };
+            dadosSistema.fornecedores.push(f);
+            fecharModal();
+            carregarFornecedores();
+        }
+
+        function excluirFornecedor(idx) {
+            if(confirm("Deseja remover este fornecedor?")) {
+                dadosSistema.fornecedores.splice(idx, 1);
                 carregarFornecedores();
             }
         }
 
-        function carregarFinanceiro() {
+        // ==========================================
+        // 4. PLANO DE CONTAS & BANCOS
+        // ==========================================
+        function carregarPlanoContas() {
             const content = document.getElementById('contentArea');
             content.innerHTML = `
                 <div class="flex justify-between items-center mb-6">
-                    <h3 class="text-lg font-bold text-white">Contas a Pagar e Receber</h3>
-                    <button onclick="alert('Cadastre moradores e fornecedores primeiro para associar os títulos!')" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-sm font-semibold transition flex items-center gap-2">
+                    <h3 class="text-lg font-bold text-white">Plano de Contas Cadastrado</h3>
+                    <button onclick="modalNovoPlanoConta()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Nova Categoria
+                    </button>
+                </div>
+                <div class="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-900 text-slate-400 text-xs uppercase border-b border-slate-800">
+                            <tr>
+                                <th class="p-4">Código</th>
+                                <th class="p-4">Nome da Categoria</th>
+                                <th class="p-4">Tipo</th>
+                                <th class="p-4 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800 text-slate-300">
+                            ${dadosSistema.planoContas.map((pc, idx) => `
+                                <tr class="hover:bg-slate-900/50 transition">
+                                    <td class="p-4 font-mono text-blue-400">${pc.codigo}</td>
+                                    <td class="p-4 font-semibold text-white">${pc.nome}</td>
+                                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${pc.tipo === 'RECEITA' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}">${pc.tipo}</span></td>
+                                    <td class="p-4 text-right">
+                                        <button onclick="excluirPlanoConta(${idx})" class="text-rose-400 hover:text-rose-300 p-2"><i class="fa-solid fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function modalNovoPlanoConta() {
+            document.getElementById('modalBody').innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-white">Nova Categoria de Plano de Contas</h3>
+                    <button onclick="fecharModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                <form onsubmit="event.preventDefault(); salvarPlanoConta();" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Código Estrutural</label>
+                            <input type="text" id="pcCodigo" placeholder="Ex: 1.03" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Tipo de Fluxo</label>
+                            <select id="pcTipo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                                <option value="RECEITA">RECEITA (+)</option>
+                                <option value="DESPESA">DESPESA (-)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Nome da Categoria</label>
+                        <input type="text" id="pcNome" placeholder="Ex: Fundo de Reserva" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="flex justify-end gap-3 pt-4">
+                        <button type="button" onclick="fecharModal()" class="px-5 py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-white text-sm font-semibold">Cancelar</button>
+                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold shadow-lg shadow-blue-600/20">Salvar Categoria</button>
+                    </div>
+                </form>
+            `;
+            document.getElementById('modalContainer').classList.remove('hidden');
+        }
+
+        function salvarPlanoConta() {
+            const pc = {
+                id: 'pc' + (dadosSistema.planoContas.length + 1),
+                codigo: document.getElementById('pcCodigo').value,
+                nome: document.getElementById('pcNome').value,
+                tipo: document.getElementById('pcTipo').value
+            };
+            dadosSistema.planoContas.push(pc);
+            fecharModal();
+            carregarPlanoContas();
+        }
+
+        function excluirPlanoConta(idx) {
+            if(confirm("Deseja remover esta categoria?")) {
+                dadosSistema.planoContas.splice(idx, 1);
+                carregarPlanoContas();
+            }
+        }
+
+        function carregarBancos() {
+            const content = document.getElementById('contentArea');
+            content.innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-white">Contas Bancárias Cadastradas</h3>
+                    <button onclick="modalNovoBanco()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2">
+                        <i class="fa-solid fa-plus"></i> Nova Conta Bancária
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    ${dadosSistema.bancos.map((b, idx) => `
+                        <div class="bg-slate-950 p-6 rounded-2xl border border-slate-800 flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-center mb-2">
+                                    <h4 class="font-bold text-white text-base">${b.nome}</h4>
+                                    <span class="text-xs font-mono text-slate-400">Ag: ${b.agencia} / CC:${b.conta}</span>
+                                </div>
+                                <span class="text-xs text-slate-500 uppercase font-semibold">Saldo em Conta</span>
+                                <div class="text-2xl font-bold text-emerald-400 mt-1">R$ ${(Number(b.saldo) || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</div>
+                            </div>
+                            <div class="flex justify-end gap-2 mt-4 pt-4 border-t border-slate-900">
+                                <button onclick="excluirBanco(${idx})" class="text-rose-400 hover:text-rose-300 text-xs font-semibold px-3 py-1.5 rounded-lg border border-rose-500/20 bg-rose-500/10">Remover</button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function modalNovoBanco() {
+            document.getElementById('modalBody').innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-white">Cadastrar Conta Bancária</h3>
+                    <button onclick="fecharModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                <form onsubmit="event.preventDefault(); salvarBanco();" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Nome do Banco / Instituição</label>
+                        <input type="text" id="bNome" placeholder="Ex: Banco do Brasil" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Agência</label>
+                            <input type="text" id="bAgencia" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Número da Conta com DV</label>
+                            <input type="text" id="bConta" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Saldo Inicial (R$)</label>
+                        <input type="number" step="0.01" id="bSaldo" value="0.00" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="flex justify-end gap-3 pt-4">
+                        <button type="button" onclick="fecharModal()" class="px-5 py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-white text-sm font-semibold">Cancelar</button>
+                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold shadow-lg shadow-blue-600/20">Salvar Conta</button>
+                    </div>
+                </form>
+            `;
+            document.getElementById('modalContainer').classList.remove('hidden');
+        }
+
+        function salvarBanco() {
+            const b = {
+                id: 'b' + (dadosSistema.bancos.length + 1),
+                nome: document.getElementById('bNome').value,
+                agencia: document.getElementById('bAgencia').value,
+                conta: document.getElementById('bConta').value,
+                saldo: parseFloat(document.getElementById('bSaldo').value) || 0
+            };
+            dadosSistema.bancos.push(b);
+            fecharModal();
+            carregarBancos();
+        }
+
+        function excluirBanco(idx) {
+            if(confirm("Deseja remover esta conta bancária?")) {
+                dadosSistema.bancos.splice(idx, 1);
+                carregarBancos();
+            }
+        }
+
+        // ==========================================
+        // 5. FINANCEIRO & BAIXA PARCIAL
+        // ==========================================
+        function carregarFinanceiro() {
+            const content = document.getElementById('contentArea');
+            content.innerHTML = `
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <div class="flex flex-wrap gap-2">
+                        <select id="filtroStatusFin" onchange="filtrarFinanceiro()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none">
+                            <option value="TODOS">Todos os Estados</option>
+                            <option value="PENDENTE">Pendentes</option>
+                            <option value="PAGO">Baixados / Pagos</option>
+                        </select>
+                        <select id="filtroTipoFin" onchange="filtrarFinanceiro()" class="bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white focus:outline-none">
+                            <option value="TODOS">Todos os Tipos</option>
+                            <option value="RECEITA">Receitas (+)</option>
+                            <option value="DESPESA">Despesas (-)</option>
+                        </select>
+                    </div>
+                    <button onclick="modalNovoLancamento()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2">
                         <i class="fa-solid fa-file-circle-plus"></i> Novo Lançamento
                     </button>
                 </div>
-                <div class="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden p-8 text-center">
-                    <i class="fa-solid fa-receipt text-4xl text-slate-700 mb-3"></i>
-                    <p class="text-slate-400 text-sm">Nenhum título financeiro em aberto.</p>
+
+                <div class="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-900 text-slate-400 text-xs uppercase border-b border-slate-800">
+                            <tr>
+                                <th class="p-4">Descrição</th>
+                                <th class="p-4">Tipo</th>
+                                <th class="p-4">Valor (R$)</th>
+                                <th class="p-4">Vencimento</th>
+                                <th class="p-4">Estado</th>
+                                <th class="p-4 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaFinanceiro" class="divide-y divide-slate-800 text-slate-300">
+                            ${gerarLinhasFinanceiro(dadosSistema.financeiro)}
+                        </tbody>
+                    </table>
                 </div>
             `;
+        }
+
+        function gerarLinhasFinanceiro(lista) {
+            if(lista.length === 0) {
+                return `<tr><td colspan="6" class="p-8 text-center text-slate-500">Nenhum título financeiro cadastrado.</td></tr>`;
+            }
+            return lista.map((f, idx) => `
+                <tr class="hover:bg-slate-900/50 transition">
+                    <td class="p-4 font-semibold text-white">${f.descricao} <br><span class="text-xs text-slate-500">${f.pessoa || 'Geral'}</span></td>
+                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${f.tipo === 'RECEITA' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}">${f.tipo}</span></td>
+                    <td class="p-4 font-bold ${f.tipo === 'RECEITA' ? 'text-emerald-400' : 'text-rose-400'}">R$ ${(Number(f.valor) || 0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</td>
+                    <td class="p-4 text-xs font-mono">${f.vencimento}</td>
+                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold ${f.status === 'PAGO' ? 'bg-blue-500/10 text-blue-400 border border-blue-500/20' : 'bg-amber-500/10 text-amber-400 border border-amber-500/20'}">${f.status}</span></td>
+                    <td class="p-4 text-right flex justify-end gap-2">
+                        ${f.status === 'PENDENTE' ? `
+                            <button onclick="modalBaixaTotal(${idx})" class="text-emerald-400 hover:text-emerald-300 text-xs px-2.5 py-1 rounded-lg bg-emerald-500/10 border border-emerald-500/20 font-semibold">Baixa Total</button>
+                            <button onclick="modalBaixaParcial(${idx})" class="text-amber-400 hover:text-amber-300 text-xs px-2.5 py-1 rounded-lg bg-amber-500/10 border border-amber-500/20 font-semibold">Baixa Parcial</button>
+                        ` : ''}
+                        <button onclick="excluirFinanceiro(${idx})" class="text-rose-400 hover:text-rose-300 p-1.5"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function modalNovoLancamento() {
+            document.getElementById('modalBody').innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-white">Novo Lançamento Financeiro</h3>
+                    <button onclick="fecharModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                <form onsubmit="event.preventDefault(); salvarLancamento();" class="space-y-4">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Tipo de Título</label>
+                            <select id="fTipo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                                <option value="RECEITA">RECEITA (A Receber)</option>
+                                <option value="DESPESA">DESPESA (A Pagar)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Valor do Título (R$)</label>
+                            <input type="number" step="0.01" id="fValor" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Descrição / Histórico</label>
+                        <input type="text" id="fDescricao" placeholder="Ex: Taxa de Condomínio - Unidade 101" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Data de Vencimento</label>
+                            <input type="date" id="fVencimento" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Pessoa / Fornecedor / Morador</label>
+                            <input type="text" id="fPessoa" placeholder="Nome ou Razão Social" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                    </div>
+                    <div class="flex justify-end gap-3 pt-4">
+                        <button type="button" onclick="fecharModal()" class="px-5 py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-white text-sm font-semibold">Cancelar</button>
+                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold shadow-lg shadow-blue-600/20">Salvar Lançamento</button>
+                    </div>
+                </form>
+            `;
+            document.getElementById('modalContainer').classList.remove('hidden');
+        }
+
+        function salvarLancamento() {
+            const item = {
+                tipo: document.getElementById('fTipo').value,
+                valor: parseFloat(document.getElementById('fValor').value) || 0,
+                descricao: document.getElementById('fDescricao').value,
+                vencimento: document.getElementById('fVencimento').value,
+                pessoa: document.getElementById('fPessoa').value,
+                status: 'PENDENTE'
+            };
+            dadosSistema.financeiro.push(item);
+            fecharModal();
+            carregarFinanceiro();
+        }
+
+        function modalBaixaTotal(idx) {
+            const item = dadosSistema.financeiro[idx];
+            document.getElementById('modalBody').innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-white">Baixa Total de Título</h3>
+                    <button onclick="fecharModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                <p class="text-sm text-slate-300 mb-4">Confirma a liquidação total de <strong>${item.descricao}</strong> no valor de <strong>R$ ${item.valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong>?</p>
+                <div class="mb-4">
+                    <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Selecione a Conta Bancária</label>
+                    <select id="bancoDestino" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none">
+                        ${dadosSistema.bancos.map(b => `<option value="${b.id}">${b.nome} (Saldo atual: R$ ${b.saldo})</option>`).join('')}
+                    </select>
+                </div>
+                <div class="flex justify-end gap-3 pt-4">
+                    <button type="button" onclick="fecharModal()" class="px-5 py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-white text-sm font-semibold">Cancelar</button>
+                    <button type="button" onclick="confirmarBaixaTotal(${idx})" class="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-semibold">Confirmar Baixa Total</button>
+                </div>
+            `;
+            document.getElementById('modalContainer').classList.remove('hidden');
+        }
+
+        function confirmarBaixaTotal(idx) {
+            const item = dadosSistema.financeiro[idx];
+            const bancoId = document.getElementById('bancoDestino').value;
+            const banco = dadosSistema.bancos.find(b => b.id === bancoId);
+
+            if(banco) {
+                if(item.tipo === 'RECEITA') banco.saldo += item.valor;
+                else banco.saldo -= item.valor;
+            }
+
+            item.status = 'PAGO';
+            fecharModal();
+            carregarFinanceiro();
+        }
+
+        function modalBaixaParcial(idx) {
+            const item = dadosSistema.financeiro[idx];
+            document.getElementById('modalBody').innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-amber-400">Baixa Parcial de Título</h3>
+                    <button onclick="fecharModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                <p class="text-sm text-slate-300 mb-2">Título original: <strong>${item.descricao}</strong></p>
+                <p class="text-xs text-slate-400 mb-4">Valor Total Atual: <strong class="text-white">R$ ${item.valor.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</strong></p>
+                
+                <form onsubmit="event.preventDefault(); confirmarBaixaParcial(${idx});" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Valor Pago / Recebido nesta parcela (R$)</label>
+                        <input type="number" step="0.01" id="bpValor" max="${item.valor - 0.01}" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Conta Bancária de Movimentação</label>
+                        <select id="bpBanco" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none">
+                            ${dadosSistema.bancos.map(b => `<option value="${b.id}">${b.nome}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Nova Data de Vencimento do Saldo Residual</label>
+                        <input type="date" id="bpNovoVencimento" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-amber-500">
+                    </div>
+                    <div class="flex justify-end gap-3 pt-4">
+                        <button type="button" onclick="fecharModal()" class="px-5 py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-white text-sm font-semibold">Cancelar</button>
+                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold">Confirmar Baixa Parcial</button>
+                    </div>
+                </form>
+            `;
+            document.getElementById('modalContainer').classList.remove('hidden');
+        }
+
+        function confirmarBaixaParcial(idx) {
+            const itemOriginal = dadosSistema.financeiro[idx];
+            const valorPago = parseFloat(document.getElementById('bpValor').value) || 0;
+            const bancoId = document.getElementById('bpBanco').value;
+            const novoVencimento = document.getElementById('bpNovoVencimento').value;
+
+            if(valorPago >= itemOriginal.valor || valorPago <= 0) {
+                alert("O valor da baixa parcial deve ser maior que zero e menor que o valor total do título!");
+                return;
+            }
+
+            const valorResidual = itemOriginal.valor - valorPago;
+
+            // Atualiza o saldo bancário com a parte paga
+            const banco = dadosSistema.bancos.find(b => b.id === bancoId);
+            if(banco) {
+                if(itemOriginal.tipo === 'RECEITA') banco.saldo += valorPago;
+                else banco.saldo -= valorPago;
+            }
+
+            // Marca a parte paga como quitada
+            dadosSistema.financeiro.push({
+                tipo: itemOriginal.tipo,
+                valor: valorPago,
+                descricao: `${itemOriginal.descricao} (Baixa Parcial)`,
+                vencimento: itemOriginal.vencimento,
+                pessoa: itemOriginal.pessoa,
+                status: 'PAGO'
+            });
+
+            // Cria o título residual com o valor restante
+            itemOriginal.valor = valorResidual;
+            itemOriginal.vencimento = novoVencimento;
+            itemOriginal.descricao = `${itemOriginal.descricao} (Saldo Residual)`;
+
+            fecharModal();
+            carregarFinanceiro();
+        }
+
+        function excluirFinanceiro(idx) {
+            if(confirm("Deseja excluir este lançamento?")) {
+                dadosSistema.financeiro.splice(idx, 1);
+                carregarFinanceiro();
+            }
+        }
+
+        function filtrarFinanceiro() {
+            const st = document.getElementById('filtroStatusFin').value;
+            const tp = document.getElementById('filtroTipoFin').value;
+
+            const filtrados = dadosSistema.financeiro.filter(f => {
+                const okSt = st === 'TODOS' || f.status === st;
+                const okTp = tp === 'TODOS' || f.tipo === tp;
+                return okSt && okTp;
+            });
+
+            document.getElementById('tabelaFinanceiro').innerHTML = gerarLinhasFinanceiro(filtrados);
+        }
+
+        // ==========================================
+        // 6. ESTOQUE, INVENTÁRIO & ACERTO
+        // ==========================================
+        function carregarEstoque() {
+            const content = document.getElementById('contentArea');
+            content.innerHTML = `
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                    <h3 class="text-lg font-bold text-white">Catálogo e Acertos de Estoque</h3>
+                    <div class="flex gap-2">
+                        <button onclick="modalAcertoEstoque()" class="bg-amber-600 hover:bg-amber-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2">
+                            <i class="fa-solid fa-sliders"></i> Acerto de Estoque
+                        </button>
+                        <button onclick="modalNovoEstoque()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2">
+                            <i class="fa-solid fa-box"></i> Novo Item
+                        </button>
+                    </div>
+                </div>
+
+                <div class="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden mb-8">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-900 text-slate-400 text-xs uppercase border-b border-slate-800">
+                            <tr>
+                                <th class="p-4">Foto</th>
+                                <th class="p-4">Produto</th>
+                                <th class="p-4">Categoria</th>
+                                <th class="p-4">Localização</th>
+                                <th class="p-4">Qtd. Atual</th>
+                                <th class="p-4">Qtd. Mínima</th>
+                                <th class="p-4 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaEstoque" class="divide-y divide-slate-800 text-slate-300">
+                            ${gerarLinhasEstoque(dadosSistema.estoque)}
+                        </tbody>
+                    </table>
+                </div>
+
+                <h4 class="text-md font-bold text-white mb-4"><i class="fa-solid fa-history text-slate-400 mr-2"></i>Histórico Auditado de Acertos</h4>
+                <div class="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead class="bg-slate-900 text-slate-400 uppercase border-b border-slate-800">
+                            <tr>
+                                <th class="p-3">Data/Hora</th>
+                                <th class="p-3">Produto</th>
+                                <th class="p-3">Tipo</th>
+                                <th class="p-3">Qtd. Ajustada</th>
+                                <th class="p-3">Motivo / Justificativa</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800 text-slate-400">
+                            ${dadosSistema.historicoEstoque.length === 0 ? `<tr><td colspan="5" class="p-4 text-center">Nenhum acerto registrado até ao momento.</td></tr>` : 
+                                dadosSistema.historicoEstoque.map(h => `
+                                    <tr>
+                                        <td class="p-3 font-mono">${h.data}</td>
+                                        <td class="p-3 font-semibold text-white">${h.produto}</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${h.tipo === 'ENTRADA' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'}">${h.tipo}</span></td>
+                                        <td class="p-3 font-bold text-white">${h.qtd}</td>
+                                        <td class="p-3 text-slate-300">${h.motivo}</td>
+                                    </tr>
+                                `).join('')
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function gerarLinhasEstoque(lista) {
+            if(lista.length === 0) {
+                return `<tr><td colspan="7" class="p-8 text-center text-slate-500">Nenhum produto cadastrado no estoque.</td></tr>`;
+            }
+            return lista.map((item, idx) => `
+                <tr class="hover:bg-slate-900/50 transition">
+                    <td class="p-4">
+                        ${item.foto ? `<img src="${item.foto}" onclick="abrirLightbox('${item.foto}')" class="w-10 h-10 object-cover rounded-lg border border-slate-800 cursor-pointer hover:opacity-80 transition">` : `<div class="w-10 h-10 bg-slate-900 border border-slate-800 rounded-lg flex items-center justify-center text-slate-600"><i class="fa-solid fa-image"></i></div>`}
+                    </td>
+                    <td class="p-4 font-semibold text-white">${item.nome}</td>
+                    <td class="p-4 text-xs">${item.categoria}</td>
+                    <td class="p-4 text-xs text-slate-400">${item.localizacao || '-'}</td>
+                    <td class="p-4 font-bold ${item.qtd <= item.qtdMinima ? 'text-amber-400' : 'text-emerald-400'}">${item.qtd}</td>
+                    <td class="p-4 text-xs font-mono text-slate-400">${item.qtdMinima}</td>
+                    <td class="p-4 text-right">
+                        <button onclick="excluirEstoque(${idx})" class="text-rose-400 hover:text-rose-300 p-2"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function modalNovoEstoque() {
+            document.getElementById('modalBody').innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-white">Novo Item de Estoque</h3>
+                    <button onclick="fecharModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                <form onsubmit="event.preventDefault(); salvarEstoque();" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Nome do Produto</label>
+                        <input type="text" id="eNome" placeholder="Ex: Lâmpada LED 15W" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Categoria</label>
+                            <input type="text" id="eCategoria" placeholder="Ex: Elétrica, Iluminação" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Localização no Condomínio</label>
+                            <input type="text" id="eLocalizacao" placeholder="Ex: Almoxarifado Bloco B" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Quantidade Inicial</label>
+                            <input type="number" id="eQtd" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Quantidade Mínima (Alerta)</label>
+                            <input type="number" id="eQtdMinima" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">URL da Foto do Produto</label>
+                        <input type="url" id="eFoto" placeholder="https://exemplo.com/foto.jpg" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="flex justify-end gap-3 pt-4">
+                        <button type="button" onclick="fecharModal()" class="px-5 py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-white text-sm font-semibold">Cancelar</button>
+                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold shadow-lg shadow-blue-600/20">Salvar Item</button>
+                    </div>
+                </form>
+            `;
+            document.getElementById('modalContainer').classList.remove('hidden');
+        }
+
+        function salvarEstoque() {
+            const item = {
+                id: 'e' + (dadosSistema.estoque.length + 1),
+                nome: document.getElementById('eNome').value,
+                categoria: document.getElementById('eCategoria').value,
+                localizacao: document.getElementById('eLocalizacao').value,
+                qtd: parseInt(document.getElementById('eQtd').value) || 0,
+                qtdMinima: parseInt(document.getElementById('eQtdMinima').value) || 0,
+                foto: document.getElementById('eFoto').value
+            };
+            dadosSistema.estoque.push(item);
+            fecharModal();
+            carregarEstoque();
+        }
+
+        function modalAcertoEstoque() {
+            if(dadosSistema.estoque.length === 0) {
+                alert("Cadastre pelo menos um item no estoque antes de realizar um acerto.");
+                return;
+            }
+            document.getElementById('modalBody').innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-amber-400">Acerto de Estoque / Inventário</h3>
+                    <button onclick="fecharModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                <form onsubmit="event.preventDefault(); confirmarAcertoEstoque();" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Selecione o Produto</label>
+                        <select id="acProdutoId" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none">
+                            ${dadosSistema.estoque.map(e => `<option value="${e.id}">${e.nome} (Qtd Atual:${e.qtd})</option>`).join('')}
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Tipo de Movimento</label>
+                            <select id="acTipo" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none">
+                                <option value="ENTRADA">ENTRADA (+)</option>
+                                <option value="SAIDA">SAÍDA (-)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Quantidade a Ajustar</label>
+                            <input type="number" id="acQtd" min="1" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-amber-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Motivo / Justificativa (Obrigatório)</label>
+                        <textarea id="acMotivo" required placeholder="Ex: Consumo interno na portaria, avaria, recontagem anual" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-amber-500 h-24"></textarea>
+                    </div>
+                    <div class="flex justify-end gap-3 pt-4">
+                        <button type="button" onclick="fecharModal()" class="px-5 py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-white text-sm font-semibold">Cancelar</button>
+                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold">Confirmar Acerto</button>
+                    </div>
+                </form>
+            `;
+            document.getElementById('modalContainer').classList.remove('hidden');
+        }
+
+        function confirmarAcertoEstoque() {
+            const pId = document.getElementById('acProdutoId').value;
+            const tipo = document.getElementById('acTipo').value;
+            const qtd = parseInt(document.getElementById('acQtd').value) || 0;
+            const motivo = document.getElementById('acMotivo').value;
+
+            const produto = dadosSistema.estoque.find(e => e.id === pId);
+            if(produto) {
+                if(tipo === 'ENTRADA') produto.qtd += qtd;
+                else {
+                    if(produto.qtd < qtd) {
+                        alert("A quantidade de saída não pode ser maior do que o saldo atual do estoque!");
+                        return;
+                    }
+                    produto.qtd -= qtd;
+                }
+
+                dadosSistema.historicoEstoque.unshift({
+                    data: new Date().toLocaleString('pt-BR'),
+                    produto: produto.nome,
+                    tipo: tipo,
+                    qtd: qtd,
+                    motivo: motivo
+                });
+            }
+
+            fecharModal();
+            carregarEstoque();
+        }
+
+        function excluirEstoque(idx) {
+            if(confirm("Deseja remover este item do estoque?")) {
+                dadosSistema.estoque.splice(idx, 1);
+                carregarEstoque();
+            }
+        }
+
+        // ==========================================
+        // 7. DOCUMENTOS
+        // ==========================================
+        function carregarDocumentos() {
+            const content = document.getElementById('contentArea');
+            content.innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-white">Documentos e Comprovantes</h3>
+                    <button onclick="modalNovoDocumento()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2.5 rounded-xl text-sm font-semibold transition flex items-center gap-2">
+                        <i class="fa-solid fa-file-arrow-up"></i> Novo Documento
+                    </button>
+                </div>
+                <div class="bg-slate-950 border border-slate-800 rounded-2xl overflow-hidden">
+                    <table class="w-full text-left border-collapse text-sm">
+                        <thead class="bg-slate-900 text-slate-400 text-xs uppercase border-b border-slate-800">
+                            <tr>
+                                <th class="p-4">Título</th>
+                                <th class="p-4">Categoria</th>
+                                <th class="p-4">Data</th>
+                                <th class="p-4">Observação</th>
+                                <th class="p-4 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tabelaDocumentos" class="divide-y divide-slate-800 text-slate-300">
+                            ${gerarLinhasDocumentos(dadosSistema.documentos)}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function gerarLinhasDocumentos(lista) {
+            if(lista.length === 0) {
+                return `<tr><td colspan="5" class="p-8 text-center text-slate-500">Nenhum documento arquivado.</td></tr>`;
+            }
+            return lista.map((d, idx) => `
+                <tr class="hover:bg-slate-900/50 transition">
+                    <td class="p-4 font-semibold text-white">${d.titulo}</td>
+                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">${d.categoria}</span></td>
+                    <td class="p-4 text-xs font-mono">${d.data}</td>
+                    <td class="p-4 text-xs text-slate-400">${d.obs || '-'}</td>
+                    <td class="p-4 text-right">
+                        <button onclick="excluirDocumento(${idx})" class="text-rose-400 hover:text-rose-300 p-2"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function modalNovoDocumento() {
+            document.getElementById('modalBody').innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-lg font-bold text-white">Arquivar Documento</h3>
+                    <button onclick="fecharModal()" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+                </div>
+                <form onsubmit="event.preventDefault(); salvarDocumento();" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Título do Documento</label>
+                        <input type="text" id="dTitulo" placeholder="Ex: Ata da Assembleia Geral 2026" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Categoria</label>
+                            <select id="dCategoria" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none">
+                                <option value="Atas e Convenções">Atas e Convenções</option>
+                                <option value="Contratos">Contratos</option>
+                                <option value="Comprovantes">Comprovantes</option>
+                                <option value="Manutenção">Manutenção</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Data do Documento</label>
+                            <input type="date" id="dData" required class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold uppercase text-slate-400 mb-1">Observações</label>
+                        <textarea id="dObs" class="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-sm text-white focus:outline-none focus:border-blue-500 h-20"></textarea>
+                    </div>
+                    <div class="flex justify-end gap-3 pt-4">
+                        <button type="button" onclick="fecharModal()" class="px-5 py-2.5 rounded-xl border border-slate-800 text-slate-400 hover:text-white text-sm font-semibold">Cancelar</button>
+                        <button type="submit" class="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-sm font-semibold shadow-lg shadow-blue-600/20">Salvar Documento</button>
+                    </div>
+                </form>
+            `;
+            document.getElementById('modalContainer').classList.remove('hidden');
+        }
+
+        function salvarDocumento() {
+            const doc = {
+                titulo: document.getElementById('dTitulo').value,
+                categoria: document.getElementById('dCategoria').value,
+                data: document.getElementById('dData').value,
+                obs: document.getElementById('dObs').value
+            };
+            dadosSistema.documentos.push(doc);
+            fecharModal();
+            carregarDocumentos();
+        }
+
+        function excluirDocumento(idx) {
+            if(confirm("Deseja remover este documento?")) {
+                dadosSistema.documentos.splice(idx, 1);
+                carregarDocumentos();
+            }
+        }
+
+        // ==========================================
+        // 8. RELATÓRIOS GLOBAIS
+        // ==========================================
+        function carregarRelatorios() {
+            const content = document.getElementById('contentArea');
+            content.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                    <button onclick="gerarRelatorioGlobal('DRE')" class="p-6 bg-slate-950 border border-slate-800 rounded-2xl hover:border-blue-500 transition text-left flex items-start gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-blue-600/20 text-blue-400 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-file-invoice-dollar text-2xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-white text-base">Demonstrativo DRE</h4>
+                            <p class="text-xs text-slate-400 mt-1">Resumo consolidado por Plano de Contas e Fluxo financeiro.</p>
+                        </div>
+                    </button>
+
+                    <button onclick="gerarRelatorioGlobal('MORADORES')" class="p-6 bg-slate-950 border border-slate-800 rounded-2xl hover:border-blue-500 transition text-left flex items-start gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-purple-600/20 text-purple-400 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-users text-2xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-white text-base">Relatório de Moradores</h4>
+                            <p class="text-xs text-slate-400 mt-1">Lista completa de proprietários e inquilinos por bloco.</p>
+                        </div>
+                    </button>
+
+                    <button onclick="gerarRelatorioGlobal('ESTOQUE')" class="p-6 bg-slate-950 border border-slate-800 rounded-2xl hover:border-blue-500 transition text-left flex items-start gap-4">
+                        <div class="w-12 h-12 rounded-xl bg-amber-600/20 text-amber-400 flex items-center justify-center shrink-0">
+                            <i class="fa-solid fa-boxes-stacked text-2xl"></i>
+                        </div>
+                        <div>
+                            <h4 class="font-bold text-white text-base">Balanço de Estoque</h4>
+                            <p class="text-xs text-slate-400 mt-1">Relatório de saldo físico e itens com alerta de estoque mínimo.</p>
+                        </div>
+                    </button>
+                </div>
+
+                <!-- ÁREA DE EXIBIÇÃO E IMPRESSÃO DO RELATÓRIO -->
+                <div id="areaRelatorioGerado" class="bg-slate-950 border border-slate-800 rounded-2xl p-8">
+                    <p class="text-center text-slate-500">Selecione um dos modelos de relatório acima para visualizar e imprimir.</p>
+                </div>
+            `;
+        }
+
+        function gerarRelatorioGlobal(tipo) {
+            const container = document.getElementById('areaRelatorioGerado');
+            
+            if(tipo === 'DRE') {
+                const receitas = dadosSistema.financeiro.filter(f => f.tipo === 'RECEITA' && f.status === 'PAGO').reduce((a, b) => a + Number(b.valor), 0);
+                const despesas = dadosSistema.financeiro.filter(f => f.tipo === 'DESPESA' && f.status === 'PAGO').reduce((a, b) => a + Number(b.valor), 0);
+
+                container.innerHTML = `
+                    <div id="areaImpressao">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-6">
+                            <div>
+                                <h2 class="text-xl font-bold text-white">Demonstrativo do Resultado (DRE)</h2>
+                                <p class="text-xs text-slate-400">Condomínio Guardiões do Bravo - Emissão: ${new Date().toLocaleDateString('pt-BR')}</p>
+                            </div>
+                            <button onclick="window.print()" class="no-print bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2">
+                                <i class="fa-solid fa-print"></i> Imprimir / Gerar PDF
+                            </button>
+                        </div>
+                        <div class="space-y-4">
+                            <div class="p-4 bg-slate-900 rounded-xl flex justify-between items-center">
+                                <span class="font-bold text-emerald-400">Total de Receitas Liquidadas (+)</span>
+                                <span class="font-mono font-bold text-emerald-400">R$ ${receitas.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                            </div>
+                            <div class="p-4 bg-slate-900 rounded-xl flex justify-between items-center">
+                                <span class="font-bold text-rose-400">Total de Despesas Liquidadas (-)</span>
+                                <span class="font-mono font-bold text-rose-400">R$ ${despesas.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                            </div>
+                            <div class="p-4 bg-slate-800 rounded-xl flex justify-between items-center text-lg">
+                                <span class="font-bold text-white">Resultado Operacional Líquido</span>
+                                <span class="font-mono font-bold ${(receitas - despesas) >= 0 ? 'text-emerald-400' : 'text-rose-400'}">R$ ${(receitas - despesas).toLocaleString('pt-BR', {minimumFractionDigits: 2})}</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else if(tipo === 'MORADORES') {
+                container.innerHTML = `
+                    <div id="areaImpressao">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-6">
+                            <div>
+                                <h2 class="text-xl font-bold text-white">Relatório Geral de Ocupantes</h2>
+                                <p class="text-xs text-slate-400">Total de Moradores: ${dadosSistema.moradores.length}</p>
+                            </div>
+                            <button onclick="window.print()" class="no-print bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2">
+                                <i class="fa-solid fa-print"></i> Imprimir / Gerar PDF
+                            </button>
+                        </div>
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead class="bg-slate-900 text-slate-400 text-xs uppercase">
+                                <tr>
+                                    <th class="p-3">Nome</th>
+                                    <th class="p-3">Bloco</th>
+                                    <th class="p-3">Unidade</th>
+                                    <th class="p-3">Tipo</th>
+                                    <th class="p-3">Contacto</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800 text-slate-300">
+                                ${dadosSistema.moradores.map(m => `
+                                    <tr>
+                                        <td class="p-3 font-semibold text-white">${m.nome}</td>
+                                        <td class="p-3">${m.bloco}</td>
+                                        <td class="p-3 font-bold text-blue-400">${m.ap}</td>
+                                        <td class="p-3">${m.tipo}</td>
+                                        <td class="p-3 text-xs">${m.telefone || '-'}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            } else if(tipo === 'ESTOQUE') {
+                container.innerHTML = `
+                    <div id="areaImpressao">
+                        <div class="flex justify-between items-center border-b border-slate-800 pb-4 mb-6">
+                            <div>
+                                <h2 class="text-xl font-bold text-white">Balanço de Estoque e Inventário</h2>
+                                <p class="text-xs text-slate-400">Itens em Alerta Mínimo: ${dadosSistema.estoque.filter(e => e.qtd <= e.qtdMinima).length}</p>
+                            </div>
+                            <button onclick="window.print()" class="no-print bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2">
+                                <i class="fa-solid fa-print"></i> Imprimir / Gerar PDF
+                            </button>
+                        </div>
+                        <table class="w-full text-left border-collapse text-sm">
+                            <thead class="bg-slate-900 text-slate-400 text-xs uppercase">
+                                <tr>
+                                    <th class="p-3">Produto</th>
+                                    <th class="p-3">Categoria</th>
+                                    <th class="p-3">Localização</th>
+                                    <th class="p-3">Qtd. Atual</th>
+                                    <th class="p-3">Mínimo</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800 text-slate-300">
+                                ${dadosSistema.estoque.map(e => `
+                                    <tr>
+                                        <td class="p-3 font-semibold text-white">${e.nome}</td>
+                                        <td class="p-3 text-xs">${e.categoria}</td>
+                                        <td class="p-3 text-xs">${e.localizacao || '-'}</td>
+                                        <td class="p-3 font-bold ${e.qtd <= e.qtdMinima ? 'text-amber-400' : 'text-emerald-400'}">${e.qtd}</td>
+                                        <td class="p-3 text-xs">${e.qtdMinima}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+            }
         }
     </script>
 </body>
