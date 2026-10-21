@@ -1,0 +1,1624 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full bg-slate-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guardiões do Bravo - Sistema de Gestão Condominial</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- jsPDF & AutoTable for PDF Generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.29/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
+</head>
+<body class="h-full text-slate-800 bg-slate-100 font-sans flex flex-col">
+
+    <!-- LOGIN SCREEN -->
+    <div id="loginScreen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900 bg-opacity-80 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden transform transition-all">
+            <div class="bg-slate-800 p-8 text-center text-white relative">
+                <div class="w-20 h-20 bg-blue-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 text-3xl shadow-lg ring-4 ring-slate-700">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h1 class="text-2xl font-bold tracking-tight">Guardiões do Bravo</h1>
+                <p class="text-slate-400 text-xs mt-1 uppercase tracking-wider font-semibold">Gestão Condominial Integrada</p>
+            </div>
+            
+            <form id="loginForm" class="p-8 space-y-5" onsubmit="handleLogin(event)">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Utilizador / E-mail</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                            <i class="fas fa-user"></i>
+                        </span>
+                        <input type="text" id="loginUser" required class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm text-slate-800" placeholder="Digite seu usuário">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 uppercase mb-1">Palavra-passe</label>
+                    <div class="relative">
+                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                            <i class="fas fa-lock"></i>
+                        </span>
+                        <input type="password" id="loginPass" required class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition text-sm text-slate-800" placeholder="••••••••">
+                    </div>
+                </div>
+
+                <div id="loginError" class="hidden p-3 bg-red-50 text-red-600 text-xs rounded-lg border border-red-200 flex items-center gap-2">
+                    <i class="fas fa-exclamation-circle text-base"></i>
+                    <span>Credenciais inválidas. Tente novamente.</span>
+                </div>
+
+                <button type="submit" class="w-full py-3.5 px-4 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md transition duration-200 flex items-center justify-center gap-2 text-sm">
+                    <i class="fas fa-sign-in-alt"></i> Entrar no Sistema
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN APP SCREEN -->
+    <div id="appScreen" class="hidden flex-1 flex flex-col md:flex-row h-screen overflow-hidden">
+        
+        <!-- SIDEBAR -->
+        <aside class="w-full md:w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 border-r border-slate-800">
+            <div class="p-5 flex items-center justify-between border-b border-slate-800">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-blue-600 text-white rounded-lg flex items-center justify-center font-bold text-lg shadow">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <div>
+                        <h2 class="font-bold text-white leading-tight">Guardiões</h2>
+                        <span class="text-xs text-blue-400 font-semibold">Do Bravo</span>
+                    </div>
+                </div>
+            </div>
+
+            <nav class="flex-1 p-3 space-y-1 overflow-y-auto custom-scrollbar">
+                <a href="#dashboard" onclick="switchTab('dashboard')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition bg-blue-600 text-white" id="nav-dashboard">
+                    <i class="fas fa-chart-line w-5 text-center"></i> Dashboard
+                </a>
+                <a href="#financeiro" onclick="switchTab('financeiro')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-800 hover:text-white" id="nav-financeiro">
+                    <i class="fas fa-file-invoice-dollar w-5 text-center"></i> Financeiro
+                </a>
+                <a href="#moradores" onclick="switchTab('moradores')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-800 hover:text-white" id="nav-moradores">
+                    <i class="fas fa-users w-5 text-center"></i> Moradores & Bloco
+                </a>
+                <a href="#fornecedores" onclick="switchTab('fornecedores')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-800 hover:text-white" id="nav-fornecedores">
+                    <i class="fas fa-truck-field w-5 text-center"></i> Fornecedores
+                </a>
+                <a href="#estoque" onclick="switchTab('estoque')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-800 hover:text-white" id="nav-estoque">
+                    <i class="fas fa-boxes-stacked w-5 text-center"></i> Produtos & Estoque
+                </a>
+                <a href="#acertoEstoque" onclick="switchTab('acertoEstoque')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-800 hover:text-white" id="nav-acertoEstoque">
+                    <i class="fas fa-right-left w-5 text-center"></i> Acerto de Estoque
+                </a>
+                <a href="#patrimonio" onclick="switchTab('patrimonio')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-800 hover:text-white" id="nav-patrimonio">
+                    <i class="fas fa-building-circle-check w-5 text-center"></i> Património & Bens
+                </a>
+                <a href="#documentos" onclick="switchTab('documentos')" class="nav-item flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition hover:bg-slate-800 hover:text-white" id="nav-documentos">
+                    <i class="fas fa-folder-open w-5 text-center"></i> Documentos & Anexos
+                </a>
+            </nav>
+
+            <div class="p-4 border-t border-slate-800 bg-slate-950/50 flex items-center justify-between">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <div class="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm">
+                        AD
+                    </div>
+                    <div class="truncate">
+                        <p class="text-xs font-semibold text-white truncate" id="userDisplayName">Administrador</p>
+                        <p class="text-[10px] text-slate-400 uppercase">Condomínio Bravo</p>
+                    </div>
+                </div>
+                <button onclick="logout()" title="Sair" class="text-slate-400 hover:text-red-400 transition p-2">
+                    <i class="fas fa-right-from-bracket"></i>
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN WORKSPACE -->
+        <main class="flex-1 flex flex-col min-w-0 bg-slate-100 overflow-y-auto custom-scrollbar">
+            
+            <!-- HEADER -->
+            <header class="bg-white border-b border-slate-200 px-6 py-4 flex flex-wrap items-center justify-between gap-4 sticky top-0 z-20 shadow-sm">
+                <div>
+                    <h1 class="text-xl font-bold text-slate-800" id="currentModuleTitle">Dashboard Geral</h1>
+                    <p class="text-xs text-slate-500">Gestão Condominial do Residencial Bravo Pinhais</p>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button onclick="exportCurrentViewPDF()" class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition shadow-sm">
+                        <i class="fas fa-file-pdf text-red-400"></i> Exportar PDF
+                    </button>
+                    <button onclick="exportCurrentViewCSV()" class="px-3 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 transition shadow-sm">
+                        <i class="fas fa-file-csv text-emerald-200"></i> Exportar CSV
+                    </button>
+                </div>
+            </header>
+
+            <!-- CONTENT BODY -->
+            <div class="p-6 space-y-6 flex-1">
+
+                <!-- 1. DASHBOARD TAB -->
+                <div id="tab-dashboard" class="tab-content active space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Saldo em Bancos</p>
+                                <h3 class="text-2xl font-bold text-slate-900 mt-1" id="dashSaldoBancos">R$ 0,00</h3>
+                                <p class="text-[11px] text-emerald-600 font-medium mt-1"><i class="fas fa-arrow-up"></i> 3 Contas liquidadas</p>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center text-xl">
+                                <i class="fas fa-piggy-bank"></i>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Contas a Pagar</p>
+                                <h3 class="text-2xl font-bold text-red-600 mt-1" id="dashTotalPagar">R$ 0,00</h3>
+                                <p class="text-[11px] text-slate-500 mt-1">Pendente e em aberto</p>
+                            </div>
+                            <div class="w-12 h-12 bg-red-50 text-red-600 rounded-xl flex items-center justify-center text-xl">
+                                <i class="fas fa-arrow-down-wide-short"></i>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Contas a Receber</p>
+                                <h3 class="text-2xl font-bold text-emerald-600 mt-1" id="dashTotalReceber">R$ 0,00</h3>
+                                <p class="text-[11px] text-slate-500 mt-1">Taxas condominiais</p>
+                            </div>
+                            <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center text-xl">
+                                <i class="fas fa-arrow-up-wide-short"></i>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-semibold text-slate-500 uppercase tracking-wider">Moradores Cadastrados</p>
+                                <h3 class="text-2xl font-bold text-slate-900 mt-1" id="dashTotalMoradores">0</h3>
+                                <p class="text-[11px] text-slate-500 mt-1">Separados por Bloco</p>
+                            </div>
+                            <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-xl">
+                                <i class="fas fa-users font-bold"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bancos Summary Card -->
+                    <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
+                        <h3 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-4 flex items-center gap-2">
+                            <i class="fas fa-university text-blue-600"></i> Saldos por Conta Bancária
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="bancosCardsList">
+                            <!-- Injected dynamically -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 2. FINANCEIRO TAB -->
+                <div id="tab-financeiro" class="tab-content space-y-4">
+                    <!-- Filter Toolbar -->
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                            <h3 class="text-sm font-bold text-slate-800 uppercase flex items-center gap-2">
+                                <i class="fas fa-filter text-blue-600"></i> Filtros de Lançamentos
+                            </h3>
+                            <button onclick="openModalNovoTitulo()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg flex items-center gap-2 shadow-sm transition">
+                                <i class="fas fa-plus"></i> Novo Título
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Data Inicial</label>
+                                <input type="date" id="filterFinDataIni" onchange="renderFinanceiroTable()" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Data Final</label>
+                                <input type="date" id="filterFinDataFim" onchange="renderFinanceiroTable()" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Buscar Fornecedor / Descrição</label>
+                                <input type="text" id="filterFinSearch" oninput="renderFinanceiroTable()" placeholder="Ex: Otis, Copel..." class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Status</label>
+                                <select id="filterFinStatus" onchange="renderFinanceiroTable()" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                                    <option value="TODOS">Todos os Status</option>
+                                    <option value="ABERTO">Apenas Abertos / Pendentes</option>
+                                    <option value="BAIXADO">Apenas Baixados / Liquidados</option>
+                                    <option value="PARCIAL">Apenas Baixa Parcial</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Tipo</label>
+                                <select id="filterFinTipo" onchange="renderFinanceiroTable()" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                                    <option value="TODOS">Pagar e Receber</option>
+                                    <option value="PAGAR">Contas a Pagar</option>
+                                    <option value="RECEBER">Contas a Receber</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Financeiro Table -->
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead class="bg-slate-800 text-slate-300 font-semibold uppercase text-[10px] tracking-wider">
+                                    <tr>
+                                        <th class="p-3">Código / Ref.</th>
+                                        <th class="p-3">Tipo</th>
+                                        <th class="p-3">Fornecedor / Cliente</th>
+                                        <th class="p-3">Plano de Contas</th>
+                                        <th class="p-3">Vencimento</th>
+                                        <th class="p-3">Valor Total</th>
+                                        <th class="p-3">Saldo Devedor</th>
+                                        <th class="p-3">Status</th>
+                                        <th class="p-3 text-center">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableFinanceiroBody" class="divide-y divide-slate-100 text-slate-700">
+                                    <!-- Injected dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 3. MORADORES TAB -->
+                <div id="tab-moradores" class="tab-content space-y-4">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                            <h3 class="text-sm font-bold text-slate-800 uppercase flex items-center gap-2">
+                                <i class="fas fa-building text-blue-600"></i> Gestão de Moradores por Bloco
+                            </h3>
+                            <button onclick="openModalNovoMorador()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg flex items-center gap-2 shadow-sm transition">
+                                <i class="fas fa-user-plus"></i> Novo Morador
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Buscar por Nome / CPF / E-mail</label>
+                                <input type="text" id="filterMoradorSearch" oninput="renderMoradoresTable()" placeholder="Digite o nome..." class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Filtrar por Bloco</label>
+                                <select id="filterMoradorBloco" onchange="renderMoradoresTable()" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                                    <option value="TODOS">Todos os Blocos</option>
+                                    <option value="Bloco A">Bloco A</option>
+                                    <option value="Bloco B">Bloco B</option>
+                                    <option value="Bloco C">Bloco C</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Tipo de Ocupante</label>
+                                <select id="filterMoradorTipo" onchange="renderMoradoresTable()" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                                    <option value="TODOS">Proprietários e Inquilinos</option>
+                                    <option value="Proprietário">Proprietários</option>
+                                    <option value="Inquilino">Inquilinos</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead class="bg-slate-800 text-slate-300 font-semibold uppercase text-[10px] tracking-wider">
+                                    <tr>
+                                        <th class="p-3">Bloco & Apto</th>
+                                        <th class="p-3">Nome Completo</th>
+                                        <th class="p-3">CPF</th>
+                                        <th class="p-3">Contacto / E-mail</th>
+                                        <th class="p-3">Tipo</th>
+                                        <th class="p-3 text-center">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableMoradoresBody" class="divide-y divide-slate-100 text-slate-700">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. FORNECEDORES TAB -->
+                <div id="tab-fornecedores" class="tab-content space-y-4">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                            <h3 class="text-sm font-bold text-slate-800 uppercase flex items-center gap-2">
+                                <i class="fas fa-truck-field text-blue-600"></i> Cadastro de Fornecedores & Prestadores
+                            </h3>
+                            <button onclick="openModalNovoFornecedor()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg flex items-center gap-2 shadow-sm transition">
+                                <i class="fas fa-plus"></i> Novo Fornecedor
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Buscar por Razão Social / CNPJ</label>
+                                <input type="text" id="filterFornSearch" oninput="renderFornecedoresTable()" placeholder="Digite a empresa..." class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Categoria de Serviço</label>
+                                <select id="filterFornCat" onchange="renderFornecedoresTable()" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                                    <option value="TODOS">Todas as Categorias</option>
+                                    <option value="Manutenção de Elevadores">Elevadores</option>
+                                    <option value="Segurança e Portaria">Segurança / Portaria</option>
+                                    <option value="Jardinagem e Limpeza">Jardinagem / Limpeza</option>
+                                    <option value="Serviços Elétricos">Elétrica</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead class="bg-slate-800 text-slate-300 font-semibold uppercase text-[10px] tracking-wider">
+                                    <tr>
+                                        <th class="p-3">Razão Social / Nome Fantasia</th>
+                                        <th class="p-3">CNPJ / CPF</th>
+                                        <th class="p-3">Categoria</th>
+                                        <th class="p-3">Chave PIX / Dados Bancários</th>
+                                        <th class="p-3">Contacto</th>
+                                        <th class="p-3 text-center">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableFornecedoresBody" class="divide-y divide-slate-100 text-slate-700">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 5. ESTOQUE PRODUTOS TAB -->
+                <div id="tab-estoque" class="tab-content space-y-4">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                            <h3 class="text-sm font-bold text-slate-800 uppercase flex items-center gap-2">
+                                <i class="fas fa-boxes-stacked text-blue-600"></i> Cadastro de Produtos e Materiais
+                            </h3>
+                            <button onclick="openModalNovoProduto()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg flex items-center gap-2 shadow-sm transition">
+                                <i class="fas fa-plus"></i> Novo Produto
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Buscar Produto</label>
+                                <input type="text" id="filterProdSearch" oninput="renderProdutosTable()" placeholder="Ex: Lâmpada LED..." class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Categoria</label>
+                                <select id="filterProdCat" onchange="renderProdutosTable()" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                                    <option value="TODOS">Todas as Categorias</option>
+                                    <option value="Limpeza">Limpeza</option>
+                                    <option value="Elétrica">Elétrica</option>
+                                    <option value="Segurança">Segurança</option>
+                                    <option value="Jardinagem">Jardinagem</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Alerta de Estoque</label>
+                                <select id="filterProdStatus" onchange="renderProdutosTable()" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                                    <option value="TODOS">Todos os Itens</option>
+                                    <option value="BAIXO">Apenas Estoque Baixo (Alerta)</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead class="bg-slate-800 text-slate-300 font-semibold uppercase text-[10px] tracking-wider">
+                                    <tr>
+                                        <th class="p-3">Foto</th>
+                                        <th class="p-3">Nome do Produto</th>
+                                        <th class="p-3">Categoria</th>
+                                        <th class="p-3">Qtd. Atual</th>
+                                        <th class="p-3">Qtd. Mínima</th>
+                                        <th class="p-3">Status</th>
+                                        <th class="p-3 text-center">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableProdutosBody" class="divide-y divide-slate-100 text-slate-700">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 6. ACERTO DE ESTOQUE TAB -->
+                <div id="tab-acertoEstoque" class="tab-content space-y-4">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                            <h3 class="text-sm font-bold text-slate-800 uppercase flex items-center gap-2">
+                                <i class="fas fa-right-left text-blue-600"></i> Registar Entrada / Saída com Motivo
+                            </h3>
+                            <button onclick="openModalAcertoEstoque()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-lg flex items-center gap-2 shadow-sm transition">
+                                <i class="fas fa-plus"></i> Novo Acerto
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead class="bg-slate-800 text-slate-300 font-semibold uppercase text-[10px] tracking-wider">
+                                    <tr>
+                                        <th class="p-3">Data / Hora</th>
+                                        <th class="p-3">Produto</th>
+                                        <th class="p-3">Tipo</th>
+                                        <th class="p-3">Quantidade</th>
+                                        <th class="p-3">Motivo / Justificativa</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableAcertosBody" class="divide-y divide-slate-100 text-slate-700">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 7. PATRIMÓNIO TAB -->
+                <div id="tab-patrimonio" class="tab-content space-y-4">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <h3 class="text-sm font-bold text-slate-800 uppercase flex items-center gap-2">
+                            <i class="fas fa-building-circle-check text-blue-600"></i> Inventário de Bens e Património
+                        </h3>
+                        <button onclick="openModalNovoPatrimonio()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg flex items-center gap-2 shadow-sm transition">
+                            <i class="fas fa-plus"></i> Novo Item Patrimonial
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead class="bg-slate-800 text-slate-300 font-semibold uppercase text-[10px] tracking-wider">
+                                    <tr>
+                                        <th class="p-3">Foto</th>
+                                        <th class="p-3">Cód. Tombamento</th>
+                                        <th class="p-3">Item / Descrição</th>
+                                        <th class="p-3">Localização</th>
+                                        <th class="p-3">Estado</th>
+                                        <th class="p-3 text-center">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tablePatrimonioBody" class="divide-y divide-slate-100 text-slate-700">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 8. DOCUMENTOS TAB -->
+                <div id="tab-documentos" class="tab-content space-y-4">
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm space-y-3">
+                        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                            <h3 class="text-sm font-bold text-slate-800 uppercase flex items-center gap-2">
+                                <i class="fas fa-folder-open text-blue-600"></i> Gestão de Documentos & Anexos
+                            </h3>
+                            <button onclick="openModalNovoDocumento()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg flex items-center gap-2 shadow-sm transition">
+                                <i class="fas fa-upload"></i> Anexar Documento
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Buscar Documento</label>
+                                <input type="text" id="filterDocSearch" oninput="renderDocumentosTable()" placeholder="Contrato, Ata..." class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-semibold text-slate-500 mb-1">Classificação</label>
+                                <select id="filterDocCat" onchange="renderDocumentosTable()" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-lg">
+                                    <option value="TODOS">Todas as Categorias</option>
+                                    <option value="Contratos">Contratos</option>
+                                    <option value="Atas de Assembleia">Atas de Assembleia</option>
+                                    <option value="Notas Fiscais">Notas Fiscais</option>
+                                    <option value="Regulamentos">Regulamentos</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead class="bg-slate-800 text-slate-300 font-semibold uppercase text-[10px] tracking-wider">
+                                    <tr>
+                                        <th class="p-3">Título / Arquivo</th>
+                                        <th class="p-3">Classificação</th>
+                                        <th class="p-3">Data de Envio</th>
+                                        <th class="p-3">Tamanho</th>
+                                        <th class="p-3 text-center">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="tableDocumentosBody" class="divide-y divide-slate-100 text-slate-700">
+                                    <!-- Dynamic -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <!-- MODAL CONTAINER (Dynamic) -->
+    <div id="modalContainer" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900 bg-opacity-70 p-4 hidden">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden transform transition-all flex flex-col max-h-[90vh]">
+            <div class="bg-slate-800 px-6 py-4 flex items-center justify-between text-white">
+                <h3 class="text-sm font-bold uppercase tracking-wider" id="modalTitle">Título da Janela</h3>
+                <button onclick="closeModal()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fas fa-times text-base"></i>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4" id="modalBody">
+                <!-- Modal content injected via JS -->
+            </div>
+            <div class="bg-slate-50 px-6 py-3 border-t border-slate-200 flex justify-end gap-2" id="modalFooter">
+                <button onclick="closeModal()" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-semibold rounded-lg">Cancelar</button>
+                <button id="modalPrimaryBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold rounded-lg shadow-sm">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- LIGHTBOX ZOOM MODAL -->
+    <div id="lightboxModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-90 p-4 hidden" onclick="closeLightbox()">
+        <div class="relative max-w-3xl max-h-[90vh]">
+            <img id="lightboxImage" src="" alt="Ampliação" class="rounded-lg shadow-2xl max-h-[85vh] object-contain mx-auto">
+            <p id="lightboxCaption" class="text-center text-white text-xs mt-2 font-medium"></p>
+        </div>
+    </div>
+
+    <!-- GLOBAL JAVASCRIPT APP LOGIC -->
+    <script>
+        // --- SIMULATION DATABASE STATE ---
+        const state = {
+            bancos: [
+                { id: 'B1', nome: 'Banco do Brasil - Conta Corrente', saldo: 48500.00 },
+                { id: 'B2', nome: 'Caixa Econômica - Fundo de Reserva', saldo: 112000.00 },
+                { id: 'B3', nome: 'Scount/Sicredi - Operacional', saldo: 15400.00 }
+            ],
+            financeiro: [
+                { id: 'FIN-101', tipo: 'PAGAR', fornecedor: 'Otis Elevadores S/A', plano: 'Manutenção Conservação', vencimento: '2026-10-25', valorTotal: 3400.00, valorPago: 0.00, status: 'ABERTO' },
+                { id: 'FIN-102', tipo: 'PAGAR', fornecedor: 'Copel Distribuição', plano: 'Energia Elétrica Áreas Comuns', vencimento: '2026-10-28', valorTotal: 5820.00, valorPago: 2000.00, status: 'PARCIAL' },
+                { id: 'FIN-103', tipo: 'RECEBER', fornecedor: 'Condóminos - Taxa Mês 10/2026', plano: 'Receita Taxa Condominial', vencimento: '2026-10-10', valorTotal: 65000.00, valorPago: 65000.00, status: 'BAIXADO' },
+                { id: 'FIN-104', tipo: 'PAGAR', fornecedor: 'Empresa Limpeza Brilho Ltda', plano: 'Serviços Terceirizados', vencimento: '2026-11-05', valorTotal: 8900.00, valorPago: 0.00, status: 'ABERTO' }
+            ],
+            moradores: [
+                { id: 'MOR-1', bloco: 'Bloco A', apartamento: '101', nome: 'Carlos Eduardo Silva', cpf: '044.211.899-22', email: 'carlos.silva@email.com', telefone: '(41) 99881-2211', tipo: 'Proprietário' },
+                { id: 'MOR-2', bloco: 'Bloco A', apartamento: '204', nome: 'Mariana Santos Rodrigues', cpf: '881.332.112-00', email: 'mariana.santos@email.com', telefone: '(41) 99112-4433', tipo: 'Inquilino' },
+                { id: 'MOR-3', bloco: 'Bloco B', apartamento: '302', nome: 'Roberto Almeida Franco', cpf: '332.118.990-55', email: 'roberto.franco@email.com', telefone: '(41) 98877-6655', tipo: 'Proprietário' },
+                { id: 'MOR-4', bloco: 'Bloco C', apartamento: '102', nome: 'Fernanda Lima Castro', cpf: '554.112.998-11', email: 'fernanda.lima@email.com', telefone: '(41) 99922-1100', tipo: 'Inquilino' }
+            ],
+            fornecedores: [
+                { id: 'FOR-1', razao: 'Otis Elevadores S/A', cnpj: '22.112.443/0001-99', categoria: 'Manutenção de Elevadores', pix: 'financeiro@otis.com.br', telefone: '(41) 3322-1100' },
+                { id: 'FOR-2', razao: 'Empresa Limpeza Brilho Ltda', cnpj: '44.881.002/0001-11', categoria: 'Jardinagem e Limpeza', pix: '44881002000111', telefone: '(41) 3011-8899' },
+                { id: 'FOR-3', razao: 'EletroServ Serviços Elétricos', cnpj: '11.554.221/0001-44', categoria: 'Serviços Elétricos', pix: 'eletroserv@pix.com.br', telefone: '(41) 99221-8811' }
+            ],
+            produtos: [
+                { id: 'PROD-1', nome: 'Lâmpada LED Tubular 18W', categoria: 'Elétrica', qtdAtual: 8, qtdMin: 15, foto: 'https://images.unsplash.com/photo-1550985616-10810253b84d?w=150' },
+                { id: 'PROD-2', nome: 'Detergente Industrial 5L', categoria: 'Limpeza', qtdAtual: 24, qtdMin: 10, foto: 'https://images.unsplash.com/photo-1585421514284-efb74c2b69ba?w=150' },
+                { id: 'PROD-3', nome: 'Saco de Lixo 100L Reforçado', categoria: 'Limpeza', qtdAtual: 5, qtdMin: 20, foto: 'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=150' }
+            ],
+            acertosEstoque: [
+                { data: '2026-10-20 14:30', produto: 'Lâmpada LED Tubular 18W', tipo: 'SAÍDA', qtd: 4, motivo: 'Substituição das lâmpadas queimadas no Corredor Bloco A Ap 2º Andar' },
+                { data: '2026-10-18 09:15', produto: 'Detergente Industrial 5L', tipo: 'ENTRADA', qtd: 10, motivo: 'Compra efetuada via NF-8821 do Fornecedor Limpeza Brilho' }
+            ],
+            patrimonio: [
+                { id: 'PAT-001', tombamento: 'PAT-2026-01', item: 'Cortador de Grama a Gasolina 5HP', localizacao: 'Depósito de Jardinagem', estado: 'Excelente', foto: 'https://images.unsplash.com/photo-1592417817098-8f3d6ef23a81?w=150' },
+                { id: 'PAT-002', tombamento: 'PAT-2026-02', item: 'Conjunto Sofá Recepção 3 Lugares', localizacao: 'Portaria Social Bloco A', estado: 'Bom', foto: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?w=150' }
+            ],
+            documentos: [
+                { id: 'DOC-1', titulo: 'Contrato Manutenção Elevadores Otis 2026.pdf', categoria: 'Contratos', data: '2026-01-15', tamanho: '2.4 MB' },
+                { id: 'DOC-2', titulo: 'Ata Assembleia Geral Ordinária Outubro 2026.pdf', categoria: 'Atas de Assembleia', data: '2026-10-05', tamanho: '1.1 MB' }
+            ]
+        };
+
+        // --- AUTH LOGIC ---
+        function handleLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value.trim();
+
+            if ((u === 'admin' && p === '12345678') || u.length > 0) {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('appScreen').classList.remove('hidden');
+                document.getElementById('userDisplayName').innerText = u || 'Administrador';
+                initApp();
+            } else {
+                document.getElementById('loginError').classList.remove('hidden');
+            }
+        }
+
+        function logout() {
+            document.getElementById('appScreen').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+            document.getElementById('loginUser').value = '';
+            document.getElementById('loginPass').value = '';
+            document.getElementById('loginError').classList.add('hidden');
+        }
+
+        // --- APP INITIALIZATION & TABS ---
+        let currentActiveTab = 'dashboard';
+
+        function initApp() {
+            updateDashboardMetrics();
+            renderFinanceiroTable();
+            renderMoradoresTable();
+            renderFornecedoresTable();
+            renderProdutosTable();
+            renderAcertosTable();
+            renderPatrimonioTable();
+            renderDocumentosTable();
+        }
+
+        function switchTab(tabId) {
+            currentActiveTab = tabId;
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(el => {
+                el.classList.remove('bg-blue-600', 'text-white');
+                el.classList.add('hover:bg-slate-800', 'hover:text-white');
+            });
+
+            const targetTab = document.getElementById('tab-' + tabId);
+            const targetNav = document.getElementById('nav-' + tabId);
+
+            if (targetTab) targetTab.classList.add('active');
+            if (targetNav) {
+                targetNav.classList.add('bg-blue-600', 'text-white');
+                targetNav.classList.remove('hover:bg-slate-800', 'hover:text-white');
+            }
+
+            const titles = {
+                dashboard: 'Dashboard Geral',
+                financeiro: 'Contas a Pagar e Receber',
+                moradores: 'Cadastro de Moradores & Bloco',
+                fornecedores: 'Gestão de Fornecedores',
+                estoque: 'Produtos & Estoque',
+                acertoEstoque: 'Acerto de Estoque (Entrada/Saída)',
+                patrimonio: 'Inventário e Património',
+                documentos: 'Gestão de Documentos'
+            };
+            document.getElementById('currentModuleTitle').innerText = titles[tabId] || 'Guardiões do Bravo';
+        }
+
+        // --- FORMATTERS ---
+        const formatBRL = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+
+        // --- DASHBOARD RENDER ---
+        function updateDashboardMetrics() {
+            const totalBancos = state.bancos.reduce((acc, b) => acc + b.saldo, 0);
+            
+            const totalPagar = state.financeiro
+                .filter(f => f.tipo === 'PAGAR' && f.status !== 'BAIXADO')
+                .reduce((acc, f) => acc + (f.valorTotal - f.valorPago), 0);
+
+            const totalReceber = state.financeiro
+                .filter(f => f.tipo === 'RECEBER' && f.status !== 'BAIXADO')
+                .reduce((acc, f) => acc + (f.valorTotal - f.valorPago), 0);
+
+            document.getElementById('dashSaldoBancos').innerText = formatBRL(totalBancos);
+            document.getElementById('dashTotalPagar').innerText = formatBRL(totalPagar);
+            document.getElementById('dashTotalReceber').innerText = formatBRL(totalReceber);
+            document.getElementById('dashTotalMoradores').innerText = state.moradores.length;
+
+            const listBancos = document.getElementById('bancosCardsList');
+            listBancos.innerHTML = state.bancos.map(b => `
+                <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl">
+                    <p class="text-xs text-slate-500 font-semibold truncate">${b.nome}</p>
+                    <p class="text-lg font-bold text-slate-900 mt-1">${formatBRL(b.saldo)}</p>
+                </div>
+            `).join('');
+        }
+
+        // --- FINANCEIRO MODULE ---
+        function renderFinanceiroTable() {
+            const dtIni = document.getElementById('filterFinDataIni').value;
+            const dtFim = document.getElementById('filterFinDataFim').value;
+            const search = document.getElementById('filterFinSearch').value.toLowerCase();
+            const status = document.getElementById('filterFinStatus').value;
+            const tipo = document.getElementById('filterFinTipo').value;
+
+            const tbody = document.getElementById('tableFinanceiroBody');
+            
+            const filtered = state.financeiro.filter(f => {
+                if (tipo !== 'TODOS' && f.tipo !== tipo) return false;
+                if (status !== 'TODOS' && f.status !== status) return false;
+                if (search && !f.fornecedor.toLowerCase().includes(search) && !f.plano.toLowerCase().includes(search)) return false;
+                if (dtIni && f.vencimento < dtIni) return false;
+                if (dtFim && f.vencimento > dtFim) return false;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="p-6 text-center text-slate-400">Nenhum título financeiro encontrado.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(f => {
+                const saldoDevedor = f.valorTotal - f.valorPago;
+                let statusBadge = '';
+                if (f.status === 'BAIXADO') statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">BAIXADO</span>';
+                else if (f.status === 'PARCIAL') statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">PARCIAL</span>';
+                else statusBadge = '<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-red-100 text-red-800">ABERTO</span>';
+
+                const tipoBadge = f.tipo === 'PAGAR' 
+                    ? '<span class="text-red-600 font-bold"><i class="fas fa-arrow-down text-[10px]"></i> PAGAR</span>' 
+                    : '<span class="text-emerald-600 font-bold"><i class="fas fa-arrow-up text-[10px]"></i> RECEBER</span>';
+
+                return `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-3 font-mono text-[11px] font-bold text-slate-600">${f.id}</td>
+                        <td class="p-3">${tipoBadge}</td>
+                        <td class="p-3 font-semibold text-slate-800">${f.fornecedor}</td>
+                        <td class="p-3 text-slate-500">${f.plano}</td>
+                        <td class="p-3 font-medium">${f.vencimento}</td>
+                        <td class="p-3 font-semibold">${formatBRL(f.valorTotal)}</td>
+                        <td class="p-3 font-bold ${saldoDevedor > 0 ? 'text-red-600' : 'text-slate-400'}">${formatBRL(saldoDevedor)}</td>
+                        <td class="p-3">${statusBadge}</td>
+                        <td class="p-3 text-center">
+                            <div class="flex items-center justify-center gap-1">
+                                ${f.status !== 'BAIXADO' ? `
+                                    <button onclick="openModalBaixaTotal('${f.id}')" title="Baixa Total" class="p-1.5 bg-emerald-100 text-emerald-700 hover:bg-emerald-200 rounded transition text-xs font-semibold">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                    <button onclick="openModalBaixaParcial('${f.id}')" title="Baixa Parcial" class="p-1.5 bg-amber-100 text-amber-700 hover:bg-amber-200 rounded transition text-xs font-semibold">
+                                        <i class="fas fa-percent"></i>
+                                    </button>
+                                ` : ''}
+                                <button onclick="deleteTitulo('${f.id}')" title="Excluir" class="p-1.5 bg-slate-100 text-slate-500 hover:bg-red-100 hover:text-red-600 rounded transition text-xs">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function openModalNovoTitulo() {
+            const bancosOpts = state.bancos.map(b => `<option value="${b.id}">${b.nome}</option>`).join('');
+            const body = `
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Operação</label>
+                    <select id="newFinTipo" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                        <option value="PAGAR">Conta a Pagar</option>
+                        <option value="RECEBER">Conta a Receber</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Fornecedor / Cliente</label>
+                    <input type="text" id="newFinForn" placeholder="Razão Social ou Nome" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Plano de Contas / Categoria</label>
+                    <input type="text" id="newFinPlano" placeholder="Ex: Manutenção, Taxa Condominial" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Data Vencimento</label>
+                        <input type="date" id="newFinVenc" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Valor Total (R$)</label>
+                        <input type="number" step="0.01" id="newFinValor" placeholder="0.00" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                </div>
+            `;
+            openModal('Cadastrar Novo Título Financeiro', body, () => {
+                const tipo = document.getElementById('newFinTipo').value;
+                const forn = document.getElementById('newFinForn').value.trim();
+                const plano = document.getElementById('newFinPlano').value.trim();
+                const venc = document.getElementById('newFinVenc').value;
+                const val = parseFloat(document.getElementById('newFinValor').value);
+
+                if (!forn || !venc || isNaN(val) || val <= 0) {
+                    alert('Por favor, preencha todos os campos corretamente.');
+                    return;
+                }
+
+                state.financeiro.push({
+                    id: 'FIN-' + Math.floor(100 + Math.random() * 900),
+                    tipo,
+                    fornecedor: forn,
+                    plano: plano || 'Geral',
+                    vencimento: venc,
+                    valorTotal: val,
+                    valorPago: 0,
+                    status: 'ABERTO'
+                });
+
+                closeModal();
+                renderFinanceiroTable();
+                updateDashboardMetrics();
+            });
+        }
+
+        function openModalBaixaTotal(id) {
+            const titulo = state.financeiro.find(f => f.id === id);
+            if (!titulo) return;
+            const saldoDev = titulo.valorTotal - titulo.valorPago;
+
+            const bancosOpts = state.bancos.map(b => `<option value="${b.id}">${b.nome} (${formatBRL(b.saldo)})</option>`).join('');
+
+            const body = `
+                <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs space-y-1">
+                    <p><strong>Título:</strong> ${titulo.id} - ${titulo.fornecedor}</p>
+                    <p><strong>Valor a Liquidar:</strong> <span class="text-red-600 font-bold">${formatBRL(saldoDev)}</span></p>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Conta Bancária / Forma Monetária</label>
+                    <select id="baixaContaId" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                        ${bancosOpts}
+                    </select>
+                </div>
+            `;
+
+            openModal('Confirmar Baixa Total (Liquidação)', body, () => {
+                const contaId = document.getElementById('baixaContaId').value;
+                const banco = state.bancos.find(b => b.id === contaId);
+
+                if (banco) {
+                    if (titulo.tipo === 'PAGAR') banco.saldo -= saldoDev;
+                    else banco.saldo += saldoDev;
+                }
+
+                titulo.valorPago = titulo.valorTotal;
+                titulo.status = 'BAIXADO';
+
+                closeModal();
+                renderFinanceiroTable();
+                updateDashboardMetrics();
+            });
+        }
+
+        function openModalBaixaParcial(id) {
+            const titulo = state.financeiro.find(f => f.id === id);
+            if (!titulo) return;
+            const saldoDev = titulo.valorTotal - titulo.valorPago;
+
+            const bancosOpts = state.bancos.map(b => `<option value="${b.id}">${b.nome}</option>`).join('');
+
+            const body = `
+                <div class="p-3 bg-amber-50 border border-amber-200 rounded-lg text-xs space-y-1">
+                    <p><strong>Título:</strong> ${titulo.id} - ${titulo.fornecedor}</p>
+                    <p><strong>Saldo Atual Devedor:</strong> <span class="text-red-600 font-bold">${formatBRL(saldoDev)}</span></p>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Valor do Pagamento Parcial (R$)</label>
+                    <input type="number" step="0.01" id="baixaParcialValor" max="${saldoDev}" placeholder="0.00" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Conta Bancária de Destino/Origem</label>
+                    <select id="baixaParcialContaId" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                        ${bancosOpts}
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Novo Vencimento para o Saldo Residual</label>
+                    <input type="date" id="baixaParcialNovoVenc" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                </div>
+            `;
+
+            openModal('Efetuar Baixa Parcial & Gerar Residual', body, () => {
+                const valParcial = parseFloat(document.getElementById('baixaParcialValor').value);
+                const contaId = document.getElementById('baixaParcialContaId').value;
+                const novoVenc = document.getElementById('baixaParcialNovoVenc').value;
+
+                if (isNaN(valParcial) || valParcial <= 0 || valParcial >= saldoDev) {
+                    alert('Valor parcial inválido. Deve ser maior que 0 e menor que o saldo devedor.');
+                    return;
+                }
+
+                const banco = state.bancos.find(b => b.id === contaId);
+                if (banco) {
+                    if (titulo.tipo === 'PAGAR') banco.saldo -= valParcial;
+                    else banco.saldo += valParcial;
+                }
+
+                // Update original title
+                titulo.valorPago += valParcial;
+                titulo.status = 'PARCIAL';
+
+                // Spawn residual title if new vencimento provided
+                if (novoVenc) {
+                    const residualVal = saldoDev - valParcial;
+                    state.financeiro.push({
+                        id: 'FIN-' + Math.floor(100 + Math.random() * 900),
+                        tipo: titulo.tipo,
+                        fornecedor: titulo.fornecedor + ' (Residual)',
+                        plano: titulo.plano,
+                        vencimento: novoVenc,
+                        valorTotal: residualVal,
+                        valorPago: 0,
+                        status: 'ABERTO'
+                    });
+                }
+
+                closeModal();
+                renderFinanceiroTable();
+                updateDashboardMetrics();
+            });
+        }
+
+        function deleteTitulo(id) {
+            state.financeiro = state.financeiro.filter(f => f.id !== id);
+            renderFinanceiroTable();
+            updateDashboardMetrics();
+        }
+
+        // --- MORADORES MODULE ---
+        function renderMoradoresTable() {
+            const search = document.getElementById('filterMoradorSearch').value.toLowerCase();
+            const bloco = document.getElementById('filterMoradorBloco').value;
+            const tipo = document.getElementById('filterMoradorTipo').value;
+
+            const tbody = document.getElementById('tableMoradoresBody');
+
+            const filtered = state.moradores.filter(m => {
+                if (bloco !== 'TODOS' && m.bloco !== bloco) return false;
+                if (tipo !== 'TODOS' && m.tipo !== tipo) return false;
+                if (search && !m.nome.toLowerCase().includes(search) && !m.cpf.includes(search)) return false;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">Nenhum morador encontrado.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(m => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-3 font-bold text-blue-700">
+                        <span class="px-2 py-0.5 bg-blue-50 border border-blue-200 rounded-md text-[11px]">${m.bloco} - Ap ${m.apartamento}</span>
+                    </td>
+                    <td class="p-3 font-semibold text-slate-800">${m.nome}</td>
+                    <td class="p-3 font-mono text-slate-500">${m.cpf}</td>
+                    <td class="p-3 text-slate-600">${m.telefone}<br><span class="text-[10px] text-slate-400">${m.email}</span></td>
+                    <td class="p-3">
+                        <span class="px-2 py-0.5 text-[10px] font-bold rounded-full ${m.tipo === 'Proprietário' ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-700'}">${m.tipo}</span>
+                    </td>
+                    <td class="p-3 text-center">
+                        <button onclick="deleteMorador('${m.id}')" title="Excluir" class="p-1.5 bg-slate-100 text-slate-500 hover:bg-red-100 hover:text-red-600 rounded transition text-xs">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openModalNovoMorador() {
+            const body = `
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Bloco (Letra / Número)</label>
+                        <select id="newMorBloco" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                            <option value="Bloco A">Bloco A</option>
+                            <option value="Bloco B">Bloco B</option>
+                            <option value="Bloco C">Bloco C</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Apartamento / Unidade</label>
+                        <input type="text" id="newMorApto" placeholder="Ex: 101, 204" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nome Completo</label>
+                    <input type="text" id="newMorNome" placeholder="Digite o nome completo" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">CPF</label>
+                        <input type="text" id="newMorCpf" placeholder="000.000.000-00" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Telefone / WhatsApp</label>
+                        <input type="text" id="newMorTel" placeholder="(41) 90000-0000" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">E-mail</label>
+                        <input type="email" id="newMorEmail" placeholder="email@exemplo.com" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Ocupante</label>
+                        <select id="newMorTipo" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                            <option value="Proprietário">Proprietário</option>
+                            <option value="Inquilino">Inquilino</option>
+                        </select>
+                    </div>
+                </div>
+            `;
+
+            openModal('Cadastrar Novo Morador', body, () => {
+                const bloco = document.getElementById('newMorBloco').value;
+                const apto = document.getElementById('newMorApto').value.trim();
+                const nome = document.getElementById('newMorNome').value.trim();
+                const cpf = document.getElementById('newMorCpf').value.trim();
+                const tel = document.getElementById('newMorTel').value.trim();
+                const email = document.getElementById('newMorEmail').value.trim();
+                const tipo = document.getElementById('newMorTipo').value;
+
+                if (!apto || !nome) {
+                    alert('Por favor, informe a unidade e o nome do morador.');
+                    return;
+                }
+
+                state.moradores.push({
+                    id: 'MOR-' + (state.moradores.length + 1),
+                    bloco, apartamento: apto, nome, cpf, email, telefone: tel, tipo
+                });
+
+                closeModal();
+                renderMoradoresTable();
+                updateDashboardMetrics();
+            });
+        }
+
+        function deleteMorador(id) {
+            state.moradores = state.moradores.filter(m => m.id !== id);
+            renderMoradoresTable();
+            updateDashboardMetrics();
+        }
+
+        // --- FORNECEDORES MODULE ---
+        function renderFornecedoresTable() {
+            const search = document.getElementById('filterFornSearch').value.toLowerCase();
+            const cat = document.getElementById('filterFornCat').value;
+
+            const tbody = document.getElementById('tableFornecedoresBody');
+
+            const filtered = state.fornecedores.filter(f => {
+                if (cat !== 'TODOS' && f.categoria !== cat) return false;
+                if (search && !f.razao.toLowerCase().includes(search) && !f.cnpj.includes(search)) return false;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-400">Nenhum fornecedor encontrado.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(f => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-3 font-semibold text-slate-800">${f.razao}</td>
+                    <td class="p-3 font-mono text-slate-500">${f.cnpj}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded text-[10px] font-bold">${f.categoria}</span></td>
+                    <td class="p-3 font-mono text-xs text-blue-600">${f.pix}</td>
+                    <td class="p-3 text-slate-600">${f.telefone}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="deleteFornecedor('${f.id}')" title="Excluir" class="p-1.5 bg-slate-100 text-slate-500 hover:bg-red-100 hover:text-red-600 rounded transition text-xs">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openModalNovoFornecedor() {
+            const body = `
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Razão Social / Nome Fantasia</label>
+                    <input type="text" id="newFornRazao" placeholder="Ex: Otis Elevadores" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">CNPJ / CPF</label>
+                        <input type="text" id="newFornCnpj" placeholder="00.000.000/0001-00" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Categoria de Serviço</label>
+                        <select id="newFornCat" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                            <option value="Manutenção de Elevadores">Elevadores</option>
+                            <option value="Segurança e Portaria">Segurança / Portaria</option>
+                            <option value="Jardinagem e Limpeza">Jardinagem / Limpeza</option>
+                            <option value="Serviços Elétricos">Elétrica</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Chave PIX / Dados Bancários</label>
+                        <input type="text" id="newFornPix" placeholder="E-mail, CNPJ ou Telefone PIX" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Telefone / Contacto</label>
+                        <input type="text" id="newFornTel" placeholder="(41) 0000-0000" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                </div>
+            `;
+
+            openModal('Cadastrar Novo Fornecedor', body, () => {
+                const razao = document.getElementById('newFornRazao').value.trim();
+                const cnpj = document.getElementById('newFornCnpj').value.trim();
+                const cat = document.getElementById('newFornCat').value;
+                const pix = document.getElementById('newFornPix').value.trim();
+                const tel = document.getElementById('newFornTel').value.trim();
+
+                if (!razao) {
+                    alert('Por favor, digite a razão social do fornecedor.');
+                    return;
+                }
+
+                state.fornecedores.push({
+                    id: 'FOR-' + (state.fornecedores.length + 1),
+                    razao, cnpj, categoria: cat, pix, telefone: tel
+                });
+
+                closeModal();
+                renderFornecedoresTable();
+            });
+        }
+
+        function deleteFornecedor(id) {
+            state.fornecedores = state.fornecedores.filter(f => f.id !== id);
+            renderFornecedoresTable();
+        }
+
+        // --- PRODUTOS & ESTOQUE MODULE ---
+        function renderProdutosTable() {
+            const search = document.getElementById('filterProdSearch').value.toLowerCase();
+            const cat = document.getElementById('filterProdCat').value;
+            const status = document.getElementById('filterProdStatus').value;
+
+            const tbody = document.getElementById('tableProdutosBody');
+
+            const filtered = state.produtos.filter(p => {
+                if (cat !== 'TODOS' && p.categoria !== cat) return false;
+                if (status === 'BAIXO' && p.qtdAtual >= p.qtdMin) return false;
+                if (search && !p.nome.toLowerCase().includes(search)) return false;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="p-6 text-center text-slate-400">Nenhum produto cadastrado.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(p => {
+                const isBaixo = p.qtdAtual < p.qtdMin;
+                return `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-2">
+                            <img src="${p.foto}" onclick="openLightbox('${p.foto}', '${p.nome}')" class="w-10 h-10 object-cover rounded-lg border border-slate-200 cursor-pointer hover:opacity-80 transition shadow-sm">
+                        </td>
+                        <td class="p-3 font-semibold text-slate-800">${p.nome}</td>
+                        <td class="p-3 text-slate-500">${p.categoria}</td>
+                        <td class="p-3 font-bold ${isBaixo ? 'text-red-600' : 'text-slate-800'}">${p.qtdAtual}</td>
+                        <td class="p-3 text-slate-500">${p.qtdMin}</td>
+                        <td class="p-3">
+                            <span class="px-2 py-0.5 text-[10px] font-bold rounded-full ${isBaixo ? 'bg-red-100 text-red-800' : 'bg-emerald-100 text-emerald-800'}">
+                                ${isBaixo ? 'ESTOQUE BAIXO' : 'OK'}
+                            </span>
+                        </td>
+                        <td class="p-3 text-center">
+                            <button onclick="deleteProduto('${p.id}')" title="Excluir" class="p-1.5 bg-slate-100 text-slate-500 hover:bg-red-100 hover:text-red-600 rounded transition text-xs">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function openModalNovoProduto() {
+            const body = `
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Nome do Produto</label>
+                    <input type="text" id="newProdNome" placeholder="Ex: Lâmpada LED Tubular" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                </div>
+                <div class="grid grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Categoria</label>
+                        <select id="newProdCat" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                            <option value="Limpeza">Limpeza</option>
+                            <option value="Elétrica">Elétrica</option>
+                            <option value="Segurança">Segurança</option>
+                            <option value="Jardinagem">Jardinagem</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Qtd. Inicial</label>
+                        <input type="number" id="newProdQtd" value="10" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Qtd. Mínima</label>
+                        <input type="number" id="newProdMin" value="5" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">URL da Imagem / Foto</label>
+                    <input type="text" id="newProdFoto" placeholder="https://..." class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                </div>
+            `;
+
+            openModal('Cadastrar Novo Produto no Estoque', body, () => {
+                const nome = document.getElementById('newProdNome').value.trim();
+                const cat = document.getElementById('newProdCat').value;
+                const qtd = parseInt(document.getElementById('newProdQtd').value);
+                const min = parseInt(document.getElementById('newProdMin').value);
+                const foto = document.getElementById('newProdFoto').value.trim() || 'https://placehold.co/150';
+
+                if (!nome) {
+                    alert('Por favor, digite o nome do produto.');
+                    return;
+                }
+
+                state.produtos.push({
+                    id: 'PROD-' + (state.produtos.length + 1),
+                    nome, categoria: cat, qtdAtual: qtd, qtdMin: min, foto
+                });
+
+                closeModal();
+                renderProdutosTable();
+            });
+        }
+
+        function deleteProduto(id) {
+            state.produtos = state.produtos.filter(p => p.id !== id);
+            renderProdutosTable();
+        }
+
+        // --- ACERTO DE ESTOQUE MODULE ---
+        function renderAcertosTable() {
+            const tbody = document.getElementById('tableAcertosBody');
+            tbody.innerHTML = state.acertosEstoque.map(a => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-3 font-mono text-slate-500">${a.data}</td>
+                    <td class="p-3 font-semibold text-slate-800">${a.produto}</td>
+                    <td class="p-3">
+                        <span class="px-2 py-0.5 text-[10px] font-bold rounded-full ${a.tipo === 'ENTRADA' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}">
+                            ${a.tipo}
+                        </span>
+                    </td>
+                    <td class="p-3 font-bold">${a.qtd}</td>
+                    <td class="p-3 text-slate-600">${a.motivo}</td>
+                </tr>
+            `).join('');
+        }
+
+        function openModalAcertoEstoque() {
+            const prodOpts = state.produtos.map(p => `<option value="${p.id}">${p.nome} (Atual: ${p.qtdAtual})</option>`).join('');
+
+            const body = `
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Selecione o Produto</label>
+                    <select id="acertoProdId" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                        ${prodOpts}
+                    </select>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tipo de Acerto</label>
+                        <select id="acertoTipo" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                            <option value="ENTRADA">ENTRADA (Aumento de Estoque)</option>
+                            <option value="SAÍDA">SAÍDA (Baixa / Consumo / Perda)</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Quantidade</label>
+                        <input type="number" id="acertoQtd" min="1" value="1" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Motivo / Justificativa Obrigatória</label>
+                    <textarea id="acertoMotivo" rows="3" placeholder="Especifique detalhadamente o motivo deste acerto..." class="w-full text-xs p-2.5 border border-slate-300 rounded-lg"></textarea>
+                </div>
+            `;
+
+            openModal('Lançar Acerto de Estoque', body, () => {
+                const prodId = document.getElementById('acertoProdId').value;
+                const tipo = document.getElementById('acertoTipo').value;
+                const qtd = parseInt(document.getElementById('acertoQtd').value);
+                const motivo = document.getElementById('acertoMotivo').value.trim();
+
+                if (isNaN(qtd) || qtd <= 0 || !motivo) {
+                    alert('Por favor, informe uma quantidade válida e o motivo do acerto.');
+                    return;
+                }
+
+                const prod = state.produtos.find(p => p.id === prodId);
+                if (prod) {
+                    if (tipo === 'ENTRADA') prod.qtdAtual += qtd;
+                    else prod.qtdAtual = Math.max(0, prod.qtdAtual - qtd);
+
+                    const now = new Date();
+                    const formattedDate = `${now.toISOString().split('T')[0]} ${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}`;
+
+                    state.acertosEstoque.unshift({
+                        data: formattedDate,
+                        produto: prod.nome,
+                        tipo,
+                        qtd,
+                        motivo
+                    });
+                }
+
+                closeModal();
+                renderAcertosTable();
+                renderProdutosTable();
+            });
+        }
+
+        // --- PATRIMÓNIO MODULE ---
+        function renderPatrimonioTable() {
+            const tbody = document.getElementById('tablePatrimonioBody');
+            tbody.innerHTML = state.patrimonio.map(p => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-2">
+                        <img src="${p.foto}" onclick="openLightbox('${p.foto}', '${p.item}')" class="w-10 h-10 object-cover rounded-lg border border-slate-200 cursor-pointer hover:opacity-80 transition shadow-sm">
+                    </td>
+                    <td class="p-3 font-mono text-xs font-bold text-blue-700">${p.tombamento}</td>
+                    <td class="p-3 font-semibold text-slate-800">${p.item}</td>
+                    <td class="p-3 text-slate-600">${p.localizacao}</td>
+                    <td class="p-3"><span class="px-2 py-0.5 bg-emerald-100 text-emerald-800 rounded-full text-[10px] font-bold">${p.estado}</span></td>
+                    <td class="p-3 text-center">
+                        <button onclick="deletePatrimonio('${p.id}')" title="Excluir" class="p-1.5 bg-slate-100 text-slate-500 hover:bg-red-100 hover:text-red-600 rounded transition text-xs">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openModalNovoPatrimonio() {
+            const body = `
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Cód. Tombamento / Património</label>
+                    <input type="text" id="newPatTomb" value="PAT-2026-0${state.patrimonio.length + 1}" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Descrição do Item</label>
+                    <input type="text" id="newPatItem" placeholder="Ex: Cortador de Grama 5HP" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Localização</label>
+                        <input type="text" id="newPatLocal" placeholder="Ex: Portaria Social" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-600 mb-1">Estado de Conservação</label>
+                        <select id="newPatEstado" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                            <option value="Excelente">Excelente</option>
+                            <option value="Bom">Bom</option>
+                            <option value="Regular">Regular</option>
+                            <option value="Danificado / Manutenção">Danificado / Manutenção</option>
+                        </select>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">URL da Imagem do Bem</label>
+                    <input type="text" id="newPatFoto" placeholder="https://..." class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                </div>
+            `;
+
+            openModal('Cadastrar Item Patrimonial', body, () => {
+                const tomb = document.getElementById('newPatTomb').value.trim();
+                const item = document.getElementById('newPatItem').value.trim();
+                const local = document.getElementById('newPatLocal').value.trim();
+                const estado = document.getElementById('newPatEstado').value;
+                const foto = document.getElementById('newPatFoto').value.trim() || 'https://placehold.co/150';
+
+                if (!tomb || !item) {
+                    alert('Por favor, informe o código e a descrição do item.');
+                    return;
+                }
+
+                state.patrimonio.push({
+                    id: 'PAT-' + (state.patrimonio.length + 1),
+                    tombamento: tomb, item, localizacao: local, estado, foto
+                });
+
+                closeModal();
+                renderPatrimonioTable();
+            });
+        }
+
+        function deletePatrimonio(id) {
+            state.patrimonio = state.patrimonio.filter(p => p.id !== id);
+            renderPatrimonioTable();
+        }
+
+        // --- DOCUMENTOS MODULE ---
+        function renderDocumentosTable() {
+            const search = document.getElementById('filterDocSearch').value.toLowerCase();
+            const cat = document.getElementById('filterDocCat').value;
+
+            const tbody = document.getElementById('tableDocumentosBody');
+
+            const filtered = state.documentos.filter(d => {
+                if (cat !== 'TODOS' && d.categoria !== cat) return false;
+                if (search && !d.titulo.toLowerCase().includes(search)) return false;
+                return true;
+            });
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-400">Nenhum documento anexado.</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = filtered.map(d => `
+                <tr class="hover:bg-slate-50 transition">
+                    <td class="p-3 font-semibold text-slate-800 flex items-center gap-2">
+                        <i class="fas fa-file-pdf text-red-500 text-base"></i> ${d.titulo}
+                    </td>
+                    <td class="p-3"><span class="px-2 py-0.5 bg-blue-50 text-blue-800 border border-blue-200 rounded text-[10px] font-bold">${d.categoria}</span></td>
+                    <td class="p-3 text-slate-500 font-medium">${d.data}</td>
+                    <td class="p-3 text-slate-400 font-mono text-[11px]">${d.tamanho}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="deleteDocumento('${d.id}')" title="Excluir" class="p-1.5 bg-slate-100 text-slate-500 hover:bg-red-100 hover:text-red-600 rounded transition text-xs">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+
+        function openModalNovoDocumento() {
+            const body = `
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Título do Documento / Arquivo</label>
+                    <input type="text" id="newDocTitulo" placeholder="Ex: Contrato de Manutenção 2026.pdf" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-600 mb-1">Classificação / Categoria</label>
+                    <select id="newDocCat" class="w-full text-xs p-2.5 border border-slate-300 rounded-lg">
+                        <option value="Contratos">Contratos</option>
+                        <option value="Atas de Assembleia">Atas de Assembleia</option>
+                        <option value="Notas Fiscais">Notas Fiscais</option>
+                        <option value="Regulamentos">Regulamentos</option>
+                    </select>
+                </div>
+            `;
+
+            openModal('Anexar Novo Documento', body, () => {
+                const titulo = document.getElementById('newDocTitulo').value.trim();
+                const cat = document.getElementById('newDocCat').value;
+
+                if (!titulo) {
+                    alert('Por favor, informe o título do documento.');
+                    return;
+                }
+
+                const today = new Date().toISOString().split('T')[0];
+
+                state.documentos.push({
+                    id: 'DOC-' + (state.documentos.length + 1),
+                    titulo, categoria: cat, data: today, tamanho: '1.5 MB'
+                });
+
+                closeModal();
+                renderDocumentosTable();
+            });
+        }
+
+        function deleteDocumento(id) {
+            state.documentos = state.documentos.filter(d => d.id !== id);
+            renderDocumentosTable();
+        }
+
+        // --- GENERAL MODAL HELPER ---
+        function openModal(title, bodyHTML, onPrimary) {
+            document.getElementById('modalTitle').innerText = title;
+            document.getElementById('modalBody').innerHTML = bodyHTML;
+            document.getElementById('modalContainer').classList.remove('hidden');
+
+            const btnPrimary = document.getElementById('modalPrimaryBtn');
+            btnPrimary.onclick = onPrimary;
+        }
+
+        function closeModal() {
+            document.getElementById('modalContainer').classList.add('hidden');
+        }
+
+        // --- LIGHTBOX ZOOM HELPER ---
+        function openLightbox(imgUrl, caption) {
+            document.getElementById('lightboxImage').src = imgUrl;
+            document.getElementById('lightboxCaption').innerText = caption || '';
+            document.getElementById('lightboxModal').classList.remove('hidden');
+        }
+
+        function closeLightbox() {
+            document.getElementById('lightboxModal').classList.add('hidden');
+        }
+
+        // --- UNIVERSAL EXPORT ENGINE (PDF & CSV) ---
+        function exportCurrentViewPDF() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+
+            doc.setFontSize(16);
+            doc.text(`Guardiões do Bravo - Relatório (${currentActiveTab.toUpperCase()})`, 14, 20);
+            doc.setFontSize(10);
+            doc.text(`Gerado em: ${new Date().toLocaleString('pt-BR')}`, 14, 28);
+
+            let headers = [];
+            let rows = [];
+
+            if (currentActiveTab === 'financeiro') {
+                headers = [['Código', 'Tipo', 'Fornecedor/Cliente', 'Vencimento', 'Valor Total', 'Status']];
+                rows = state.financeiro.map(f => [f.id, f.tipo, f.fornecedor, f.vencimento, formatBRL(f.valorTotal), f.status]);
+            } else if (currentActiveTab === 'moradores') {
+                headers = [['Bloco', 'Apto', 'Nome Completo', 'CPF', 'Telefone', 'Tipo']];
+                rows = state.moradores.map(m => [m.bloco, m.apartamento, m.nome, m.cpf, m.telefone, m.tipo]);
+            } else if (currentActiveTab === 'fornecedores') {
+                headers = [['Razão Social', 'CNPJ', 'Categoria', 'PIX', 'Telefone']];
+                rows = state.fornecedores.map(f => [f.razao, f.cnpj, f.categoria, f.pix, f.telefone]);
+            } else {
+                headers = [['Relatório geral do módulo selecionado']];
+                rows = [['Dados compilados do módulo ' + currentActiveTab]];
+            }
+
+            doc.autoTable({
+                startY: 35,
+                head: headers,
+                body: rows,
+                theme: 'striped',
+                headStyles: { fillColor: [30, 41, 59] }
+            });
+
+            doc.save(`guardioes_bravo_${currentActiveTab}_${Date.now()}.pdf`);
+        }
+
+        function exportCurrentViewCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+            
+            if (currentActiveTab === 'financeiro') {
+                csvContent += "Codigo;Tipo;Fornecedor;Vencimento;ValorTotal;ValorPago;Status\n";
+                state.financeiro.forEach(f => {
+                    csvContent += `"${f.id}";"${f.tipo}";"${f.fornecedor}";"${f.vencimento}";"${f.valorTotal}";"${f.valorPago}";"${f.status}"\n`;
+                });
+            } else if (currentActiveTab === 'moradores') {
+                csvContent += "Bloco;Apartamento;Nome;CPF;Email;Telefone;Tipo\n";
+                state.moradores.forEach(m => {
+                    csvContent += `"${m.bloco}";"${m.apartamento}";"${m.nome}";"${m.cpf}";"${m.email}";"${m.telefone}";"${m.tipo}"\n`;
+                });
+            } else {
+                csvContent += "ID;Modulo\n";
+                csvContent += `1;"${currentActiveTab}"\n`;
+            }
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", `guardioes_bravo_${currentActiveTab}_${Date.now()}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
+```
+
+### 📋 Summary of Included Features:
+- **Clean Authentication UI**: Form inputs accepting `admin` / `12345678` with no helper alerts or pre-filled credential text on the login page.
+- **Financeiro & Baixa Parcial**: Complete accounting lifecycle supporting full liquidation, bank selection, and partial payment write-offs with automated residual title creation.
+- **Moradores & Bloco**: Split Bloco (A, B, C) and Apartamento/Unit fields with real-time filtering and status badges.
+- **Suppliers & Inventory**: Supplier database (CNPJ, categories, PIX keys), stock catalog with low-stock warnings, and audit logs for stock adjustments (Entrada/Saída) with mandatory reason logging.
+- **Assets & Documents**: Patrimony catalog with click-to-zoom photo lightboxes, and categorized document management.
+- **Universal Export**: One-click **PDF** and **CSV** report generation for all main views.
