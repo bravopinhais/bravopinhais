@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .will-change-transform { will-change: transform; }
-        /* Garantia de Alto Contraste */
         input, select, textarea { color: #0f172a !important; font-weight: 600 !important; }
         .tab-active { border-bottom: 3px solid #0d9488; background-color: #ffffff; color: #0f766e; font-weight: 700; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -22,7 +21,7 @@
 
     <script>
         // ==========================================
-        // 1. SEGURANÇA, SANITIZAÇÃO E UTILITÁRIOS
+        // 1. SEGURANÇA E UTILITÁRIOS
         // ==========================================
         function escapeHTML(str) {
             if (typeof str !== 'string') return str || '';
@@ -35,30 +34,36 @@
             return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$%^&*!_\-]).{8,}$/.test(senha);
         }
 
-        function compressImage(base64Str, maxWidth = 800, quality = 0.7) {
+        function compressImage(file) {
             return new Promise((resolve) => {
-                const img = new Image();
-                img.src = base64Str;
-                img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    let width = img.width;
-                    let height = img.height;
-                    if (width > maxWidth) {
-                        height = Math.round((height * maxWidth) / width);
-                        width = maxWidth;
-                    }
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, width, height);
-                    resolve(canvas.toDataURL('image/jpeg', quality));
+                if (!file) return resolve('');
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const img = new Image();
+                    img.src = e.target.result;
+                    img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const maxWidth = 800;
+                        if (width > maxWidth) {
+                            height = Math.round((height * maxWidth) / width);
+                            width = maxWidth;
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+                        resolve(canvas.toDataURL('image/jpeg', 0.7));
+                    };
+                    img.onerror = () => resolve(e.target.result);
                 };
-                img.onerror = () => resolve(base64Str);
+                reader.readAsDataURL(file);
             });
         }
 
         // ==========================================
-        // 2. BANCO DE DADOS LOCALSTORAGE
+        // 2. BANCO DE DADOS E ESTRUTURA
         // ==========================================
         const DEFAULT_DATA = {
             usuarios: [
@@ -69,13 +74,13 @@
                 { id: 'fin_1', tipo: 'Receber', historico: 'Taxa Condominial - Ap 101', valor: 650.00, vencimento: '2026-11-10', competencia: '11/2026', categoria: '1.1 Taxa Condominial', fornecedor: 'Carlos Eduardo', status: 'Aberto' },
                 { id: 'fin_2', tipo: 'Pagar', historico: 'Manutenção Elevadores', valor: 1200.00, vencimento: '2026-11-05', competencia: '11/2026', categoria: '2.3 Manutenção Predial', fornecedor: 'Otis Elevadores', status: 'Aberto' }
             ],
-            planoContas: [
+            plano_contas: [
                 { id: 'pc_1', codigo: '1.1', nome: 'Taxa Condominial Ordinária', tipo: 'Receita' },
                 { id: 'pc_2', codigo: '2.1', nome: 'Serviços Públicos (Água/Luz)', tipo: 'Despesa' }
             ],
-            contasBancarias: [
+            contas_bancarias: [
                 { id: 'cb_1', banco: 'Banco do Brasil', agencia: '1234-5', conta: '98765-4', saldo: 45800.00 },
-                { id: 'cb_2', banco: 'Caixa Pequeno / Efetuado', agencia: 'Interno', conta: 'Caixa', saldo: 1250.00 }
+                { id: 'cb_2', banco: 'Caixa Pequeno / Interno', agencia: 'Interno', conta: 'Caixa', saldo: 1250.00 }
             ],
             moradores: [
                 { id: 'mor_1', bloco: 'A', apartamento: '101', nome: 'Carlos Eduardo', email: 'carlos@email.com', telefone: '(41) 99999-1111', tipo: 'Proprietário', status: 'Ativo' }
@@ -84,13 +89,13 @@
                 { id: 'for_1', nome: 'Otis Elevadores', cnpj: '12.345.678/0001-90', telefone: '(41) 3333-4444', servico: 'Elevadores', status: 'Ativo' }
             ],
             estoque: [
-                { id: 'est_1', item: 'Lâmpada LED 12W', categoria: 'Elétrica', qtd: 24, minimo: 5, localizacao: 'Almoxarifado Central', foto: '' }
+                { id: 'est_1', item: 'Lâmpada LED 12W', categoria: 'Elétrica', qtd: 24, minimo: 5, localizacao: 'Almoxarifado Central' }
             ],
             patrimonio: [
-                { id: 'pat_1', codigo: 'PAT-001', item: 'Cortador de Grama', local: 'Jardim', valor: 1850.00, estado: 'Ótimo', foto: '' }
+                { id: 'pat_1', codigo: 'PAT-001', item: 'Cortador de Grama', local: 'Jardim', valor: 1850.00, estado: 'Ótimo' }
             ],
             documentos: [
-                { id: 'doc_1', titulo: 'Convenção Condominial', categoria: 'Jurídico', data: '2026-01-10', arquivo: '' }
+                { id: 'doc_1', titulo: 'Convenção Condominial', categoria: 'Jurídico', data: '2026-01-10' }
             ],
             logs: []
         };
@@ -176,7 +181,7 @@
         }
 
         // ==========================================
-        // 4. SISTEMA DE LOGIN E SESSÃO
+        // 4. AUTENTICAÇÃO E SESSÃO
         // ==========================================
         function realizarLogin(e) {
             e.preventDefault();
@@ -257,7 +262,7 @@
         }
 
         // ==========================================
-        // 5. RENDERIZAÇÃO DA INTERFACE
+        // 5. INTERFACE PRINCIPAL
         // ==========================================
         function renderApp() {
             const container = document.getElementById('app');
@@ -276,7 +281,7 @@
                 <div class="flex-1 flex overflow-hidden">
                     <div id="mobile-sidebar-backdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-900/50 z-40 hidden md:hidden"></div>
 
-                    <!-- BARRA LATERAL (SIDEBAR) -->
+                    <!-- SIDEBAR -->
                     <aside id="sidebar-menu" class="fixed md:relative z-50 w-64 bg-slate-900 text-slate-300 flex flex-col h-full transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out">
                         <div class="p-4 bg-slate-950 flex items-center justify-between border-b border-slate-800">
                             <div class="flex items-center gap-3">
@@ -352,7 +357,7 @@
                         </div>
                     </aside>
 
-                    <!-- ÁREA DE CONTEÚDO COM ABAS -->
+                    <!-- CONTEÚDO -->
                     <div class="flex-1 flex flex-col overflow-hidden">
                         <header class="bg-slate-900 text-white p-3 flex md:hidden items-center justify-between border-b border-slate-800">
                             <div class="flex items-center gap-3">
@@ -364,7 +369,7 @@
                             <button onclick="encerrarSessao()" class="text-xs bg-red-600/20 text-red-400 px-2.5 py-1.5 rounded-md">Sair</button>
                         </header>
 
-                        <!-- BARRA DE ABAS SIMULTÂNEAS -->
+                        <!-- BARRA DE ABAS -->
                         <div class="bg-slate-200 border-b border-slate-300 flex items-center overflow-x-auto px-2 pt-2 gap-1">
                             ${tabsState.openTabs.map(tabId => `
                                 <div onclick="abrirModulo('${tabId}')" class="flex items-center gap-2 px-3 py-2 rounded-t-lg text-xs font-semibold cursor-pointer transition select-none ${tabsState.activeTab === tabId ? 'tab-active shadow-sm' : 'bg-slate-300 text-slate-600 hover:bg-slate-300/80'}">
@@ -378,7 +383,7 @@
                             `).join('')}
                         </div>
 
-                        <!-- CONTEÚDO DO MÓDULO -->
+                        <!-- BODY DO MÓDULO -->
                         <main class="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-100">
                             ${renderModuleContent(tabsState.activeTab)}
                         </main>
@@ -393,19 +398,19 @@
         }
 
         // ==========================================
-        // 6. MÓDULOS E BOTOES "NOVO / INCLUIR"
+        // 6. RENDERIZAÇÃO DE MÓDULOS E TABELAS
         // ==========================================
         function renderModuleContent(moduloId) {
             const getButtonConfig = (id) => {
                 switch(id) {
                     case 'financeiro': return { title: 'Novo Título Financeiro', fn: 'renderModalNovoTitulo()' };
-                    case 'plano_contas': return { title: 'Nova Conta Contábil', fn: 'renderModalGen("Plano de Contas", ["codigo", "nome", "tipo"])' };
-                    case 'contas_bancarias': return { title: 'Nova Conta / Caixinha', fn: 'renderModalGen("Conta Bancária", ["banco", "agencia", "conta", "saldo"])' };
-                    case 'moradores': return { title: 'Novo Morador', fn: 'renderModalGen("Morador", ["bloco", "apartamento", "nome", "email", "telefone"])' };
-                    case 'fornecedores': return { title: 'Novo Fornecedor', fn: 'renderModalGen("Fornecedor", ["nome", "cnpj", "telefone", "servico"])' };
-                    case 'estoque': return { title: 'Novo Item no Estoque', fn: 'renderModalGen("Item do Estoque", ["item", "categoria", "qtd", "minimo"])' };
-                    case 'patrimonio': return { title: 'Novo Ativo / Patrimônio', fn: 'renderModalGen("Patrimônio", ["codigo", "item", "local", "valor"])' };
-                    case 'documentos': return { title: 'Novo Documento', fn: 'renderModalGen("Documento", ["titulo", "categoria", "data"])' };
+                    case 'plano_contas': return { title: 'Nova Conta Contábil', fn: 'renderModalGen("plano_contas", "Plano de Contas", [{key:"codigo", label:"Código"}, {key:"nome", label:"Nome da Conta"}, {key:"tipo", label:"Tipo (Receita/Despesa)"}])' };
+                    case 'contas_bancarias': return { title: 'Nova Conta / Caixinha', fn: 'renderModalGen("contas_bancarias", "Conta Bancária", [{key:"banco", label:"Banco / Caixinha"}, {key:"agencia", label:"Agência"}, {key:"conta", label:"Número da Conta"}, {key:"saldo", label:"Saldo Inicial (R$)"}])' };
+                    case 'moradores': return { title: 'Novo Morador', fn: 'renderModalGen("moradores", "Morador", [{key:"bloco", label:"Bloco"}, {key:"apartamento", label:"Apartamento"}, {key:"nome", label:"Nome Completo"}, {key:"email", label:"E-mail"}, {key:"telefone", label:"Telefone / WhatsApp"}, {key:"tipo", label:"Tipo (Proprietário/Inquilino)"}])' };
+                    case 'fornecedores': return { title: 'Novo Fornecedor', fn: 'renderModalGen("fornecedores", "Fornecedor", [{key:"nome", label:"Razão Social / Nome"}, {key:"cnpj", label:"CNPJ / CPF"}, {key:"telefone", label:"Telefone"}, {key:"servico", label:"Serviço Prestado"}])' };
+                    case 'estoque': return { title: 'Novo Item no Estoque', fn: 'renderModalGen("estoque", "Item do Estoque", [{key:"item", label:"Nome do Produto"}, {key:"categoria", label:"Categoria"}, {key:"qtd", label:"Quantidade"}, {key:"minimo", label:"Estoque Mínimo"}, {key:"localizacao", label:"Localização"}])' };
+                    case 'patrimonio': return { title: 'Novo Ativo / Patrimônio', fn: 'renderModalGen("patrimonio", "Patrimônio", [{key:"codigo", label:"Código / Placa"}, {key:"item", label:"Descrição do Item"}, {key:"local", label:"Localização"}, {key:"valor", label:"Valor Estimado (R$)"}, {key:"estado", label:"Estado de Conservação"}])' };
+                    case 'documentos': return { title: 'Novo Documento', fn: 'renderModalGen("documentos", "Documento", [{key:"titulo", label:"Título do Documento"}, {key:"categoria", label:"Categoria"}, {key:"data", label:"Data (AAAA-MM-DD)"}])' };
                     case 'usuarios': return { title: 'Novo Usuário', fn: 'renderModalUsuario()' };
                     default: return null;
                 }
@@ -437,12 +442,152 @@
                 case 'financeiro': return headerGlobal + renderFinanceiroView();
                 case 'usuarios': return headerGlobal + renderUsuariosView();
                 case 'audit_log': return headerGlobal + renderAuditLogView();
-                default: return headerGlobal + renderGenericModuleView(moduloId);
+                default: return headerGlobal + renderGenericDataList(moduloId);
             }
         }
 
         // ==========================================
-        // 7. MODAL FINANCEIRO COM RECORRÊNCIA E EDIÇÃO
+        // 7. RENDERIZAÇÃO GENÉRICA DE DADOS E TABELAS
+        // ==========================================
+        function renderGenericDataList(modKey) {
+            const list = db[modKey] || [];
+            if (list.length === 0) {
+                return `
+                    <div class="bg-white p-8 rounded-xl shadow-sm border border-slate-200 text-center py-12">
+                        <div class="w-16 h-16 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
+                            <i class="fa-solid fa-folder-open"></i>
+                        </div>
+                        <h3 class="text-base font-bold text-slate-800 mb-1">${MODULE_NAMES[modKey]}</h3>
+                        <p class="text-xs text-slate-500 mb-4">Nenhum registro cadastrado até o momento.</p>
+                    </div>
+                `;
+            }
+
+            const keys = Object.keys(list[0]).filter(k => k !== 'id' && k !== 'foto');
+
+            return `
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-600 font-bold uppercase border-b">
+                                <tr>
+                                    ${keys.map(k => `<th class="p-3 capitalize">${k}</th>`).join('')}
+                                    <th class="p-3 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200">
+                                ${list.map(item => `
+                                    <tr class="hover:bg-slate-50">
+                                        ${keys.map(k => `
+                                            <td class="p-3 font-semibold text-slate-800">${escapeHTML(String(item[k] || ''))}</td>
+                                        `).join('')}
+                                        <td class="p-3 text-right">
+                                            <button onclick="excluirItemGenerico('${modKey}', '${item.id}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Excluir">
+                                                <i class="fa-solid fa-trash-can"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==========================================
+        // 8. MODAL GENÉRICO DE CRIAÇÃO REAL
+        // ==========================================
+        let imagemAnexadaBase64 = '';
+
+        function renderModalGen(modKey, nomeModulo, campos) {
+            imagemAnexadaBase64 = '';
+            const html = `
+                <div id="modal_gen" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+                            <h3 class="font-bold text-sm">Novo Cadastro - ${nomeModulo}</h3>
+                            <button onclick="fecharModal('modal_gen')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <form onsubmit="salvarItemGenerico(event, '${modKey}')" class="p-6 space-y-3">
+                            ${campos.map(c => `
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">${c.label}</label>
+                                    <input type="text" data-key="${c.key}" required class="input_gen_field w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                                </div>
+                            `).join('')}
+
+                            <div class="p-3 bg-slate-50 rounded border text-center space-y-2">
+                                <p class="text-[10px] font-bold text-slate-500 uppercase">Foto / Anexo (Opcional)</p>
+                                <div class="flex justify-center gap-2">
+                                    <label class="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 rounded text-xs font-bold cursor-pointer">
+                                        📁 Galeria <input type="file" accept="image/*" onchange="processarFotoModalGen(event)" class="hidden">
+                                    </label>
+                                    <label class="px-2.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded text-xs font-bold cursor-pointer">
+                                        📷 Tirar Foto <input type="file" accept="image/*" capture="environment" onchange="processarFotoModalGen(event)" class="hidden">
+                                    </label>
+                                </div>
+                                <p id="lbl_foto_gen" class="text-[10px] text-emerald-600 font-bold hidden"><i class="fa-solid fa-check"></i> Imagem anexada!</p>
+                            </div>
+
+                            <div class="flex items-center justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModal('modal_gen')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
+                                <button type="submit" class="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded text-xs font-bold">Salvar Registro</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        async function processarFotoModalGen(e) {
+            const file = e.target.files[0];
+            if (file) {
+                imagemAnexadaBase64 = await compressImage(file);
+                const lbl = document.getElementById('lbl_foto_gen');
+                if (lbl) lbl.classList.remove('hidden');
+            }
+        }
+
+        function salvarItemGenerico(e, modKey) {
+            e.preventDefault();
+            const inputs = document.querySelectorAll('.input_gen_field');
+            const novoObjeto = { id: modKey.substr(0, 3) + '_' + Date.now() };
+
+            inputs.forEach(input => {
+                const key = input.getAttribute('data-key');
+                let val = input.value.trim();
+                if (key === 'saldo' || key === 'valor' || key === 'qtd') {
+                    val = parseFloat(val) || 0;
+                }
+                novoObjeto[key] = val;
+            });
+
+            if (imagemAnexadaBase64) {
+                novoObjeto.foto = imagemAnexadaBase64;
+            }
+
+            if (!db[modKey]) db[modKey] = [];
+            db[modKey].push(novoObjeto);
+
+            registrarLog(MODULE_NAMES[modKey] || modKey, 'Criação', `Novo registo gravado com sucesso.`);
+            salvarDados(db);
+            fecharModal('modal_gen');
+            renderApp();
+        }
+
+        function excluirItemGenerico(modKey, itemId) {
+            if (confirm('Tem certeza de que deseja excluir este registo?')) {
+                db[modKey] = db[modKey].filter(x => x.id !== itemId);
+                registrarLog(MODULE_NAMES[modKey] || modKey, 'Exclusão', `Registo removido.`);
+                salvarDados(db);
+                renderApp();
+            }
+        }
+
+        // ==========================================
+        // 9. DEMAIS FUNÇÕES E MODAIS
         // ==========================================
         function renderFinanceiroView() {
             return `
@@ -457,6 +602,7 @@
                                     <th class="p-3">Vencimento</th>
                                     <th class="p-3">Valor</th>
                                     <th class="p-3">Status</th>
+                                    <th class="p-3 text-right">Ações</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-200">
@@ -468,6 +614,9 @@
                                         <td class="p-3 text-slate-700">${escapeHTML(f.vencimento)}</td>
                                         <td class="p-3 font-bold text-slate-900">R$ ${Number(f.valor).toFixed(2)}</td>
                                         <td class="p-3"><span class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px] font-bold">${escapeHTML(f.status)}</span></td>
+                                        <td class="p-3 text-right">
+                                            <button onclick="excluirItemGenerico('financeiro', '${f.id}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Excluir"><i class="fa-solid fa-trash-can"></i></button>
+                                        </td>
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -516,7 +665,6 @@
                                 </div>
                             </div>
 
-                            <!-- BLUDO DE RECORRÊNCIA -->
                             <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
                                 <label class="flex items-center gap-2 cursor-pointer font-bold text-xs text-teal-800">
                                     <input type="checkbox" id="chk_recorrencia" onchange="toggleBoxRecorrencia()" class="rounded border-slate-300 text-teal-600 w-4 h-4">
@@ -646,9 +794,6 @@
             renderApp();
         }
 
-        // ==========================================
-        // 8. TELA DE LOGIN E USUÁRIOS
-        // ==========================================
         function renderTelaLogin() {
             return `
                 <div class="min-h-screen bg-slate-900 flex items-center justify-center p-4">
@@ -883,9 +1028,6 @@
             }
         }
 
-        // ==========================================
-        // 9. AUDITORIA E DEMAIS MÓDULOS
-        // ==========================================
         function renderModalAuditLog(moduloKey = '') {
             const logs = moduloKey ? db.logs.filter(l => l.modulo.toLowerCase() === moduloKey.toLowerCase()) : db.logs;
             const html = `
@@ -975,57 +1117,6 @@
                     </div>
                 </div>
             `;
-        }
-
-        function renderGenericModuleView(modKey) {
-            return `
-                <div class="bg-white p-8 rounded-xl shadow-sm border border-slate-200 text-center">
-                    <div class="w-16 h-16 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
-                        <i class="fa-solid fa-folder-open"></i>
-                    </div>
-                    <h3 class="text-base font-bold text-slate-800 mb-1">${MODULE_NAMES[modKey]}</h3>
-                    <p class="text-xs text-slate-500">Módulo operacional ativo, pronto para consultas e auditoria.</p>
-                </div>
-            `;
-        }
-
-        function renderModalGen(nomeModulo, campos) {
-            const html = `
-                <div id="modal_gen" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
-                    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
-                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
-                            <h3 class="font-bold text-sm">Novo Cadastro - ${nomeModulo}</h3>
-                            <button onclick="fecharModal('modal_gen')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-                        </div>
-                        <div class="p-6 space-y-3">
-                            ${campos.map(c => `
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">${c}</label>
-                                    <input type="text" class="w-full p-2 border rounded text-xs text-slate-900 font-bold">
-                                </div>
-                            `).join('')}
-
-                            <div class="p-3 bg-slate-50 rounded border text-center space-y-2">
-                                <p class="text-[10px] font-bold text-slate-500 uppercase">Foto / Comprovativo (Opcional)</p>
-                                <div class="flex justify-center gap-2">
-                                    <label class="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 rounded text-xs font-bold cursor-pointer">
-                                        📁 Galeria <input type="file" accept="image/*" class="hidden">
-                                    </label>
-                                    <label class="px-2.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded text-xs font-bold cursor-pointer">
-                                        📷 Tirar Foto <input type="file" accept="image/*" capture="environment" class="hidden">
-                                    </label>
-                                </div>
-                            </div>
-
-                            <div class="flex items-center justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModal('modal_gen')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
-                                <button type="button" onclick="fecharModal('modal_gen'); alert('Registro gravado com sucesso!');" class="px-3 py-1.5 bg-teal-600 text-white rounded text-xs font-bold">Salvar Registro</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', html);
         }
 
         function fecharModal(id) {
