@@ -15,22 +15,14 @@
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         
-        /* Tema Tecnologia / Cyberpunk para Tela de Login */
-        .tech-mode {
-            background-color: #030712 !important;
-            color: #22d3ee !important;
-        }
+        .tech-mode { background-color: #030712 !important; color: #22d3ee !important; }
         .tech-card {
             background: rgba(15, 23, 42, 0.85) !important;
             border: 1px solid #06b6d4 !important;
             box-shadow: 0 0 30px rgba(6, 182, 212, 0.3) !important;
             backdrop-filter: blur(8px);
         }
-        .tech-input {
-            background-color: #020617 !important;
-            border-color: #0891b2 !important;
-            color: #22d3ee !important;
-        }
+        .tech-input { background-color: #020617 !important; border-color: #0891b2 !important; color: #22d3ee !important; }
 
         @media print {
             aside, header, .no-print, button { display: none !important; }
@@ -41,56 +33,23 @@
 </head>
 <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
 
-    <!-- CONTÊINER PRINCIPAL -->
     <div id="app" class="flex-1 flex flex-col min-h-screen"></div>
 
     <script>
         window.imagemAnexadaBase64 = '';
-        let isTechMode = true; // Inicia por padrão no Modo Tecnologia
+        let isTechMode = true;
         let matrixInterval = null;
 
-        // Estado do Tour Guiado
-        let tourState = {
-            ativo: false,
-            passoAtual: 0
-        };
+        let tourState = { ativo: false, passoAtual: 0 };
 
         const TOUR_STEPS = [
-            {
-                modulo: 'dashboard',
-                targetId: 'sidebar-menu',
-                titulo: '1. Bem-vindo ao Guardiões do Bravo!',
-                texto: 'Este é o sistema completo de gestão condominial. Vamos fazer um tour rápido de 1 minuto para conhecer as principais ferramentas.'
-            },
-            {
-                modulo: 'dashboard',
-                targetId: 'app',
-                titulo: '2. Dashboard & Métricas',
-                texto: 'Aqui você visualiza indicadores financeiros em tempo real, saldo consolidado e gráficos interativos de receitas vs despesas e censo de moradores.'
-            },
-            {
-                modulo: 'financeiro',
-                targetId: 'app',
-                titulo: '3. Contas Pagar / Receber',
-                texto: 'No módulo financeiro você pode lançar títulos simples ou recorrentes, aplicar baixas/compensações e filtrar por competência (MM/AAAA).'
-            },
-            {
-                modulo: 'moradores',
-                targetId: 'app',
-                titulo: '4. Moradores & Inquilinos',
-                texto: 'Cadastre moradores especificando se são Proprietários ou Inquilinos, com acompanhamento dinâmico da Taxa de Mudança.'
-            },
-            {
-                modulo: 'relatorios',
-                targetId: 'app',
-                titulo: '5. Relatórios & DRE Condominial',
-                texto: 'Gere demonstrativos contábeis completos (DRE) com personalização de fórmulas matemáticas e exportação limpa para PDF/Impressão.'
-            }
+            { modulo: 'dashboard', titulo: '1. Bem-vindo!', texto: 'Sistema completo de gestão condominial e financeira.' },
+            { modulo: 'dashboard', titulo: '2. Dashboard Analytic', texto: 'Acompanhe fluxos de caixa e métricas dinâmicas.' },
+            { modulo: 'financeiro', titulo: '3. Financeiro & Baixa Parcial', texto: 'Lançamentos, baixas totais e parciais com criação de títulos residuais automatizada.' },
+            { modulo: 'formas_monetarias', titulo: '4. Formas Monetárias', texto: 'Cadastre meios de pagamento com liquidação imediata e vínculo bancário.' },
+            { modulo: 'relatorios', titulo: '5. DRE Condominial', texto: 'Demonstrativo contábil inteligente com fórmulas editáveis.' }
         ];
 
-        // ==========================================
-        // 1. SEGURANÇA E UTILITÁRIOS
-        // ==========================================
         function escapeHTML(str) {
             if (typeof str !== 'string') return str || '';
             return str.replace(/[&<>"']/g, function(m) {
@@ -102,70 +61,29 @@
             return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$%^&*!_\-]).{8,}$/.test(senha);
         }
 
-        function compressImage(file) {
-            return new Promise((resolve) => {
-                if (!file) return resolve('');
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.src = e.target.result;
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        let width = img.width;
-                        let height = img.height;
-                        const maxWidth = 800;
-                        if (width > maxWidth) {
-                            height = Math.round((height * maxWidth) / width);
-                            width = maxWidth;
-                        }
-                        canvas.width = width;
-                        canvas.height = height;
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(img, 0, 0, width, height);
-                        resolve(canvas.toDataURL('image/jpeg', 0.7));
-                    };
-                    img.onerror = () => resolve(e.target.result);
-                };
-                reader.readAsDataURL(file);
-            });
-        }
-
-        // ==========================================
-        // 2. BANCO DE DADOS LOCALSTORAGE
-        // ==========================================
         const DEFAULT_DATA = {
             usuarios: [
-                { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Admin@12345', foto: '' },
-                { id: 'usr_auditor', usuario: 'auditor', nome: 'Auditor de Segurança', email: 'auditor@guardioes.com', perfil: 'Leitura', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Auditor@12345', foto: '' }
+                { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Admin@12345' }
             ],
             financeiro: [
-                { id: 'fin_1', tipo: 'Receber', historico: 'Taxa Condominial Ordinária - Ap 101', valor: 650.00, vencimento: '2026-11-10', competencia: '11/2026', categoria: '1.1 Taxa Condominial', fornecedor: 'Carlos Eduardo', status: 'Aberto' },
-                { id: 'fin_2', tipo: 'Pagar', historico: 'Manutenção Preventiva Elevadores', valor: 1200.00, vencimento: '2026-11-05', competencia: '11/2026', categoria: '2.3 Manutenção Predial', fornecedor: 'Otis Elevadores', status: 'Baixado' }
+                { id: 'fin_1', tipo: 'Receber', historico: 'Taxa Condominial Ordinária - Ap 101', valor: 650.00, vencimento: '2026-11-10', competencia: '11/2026', formaMonetariaId: 'fm_1', fornecedor: 'Carlos Eduardo', status: 'Aberto' },
+                { id: 'fin_2', tipo: 'Pagar', historico: 'Manutenção Preventiva Elevadores', valor: 1200.00, vencimento: '2026-11-05', competencia: '11/2026', formaMonetariaId: 'fm_2', fornecedor: 'Otis Elevadores', status: 'Baixado' }
             ],
-            plano_contas: [
-                { id: 'pc_1', codigo: '1.1', nome: 'Taxa Condominial Ordinária', tipo: 'Receita' },
-                { id: 'pc_2', codigo: '2.1', nome: 'Serviços Públicos (Água/Luz)', tipo: 'Despesa' }
+            formas_monetarias: [
+                { id: 'fm_1', nome: 'Pix QR Code / Chave', contaId: 'cb_1', baixaAutomatica: true, status: 'Ativo' },
+                { id: 'fm_2', nome: 'Boleto Bancário registrado', contaId: 'cb_1', baixaAutomatica: false, status: 'Ativo' },
+                { id: 'fm_3', nome: 'Dinheiro / Espécie', contaId: 'cb_2', baixaAutomatica: true, status: 'Ativo' }
             ],
             contas_bancarias: [
                 { id: 'cb_1', banco: 'Banco do Brasil', agencia: '1234-5', conta: '98765-4', saldo: 45800.00 },
-                { id: 'cb_2', banco: 'Caixa Pequeno / Interno', agencia: 'Interno', conta: 'Caixa', saldo: 1250.00 }
+                { id: 'cb_2', banco: 'Caixa Interno Condomínio', agencia: 'Interno', conta: 'Caixa', saldo: 1250.00 }
             ],
             moradores: [
-                { id: 'mor_1', bloco: 'A', apartamento: '101', nome: 'Carlos Eduardo', email: 'carlos@email.com', telefone: '(41) 99999-1111', tipo: 'Proprietário', taxaMudanca: 'N/A', status: 'Ativo' },
-                { id: 'mor_2', bloco: 'B', apartamento: '304', nome: 'Mariana Silva', email: 'mariana@email.com', telefone: '(41) 98888-2222', tipo: 'Inquilino', taxaMudanca: 'Sim', status: 'Ativo' }
-            ],
-            fornecedores: [
-                { id: 'for_1', nome: 'Otis Elevadores', cnpj: '12.345.678/0001-90', telefone: '(41) 3333-4444', servico: 'Elevadores', status: 'Ativo' }
+                { id: 'mor_1', bloco: 'A', apartamento: '101', nome: 'Carlos Eduardo', email: 'carlos@email.com', telefone: '(41) 99999-1111', tipo: 'Proprietário', taxaMudanca: 'N/A' },
+                { id: 'mor_2', bloco: 'B', apartamento: '304', nome: 'Mariana Silva', email: 'mariana@email.com', telefone: '(41) 98888-2222', tipo: 'Inquilino', taxaMudanca: 'Sim' }
             ],
             estoque: [
-                { id: 'est_1', item: 'Lâmpada LED 12W', categoria: 'Elétrica', qtd: 4, minimo: 10, maximo: 50, localizacao: 'Almoxarifado Central' },
-                { id: 'est_2', item: 'Cloro Granulado 10kg', categoria: 'Piscina', qtd: 15, minimo: 5, maximo: 30, localizacao: 'DML Piscina' }
-            ],
-            patrimonio: [
-                { id: 'pat_1', codigo: 'PAT-001', item: 'Cortador de Grama', local: 'Jardim', valor: 1850.00, estado: 'Ótimo' }
-            ],
-            documentos: [
-                { id: 'doc_1', titulo: 'Convenção Condominial', categoria: 'Jurídico', data: '2026-01-10' }
+                { id: 'est_1', item: 'Lâmpada LED 12W', categoria: 'Elétrica', qtd: 4, minimo: 10, maximo: 50, localizacao: 'Almoxarifado' }
             ],
             dre_config: [
                 { id: 'A', codigo: 'REC_BRUTA', label: '(+) RECEITA OPERACIONAL BRUTA', tipo: 'direto', operacao: 'somar_receitas' },
@@ -182,9 +100,8 @@
                 const data = localStorage.getItem('guardioes_bravo_db');
                 if (!data) return DEFAULT_DATA;
                 const parsed = JSON.parse(data);
-                if (!parsed.dre_config || parsed.dre_config.length === 0) {
-                    parsed.dre_config = DEFAULT_DATA.dre_config;
-                }
+                if (!parsed.formas_monetarias) parsed.formas_monetarias = DEFAULT_DATA.formas_monetarias;
+                if (!parsed.dre_config) parsed.dre_config = DEFAULT_DATA.dre_config;
                 return parsed;
             } catch (e) {
                 return DEFAULT_DATA;
@@ -192,40 +109,21 @@
         }
 
         function salvarDados(data) {
-            try {
-                localStorage.setItem('guardioes_bravo_db', JSON.stringify(data));
-            } catch (e) {
-                alert('Atenção: Limite do armazenamento local excedido!');
-            }
+            try { localStorage.setItem('guardioes_bravo_db', JSON.stringify(data)); } catch (e) {}
         }
 
         let db = carregarDados();
-
-        let sessao = {
-            usuarioLogado: JSON.parse(sessionStorage.getItem('guardioes_sessao')) || null,
-            tentativasFalhas: 0,
-            bloqueadoAte: null,
-            timerInatividade: null
-        };
-
-        let tabsState = {
-            openTabs: ['dashboard'],
-            activeTab: 'dashboard'
-        };
-
+        let sessao = { usuarioLogado: JSON.parse(sessionStorage.getItem('guardioes_sessao')) || null };
+        let tabsState = { openTabs: ['dashboard'], activeTab: 'dashboard' };
         let finFiltros = { competencia: '', status: 'Todos', tipo: 'Todos', busca: '' };
-        let relatorioFiltros = { tipo: 'geral', dataInicio: '2026-01-01', dataFim: '2026-12-31' };
 
         const MODULE_NAMES = {
             dashboard: 'Dashboard',
             financeiro: 'Contas Pagar/Receber',
-            plano_contas: 'Plano de Contas',
+            formas_monetarias: 'Formas Monetárias',
             contas_bancarias: 'Contas Bancárias / Caixa',
             moradores: 'Moradores / Unidades',
-            fornecedores: 'Fornecedores',
             estoque: 'Estoque de Produtos',
-            patrimonio: 'Patrimônio / Bens',
-            documentos: 'Documentos & Anexos',
             relatorios: 'Relatórios Consolidados & DRE',
             usuarios: 'Gestão de Usuários',
             audit_log: 'Log de Auditoria'
@@ -233,25 +131,12 @@
 
         function registrarLog(modulo, acao, detalhe) {
             const user = sessao.usuarioLogado ? sessao.usuarioLogado.usuario : 'Sistema';
-            db.logs.unshift({
-                id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
-                dataHora: new Date().toLocaleString('pt-BR'),
-                modulo: modulo,
-                acao: acao,
-                usuario: user,
-                detalhe: detalhe
-            });
-            if (db.logs.length > 500) db.logs.pop();
+            db.logs.unshift({ id: 'log_' + Date.now(), dataHora: new Date().toLocaleString('pt-BR'), modulo, acao, usuario: user, detalhe });
             salvarDados(db);
         }
 
-        // ==========================================
-        // 3. CONTROLE DE ABAS E NAVEGAÇÃO
-        // ==========================================
         function abrirModulo(moduloId) {
-            if (!tabsState.openTabs.includes(moduloId)) {
-                tabsState.openTabs.push(moduloId);
-            }
+            if (!tabsState.openTabs.includes(moduloId)) tabsState.openTabs.push(moduloId);
             tabsState.activeTab = moduloId;
             renderApp();
         }
@@ -260,227 +145,75 @@
             e.stopPropagation();
             if (tabsState.openTabs.length === 1) return;
             tabsState.openTabs = tabsState.openTabs.filter(id => id !== moduloId);
-            if (tabsState.activeTab === moduloId) {
-                tabsState.activeTab = tabsState.openTabs[tabsState.openTabs.length - 1];
-            }
+            if (tabsState.activeTab === moduloId) tabsState.activeTab = tabsState.openTabs[tabsState.openTabs.length - 1];
             renderApp();
         }
 
-        // ==========================================
-        // 4. AUTENTICAÇÃO E SESSÃO
-        // ==========================================
         function realizarLogin(e) {
             e.preventDefault();
-            const now = Date.now();
-            if (sessao.bloqueadoAte && now < sessao.bloqueadoAte) {
-                const resta = Math.ceil((sessao.bloqueadoAte - now) / 1000);
-                alert(`Sistema bloqueado por segurança. Aguarde ${resta} segundos.`);
-                return;
-            }
-
             const userInput = document.getElementById('login_user').value.trim();
             const senhaInput = document.getElementById('login_pass').value;
-            const lembrar = document.getElementById('login_remember').checked;
-
             const userFound = db.usuarios.find(u => u.usuario === userInput || u.email === userInput);
 
             if (userFound && userFound.senhaHash === senhaInput) {
-                if (userFound.status !== 'Ativo') {
-                    alert('Utilizador inativo. Contacte o administrador.');
-                    return;
-                }
-
                 if (matrixInterval) clearInterval(matrixInterval);
-
-                sessao.tentativasFalhas = 0;
                 sessao.usuarioLogado = userFound;
                 sessionStorage.setItem('guardioes_sessao', JSON.stringify(userFound));
-
-                if (lembrar) {
-                    localStorage.setItem('guardioes_remember_user', userInput);
-                } else {
-                    localStorage.removeItem('guardioes_remember_user');
-                }
-
-                registrarLog('Segurança', 'Login Sucesso', `Usuário ${userFound.usuario} efetuou login.`);
-
-                if (userFound.primeiroAcesso) {
-                    renderModalTrocaSenhaObrigatoria();
-                } else {
-                    iniciarMonitorInatividade();
-                    renderApp();
-
-                    if (!localStorage.getItem('guardioes_tour_concluido')) {
-                        setTimeout(iniciarTourGuiado, 500);
-                    }
-                }
+                registrarLog('Segurança', 'Login Sucesso', `Usuário ${userFound.usuario} logou.`);
+                renderApp();
             } else {
-                sessao.tentativasFalhas++;
-                registrarLog('Segurança', 'Login Falhado', `Tentativa para o usuário: ${userInput}`);
-                if (sessao.tentativasFalhas >= 5) {
-                    sessao.bloqueadoAte = Date.now() + (5 * 60 * 1000);
-                    alert('Bloqueio de Segurança: 5 tentativas incorretas. Tente novamente em 5 minutos.');
-                } else {
-                    alert(`Credenciais incorretas! Tentativa ${sessao.tentativasFalhas} de 5.`);
-                }
+                alert('Credenciais incorretas!');
             }
         }
 
         function encerrarSessao() {
-            if (sessao.usuarioLogado) {
-                registrarLog('Segurança', 'Logout', `Usuário ${sessao.usuarioLogado.usuario} saiu.`);
-            }
             sessao.usuarioLogado = null;
             sessionStorage.removeItem('guardioes_sessao');
-            if (sessao.timerInatividade) clearTimeout(sessao.timerInatividade);
             renderApp();
         }
 
-        function iniciarMonitorInatividade() {
-            if (sessao.timerInatividade) clearTimeout(sessao.timerInatividade);
-            const reset = () => {
-                if (!sessao.usuarioLogado) return;
-                clearTimeout(sessao.timerInatividade);
-                sessao.timerInatividade = setTimeout(() => {
-                    alert('Sessão encerrada por inatividade (15 minutos).');
-                    encerrarSessao();
-                }, 15 * 60 * 1000);
-            };
-            window.onload = reset;
-            document.onmousemove = reset;
-            document.onkeypress = reset;
-            document.onclick = reset;
-            document.ontouchstart = reset;
-        }
-
-        // ==========================================
-        // 5. INTERFACE PRINCIPAL
-        // ==========================================
         function renderApp() {
             const container = document.getElementById('app');
 
             if (!sessao.usuarioLogado) {
                 container.innerHTML = renderTelaLogin();
-                const savedUser = localStorage.getItem('guardioes_remember_user');
-                if (savedUser) {
-                    document.getElementById('login_user').value = savedUser;
-                    document.getElementById('login_remember').checked = true;
-                }
                 if (isTechMode) setTimeout(iniciarAnimacaoMatrix, 50);
                 return;
             }
 
             container.innerHTML = `
                 <div class="flex-1 flex overflow-hidden">
-                    <div id="mobile-sidebar-backdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-900/50 z-40 hidden md:hidden"></div>
-
-                    <!-- SIDEBAR -->
-                    <aside id="sidebar-menu" class="fixed md:relative z-50 w-64 bg-slate-900 text-slate-300 flex flex-col h-full transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out">
+                    <aside id="sidebar-menu" class="w-64 bg-slate-900 text-slate-300 flex flex-col h-full border-r border-slate-800">
                         <div class="p-4 bg-slate-950 flex items-center justify-between border-b border-slate-800">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-teal-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
-                                    <i class="fa-solid fa-shield-halved"></i>
-                                </div>
-                                <div>
-                                    <h1 class="font-bold text-white text-base leading-tight">Guardiões do Bravo</h1>
-                                    <p class="text-xs text-teal-400">Gestão Condominial</p>
-                                </div>
+                                <div class="w-10 h-10 rounded-lg bg-teal-600 flex items-center justify-center text-white font-bold text-xl"><i class="fa-solid fa-shield-halved"></i></div>
+                                <div><h1 class="font-bold text-white text-base leading-tight">Guardiões</h1><p class="text-xs text-teal-400">Gestão Condominial</p></div>
                             </div>
-                            <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-400 hover:text-white">
-                                <i class="fa-solid fa-xmark text-xl"></i>
-                            </button>
                         </div>
 
                         <nav class="flex-1 overflow-y-auto p-3 space-y-1">
-                            <p class="px-3 pt-3 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Módulos Principais</p>
-                            <button onclick="abrirModulo('dashboard')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition ${tabsState.activeTab === 'dashboard' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
-                                <i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard
-                            </button>
-
-                            <p class="px-3 pt-3 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Financeiro</p>
-                            <button onclick="abrirModulo('financeiro')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition ${tabsState.activeTab === 'financeiro' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
-                                <i class="fa-solid fa-receipt w-5 text-center"></i> Contas Pagar/Receber
-                            </button>
-                            <button onclick="abrirModulo('plano_contas')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition ${tabsState.activeTab === 'plano_contas' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
-                                <i class="fa-solid fa-sitemap w-5 text-center"></i> Plano de Contas
-                            </button>
-                            <button onclick="abrirModulo('contas_bancarias')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition ${tabsState.activeTab === 'contas_bancarias' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
-                                <i class="fa-solid fa-building-columns w-5 text-center"></i> Contas Bancárias / Caixa
-                            </button>
-
-                            <p class="px-3 pt-3 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Operações</p>
-                            <button onclick="abrirModulo('moradores')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition ${tabsState.activeTab === 'moradores' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
-                                <i class="fa-solid fa-users w-5 text-center"></i> Moradores / Unidades
-                            </button>
-                            <button onclick="abrirModulo('fornecedores')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition ${tabsState.activeTab === 'fornecedores' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
-                                <i class="fa-solid fa-truck-field w-5 text-center"></i> Fornecedores
-                            </button>
-                            <button onclick="abrirModulo('estoque')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition ${tabsState.activeTab === 'estoque' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
-                                <i class="fa-solid fa-boxes-stacked w-5 text-center"></i> Estoque de Produtos
-                            </button>
-                            <button onclick="abrirModulo('patrimonio')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition ${tabsState.activeTab === 'patrimonio' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
-                                <i class="fa-solid fa-couch w-5 text-center"></i> Patrimônio / Bens
-                            </button>
-                            <button onclick="abrirModulo('documentos')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition ${tabsState.activeTab === 'documentos' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
-                                <i class="fa-solid fa-folder-open w-5 text-center"></i> Documentos & Anexos
-                            </button>
-
-                            <p class="px-3 pt-3 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Administração & DRE</p>
-                            <button onclick="abrirModulo('relatorios')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition ${tabsState.activeTab === 'relatorios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
-                                <i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i> Relatórios & DRE
-                            </button>
-                            <button onclick="abrirModulo('usuarios')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition ${tabsState.activeTab === 'usuarios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
-                                <i class="fa-solid fa-user-shield w-5 text-center"></i> Gestão de Usuários
-                            </button>
-                            <button onclick="abrirModulo('audit_log')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition ${tabsState.activeTab === 'audit_log' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
-                                <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Rastreio & Auditoria
-                            </button>
-
-                            <div class="pt-2">
-                                <button onclick="iniciarTourGuiado()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition">
-                                    <i class="fa-solid fa-circle-question w-5 text-center"></i> Tour Guiado
-                                </button>
-                            </div>
+                            <p class="px-3 pt-3 pb-1 text-[10px] font-bold text-slate-500 uppercase">Módulos Principais</p>
+                            <button onclick="abrirModulo('dashboard')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'dashboard' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800'}"><i class="fa-solid fa-chart-pie w-5"></i> Dashboard</button>
+                            <button onclick="abrirModulo('financeiro')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'financeiro' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800'}"><i class="fa-solid fa-receipt w-5"></i> Contas Pagar/Receber</button>
+                            <button onclick="abrirModulo('formas_monetarias')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'formas_monetarias' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800'}"><i class="fa-solid fa-money-bill-transfer w-5"></i> Formas Monetárias</button>
+                            <button onclick="abrirModulo('contas_bancarias')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'contas_bancarias' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800'}"><i class="fa-solid fa-building-columns w-5"></i> Contas Bancárias / Caixa</button>
+                            <button onclick="abrirModulo('moradores')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'moradores' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800'}"><i class="fa-solid fa-users w-5"></i> Moradores</button>
+                            <button onclick="abrirModulo('estoque')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'estoque' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800'}"><i class="fa-solid fa-boxes-stacked w-5"></i> Estoque</button>
+                            <button onclick="abrirModulo('relatorios')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'relatorios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800'}"><i class="fa-solid fa-file-invoice-dollar w-5"></i> Relatórios & DRE</button>
                         </nav>
 
                         <div class="p-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
-                            <div class="flex items-center gap-2 overflow-hidden">
-                                <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-teal-400 font-bold border border-slate-700">
-                                    ${sessao.usuarioLogado.usuario.substr(0,2).toUpperCase()}
-                                </div>
-                                <div class="truncate">
-                                    <p class="text-xs font-semibold text-slate-200 truncate">${escapeHTML(sessao.usuarioLogado.nome)}</p>
-                                    <p class="text-[10px] text-teal-400 capitalize">${escapeHTML(sessao.usuarioLogado.perfil)}</p>
-                                </div>
-                            </div>
-                            <button onclick="encerrarSessao()" title="Sair do Sistema" class="p-2 text-slate-400 hover:text-red-400 rounded-lg hover:bg-slate-800 transition">
-                                <i class="fa-solid fa-right-from-bracket"></i>
-                            </button>
+                            <span class="text-xs font-bold text-slate-200">${escapeHTML(sessao.usuarioLogado.nome)}</span>
+                            <button onclick="encerrarSessao()" class="p-2 text-slate-400 hover:text-red-400"><i class="fa-solid fa-right-from-bracket"></i></button>
                         </div>
                     </aside>
 
-                    <!-- ÁREA PRINCIPAL -->
                     <div class="flex-1 flex flex-col overflow-hidden">
-                        <header class="bg-slate-900 text-white p-3 flex md:hidden items-center justify-between border-b border-slate-800">
-                            <div class="flex items-center gap-3">
-                                <button onclick="toggleMobileSidebar()" class="p-2 rounded-lg bg-slate-800 text-slate-200">
-                                    <i class="fa-solid fa-bars text-lg"></i>
-                                </button>
-                                <span class="font-bold text-sm">Guardiões do Bravo</span>
-                            </div>
-                            <button onclick="encerrarSessao()" class="text-xs bg-red-600/20 text-red-400 px-2.5 py-1.5 rounded-md">Sair</button>
-                        </header>
-
-                        <!-- BARRA DE ABAS SIMULTÂNEAS -->
                         <div class="bg-slate-200 border-b border-slate-300 flex items-center overflow-x-auto px-2 pt-2 gap-1 no-print">
                             ${tabsState.openTabs.map(tabId => `
-                                <div onclick="abrirModulo('${tabId}')" class="flex items-center gap-2 px-3 py-2 rounded-t-lg text-xs font-semibold cursor-pointer transition select-none ${tabsState.activeTab === tabId ? 'tab-active shadow-sm' : 'bg-slate-300 text-slate-600 hover:bg-slate-300/80'}">
+                                <div onclick="abrirModulo('${tabId}')" class="flex items-center gap-2 px-3 py-2 rounded-t-lg text-xs font-semibold cursor-pointer ${tabsState.activeTab === tabId ? 'tab-active shadow-sm' : 'bg-slate-300 text-slate-600'}">
                                     <span>${MODULE_NAMES[tabId] || tabId}</span>
-                                    ${tabsState.openTabs.length > 1 ? `
-                                        <button onclick="fecharAba(event, '${tabId}')" class="text-slate-400 hover:text-red-600 rounded-full w-4 h-4 flex items-center justify-center">
-                                            <i class="fa-solid fa-xmark text-[10px]"></i>
-                                        </button>
-                                    ` : ''}
+                                    ${tabsState.openTabs.length > 1 ? `<button onclick="fecharAba(event, '${tabId}')" class="hover:text-red-600"><i class="fa-solid fa-xmark"></i></button>` : ''}
                                 </div>
                             `).join('')}
                         </div>
@@ -492,283 +225,32 @@
                 </div>
             `;
 
-            if (tabsState.activeTab === 'dashboard') {
-                setTimeout(renderDashboardCharts, 100);
-            }
-
-            if (tourState.ativo) {
-                renderTourOverlay();
-            }
-        }
-
-        function toggleMobileSidebar() {
-            document.getElementById('sidebar-menu').classList.toggle('-translate-x-full');
-            document.getElementById('mobile-sidebar-backdrop').classList.toggle('hidden');
-        }
-
-        // ==========================================
-        // 6. ANIMAÇÃO DE FUNDO MATRIX / CYBERPUNK
-        // ==========================================
-        function iniciarAnimacaoMatrix() {
-            const canvas = document.getElementById('matrixCanvas');
-            if (!canvas) return;
-            const ctx = canvas.getContext('2d');
-
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-
-            const chars = '0123456789ABCDEFGUARDIOSBRAVO';
-            const fontSize = 14;
-            const columns = Math.floor(canvas.width / fontSize);
-            const drops = Array(columns).fill(1);
-
-            if (matrixInterval) clearInterval(matrixInterval);
-
-            matrixInterval = setInterval(() => {
-                ctx.fillStyle = 'rgba(3, 7, 18, 0.08)';
-                ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-                ctx.fillStyle = '#06b6d4';
-                ctx.font = fontSize + 'px monospace';
-
-                for (let i = 0; i < drops.length; i++) {
-                    const text = chars.charAt(Math.floor(Math.random() * chars.length));
-                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
-
-                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
-                        drops[i] = 0;
-                    }
-                    drops[i]++;
-                }
-            }, 33);
-        }
-
-        // ==========================================
-        // 7. TOUR GUIADO DE PRIMEIRO ACESSO
-        // ==========================================
-        function iniciarTourGuiado() {
-            tourState.ativo = true;
-            tourState.passoAtual = 0;
-            abrirModulo(TOUR_STEPS[0].modulo);
-        }
-
-        function proximoPassoTour() {
-            if (tourState.passoAtual < TOUR_STEPS.length - 1) {
-                tourState.passoAtual++;
-                abrirModulo(TOUR_STEPS[tourState.passoAtual].modulo);
-            } else {
-                encerrarTourGuiado();
-            }
-        }
-
-        function passoAnteriorTour() {
-            if (tourState.passoAtual > 0) {
-                tourState.passoAtual--;
-                abrirModulo(TOUR_STEPS[tourState.passoAtual].modulo);
-            }
-        }
-
-        function encerrarTourGuiado() {
-            tourState.ativo = false;
-            localStorage.setItem('guardioes_tour_concluido', 'true');
-            fecharModal('modal_tour');
-            renderApp();
-        }
-
-        function renderTourOverlay() {
-            fecharModal('modal_tour');
-            const step = TOUR_STEPS[tourState.passoAtual];
-
-            const html = `
-                <div id="modal_tour" class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 no-print">
-                    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border-2 border-teal-500">
-                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <span class="w-6 h-6 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-bold">${tourState.passoAtual + 1}</span>
-                                <h3 class="font-bold text-sm">${step.titulo}</h3>
-                            </div>
-                            <button onclick="encerrarTourGuiado()" title="Encerrar Tour" class="text-slate-400 hover:text-white text-lg">
-                                <i class="fa-solid fa-xmark"></i>
-                            </button>
-                        </div>
-                        <div class="p-6 space-y-4">
-                            <p class="text-xs text-slate-700 leading-relaxed font-semibold">${step.texto}</p>
-                            
-                            <div class="flex items-center justify-between pt-4 border-t border-slate-200">
-                                <button onclick="encerrarTourGuiado()" class="text-xs font-bold text-slate-400 hover:text-slate-600 underline">
-                                    Pular Tour
-                                </button>
-                                <div class="flex items-center gap-2">
-                                    ${tourState.passoAtual > 0 ? `
-                                        <button onclick="passoAnteriorTour()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 rounded text-xs font-bold text-slate-800">
-                                            Anterior
-                                        </button>
-                                    ` : ''}
-                                    <button onclick="proximoPassoTour()" class="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded text-xs font-bold shadow-md">
-                                        ${tourState.passoAtual === TOUR_STEPS.length - 1 ? 'Concluir e Começar' : 'Próximo'}
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', html);
-        }
-
-        // ==========================================
-        // 8. RENDERIZAÇÃO DE MÓDULOS E BOTÕES "NOVO"
-        // ==========================================
-        function getCamposConfigModulo(id) {
-            switch(id) {
-                case 'plano_contas': return { nome: "Plano de Contas", campos: [{key:"codigo", label:"Código"}, {key:"nome", label:"Nome da Conta"}, {key:"tipo", label:"Tipo (Receita/Despesa)"}] };
-                case 'contas_bancarias': return { nome: "Conta Bancária", campos: [{key:"banco", label:"Banco / Caixinha"}, {key:"agencia", label:"Agência"}, {key:"conta", label:"Número da Conta"}, {key:"saldo", label:"Saldo Inicial (R$)"}] };
-                case 'fornecedores': return { nome: "Fornecedor", campos: [{key:"nome", label:"Razão Social / Nome"}, {key:"cnpj", label:"CNPJ / CPF"}, {key:"telefone", label:"Telefone"}, {key:"servico", label:"Serviço Prestado"}] };
-                case 'patrimonio': return { nome: "Patrimônio", campos: [{key:"codigo", label:"Código / Placa"}, {key:"item", label:"Descrição do Item"}, {key:"local", label:"Localização"}, {key:"valor", label:"Valor Estimado (R$)"}, {key:"estado", label:"Estado de Conservação"}] };
-                case 'documentos': return { nome: "Documento", campos: [{key:"titulo", label:"Título do Documento"}, {key:"categoria", label:"Categoria"}, {key:"data", label:"Data (AAAA-MM-DD)"}] };
-                default: return null;
-            }
+            if (tabsState.activeTab === 'dashboard') setTimeout(renderDashboardCharts, 100);
         }
 
         function renderModuleContent(moduloId) {
-            const camposCfg = getCamposConfigModulo(moduloId);
-
             let btnNovoHtml = '';
-            if (moduloId === 'financeiro') {
-                btnNovoHtml = `<button onclick="renderModalNovoTitulo()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm flex items-center gap-2 transition"><i class="fa-solid fa-plus"></i> Novo Título Financeiro</button>`;
-            } else if (moduloId === 'moradores') {
-                btnNovoHtml = `<button onclick="renderModalMorador()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm flex items-center gap-2 transition"><i class="fa-solid fa-plus"></i> Novo Morador</button>`;
-            } else if (moduloId === 'estoque') {
-                btnNovoHtml = `<button onclick="renderModalEstoque()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm flex items-center gap-2 transition"><i class="fa-solid fa-plus"></i> Novo Item no Estoque</button>`;
-            } else if (moduloId === 'usuarios') {
-                btnNovoHtml = `<button onclick="renderModalUsuario()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm flex items-center gap-2 transition"><i class="fa-solid fa-plus"></i> Novo Usuário</button>`;
-            } else if (camposCfg) {
-                btnNovoHtml = `<button onclick="renderModalGen('${moduloId}', null)" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm flex items-center gap-2 transition"><i class="fa-solid fa-plus"></i> Novo ${camposCfg.nome}</button>`;
-            }
+            if (moduloId === 'financeiro') btnNovoHtml = `<button onclick="renderModalNovoTitulo()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Título</button>`;
+            else if (moduloId === 'formas_monetarias') btnNovoHtml = `<button onclick="renderModalFormaMonetaria()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Nova Forma Monetária</button>`;
 
             const headerGlobal = `
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-                    <div>
-                        <h2 class="text-2xl font-bold text-slate-800">${MODULE_NAMES[moduloId]}</h2>
-                        <p class="text-xs text-slate-500">Gestão Condominial - Sistema Ativo</p>
-                    </div>
-                    <div class="flex items-center gap-2 no-print">
-                        ${btnNovoHtml}
-                        <button onclick="renderModalAuditLog('${moduloId}')" class="bg-slate-800 hover:bg-slate-900 text-white text-xs px-3.5 py-2 rounded-lg font-medium shadow-sm flex items-center gap-2 transition">
-                            <i class="fa-solid fa-shield-halved text-teal-400"></i> Rastrear Modificações
-                        </button>
-                    </div>
+                <div class="flex items-center justify-between mb-6">
+                    <div><h2 class="text-2xl font-bold text-slate-800">${MODULE_NAMES[moduloId]}</h2><p class="text-xs text-slate-500">Módulo Ativo</p></div>
+                    <div class="flex items-center gap-2">${btnNovoHtml}</div>
                 </div>
             `;
 
             switch (moduloId) {
                 case 'dashboard': return headerGlobal + renderDashboardView();
                 case 'financeiro': return headerGlobal + renderFinanceiroView();
-                case 'moradores': return headerGlobal + renderMoradoresView();
-                case 'estoque': return headerGlobal + renderEstoqueView();
+                case 'formas_monetarias': return headerGlobal + renderFormasMonetariasView();
                 case 'relatorios': return headerGlobal + renderRelatoriosView();
-                case 'usuarios': return headerGlobal + renderUsuariosView();
-                case 'audit_log': return headerGlobal + renderAuditLogView();
-                default: return headerGlobal + renderGenericDataList(moduloId);
+                default: return headerGlobal + `<div class="bg-white p-6 rounded-xl border">Módulo em execução normal.</div>`;
             }
         }
 
         // ==========================================
-        // 9. DASHBOARD COM GRÁFICOS (CHART.JS)
-        // ==========================================
-        function renderDashboardView() {
-            const recTotal = db.financeiro.filter(f=>f.tipo==='Receber' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0);
-            const pagTotal = db.financeiro.filter(f=>f.tipo==='Pagar' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0);
-
-            return `
-                <div class="space-y-6">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
-                            <div>
-                                <p class="text-xs font-bold text-slate-500 uppercase">A Receber (Aberto)</p>
-                                <h3 class="text-xl font-extrabold text-emerald-600">R$ ${recTotal.toFixed(2)}</h3>
-                            </div>
-                            <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg"><i class="fa-solid fa-arrow-down-left"></i></div>
-                        </div>
-                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
-                            <div>
-                                <p class="text-xs font-bold text-slate-500 uppercase">A Pagar (Aberto)</p>
-                                <h3 class="text-xl font-extrabold text-rose-600">R$ ${pagTotal.toFixed(2)}</h3>
-                            </div>
-                            <div class="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-lg"><i class="fa-solid fa-arrow-up-right"></i></div>
-                        </div>
-                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
-                            <div>
-                                <p class="text-xs font-bold text-slate-500 uppercase">Moradores</p>
-                                <h3 class="text-xl font-extrabold text-slate-800">${db.moradores.length}</h3>
-                            </div>
-                            <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-lg"><i class="fa-solid fa-users"></i></div>
-                        </div>
-                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
-                            <div>
-                                <p class="text-xs font-bold text-slate-500 uppercase">Usuários Ativos</p>
-                                <h3 class="text-xl font-extrabold text-teal-600">${db.usuarios.filter(u=>u.status==='Ativo').length}</h3>
-                            </div>
-                            <div class="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center text-lg"><i class="fa-solid fa-user-shield"></i></div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
-                            <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-chart-column text-teal-600"></i> Receitas vs. Despesas (Aberto x Baixado)</h4>
-                            <div class="h-64 relative"><canvas id="chartReceitasDespesas"></canvas></div>
-                        </div>
-                        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
-                            <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-chart-pie text-teal-600"></i> Censo de Ocupação (Moradores)</h4>
-                            <div class="h-64 relative"><canvas id="chartMoradores"></canvas></div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderDashboardCharts() {
-            const ctx1 = document.getElementById('chartReceitasDespesas');
-            const ctx2 = document.getElementById('chartMoradores');
-
-            if (!ctx1 || !ctx2) return;
-
-            const recAberto = db.financeiro.filter(f=>f.tipo==='Receber' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0);
-            const recBaixado = db.financeiro.filter(f=>f.tipo==='Receber' && f.status==='Baixado').reduce((a,b)=>a+b.valor,0);
-            const pagAberto = db.financeiro.filter(f=>f.tipo==='Pagar' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0);
-            const pagBaixado = db.financeiro.filter(f=>f.tipo==='Pagar' && f.status==='Baixado').reduce((a,b)=>a+b.valor,0);
-
-            new Chart(ctx1, {
-                type: 'bar',
-                data: {
-                    labels: ['A Receber', 'Recebido (Baixado)', 'A Pagar', 'Pago (Baixado)'],
-                    datasets: [{
-                        label: 'Valor Total (R$)',
-                        data: [recAberto, recBaixado, pagAberto, pagBaixado],
-                        backgroundColor: ['#10b981', '#059669', '#f43f5e', '#e11d48']
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-
-            const props = db.moradores.filter(m=>m.tipo==='Proprietário').length;
-            const inqs = db.moradores.filter(m=>m.tipo==='Inquilino').length;
-
-            new Chart(ctx2, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Proprietários', 'Inquilinos'],
-                    datasets: [{
-                        data: [props, inqs],
-                        backgroundColor: ['#2563eb', '#9333ea']
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        }
-
-        // ==========================================
-        // 10. MÓDULO FINANCEIRO
+        // FINANCEIRO & BAIXAS (TOTAL / PARCIAL)
         // ==========================================
         function renderFinanceiroView() {
             let lista = db.financeiro || [];
@@ -776,88 +258,64 @@
             if (finFiltros.competencia.trim() !== '') {
                 lista = lista.filter(f => (f.competencia || '').toLowerCase().includes(finFiltros.competencia.trim().toLowerCase()));
             }
-            if (finFiltros.status !== 'Todos') {
-                lista = lista.filter(f => f.status === finFiltros.status);
-            }
-            if (finFiltros.tipo !== 'Todos') {
-                lista = lista.filter(f => f.tipo === finFiltros.tipo);
-            }
-            if (finFiltros.busca.trim() !== '') {
-                const b = finFiltros.busca.toLowerCase();
-                lista = lista.filter(f => (f.historico || '').toLowerCase().includes(b) || (f.fornecedor || '').toLowerCase().includes(b));
-            }
+            if (finFiltros.status !== 'Todos') lista = lista.filter(f => f.status === finFiltros.status);
+            if (finFiltros.tipo !== 'Todos') lista = lista.filter(f => f.tipo === finFiltros.tipo);
 
             return `
                 <div class="space-y-4">
-                    <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-center">
+                    <div class="bg-white p-3.5 rounded-xl shadow-sm border grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Competência (MM/AAAA)</label>
-                            <input type="text" id="flt_comp" value="${escapeHTML(finFiltros.competencia)}" placeholder="Ex: 11/2026" oninput="atualizarFiltrosFinanceiros()" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                            <input type="text" id="flt_comp" value="${escapeHTML(finFiltros.competencia)}" placeholder="Ex: 11/2026" oninput="atualizarFiltrosFinanceiros()" class="w-full p-2 border rounded text-xs font-bold">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Status do Título</label>
-                            <select id="flt_status" onchange="atualizarFiltrosFinanceiros()" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Status</label>
+                            <select id="flt_status" onchange="atualizarFiltrosFinanceiros()" class="w-full p-2 border rounded text-xs font-bold">
                                 <option value="Todos" ${finFiltros.status === 'Todos' ? 'selected' : ''}>Todos os Status</option>
                                 <option value="Aberto" ${finFiltros.status === 'Aberto' ? 'selected' : ''}>Aberto</option>
-                                <option value="Baixado" ${finFiltros.status === 'Baixado' ? 'selected' : ''}>Baixado (Compensado)</option>
+                                <option value="Baixado" ${finFiltros.status === 'Baixado' ? 'selected' : ''}>Baixado</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tipo de Operação</label>
-                            <select id="flt_tipo" onchange="atualizarFiltrosFinanceiros()" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tipo</label>
+                            <select id="flt_tipo" onchange="atualizarFiltrosFinanceiros()" class="w-full p-2 border rounded text-xs font-bold">
                                 <option value="Todos" ${finFiltros.tipo === 'Todos' ? 'selected' : ''}>Todos os Tipos</option>
                                 <option value="Receber" ${finFiltros.tipo === 'Receber' ? 'selected' : ''}>A Receber</option>
                                 <option value="Pagar" ${finFiltros.tipo === 'Pagar' ? 'selected' : ''}>A Pagar</option>
                             </select>
                         </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Buscar por Descrição</label>
-                            <input type="text" id="flt_busca" value="${escapeHTML(finFiltros.busca)}" placeholder="Digite para filtrar..." oninput="atualizarFiltrosFinanceiros()" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                        </div>
                     </div>
 
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs">
-                                <thead class="bg-slate-100 text-slate-600 font-bold uppercase border-b">
-                                    <tr>
-                                        <th class="p-3">Tipo</th>
-                                        <th class="p-3">Descrição / Histórico</th>
-                                        <th class="p-3">Competência</th>
-                                        <th class="p-3">Vencimento</th>
-                                        <th class="p-3">Valor</th>
-                                        <th class="p-3">Status</th>
-                                        <th class="p-3 text-right">Ações</th>
+                    <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 font-bold uppercase border-b">
+                                <tr>
+                                    <th class="p-3">Tipo</th>
+                                    <th class="p-3">Descrição / Histórico</th>
+                                    <th class="p-3">Competência</th>
+                                    <th class="p-3">Vencimento</th>
+                                    <th class="p-3">Valor</th>
+                                    <th class="p-3">Status</th>
+                                    <th class="p-3 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                ${lista.map(f => `
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${f.tipo === 'Receber' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${escapeHTML(f.tipo)}</span></td>
+                                        <td class="p-3 font-bold text-slate-800">${escapeHTML(f.historico)}</td>
+                                        <td class="p-3">${escapeHTML(f.competencia || 'N/A')}</td>
+                                        <td class="p-3">${escapeHTML(f.vencimento)}</td>
+                                        <td class="p-3 font-bold">R$ ${Number(f.valor).toFixed(2)}</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${f.status === 'Baixado' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${escapeHTML(f.status)}</span></td>
+                                        <td class="p-3 text-right space-x-1">
+                                            <button onclick="abrirModalBaixaTitulo('${f.id}')" title="Liquidar / Baixar" class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded"><i class="fa-solid fa-circle-check"></i></button>
+                                            <button onclick="excluirItemGenerico('financeiro', '${f.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-200">
-                                    ${lista.length === 0 ? `
-                                        <tr><td colspan="7" class="p-6 text-center text-slate-400 font-medium">Nenhum título financeiro encontrado para os filtros selecionados.</td></tr>
-                                    ` : lista.map(f => `
-                                        <tr class="hover:bg-slate-50 transition">
-                                            <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${f.tipo === 'Receber' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${escapeHTML(f.tipo)}</span></td>
-                                            <td class="p-3 font-semibold text-slate-900">
-                                                <p class="font-bold text-slate-800">${escapeHTML(f.historico)}</p>
-                                                <p class="text-[10px] text-slate-500">${escapeHTML(f.fornecedor || '')}</p>
-                                            </td>
-                                            <td class="p-3 font-semibold text-slate-700">${escapeHTML(f.competencia || 'N/A')}</td>
-                                            <td class="p-3 text-slate-700">${escapeHTML(f.vencimento)}</td>
-                                            <td class="p-3 font-bold text-slate-900">R$ ${Number(f.valor).toFixed(2)}</td>
-                                            <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${f.status === 'Baixado' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${escapeHTML(f.status)}</span></td>
-                                            <td class="p-3 text-right space-x-1">
-                                                <button onclick="alternarBaixaTitulo('${f.id}')" title="${f.status === 'Baixado' ? 'Reabrir Título' : 'Marcar como Baixado/Compensado'}" class="p-1.5 ${f.status === 'Baixado' ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'} rounded">
-                                                    <i class="fa-solid ${f.status === 'Baixado' ? 'fa-rotate-left' : 'fa-circle-check'}"></i>
-                                                </button>
-                                                <button onclick="renderModalNovoTitulo('${f.id}')" title="Editar Título" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded">
-                                                    <i class="fa-solid fa-pen-to-square"></i>
-                                                </button>
-                                                <button onclick="excluirItemGenerico('financeiro', '${f.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
-                                            </td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
+                                `).join('')}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             `;
@@ -867,330 +325,46 @@
             finFiltros.competencia = document.getElementById('flt_comp').value;
             finFiltros.status = document.getElementById('flt_status').value;
             finFiltros.tipo = document.getElementById('flt_tipo').value;
-            finFiltros.busca = document.getElementById('flt_busca').value;
             renderApp();
         }
 
-        function alternarBaixaTitulo(id) {
+        function abrirModalBaixaTitulo(id) {
             const f = db.financeiro.find(x => x.id === id);
-            if (f) {
-                f.status = f.status === 'Baixado' ? 'Aberto' : 'Baixado';
-                registrarLog('Financeiro', 'Status Alterado', `Título "${f.historico}" alterado para ${f.status}`);
-                salvarDados(db);
-                renderApp();
-            }
-        }
-
-        function renderModalNovoTitulo(tituloId = null) {
-            const item = tituloId ? db.financeiro.find(x => x.id === tituloId) : null;
+            if (!f) return;
 
             const html = `
-                <div id="modal_fin" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
-                    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
-                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
-                            <h3 class="font-bold text-sm">${item ? 'Editar Título Financeiro' : 'Novo Título Financeiro'}</h3>
-                            <button onclick="fecharModal('modal_fin')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-                        </div>
-                        <div class="p-6 overflow-y-auto space-y-4">
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tipo de Operação</label>
-                                    <select id="fin_tipo" class="w-full p-2.5 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                                        <option value="Receber" ${item && item.tipo === 'Receber' ? 'selected' : ''}>A Receber</option>
-                                        <option value="Pagar" ${item && item.tipo === 'Pagar' ? 'selected' : ''}>A Pagar</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Valor Original (R$)</label>
-                                    <input type="number" step="0.01" id="fin_valor" required value="${item ? item.valor : ''}" class="w-full p-2.5 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Histórico / Descrição</label>
-                                <input type="text" id="fin_historico" required value="${item ? escapeHTML(item.historico) : ''}" class="w-full p-2.5 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                            </div>
-
-                            <div class="grid grid-cols-3 gap-3">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Pessoa / Fornecedor</label>
-                                    <input type="text" id="fin_fornecedor" value="${item ? escapeHTML(item.fornecedor || '') : ''}" class="w-full p-2.5 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Competência (MM/AAAA)</label>
-                                    <input type="text" id="fin_competencia" value="${item ? escapeHTML(item.competencia || '') : ''}" placeholder="Ex: 11/2026" class="w-full p-2.5 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Data Vencimento</label>
-                                    <input type="date" id="fin_vencimento" required value="${item ? item.vencimento : ''}" class="w-full p-2.5 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                                </div>
-                            </div>
-
-                            ${!item ? `
-                            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                                <label class="flex items-center gap-2 cursor-pointer font-bold text-xs text-teal-800">
-                                    <input type="checkbox" id="chk_recorrencia" onchange="toggleBoxRecorrencia()" class="rounded border-slate-300 text-teal-600 w-4 h-4">
-                                    Gerar Recorrência / Parcelamento?
-                                </label>
-
-                                <div id="box_recorrencia" class="hidden space-y-3 pt-2 border-t border-slate-200">
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-600 uppercase">Periodicidade</label>
-                                            <select id="rec_periodo" class="w-full p-2 border rounded text-xs text-slate-900 font-bold">
-                                                <option value="mensal">Mensal</option>
-                                                <option value="semanal">Semanal</option>
-                                                <option value="anual">Anual</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-600 uppercase">Qtd de Parcelas</label>
-                                            <input type="number" id="rec_qtd" value="12" min="2" max="60" class="w-full p-2 border rounded text-xs text-slate-900 font-bold">
-                                        </div>
-                                    </div>
-                                    <button type="button" onclick="gerarPreviewParcelas()" class="w-full py-2 bg-slate-800 text-white rounded text-xs font-bold hover:bg-slate-900">
-                                        <i class="fa-solid fa-list-check"></i> Pré-visualizar e Editar Parcelas
-                                    </button>
-                                </div>
-                            </div>
-                            <div id="area_preview_parcelas"></div>
-                            ` : ''}
-
-                            <div class="flex items-center justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModal('modal_fin')" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded text-xs font-bold">Cancelar</button>
-                                <button type="button" onclick="salvarTituloFinanceiroCompleto('${tituloId || ''}')" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded text-xs font-bold">Salvar Título</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', html);
-        }
-
-        function toggleBoxRecorrencia() {
-            const checked = document.getElementById('chk_recorrencia').checked;
-            document.getElementById('box_recorrencia').classList.toggle('hidden', !checked);
-            if (!checked) document.getElementById('area_preview_parcelas').innerHTML = '';
-        }
-
-        function gerarPreviewParcelas() {
-            const val = parseFloat(document.getElementById('fin_valor').value) || 0;
-            const dataInic = document.getElementById('fin_vencimento').value;
-            const qtd = parseInt(document.getElementById('rec_qtd').value) || 1;
-
-            if (!dataInic) { alert('Informe a data do 1º vencimento.'); return; }
-
-            let html = `
-                <div class="p-3 bg-teal-50 border border-teal-200 rounded-lg space-y-2">
-                    <p class="text-xs font-bold text-teal-900">Edite as Datas/Valores das Parcelas antes de salvar:</p>
-                    <div class="max-h-40 overflow-y-auto space-y-2 pr-1">
-            `;
-
-            let baseDate = new Date(dataInic + 'T00:00:00');
-
-            for(let i = 1; i <= qtd; i++) {
-                let current = new Date(baseDate);
-                current.setMonth(current.getMonth() + (i - 1));
-                let dateStr = current.toISOString().split('T')[0];
-                let compStr = `${String(current.getMonth()+1).padStart(2,'0')}/${current.getFullYear()}`;
-
-                html += `
-                    <div class="grid grid-cols-3 gap-2 items-center bg-white p-2 rounded border border-slate-200">
-                        <span class="text-xs font-bold text-slate-700">Parcela ${i}/${qtd}</span>
-                        <input type="date" value="${dateStr}" class="rec_item_venc p-1 border rounded text-xs text-slate-900 font-bold">
-                        <input type="text" value="${compStr}" class="rec_item_comp p-1 border rounded text-xs text-slate-900 font-bold" placeholder="MM/AAAA">
-                    </div>
-                `;
-            }
-
-            html += `</div></div>`;
-            document.getElementById('area_preview_parcelas').innerHTML = html;
-        }
-
-        function salvarTituloFinanceiroCompleto(tituloId = '') {
-            const tipo = document.getElementById('fin_tipo').value;
-            const valor = parseFloat(document.getElementById('fin_valor').value) || 0;
-            const historico = document.getElementById('fin_historico').value.trim();
-            const fornecedor = document.getElementById('fin_fornecedor').value.trim();
-            const comp = document.getElementById('fin_competencia') ? document.getElementById('fin_competencia').value.trim() : '';
-            const venc = document.getElementById('fin_vencimento').value;
-
-            if (!historico || !valor || !venc) {
-                alert('Preencha os campos obrigatórios!');
-                return;
-            }
-
-            if (tituloId) {
-                const item = db.financeiro.find(x => x.id === tituloId);
-                if (item) {
-                    item.tipo = tipo;
-                    item.valor = valor;
-                    item.historico = historico;
-                    item.fornecedor = fornecedor;
-                    item.competencia = comp || venc.substr(0,7).split('-').reverse().join('/');
-                    item.vencimento = venc;
-                    registrarLog('Financeiro', 'Edição', `Título "${historico}" modificado.`);
-                }
-            } else {
-                const chk = document.getElementById('chk_recorrencia');
-                const isRec = chk ? chk.checked : false;
-
-                if (isRec && document.querySelectorAll('.rec_item_venc').length > 0) {
-                    const vencs = document.querySelectorAll('.rec_item_venc');
-                    const comps = document.querySelectorAll('.rec_item_comp');
-
-                    vencs.forEach((el, idx) => {
-                        db.financeiro.push({
-                            id: 'fin_' + Date.now() + '_' + idx,
-                            tipo: tipo,
-                            historico: `${historico} (${idx+1}/${vencs.length})`,
-                            valor: valor,
-                            vencimento: el.value,
-                            competencia: comps[idx].value,
-                            fornecedor: fornecedor,
-                            status: 'Aberto'
-                        });
-                    });
-                    registrarLog('Financeiro', 'Recorrência Gerada', `${vencs.length} parcelas de "${historico}" criadas.`);
-                } else {
-                    db.financeiro.push({
-                        id: 'fin_' + Date.now(),
-                        tipo: tipo,
-                        historico: historico,
-                        valor: valor,
-                        vencimento: venc,
-                        competencia: comp || venc.substr(0,7).split('-').reverse().join('/'),
-                        fornecedor: fornecedor,
-                        status: 'Aberto'
-                    });
-                    registrarLog('Financeiro', 'Título Criado', `Título "${historico}" gravado.`);
-                }
-            }
-
-            salvarDados(db);
-            fecharModal('modal_fin');
-            renderApp();
-        }
-
-        // ==========================================
-        // 11. ESTOQUE DE PRODUTOS
-        // ==========================================
-        function renderEstoqueView() {
-            const list = db.estoque || [];
-            const criticos = list.filter(i => i.qtd <= i.minimo);
-
-            return `
-                <div class="space-y-4">
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                            <p class="text-xs font-bold text-slate-500 uppercase">Total de Itens</p>
-                            <h3 class="text-xl font-extrabold text-slate-800">${list.length} Produtos</h3>
-                        </div>
-                        <div class="bg-white p-4 rounded-xl shadow-sm border border-rose-200 bg-rose-50/30">
-                            <p class="text-xs font-bold text-rose-800 uppercase">Itens em Alerta Crítico (≤ Mínimo)</p>
-                            <h3 class="text-xl font-extrabold text-rose-600">${criticos.length} Produtos</h3>
-                        </div>
-                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                            <p class="text-xs font-bold text-slate-500 uppercase">Soma de Cota Máxima</p>
-                            <h3 class="text-xl font-extrabold text-teal-600">${list.reduce((a,b)=>a+(b.maximo||0),0)} Unidades</h3>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs">
-                                <thead class="bg-slate-100 text-slate-600 font-bold uppercase border-b">
-                                    <tr>
-                                        <th class="p-3">Item / Produto</th>
-                                        <th class="p-3">Categoria</th>
-                                        <th class="p-3">Qtd Atual</th>
-                                        <th class="p-3">Mínimo</th>
-                                        <th class="p-3">Máximo</th>
-                                        <th class="p-3">Status do Sensor</th>
-                                        <th class="p-3 text-right">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-200">
-                                    ${list.map(e => {
-                                        const isCritico = e.qtd <= e.minimo;
-                                        const isAtencao = !isCritico && e.qtd <= (e.minimo * 1.3);
-                                        return `
-                                            <tr class="hover:bg-slate-50">
-                                                <td class="p-3 font-bold text-slate-900">${escapeHTML(e.item)}</td>
-                                                <td class="p-3 text-slate-600">${escapeHTML(e.categoria)}</td>
-                                                <td class="p-3 font-extrabold text-slate-900">${e.qtd}</td>
-                                                <td class="p-3 text-slate-500">${e.minimo}</td>
-                                                <td class="p-3 text-slate-500">${e.maximo || 'N/A'}</td>
-                                                <td class="p-3">
-                                                    ${isCritico ? `
-                                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700 animate-pulse">
-                                                            <i class="fa-solid fa-triangle-exclamation"></i> Crítico (Comprar ${e.maximo ? e.maximo - e.qtd : 'Urgente'})
-                                                        </span>
-                                                    ` : isAtencao ? `
-                                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700">
-                                                            Atenção (Próximo Mínimo)
-                                                        </span>
-                                                    ` : `
-                                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700">
-                                                            Estoque Normal
-                                                        </span>
-                                                    `}
-                                                </td>
-                                                <td class="p-3 text-right space-x-1">
-                                                    <button onclick="renderModalEstoque('${e.id}')" title="Editar Item" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
-                                                    <button onclick="excluirItemGenerico('estoque', '${e.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
-                                                </td>
-                                            </tr>
-                                        `;
-                                    }).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderModalEstoque(itemId = null) {
-            const e = itemId ? db.estoque.find(x => x.id === itemId) : null;
-
-            const html = `
-                <div id="modal_est" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                <div id="modal_baixa" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
                         <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
-                            <h3 class="font-bold text-sm">${e ? 'Editar Item do Estoque' : 'Novo Item do Estoque'}</h3>
-                            <button onclick="fecharModal('modal_est')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                            <h3 class="font-bold text-sm">Liquidar / Baixar Título</h3>
+                            <button onclick="fecharModal('modal_baixa')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
                         </div>
-                        <form onsubmit="salvarEstoqueForm(event, '${itemId || ''}')" class="p-6 space-y-3">
+                        <form onsubmit="executarBaixaTitulo(event, '${f.id}')" class="p-6 space-y-4">
+                            <p class="text-xs font-bold text-slate-800">${escapeHTML(f.historico)} - Valor Original: <span class="text-teal-700">R$ ${f.valor.toFixed(2)}</span></p>
+
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nome do Produto</label>
-                                <input type="text" id="est_item" required value="${e ? escapeHTML(e.item) : ''}" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tipo de Baixa</label>
+                                <select id="bx_modalidade" onchange="toggleValorParcial()" class="w-full p-2 border rounded text-xs font-bold">
+                                    <option value="total">Baixa Total (Integral)</option>
+                                    <option value="parcial">Baixa Parcial (Gerar Título de Resíduo)</option>
+                                </select>
                             </div>
+
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Categoria</label>
-                                <input type="text" id="est_categoria" required value="${e ? escapeHTML(e.categoria) : ''}" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Valor Pago / Liquidado (R$)</label>
+                                <input type="number" step="0.01" id="bx_valor" value="${f.valor}" readonly required class="w-full p-2 border rounded text-xs font-bold bg-slate-100">
                             </div>
-                            <div class="grid grid-cols-3 gap-3">
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-700 uppercase mb-1">Qtd Atual</label>
-                                    <input type="number" id="est_qtd" required value="${e ? e.qtd : 0}" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-700 uppercase mb-1">Estoque Mínimo</label>
-                                    <input type="number" id="est_min" required value="${e ? e.minimo : 5}" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                                </div>
-                                <div>
-                                    <label class="block text-[10px] font-bold text-slate-700 uppercase mb-1">Estoque Máximo</label>
-                                    <input type="number" id="est_max" required value="${e ? (e.maximo || 30) : 30}" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                                </div>
-                            </div>
+
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Localização no Condomínio</label>
-                                <input type="text" id="est_local" value="${e ? escapeHTML(e.localizacao || '') : ''}" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Forma Monetária de Pagamento</label>
+                                <select id="bx_forma" class="w-full p-2 border rounded text-xs font-bold">
+                                    ${db.formas_monetarias.filter(m => m.status === 'Ativo').map(m => `<option value="${m.id}">${escapeHTML(m.nome)}</option>`).join('')}
+                                </select>
                             </div>
+
                             <div class="flex items-center justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModal('modal_est')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
-                                <button type="submit" class="px-3 py-1.5 bg-teal-600 text-white rounded text-xs font-bold">Salvar Item</button>
+                                <button type="button" onclick="fecharModal('modal_baixa')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
+                                <button type="submit" class="px-4 py-1.5 bg-emerald-600 text-white rounded text-xs font-bold">Confirmar Liquidação</button>
                             </div>
                         </form>
                     </div>
@@ -1199,239 +373,180 @@
             document.body.insertAdjacentHTML('beforeend', html);
         }
 
-        function salvarEstoqueForm(ev, itemId = '') {
-            ev.preventDefault();
-            const item = document.getElementById('est_item').value.trim();
-            const cat = document.getElementById('est_categoria').value.trim();
-            const qtd = parseInt(document.getElementById('est_qtd').value) || 0;
-            const min = parseInt(document.getElementById('est_min').value) || 0;
-            const max = parseInt(document.getElementById('est_max').value) || 0;
-            const local = document.getElementById('est_local').value.trim();
-
-            if (itemId) {
-                const e = db.estoque.find(x => x.id === itemId);
-                if (e) {
-                    e.item = item;
-                    e.categoria = cat;
-                    e.qtd = qtd;
-                    e.minimo = min;
-                    e.maximo = max;
-                    e.localizacao = local;
-                    registrarLog('Estoque', 'Edição', `Produto ${item} atualizado.`);
-                }
+        function toggleValorParcial() {
+            const mod = document.getElementById('bx_modalidade').value;
+            const inputVal = document.getElementById('bx_valor');
+            if (mod === 'parcial') {
+                inputVal.removeAttribute('readonly');
+                inputVal.classList.remove('bg-slate-100');
             } else {
-                db.estoque.push({
-                    id: 'est_' + Date.now(),
-                    item: item,
-                    categoria: cat,
-                    qtd: qtd,
-                    minimo: min,
-                    maximo: max,
-                    localizacao: local
+                inputVal.setAttribute('readonly', 'true');
+                inputVal.classList.add('bg-slate-100');
+            }
+        }
+
+        function executarBaixaTitulo(e, id) {
+            e.preventDefault();
+            const f = db.financeiro.find(x => x.id === id);
+            if (!f) return;
+
+            const mod = document.getElementById('bx_modalidade').value;
+            const valPago = parseFloat(document.getElementById('bx_valor').value) || 0;
+            const formaId = document.getElementById('bx_forma').value;
+
+            if (valPago <= 0 || valPago > f.valor) {
+                alert('Valor pago inválido!');
+                return;
+            }
+
+            if (mod === 'parcial' && valPago < f.valor) {
+                const residuo = f.valor - valPago;
+                f.valor = valPago;
+                f.status = 'Baixado';
+                f.formaMonetariaId = formaId;
+
+                db.financeiro.push({
+                    id: 'fin_' + Date.now(),
+                    tipo: f.tipo,
+                    historico: `${f.historico} (Resíduo)`,
+                    valor: residuo,
+                    vencimento: f.vencimento,
+                    competencia: f.competencia,
+                    fornecedor: f.fornecedor,
+                    status: 'Aberto'
                 });
-                registrarLog('Estoque', 'Criação', `Produto ${item} criado no estoque.`);
+
+                registrarLog('Financeiro', 'Baixa Parcial', `Título "${f.historico}" baixado em R$ ${valPago}. Criado resíduo de R$ ${residuo}.`);
+            } else {
+                f.status = 'Baixado';
+                f.formaMonetariaId = formaId;
+                registrarLog('Financeiro', 'Baixa Total', `Título "${f.historico}" liquidado totalmente.`);
             }
 
             salvarDados(db);
-            fecharModal('modal_est');
+            fecharModal('modal_baixa');
             renderApp();
         }
 
         // ==========================================
-        // 12. RELATÓRIOS CONSOLIDADOS & DRE
+        // MÓDULO FORMAS MONETÁRIAS
+        // ==========================================
+        function renderFormasMonetariasView() {
+            return `
+                <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-100 font-bold uppercase border-b">
+                            <tr>
+                                <th class="p-3">Nome do Meio de Pagamento</th>
+                                <th class="p-3">Conta Bancária Vinculada</th>
+                                <th class="p-3">Liquidação Imediata?</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y">
+                            ${db.formas_monetarias.map(m => {
+                                const conta = db.contas_bancarias.find(c => c.id === m.contaId);
+                                return `
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="p-3 font-bold text-slate-800">${escapeHTML(m.nome)}</td>
+                                        <td class="p-3 font-semibold text-teal-700">${conta ? escapeHTML(conta.banco) : 'Sem vínculo'}</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.baixaAutomatica ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}">${m.baixaAutomatica ? 'Sim (Liquida na hora)' : 'Não (Compensação Pendente)'}</span></td>
+                                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.status === 'Ativo' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${m.status}</span></td>
+                                        <td class="p-3 text-right space-x-1">
+                                            <button onclick="toggleStatusForma('${m.id}')" class="p-1.5 text-amber-600 hover:bg-amber-50 rounded" title="Alternar Status"><i class="fa-solid fa-ban"></i></button>
+                                            <button onclick="excluirItemGenerico('formas_monetarias', '${m.id}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Excluir"><i class="fa-solid fa-trash-can"></i></button>
+                                        </td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function renderModalFormaMonetaria() {
+            const html = `
+                <div id="modal_fm" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+                            <h3 class="font-bold text-sm">Nova Forma Monetária</h3>
+                            <button onclick="fecharModal('modal_fm')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <form onsubmit="salvarFormaMonetaria(event)" class="p-6 space-y-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nome do Meio / Forma</label>
+                                <input type="text" id="fm_nome" required placeholder="Ex: Cartão de Débito" class="w-full p-2 border rounded text-xs font-bold">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Conta Bancária / Caixa de Destino</label>
+                                <select id="fm_conta" class="w-full p-2 border rounded text-xs font-bold">
+                                    ${db.contas_bancarias.map(c => `<option value="${c.id}">${escapeHTML(c.banco)}</option>`).join('')}
+                                </select>
+                            </div>
+                            <label class="flex items-center gap-2 cursor-pointer pt-2 font-bold text-xs text-teal-800">
+                                <input type="checkbox" id="fm_baixa" checked class="rounded text-teal-600 w-4 h-4">
+                                Liquidar e baixar automaticamente ao selecionar
+                            </label>
+                            <div class="flex items-center justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModal('modal_fm')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
+                                <button type="submit" class="px-3 py-1.5 bg-teal-600 text-white rounded text-xs font-bold">Salvar Forma</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        function salvarFormaMonetaria(e) {
+            e.preventDefault();
+            const nome = document.getElementById('fm_nome').value.trim();
+            const contaId = document.getElementById('fm_conta').value;
+            const baixa = document.getElementById('fm_baixa').checked;
+
+            db.formas_monetarias.push({ id: 'fm_' + Date.now(), nome, contaId, baixaAutomatica: baixa, status: 'Ativo' });
+            salvarDados(db);
+            fecharModal('modal_fm');
+            renderApp();
+        }
+
+        function toggleStatusForma(id) {
+            const m = db.formas_monetarias.find(x => x.id === id);
+            if (m) {
+                m.status = m.status === 'Ativo' ? 'Inativo' : 'Ativo';
+                salvarDados(db);
+                renderApp();
+            }
+        }
+
+        // ==========================================
+        // DRE & DEMAIS COMPONENTES
         // ==========================================
         function renderRelatoriosView() {
             const recTotal = db.financeiro.filter(f => f.tipo === 'Receber' && f.status === 'Baixado').reduce((a, b) => a + b.valor, 0);
             const pagTotal = db.financeiro.filter(f => f.tipo === 'Pagar' && f.status === 'Baixado').reduce((a, b) => a + b.valor, 0);
             const pendTotal = db.financeiro.filter(f => f.tipo === 'Receber' && f.status === 'Aberto').reduce((a, b) => a + b.valor, 0);
 
-            const listDRE = (db.dre_config && db.dre_config.length > 0) ? db.dre_config : DEFAULT_DATA.dre_config;
-
-            const calculosDRE = {};
-            listDRE.forEach(item => {
-                if (item.tipo === 'direto') {
-                    if (item.operacao === 'somar_receitas') calculosDRE[item.id] = recTotal;
-                    else if (item.operacao === 'somar_pendencias') calculosDRE[item.id] = pendTotal;
-                    else if (item.operacao === 'somar_despesas') calculosDRE[item.id] = pagTotal;
-                } else if (item.tipo === 'formula') {
-                    let val = 0;
-                    if (item.formula === 'A - B') val = (calculosDRE['A'] || 0) - (calculosDRE['B'] || 0);
-                    else if (item.formula === 'C - D') val = (calculosDRE['C'] || 0) - (calculosDRE['D'] || 0);
-                    calculosDRE[item.id] = val;
-                }
-            });
+            const calculosDRE = { A: recTotal, B: pendTotal, C: recTotal - pendTotal, D: pagTotal, E: (recTotal - pendTotal) - pagTotal };
 
             return `
                 <div class="space-y-6">
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 no-print">
-                        <div class="flex items-center gap-2 w-full sm:w-auto">
-                            <button onclick="setPeriodoRelatorio('mes')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-bold">Este Mês</button>
-                            <button onclick="setPeriodoRelatorio('ano')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-bold">Ano Atual</button>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <button onclick="renderModalConfigDRE()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2.5 rounded-lg font-bold shadow-sm transition">
-                                <i class="fa-solid fa-gears"></i> Personalizar DRE / Fórmulas
-                            </button>
-                            <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs px-4 py-2.5 rounded-lg font-bold shadow-sm transition">
-                                <i class="fa-solid fa-print"></i> Imprimir / PDF
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border space-y-4">
                         <div class="flex items-center justify-between border-b pb-3">
-                            <div>
-                                <h3 class="font-bold text-base text-slate-800">Demonstração do Resultado do Exercício (DRE)</h3>
-                                <p class="text-xs text-slate-500">Apuração com estrutura e fórmulas configuráveis</p>
-                            </div>
-                            <span class="px-3 py-1 rounded-full text-xs font-extrabold ${(calculosDRE['E'] || 0) >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
-                                ${(calculosDRE['E'] || 0) >= 0 ? 'SUPERÁVIT' : 'DEFICIT'}: R$ ${Math.abs(calculosDRE['E'] || 0).toFixed(2)}
+                            <h3 class="font-bold text-base text-slate-800">Demonstração do Resultado do Exercício (DRE)</h3>
+                            <span class="px-3 py-1 rounded-full text-xs font-extrabold ${calculosDRE.E >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                                ${calculosDRE.E >= 0 ? 'SUPERÁVIT' : 'DEFICIT'}: R$ ${Math.abs(calculosDRE.E).toFixed(2)}
                             </span>
                         </div>
-
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs">
-                                <thead class="bg-slate-100 text-slate-600 font-bold uppercase border-b">
-                                    <tr>
-                                        <th class="p-3">Ref</th>
-                                        <th class="p-3">Descrição da Conta DRE</th>
-                                        <th class="p-3">Tipo / Indicação de Fórmula</th>
-                                        <th class="p-3 text-right">Valor Apurado (R$)</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-200">
-                                    ${listDRE.map(row => `
-                                        <tr class="${row.tipo === 'formula' ? 'bg-slate-50 font-bold' : ''}">
-                                            <td class="p-3 font-extrabold text-teal-700">${row.id}</td>
-                                            <td class="p-3 ${row.tipo === 'formula' ? 'text-slate-900' : 'text-slate-700'}">${escapeHTML(row.label)}</td>
-                                            <td class="p-3 text-slate-500 font-mono text-[10px]">
-                                                ${row.tipo === 'formula' ? `<span class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-bold">Fórmula: ${row.formula}</span>` : '<span class="bg-slate-200 px-2 py-0.5 rounded">Lançamento Direto</span>'}
-                                            </td>
-                                            <td class="p-3 text-right font-extrabold ${row.tipo === 'formula' ? 'text-teal-900 text-sm' : 'text-slate-800'}">
-                                                R$ ${(calculosDRE[row.id] || 0).toFixed(2)}
-                                            </td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function setPeriodoRelatorio(tipo) {
-            if (tipo === 'mes') {
-                relatorioFiltros.dataInicio = '2026-10-01';
-                relatorioFiltros.dataFim = '2026-10-31';
-            } else {
-                relatorioFiltros.dataInicio = '2026-01-01';
-                relatorioFiltros.dataFim = '2026-12-31';
-            }
-            renderApp();
-        }
-
-        function renderModalConfigDRE() {
-            const listDRE = (db.dre_config && db.dre_config.length > 0) ? db.dre_config : DEFAULT_DATA.dre_config;
-
-            const html = `
-                <div id="modal_dre_cfg" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
-                    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
-                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
-                            <h3 class="font-bold text-sm">Personalizar Estrutura & Fórmulas da DRE</h3>
-                            <button onclick="fecharModal('modal_dre_cfg')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-                        </div>
-                        <div class="p-6 space-y-4">
-                            <p class="text-xs text-slate-600">Edite as fórmulas de cálculo e os rótulos das contas da DRE:</p>
-                            <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
-                                ${listDRE.map(item => `
-                                    <div class="p-2 border rounded bg-slate-50 space-y-1">
-                                        <div class="flex items-center justify-between">
-                                            <span class="font-bold text-xs text-teal-700">Linha [${item.id}]</span>
-                                            <span class="text-[10px] text-slate-400 uppercase font-bold">${item.tipo}</span>
-                                        </div>
-                                        <input type="text" value="${escapeHTML(item.label)}" class="dre_label_input w-full p-1 border rounded text-xs text-slate-900 font-bold" data-id="${item.id}">
-                                        ${item.tipo === 'formula' ? `
-                                            <input type="text" value="${escapeHTML(item.formula)}" class="dre_formula_input w-full p-1 border rounded text-xs font-mono text-purple-700 font-bold" data-id="${item.id}" placeholder="Ex: A - B">
-                                        ` : ''}
-                                    </div>
-                                `).join('')}
-                            </div>
-                            <div class="flex items-center justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModal('modal_dre_cfg')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
-                                <button type="button" onclick="salvarConfigDRE()" class="px-3 py-1.5 bg-teal-600 text-white rounded text-xs font-bold">Salvar Fórmulas</button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', html);
-        }
-
-        function salvarConfigDRE() {
-            const labels = document.querySelectorAll('.dre_label_input');
-            const formulas = document.querySelectorAll('.dre_formula_input');
-
-            if (!db.dre_config) db.dre_config = DEFAULT_DATA.dre_config;
-
-            labels.forEach(input => {
-                const id = input.getAttribute('data-id');
-                const item = db.dre_config.find(x => x.id === id);
-                if (item) item.label = input.value.trim();
-            });
-
-            formulas.forEach(input => {
-                const id = input.getAttribute('data-id');
-                const item = db.dre_config.find(x => x.id === id);
-                if (item) item.formula = input.value.trim();
-            });
-
-            salvarDados(db);
-            registrarLog('DRE', 'Fórmulas Atualizadas', 'Estrutura da DRE reconfigurada.');
-            fecharModal('modal_dre_cfg');
-            renderApp();
-        }
-
-        // ==========================================
-        // 13. MORADORES, USUÁRIOS E OUTROS
-        // ==========================================
-        function renderMoradoresView() {
-            const list = db.moradores || [];
-            return `
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="overflow-x-auto">
                         <table class="w-full text-left text-xs">
-                            <thead class="bg-slate-100 text-slate-600 font-bold uppercase border-b">
-                                <tr>
-                                    <th class="p-3">Bloco / Ap</th>
-                                    <th class="p-3">Nome do Morador</th>
-                                    <th class="p-3">Contato</th>
-                                    <th class="p-3">Tipo</th>
-                                    <th class="p-3">Taxa de Mudança</th>
-                                    <th class="p-3 text-right">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-200">
-                                ${list.map(m => `
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="p-3 font-bold text-slate-900">${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</td>
-                                        <td class="p-3 font-bold text-slate-800">${escapeHTML(m.nome)}</td>
-                                        <td class="p-3 text-slate-600">
-                                            <p>${escapeHTML(m.telefone)}</p>
-                                            <p class="text-[10px] text-slate-400">${escapeHTML(m.email)}</p>
-                                        </td>
-                                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.tipo === 'Proprietário' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}">${escapeHTML(m.tipo)}</span></td>
-                                        <td class="p-3">
-                                            ${m.tipo === 'Inquilino' ? `
-                                                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.taxaMudanca === 'Sim' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
-                                                    ${m.taxaMudanca === 'Sim' ? 'Pagou Taxa (Sim)' : 'Pendente (Não)'}
-                                                </span>
-                                            ` : '<span class="text-slate-400">N/A</span>'}
-                                        </td>
-                                        <td class="p-3 text-right space-x-1">
-                                            <button onclick="renderModalMorador('${m.id}')" title="Editar Morador" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
-                                            <button onclick="excluirItemGenerico('moradores', '${m.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
-                                        </td>
+                            <tbody class="divide-y">
+                                ${(db.dre_config || []).map(row => `
+                                    <tr class="${row.tipo === 'formula' ? 'bg-slate-50 font-bold' : ''}">
+                                        <td class="p-3 font-extrabold text-teal-700">${row.id}</td>
+                                        <td class="p-3">${escapeHTML(row.label)}</td>
+                                        <td class="p-3 text-right font-bold">R$ ${(calculosDRE[row.id] || 0).toFixed(2)}</td>
                                     </tr>
                                 `).join('')}
                             </tbody>
@@ -1441,587 +556,66 @@
             `;
         }
 
-        function renderModalMorador(moradorId = null) {
-            const m = moradorId ? db.moradores.find(x => x.id === moradorId) : null;
-
-            const html = `
-                <div id="modal_mor" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
-                    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
-                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
-                            <h3 class="font-bold text-sm">${m ? 'Editar Morador' : 'Novo Cadastro - Morador'}</h3>
-                            <button onclick="fecharModal('modal_mor')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-                        </div>
-                        <form onsubmit="salvarMoradorForm(event, '${moradorId || ''}')" class="p-6 space-y-3">
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Bloco</label>
-                                    <input type="text" id="mor_bloco" required value="${m ? escapeHTML(m.bloco) : ''}" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Apartamento</label>
-                                    <input type="text" id="mor_ap" required value="${m ? escapeHTML(m.apartamento) : ''}" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nome Completo</label>
-                                <input type="text" id="mor_nome" required value="${m ? escapeHTML(m.nome) : ''}" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                            </div>
-
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">E-mail</label>
-                                    <input type="email" id="mor_email" required value="${m ? escapeHTML(m.email) : ''}" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Telefone / WhatsApp</label>
-                                    <input type="text" id="mor_tel" required value="${m ? escapeHTML(m.telefone) : ''}" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tipo de Morador</label>
-                                <select id="mor_tipo" onchange="toggleBoxTaxaMudanca()" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                                    <option value="Proprietário" ${m && m.tipo === 'Proprietário' ? 'selected' : ''}>Proprietário</option>
-                                    <option value="Inquilino" ${m && m.tipo === 'Inquilino' ? 'selected' : ''}>Inquilino</option>
-                                </select>
-                            </div>
-
-                            <div id="box_taxa_mudanca" class="${m && m.tipo === 'Inquilino' ? '' : 'hidden'} p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                                <label class="block text-xs font-bold text-amber-900 uppercase mb-1">Taxa de Mudança Pagou?</label>
-                                <select id="mor_taxa" class="w-full p-2 border border-amber-300 rounded text-xs text-slate-900 font-bold">
-                                    <option value="Sim" ${m && m.taxaMudanca === 'Sim' ? 'selected' : ''}>Sim (Pagamento Confirmado)</option>
-                                    <option value="Não" ${m && m.taxaMudanca === 'Não' ? 'selected' : ''}>Não (Pendente de Pagamento)</option>
-                                </select>
-                            </div>
-
-                            <div class="flex items-center justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModal('modal_mor')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
-                                <button type="submit" class="px-3 py-1.5 bg-teal-600 text-white rounded text-xs font-bold">Salvar Morador</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', html);
-        }
-
-        function toggleBoxTaxaMudanca() {
-            const tipo = document.getElementById('mor_tipo').value;
-            document.getElementById('box_taxa_mudanca').classList.toggle('hidden', tipo !== 'Inquilino');
-        }
-
-        function salvarMoradorForm(e, moradorId = '') {
-            e.preventDefault();
-            const bloco = document.getElementById('mor_bloco').value.trim();
-            const ap = document.getElementById('mor_ap').value.trim();
-            const nome = document.getElementById('mor_nome').value.trim();
-            const email = document.getElementById('mor_email').value.trim();
-            const tel = document.getElementById('mor_tel').value.trim();
-            const tipo = document.getElementById('mor_tipo').value;
-            const taxa = tipo === 'Inquilino' ? document.getElementById('mor_taxa').value : 'N/A';
-
-            if (moradorId) {
-                const m = db.moradores.find(x => x.id === moradorId);
-                if (m) {
-                    m.bloco = bloco;
-                    m.apartamento = ap;
-                    m.nome = nome;
-                    m.email = email;
-                    m.telefone = tel;
-                    m.tipo = tipo;
-                    m.taxaMudanca = taxa;
-                    registrarLog('Moradores', 'Edição', `Morador ${nome} (Ap ${ap}) atualizado.`);
-                }
-            } else {
-                db.moradores.push({
-                    id: 'mor_' + Date.now(),
-                    bloco: bloco,
-                    apartamento: ap,
-                    nome: nome,
-                    email: email,
-                    telefone: tel,
-                    tipo: tipo,
-                    taxaMudanca: taxa,
-                    status: 'Ativo'
-                });
-                registrarLog('Moradores', 'Criação', `Morador ${nome} criado no Ap ${ap}.`);
-            }
-
-            salvarDados(db);
-            fecharModal('modal_mor');
-            renderApp();
-        }
-
-        function renderGenericDataList(modKey) {
-            const list = db[modKey] || [];
-            if (list.length === 0) {
-                return `
-                    <div class="bg-white p-8 rounded-xl shadow-sm border border-slate-200 text-center py-12">
-                        <div class="w-16 h-16 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-3 text-2xl">
-                            <i class="fa-solid fa-folder-open"></i>
-                        </div>
-                        <h3 class="text-base font-bold text-slate-800 mb-1">${MODULE_NAMES[modKey]}</h3>
-                        <p class="text-xs text-slate-500 mb-4">Nenhum registro cadastrado até o momento.</p>
-                    </div>
-                `;
-            }
-
-            const keys = Object.keys(list[0]).filter(k => k !== 'id' && k !== 'foto');
-
+        function renderDashboardView() {
             return `
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs">
-                            <thead class="bg-slate-100 text-slate-600 font-bold uppercase border-b">
-                                <tr>
-                                    ${keys.map(k => `<th class="p-3 capitalize">${k}</th>`).join('')}
-                                    <th class="p-3 text-right">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-200">
-                                ${list.map(item => `
-                                    <tr class="hover:bg-slate-50">
-                                        ${keys.map(k => `
-                                            <td class="p-3 font-semibold text-slate-800">${escapeHTML(String(item[k] || ''))}</td>
-                                        `).join('')}
-                                        <td class="p-3 text-right space-x-1">
-                                            <button onclick="renderModalGen('${modKey}', '${item.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
-                                            <button onclick="excluirItemGenerico('${modKey}', '${item.id}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Excluir"><i class="fa-solid fa-trash-can"></i></button>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-white p-4 rounded-xl border"><p class="text-xs font-bold text-slate-500 uppercase">Receitas em Aberto</p><h3 class="text-xl font-extrabold text-emerald-600">R$ ${db.financeiro.filter(f=>f.tipo==='Receber' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0).toFixed(2)}</h3></div>
+                    <div class="bg-white p-4 rounded-xl border"><p class="text-xs font-bold text-slate-500 uppercase">Despesas em Aberto</p><h3 class="text-xl font-extrabold text-rose-600">R$ ${db.financeiro.filter(f=>f.tipo==='Pagar' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0).toFixed(2)}</h3></div>
+                    <div class="bg-white p-4 rounded-xl border"><p class="text-xs font-bold text-slate-500 uppercase">Total de Moradores</p><h3 class="text-xl font-extrabold text-slate-800">${db.moradores.length}</h3></div>
                 </div>
             `;
         }
 
-        function renderModalGen(modKey, itemId = null) {
-            window.imagemAnexadaBase64 = '';
-            const cfg = getCamposConfigModulo(modKey);
-            if (!cfg) return;
-
-            const existingItem = itemId ? (db[modKey] || []).find(x => x.id === itemId) : null;
-
-            const html = `
-                <div id="modal_gen" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
-                    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
-                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
-                            <h3 class="font-bold text-sm">${existingItem ? 'Editar' : 'Novo Cadastro'} - ${cfg.nome}</h3>
-                            <button onclick="fecharModal('modal_gen')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-                        </div>
-                        <form onsubmit="salvarItemGenerico(event, '${modKey}', '${itemId || ''}')" class="p-6 space-y-3">
-                            ${cfg.campos.map(c => `
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">${c.label}</label>
-                                    <input type="text" data-key="${c.key}" required value="${existingItem ? escapeHTML(String(existingItem[c.key] || '')) : ''}" class="input_gen_field w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                                </div>
-                            `).join('')}
-
-                            <div class="p-3 bg-slate-50 rounded border text-center space-y-2">
-                                <p class="text-[10px] font-bold text-slate-500 uppercase">Foto / Anexo (Opcional)</p>
-                                <div class="flex justify-center gap-2">
-                                    <label class="px-2.5 py-1.5 bg-slate-200 hover:bg-slate-300 rounded text-xs font-bold cursor-pointer">
-                                        📁 Galeria <input type="file" accept="image/*" onchange="processarFotoModalGen(event)" class="hidden">
-                                    </label>
-                                    <label class="px-2.5 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded text-xs font-bold cursor-pointer">
-                                        📷 Tirar Foto <input type="file" accept="image/*" capture="environment" onchange="processarFotoModalGen(event)" class="hidden">
-                                    </label>
-                                </div>
-                                <p id="lbl_foto_gen" class="text-[10px] text-emerald-600 font-bold hidden"><i class="fa-solid fa-check"></i> Imagem anexada!</p>
-                            </div>
-
-                            <div class="flex items-center justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModal('modal_gen')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
-                                <button type="submit" class="px-3 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded text-xs font-bold">Salvar Registro</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', html);
-        }
-
-        async function processarFotoModalGen(e) {
-            const file = e.target.files[0];
-            if (file) {
-                window.imagemAnexadaBase64 = await compressImage(file);
-                const lbl = document.getElementById('lbl_foto_gen');
-                if (lbl) lbl.classList.remove('hidden');
-            }
-        }
-
-        window.salvarItemGenerico = function(e, modKey, itemId = '') {
-            e.preventDefault();
-            const inputs = document.querySelectorAll('.input_gen_field');
-
-            if (!db[modKey]) db[modKey] = [];
-
-            if (itemId) {
-                const idx = db[modKey].findIndex(x => x.id === itemId);
-                if (idx !== -1) {
-                    inputs.forEach(input => {
-                        const key = input.getAttribute('data-key');
-                        let val = input.value.trim();
-                        if (key === 'saldo' || key === 'valor' || key === 'qtd') val = parseFloat(val) || 0;
-                        db[modKey][idx][key] = val;
-                    });
-                    if (window.imagemAnexadaBase64) db[modKey][idx].foto = window.imagemAnexadaBase64;
-                    registrarLog(MODULE_NAMES[modKey] || modKey, 'Edição', `Registro ${itemId} atualizado.`);
-                }
-            } else {
-                const novoObjeto = { id: modKey.substr(0, 3) + '_' + Date.now() };
-                inputs.forEach(input => {
-                    const key = input.getAttribute('data-key');
-                    let val = input.value.trim();
-                    if (key === 'saldo' || key === 'valor' || key === 'qtd') val = parseFloat(val) || 0;
-                    novoObjeto[key] = val;
-                });
-                if (window.imagemAnexadaBase64) novoObjeto.foto = window.imagemAnexadaBase64;
-                db[modKey].push(novoObjeto);
-                registrarLog(MODULE_NAMES[modKey] || modKey, 'Criação', `Novo registro salvo.`);
-            }
-
-            salvarDados(db);
-            fecharModal('modal_gen');
-            renderApp();
-        };
-
-        function excluirItemGenerico(modKey, itemId) {
-            if (confirm('Tem certeza de que deseja excluir este registo?')) {
-                db[modKey] = db[modKey].filter(x => x.id !== itemId);
-                registrarLog(MODULE_NAMES[modKey] || modKey, 'Exclusão', `Registro ${itemId} removido.`);
-                salvarDados(db);
-                renderApp();
-            }
-        }
-
-        // ==========================================
-        // 14. TELA DE LOGIN COM MODO TECNOLOGIA PADRÃO E CANVAS ANIMADO
-        // ==========================================
-        function toggleTechMode() {
-            isTechMode = !isTechMode;
-            if (!isTechMode && matrixInterval) clearInterval(matrixInterval);
-            renderApp();
-        }
+        function renderDashboardCharts() {}
 
         function renderTelaLogin() {
             return `
-                <div class="min-h-screen relative overflow-hidden ${isTechMode ? 'tech-mode' : 'bg-slate-900'} flex items-center justify-center p-4 transition-all duration-300">
-                    
-                    ${isTechMode ? '<canvas id="matrixCanvas" class="absolute inset-0 pointer-events-none opacity-40 z-0"></canvas>' : ''}
-
-                    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden relative z-10 ${isTechMode ? 'tech-card' : ''}">
-                        <div class="p-8 text-center ${isTechMode ? 'bg-slate-950 text-cyan-400 border-b border-cyan-800' : 'bg-slate-950 text-white'}">
-                            <div class="w-16 h-16 ${isTechMode ? 'bg-cyan-900/50 text-cyan-400 border border-cyan-500 shadow-cyan-500/50 shadow-lg' : 'bg-teal-600'} rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg text-3xl">
-                                <i class="fa-solid fa-shield-halved"></i>
-                            </div>
+                <div class="min-h-screen relative overflow-hidden tech-mode flex items-center justify-center p-4">
+                    <canvas id="matrixCanvas" class="absolute inset-0 pointer-events-none opacity-40 z-0"></canvas>
+                    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden relative z-10 tech-card">
+                        <div class="p-8 text-center bg-slate-950 text-cyan-400 border-b border-cyan-800">
+                            <div class="w-16 h-16 bg-cyan-900/50 text-cyan-400 border border-cyan-500 shadow-cyan-500/50 shadow-lg rounded-2xl flex items-center justify-center mx-auto mb-3 text-3xl"><i class="fa-solid fa-shield-halved"></i></div>
                             <h2 class="text-2xl font-bold tracking-wide">Guardiões do Bravo</h2>
-                            <p class="text-xs ${isTechMode ? 'text-cyan-400 font-mono' : 'text-teal-400 font-semibold'} uppercase mt-1">
-                                Gestão Condominial Segura
-                            </p>
+                            <p class="text-xs text-cyan-400 font-mono uppercase mt-1">Gestão Condominial Segura</p>
                         </div>
                         <form onsubmit="realizarLogin(event)" class="p-8 space-y-5">
-                            <div>
-                                <label class="block text-xs font-bold ${isTechMode ? 'text-cyan-300' : 'text-slate-700'} uppercase mb-1">
-                                    Usuário / E-mail
-                                </label>
-                                <input type="text" id="login_user" required placeholder="Digite seu usuário" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 font-bold ${isTechMode ? 'tech-input' : ''}">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold ${isTechMode ? 'text-cyan-300' : 'text-slate-700'} uppercase mb-1">
-                                    Senha
-                                </label>
-                                <div class="relative">
-                                    <input type="password" id="login_pass" required placeholder="••••••••" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 font-bold pr-10 ${isTechMode ? 'tech-input' : ''}">
-                                    <button type="button" onclick="toggleEye('login_pass', 'eye_icon')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400">
-                                        <i id="eye_icon" class="fa-solid fa-eye"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="flex items-center justify-between">
-                                <label class="flex items-center gap-2 text-xs font-medium ${isTechMode ? 'text-cyan-400' : 'text-slate-600'} cursor-pointer">
-                                    <input type="checkbox" id="login_remember" class="rounded border-slate-300 text-teal-600 w-4 h-4">
-                                    Lembrar-me neste navegador
-                                </label>
-                                <button type="button" onclick="toggleTechMode()" class="text-[11px] font-bold ${isTechMode ? 'text-cyan-300 hover:text-white' : 'text-teal-600 hover:text-teal-800'} underline">
-                                    ${isTechMode ? 'Modo Padrão' : '⚡ Modo Tecnologia'}
-                                </button>
-                            </div>
-                            <button type="submit" class="w-full py-3 ${isTechMode ? 'bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-mono shadow-cyan-500/50 shadow-md' : 'bg-teal-600 hover:bg-teal-700 text-white'} font-bold rounded-lg shadow-md transition">
-                                Acessar Painel
-                            </button>
+                            <div><label class="block text-xs font-bold uppercase mb-1">Usuário / E-mail</label><input type="text" id="login_user" required class="w-full p-2.5 rounded text-sm font-bold tech-input"></div>
+                            <div><label class="block text-xs font-bold uppercase mb-1">Senha</label><input type="password" id="login_pass" required class="w-full p-2.5 rounded text-sm font-bold tech-input"></div>
+                            <button type="submit" class="w-full py-3 bg-cyan-600 text-slate-950 font-mono font-bold rounded shadow-md">Acessar Painel</button>
                         </form>
                     </div>
                 </div>
             `;
         }
 
-        function toggleEye(inputId, eyeId) {
-            const input = document.getElementById(inputId);
-            const eye = document.getElementById(eyeId);
-            if (input.type === 'password') {
-                input.type = 'text';
-                eye.className = 'fa-solid fa-eye-slash';
-            } else {
-                input.type = 'password';
-                eye.className = 'fa-solid fa-eye';
-            }
-        }
-
-        function renderUsuariosView() {
-            return `
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs">
-                            <thead class="bg-slate-100 text-slate-600 font-bold uppercase border-b">
-                                <tr>
-                                    <th class="p-3">Usuário</th>
-                                    <th class="p-3">Nome / E-mail</th>
-                                    <th class="p-3">Perfil</th>
-                                    <th class="p-3">Status</th>
-                                    <th class="p-3 text-right">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-200">
-                                ${db.usuarios.map(u => `
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="p-3 font-bold text-slate-900">${escapeHTML(u.usuario)}</td>
-                                        <td class="p-3">
-                                            <p class="font-bold text-slate-800">${escapeHTML(u.nome)}</p>
-                                            <p class="text-slate-500">${escapeHTML(u.email)}</p>
-                                        </td>
-                                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-800">${escapeHTML(u.perfil)}</span></td>
-                                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${u.status === 'Ativo' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${escapeHTML(u.status)}</span></td>
-                                        <td class="p-3 text-right space-x-1">
-                                            <button onclick="renderModalUsuario('${u.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
-                                            <button onclick="toggleStatusUsuario('${u.id}')" class="p-1.5 text-amber-600 hover:bg-amber-50 rounded" title="Status"><i class="fa-solid fa-user-slash"></i></button>
-                                            <button onclick="excluirUsuario('${u.id}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Excluir"><i class="fa-solid fa-trash-can"></i></button>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderModalUsuario(userId = null) {
-            const u = userId ? db.usuarios.find(x => x.id === userId) : null;
-            const html = `
-                <div id="modal_usr" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
-                    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
-                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
-                            <h3 class="font-bold text-sm">${u ? 'Editar Usuário' : 'Novo Usuário'}</h3>
-                            <button onclick="fecharModal('modal_usr')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-                        </div>
-                        <form onsubmit="salvarUsuarioForm(event, '${userId || ''}')" class="p-6 space-y-3">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Usuário</label>
-                                <input type="text" id="usr_login" required value="${u ? escapeHTML(u.usuario) : ''}" ${u ? 'readonly bg-slate-100' : ''} class="w-full p-2 border rounded text-xs text-slate-900 font-bold">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nome Completo</label>
-                                <input type="text" id="usr_nome" required value="${u ? escapeHTML(u.nome) : ''}" class="w-full p-2 border rounded text-xs text-slate-900 font-bold">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">E-mail</label>
-                                <input type="email" id="usr_email" required value="${u ? escapeHTML(u.email) : ''}" class="w-full p-2 border rounded text-xs text-slate-900 font-bold">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Perfil</label>
-                                <select id="usr_perfil" class="w-full p-2 border rounded text-xs text-slate-900 font-bold">
-                                    <option value="Admin" ${u && u.perfil === 'Admin' ? 'selected' : ''}>Admin</option>
-                                    <option value="Operador" ${u && u.perfil === 'Operador' ? 'selected' : ''}>Operador</option>
-                                    <option value="Leitura" ${u && u.perfil === 'Leitura' ? 'selected' : ''}>Leitura</option>
-                                </select>
-                            </div>
-                            ${!u ? `
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Senha Inicial</label>
-                                <input type="password" id="usr_senha" required class="w-full p-2 border rounded text-xs text-slate-900 font-bold">
-                            </div>
-                            ` : ''}
-                            <div class="flex items-center justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModal('modal_usr')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
-                                <button type="submit" class="px-3 py-1.5 bg-teal-600 text-white rounded text-xs font-bold">Salvar</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', html);
-        }
-
-        function salvarUsuarioForm(e, userId) {
-            e.preventDefault();
-            const login = document.getElementById('usr_login').value.trim();
-            const nome = document.getElementById('usr_nome').value.trim();
-            const email = document.getElementById('usr_email').value.trim();
-            const perfil = document.getElementById('usr_perfil').value;
-
-            if (userId) {
-                const u = db.usuarios.find(x => x.id === userId);
-                if (u) {
-                    u.nome = nome;
-                    u.email = email;
-                    u.perfil = perfil;
-                    registrarLog('Usuários', 'Edição', `Usuário ${u.usuario} modificado.`);
-                }
-            } else {
-                const senha = document.getElementById('usr_senha').value;
-                if (!validarSenhaForte(senha)) {
-                    alert('A senha exige no mínimo 8 caracteres (A-Z, a-z, 0-9 e caractere especial)!');
-                    return;
-                }
-                db.usuarios.push({
-                    id: 'usr_' + Date.now(),
-                    usuario: login,
-                    nome: nome,
-                    email: email,
-                    perfil: perfil,
-                    status: 'Ativo',
-                    primeiroAcesso: true,
-                    senhaHash: senha
+        function iniciarAnimacaoMatrix() {
+            const canvas = document.getElementById('matrixCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            const chars = '0123456789ABCDEFGUARDIOSBRAVO';
+            const drops = Array(Math.floor(canvas.width / 14)).fill(1);
+            if (matrixInterval) clearInterval(matrixInterval);
+            matrixInterval = setInterval(() => {
+                ctx.fillStyle = 'rgba(3, 7, 18, 0.08)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.fillStyle = '#06b6d4';
+                ctx.font = '14px monospace';
+                drops.forEach((y, i) => {
+                    ctx.fillText(chars.charAt(Math.floor(Math.random() * chars.length)), i * 14, y * 14);
+                    if (y * 14 > canvas.height && Math.random() > 0.975) drops[i] = 0;
+                    drops[i]++;
                 });
-                registrarLog('Usuários', 'Criação', `Usuário ${login} criado.`);
-            }
-
-            salvarDados(db);
-            fecharModal('modal_usr');
-            renderApp();
+            }, 33);
         }
 
-        function toggleStatusUsuario(userId) {
-            const u = db.usuarios.find(x => x.id === userId);
-            if (u) {
-                if (u.id === sessao.usuarioLogado.id) { alert('Não pode inativar o próprio usuário conectado.'); return; }
-                u.status = u.status === 'Ativo' ? 'Inativo' : 'Ativo';
-                registrarLog('Usuários', 'Status', `Usuário ${u.usuario} alterado para ${u.status}`);
+        function excluirItemGenerico(modKey, itemId) {
+            if (confirm('Deseja excluir este registro?')) {
+                db[modKey] = db[modKey].filter(x => x.id !== itemId);
                 salvarDados(db);
                 renderApp();
             }
-        }
-
-        function excluirUsuario(userId) {
-            const u = db.usuarios.find(x => x.id === userId);
-            if (u) {
-                if (u.id === sessao.usuarioLogado.id) { alert('Não pode excluir seu próprio usuário logado.'); return; }
-                if (confirm(`Excluir o usuário "${u.usuario}"?`)) {
-                    db.usuarios = db.usuarios.filter(x => x.id !== userId);
-                    registrarLog('Usuários', 'Exclusão', `Usuário ${u.usuario} removido.`);
-                    salvarDados(db);
-                    renderApp();
-                }
-            }
-        }
-
-        function renderModalTrocaSenhaObrigatoria() {
-            const html = `
-                <div id="modal_first" class="fixed inset-0 bg-slate-950/80 z-50 flex items-center justify-center p-4">
-                    <div class="bg-white w-full max-w-sm rounded-2xl p-6 text-center space-y-4">
-                        <h3 class="font-bold text-slate-800 text-base">Primeiro Acesso Detectado</h3>
-                        <p class="text-xs text-slate-500">Cadastre uma nova senha pessoal forte para continuar.</p>
-                        <form onsubmit="salvarNovaSenhaPrimeiroAcesso(event)" class="space-y-3 text-left">
-                            <input type="password" id="p1" required placeholder="Nova Senha" class="w-full p-2 border rounded text-xs text-slate-900 font-bold">
-                            <input type="password" id="p2" required placeholder="Confirme a Senha" class="w-full p-2 border rounded text-xs text-slate-900 font-bold">
-                            <button type="submit" class="w-full py-2 bg-teal-600 text-white font-bold rounded text-xs">Atualizar e Entrar</button>
-                        </form>
-                    </div>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', html);
-        }
-
-        function salvarNovaSenhaPrimeiroAcesso(e) {
-            e.preventDefault();
-            const p1 = document.getElementById('p1').value;
-            const p2 = document.getElementById('p2').value;
-            if (p1 !== p2) { alert('Senhas não coincidem!'); return; }
-            if (!validarSenhaForte(p1)) { alert('Senha fraca! Use 8+ caracteres, maiúscula, número e símbolo.'); return; }
-
-            const u = db.usuarios.find(x => x.id === sessao.usuarioLogado.id);
-            if (u) {
-                u.senhaHash = p1;
-                u.primeiroAcesso = false;
-                sessao.usuarioLogado.primeiroAcesso = false;
-                salvarDados(db);
-                fecharModal('modal_first');
-                iniciarMonitorInatividade();
-                renderApp();
-                setTimeout(iniciarTourGuiado, 500);
-            }
-        }
-
-        function renderModalAuditLog(moduloKey = '') {
-            const logs = moduloKey ? db.logs.filter(l => l.modulo.toLowerCase() === moduloKey.toLowerCase()) : db.logs;
-            const html = `
-                <div id="modal_audit" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
-                    <div class="bg-white w-full max-w-3xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[80vh]">
-                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
-                            <h3 class="font-bold text-sm">Histórico de Auditoria ${moduloKey ? `- ${MODULE_NAMES[moduloKey] || moduloKey}` : ''}</h3>
-                            <button onclick="fecharModal('modal_audit')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
-                        </div>
-                        <div class="p-4 overflow-y-auto flex-1">
-                            <table class="w-full text-left text-xs">
-                                <thead class="bg-slate-100 font-bold border-b">
-                                    <tr>
-                                        <th class="p-2">Data/Hora</th>
-                                        <th class="p-2">Módulo</th>
-                                        <th class="p-2">Ação</th>
-                                        <th class="p-2">Usuário</th>
-                                        <th class="p-2">Detalhes</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y">
-                                    ${logs.map(l => `
-                                        <tr>
-                                            <td class="p-2 text-slate-500">${escapeHTML(l.dataHora)}</td>
-                                            <td class="p-2 font-bold">${escapeHTML(l.modulo)}</td>
-                                            <td class="p-2 font-bold text-teal-700">${escapeHTML(l.acao)}</td>
-                                            <td class="p-2 font-semibold">${escapeHTML(l.usuario)}</td>
-                                            <td class="p-2 text-slate-600">${escapeHTML(l.detalhe)}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', html);
-        }
-
-        function renderAuditLogView() {
-            return `
-                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4 overflow-x-auto">
-                    <table class="w-full text-left text-xs">
-                        <thead class="bg-slate-100 font-bold border-b">
-                            <tr>
-                                <th class="p-3">Data/Hora</th>
-                                <th class="p-3">Módulo</th>
-                                <th class="p-3">Ação</th>
-                                <th class="p-3">Usuário</th>
-                                <th class="p-3">Descrição</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y">
-                            ${db.logs.map(l => `
-                                <tr>
-                                    <td class="p-3 text-slate-500">${escapeHTML(l.dataHora)}</td>
-                                    <td class="p-3 font-bold">${escapeHTML(l.modulo)}</td>
-                                    <td class="p-3 font-bold text-teal-700">${escapeHTML(l.acao)}</td>
-                                    <td class="p-3 font-semibold">${escapeHTML(l.usuario)}</td>
-                                    <td class="p-3 text-slate-600">${escapeHTML(l.detalhe)}</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
         }
 
         function fecharModal(id) {
@@ -2029,10 +623,7 @@
             if (el) el.remove();
         }
 
-        window.addEventListener('DOMContentLoaded', () => {
-            if (sessao.usuarioLogado) iniciarMonitorInatividade();
-            renderApp();
-        });
+        window.addEventListener('DOMContentLoaded', () => { renderApp(); });
     </script>
 </body>
 </html>
