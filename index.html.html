@@ -34,7 +34,7 @@
         }
 
         @media print {
-            aside, header, .no-print, button { display: none !important; }
+            aside, header, .no-print, button, .actions-col { display: none !important; }
             body { background: white !important; color: black !important; }
             main { padding: 0 !important; }
         }
@@ -167,6 +167,38 @@
             }
         }
 
+        // ==========================================
+        // FUNÇÃO DE EXPORTAÇÃO EXCEL & PDF
+        // ==========================================
+        function exportarParaExcel(dados, nomeArquivo = 'relatorio.csv') {
+            if (!dados || dados.length === 0) {
+                alert('Não há dados disponíveis para exportação.');
+                return;
+            }
+            const keys = Object.keys(dados[0]);
+            let csvContent = '\uFEFF' + keys.join(';') + '\n';
+            dados.forEach(row => {
+                const values = keys.map(k => {
+                    let val = row[k] === null || row[k] === undefined ? '' : row[k];
+                    return `"${String(val).replace(/"/g, '""')}"`;
+                });
+                csvContent += values.join(';') + '\n';
+            });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = nomeArquivo.endsWith('.xlsx') || nomeArquivo.endsWith('.csv') ? nomeArquivo : nomeArquivo + '.csv';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function exportarParaPDF() {
+            window.print();
+        }
+
         function realizarLogin(e) {
             e.preventDefault();
             const userInput = document.getElementById('login_user').value.trim();
@@ -277,17 +309,27 @@
 
         function renderModuleContent(moduloId) {
             let btnNovoHtml = '';
+            let btnExportHtml = `
+                <button onclick="exportarParaPDF()" class="px-3 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-lg font-bold text-xs shadow transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-file-pdf"></i> Exportar PDF
+                </button>
+                <button onclick="exportarModuloExcel('${moduloId}')" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-xs shadow transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-file-excel"></i> Exportar Excel
+                </button>
+            `;
+
             if (moduloId === 'financeiro') btnNovoHtml = `<button onclick="renderModalNovoTitulo()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm"><i class="fa-solid fa-plus"></i> Novo Título</button>`;
             else if (moduloId === 'formas_monetarias') btnNovoHtml = `<button onclick="renderModalFormaMonetaria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm"><i class="fa-solid fa-plus"></i> Nova Forma Monetária</button>`;
             else if (moduloId === 'moradores') btnNovoHtml = `<button onclick="renderModalMorador()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm"><i class="fa-solid fa-plus"></i> Novo Morador</button>`;
             else if (moduloId === 'contas_bancarias') btnNovoHtml = `<button onclick="renderModalContaBancaria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm"><i class="fa-solid fa-plus"></i> Nova Conta Bancária</button>`;
             else if (moduloId === 'estoque') btnNovoHtml = `<button onclick="renderModalEstoque()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm"><i class="fa-solid fa-plus"></i> Novo Item no Estoque</button>`;
             else if (moduloId === 'usuarios') btnNovoHtml = `<button onclick="renderModalUsuario()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm"><i class="fa-solid fa-user-plus"></i> Novo Usuário</button>`;
+            else if (moduloId === 'relatorios') btnNovoHtml = `<button onclick="renderModalDRELinha()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm"><i class="fa-solid fa-plus"></i> Nova Linha / Fórmula DRE</button>`;
 
             const headerGlobal = `
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                     <div><h2 class="text-xl md:text-2xl font-bold text-slate-800">${MODULE_NAMES[moduloId]}</h2><p class="text-xs text-slate-500">Módulo Ativo</p></div>
-                    <div class="flex items-center gap-2">${btnNovoHtml}</div>
+                    <div class="flex flex-wrap items-center gap-2 no-print">${btnExportHtml} ${btnNovoHtml}</div>
                 </div>
             `;
 
@@ -302,6 +344,19 @@
                 case 'usuarios': return headerGlobal + renderUsuariosView();
                 default: return headerGlobal + `<div class="bg-white p-6 rounded-xl border">Módulo em execução normal.</div>`;
             }
+        }
+
+        function exportarModuloExcel(moduloId) {
+            let dataExport = [];
+            if (moduloId === 'financeiro') dataExport = db.financeiro;
+            else if (moduloId === 'formas_monetarias') dataExport = db.formas_monetarias;
+            else if (moduloId === 'contas_bancarias') dataExport = db.contas_bancarias;
+            else if (moduloId === 'moradores') dataExport = db.moradores;
+            else if (moduloId === 'estoque') dataExport = db.estoque;
+            else if (moduloId === 'usuarios') dataExport = db.usuarios;
+            else if (moduloId === 'relatorios') dataExport = db.dre_config;
+
+            exportarParaExcel(dataExport, `relatorio_${moduloId}_${Date.now()}.xlsx`);
         }
 
         // ==========================================
@@ -476,46 +531,190 @@
         }
 
         // ==========================================
-        // MÓDULO RELATÓRIOS & DRE
+        // MÓDULO RELATÓRIOS & DRE DINÂMICO
         // ==========================================
-        function renderRelatoriosView() {
+        function calcularValorLinhaDRE(row, valoresAcumulados) {
             const recTotal = db.financeiro.filter(f => f.tipo === 'Receber' && f.status === 'Baixado').reduce((a, b) => a + b.valor, 0);
             const pagTotal = db.financeiro.filter(f => f.tipo === 'Pagar' && f.status === 'Baixado').reduce((a, b) => a + b.valor, 0);
             const pendTotal = db.financeiro.filter(f => f.tipo === 'Receber' && f.status === 'Aberto').reduce((a, b) => a + b.valor, 0);
 
-            const calculosDRE = { A: recTotal, B: pendTotal, C: recTotal - pendTotal, D: pagTotal, E: (recTotal - pendTotal) - pagTotal };
+            if (row.tipo === 'direto') {
+                if (row.operacao === 'somar_receitas') return recTotal;
+                if (row.operacao === 'somar_pendencias') return pendTotal;
+                if (row.operacao === 'somar_despesas') return pagTotal;
+                return parseFloat(row.valorFixo || 0);
+            }
+
+            if (row.tipo === 'formula' && row.formula) {
+                try {
+                    let expr = row.formula.toUpperCase();
+                    Object.keys(valoresAcumulados).forEach(k => {
+                        const regex = new RegExp('\\b' + k + '\\b', 'g');
+                        expr = expr.replace(regex, valoresAcumulados[k]);
+                    });
+                    return eval(expr) || 0;
+                } catch (e) {
+                    return 0;
+                }
+            }
+            return 0;
+        }
+
+        function renderRelatoriosView() {
+            const valoresAcumulados = {};
+            const dreList = db.dre_config || [];
+
+            dreList.forEach(row => {
+                valoresAcumulados[row.id] = calcularValorLinhaDRE(row, valoresAcumulados);
+            });
+
+            const ultLinha = dreList[dreList.length - 1];
+            const resultadoFinal = ultLinha ? (valoresAcumulados[ultLinha.id] || 0) : 0;
 
             return `
                 <div class="space-y-6">
-                    <div class="flex justify-end no-print">
-                        <button onclick="window.print()" class="px-4 py-2 bg-slate-800 text-white rounded-lg text-xs font-bold flex items-center gap-2 shadow">
-                            <i class="fa-solid fa-print"></i> Imprimir / Exportar PDF
+                    <div class="flex justify-between items-center no-print">
+                        <button onclick="restaurarDREPadrao()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded text-xs font-bold">
+                            <i class="fa-solid fa-rotate-left"></i> Restaurar DRE Padrão
                         </button>
                     </div>
 
                     <div class="bg-white p-6 rounded-xl shadow-sm border space-y-4">
                         <div class="flex items-center justify-between border-b pb-3">
-                            <h3 class="font-bold text-base text-slate-800">Demonstração do Resultado do Exercício (DRE)</h3>
-                            <span class="px-3 py-1 rounded-full text-xs font-extrabold ${calculosDRE.E >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
-                                ${calculosDRE.E >= 0 ? 'SUPERÁVIT' : 'DEFICIT'}: R$ ${Math.abs(calculosDRE.E).toFixed(2)}
+                            <h3 class="font-bold text-base text-slate-800">Demonstração do Resultado do Exercício (DRE) - Customizável</h3>
+                            <span class="px-3 py-1 rounded-full text-xs font-extrabold ${resultadoFinal >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                                ${resultadoFinal >= 0 ? 'RESULTADO LÍQUIDO' : 'DEFICIT'}: R$ ${Math.abs(resultadoFinal).toFixed(2)}
                             </span>
                         </div>
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-100 font-bold uppercase border-b">
+                                    <tr>
+                                        <th class="p-3 w-16">Linha</th>
+                                        <th class="p-3">Descrição / Rótulo</th>
+                                        <th class="p-3">Tipo / Fórmula</th>
+                                        <th class="p-3 text-right">Valor Calculado (R$)</th>
+                                        <th class="p-3 text-right actions-col no-print">Ações</th>
+                                    </tr>
+                                </thead>
                                 <tbody class="divide-y">
-                                    ${(db.dre_config || []).map(row => `
-                                        <tr class="${row.tipo === 'formula' ? 'bg-slate-50 font-bold' : ''}">
-                                            <td class="p-3 font-extrabold text-teal-700">${row.id}</td>
-                                            <td class="p-3">${escapeHTML(row.label)}</td>
-                                            <td class="p-3 text-right font-bold">R$ ${(calculosDRE[row.id] || 0).toFixed(2)}</td>
-                                        </tr>
-                                    `).join('')}
+                                    ${dreList.map(row => {
+                                        const val = valoresAcumulados[row.id] || 0;
+                                        return `
+                                            <tr class="${row.tipo === 'formula' ? 'bg-slate-50 font-bold' : ''}">
+                                                <td class="p-3 font-extrabold text-teal-700">${escapeHTML(row.id)}</td>
+                                                <td class="p-3 font-bold">${escapeHTML(row.label)}</td>
+                                                <td class="p-3 text-slate-500 font-mono text-[11px]">${row.tipo === 'formula' ? escapeHTML(row.formula) : escapeHTML(row.operacao || 'direto')}</td>
+                                                <td class="p-3 text-right font-extrabold text-slate-900">R$ ${val.toFixed(2)}</td>
+                                                <td class="p-3 text-right space-x-1 actions-col no-print">
+                                                    <button onclick="renderModalDRELinha('${row.id}')" title="Editar Linha" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+                                                    <button onclick="excluirLinhaDRE('${row.id}')" title="Excluir Linha" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
                                 </tbody>
                             </table>
                         </div>
                     </div>
                 </div>
             `;
+        }
+
+        function renderModalDRELinha(linhaId = null) {
+            const r = linhaId ? db.dre_config.find(x => x.id === linhaId) : null;
+            const html = `
+                <div id="modal_dre_linha" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+                            <h3 class="font-bold text-sm">${r ? 'Editar Campo/Fórmula DRE' : 'Novo Campo / Fórmula DRE'}</h3>
+                            <button onclick="fecharModal('modal_dre_linha')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <form onsubmit="salvarDRELinhaForm(event, '${linhaId || ''}')" class="p-6 space-y-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="block text-xs font-bold uppercase mb-1">Código da Linha</label><input type="text" id="dre_id" required value="${r ? escapeHTML(r.id) : ''}" placeholder="Ex: F" class="w-full p-2 border rounded text-xs font-bold"></div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase mb-1">Tipo de Cálculo</label>
+                                    <select id="dre_tipo" onchange="alternarCamposDREModal()" class="w-full p-2 border rounded text-xs font-bold">
+                                        <option value="direto" ${r && r.tipo==='direto'?'selected':''}>Direto (Módulo)</option>
+                                        <option value="formula" ${r && r.tipo==='formula'?'selected':''}>Fórmula Matemática</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div><label class="block text-xs font-bold uppercase mb-1">Descrição / Rótulo</label><input type="text" id="dre_label" required value="${r ? escapeHTML(r.label) : ''}" placeholder="Ex: (-) RESERVA DE EMERGÊNCIA" class="w-full p-2 border rounded text-xs font-bold"></div>
+                            
+                            <div id="box_dre_operacao">
+                                <label class="block text-xs font-bold uppercase mb-1">Operação Direta</label>
+                                <select id="dre_operacao" class="w-full p-2 border rounded text-xs font-bold">
+                                    <option value="somar_receitas" ${r && r.operacao==='somar_receitas'?'selected':''}>Somar Receitas Baixadas</option>
+                                    <option value="somar_despesas" ${r && r.operacao==='somar_despesas'?'selected':''}>Somar Despesas Baixadas</option>
+                                    <option value="somar_pendencias" ${r && r.operacao==='somar_pendencias'?'selected':''}>Somar Pendências (Em Aberto)</option>
+                                </select>
+                            </div>
+
+                            <div id="box_dre_formula" class="hidden">
+                                <label class="block text-xs font-bold uppercase mb-1">Fórmula (Ex: A - B - D)</label>
+                                <input type="text" id="dre_formula" value="${r ? escapeHTML(r.formula || '') : ''}" placeholder="A - B - D" class="w-full p-2 border rounded text-xs font-bold font-mono">
+                            </div>
+
+                            <div class="flex items-center justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModal('modal_dre_linha')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
+                                <button type="submit" class="px-3 py-1.5 bg-teal-600 text-white rounded text-xs font-bold">Salvar Campo DRE</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+            alternarCamposDREModal();
+        }
+
+        function alternarCamposDREModal() {
+            const tipo = document.getElementById('dre_tipo').value;
+            const boxOp = document.getElementById('box_dre_operacao');
+            const boxForm = document.getElementById('box_dre_formula');
+
+            if (tipo === 'formula') {
+                boxOp.classList.add('hidden');
+                boxForm.classList.remove('hidden');
+            } else {
+                boxOp.classList.remove('hidden');
+                boxForm.classList.add('hidden');
+            }
+        }
+
+        function salvarDRELinhaForm(e, linhaId = '') {
+            e.preventDefault();
+            const id = document.getElementById('dre_id').value.trim().toUpperCase();
+            const tipo = document.getElementById('dre_tipo').value;
+            const label = document.getElementById('dre_label').value.trim();
+            const operacao = document.getElementById('dre_operacao').value;
+            const formula = document.getElementById('dre_formula').value.trim();
+
+            if (linhaId) {
+                const r = db.dre_config.find(x => x.id === linhaId);
+                if (r) { r.id = id; r.tipo = tipo; r.label = label; r.operacao = operacao; r.formula = formula; }
+            } else {
+                db.dre_config.push({ id, tipo, label, operacao, formula });
+            }
+
+            salvarDados(db); fecharModal('modal_dre_linha'); renderApp();
+        }
+
+        function excluirLinhaDRE(id) {
+            if (confirm(`Deseja excluir a linha ${id} da DRE?`)) {
+                db.dre_config = db.dre_config.filter(x => x.id !== id);
+                salvarDados(db);
+                renderApp();
+            }
+        }
+
+        function restaurarDREPadrao() {
+            if (confirm('Restaurar a estrutura padrão da DRE?')) {
+                db.dre_config = DEFAULT_DATA.dre_config;
+                salvarDados(db);
+                renderApp();
+            }
         }
 
         // ==========================================
@@ -829,7 +1028,7 @@
         }
 
         // ==========================================
-        // FINANCEIRO & LIQUIDAÇÃO
+        // FINANCEIRO & TELA DE BAIXA PARCIAL COMPLETA
         // ==========================================
         function renderFinanceiroView() {
             let lista = db.financeiro || [];
@@ -931,7 +1130,7 @@
                     <div class="bg-white w-full max-w-6xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
                         <div class="p-4 bg-slate-100 border-b flex items-center justify-between">
                             <h3 class="text-xl font-bold text-slate-700 flex items-center gap-2">
-                                <i class="fa-solid fa-file-invoice-dollar text-teal-600"></i> ${f.tipo === 'Receber' ? 'Receber Parcial / Total' : 'Pagar Parcial / Total'}
+                                <i class="fa-solid fa-file-invoice-dollar text-teal-600"></i> ${f.tipo === 'Receber' ? 'Receber Parcial' : 'Pagar Parcial'}
                             </h3>
                             <div class="flex items-center gap-2">
                                 <button onclick="confirmarEFinalizarBaixa('${f.id}')" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs shadow transition flex items-center gap-2">
@@ -947,32 +1146,40 @@
                             <div class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
                                 <div>
                                     <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Forma Monetária</label>
-                                    <select id="bx_forma_sel" onchange="recalcularValoresBaixa('${f.id}')" class="w-full p-2 border rounded font-bold bg-white text-slate-900">
-                                        ${db.formas_monetarias.filter(m => m.status === 'Ativo').map(m => `<option value="${m.id}">${escapeHTML(m.nome)}</option>`).join('')}
-                                    </select>
+                                    <div class="flex items-center gap-1">
+                                        <select id="bx_forma_sel" onchange="recalcularValoresBaixa('${f.id}')" class="w-full p-2 border rounded font-bold bg-white text-slate-900">
+                                            ${db.formas_monetarias.filter(m => m.status === 'Ativo').map(m => `<option value="${m.id}">${escapeHTML(m.nome)}</option>`).join('')}
+                                        </select>
+                                        <button class="p-2 bg-slate-200 rounded hover:bg-slate-300 text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+                                        <button class="p-2 bg-slate-200 rounded hover:bg-slate-300 text-slate-600"><i class="fa-solid fa-magnifying-glass"></i></button>
+                                    </div>
                                 </div>
                                 <div>
-                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Conta Bancária / Caixa</label>
-                                    <select id="bx_conta_sel" class="w-full p-2 border rounded font-bold bg-white text-slate-900">
-                                        ${db.contas_bancarias.map(c => `<option value="${c.id}">${escapeHTML(c.banco)}</option>`).join('')}
-                                    </select>
+                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Conta</label>
+                                    <div class="flex items-center gap-1">
+                                        <select id="bx_conta_sel" class="w-full p-2 border rounded font-bold bg-white text-slate-900">
+                                            ${db.contas_bancarias.map(c => `<option value="${c.id}">${escapeHTML(c.banco)}</option>`).join('')}
+                                        </select>
+                                        <button class="p-2 bg-slate-200 rounded hover:bg-slate-300 text-slate-600"><i class="fa-solid fa-xmark"></i></button>
+                                        <button class="p-2 bg-slate-200 rounded hover:bg-slate-300 text-slate-600"><i class="fa-solid fa-magnifying-glass"></i></button>
+                                    </div>
                                 </div>
                                 <div>
-                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Documento / Nº</label>
+                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Documento</label>
                                     <input type="text" id="bx_doc" value="0" class="w-full p-2 border rounded font-bold text-slate-900">
                                 </div>
                                 <div>
                                     <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Data Compensação</label>
                                     <div class="flex gap-1">
                                         <input type="date" id="bx_data_comp" value="${dataHoje}" onchange="recalcularValoresBaixa('${f.id}')" class="w-full p-2 border rounded font-bold text-slate-900">
-                                        <input type="time" id="bx_hora_comp" value="14:00" class="w-24 p-2 border rounded font-bold text-slate-900">
+                                        <input type="time" id="bx_hora_comp" value="15:04" class="w-24 p-2 border rounded font-bold text-slate-900">
                                     </div>
                                 </div>
                             </div>
 
                             <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
                                 <div>
-                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Valor Bruto (R$)</label>
+                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Valor Bruto</label>
                                     <input type="text" id="bx_val_bruto" value="${f.valor.toFixed(2)}" readonly class="w-full p-2 border rounded font-bold bg-slate-100 text-slate-900">
                                 </div>
                                 <div>
@@ -980,11 +1187,14 @@
                                     <input type="number" step="0.01" id="bx_multa" value="0.00" oninput="recalcularValoresBaixaManualmente()" class="w-full p-2 border rounded font-bold text-slate-900">
                                 </div>
                                 <div>
-                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Juros dia (R$)</label>
-                                    <input type="number" step="0.01" id="bx_juros" value="0.00" oninput="recalcularValoresBaixaManualmente()" class="w-full p-2 border rounded font-bold text-slate-900">
+                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Juros dia</label>
+                                    <div class="flex items-center gap-1">
+                                        <input type="text" id="bx_juros_dias" value="0" readonly class="w-12 p-2 border rounded text-center font-bold bg-slate-100 text-slate-700">
+                                        <input type="number" step="0.01" id="bx_juros" value="0.00" oninput="recalcularValoresBaixaManualmente()" class="w-full p-2 border rounded font-bold text-slate-900">
+                                    </div>
                                 </div>
                                 <div>
-                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Tx. Adicional (R$)</label>
+                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Tx. Adicional</label>
                                     <input type="number" step="0.01" id="bx_taxa" value="0.00" oninput="recalcularValoresBaixaManualmente()" class="w-full p-2 border rounded text-xs font-bold text-slate-900">
                                 </div>
                                 <div>
@@ -992,21 +1202,30 @@
                                     <input type="number" step="0.01" id="bx_desconto" value="0.00" oninput="recalcularValoresBaixaManualmente()" class="w-full p-2 border rounded text-xs font-bold text-slate-900">
                                 </div>
                                 <div>
-                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Valor Líquido (R$)</label>
+                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Valor Líquido</label>
                                     <input type="text" id="bx_val_liquido" value="${f.valor.toFixed(2)}" readonly class="w-full p-2 border rounded font-bold bg-slate-100 text-slate-900">
                                 </div>
                             </div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 items-center">
                                 <div>
-                                    <label class="block font-bold text-emerald-800 uppercase text-[10px] mb-1">Valor Baixa / Quitado (R$)</label>
-                                    <input type="number" step="0.01" id="bx_val_baixa" value="${f.valor.toFixed(2)}" class="w-full p-2.5 bg-emerald-100 border-2 border-emerald-400 rounded-lg font-extrabold text-emerald-900 text-sm">
+                                    <label class="block font-bold text-slate-700 uppercase text-[10px] mb-1">Valor Baixa</label>
+                                    <input type="number" step="0.01" id="bx_val_baixa" value="${f.valor.toFixed(2)}" class="w-full p-2.5 bg-emerald-200 border border-emerald-500 rounded-lg font-extrabold text-emerald-950 text-sm">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-700 uppercase text-[10px] mb-1">Abrangência</label>
+                                    <div class="flex items-center gap-1">
+                                        <select class="w-full p-2 border rounded font-bold bg-white text-slate-900">
+                                            <option value="Total">Total / Padrão</option>
+                                        </select>
+                                        <button class="p-2 bg-blue-600 text-white rounded hover:bg-blue-700"><i class="fa-solid fa-pen-to-square"></i></button>
+                                    </div>
                                 </div>
                                 <div class="md:col-span-2">
-                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Comprovante / Anexo (Opcional)</label>
+                                    <label class="block font-bold text-slate-700 uppercase text-[10px] mb-1">Comprovante</label>
                                     <div class="flex gap-2">
-                                        <input type="text" id="bx_comprovante" placeholder="Nº do Recibo ou Autenticação" class="flex-1 p-2 border rounded font-bold text-slate-900">
-                                        <button onclick="adicionarItemNaGrelhaBaixa()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold text-xs shadow">
+                                        <input type="text" id="bx_comprovante" placeholder="Nº de Autenticação / Recibo" class="flex-1 p-2 border rounded font-bold text-slate-900">
+                                        <button onclick="adicionarItemNaGrelhaBaixa()" class="px-6 py-2 bg-sky-700 hover:bg-sky-800 text-white rounded font-bold text-xs shadow">
                                             Adicionar
                                         </button>
                                     </div>
@@ -1019,16 +1238,19 @@
                                         <thead class="bg-slate-100 border-b font-bold uppercase text-slate-600">
                                             <tr>
                                                 <th class="p-2.5">FORMA</th>
-                                                <th class="p-2.5">VALOR BRUTO</th>
+                                                <th class="p-2.5">BANDEIRA</th>
+                                                <th class="p-2.5">VALOR BRUT</th>
+                                                <th class="p-2.5">TX CARTAO</th>
+                                                <th class="p-2.5">TX ANTECIP. CARTAO</th>
                                                 <th class="p-2.5">MULTA</th>
-                                                <th class="p-2.5">JUROS</th>
                                                 <th class="p-2.5">TX. ADICIC</th>
+                                                <th class="p-2.5">JUROS</th>
                                                 <th class="p-2.5">DESCONTO</th>
-                                                <th class="p-2.5">VALOR LÍQUIDO</th>
+                                                <th class="p-2.5">VALOR LÍQUI</th>
                                             </tr>
                                         </thead>
                                         <tbody id="tbl_body_grid_baixa" class="divide-y">
-                                            <tr><td colspan="7" class="p-4 text-center text-slate-400">Clique em "Adicionar" para incluir o detalhamento do recebimento.</td></tr>
+                                            <tr><td colspan="10" class="p-4 text-center text-slate-400">Clique em "Adicionar" para incluir o lançamento na tabela de liquidação.</td></tr>
                                         </tbody>
                                     </table>
                                 </div>
@@ -1051,10 +1273,11 @@
 
             let multa = 0;
             let juros = 0;
+            let diasAtraso = 0;
 
             if (forma && f.vencimento && dataComp > f.vencimento) {
                 const diffMs = new Date(dataComp) - new Date(f.vencimento);
-                const diasAtraso = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+                diasAtraso = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 
                 if (diasAtraso > 0) {
                     multa = (f.valor * (forma.multaPct || 0)) / 100;
@@ -1062,6 +1285,7 @@
                 }
             }
 
+            document.getElementById('bx_juros_dias').value = diasAtraso;
             document.getElementById('bx_multa').value = multa.toFixed(2);
             document.getElementById('bx_juros').value = juros.toFixed(2);
             recalcularValoresBaixaManualmente();
@@ -1087,16 +1311,19 @@
             const desconto = parseFloat(document.getElementById('bx_desconto').value) || 0;
             const liquido = parseFloat(document.getElementById('bx_val_liquido').value) || 0;
 
-            itensGridBaixa.push({ forma: formaText, bruto, multa, juros, taxa, desconto, liquido });
+            itensGridBaixa.push({ forma: formaText, bandeira: 'N/A', bruto, txCartao: 0, txAntecip: 0, multa, taxa, juros, desconto, liquido });
 
             const tbody = document.getElementById('tbl_body_grid_baixa');
             tbody.innerHTML = itensGridBaixa.map(i => `
                 <tr class="font-bold">
                     <td class="p-2.5">${escapeHTML(i.forma)}</td>
+                    <td class="p-2.5">${escapeHTML(i.bandeira)}</td>
                     <td class="p-2.5">R$ ${i.bruto.toFixed(2)}</td>
+                    <td class="p-2.5">R$ 0,00</td>
+                    <td class="p-2.5">R$ 0,00</td>
                     <td class="p-2.5 text-rose-600">R$ ${i.multa.toFixed(2)}</td>
-                    <td class="p-2.5 text-rose-600">R$ ${i.juros.toFixed(2)}</td>
                     <td class="p-2.5">R$ ${i.taxa.toFixed(2)}</td>
+                    <td class="p-2.5 text-rose-600">R$ ${i.juros.toFixed(2)}</td>
                     <td class="p-2.5 text-emerald-600">R$ ${i.desconto.toFixed(2)}</td>
                     <td class="p-2.5 text-teal-800">R$ ${i.liquido.toFixed(2)}</td>
                 </tr>
@@ -1328,52 +1555,4 @@
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold uppercase mb-1">Vencimento</label>
-                                    <input type="date" id="nt_venc" required value="${f ? f.vencimento : '2026-10-15'}" class="w-full p-2 border rounded text-xs font-bold">
-                                </div>
-                            </div>
-                            <div class="flex items-center justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModal('modal_novo_t')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
-                                <button type="submit" class="px-3 py-1.5 bg-teal-600 text-white rounded text-xs font-bold">Salvar Título</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', html);
-        }
-
-        function salvarNovoTituloForm(e, tituloId = '') {
-            e.preventDefault();
-            const tipo = document.getElementById('nt_tipo').value;
-            const valor = parseFloat(document.getElementById('nt_valor').value) || 0;
-            const historico = document.getElementById('nt_hist').value.trim();
-            const competencia = document.getElementById('nt_comp').value.trim();
-            const vencimento = document.getElementById('nt_venc').value;
-
-            if (tituloId) {
-                const f = db.financeiro.find(x => x.id === tituloId);
-                if (f) { f.tipo = tipo; f.valor = valor; f.historico = historico; f.competencia = competencia; f.vencimento = vencimento; }
-            } else {
-                db.financeiro.push({ id: 'fin_' + Date.now(), tipo, valor, historico, competencia, vencimento, status: 'Aberto' });
-            }
-
-            salvarDados(db); fecharModal('modal_novo_t'); renderApp();
-        }
-
-        function excluirItemGenerico(modKey, itemId) {
-            if (confirm('Deseja excluir este registro?')) {
-                db[modKey] = db[modKey].filter(x => x.id !== itemId);
-                salvarDados(db);
-                renderApp();
-            }
-        }
-
-        function fecharModal(id) {
-            const el = document.getElementById(id);
-            if (el) el.remove();
-        }
-
-        window.addEventListener('DOMContentLoaded', () => { renderApp(); });
-    </script>
-</body>
-</html>
+                                    <input type="date" id="nt_venc" required value
