@@ -19,26 +19,17 @@
         .tech-mode {
             background-color: #030712 !important;
             color: #22d3ee !important;
-            font-family: monospace !important;
         }
         .tech-card {
-            background: rgba(15, 23, 42, 0.9) !important;
+            background: rgba(15, 23, 42, 0.85) !important;
             border: 1px solid #06b6d4 !important;
-            box-shadow: 0 0 25px rgba(6, 182, 212, 0.3) !important;
+            box-shadow: 0 0 30px rgba(6, 182, 212, 0.3) !important;
+            backdrop-filter: blur(8px);
         }
         .tech-input {
             background-color: #020617 !important;
             border-color: #0891b2 !important;
             color: #22d3ee !important;
-        }
-
-        /* Efeito de Destaque no Tour */
-        .tour-highlight {
-            position: relative;
-            z-index: 100 !important;
-            box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.75), 0 0 15px #0d9488 !important;
-            border-radius: 0.5rem;
-            transition: all 0.3s ease;
         }
 
         @media print {
@@ -55,7 +46,8 @@
 
     <script>
         window.imagemAnexadaBase64 = '';
-        let isTechMode = false;
+        let isTechMode = true; // Inicia por padrão no Modo Tecnologia
+        let matrixInterval = null;
 
         // Estado do Tour Guiado
         let tourState = {
@@ -80,13 +72,13 @@
                 modulo: 'financeiro',
                 targetId: 'app',
                 titulo: '3. Contas Pagar / Receber',
-                texto: 'No módulo financeiro você pode lançar títulos simples ou recorrentes (parcelamentos), aplicar baixas/compensações e filtrar por competência (MM/AAAA).'
+                texto: 'No módulo financeiro você pode lançar títulos simples ou recorrentes, aplicar baixas/compensações e filtrar por competência (MM/AAAA).'
             },
             {
                 modulo: 'moradores',
                 targetId: 'app',
                 titulo: '4. Moradores & Inquilinos',
-                texto: 'Cadastre moradores especificando se são Proprietários ou Inquilinos, com acompanhamento dinâmico do pagamento da Taxa de Mudança.'
+                texto: 'Cadastre moradores especificando se são Proprietários ou Inquilinos, com acompanhamento dinâmico da Taxa de Mudança.'
             },
             {
                 modulo: 'relatorios',
@@ -190,7 +182,6 @@
                 const data = localStorage.getItem('guardioes_bravo_db');
                 if (!data) return DEFAULT_DATA;
                 const parsed = JSON.parse(data);
-                // Garantir fallback da DRE caso inexistente no localStorage antigo
                 if (!parsed.dre_config || parsed.dre_config.length === 0) {
                     parsed.dre_config = DEFAULT_DATA.dre_config;
                 }
@@ -299,6 +290,8 @@
                     return;
                 }
 
+                if (matrixInterval) clearInterval(matrixInterval);
+
                 sessao.tentativasFalhas = 0;
                 sessao.usuarioLogado = userFound;
                 sessionStorage.setItem('guardioes_sessao', JSON.stringify(userFound));
@@ -317,7 +310,6 @@
                     iniciarMonitorInatividade();
                     renderApp();
 
-                    // Disparar tour guiado se for a primeira vez no dispositivo
                     if (!localStorage.getItem('guardioes_tour_concluido')) {
                         setTimeout(iniciarTourGuiado, 500);
                     }
@@ -362,7 +354,7 @@
         }
 
         // ==========================================
-        // 5. INTERFACE PRINCIPAL DA APLICAÇÃO
+        // 5. INTERFACE PRINCIPAL
         // ==========================================
         function renderApp() {
             const container = document.getElementById('app');
@@ -374,6 +366,7 @@
                     document.getElementById('login_user').value = savedUser;
                     document.getElementById('login_remember').checked = true;
                 }
+                if (isTechMode) setTimeout(iniciarAnimacaoMatrix, 50);
                 return;
             }
 
@@ -514,7 +507,44 @@
         }
 
         // ==========================================
-        // 6. TOUR GUIADO DE PRIMEIRO ACESSO
+        // 6. ANIMAÇÃO DE FUNDO MATRIX / CYBERPUNK
+        // ==========================================
+        function iniciarAnimacaoMatrix() {
+            const canvas = document.getElementById('matrixCanvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+
+            const chars = '0123456789ABCDEFGUARDIOSBRAVO';
+            const fontSize = 14;
+            const columns = Math.floor(canvas.width / fontSize);
+            const drops = Array(columns).fill(1);
+
+            if (matrixInterval) clearInterval(matrixInterval);
+
+            matrixInterval = setInterval(() => {
+                ctx.fillStyle = 'rgba(3, 7, 18, 0.08)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                ctx.fillStyle = '#06b6d4';
+                ctx.font = fontSize + 'px monospace';
+
+                for (let i = 0; i < drops.length; i++) {
+                    const text = chars.charAt(Math.floor(Math.random() * chars.length));
+                    ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+                    if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
+                        drops[i] = 0;
+                    }
+                    drops[i]++;
+                }
+            }, 33);
+        }
+
+        // ==========================================
+        // 7. TOUR GUIADO DE PRIMEIRO ACESSO
         // ==========================================
         function iniciarTourGuiado() {
             tourState.ativo = true;
@@ -551,7 +581,7 @@
 
             const html = `
                 <div id="modal_tour" class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 no-print">
-                    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border-2 border-teal-500 animate-fade-in">
+                    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border-2 border-teal-500">
                         <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
                             <div class="flex items-center gap-2">
                                 <span class="w-6 h-6 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-bold">${tourState.passoAtual + 1}</span>
@@ -587,7 +617,7 @@
         }
 
         // ==========================================
-        // 7. RENDERIZAÇÃO DE MÓDULOS E BOTÕES "NOVO"
+        // 8. RENDERIZAÇÃO DE MÓDULOS E BOTÕES "NOVO"
         // ==========================================
         function getCamposConfigModulo(id) {
             switch(id) {
@@ -644,7 +674,7 @@
         }
 
         // ==========================================
-        // 8. DASHBOARD COM GRÁFICOS (CHART.JS)
+        // 9. DASHBOARD COM GRÁFICOS (CHART.JS)
         // ==========================================
         function renderDashboardView() {
             const recTotal = db.financeiro.filter(f=>f.tipo==='Receber' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0);
@@ -738,7 +768,7 @@
         }
 
         // ==========================================
-        // 9. MÓDULO FINANCEIRO
+        // 10. MÓDULO FINANCEIRO
         // ==========================================
         function renderFinanceiroView() {
             let lista = db.financeiro || [];
@@ -1043,7 +1073,7 @@
         }
 
         // ==========================================
-        // 10. ESTOQUE DE PRODUTOS
+        // 11. ESTOQUE DE PRODUTOS
         // ==========================================
         function renderEstoqueView() {
             const list = db.estoque || [];
@@ -1208,14 +1238,13 @@
         }
 
         // ==========================================
-        // 11. RELATÓRIOS CONSOLIDADOS & DRE
+        // 12. RELATÓRIOS CONSOLIDADOS & DRE
         // ==========================================
         function renderRelatoriosView() {
             const recTotal = db.financeiro.filter(f => f.tipo === 'Receber' && f.status === 'Baixado').reduce((a, b) => a + b.valor, 0);
             const pagTotal = db.financeiro.filter(f => f.tipo === 'Pagar' && f.status === 'Baixado').reduce((a, b) => a + b.valor, 0);
             const pendTotal = db.financeiro.filter(f => f.tipo === 'Receber' && f.status === 'Aberto').reduce((a, b) => a + b.valor, 0);
 
-            // Lista DRE com fallback garantido
             const listDRE = (db.dre_config && db.dre_config.length > 0) ? db.dre_config : DEFAULT_DATA.dre_config;
 
             const calculosDRE = {};
@@ -1364,7 +1393,7 @@
         }
 
         // ==========================================
-        // 12. MORADORES, USUÁRIOS E OUTROS
+        // 13. MORADORES, USUÁRIOS E OUTROS
         // ==========================================
         function renderMoradoresView() {
             const list = db.moradores || [];
@@ -1670,36 +1699,40 @@
         }
 
         // ==========================================
-        // 13. TELA DE LOGIN COM MODO TECNOLOGIA
+        // 14. TELA DE LOGIN COM MODO TECNOLOGIA PADRÃO E CANVAS ANIMADO
         // ==========================================
         function toggleTechMode() {
             isTechMode = !isTechMode;
+            if (!isTechMode && matrixInterval) clearInterval(matrixInterval);
             renderApp();
         }
 
         function renderTelaLogin() {
             return `
-                <div class="min-h-screen ${isTechMode ? 'tech-mode' : 'bg-slate-900'} flex items-center justify-center p-4 transition-all duration-300">
-                    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden ${isTechMode ? 'tech-card' : ''}">
+                <div class="min-h-screen relative overflow-hidden ${isTechMode ? 'tech-mode' : 'bg-slate-900'} flex items-center justify-center p-4 transition-all duration-300">
+                    
+                    ${isTechMode ? '<canvas id="matrixCanvas" class="absolute inset-0 pointer-events-none opacity-40 z-0"></canvas>' : ''}
+
+                    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden relative z-10 ${isTechMode ? 'tech-card' : ''}">
                         <div class="p-8 text-center ${isTechMode ? 'bg-slate-950 text-cyan-400 border-b border-cyan-800' : 'bg-slate-950 text-white'}">
                             <div class="w-16 h-16 ${isTechMode ? 'bg-cyan-900/50 text-cyan-400 border border-cyan-500 shadow-cyan-500/50 shadow-lg' : 'bg-teal-600'} rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg text-3xl">
                                 <i class="fa-solid fa-shield-halved"></i>
                             </div>
-                            <h2 class="text-2xl font-bold tracking-wide">${isTechMode ? 'SYSTEM://GUARDIÕES' : 'Guardiões do Bravo'}</h2>
-                            <p class="text-xs ${isTechMode ? 'text-cyan-300 font-mono' : 'text-teal-400 font-semibold'} uppercase mt-1">
-                                ${isTechMode ? '[SECURE_TERMINAL_V4]' : 'Gestão Condominial Segura'}
+                            <h2 class="text-2xl font-bold tracking-wide">Guardiões do Bravo</h2>
+                            <p class="text-xs ${isTechMode ? 'text-cyan-400 font-mono' : 'text-teal-400 font-semibold'} uppercase mt-1">
+                                Gestão Condominial Segura
                             </p>
                         </div>
                         <form onsubmit="realizarLogin(event)" class="p-8 space-y-5">
                             <div>
                                 <label class="block text-xs font-bold ${isTechMode ? 'text-cyan-300' : 'text-slate-700'} uppercase mb-1">
-                                    ${isTechMode ? '> ID_USUÁRIO' : 'Usuário / E-mail'}
+                                    Usuário / E-mail
                                 </label>
-                                <input type="text" id="login_user" required placeholder="${isTechMode ? 'admin' : 'Digite seu usuário'}" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 font-bold ${isTechMode ? 'tech-input' : ''}">
+                                <input type="text" id="login_user" required placeholder="Digite seu usuário" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 font-bold ${isTechMode ? 'tech-input' : ''}">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold ${isTechMode ? 'text-cyan-300' : 'text-slate-700'} uppercase mb-1">
-                                    ${isTechMode ? '> CREDENCIAL_ACESSO' : 'Senha'}
+                                    Senha
                                 </label>
                                 <div class="relative">
                                     <input type="password" id="login_pass" required placeholder="••••••••" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 font-bold pr-10 ${isTechMode ? 'tech-input' : ''}">
@@ -1711,14 +1744,14 @@
                             <div class="flex items-center justify-between">
                                 <label class="flex items-center gap-2 text-xs font-medium ${isTechMode ? 'text-cyan-400' : 'text-slate-600'} cursor-pointer">
                                     <input type="checkbox" id="login_remember" class="rounded border-slate-300 text-teal-600 w-4 h-4">
-                                    Lembrar acesso
+                                    Lembrar-me neste navegador
                                 </label>
                                 <button type="button" onclick="toggleTechMode()" class="text-[11px] font-bold ${isTechMode ? 'text-cyan-300 hover:text-white' : 'text-teal-600 hover:text-teal-800'} underline">
-                                    ${isTechMode ? 'Modo Normal' : '⚡ Modo Tecnologia'}
+                                    ${isTechMode ? 'Modo Padrão' : '⚡ Modo Tecnologia'}
                                 </button>
                             </div>
                             <button type="submit" class="w-full py-3 ${isTechMode ? 'bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-mono shadow-cyan-500/50 shadow-md' : 'bg-teal-600 hover:bg-teal-700 text-white'} font-bold rounded-lg shadow-md transition">
-                                ${isTechMode ? 'INICIAR_SESSAO.EXE' : 'Acessar Painel'}
+                                Acessar Painel
                             </button>
                         </form>
                     </div>
