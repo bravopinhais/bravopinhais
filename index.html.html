@@ -42,14 +42,6 @@
 
         let tourState = { ativo: false, passoAtual: 0 };
 
-        const TOUR_STEPS = [
-            { modulo: 'dashboard', titulo: '1. Bem-vindo!', texto: 'Sistema completo de gestão condominial e financeira.' },
-            { modulo: 'dashboard', titulo: '2. Dashboard Analytic', texto: 'Acompanhe fluxos de caixa e métricas dinâmicas.' },
-            { modulo: 'financeiro', titulo: '3. Financeiro & Baixa Parcial', texto: 'Lançamentos, baixas totais e parciais com criação de títulos residuais automatizada.' },
-            { modulo: 'formas_monetarias', titulo: '4. Formas Monetárias', texto: 'Cadastre meios de pagamento com liquidação imediata e vínculo bancário.' },
-            { modulo: 'relatorios', titulo: '5. DRE Condominial', texto: 'Demonstrativo contábil inteligente com fórmulas editáveis.' }
-        ];
-
         function escapeHTML(str) {
             if (typeof str !== 'string') return str || '';
             return str.replace(/[&<>"']/g, function(m) {
@@ -57,33 +49,30 @@
             });
         }
 
-        function validarSenhaForte(senha) {
-            return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$%^&*!_\-]).{8,}$/.test(senha);
-        }
-
         const DEFAULT_DATA = {
             usuarios: [
                 { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Admin@12345' }
             ],
             financeiro: [
-                { id: 'fin_1', tipo: 'Receber', historico: 'Taxa Condominial Ordinária - Ap 101', valor: 650.00, vencimento: '2026-11-10', competencia: '11/2026', formaMonetariaId: 'fm_1', fornecedor: 'Carlos Eduardo', status: 'Aberto' },
+                { id: 'fin_1', tipo: 'Receber', historico: 'Taxa Condominial Ordinária - Ap 101', valor: 2500.00, vencimento: '2026-10-15', competencia: '10/2026', formaMonetariaId: 'fm_1', fornecedor: 'Carlos Eduardo', status: 'Aberto' },
                 { id: 'fin_2', tipo: 'Pagar', historico: 'Manutenção Preventiva Elevadores', valor: 1200.00, vencimento: '2026-11-05', competencia: '11/2026', formaMonetariaId: 'fm_2', fornecedor: 'Otis Elevadores', status: 'Baixado' }
             ],
             formas_monetarias: [
-                { id: 'fm_1', nome: 'Pix QR Code / Chave', contaId: 'cb_1', baixaAutomatica: true, status: 'Ativo' },
-                { id: 'fm_2', nome: 'Boleto Bancário registrado', contaId: 'cb_1', baixaAutomatica: false, status: 'Ativo' },
-                { id: 'fm_3', nome: 'Dinheiro / Espécie', contaId: 'cb_2', baixaAutomatica: true, status: 'Ativo' }
+                { id: 'fm_1', nome: '4, MOVIMENTO BANCARIO', contaId: 'cb_1', multaPct: 2.0, jurosDiaPct: 0.033, baixaAutomatica: true, status: 'Ativo' },
+                { id: 'fm_2', nome: 'BOLETO BANCARIO', contaId: 'cb_1', multaPct: 2.0, jurosDiaPct: 0.033, baixaAutomatica: false, status: 'Ativo' },
+                { id: 'fm_3', nome: 'ESPECIE / CAIXA', contaId: 'cb_2', multaPct: 0.0, jurosDiaPct: 0.0, baixaAutomatica: true, status: 'Ativo' }
             ],
             contas_bancarias: [
-                { id: 'cb_1', banco: 'Banco do Brasil', agencia: '1234-5', conta: '98765-4', saldo: 45800.00 },
-                { id: 'cb_2', banco: 'Caixa Interno Condomínio', agencia: 'Interno', conta: 'Caixa', saldo: 1250.00 }
+                { id: 'cb_1', banco: '1, CAIXA BARAO', agencia: '1234-5', conta: '98765-4', saldo: 45800.00 },
+                { id: 'cb_2', banco: 'CAIXA INTERNO', agencia: 'Interno', conta: 'Caixa', saldo: 1250.00 }
             ],
             moradores: [
                 { id: 'mor_1', bloco: 'A', apartamento: '101', nome: 'Carlos Eduardo', email: 'carlos@email.com', telefone: '(41) 99999-1111', tipo: 'Proprietário', taxaMudanca: 'N/A' },
                 { id: 'mor_2', bloco: 'B', apartamento: '304', nome: 'Mariana Silva', email: 'mariana@email.com', telefone: '(41) 98888-2222', tipo: 'Inquilino', taxaMudanca: 'Sim' }
             ],
             estoque: [
-                { id: 'est_1', item: 'Lâmpada LED 12W', categoria: 'Elétrica', qtd: 4, minimo: 10, maximo: 50, localizacao: 'Almoxarifado' }
+                { id: 'est_1', item: 'Lâmpada LED 12W', categoria: 'Elétrica', qtd: 4, minimo: 10, maximo: 50, localizacao: 'Almoxarifado Central', proximoBalanco: '2026-10-20' },
+                { id: 'est_2', item: 'Cloro Granulado 10kg', categoria: 'Piscina', qtd: 15, minimo: 5, maximo: 30, localizacao: 'DML Piscina', proximoBalanco: '2026-11-15' }
             ],
             dre_config: [
                 { id: 'A', codigo: 'REC_BRUTA', label: '(+) RECEITA OPERACIONAL BRUTA', tipo: 'direto', operacao: 'somar_receitas' },
@@ -116,6 +105,7 @@
         let sessao = { usuarioLogado: JSON.parse(sessionStorage.getItem('guardioes_sessao')) || null };
         let tabsState = { openTabs: ['dashboard'], activeTab: 'dashboard' };
         let finFiltros = { competencia: '', status: 'Todos', tipo: 'Todos', busca: '' };
+        let itensGridBaixa = [];
 
         const MODULE_NAMES = {
             dashboard: 'Dashboard',
@@ -198,7 +188,7 @@
                             <button onclick="abrirModulo('formas_monetarias')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'formas_monetarias' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800'}"><i class="fa-solid fa-money-bill-transfer w-5"></i> Formas Monetárias</button>
                             <button onclick="abrirModulo('contas_bancarias')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'contas_bancarias' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800'}"><i class="fa-solid fa-building-columns w-5"></i> Contas Bancárias / Caixa</button>
                             <button onclick="abrirModulo('moradores')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'moradores' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800'}"><i class="fa-solid fa-users w-5"></i> Moradores</button>
-                            <button onclick="abrirModulo('estoque')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'estoque' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800'}"><i class="fa-solid fa-boxes-stacked w-5"></i> Estoque</button>
+                            <button onclick="abrirModulo('estoque')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'estoque' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800'}"><i class="fa-solid fa-boxes-stacked w-5"></i> Estoque & Inventário</button>
                             <button onclick="abrirModulo('relatorios')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'relatorios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800'}"><i class="fa-solid fa-file-invoice-dollar w-5"></i> Relatórios & DRE</button>
                         </nav>
 
@@ -232,6 +222,7 @@
             let btnNovoHtml = '';
             if (moduloId === 'financeiro') btnNovoHtml = `<button onclick="renderModalNovoTitulo()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Título</button>`;
             else if (moduloId === 'formas_monetarias') btnNovoHtml = `<button onclick="renderModalFormaMonetaria()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Nova Forma Monetária</button>`;
+            else if (moduloId === 'estoque') btnNovoHtml = `<button onclick="renderModalEstoque()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Item no Estoque</button>`;
 
             const headerGlobal = `
                 <div class="flex items-center justify-between mb-6">
@@ -244,13 +235,167 @@
                 case 'dashboard': return headerGlobal + renderDashboardView();
                 case 'financeiro': return headerGlobal + renderFinanceiroView();
                 case 'formas_monetarias': return headerGlobal + renderFormasMonetariasView();
+                case 'estoque': return headerGlobal + renderEstoqueView();
                 case 'relatorios': return headerGlobal + renderRelatoriosView();
                 default: return headerGlobal + `<div class="bg-white p-6 rounded-xl border">Módulo em execução normal.</div>`;
             }
         }
 
         // ==========================================
-        // FINANCEIRO & BAIXAS (TOTAL / PARCIAL)
+        // MÓDULO ESTOQUE & INVENTÁRIO
+        // ==========================================
+        function renderEstoqueView() {
+            const list = db.estoque || [];
+            const hoje = new Date().toISOString().split('T')[0];
+
+            const inventariosAtrasadosOuHoje = list.filter(i => i.proximoBalanco && i.proximoBalanco <= hoje);
+            const proximosAgendados = list.filter(i => i.proximoBalanco && i.proximoBalanco > hoje);
+
+            return `
+                <div class="space-y-4">
+                    <!-- BANNER / NOTIFICAÇÃO DE INVENTÁRIO (CARD HIGHLIGHT) -->
+                    <div class="p-4 rounded-xl shadow-sm border ${inventariosAtrasadosOuHoje.length > 0 ? 'bg-rose-50 border-rose-300' : 'bg-amber-50 border-amber-200'} flex flex-col sm:flex-row items-center justify-between gap-4">
+                        <div class="flex items-center gap-3">
+                            <div class="w-12 h-12 rounded-xl ${inventariosAtrasadosOuHoje.length > 0 ? 'bg-rose-600 text-white' : 'bg-amber-500 text-white'} flex items-center justify-center text-xl font-bold shadow-sm">
+                                <i class="fa-solid ${inventariosAtrasadosOuHoje.length > 0 ? 'fa-triangle-exclamation animate-pulse' : 'fa-clipboard-check'}"></i>
+                            </div>
+                            <div>
+                                <h4 class="font-extrabold text-sm ${inventariosAtrasadosOuHoje.length > 0 ? 'text-rose-900' : 'text-amber-900'}">
+                                    ${inventariosAtrasadosOuHoje.length > 0 ? 'Alerta de Balanço de Estoque Pendente!' : 'Agendamento de Inventário do Condomínio'}
+                                </h4>
+                                <p class="text-xs ${inventariosAtrasadosOuHoje.length > 0 ? 'text-rose-700' : 'text-amber-800'} font-semibold">
+                                    ${inventariosAtrasadosOuHoje.length > 0 
+                                        ? `Existem ${inventariosAtrasadosOuHoje.length} item(ns) com balanço programado em atraso ou para a data de hoje.` 
+                                        : `Próximo balanço geral agendado: ${proximosAgendados.length > 0 ? proximosAgendados[0].proximoBalanco : 'Nenhum agendamento imediato'}.`}
+                                </p>
+                            </div>
+                        </div>
+                        <button onclick="filtrarItensBalancoPendente()" class="px-4 py-2 ${inventariosAtrasadosOuHoje.length > 0 ? 'bg-rose-600 hover:bg-rose-700' : 'bg-amber-600 hover:bg-amber-700'} text-white rounded-lg text-xs font-bold shadow transition">
+                            <i class="fa-solid fa-list-check"></i> Ver Itens Pendentes
+                        </button>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 font-bold uppercase border-b">
+                                <tr>
+                                    <th class="p-3">Item / Produto</th>
+                                    <th class="p-3">Categoria</th>
+                                    <th class="p-3">Qtd Atual</th>
+                                    <th class="p-3">Localização</th>
+                                    <th class="p-3">Próximo Balanço</th>
+                                    <th class="p-3">Status do Sensor</th>
+                                    <th class="p-3 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                ${list.map(e => {
+                                    const isCritico = e.qtd <= e.minimo;
+                                    const balancoPendente = e.proximoBalanco && e.proximoBalanco <= hoje;
+                                    return `
+                                        <tr class="hover:bg-slate-50">
+                                            <td class="p-3 font-bold text-slate-900">${escapeHTML(e.item)}</td>
+                                            <td class="p-3 text-slate-600">${escapeHTML(e.categoria)}</td>
+                                            <td class="p-3 font-extrabold text-slate-900">${e.qtd}</td>
+                                            <td class="p-3 text-slate-600">${escapeHTML(e.localizacao || 'Central')}</td>
+                                            <td class="p-3 font-bold">
+                                                ${e.proximoBalanco ? `
+                                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold ${balancoPendente ? 'bg-rose-100 text-rose-700 border border-rose-300 animate-pulse' : 'bg-slate-100 text-slate-700'}">
+                                                        <i class="fa-solid fa-calendar-day"></i> ${e.proximoBalanco} ${balancoPendente ? '(Realizar Hoje!)' : ''}
+                                                    </span>
+                                                ` : '<span class="text-slate-400">Não programado</span>'}
+                                            </td>
+                                            <td class="p-3">
+                                                ${isCritico ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700">Estoque Mínimo</span>` : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700">Estoque OK</span>`}
+                                            </td>
+                                            <td class="p-3 text-right space-x-1">
+                                                <button onclick="renderModalEstoque('${e.id}')" title="Editar Item" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+                                                <button onclick="excluirItemGenerico('estoque', '${e.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function filtrarItensBalancoPendente() {
+            alert('Atenção: Os itens destacados em vermelho possuem contagem física de inventário agendada para a data corrente ou em atraso.');
+        }
+
+        function renderModalEstoque(itemId = null) {
+            const e = itemId ? db.estoque.find(x => x.id === itemId) : null;
+
+            const html = `
+                <div id="modal_est" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+                            <h3 class="font-bold text-sm">${e ? 'Editar Item do Estoque' : 'Novo Item no Estoque'}</h3>
+                            <button onclick="fecharModal('modal_est')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <form onsubmit="salvarEstoqueForm(event, '${itemId || ''}')" class="p-6 space-y-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nome do Produto</label>
+                                <input type="text" id="est_item" required value="${e ? escapeHTML(e.item) : ''}" class="w-full p-2 border rounded text-xs font-bold">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Categoria</label>
+                                <input type="text" id="est_categoria" required value="${e ? escapeHTML(e.categoria) : ''}" class="w-full p-2 border rounded text-xs font-bold">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Qtd Atual</label>
+                                    <input type="number" id="est_qtd" required value="${e ? e.qtd : 0}" class="w-full p-2 border rounded text-xs font-bold">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Qtd Mínima</label>
+                                    <input type="number" id="est_min" required value="${e ? e.minimo : 5}" class="w-full p-2 border rounded text-xs font-bold">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Data do Próximo Balanço / Inventário</label>
+                                <input type="date" id="est_balanco" value="${e ? (e.proximoBalanco || '') : ''}" class="w-full p-2 border rounded text-xs font-bold">
+                            </div>
+                            <div class="flex items-center justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModal('modal_est')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
+                                <button type="submit" class="px-3 py-1.5 bg-teal-600 text-white rounded text-xs font-bold">Salvar Item</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        function salvarEstoqueForm(ev, itemId = '') {
+            ev.preventDefault();
+            const item = document.getElementById('est_item').value.trim();
+            const cat = document.getElementById('est_categoria').value.trim();
+            const qtd = parseInt(document.getElementById('est_qtd').value) || 0;
+            const min = parseInt(document.getElementById('est_min').value) || 0;
+            const bal = document.getElementById('est_balanco').value;
+
+            if (itemId) {
+                const e = db.estoque.find(x => x.id === itemId);
+                if (e) {
+                    e.item = item; e.categoria = cat; e.qtd = qtd; e.minimo = min; e.proximoBalanco = bal;
+                    registrarLog('Estoque', 'Edição', `Item ${item} atualizado. Balanço agendado para: ${bal}`);
+                }
+            } else {
+                db.estoque.push({ id: 'est_' + Date.now(), item, categoria: cat, qtd, minimo: min, proximoBalanco: bal });
+                registrarLog('Estoque', 'Criação', `Item ${item} adicionado. Balanço: ${bal}`);
+            }
+
+            salvarDados(db);
+            fecharModal('modal_est');
+            renderApp();
+        }
+
+        // ==========================================
+        // FINANCEIRO & LIQUIDAÇÃO
         // ==========================================
         function renderFinanceiroView() {
             let lista = db.financeiro || [];
@@ -266,7 +411,7 @@
                     <div class="bg-white p-3.5 rounded-xl shadow-sm border grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Competência (MM/AAAA)</label>
-                            <input type="text" id="flt_comp" value="${escapeHTML(finFiltros.competencia)}" placeholder="Ex: 11/2026" oninput="atualizarFiltrosFinanceiros()" class="w-full p-2 border rounded text-xs font-bold">
+                            <input type="text" id="flt_comp" value="${escapeHTML(finFiltros.competencia)}" placeholder="Ex: 10/2026" oninput="atualizarFiltrosFinanceiros()" class="w-full p-2 border rounded text-xs font-bold">
                         </div>
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Status</label>
@@ -296,7 +441,7 @@
                                     <th class="p-3">Vencimento</th>
                                     <th class="p-3">Valor</th>
                                     <th class="p-3">Status</th>
-                                    <th class="p-3 text-right">Ações</th>
+                                    <th class="p-3 text-right">Ações de Baixa</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y">
@@ -309,7 +454,16 @@
                                         <td class="p-3 font-bold">R$ ${Number(f.valor).toFixed(2)}</td>
                                         <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${f.status === 'Baixado' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${escapeHTML(f.status)}</span></td>
                                         <td class="p-3 text-right space-x-1">
-                                            <button onclick="abrirModalBaixaTitulo('${f.id}')" title="Liquidar / Baixar" class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded"><i class="fa-solid fa-circle-check"></i></button>
+                                            ${f.status === 'Aberto' ? `
+                                                <button onclick="abrirTelaPagarParcial('${f.id}', 'total')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[11px] inline-flex items-center gap-1 shadow-sm">
+                                                    <i class="fa-solid fa-check"></i> Total
+                                                </button>
+                                                <button onclick="abrirTelaPagarParcial('${f.id}', 'parcial')" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded font-bold text-[11px] inline-flex items-center gap-1 shadow-sm">
+                                                    <i class="fa-solid fa-scissors"></i> Parcial
+                                                </button>
+                                            ` : `
+                                                <span class="text-emerald-600 font-bold text-xs"><i class="fa-solid fa-circle-check"></i> Liquidado</span>
+                                            `}
                                             <button onclick="excluirItemGenerico('financeiro', '${f.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
                                         </td>
                                     </tr>
@@ -328,80 +482,206 @@
             renderApp();
         }
 
-        function abrirModalBaixaTitulo(id) {
+        function abrirTelaPagarParcial(id, modo = 'parcial') {
             const f = db.financeiro.find(x => x.id === id);
             if (!f) return;
 
+            itensGridBaixa = [];
+            const dataHoje = new Date().toISOString().split('T')[0];
+
             const html = `
-                <div id="modal_baixa" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
-                    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
-                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
-                            <h3 class="font-bold text-sm">Liquidar / Baixar Título</h3>
-                            <button onclick="fecharModal('modal_baixa')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                <div id="modal_pagar_parcial" class="fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-3">
+                    <div class="bg-white w-full max-w-6xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
+                        <div class="p-4 bg-slate-100 border-b flex items-center justify-between">
+                            <h3 class="text-xl font-bold text-slate-700 flex items-center gap-2">
+                                <i class="fa-solid fa-file-invoice-dollar text-teal-600"></i> ${f.tipo === 'Receber' ? 'Receber Parcial / Total' : 'Pagar Parcial / Total'}
+                            </h3>
+                            <div class="flex items-center gap-2">
+                                <button onclick="confirmarEFinalizarBaixa('${f.id}')" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs shadow transition flex items-center gap-2">
+                                    <i class="fa-solid fa-check"></i> ${f.tipo === 'Receber' ? 'Receber' : 'Pagar / Liquidar'}
+                                </button>
+                                <button onclick="fecharModal('modal_pagar_parcial')" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs shadow transition">
+                                    Voltar
+                                </button>
+                            </div>
                         </div>
-                        <form onsubmit="executarBaixaTitulo(event, '${f.id}')" class="p-6 space-y-4">
-                            <p class="text-xs font-bold text-slate-800">${escapeHTML(f.historico)} - Valor Original: <span class="text-teal-700">R$ ${f.valor.toFixed(2)}</span></p>
 
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tipo de Baixa</label>
-                                <select id="bx_modalidade" onchange="toggleValorParcial()" class="w-full p-2 border rounded text-xs font-bold">
-                                    <option value="total">Baixa Total (Integral)</option>
-                                    <option value="parcial">Baixa Parcial (Gerar Título de Resíduo)</option>
-                                </select>
+                        <div class="p-5 overflow-y-auto space-y-4 text-xs">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                                <div>
+                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Forma Monetária</label>
+                                    <div class="flex items-center gap-1">
+                                        <select id="bx_forma_sel" onchange="recalcularValoresBaixa('${f.id}')" class="w-full p-2 border rounded font-bold bg-white text-slate-900">
+                                            ${db.formas_monetarias.filter(m => m.status === 'Ativo').map(m => `<option value="${m.id}">${escapeHTML(m.nome)}</option>`).join('')}
+                                        </select>
+                                    </div>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Conta Bancária / Caixa</label>
+                                    <select id="bx_conta_sel" class="w-full p-2 border rounded font-bold bg-white text-slate-900">
+                                        ${db.contas_bancarias.map(c => `<option value="${c.id}">${escapeHTML(c.banco)}</option>`).join('')}
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Documento / Nº</label>
+                                    <input type="text" id="bx_doc" value="0" class="w-full p-2 border rounded font-bold text-slate-900">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Data Compensação</label>
+                                    <div class="flex gap-1">
+                                        <input type="date" id="bx_data_comp" value="${dataHoje}" onchange="recalcularValoresBaixa('${f.id}')" class="w-full p-2 border rounded font-bold text-slate-900">
+                                        <input type="time" id="bx_hora_comp" value="14:00" class="w-24 p-2 border rounded font-bold text-slate-900">
+                                    </div>
+                                </div>
                             </div>
 
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Valor Pago / Liquidado (R$)</label>
-                                <input type="number" step="0.01" id="bx_valor" value="${f.valor}" readonly required class="w-full p-2 border rounded text-xs font-bold bg-slate-100">
+                            <div class="grid grid-cols-2 md:grid-cols-6 gap-3">
+                                <div>
+                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Valor Bruto (R$)</label>
+                                    <input type="text" id="bx_val_bruto" value="${f.valor.toFixed(2)}" readonly class="w-full p-2 border rounded font-bold bg-slate-100 text-slate-900">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Multa (R$)</label>
+                                    <input type="number" step="0.01" id="bx_multa" value="0.00" oninput="recalcularValoresBaixaManualmente()" class="w-full p-2 border rounded font-bold text-slate-900">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Juros dia (R$)</label>
+                                    <input type="number" step="0.01" id="bx_juros" value="0.00" oninput="recalcularValoresBaixaManualmente()" class="w-full p-2 border rounded font-bold text-slate-900">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Tx. Adicional (R$)</label>
+                                    <input type="number" step="0.01" id="bx_taxa" value="0.00" oninput="recalcularValoresBaixaManualmente()" class="w-full p-2 border rounded text-xs font-bold text-slate-900">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Descontos (R$)</label>
+                                    <input type="number" step="0.01" id="bx_desconto" value="0.00" oninput="recalcularValoresBaixaManualmente()" class="w-full p-2 border rounded text-xs font-bold text-slate-900">
+                                </div>
+                                <div>
+                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Valor Líquido (R$)</label>
+                                    <input type="text" id="bx_val_liquido" value="${f.valor.toFixed(2)}" readonly class="w-full p-2 border rounded font-bold bg-slate-100 text-slate-900">
+                                </div>
                             </div>
 
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Forma Monetária de Pagamento</label>
-                                <select id="bx_forma" class="w-full p-2 border rounded text-xs font-bold">
-                                    ${db.formas_monetarias.filter(m => m.status === 'Ativo').map(m => `<option value="${m.id}">${escapeHTML(m.nome)}</option>`).join('')}
-                                </select>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+                                <div>
+                                    <label class="block font-bold text-emerald-800 uppercase text-[10px] mb-1">Valor Baixa / Quitado (R$)</label>
+                                    <input type="number" step="0.01" id="bx_val_baixa" value="${f.valor.toFixed(2)}" class="w-full p-2.5 bg-emerald-100 border-2 border-emerald-400 rounded-lg font-extrabold text-emerald-900 text-sm">
+                                </div>
+                                <div class="md:col-span-2">
+                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Comprovante / Anexo (Opcional)</label>
+                                    <div class="flex gap-2">
+                                        <input type="text" id="bx_comprovante" placeholder="Nº do Recibo ou Autenticação" class="flex-1 p-2 border rounded font-bold text-slate-900">
+                                        <button onclick="adicionarItemNaGrelhaBaixa()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded font-bold text-xs shadow">
+                                            Adicionar
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
 
-                            <div class="flex items-center justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModal('modal_baixa')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
-                                <button type="submit" class="px-4 py-1.5 bg-emerald-600 text-white rounded text-xs font-bold">Confirmar Liquidação</button>
+                            <div class="border rounded-xl overflow-hidden bg-white mt-4">
+                                <table class="w-full text-left text-[11px]">
+                                    <thead class="bg-slate-100 border-b font-bold uppercase text-slate-600">
+                                        <tr>
+                                            <th class="p-2.5">FORMA</th>
+                                            <th class="p-2.5">VALOR BRUTO</th>
+                                            <th class="p-2.5">MULTA</th>
+                                            <th class="p-2.5">JUROS</th>
+                                            <th class="p-2.5">TX. ADICIC</th>
+                                            <th class="p-2.5">DESCONTO</th>
+                                            <th class="p-2.5">VALOR LÍQUIDO</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="tbl_body_grid_baixa" class="divide-y">
+                                        <tr><td colspan="7" class="p-4 text-center text-slate-400">Clique em "Adicionar" para incluir o detalhamento do recebimento.</td></tr>
+                                    </tbody>
+                                </table>
                             </div>
-                        </form>
+                        </div>
                     </div>
                 </div>
             `;
             document.body.insertAdjacentHTML('beforeend', html);
+            recalcularValoresBaixa(id);
         }
 
-        function toggleValorParcial() {
-            const mod = document.getElementById('bx_modalidade').value;
-            const inputVal = document.getElementById('bx_valor');
-            if (mod === 'parcial') {
-                inputVal.removeAttribute('readonly');
-                inputVal.classList.remove('bg-slate-100');
-            } else {
-                inputVal.setAttribute('readonly', 'true');
-                inputVal.classList.add('bg-slate-100');
+        function recalcularValoresBaixa(tituloId) {
+            const f = db.financeiro.find(x => x.id === tituloId);
+            if (!f) return;
+
+            const formaId = document.getElementById('bx_forma_sel').value;
+            const forma = db.formas_monetarias.find(m => m.id === formaId);
+            const dataComp = document.getElementById('bx_data_comp').value;
+
+            let multa = 0;
+            let juros = 0;
+
+            if (forma && f.vencimento && dataComp > f.vencimento) {
+                const diffMs = new Date(dataComp) - new Date(f.vencimento);
+                const diasAtraso = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+                if (diasAtraso > 0) {
+                    multa = (f.valor * (forma.multaPct || 0)) / 100;
+                    juros = f.valor * ((forma.jurosDiaPct || 0) / 100) * diasAtraso;
+                }
             }
+
+            document.getElementById('bx_multa').value = multa.toFixed(2);
+            document.getElementById('bx_juros').value = juros.toFixed(2);
+            recalcularValoresBaixaManualmente();
         }
 
-        function executarBaixaTitulo(e, id) {
-            e.preventDefault();
+        function recalcularValoresBaixaManualmente() {
+            const bruto = parseFloat(document.getElementById('bx_val_bruto').value) || 0;
+            const multa = parseFloat(document.getElementById('bx_multa').value) || 0;
+            const juros = parseFloat(document.getElementById('bx_juros').value) || 0;
+            const taxa = parseFloat(document.getElementById('bx_taxa').value) || 0;
+            const desconto = parseFloat(document.getElementById('bx_desconto').value) || 0;
+
+            const liquido = bruto + multa + juros + taxa - desconto;
+            document.getElementById('bx_val_liquido').value = liquido.toFixed(2);
+        }
+
+        function adicionarItemNaGrelhaBaixa() {
+            const formaText = document.getElementById('bx_forma_sel').options[document.getElementById('bx_forma_sel').selectedIndex].text;
+            const bruto = parseFloat(document.getElementById('bx_val_bruto').value) || 0;
+            const multa = parseFloat(document.getElementById('bx_multa').value) || 0;
+            const juros = parseFloat(document.getElementById('bx_juros').value) || 0;
+            const taxa = parseFloat(document.getElementById('bx_taxa').value) || 0;
+            const desconto = parseFloat(document.getElementById('bx_desconto').value) || 0;
+            const liquido = parseFloat(document.getElementById('bx_val_liquido').value) || 0;
+
+            itensGridBaixa.push({ forma: formaText, bruto, multa, juros, taxa, desconto, liquido });
+
+            const tbody = document.getElementById('tbl_body_grid_baixa');
+            tbody.innerHTML = itensGridBaixa.map(i => `
+                <tr class="font-bold">
+                    <td class="p-2.5">${escapeHTML(i.forma)}</td>
+                    <td class="p-2.5">R$ ${i.bruto.toFixed(2)}</td>
+                    <td class="p-2.5 text-rose-600">R$ ${i.multa.toFixed(2)}</td>
+                    <td class="p-2.5 text-rose-600">R$ ${i.juros.toFixed(2)}</td>
+                    <td class="p-2.5">R$ ${i.taxa.toFixed(2)}</td>
+                    <td class="p-2.5 text-emerald-600">R$ ${i.desconto.toFixed(2)}</td>
+                    <td class="p-2.5 text-teal-800">R$ ${i.liquido.toFixed(2)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function confirmarEFinalizarBaixa(id) {
             const f = db.financeiro.find(x => x.id === id);
             if (!f) return;
 
-            const mod = document.getElementById('bx_modalidade').value;
-            const valPago = parseFloat(document.getElementById('bx_valor').value) || 0;
-            const formaId = document.getElementById('bx_forma').value;
+            const valLiquidoTotal = parseFloat(document.getElementById('bx_val_liquido').value) || 0;
+            const valBaixa = parseFloat(document.getElementById('bx_val_baixa').value) || 0;
+            const formaId = document.getElementById('bx_forma_sel').value;
 
-            if (valPago <= 0 || valPago > f.valor) {
-                alert('Valor pago inválido!');
+            if (valBaixa <= 0) {
+                alert('Informe um valor de baixa válido!');
                 return;
             }
 
-            if (mod === 'parcial' && valPago < f.valor) {
-                const residuo = f.valor - valPago;
-                f.valor = valPago;
+            if (valBaixa < f.valor) {
+                const residuo = f.valor - valBaixa;
+                f.valor = valBaixa;
                 f.status = 'Baixado';
                 f.formaMonetariaId = formaId;
 
@@ -416,15 +696,15 @@
                     status: 'Aberto'
                 });
 
-                registrarLog('Financeiro', 'Baixa Parcial', `Título "${f.historico}" baixado em R$ ${valPago}. Criado resíduo de R$ ${residuo}.`);
+                registrarLog('Financeiro', 'Baixa Parcial', `Título "${f.historico}" liquidado em R$ ${valBaixa}. Gerado resíduo automático de R$ ${residuo.toFixed(2)}.`);
             } else {
                 f.status = 'Baixado';
                 f.formaMonetariaId = formaId;
-                registrarLog('Financeiro', 'Baixa Total', `Título "${f.historico}" liquidado totalmente.`);
+                registrarLog('Financeiro', 'Baixa Total', `Título "${f.historico}" liquidado integralmente.`);
             }
 
             salvarDados(db);
-            fecharModal('modal_baixa');
+            fecharModal('modal_pagar_parcial');
             renderApp();
         }
 
@@ -437,9 +717,10 @@
                     <table class="w-full text-left text-xs">
                         <thead class="bg-slate-100 font-bold uppercase border-b">
                             <tr>
-                                <th class="p-3">Nome do Meio de Pagamento</th>
+                                <th class="p-3">Nome da Forma Monetária</th>
+                                <th class="p-3">Multa Padrão (%)</th>
+                                <th class="p-3">Juros Dia (%)</th>
                                 <th class="p-3">Conta Bancária Vinculada</th>
-                                <th class="p-3">Liquidação Imediata?</th>
                                 <th class="p-3">Status</th>
                                 <th class="p-3 text-right">Ações</th>
                             </tr>
@@ -450,11 +731,11 @@
                                 return `
                                     <tr class="hover:bg-slate-50">
                                         <td class="p-3 font-bold text-slate-800">${escapeHTML(m.nome)}</td>
-                                        <td class="p-3 font-semibold text-teal-700">${conta ? escapeHTML(conta.banco) : 'Sem vínculo'}</td>
-                                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.baixaAutomatica ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}">${m.baixaAutomatica ? 'Sim (Liquida na hora)' : 'Não (Compensação Pendente)'}</span></td>
+                                        <td class="p-3 font-bold text-slate-700">${(m.multaPct || 0).toFixed(2)}%</td>
+                                        <td class="p-3 font-bold text-slate-700">${(m.jurosDiaPct || 0).toFixed(3)}%</td>
+                                        <td class="p-3 font-semibold text-teal-700">${conta ? escapeHTML(conta.banco) : 'Caixa Interno'}</td>
                                         <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.status === 'Ativo' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${m.status}</span></td>
                                         <td class="p-3 text-right space-x-1">
-                                            <button onclick="toggleStatusForma('${m.id}')" class="p-1.5 text-amber-600 hover:bg-amber-50 rounded" title="Alternar Status"><i class="fa-solid fa-ban"></i></button>
                                             <button onclick="excluirItemGenerico('formas_monetarias', '${m.id}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Excluir"><i class="fa-solid fa-trash-can"></i></button>
                                         </td>
                                     </tr>
@@ -477,18 +758,24 @@
                         <form onsubmit="salvarFormaMonetaria(event)" class="p-6 space-y-3">
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nome do Meio / Forma</label>
-                                <input type="text" id="fm_nome" required placeholder="Ex: Cartão de Débito" class="w-full p-2 border rounded text-xs font-bold">
+                                <input type="text" id="fm_nome" required placeholder="Ex: PIX ONLINE" class="w-full p-2 border rounded text-xs font-bold">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Multa Atraso (%)</label>
+                                    <input type="number" step="0.01" id="fm_multa" value="2.00" class="w-full p-2 border rounded text-xs font-bold">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Juros ao Dia (%)</label>
+                                    <input type="number" step="0.001" id="fm_juros" value="0.033" class="w-full p-2 border rounded text-xs font-bold">
+                                </div>
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Conta Bancária / Caixa de Destino</label>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Conta Bancária Destino</label>
                                 <select id="fm_conta" class="w-full p-2 border rounded text-xs font-bold">
                                     ${db.contas_bancarias.map(c => `<option value="${c.id}">${escapeHTML(c.banco)}</option>`).join('')}
                                 </select>
                             </div>
-                            <label class="flex items-center gap-2 cursor-pointer pt-2 font-bold text-xs text-teal-800">
-                                <input type="checkbox" id="fm_baixa" checked class="rounded text-teal-600 w-4 h-4">
-                                Liquidar e baixar automaticamente ao selecionar
-                            </label>
                             <div class="flex items-center justify-end gap-2 pt-3 border-t">
                                 <button type="button" onclick="fecharModal('modal_fm')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
                                 <button type="submit" class="px-3 py-1.5 bg-teal-600 text-white rounded text-xs font-bold">Salvar Forma</button>
@@ -503,26 +790,18 @@
         function salvarFormaMonetaria(e) {
             e.preventDefault();
             const nome = document.getElementById('fm_nome').value.trim();
+            const multaPct = parseFloat(document.getElementById('fm_multa').value) || 0;
+            const jurosDiaPct = parseFloat(document.getElementById('fm_juros').value) || 0;
             const contaId = document.getElementById('fm_conta').value;
-            const baixa = document.getElementById('fm_baixa').checked;
 
-            db.formas_monetarias.push({ id: 'fm_' + Date.now(), nome, contaId, baixaAutomatica: baixa, status: 'Ativo' });
+            db.formas_monetarias.push({ id: 'fm_' + Date.now(), nome, multaPct, jurosDiaPct, contaId, baixaAutomatica: true, status: 'Ativo' });
             salvarDados(db);
             fecharModal('modal_fm');
             renderApp();
         }
 
-        function toggleStatusForma(id) {
-            const m = db.formas_monetarias.find(x => x.id === id);
-            if (m) {
-                m.status = m.status === 'Ativo' ? 'Inativo' : 'Ativo';
-                salvarDados(db);
-                renderApp();
-            }
-        }
-
         // ==========================================
-        // DRE & DEMAIS COMPONENTES
+        // DRE & OUTRAS INTERFACES
         // ==========================================
         function renderRelatoriosView() {
             const recTotal = db.financeiro.filter(f => f.tipo === 'Receber' && f.status === 'Baixado').reduce((a, b) => a + b.valor, 0);
@@ -559,9 +838,9 @@
         function renderDashboardView() {
             return `
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="bg-white p-4 rounded-xl border"><p class="text-xs font-bold text-slate-500 uppercase">Receitas em Aberto</p><h3 class="text-xl font-extrabold text-emerald-600">R$ ${db.financeiro.filter(f=>f.tipo==='Receber' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0).toFixed(2)}</h3></div>
-                    <div class="bg-white p-4 rounded-xl border"><p class="text-xs font-bold text-slate-500 uppercase">Despesas em Aberto</p><h3 class="text-xl font-extrabold text-rose-600">R$ ${db.financeiro.filter(f=>f.tipo==='Pagar' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0).toFixed(2)}</h3></div>
-                    <div class="bg-white p-4 rounded-xl border"><p class="text-xs font-bold text-slate-500 uppercase">Total de Moradores</p><h3 class="text-xl font-extrabold text-slate-800">${db.moradores.length}</h3></div>
+                    <div class="bg-white p-4 rounded-xl border"><p class="text-xs font-bold text-slate-500 uppercase">A Receber em Aberto</p><h3 class="text-xl font-extrabold text-emerald-600">R$ ${db.financeiro.filter(f=>f.tipo==='Receber' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0).toFixed(2)}</h3></div>
+                    <div class="bg-white p-4 rounded-xl border"><p class="text-xs font-bold text-slate-500 uppercase">A Pagar em Aberto</p><h3 class="text-xl font-extrabold text-rose-600">R$ ${db.financeiro.filter(f=>f.tipo==='Pagar' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0).toFixed(2)}</h3></div>
+                    <div class="bg-white p-4 rounded-xl border"><p class="text-xs font-bold text-slate-500 uppercase">Itens no Estoque</p><h3 class="text-xl font-extrabold text-slate-800">${db.estoque.length}</h3></div>
                 </div>
             `;
         }
@@ -608,6 +887,67 @@
                     drops[i]++;
                 });
             }, 33);
+        }
+
+        function renderModalNovoTitulo() {
+            const html = `
+                <div id="modal_novo_t" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+                            <h3 class="font-bold text-sm">Novo Título Financeiro</h3>
+                            <button onclick="fecharModal('modal_novo_t')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <form onsubmit="salvarNovoTituloForm(event)" class="p-6 space-y-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tipo</label>
+                                    <select id="nt_tipo" class="w-full p-2 border rounded text-xs font-bold">
+                                        <option value="Receber">A Receber</option>
+                                        <option value="Pagar">A Pagar</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Valor (R$)</label>
+                                    <input type="number" step="0.01" id="nt_valor" required value="2500.00" class="w-full p-2 border rounded text-xs font-bold">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Histórico / Descrição</label>
+                                <input type="text" id="nt_hist" required placeholder="Ex: Taxa Condominial Ordinária" class="w-full p-2 border rounded text-xs font-bold">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Competência</label>
+                                    <input type="text" id="nt_comp" value="10/2026" class="w-full p-2 border rounded text-xs font-bold">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Vencimento</label>
+                                    <input type="date" id="nt_venc" required value="2026-10-15" class="w-full p-2 border rounded text-xs font-bold">
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModal('modal_novo_t')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
+                                <button type="submit" class="px-3 py-1.5 bg-teal-600 text-white rounded text-xs font-bold">Salvar Título</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        function salvarNovoTituloForm(e) {
+            e.preventDefault();
+            const tipo = document.getElementById('nt_tipo').value;
+            const valor = parseFloat(document.getElementById('nt_valor').value) || 0;
+            const historico = document.getElementById('nt_hist').value.trim();
+            const competencia = document.getElementById('nt_comp').value.trim();
+            const vencimento = document.getElementById('nt_venc').value;
+
+            db.financeiro.push({ id: 'fin_' + Date.now(), tipo, valor, historico, competencia, vencimento, status: 'Aberto' });
+            salvarDados(db);
+            fecharModal('modal_novo_t');
+            renderApp();
         }
 
         function excluirItemGenerico(modKey, itemId) {
