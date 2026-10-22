@@ -6,9 +6,9 @@
     <title>Guardiões do Bravo - Gestão Condominial Segura</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         .will-change-transform { will-change: transform; }
-        /* Alto Contraste */
         input, select, textarea { color: #0f172a !important; font-weight: 600 !important; }
         .tab-active { border-bottom: 3px solid #0d9488; background-color: #ffffff; color: #0f766e; font-weight: 700; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -100,13 +100,21 @@
                 { id: 'for_1', nome: 'Otis Elevadores', cnpj: '12.345.678/0001-90', telefone: '(41) 3333-4444', servico: 'Elevadores', status: 'Ativo' }
             ],
             estoque: [
-                { id: 'est_1', item: 'Lâmpada LED 12W', categoria: 'Elétrica', qtd: 24, minimo: 5, localizacao: 'Almoxarifado Central' }
+                { id: 'est_1', item: 'Lâmpada LED 12W', categoria: 'Elétrica', qtd: 4, minimo: 10, maximo: 50, localizacao: 'Almoxarifado Central' },
+                { id: 'est_2', item: 'Cloro Granulado 10kg', categoria: 'Piscina', qtd: 15, minimo: 5, maximo: 30, localizacao: 'DML Piscina' }
             ],
             patrimonio: [
                 { id: 'pat_1', codigo: 'PAT-001', item: 'Cortador de Grama', local: 'Jardim', valor: 1850.00, estado: 'Ótimo' }
             ],
             documentos: [
                 { id: 'doc_1', titulo: 'Convenção Condominial', categoria: 'Jurídico', data: '2026-01-10' }
+            ],
+            dre_config: [
+                { id: 'A', codigo: 'REC_BRUTA', label: '(+) RECEITA OPERACIONAL BRUTA', tipo: 'direto', operacao: 'somar_receitas' },
+                { id: 'B', codigo: 'INADIMP', label: '(-) INADIMPLÊNCIA / ABATIMENTOS', tipo: 'direto', operacao: 'somar_pendencias' },
+                { id: 'C', codigo: 'REC_LIQ', label: '(=) RECEITA OPERACIONAL LÍQUIDA', tipo: 'formula', formula: 'A - B' },
+                { id: 'D', codigo: 'DESP_OP', label: '(-) DESPESAS OPERACIONAIS & MANUTENÇÃO', tipo: 'direto', operacao: 'somar_despesas' },
+                { id: 'E', codigo: 'RES_LIQ', label: '(=) RESULTADO OPERACIONAL (SUPERÁVIT/DEFICIT)', tipo: 'formula', formula: 'C - D' }
             ],
             logs: []
         };
@@ -142,12 +150,17 @@
             activeTab: 'dashboard'
         };
 
-        // Estado do Filtro Financeiro
         let finFiltros = {
             competencia: '',
             status: 'Todos',
             tipo: 'Todos',
             busca: ''
+        };
+
+        let relatorioFiltros = {
+            tipo: 'geral',
+            dataInicio: '2026-01-01',
+            dataFim: '2026-12-31'
         };
 
         const MODULE_NAMES = {
@@ -160,7 +173,7 @@
             estoque: 'Estoque de Produtos',
             patrimonio: 'Patrimônio / Bens',
             documentos: 'Documentos & Anexos',
-            relatorios: 'Relatórios Consolidados',
+            relatorios: 'Relatórios Consolidados & DRE',
             usuarios: 'Gestão de Usuários',
             audit_log: 'Log de Auditoria'
         };
@@ -352,9 +365,9 @@
                                 <i class="fa-solid fa-folder-open w-5 text-center"></i> Documentos & Anexos
                             </button>
 
-                            <p class="px-3 pt-3 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Administração & Relatórios</p>
+                            <p class="px-3 pt-3 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Administração & DRE</p>
                             <button onclick="abrirModulo('relatorios')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition ${tabsState.activeTab === 'relatorios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
-                                <i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i> Relatórios Consolidados
+                                <i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i> Relatórios & DRE
                             </button>
                             <button onclick="abrirModulo('usuarios')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition ${tabsState.activeTab === 'usuarios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
                                 <i class="fa-solid fa-user-shield w-5 text-center"></i> Gestão de Usuários
@@ -380,7 +393,7 @@
                         </div>
                     </aside>
 
-                    <!-- ÁREA COM ABAS MULTI-TABS -->
+                    <!-- ÁREA PRINCIPAL -->
                     <div class="flex-1 flex flex-col overflow-hidden">
                         <header class="bg-slate-900 text-white p-3 flex md:hidden items-center justify-between border-b border-slate-800">
                             <div class="flex items-center gap-3">
@@ -392,7 +405,7 @@
                             <button onclick="encerrarSessao()" class="text-xs bg-red-600/20 text-red-400 px-2.5 py-1.5 rounded-md">Sair</button>
                         </header>
 
-                        <!-- BARRA DE ABAS -->
+                        <!-- BARRA DE ABAS SIMULTÂNEAS -->
                         <div class="bg-slate-200 border-b border-slate-300 flex items-center overflow-x-auto px-2 pt-2 gap-1 no-print">
                             ${tabsState.openTabs.map(tabId => `
                                 <div onclick="abrirModulo('${tabId}')" class="flex items-center gap-2 px-3 py-2 rounded-t-lg text-xs font-semibold cursor-pointer transition select-none ${tabsState.activeTab === tabId ? 'tab-active shadow-sm' : 'bg-slate-300 text-slate-600 hover:bg-slate-300/80'}">
@@ -412,6 +425,10 @@
                     </div>
                 </div>
             `;
+
+            if (tabsState.activeTab === 'dashboard') {
+                setTimeout(renderDashboardCharts, 100);
+            }
         }
 
         function toggleMobileSidebar() {
@@ -427,7 +444,6 @@
                 case 'plano_contas': return { nome: "Plano de Contas", campos: [{key:"codigo", label:"Código"}, {key:"nome", label:"Nome da Conta"}, {key:"tipo", label:"Tipo (Receita/Despesa)"}] };
                 case 'contas_bancarias': return { nome: "Conta Bancária", campos: [{key:"banco", label:"Banco / Caixinha"}, {key:"agencia", label:"Agência"}, {key:"conta", label:"Número da Conta"}, {key:"saldo", label:"Saldo Inicial (R$)"}] };
                 case 'fornecedores': return { nome: "Fornecedor", campos: [{key:"nome", label:"Razão Social / Nome"}, {key:"cnpj", label:"CNPJ / CPF"}, {key:"telefone", label:"Telefone"}, {key:"servico", label:"Serviço Prestado"}] };
-                case 'estoque': return { nome: "Item do Estoque", campos: [{key:"item", label:"Nome do Produto"}, {key:"categoria", label:"Categoria"}, {key:"qtd", label:"Quantidade"}, {key:"minimo", label:"Estoque Mínimo"}, {key:"localizacao", label:"Localização"}] };
                 case 'patrimonio': return { nome: "Patrimônio", campos: [{key:"codigo", label:"Código / Placa"}, {key:"item", label:"Descrição do Item"}, {key:"local", label:"Localização"}, {key:"valor", label:"Valor Estimado (R$)"}, {key:"estado", label:"Estado de Conservação"}] };
                 case 'documentos': return { nome: "Documento", campos: [{key:"titulo", label:"Título do Documento"}, {key:"categoria", label:"Categoria"}, {key:"data", label:"Data (AAAA-MM-DD)"}] };
                 default: return null;
@@ -442,6 +458,8 @@
                 btnNovoHtml = `<button onclick="renderModalNovoTitulo()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm flex items-center gap-2 transition"><i class="fa-solid fa-plus"></i> Novo Título Financeiro</button>`;
             } else if (moduloId === 'moradores') {
                 btnNovoHtml = `<button onclick="renderModalMorador()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm flex items-center gap-2 transition"><i class="fa-solid fa-plus"></i> Novo Morador</button>`;
+            } else if (moduloId === 'estoque') {
+                btnNovoHtml = `<button onclick="renderModalEstoque()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm flex items-center gap-2 transition"><i class="fa-solid fa-plus"></i> Novo Item no Estoque</button>`;
             } else if (moduloId === 'usuarios') {
                 btnNovoHtml = `<button onclick="renderModalUsuario()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm flex items-center gap-2 transition"><i class="fa-solid fa-plus"></i> Novo Usuário</button>`;
             } else if (camposCfg) {
@@ -467,6 +485,7 @@
                 case 'dashboard': return headerGlobal + renderDashboardView();
                 case 'financeiro': return headerGlobal + renderFinanceiroView();
                 case 'moradores': return headerGlobal + renderMoradoresView();
+                case 'estoque': return headerGlobal + renderEstoqueView();
                 case 'relatorios': return headerGlobal + renderRelatoriosView();
                 case 'usuarios': return headerGlobal + renderUsuariosView();
                 case 'audit_log': return headerGlobal + renderAuditLogView();
@@ -475,96 +494,340 @@
         }
 
         // ==========================================
-        // 7. MÓDULO FINANCEIRO COM FILTROS AVANÇADOS
+        // 7. DASHBOARD COM GRÁFICOS (CHART.JS)
         // ==========================================
-        function renderFinanceiroView() {
-            let lista = db.financeiro || [];
-
-            // Filtro por Competência
-            if (finFiltros.competencia.trim() !== '') {
-                lista = lista.filter(f => (f.competencia || '').toLowerCase().includes(finFiltros.competencia.trim().toLowerCase()));
-            }
-            // Filtro por Status
-            if (finFiltros.status !== 'Todos') {
-                lista = lista.filter(f => f.status === finFiltros.status);
-            }
-            // Filtro por Tipo
-            if (finFiltros.tipo !== 'Todos') {
-                lista = lista.filter(f => f.tipo === finFiltros.tipo);
-            }
-            // Busca por texto
-            if (finFiltros.busca.trim() !== '') {
-                const b = finFiltros.busca.toLowerCase();
-                lista = lista.filter(f => (f.historico || '').toLowerCase().includes(b) || (f.fornecedor || '').toLowerCase().includes(b));
-            }
+        function renderDashboardView() {
+            const recTotal = db.financeiro.filter(f=>f.tipo==='Receber' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0);
+            const pagTotal = db.financeiro.filter(f=>f.tipo==='Pagar' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0);
 
             return `
-                <div class="space-y-4">
-                    <!-- BARRA SUPERIOR DE FILTROS APRIMORADA -->
-                    <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-center">
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Competência (MM/AAAA)</label>
-                            <input type="text" id="flt_comp" value="${escapeHTML(finFiltros.competencia)}" placeholder="Ex: 11/2026" oninput="atualizarFiltrosFinanceiros()" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                <div class="space-y-6">
+                    <!-- CARDS DE METRICAS -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-bold text-slate-500 uppercase">A Receber (Aberto)</p>
+                                <h3 class="text-xl font-extrabold text-emerald-600">R$ ${recTotal.toFixed(2)}</h3>
+                            </div>
+                            <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg"><i class="fa-solid fa-arrow-down-left"></i></div>
                         </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Status do Título</label>
-                            <select id="flt_status" onchange="atualizarFiltrosFinanceiros()" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                                <option value="Todos" ${finFiltros.status === 'Todos' ? 'selected' : ''}>Todos os Status</option>
-                                <option value="Aberto" ${finFiltros.status === 'Aberto' ? 'selected' : ''}>Aberto</option>
-                                <option value="Baixado" ${finFiltros.status === 'Baixado' ? 'selected' : ''}>Baixado (Compensado)</option>
-                            </select>
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-bold text-slate-500 uppercase">A Pagar (Aberto)</p>
+                                <h3 class="text-xl font-extrabold text-rose-600">R$ ${pagTotal.toFixed(2)}</h3>
+                            </div>
+                            <div class="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-lg"><i class="fa-solid fa-arrow-up-right"></i></div>
                         </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tipo de Operação</label>
-                            <select id="flt_tipo" onchange="atualizarFiltrosFinanceiros()" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                                <option value="Todos" ${finFiltros.tipo === 'Todos' ? 'selected' : ''}>Todos os Tipos</option>
-                                <option value="Receber" ${finFiltros.tipo === 'Receber' ? 'selected' : ''}>A Receber</option>
-                                <option value="Pagar" ${finFiltros.tipo === 'Pagar' ? 'selected' : ''}>A Pagar</option>
-                            </select>
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-bold text-slate-500 uppercase">Moradores</p>
+                                <h3 class="text-xl font-extrabold text-slate-800">${db.moradores.length}</h3>
+                            </div>
+                            <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-lg"><i class="fa-solid fa-users"></i></div>
                         </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Buscar por Descrição</label>
-                            <input type="text" id="flt_busca" value="${escapeHTML(finFiltros.busca)}" placeholder="Digite para filtrar..." oninput="atualizarFiltrosFinanceiros()" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                            <div>
+                                <p class="text-xs font-bold text-slate-500 uppercase">Usuários Ativos</p>
+                                <h3 class="text-xl font-extrabold text-teal-600">${db.usuarios.filter(u=>u.status==='Ativo').length}</h3>
+                            </div>
+                            <div class="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center text-lg"><i class="fa-solid fa-user-shield"></i></div>
                         </div>
                     </div>
 
-                    <!-- TABELA DE TÍTULOS FINANCEIROS -->
+                    <!-- ÁREA DE GRÁFICOS DINÂMICOS -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
+                            <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-chart-column text-teal-600"></i> Receitas vs. Despesas (Aberto x Baixado)</h4>
+                            <div class="h-64 relative"><canvas id="chartReceitasDespesas"></canvas></div>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
+                            <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-chart-pie text-teal-600"></i> Censo de Ocupação (Moradores)</h4>
+                            <div class="h-64 relative"><canvas id="chartMoradores"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDashboardCharts() {
+            const ctx1 = document.getElementById('chartReceitasDespesas');
+            const ctx2 = document.getElementById('chartMoradores');
+
+            if (!ctx1 || !ctx2) return;
+
+            const recAberto = db.financeiro.filter(f=>f.tipo==='Receber' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0);
+            const recBaixado = db.financeiro.filter(f=>f.tipo==='Receber' && f.status==='Baixado').reduce((a,b)=>a+b.valor,0);
+            const pagAberto = db.financeiro.filter(f=>f.tipo==='Pagar' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0);
+            const pagBaixado = db.financeiro.filter(f=>f.tipo==='Pagar' && f.status==='Baixado').reduce((a,b)=>a+b.valor,0);
+
+            new Chart(ctx1, {
+                type: 'bar',
+                data: {
+                    labels: ['A Receber', 'Recebido (Baixado)', 'A Pagar', 'Pago (Baixado)'],
+                    datasets: [{
+                        label: 'Valor Total (R$)',
+                        data: [recAberto, recBaixado, pagAberto, pagBaixado],
+                        backgroundColor: ['#10b981', '#059669', '#f43f5e', '#e11d48']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+
+            const props = db.moradores.filter(m=>m.tipo==='Proprietário').length;
+            const inqs = db.moradores.filter(m=>m.tipo==='Inquilino').length;
+
+            new Chart(ctx2, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Proprietários', 'Inquilinos'],
+                    datasets: [{
+                        data: [props, inqs],
+                        backgroundColor: ['#2563eb', '#9333ea']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        // ==========================================
+        // 8. MÓDULO DE ESTOQUE COM SENSOR MÍN/MÁX
+        // ==========================================
+        function renderEstoqueView() {
+            const list = db.estoque || [];
+            const criticos = list.filter(i => i.qtd <= i.minimo);
+
+            return `
+                <div class="space-y-4">
+                    <!-- CARDS DE ALERTA DE ESTOQUE -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                            <p class="text-xs font-bold text-slate-500 uppercase">Total de Itens</p>
+                            <h3 class="text-xl font-extrabold text-slate-800">${list.length} Produtos</h3>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-rose-200 bg-rose-50/30">
+                            <p class="text-xs font-bold text-rose-800 uppercase">Itens em Alerta Crítico (≤ Mínimo)</p>
+                            <h3 class="text-xl font-extrabold text-rose-600">${criticos.length} Produtos</h3>
+                        </div>
+                        <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
+                            <p class="text-xs font-bold text-slate-500 uppercase">Soma de Cota Máxima</p>
+                            <h3 class="text-xl font-extrabold text-teal-600">${list.reduce((a,b)=>a+(b.maximo||0),0)} Unidades</h3>
+                        </div>
+                    </div>
+
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-xs">
                                 <thead class="bg-slate-100 text-slate-600 font-bold uppercase border-b">
                                     <tr>
-                                        <th class="p-3">Tipo</th>
-                                        <th class="p-3">Descrição / Histórico</th>
-                                        <th class="p-3">Competência</th>
-                                        <th class="p-3">Vencimento</th>
-                                        <th class="p-3">Valor</th>
-                                        <th class="p-3">Status</th>
+                                        <th class="p-3">Item / Produto</th>
+                                        <th class="p-3">Categoria</th>
+                                        <th class="p-3">Qtd Atual</th>
+                                        <th class="p-3">Mínimo</th>
+                                        <th class="p-3">Máximo</th>
+                                        <th class="p-3">Status do Sensor</th>
                                         <th class="p-3 text-right">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-200">
-                                    ${lista.length === 0 ? `
-                                        <tr><td colspan="7" class="p-6 text-center text-slate-400 font-medium">Nenhum título financeiro encontrado para os filtros selecionados.</td></tr>
-                                    ` : lista.map(f => `
-                                        <tr class="hover:bg-slate-50 transition">
-                                            <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${f.tipo === 'Receber' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${escapeHTML(f.tipo)}</span></td>
-                                            <td class="p-3 font-semibold text-slate-900">
-                                                <p class="font-bold text-slate-800">${escapeHTML(f.historico)}</p>
-                                                <p class="text-[10px] text-slate-500">${escapeHTML(f.fornecedor || '')}</p>
+                                    ${list.map(e => {
+                                        const isCritico = e.qtd <= e.minimo;
+                                        const isAtencao = !isCritico && e.qtd <= (e.minimo * 1.3);
+                                        return `
+                                            <tr class="hover:bg-slate-50">
+                                                <td class="p-3 font-bold text-slate-900">${escapeHTML(e.item)}</td>
+                                                <td class="p-3 text-slate-600">${escapeHTML(e.categoria)}</td>
+                                                <td class="p-3 font-extrabold text-slate-900">${e.qtd}</td>
+                                                <td class="p-3 text-slate-500">${e.minimo}</td>
+                                                <td class="p-3 text-slate-500">${e.maximo || 'N/A'}</td>
+                                                <td class="p-3">
+                                                    ${isCritico ? `
+                                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700 animate-pulse">
+                                                            <i class="fa-solid fa-triangle-exclamation"></i> Crítico (Comprar ${e.maximo ? e.maximo - e.qtd : 'Urgeste'})
+                                                        </span>
+                                                    ` : isAtencao ? `
+                                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700">
+                                                            Atenção (Próximo Mínimo)
+                                                        </span>
+                                                    ` : `
+                                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700">
+                                                            Estoque Normal
+                                                        </span>
+                                                    `}
+                                                </td>
+                                                <td class="p-3 text-right space-x-1">
+                                                    <button onclick="renderModalEstoque('${e.id}')" title="Editar Item" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+                                                    <button onclick="excluirItemGenerico('estoque', '${e.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderModalEstoque(itemId = null) {
+            const e = itemId ? db.estoque.find(x => x.id === itemId) : null;
+
+            const html = `
+                <div id="modal_est" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+                            <h3 class="font-bold text-sm">${e ? 'Editar Item do Estoque' : 'Novo Item do Estoque'}</h3>
+                            <button onclick="fecharModal('modal_est')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <form onsubmit="salvarEstoqueForm(event, '${itemId || ''}')" class="p-6 space-y-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nome do Produto</label>
+                                <input type="text" id="est_item" required value="${e ? escapeHTML(e.item) : ''}" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Categoria</label>
+                                <input type="text" id="est_categoria" required value="${e ? escapeHTML(e.categoria) : ''}" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                            </div>
+                            <div class="grid grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-700 uppercase mb-1">Qtd Atual</label>
+                                    <input type="number" id="est_qtd" required value="${e ? e.qtd : 0}" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-700 uppercase mb-1">Estoque Mínimo</label>
+                                    <input type="number" id="est_min" required value="${e ? e.minimo : 5}" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-700 uppercase mb-1">Estoque Máximo</label>
+                                    <input type="number" id="est_max" required value="${e ? (e.maximo || 30) : 30}" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Localização no Condomínio</label>
+                                <input type="text" id="est_local" value="${e ? escapeHTML(e.localizacao || '') : ''}" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                            </div>
+                            <div class="flex items-center justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModal('modal_est')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
+                                <button type="submit" class="px-3 py-1.5 bg-teal-600 text-white rounded text-xs font-bold">Salvar Item</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        function salvarEstoqueForm(ev, itemId = '') {
+            ev.preventDefault();
+            const item = document.getElementById('est_item').value.trim();
+            const cat = document.getElementById('est_categoria').value.trim();
+            const qtd = parseInt(document.getElementById('est_qtd').value) || 0;
+            const min = parseInt(document.getElementById('est_min').value) || 0;
+            const max = parseInt(document.getElementById('est_max').value) || 0;
+            const local = document.getElementById('est_local').value.trim();
+
+            if (itemId) {
+                const e = db.estoque.find(x => x.id === itemId);
+                if (e) {
+                    e.item = item;
+                    e.categoria = cat;
+                    e.qtd = qtd;
+                    e.minimo = min;
+                    e.maximo = max;
+                    e.localizacao = local;
+                    registrarLog('Estoque', 'Edição', `Produto ${item} atualizado.`);
+                }
+            } else {
+                db.estoque.push({
+                    id: 'est_' + Date.now(),
+                    item: item,
+                    categoria: cat,
+                    qtd: qtd,
+                    minimo: min,
+                    maximo: max,
+                    localizacao: local
+                });
+                registrarLog('Estoque', 'Criação', `Produto ${item} criado no estoque.`);
+            }
+
+            salvarDados(db);
+            fecharModal('modal_est');
+            renderApp();
+        }
+
+        // ==========================================
+        // 9. RELATÓRIOS CONSOLIDADOS & DRE PERSONALIZÁVEL
+        // ==========================================
+        function renderRelatoriosView() {
+            const recTotal = db.financeiro.filter(f => f.tipo === 'Receber' && f.status === 'Baixado').reduce((a, b) => a + b.valor, 0);
+            const pagTotal = db.financeiro.filter(f => f.tipo === 'Pagar' && f.status === 'Baixado').reduce((a, b) => a + b.valor, 0);
+            const pendTotal = db.financeiro.filter(f => f.tipo === 'Receber' && f.status === 'Aberto').reduce((a, b) => a + b.valor, 0);
+
+            // Cálculo da DRE Personalizável baseado nas Fórmulas
+            const calculosDRE = {};
+            (db.dre_config || []).forEach(item => {
+                if (item.tipo === 'direto') {
+                    if (item.operacao === 'somar_receitas') calculosDRE[item.id] = recTotal;
+                    else if (item.operacao === 'somar_pendencias') calculosDRE[item.id] = pendTotal;
+                    else if (item.operacao === 'somar_despesas') calculosDRE[item.id] = pagTotal;
+                } else if (item.tipo === 'formula') {
+                    let val = 0;
+                    if (item.formula === 'A - B') val = (calculosDRE['A'] || 0) - (calculosDRE['B'] || 0);
+                    else if (item.formula === 'C - D') val = (calculosDRE['C'] || 0) - (calculosDRE['D'] || 0);
+                    calculosDRE[item.id] = val;
+                }
+            });
+
+            return `
+                <div class="space-y-6">
+                    <!-- BARRA DE FILTROS E EXPORTAÇÃO DE RELATÓRIO -->
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 no-print">
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <button onclick="setPeriodoRelatorio('mes')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-bold">Este Mês</button>
+                            <button onclick="setPeriodoRelatorio('ano')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-bold">Ano Atual</button>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <button onclick="renderModalConfigDRE()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2.5 rounded-lg font-bold shadow-sm transition">
+                                <i class="fa-solid fa-gears"></i> Personalizar DRE / Fórmulas
+                            </button>
+                            <button onclick="window.print()" class="bg-slate-800 hover:bg-slate-900 text-white text-xs px-4 py-2.5 rounded-lg font-bold shadow-sm transition">
+                                <i class="fa-solid fa-print"></i> Imprimir / PDF
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- SEÇÃO DRE CONDOMINIAL -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
+                        <div class="flex items-center justify-between border-b pb-3">
+                            <div>
+                                <h3 class="font-bold text-base text-slate-800">Demonstração do Resultado do Exercício (DRE)</h3>
+                                <p class="text-xs text-slate-500">Apuração com estrutura e fórmulas configuráveis</p>
+                            </div>
+                            <span class="px-3 py-1 rounded-full text-xs font-extrabold ${(calculosDRE['E'] || 0) >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                                ${(calculosDRE['E'] || 0) >= 0 ? 'SUPERÁVIT' : 'DEFICIT'}: R$ ${Math.abs(calculosDRE['E'] || 0).toFixed(2)}
+                            </span>
+                        </div>
+
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-100 text-slate-600 font-bold uppercase border-b">
+                                    <tr>
+                                        <th class="p-3">Ref</th>
+                                        <th class="p-3">Descrição da Conta DRE</th>
+                                        <th class="p-3">Tipo / Indicação de Fórmula</th>
+                                        <th class="p-3 text-right">Valor Apurado (R$)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200">
+                                    ${(db.dre_config || []).map(row => `
+                                        <tr class="${row.tipo === 'formula' ? 'bg-slate-50 font-bold' : ''}">
+                                            <td class="p-3 font-extrabold text-teal-700">${row.id}</td>
+                                            <td class="p-3 ${row.tipo === 'formula' ? 'text-slate-900' : 'text-slate-700'}">${escapeHTML(row.label)}</td>
+                                            <td class="p-3 text-slate-500 font-mono text-[10px]">
+                                                ${row.tipo === 'formula' ? `<span class="bg-purple-100 text-purple-700 px-2 py-0.5 rounded font-bold">Fórmula: ${row.formula}</span>` : '<span class="bg-slate-200 px-2 py-0.5 rounded">Lançamento Direto</span>'}
                                             </td>
-                                            <td class="p-3 font-semibold text-slate-700">${escapeHTML(f.competencia || 'N/A')}</td>
-                                            <td class="p-3 text-slate-700">${escapeHTML(f.vencimento)}</td>
-                                            <td class="p-3 font-bold text-slate-900">R$ ${Number(f.valor).toFixed(2)}</td>
-                                            <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${f.status === 'Baixado' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${escapeHTML(f.status)}</span></td>
-                                            <td class="p-3 text-right space-x-1">
-                                                <button onclick="alternarBaixaTitulo('${f.id}')" title="${f.status === 'Baixado' ? 'Reabrir Título' : 'Marcar como Baixado/Compensado'}" class="p-1.5 ${f.status === 'Baixado' ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'} rounded">
-                                                    <i class="fa-solid ${f.status === 'Baixado' ? 'fa-rotate-left' : 'fa-circle-check'}"></i>
-                                                </button>
-                                                <button onclick="renderModalNovoTitulo('${f.id}')" title="Editar Título" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded">
-                                                    <i class="fa-solid fa-pen-to-square"></i>
-                                                </button>
-                                                <button onclick="excluirItemGenerico('financeiro', '${f.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
+                                            <td class="p-3 text-right font-extrabold ${row.tipo === 'formula' ? 'text-teal-900 text-sm' : 'text-slate-800'}">
+                                                R$ ${(calculosDRE[row.id] || 0).toFixed(2)}
                                             </td>
                                         </tr>
                                     `).join('')}
@@ -576,102 +839,44 @@
             `;
         }
 
-        function atualizarFiltrosFinanceiros() {
-            finFiltros.competencia = document.getElementById('flt_comp').value;
-            finFiltros.status = document.getElementById('flt_status').value;
-            finFiltros.tipo = document.getElementById('flt_tipo').value;
-            finFiltros.busca = document.getElementById('flt_busca').value;
+        function setPeriodoRelatorio(tipo) {
+            if (tipo === 'mes') {
+                relatorioFiltros.dataInicio = '2026-10-01';
+                relatorioFiltros.dataFim = '2026-10-31';
+            } else {
+                relatorioFiltros.dataInicio = '2026-01-01';
+                relatorioFiltros.dataFim = '2026-12-31';
+            }
             renderApp();
         }
 
-        function alternarBaixaTitulo(id) {
-            const f = db.financeiro.find(x => x.id === id);
-            if (f) {
-                f.status = f.status === 'Baixado' ? 'Aberto' : 'Baixado';
-                registrarLog('Financeiro', 'Status Alterado', `Título "${f.historico}" alterado para ${f.status}`);
-                salvarDados(db);
-                renderApp();
-            }
-        }
-
-        function renderModalNovoTitulo(tituloId = null) {
-            const item = tituloId ? db.financeiro.find(x => x.id === tituloId) : null;
-
+        function renderModalConfigDRE() {
             const html = `
-                <div id="modal_fin" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
-                    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+                <div id="modal_dre_cfg" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
                         <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
-                            <h3 class="font-bold text-sm">${item ? 'Editar Título Financeiro' : 'Novo Título Financeiro'}</h3>
-                            <button onclick="fecharModal('modal_fin')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                            <h3 class="font-bold text-sm">Personalizar Estrutura & Fórmulas da DRE</h3>
+                            <button onclick="fecharModal('modal_dre_cfg')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
                         </div>
-                        <div class="p-6 overflow-y-auto space-y-4">
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tipo de Operação</label>
-                                    <select id="fin_tipo" class="w-full p-2.5 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                                        <option value="Receber" ${item && item.tipo === 'Receber' ? 'selected' : ''}>A Receber</option>
-                                        <option value="Pagar" ${item && item.tipo === 'Pagar' ? 'selected' : ''}>A Pagar</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Valor Original (R$)</label>
-                                    <input type="number" step="0.01" id="fin_valor" required value="${item ? item.valor : ''}" class="w-full p-2.5 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Histórico / Descrição</label>
-                                <input type="text" id="fin_historico" required value="${item ? escapeHTML(item.historico) : ''}" class="w-full p-2.5 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                            </div>
-
-                            <div class="grid grid-cols-3 gap-3">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Pessoa / Fornecedor</label>
-                                    <input type="text" id="fin_fornecedor" value="${item ? escapeHTML(item.fornecedor || '') : ''}" class="w-full p-2.5 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Competência (MM/AAAA)</label>
-                                    <input type="text" id="fin_competencia" value="${item ? escapeHTML(item.competencia || '') : ''}" placeholder="Ex: 11/2026" class="w-full p-2.5 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Data Vencimento</label>
-                                    <input type="date" id="fin_vencimento" required value="${item ? item.vencimento : ''}" class="w-full p-2.5 border border-slate-300 rounded text-xs text-slate-900 font-bold">
-                                </div>
-                            </div>
-
-                            ${!item ? `
-                            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
-                                <label class="flex items-center gap-2 cursor-pointer font-bold text-xs text-teal-800">
-                                    <input type="checkbox" id="chk_recorrencia" onchange="toggleBoxRecorrencia()" class="rounded border-slate-300 text-teal-600 w-4 h-4">
-                                    Gerar Recorrência / Parcelamento?
-                                </label>
-
-                                <div id="box_recorrencia" class="hidden space-y-3 pt-2 border-t border-slate-200">
-                                    <div class="grid grid-cols-2 gap-3">
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-600 uppercase">Periodicidade</label>
-                                            <select id="rec_periodo" class="w-full p-2 border rounded text-xs text-slate-900 font-bold">
-                                                <option value="mensal">Mensal</option>
-                                                <option value="semanal">Semanal</option>
-                                                <option value="anual">Anual</option>
-                                            </select>
+                        <div class="p-6 space-y-4">
+                            <p class="text-xs text-slate-600">Edite as fórmulas de cálculo e os rótulos das contas da DRE:</p>
+                            <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                                ${(db.dre_config || []).map(item => `
+                                    <div class="p-2 border rounded bg-slate-50 space-y-1">
+                                        <div class="flex items-center justify-between">
+                                            <span class="font-bold text-xs text-teal-700">Linha [${item.id}]</span>
+                                            <span class="text-[10px] text-slate-400 uppercase font-bold">${item.tipo}</span>
                                         </div>
-                                        <div>
-                                            <label class="block text-[10px] font-bold text-slate-600 uppercase">Qtd de Parcelas</label>
-                                            <input type="number" id="rec_qtd" value="12" min="2" max="60" class="w-full p-2 border rounded text-xs text-slate-900 font-bold">
-                                        </div>
+                                        <input type="text" value="${escapeHTML(item.label)}" class="dre_label_input w-full p-1 border rounded text-xs text-slate-900 font-bold" data-id="${item.id}">
+                                        ${item.tipo === 'formula' ? `
+                                            <input type="text" value="${escapeHTML(item.formula)}" class="dre_formula_input w-full p-1 border rounded text-xs font-mono text-purple-700 font-bold" data-id="${item.id}" placeholder="Ex: A - B">
+                                        ` : ''}
                                     </div>
-                                    <button type="button" onclick="gerarPreviewParcelas()" class="w-full py-2 bg-slate-800 text-white rounded text-xs font-bold hover:bg-slate-900">
-                                        <i class="fa-solid fa-list-check"></i> Pré-visualizar e Editar Parcelas
-                                    </button>
-                                </div>
+                                `).join('')}
                             </div>
-                            <div id="area_preview_parcelas"></div>
-                            ` : ''}
-
                             <div class="flex items-center justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModal('modal_fin')" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded text-xs font-bold">Cancelar</button>
-                                <button type="button" onclick="salvarTituloFinanceiroCompleto('${tituloId || ''}')" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded text-xs font-bold">Salvar Título</button>
+                                <button type="button" onclick="fecharModal('modal_dre_cfg')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
+                                <button type="button" onclick="salvarConfigDRE()" class="px-3 py-1.5 bg-teal-600 text-white rounded text-xs font-bold">Salvar Fórmulas</button>
                             </div>
                         </div>
                     </div>
@@ -680,113 +885,30 @@
             document.body.insertAdjacentHTML('beforeend', html);
         }
 
-        function toggleBoxRecorrencia() {
-            const checked = document.getElementById('chk_recorrencia').checked;
-            document.getElementById('box_recorrencia').classList.toggle('hidden', !checked);
-            if (!checked) document.getElementById('area_preview_parcelas').innerHTML = '';
-        }
+        function salvarConfigDRE() {
+            const labels = document.querySelectorAll('.dre_label_input');
+            const formulas = document.querySelectorAll('.dre_formula_input');
 
-        function gerarPreviewParcelas() {
-            const val = parseFloat(document.getElementById('fin_valor').value) || 0;
-            const dataInic = document.getElementById('fin_vencimento').value;
-            const qtd = parseInt(document.getElementById('rec_qtd').value) || 1;
+            labels.forEach(input => {
+                const id = input.getAttribute('data-id');
+                const item = db.dre_config.find(x => x.id === id);
+                if (item) item.label = input.value.trim();
+            });
 
-            if (!dataInic) { alert('Informe a data do 1º vencimento.'); return; }
-
-            let html = `
-                <div class="p-3 bg-teal-50 border border-teal-200 rounded-lg space-y-2">
-                    <p class="text-xs font-bold text-teal-900">Edite as Datas/Valores das Parcelas antes de salvar:</p>
-                    <div class="max-h-40 overflow-y-auto space-y-2 pr-1">
-            `;
-
-            let baseDate = new Date(dataInic + 'T00:00:00');
-
-            for(let i = 1; i <= qtd; i++) {
-                let current = new Date(baseDate);
-                current.setMonth(current.getMonth() + (i - 1));
-                let dateStr = current.toISOString().split('T')[0];
-                let compStr = `${String(current.getMonth()+1).padStart(2,'0')}/${current.getFullYear()}`;
-
-                html += `
-                    <div class="grid grid-cols-3 gap-2 items-center bg-white p-2 rounded border border-slate-200">
-                        <span class="text-xs font-bold text-slate-700">Parcela ${i}/${qtd}</span>
-                        <input type="date" value="${dateStr}" class="rec_item_venc p-1 border rounded text-xs text-slate-900 font-bold">
-                        <input type="text" value="${compStr}" class="rec_item_comp p-1 border rounded text-xs text-slate-900 font-bold" placeholder="MM/AAAA">
-                    </div>
-                `;
-            }
-
-            html += `</div></div>`;
-            document.getElementById('area_preview_parcelas').innerHTML = html;
-        }
-
-        function salvarTituloFinanceiroCompleto(tituloId = '') {
-            const tipo = document.getElementById('fin_tipo').value;
-            const valor = parseFloat(document.getElementById('fin_valor').value) || 0;
-            const historico = document.getElementById('fin_historico').value.trim();
-            const fornecedor = document.getElementById('fin_fornecedor').value.trim();
-            const comp = document.getElementById('fin_competencia') ? document.getElementById('fin_competencia').value.trim() : '';
-            const venc = document.getElementById('fin_vencimento').value;
-
-            if (!historico || !valor || !venc) {
-                alert('Preencha os campos obrigatórios!');
-                return;
-            }
-
-            if (tituloId) {
-                const item = db.financeiro.find(x => x.id === tituloId);
-                if (item) {
-                    item.tipo = tipo;
-                    item.valor = valor;
-                    item.historico = historico;
-                    item.fornecedor = fornecedor;
-                    item.competencia = comp || venc.substr(0,7).split('-').reverse().join('/');
-                    item.vencimento = venc;
-                    registrarLog('Financeiro', 'Edição', `Título "${historico}" modificado.`);
-                }
-            } else {
-                const chk = document.getElementById('chk_recorrencia');
-                const isRec = chk ? chk.checked : false;
-
-                if (isRec && document.querySelectorAll('.rec_item_venc').length > 0) {
-                    const vencs = document.querySelectorAll('.rec_item_venc');
-                    const comps = document.querySelectorAll('.rec_item_comp');
-
-                    vencs.forEach((el, idx) => {
-                        db.financeiro.push({
-                            id: 'fin_' + Date.now() + '_' + idx,
-                            tipo: tipo,
-                            historico: `${historico} (${idx+1}/${vencs.length})`,
-                            valor: valor,
-                            vencimento: el.value,
-                            competencia: comps[idx].value,
-                            fornecedor: fornecedor,
-                            status: 'Aberto'
-                        });
-                    });
-                    registrarLog('Financeiro', 'Recorrência Gerada', `${vencs.length} parcelas de "${historico}" criadas.`);
-                } else {
-                    db.financeiro.push({
-                        id: 'fin_' + Date.now(),
-                        tipo: tipo,
-                        historico: historico,
-                        valor: valor,
-                        vencimento: venc,
-                        competencia: comp || venc.substr(0,7).split('-').reverse().join('/'),
-                        fornecedor: fornecedor,
-                        status: 'Aberto'
-                    });
-                    registrarLog('Financeiro', 'Título Criado', `Título "${historico}" gravado.`);
-                }
-            }
+            formulas.forEach(input => {
+                const id = input.getAttribute('data-id');
+                const item = db.dre_config.find(x => x.id === id);
+                if (item) item.formula = input.value.trim();
+            });
 
             salvarDados(db);
-            fecharModal('modal_fin');
+            registrarLog('DRE', 'Fórmulas Atualizadas', 'Estrutura da DRE reconfigurada.');
+            fecharModal('modal_dre_cfg');
             renderApp();
         }
 
         // ==========================================
-        // 8. MÓDULO DE MORADORES
+        // 10. MÓDULOS DE MORADORES, USUÁRIOS E OUTROS
         // ==========================================
         function renderMoradoresView() {
             const list = db.moradores || [];
@@ -946,75 +1068,6 @@
             renderApp();
         }
 
-        // ==========================================
-        // 9. MÓDULO DE RELATÓRIOS CONSOLIDADOS
-        // ==========================================
-        function renderRelatoriosView() {
-            const recTotal = db.financeiro.filter(f => f.tipo === 'Receber' && f.status === 'Baixado').reduce((a, b) => a + b.valor, 0);
-            const pagTotal = db.financeiro.filter(f => f.tipo === 'Pagar' && f.status === 'Baixado').reduce((a, b) => a + b.valor, 0);
-
-            return `
-                <div class="space-y-6">
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 no-print">
-                        <div class="flex items-center gap-3 w-full sm:w-auto">
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-500 uppercase">Período Inicial</label>
-                                <input type="date" value="2026-01-01" class="p-2 border rounded text-xs text-slate-900 font-bold">
-                            </div>
-                            <div>
-                                <label class="block text-[10px] font-bold text-slate-500 uppercase">Período Final</label>
-                                <input type="date" value="2026-12-31" class="p-2 border rounded text-xs text-slate-900 font-bold">
-                            </div>
-                        </div>
-                        <button onclick="window.print()" class="w-full sm:w-auto bg-slate-800 hover:bg-slate-900 text-white text-xs px-4 py-2.5 rounded-lg font-bold flex items-center justify-center gap-2 shadow-sm transition">
-                            <i class="fa-solid fa-print"></i> Imprimir / Exportar PDF
-                        </button>
-                    </div>
-
-                    <!-- RESUMO FINANCEIRO -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
-                        <h3 class="font-bold text-base text-slate-800 border-b pb-2">1. Resumo Financeiro Consolidado</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <div class="p-4 bg-emerald-50 rounded-xl border border-emerald-200">
-                                <p class="text-xs font-bold text-emerald-800 uppercase">Receitas Efetivadas</p>
-                                <h4 class="text-2xl font-extrabold text-emerald-700">R$ ${recTotal.toFixed(2)}</h4>
-                            </div>
-                            <div class="p-4 bg-rose-50 rounded-xl border border-rose-200">
-                                <p class="text-xs font-bold text-rose-800 uppercase">Despesas Liquidadas</p>
-                                <h4 class="text-2xl font-extrabold text-rose-700">R$ ${pagTotal.toFixed(2)}</h4>
-                            </div>
-                            <div class="p-4 bg-teal-50 rounded-xl border border-teal-200">
-                                <p class="text-xs font-bold text-teal-800 uppercase">Saldo Líquido</p>
-                                <h4 class="text-2xl font-extrabold text-teal-700">R$ ${(recTotal - pagTotal).toFixed(2)}</h4>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- RESUMO DE MORADORES -->
-                    <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
-                        <h3 class="font-bold text-base text-slate-800 border-b pb-2">2. Censo de Moradores e Ocupação</h3>
-                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                                <p class="text-xs font-bold text-slate-500 uppercase">Total de Unidades Cadastradas</p>
-                                <h4 class="text-xl font-extrabold text-slate-800">${db.moradores.length} Unidades</h4>
-                            </div>
-                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                                <p class="text-xs font-bold text-slate-500 uppercase">Proprietários Residentes</p>
-                                <h4 class="text-xl font-extrabold text-blue-700">${db.moradores.filter(m => m.tipo === 'Proprietário').length}</h4>
-                            </div>
-                            <div class="p-4 bg-slate-50 rounded-xl border border-slate-200">
-                                <p class="text-xs font-bold text-slate-500 uppercase">Inquilinos (Taxa Mudança)</p>
-                                <h4 class="text-xl font-extrabold text-purple-700">${db.moradores.filter(m => m.tipo === 'Inquilino').length}</h4>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // ==========================================
-        // 10. DEMAIS MODAIS E TABELAS GENÉRICAS
-        // ==========================================
         function renderGenericDataList(modKey) {
             const list = db[modKey] || [];
             if (list.length === 0) {
@@ -1461,29 +1514,6 @@
                             `).join('')}
                         </tbody>
                     </table>
-                </div>
-            `;
-        }
-
-        function renderDashboardView() {
-            return `
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                        <p class="text-xs font-bold text-slate-500 uppercase">A Receber</p>
-                        <h3 class="text-xl font-extrabold text-emerald-600">R$ ${db.financeiro.filter(f=>f.tipo==='Receber' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0).toFixed(2)}</h3>
-                    </div>
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                        <p class="text-xs font-bold text-slate-500 uppercase">A Pagar</p>
-                        <h3 class="text-xl font-extrabold text-rose-600">R$ ${db.financeiro.filter(f=>f.tipo==='Pagar' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0).toFixed(2)}</h3>
-                    </div>
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                        <p class="text-xs font-bold text-slate-500 uppercase">Moradores Cadastrados</p>
-                        <h3 class="text-xl font-extrabold text-slate-800">${db.moradores.length}</h3>
-                    </div>
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
-                        <p class="text-xs font-bold text-slate-500 uppercase">Usuários Ativos</p>
-                        <h3 class="text-xl font-extrabold text-teal-600">${db.usuarios.filter(u=>u.status==='Ativo').length}</h3>
-                    </div>
                 </div>
             `;
         }
