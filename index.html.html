@@ -6,8 +6,10 @@
     <title>Guardiões do Bravo - Gestão Condominial Segura</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
+    <!-- FontAwesome Icons CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         html, body { height: 100%; margin: 0; padding: 0; }
         input, select, textarea { color: #0f172a !important; font-weight: 600 !important; }
@@ -56,7 +58,8 @@
 
         const DEFAULT_DATA = {
             usuarios: [
-                { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Admin@12345' }
+                { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Admin@12345' },
+                { id: 'usr_sindico', usuario: 'sindico', nome: 'João da Silva', email: 'sindico@guardioes.com', perfil: 'Síndico', status: 'Ativo', primeiroAcesso: false, senhaHash: '123456' }
             ],
             financeiro: [
                 { id: 'fin_1', tipo: 'Receber', historico: 'Taxa Condominial Ordinária - Ap 101', valor: 2500.00, vencimento: '2026-10-15', competencia: '10/2026', formaMonetariaId: 'fm_1', fornecedor: 'Carlos Eduardo', status: 'Aberto' },
@@ -95,6 +98,7 @@
                 if (!data) return DEFAULT_DATA;
                 const parsed = JSON.parse(data);
                 if (!parsed.formas_monetarias) parsed.formas_monetarias = DEFAULT_DATA.formas_monetarias;
+                if (!parsed.usuarios) parsed.usuarios = DEFAULT_DATA.usuarios;
                 if (!parsed.dre_config) parsed.dre_config = DEFAULT_DATA.dre_config;
                 return parsed;
             } catch (e) {
@@ -212,7 +216,6 @@
                 <div class="flex-1 flex flex-col md:flex-row min-h-screen">
                     <div id="sidebar-backdrop" onclick="fecharMenuMobile()" class="fixed inset-0 bg-slate-900/60 z-40 hidden md:hidden"></div>
 
-                    <!-- SIDEBAR DE ALTURA TOTAL 100VH -->
                     <aside id="sidebar-menu" class="fixed md:sticky top-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 flex flex-col sidebar-full border-r border-slate-800 transform -translate-x-full md:translate-x-0 transition-transform duration-200">
                         <div class="p-4 bg-slate-950 flex items-center justify-between border-b border-slate-800">
                             <div class="flex items-center gap-3">
@@ -233,6 +236,7 @@
                             <button onclick="abrirModulo('moradores')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'moradores' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-users w-5 text-center"></i> Moradores</button>
                             <button onclick="abrirModulo('estoque')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'estoque' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-boxes-stacked w-5 text-center"></i> Estoque & Inventário</button>
                             <button onclick="abrirModulo('relatorios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'relatorios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i> Relatórios & DRE</button>
+                            <button onclick="abrirModulo('usuarios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'usuarios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-user-gear w-5 text-center"></i> Gestão de Usuários</button>
                         </nav>
 
                         <div class="p-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
@@ -267,6 +271,8 @@
                     </div>
                 </div>
             `;
+
+            if (tabsState.activeTab === 'dashboard') setTimeout(renderDashboardCharts, 100);
         }
 
         function renderModuleContent(moduloId) {
@@ -276,6 +282,7 @@
             else if (moduloId === 'moradores') btnNovoHtml = `<button onclick="renderModalMorador()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm"><i class="fa-solid fa-plus"></i> Novo Morador</button>`;
             else if (moduloId === 'contas_bancarias') btnNovoHtml = `<button onclick="renderModalContaBancaria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm"><i class="fa-solid fa-plus"></i> Nova Conta Bancária</button>`;
             else if (moduloId === 'estoque') btnNovoHtml = `<button onclick="renderModalEstoque()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm"><i class="fa-solid fa-plus"></i> Novo Item no Estoque</button>`;
+            else if (moduloId === 'usuarios') btnNovoHtml = `<button onclick="renderModalUsuario()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm"><i class="fa-solid fa-user-plus"></i> Novo Usuário</button>`;
 
             const headerGlobal = `
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
@@ -292,8 +299,223 @@
                 case 'contas_bancarias': return headerGlobal + renderContasBancariasView();
                 case 'estoque': return headerGlobal + renderEstoqueView();
                 case 'relatorios': return headerGlobal + renderRelatoriosView();
+                case 'usuarios': return headerGlobal + renderUsuariosView();
                 default: return headerGlobal + `<div class="bg-white p-6 rounded-xl border">Módulo em execução normal.</div>`;
             }
+        }
+
+        // ==========================================
+        // DASHBOARD COM GRÁFICOS
+        // ==========================================
+        function renderDashboardView() {
+            const recAberto = db.financeiro.filter(f=>f.tipo==='Receber' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0);
+            const pagAberto = db.financeiro.filter(f=>f.tipo==='Pagar' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0);
+
+            return `
+                <div class="space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-white p-4 rounded-xl border shadow-sm"><p class="text-xs font-bold text-slate-500 uppercase">A Receber em Aberto</p><h3 class="text-xl font-extrabold text-emerald-600">R$ ${recAberto.toFixed(2)}</h3></div>
+                        <div class="bg-white p-4 rounded-xl border shadow-sm"><p class="text-xs font-bold text-slate-500 uppercase">A Pagar em Aberto</p><h3 class="text-xl font-extrabold text-rose-600">R$ ${pagAberto.toFixed(2)}</h3></div>
+                        <div class="bg-white p-4 rounded-xl border shadow-sm"><p class="text-xs font-bold text-slate-500 uppercase">Itens no Estoque</p><h3 class="text-xl font-extrabold text-slate-800">${db.estoque.length}</h3></div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white p-5 rounded-xl border shadow-sm">
+                            <h4 class="font-bold text-xs uppercase text-slate-500 mb-4">Composição Financeira (Entradas vs Saídas)</h4>
+                            <div class="h-64 flex items-center justify-center">
+                                <canvas id="chartDonut"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border shadow-sm">
+                            <h4 class="font-bold text-xs uppercase text-slate-500 mb-4">Fluxo de Caixa Operacional</h4>
+                            <div class="h-64 flex items-center justify-center">
+                                <canvas id="chartBar"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDashboardCharts() {
+            const ctxDonut = document.getElementById('chartDonut');
+            const ctxBar = document.getElementById('chartBar');
+
+            if (ctxDonut) {
+                const recQuat = db.financeiro.filter(f=>f.tipo==='Receber' && f.status==='Baixado').reduce((a,b)=>a+b.valor,0);
+                const pagQuat = db.financeiro.filter(f=>f.tipo==='Pagar' && f.status==='Baixado').reduce((a,b)=>a+b.valor,0);
+
+                new Chart(ctxDonut, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Receitas Quitadas', 'Despesas Quitadas'],
+                        datasets: [{ data: [recQuat || 1, pagQuat || 1], backgroundColor: ['#059669', '#e11d48'] }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+
+            if (ctxBar) {
+                new Chart(ctxBar, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Receber Aberto', 'Receber Baixado', 'Pagar Aberto', 'Pagar Baixado'],
+                        datasets: [{
+                            label: 'Valores (R$)',
+                            data: [
+                                db.financeiro.filter(f=>f.tipo==='Receber' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0),
+                                db.financeiro.filter(f=>f.tipo==='Receber' && f.status==='Baixado').reduce((a,b)=>a+b.valor,0),
+                                db.financeiro.filter(f=>f.tipo==='Pagar' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0),
+                                db.financeiro.filter(f=>f.tipo==='Pagar' && f.status==='Baixado').reduce((a,b)=>a+b.valor,0)
+                            ],
+                            backgroundColor: ['#34d399', '#059669', '#f87171', '#e11d48']
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+        }
+
+        // ==========================================
+        // MÓDULO GESTÃO DE USUÁRIOS
+        // ==========================================
+        function renderUsuariosView() {
+            const list = db.usuarios || [];
+            return `
+                <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 font-bold uppercase border-b">
+                                <tr>
+                                    <th class="p-3">Usuário</th>
+                                    <th class="p-3">Nome Completo</th>
+                                    <th class="p-3">E-mail</th>
+                                    <th class="p-3">Perfil</th>
+                                    <th class="p-3">Status</th>
+                                    <th class="p-3 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                ${list.map(u => `
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="p-3 font-bold text-slate-900">${escapeHTML(u.usuario)}</td>
+                                        <td class="p-3 text-slate-800 font-semibold">${escapeHTML(u.nome)}</td>
+                                        <td class="p-3 text-slate-600">${escapeHTML(u.email)}</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-800 border">${escapeHTML(u.perfil)}</span></td>
+                                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${u.status === 'Ativo' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${escapeHTML(u.status)}</span></td>
+                                        <td class="p-3 text-right space-x-1">
+                                            <button onclick="renderModalUsuario('${u.id}')" title="Editar Usuário" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+                                            <button onclick="excluirItemGenerico('usuarios', '${u.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderModalUsuario(usrId = null) {
+            const u = usrId ? db.usuarios.find(x => x.id === usrId) : null;
+            const html = `
+                <div id="modal_usr" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+                            <h3 class="font-bold text-sm">${u ? 'Editar Usuário' : 'Novo Usuário'}</h3>
+                            <button onclick="fecharModal('modal_usr')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <form onsubmit="salvarUsuarioForm(event, '${usrId || ''}')" class="p-6 space-y-3">
+                            <div><label class="block text-xs font-bold uppercase mb-1">Login do Usuário</label><input type="text" id="usr_login" required value="${u ? escapeHTML(u.usuario) : ''}" class="w-full p-2 border rounded text-xs font-bold"></div>
+                            <div><label class="block text-xs font-bold uppercase mb-1">Nome Completo</label><input type="text" id="usr_nome" required value="${u ? escapeHTML(u.nome) : ''}" class="w-full p-2 border rounded text-xs font-bold"></div>
+                            <div><label class="block text-xs font-bold uppercase mb-1">E-mail</label><input type="email" id="usr_email" required value="${u ? escapeHTML(u.email) : ''}" class="w-full p-2 border rounded text-xs font-bold"></div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase mb-1">Perfil</label>
+                                    <select id="usr_perfil" class="w-full p-2 border rounded text-xs font-bold">
+                                        <option value="Admin" ${u && u.perfil==='Admin'?'selected':''}>Admin</option>
+                                        <option value="Síndico" ${u && u.perfil==='Síndico'?'selected':''}>Síndico</option>
+                                        <option value="Portaria" ${u && u.perfil==='Portaria'?'selected':''}>Portaria</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase mb-1">Senha</label>
+                                    <input type="password" id="usr_senha" ${u?'':'required'} placeholder="${u?'Alterar...':'Senha'}" class="w-full p-2 border rounded text-xs font-bold">
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModal('modal_usr')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
+                                <button type="submit" class="px-3 py-1.5 bg-teal-600 text-white rounded text-xs font-bold">Salvar Usuário</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        function salvarUsuarioForm(e, usrId = '') {
+            e.preventDefault();
+            const usuario = document.getElementById('usr_login').value.trim();
+            const nome = document.getElementById('usr_nome').value.trim();
+            const email = document.getElementById('usr_email').value.trim();
+            const perfil = document.getElementById('usr_perfil').value;
+            const senha = document.getElementById('usr_senha').value;
+
+            if (usrId) {
+                const u = db.usuarios.find(x => x.id === usrId);
+                if (u) {
+                    u.usuario = usuario; u.nome = nome; u.email = email; u.perfil = perfil;
+                    if (senha) u.senhaHash = senha;
+                }
+            } else {
+                db.usuarios.push({ id: 'usr_' + Date.now(), usuario, nome, email, perfil, status: 'Ativo', primeiroAcesso: false, senhaHash: senha });
+            }
+
+            salvarDados(db); fecharModal('modal_usr'); renderApp();
+        }
+
+        // ==========================================
+        // MÓDULO RELATÓRIOS & DRE
+        // ==========================================
+        function renderRelatoriosView() {
+            const recTotal = db.financeiro.filter(f => f.tipo === 'Receber' && f.status === 'Baixado').reduce((a, b) => a + b.valor, 0);
+            const pagTotal = db.financeiro.filter(f => f.tipo === 'Pagar' && f.status === 'Baixado').reduce((a, b) => a + b.valor, 0);
+            const pendTotal = db.financeiro.filter(f => f.tipo === 'Receber' && f.status === 'Aberto').reduce((a, b) => a + b.valor, 0);
+
+            const calculosDRE = { A: recTotal, B: pendTotal, C: recTotal - pendTotal, D: pagTotal, E: (recTotal - pendTotal) - pagTotal };
+
+            return `
+                <div class="space-y-6">
+                    <div class="flex justify-end no-print">
+                        <button onclick="window.print()" class="px-4 py-2 bg-slate-800 text-white rounded-lg text-xs font-bold flex items-center gap-2 shadow">
+                            <i class="fa-solid fa-print"></i> Imprimir / Exportar PDF
+                        </button>
+                    </div>
+
+                    <div class="bg-white p-6 rounded-xl shadow-sm border space-y-4">
+                        <div class="flex items-center justify-between border-b pb-3">
+                            <h3 class="font-bold text-base text-slate-800">Demonstração do Resultado do Exercício (DRE)</h3>
+                            <span class="px-3 py-1 rounded-full text-xs font-extrabold ${calculosDRE.E >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                                ${calculosDRE.E >= 0 ? 'SUPERÁVIT' : 'DEFICIT'}: R$ ${Math.abs(calculosDRE.E).toFixed(2)}
+                            </span>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <tbody class="divide-y">
+                                    ${(db.dre_config || []).map(row => `
+                                        <tr class="${row.tipo === 'formula' ? 'bg-slate-50 font-bold' : ''}">
+                                            <td class="p-3 font-extrabold text-teal-700">${row.id}</td>
+                                            <td class="p-3">${escapeHTML(row.label)}</td>
+                                            <td class="p-3 text-right font-bold">R$ ${(calculosDRE[row.id] || 0).toFixed(2)}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
 
         // ==========================================
@@ -654,7 +876,7 @@
                                         <th class="p-3">Vencimento</th>
                                         <th class="p-3">Valor</th>
                                         <th class="p-3">Status</th>
-                                        <th class="p-3 text-right">Ações de Baixa</th>
+                                        <th class="p-3 text-right">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y">
@@ -675,8 +897,9 @@
                                                         <i class="fa-solid fa-scissors"></i> Parcial
                                                     </button>
                                                 ` : `
-                                                    <span class="text-emerald-600 font-bold text-xs"><i class="fa-solid fa-circle-check"></i> Liquidado</span>
+                                                    <span class="text-emerald-600 font-bold text-xs mr-2"><i class="fa-solid fa-circle-check"></i> Liquidado</span>
                                                 `}
+                                                <button onclick="renderModalNovoTitulo('${f.id}')" title="Editar Título" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
                                                 <button onclick="excluirItemGenerico('financeiro', '${f.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
                                             </td>
                                         </tr>
@@ -950,6 +1173,7 @@
                                             <td class="p-3 font-semibold text-teal-700">${conta ? escapeHTML(conta.banco) : 'Caixa Interno'}</td>
                                             <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.status === 'Ativo' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${m.status}</span></td>
                                             <td class="p-3 text-right space-x-1">
+                                                <button onclick="renderModalFormaMonetaria('${m.id}')" title="Editar Forma" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
                                                 <button onclick="excluirItemGenerico('formas_monetarias', '${m.id}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Excluir"><i class="fa-solid fa-trash-can"></i></button>
                                             </td>
                                         </tr>
@@ -962,33 +1186,34 @@
             `;
         }
 
-        function renderModalFormaMonetaria() {
+        function renderModalFormaMonetaria(formaId = null) {
+            const m = formaId ? db.formas_monetarias.find(x => x.id === formaId) : null;
             const html = `
                 <div id="modal_fm" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
                         <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
-                            <h3 class="font-bold text-sm">Nova Forma Monetária</h3>
+                            <h3 class="font-bold text-sm">${m ? 'Editar Forma Monetária' : 'Nova Forma Monetária'}</h3>
                             <button onclick="fecharModal('modal_fm')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
                         </div>
-                        <form onsubmit="salvarFormaMonetaria(event)" class="p-6 space-y-3">
+                        <form onsubmit="salvarFormaMonetaria(event, '${formaId || ''}')" class="p-6 space-y-3">
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nome do Meio / Forma</label>
-                                <input type="text" id="fm_nome" required placeholder="Ex: PIX ONLINE" class="w-full p-2 border rounded text-xs font-bold">
+                                <input type="text" id="fm_nome" required value="${m ? escapeHTML(m.nome) : ''}" placeholder="Ex: PIX ONLINE" class="w-full p-2 border rounded text-xs font-bold">
                             </div>
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Multa Atraso (%)</label>
-                                    <input type="number" step="0.01" id="fm_multa" value="2.00" class="w-full p-2 border rounded text-xs font-bold">
+                                    <input type="number" step="0.01" id="fm_multa" value="${m ? m.multaPct : 2.00}" class="w-full p-2 border rounded text-xs font-bold">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Juros ao Dia (%)</label>
-                                    <input type="number" step="0.001" id="fm_juros" value="0.033" class="w-full p-2 border rounded text-xs font-bold">
+                                    <input type="number" step="0.001" id="fm_juros" value="${m ? m.jurosDiaPct : 0.033}" class="w-full p-2 border rounded text-xs font-bold">
                                 </div>
                             </div>
                             <div>
                                 <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Conta Bancária Destino</label>
                                 <select id="fm_conta" class="w-full p-2 border rounded text-xs font-bold">
-                                    ${db.contas_bancarias.map(c => `<option value="${c.id}">${escapeHTML(c.banco)}</option>`).join('')}
+                                    ${db.contas_bancarias.map(c => `<option value="${c.id}" ${m && m.contaId === c.id ? 'selected' : ''}>${escapeHTML(c.banco)}</option>`).join('')}
                                 </select>
                             </div>
                             <div class="flex items-center justify-end gap-2 pt-3 border-t">
@@ -1002,64 +1227,23 @@
             document.body.insertAdjacentHTML('beforeend', html);
         }
 
-        function salvarFormaMonetaria(e) {
+        function salvarFormaMonetaria(e, formaId = '') {
             e.preventDefault();
             const nome = document.getElementById('fm_nome').value.trim();
             const multaPct = parseFloat(document.getElementById('fm_multa').value) || 0;
             const jurosDiaPct = parseFloat(document.getElementById('fm_juros').value) || 0;
             const contaId = document.getElementById('fm_conta').value;
 
-            db.formas_monetarias.push({ id: 'fm_' + Date.now(), nome, multaPct, jurosDiaPct, contaId, baixaAutomatica: true, status: 'Ativo' });
+            if (formaId) {
+                const m = db.formas_monetarias.find(x => x.id === formaId);
+                if (m) { m.nome = nome; m.multaPct = multaPct; m.jurosDiaPct = jurosDiaPct; m.contaId = contaId; }
+            } else {
+                db.formas_monetarias.push({ id: 'fm_' + Date.now(), nome, multaPct, jurosDiaPct, contaId, baixaAutomatica: true, status: 'Ativo' });
+            }
+
             salvarDados(db);
             fecharModal('modal_fm');
             renderApp();
-        }
-
-        // ==========================================
-        // DRE & TELA DE LOGIN
-        // ==========================================
-        function renderRelatoriosView() {
-            const recTotal = db.financeiro.filter(f => f.tipo === 'Receber' && f.status === 'Baixado').reduce((a, b) => a + b.valor, 0);
-            const pagTotal = db.financeiro.filter(f => f.tipo === 'Pagar' && f.status === 'Baixado').reduce((a, b) => a + b.valor, 0);
-            const pendTotal = db.financeiro.filter(f => f.tipo === 'Receber' && f.status === 'Aberto').reduce((a, b) => a + b.valor, 0);
-
-            const calculosDRE = { A: recTotal, B: pendTotal, C: recTotal - pendTotal, D: pagTotal, E: (recTotal - pendTotal) - pagTotal };
-
-            return `
-                <div class="space-y-6">
-                    <div class="bg-white p-6 rounded-xl shadow-sm border space-y-4">
-                        <div class="flex items-center justify-between border-b pb-3">
-                            <h3 class="font-bold text-base text-slate-800">Demonstração do Resultado do Exercício (DRE)</h3>
-                            <span class="px-3 py-1 rounded-full text-xs font-extrabold ${calculosDRE.E >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
-                                ${calculosDRE.E >= 0 ? 'SUPERÁVIT' : 'DEFICIT'}: R$ ${Math.abs(calculosDRE.E).toFixed(2)}
-                            </span>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs">
-                                <tbody class="divide-y">
-                                    ${(db.dre_config || []).map(row => `
-                                        <tr class="${row.tipo === 'formula' ? 'bg-slate-50 font-bold' : ''}">
-                                            <td class="p-3 font-extrabold text-teal-700">${row.id}</td>
-                                            <td class="p-3">${escapeHTML(row.label)}</td>
-                                            <td class="p-3 text-right font-bold">R$ ${(calculosDRE[row.id] || 0).toFixed(2)}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderDashboardView() {
-            return `
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="bg-white p-4 rounded-xl border shadow-sm"><p class="text-xs font-bold text-slate-500 uppercase">A Receber em Aberto</p><h3 class="text-xl font-extrabold text-emerald-600">R$ ${db.financeiro.filter(f=>f.tipo==='Receber' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0).toFixed(2)}</h3></div>
-                    <div class="bg-white p-4 rounded-xl border shadow-sm"><p class="text-xs font-bold text-slate-500 uppercase">A Pagar em Aberto</p><h3 class="text-xl font-extrabold text-rose-600">R$ ${db.financeiro.filter(f=>f.tipo==='Pagar' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0).toFixed(2)}</h3></div>
-                    <div class="bg-white p-4 rounded-xl border shadow-sm"><p class="text-xs font-bold text-slate-500 uppercase">Itens no Estoque</p><h3 class="text-xl font-extrabold text-slate-800">${db.estoque.length}</h3></div>
-                </div>
-            `;
         }
 
         function renderTelaLogin() {
@@ -1110,40 +1294,41 @@
             }, 33);
         }
 
-        function renderModalNovoTitulo() {
+        function renderModalNovoTitulo(tituloId = null) {
+            const f = tituloId ? db.financeiro.find(x => x.id === tituloId) : null;
             const html = `
                 <div id="modal_novo_t" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
                         <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
-                            <h3 class="font-bold text-sm">Novo Título Financeiro</h3>
+                            <h3 class="font-bold text-sm">${f ? 'Editar Título Financeiro' : 'Novo Título Financeiro'}</h3>
                             <button onclick="fecharModal('modal_novo_t')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
                         </div>
-                        <form onsubmit="salvarNovoTituloForm(event)" class="p-6 space-y-3">
+                        <form onsubmit="salvarNovoTituloForm(event, '${tituloId || ''}')" class="p-6 space-y-3">
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-xs font-bold uppercase mb-1">Tipo</label>
                                     <select id="nt_tipo" class="w-full p-2 border rounded text-xs font-bold">
-                                        <option value="Receber">A Receber</option>
-                                        <option value="Pagar">A Pagar</option>
+                                        <option value="Receber" ${f && f.tipo==='Receber'?'selected':''}>A Receber</option>
+                                        <option value="Pagar" ${f && f.tipo==='Pagar'?'selected':''}>A Pagar</option>
                                     </select>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold uppercase mb-1">Valor (R$)</label>
-                                    <input type="number" step="0.01" id="nt_valor" required value="2500.00" class="w-full p-2 border rounded text-xs font-bold">
+                                    <input type="number" step="0.01" id="nt_valor" required value="${f ? f.valor : 2500.00}" class="w-full p-2 border rounded text-xs font-bold">
                                 </div>
                             </div>
                             <div>
                                 <label class="block text-xs font-bold uppercase mb-1">Histórico / Descrição</label>
-                                <input type="text" id="nt_hist" required placeholder="Ex: Taxa Condominial Ordinária" class="w-full p-2 border rounded text-xs font-bold">
+                                <input type="text" id="nt_hist" required value="${f ? escapeHTML(f.historico) : ''}" placeholder="Ex: Taxa Condominial Ordinária" class="w-full p-2 border rounded text-xs font-bold">
                             </div>
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-xs font-bold uppercase mb-1">Competência</label>
-                                    <input type="text" id="nt_comp" value="10/2026" class="w-full p-2 border rounded text-xs font-bold">
+                                    <input type="text" id="nt_comp" value="${f ? escapeHTML(f.competencia) : '10/2026'}" class="w-full p-2 border rounded text-xs font-bold">
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold uppercase mb-1">Vencimento</label>
-                                    <input type="date" id="nt_venc" required value="2026-10-15" class="w-full p-2 border rounded text-xs font-bold">
+                                    <input type="date" id="nt_venc" required value="${f ? f.vencimento : '2026-10-15'}" class="w-full p-2 border rounded text-xs font-bold">
                                 </div>
                             </div>
                             <div class="flex items-center justify-end gap-2 pt-3 border-t">
@@ -1157,7 +1342,7 @@
             document.body.insertAdjacentHTML('beforeend', html);
         }
 
-        function salvarNovoTituloForm(e) {
+        function salvarNovoTituloForm(e, tituloId = '') {
             e.preventDefault();
             const tipo = document.getElementById('nt_tipo').value;
             const valor = parseFloat(document.getElementById('nt_valor').value) || 0;
@@ -1165,10 +1350,14 @@
             const competencia = document.getElementById('nt_comp').value.trim();
             const vencimento = document.getElementById('nt_venc').value;
 
-            db.financeiro.push({ id: 'fin_' + Date.now(), tipo, valor, historico, competencia, vencimento, status: 'Aberto' });
-            salvarDados(db);
-            fecharModal('modal_novo_t');
-            renderApp();
+            if (tituloId) {
+                const f = db.financeiro.find(x => x.id === tituloId);
+                if (f) { f.tipo = tipo; f.valor = valor; f.historico = historico; f.competencia = competencia; f.vencimento = vencimento; }
+            } else {
+                db.financeiro.push({ id: 'fin_' + Date.now(), tipo, valor, historico, competencia, vencimento, status: 'Aberto' });
+            }
+
+            salvarDados(db); fecharModal('modal_novo_t'); renderApp();
         }
 
         function excluirItemGenerico(modKey, itemId) {
