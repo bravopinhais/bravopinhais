@@ -1555,4 +1555,52 @@
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold uppercase mb-1">Vencimento</label>
-                                    <input type="date" id="nt_venc" required value
+                                    <input type="date" id="nt_venc" required value="${f ? f.vencimento : '2026-10-15'}" class="w-full p-2 border rounded text-xs font-bold">
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModal('modal_novo_t')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
+                                <button type="submit" class="px-3 py-1.5 bg-teal-600 text-white rounded text-xs font-bold">Salvar Título</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        function salvarNovoTituloForm(e, tituloId = '') {
+            e.preventDefault();
+            const tipo = document.getElementById('nt_tipo').value;
+            const valor = parseFloat(document.getElementById('nt_valor').value) || 0;
+            const historico = document.getElementById('nt_hist').value.trim();
+            const competencia = document.getElementById('nt_comp').value.trim();
+            const vencimento = document.getElementById('nt_venc').value;
+
+            if (tituloId) {
+                const f = db.financeiro.find(x => x.id === tituloId);
+                if (f) { f.tipo = tipo; f.valor = valor; f.historico = historico; f.competencia = competencia; f.vencimento = vencimento; }
+            } else {
+                db.financeiro.push({ id: 'fin_' + Date.now(), tipo, valor, historico, competencia, vencimento, status: 'Aberto' });
+            }
+
+            salvarDados(db); fecharModal('modal_novo_t'); renderApp();
+        }
+
+        function excluirItemGenerico(modKey, itemId) {
+            if (confirm('Deseja excluir este registro?')) {
+                db[modKey] = db[modKey].filter(x => x.id !== itemId);
+                salvarDados(db);
+                renderApp();
+            }
+        }
+
+        function fecharModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
+
+        window.addEventListener('DOMContentLoaded', () => { renderApp(); });
+    </script>
+</body>
+</html>
