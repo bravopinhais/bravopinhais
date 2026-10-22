@@ -33,6 +33,7 @@
 </head>
 <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
 
+    <!-- CONTÊINER PRINCIPAL -->
     <div id="app" class="flex-1 flex flex-col min-h-screen"></div>
 
     <script>
@@ -143,12 +144,20 @@
             e.preventDefault();
             const userInput = document.getElementById('login_user').value.trim();
             const senhaInput = document.getElementById('login_pass').value;
+            const lembrar = document.getElementById('login_remember').checked;
             const userFound = db.usuarios.find(u => u.usuario === userInput || u.email === userInput);
 
             if (userFound && userFound.senhaHash === senhaInput) {
                 if (matrixInterval) clearInterval(matrixInterval);
                 sessao.usuarioLogado = userFound;
                 sessionStorage.setItem('guardioes_sessao', JSON.stringify(userFound));
+
+                if (lembrar) {
+                    localStorage.setItem('guardioes_remember_user', userInput);
+                } else {
+                    localStorage.removeItem('guardioes_remember_user');
+                }
+
                 registrarLog('Segurança', 'Login Sucesso', `Usuário ${userFound.usuario} logou.`);
                 renderApp();
             } else {
@@ -167,6 +176,11 @@
 
             if (!sessao.usuarioLogado) {
                 container.innerHTML = renderTelaLogin();
+                const savedUser = localStorage.getItem('guardioes_remember_user');
+                if (savedUser && document.getElementById('login_user')) {
+                    document.getElementById('login_user').value = savedUser;
+                    document.getElementById('login_remember').checked = true;
+                }
                 if (isTechMode) setTimeout(iniciarAnimacaoMatrix, 50);
                 return;
             }
@@ -222,6 +236,8 @@
             let btnNovoHtml = '';
             if (moduloId === 'financeiro') btnNovoHtml = `<button onclick="renderModalNovoTitulo()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Título</button>`;
             else if (moduloId === 'formas_monetarias') btnNovoHtml = `<button onclick="renderModalFormaMonetaria()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Nova Forma Monetária</button>`;
+            else if (moduloId === 'moradores') btnNovoHtml = `<button onclick="renderModalMorador()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Morador</button>`;
+            else if (moduloId === 'contas_bancarias') btnNovoHtml = `<button onclick="renderModalContaBancaria()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Nova Conta Bancária</button>`;
             else if (moduloId === 'estoque') btnNovoHtml = `<button onclick="renderModalEstoque()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Item no Estoque</button>`;
 
             const headerGlobal = `
@@ -235,10 +251,186 @@
                 case 'dashboard': return headerGlobal + renderDashboardView();
                 case 'financeiro': return headerGlobal + renderFinanceiroView();
                 case 'formas_monetarias': return headerGlobal + renderFormasMonetariasView();
+                case 'moradores': return headerGlobal + renderMoradoresView();
+                case 'contas_bancarias': return headerGlobal + renderContasBancariasView();
                 case 'estoque': return headerGlobal + renderEstoqueView();
                 case 'relatorios': return headerGlobal + renderRelatoriosView();
                 default: return headerGlobal + `<div class="bg-white p-6 rounded-xl border">Módulo em execução normal.</div>`;
             }
+        }
+
+        // ==========================================
+        // MÓDULO MORADORES
+        // ==========================================
+        function renderMoradoresView() {
+            const list = db.moradores || [];
+            return `
+                <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-100 font-bold uppercase border-b">
+                            <tr>
+                                <th class="p-3">Bloco / Ap</th>
+                                <th class="p-3">Nome do Morador</th>
+                                <th class="p-3">Contato</th>
+                                <th class="p-3">Tipo</th>
+                                <th class="p-3">Taxa de Mudança</th>
+                                <th class="p-3 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y">
+                            ${list.map(m => `
+                                <tr class="hover:bg-slate-50">
+                                    <td class="p-3 font-bold text-slate-900">${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</td>
+                                    <td class="p-3 font-bold text-slate-800">${escapeHTML(m.nome)}</td>
+                                    <td class="p-3 text-slate-600">${escapeHTML(m.telefone)} / ${escapeHTML(m.email)}</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.tipo === 'Proprietário' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}">${escapeHTML(m.tipo)}</span></td>
+                                    <td class="p-3 font-semibold">${escapeHTML(m.taxaMudanca)}</td>
+                                    <td class="p-3 text-right space-x-1">
+                                        <button onclick="renderModalMorador('${m.id}')" title="Editar" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+                                        <button onclick="excluirItemGenerico('moradores', '${m.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function renderModalMorador(moradorId = null) {
+            const m = moradorId ? db.moradores.find(x => x.id === moradorId) : null;
+            const html = `
+                <div id="modal_mor" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+                            <h3 class="font-bold text-sm">${m ? 'Editar Morador' : 'Novo Morador'}</h3>
+                            <button onclick="fecharModal('modal_mor')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <form onsubmit="salvarMoradorForm(event, '${moradorId || ''}')" class="p-6 space-y-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="block text-xs font-bold uppercase mb-1">Bloco</label><input type="text" id="mor_bloco" required value="${m ? escapeHTML(m.bloco) : ''}" class="w-full p-2 border rounded text-xs font-bold"></div>
+                                <div><label class="block text-xs font-bold uppercase mb-1">Apartamento</label><input type="text" id="mor_ap" required value="${m ? escapeHTML(m.apartamento) : ''}" class="w-full p-2 border rounded text-xs font-bold"></div>
+                            </div>
+                            <div><label class="block text-xs font-bold uppercase mb-1">Nome Completo</label><input type="text" id="mor_nome" required value="${m ? escapeHTML(m.nome) : ''}" class="w-full p-2 border rounded text-xs font-bold"></div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="block text-xs font-bold uppercase mb-1">E-mail</label><input type="email" id="mor_email" required value="${m ? escapeHTML(m.email) : ''}" class="w-full p-2 border rounded text-xs font-bold"></div>
+                                <div><label class="block text-xs font-bold uppercase mb-1">Telefone</label><input type="text" id="mor_tel" required value="${m ? escapeHTML(m.telefone) : ''}" class="w-full p-2 border rounded text-xs font-bold"></div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase mb-1">Tipo de Morador</label>
+                                <select id="mor_tipo" class="w-full p-2 border rounded text-xs font-bold">
+                                    <option value="Proprietário" ${m && m.tipo === 'Proprietário' ? 'selected' : ''}>Proprietário</option>
+                                    <option value="Inquilino" ${m && m.tipo === 'Inquilino' ? 'selected' : ''}>Inquilino</option>
+                                </select>
+                            </div>
+                            <div class="flex items-center justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModal('modal_mor')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
+                                <button type="submit" class="px-3 py-1.5 bg-teal-600 text-white rounded text-xs font-bold">Salvar Morador</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        function salvarMoradorForm(e, moradorId = '') {
+            e.preventDefault();
+            const bloco = document.getElementById('mor_bloco').value.trim();
+            const ap = document.getElementById('mor_ap').value.trim();
+            const nome = document.getElementById('mor_nome').value.trim();
+            const email = document.getElementById('mor_email').value.trim();
+            const tel = document.getElementById('mor_tel').value.trim();
+            const tipo = document.getElementById('mor_tipo').value;
+
+            if (moradorId) {
+                const m = db.moradores.find(x => x.id === moradorId);
+                if (m) { m.bloco = bloco; m.apartamento = ap; m.nome = nome; m.email = email; m.telefone = tel; m.tipo = tipo; }
+            } else {
+                db.moradores.push({ id: 'mor_' + Date.now(), bloco, apartamento: ap, nome, email, telefone: tel, tipo, taxaMudanca: 'N/A' });
+            }
+
+            salvarDados(db); fecharModal('modal_mor'); renderApp();
+        }
+
+        // ==========================================
+        // MÓDULO CONTAS BANCÁRIAS
+        // ==========================================
+        function renderContasBancariasView() {
+            const list = db.contas_bancarias || [];
+            return `
+                <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-100 font-bold uppercase border-b">
+                            <tr>
+                                <th class="p-3">Banco / Caixinha</th>
+                                <th class="p-3">Agência</th>
+                                <th class="p-3">Número da Conta</th>
+                                <th class="p-3">Saldo Inicial / Atual</th>
+                                <th class="p-3 text-right">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y">
+                            ${list.map(c => `
+                                <tr class="hover:bg-slate-50">
+                                    <td class="p-3 font-bold text-slate-800">${escapeHTML(c.banco)}</td>
+                                    <td class="p-3 text-slate-600">${escapeHTML(c.agencia)}</td>
+                                    <td class="p-3 text-slate-600">${escapeHTML(c.conta)}</td>
+                                    <td class="p-3 font-extrabold text-teal-800">R$ ${Number(c.saldo || 0).toFixed(2)}</td>
+                                    <td class="p-3 text-right space-x-1">
+                                        <button onclick="renderModalContaBancaria('${c.id}')" title="Editar" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+                                        <button onclick="excluirItemGenerico('contas_bancarias', '${c.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function renderModalContaBancaria(contaId = null) {
+            const c = contaId ? db.contas_bancarias.find(x => x.id === contaId) : null;
+            const html = `
+                <div id="modal_cb" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
+                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+                            <h3 class="font-bold text-sm">${c ? 'Editar Conta Bancária' : 'Nova Conta Bancária'}</h3>
+                            <button onclick="fecharModal('modal_cb')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <form onsubmit="salvarContaBancariaForm(event, '${contaId || ''}')" class="p-6 space-y-3">
+                            <div><label class="block text-xs font-bold uppercase mb-1">Nome do Banco / Caixinha</label><input type="text" id="cb_banco" required value="${c ? escapeHTML(c.banco) : ''}" class="w-full p-2 border rounded text-xs font-bold"></div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="block text-xs font-bold uppercase mb-1">Agência</label><input type="text" id="cb_ag" required value="${c ? escapeHTML(c.agencia) : ''}" class="w-full p-2 border rounded text-xs font-bold"></div>
+                                <div><label class="block text-xs font-bold uppercase mb-1">Número da Conta</label><input type="text" id="cb_conta" required value="${c ? escapeHTML(c.conta) : ''}" class="w-full p-2 border rounded text-xs font-bold"></div>
+                            </div>
+                            <div><label class="block text-xs font-bold uppercase mb-1">Saldo Inicial (R$)</label><input type="number" step="0.01" id="cb_saldo" required value="${c ? c.saldo : '0.00'}" class="w-full p-2 border rounded text-xs font-bold"></div>
+                            <div class="flex items-center justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModal('modal_cb')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
+                                <button type="submit" class="px-3 py-1.5 bg-teal-600 text-white rounded text-xs font-bold">Salvar Conta</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        function salvarContaBancariaForm(e, contaId = '') {
+            e.preventDefault();
+            const banco = document.getElementById('cb_banco').value.trim();
+            const ag = document.getElementById('cb_ag').value.trim();
+            const conta = document.getElementById('cb_conta').value.trim();
+            const saldo = parseFloat(document.getElementById('cb_saldo').value) || 0;
+
+            if (contaId) {
+                const c = db.contas_bancarias.find(x => x.id === contaId);
+                if (c) { c.banco = banco; c.agencia = ag; c.conta = conta; c.saldo = saldo; }
+            } else {
+                db.contas_bancarias.push({ id: 'cb_' + Date.now(), banco, agencia: ag, conta, saldo });
+            }
+
+            salvarDados(db); fecharModal('modal_cb'); renderApp();
         }
 
         // ==========================================
@@ -253,7 +445,6 @@
 
             return `
                 <div class="space-y-4">
-                    <!-- BANNER / NOTIFICAÇÃO DE INVENTÁRIO (CARD HIGHLIGHT) -->
                     <div class="p-4 rounded-xl shadow-sm border ${inventariosAtrasadosOuHoje.length > 0 ? 'bg-rose-50 border-rose-300' : 'bg-amber-50 border-amber-200'} flex flex-col sm:flex-row items-center justify-between gap-4">
                         <div class="flex items-center gap-3">
                             <div class="w-12 h-12 rounded-xl ${inventariosAtrasadosOuHoje.length > 0 ? 'bg-rose-600 text-white' : 'bg-amber-500 text-white'} flex items-center justify-center text-xl font-bold shadow-sm">
@@ -328,7 +519,6 @@
 
         function renderModalEstoque(itemId = null) {
             const e = itemId ? db.estoque.find(x => x.id === itemId) : null;
-
             const html = `
                 <div id="modal_est" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
@@ -337,28 +527,13 @@
                             <button onclick="fecharModal('modal_est')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                         <form onsubmit="salvarEstoqueForm(event, '${itemId || ''}')" class="p-6 space-y-3">
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nome do Produto</label>
-                                <input type="text" id="est_item" required value="${e ? escapeHTML(e.item) : ''}" class="w-full p-2 border rounded text-xs font-bold">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Categoria</label>
-                                <input type="text" id="est_categoria" required value="${e ? escapeHTML(e.categoria) : ''}" class="w-full p-2 border rounded text-xs font-bold">
-                            </div>
+                            <div><label class="block text-xs font-bold uppercase mb-1">Nome do Produto</label><input type="text" id="est_item" required value="${e ? escapeHTML(e.item) : ''}" class="w-full p-2 border rounded text-xs font-bold"></div>
+                            <div><label class="block text-xs font-bold uppercase mb-1">Categoria</label><input type="text" id="est_categoria" required value="${e ? escapeHTML(e.categoria) : ''}" class="w-full p-2 border rounded text-xs font-bold"></div>
                             <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Qtd Atual</label>
-                                    <input type="number" id="est_qtd" required value="${e ? e.qtd : 0}" class="w-full p-2 border rounded text-xs font-bold">
-                                </div>
-                                <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Qtd Mínima</label>
-                                    <input type="number" id="est_min" required value="${e ? e.minimo : 5}" class="w-full p-2 border rounded text-xs font-bold">
-                                </div>
+                                <div><label class="block text-xs font-bold uppercase mb-1">Qtd Atual</label><input type="number" id="est_qtd" required value="${e ? e.qtd : 0}" class="w-full p-2 border rounded text-xs font-bold"></div>
+                                <div><label class="block text-xs font-bold uppercase mb-1">Qtd Mínima</label><input type="number" id="est_min" required value="${e ? e.minimo : 5}" class="w-full p-2 border rounded text-xs font-bold"></div>
                             </div>
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Data do Próximo Balanço / Inventário</label>
-                                <input type="date" id="est_balanco" value="${e ? (e.proximoBalanco || '') : ''}" class="w-full p-2 border rounded text-xs font-bold">
-                            </div>
+                            <div><label class="block text-xs font-bold uppercase mb-1">Data do Próximo Balanço</label><input type="date" id="est_balanco" value="${e ? (e.proximoBalanco || '') : ''}" class="w-full p-2 border rounded text-xs font-bold"></div>
                             <div class="flex items-center justify-end gap-2 pt-3 border-t">
                                 <button type="button" onclick="fecharModal('modal_est')" class="px-3 py-1.5 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
                                 <button type="submit" class="px-3 py-1.5 bg-teal-600 text-white rounded text-xs font-bold">Salvar Item</button>
@@ -380,18 +555,12 @@
 
             if (itemId) {
                 const e = db.estoque.find(x => x.id === itemId);
-                if (e) {
-                    e.item = item; e.categoria = cat; e.qtd = qtd; e.minimo = min; e.proximoBalanco = bal;
-                    registrarLog('Estoque', 'Edição', `Item ${item} atualizado. Balanço agendado para: ${bal}`);
-                }
+                if (e) { e.item = item; e.categoria = cat; e.qtd = qtd; e.minimo = min; e.proximoBalanco = bal; }
             } else {
                 db.estoque.push({ id: 'est_' + Date.now(), item, categoria: cat, qtd, minimo: min, proximoBalanco: bal });
-                registrarLog('Estoque', 'Criação', `Item ${item} adicionado. Balanço: ${bal}`);
             }
 
-            salvarDados(db);
-            fecharModal('modal_est');
-            renderApp();
+            salvarDados(db); fecharModal('modal_est'); renderApp();
         }
 
         // ==========================================
@@ -510,11 +679,9 @@
                             <div class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
                                 <div>
                                     <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Forma Monetária</label>
-                                    <div class="flex items-center gap-1">
-                                        <select id="bx_forma_sel" onchange="recalcularValoresBaixa('${f.id}')" class="w-full p-2 border rounded font-bold bg-white text-slate-900">
-                                            ${db.formas_monetarias.filter(m => m.status === 'Ativo').map(m => `<option value="${m.id}">${escapeHTML(m.nome)}</option>`).join('')}
-                                        </select>
-                                    </div>
+                                    <select id="bx_forma_sel" onchange="recalcularValoresBaixa('${f.id}')" class="w-full p-2 border rounded font-bold bg-white text-slate-900">
+                                        ${db.formas_monetarias.filter(m => m.status === 'Ativo').map(m => `<option value="${m.id}">${escapeHTML(m.nome)}</option>`).join('')}
+                                    </select>
                                 </div>
                                 <div>
                                     <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Conta Bancária / Caixa</label>
@@ -670,7 +837,6 @@
             const f = db.financeiro.find(x => x.id === id);
             if (!f) return;
 
-            const valLiquidoTotal = parseFloat(document.getElementById('bx_val_liquido').value) || 0;
             const valBaixa = parseFloat(document.getElementById('bx_val_baixa').value) || 0;
             const formaId = document.getElementById('bx_forma_sel').value;
 
@@ -801,7 +967,7 @@
         }
 
         // ==========================================
-        // DRE & OUTRAS INTERFACES
+        // DRE & TELA DE LOGIN
         // ==========================================
         function renderRelatoriosView() {
             const recTotal = db.financeiro.filter(f => f.tipo === 'Receber' && f.status === 'Baixado').reduce((a, b) => a + b.valor, 0);
@@ -860,6 +1026,12 @@
                         <form onsubmit="realizarLogin(event)" class="p-8 space-y-5">
                             <div><label class="block text-xs font-bold uppercase mb-1">Usuário / E-mail</label><input type="text" id="login_user" required class="w-full p-2.5 rounded text-sm font-bold tech-input"></div>
                             <div><label class="block text-xs font-bold uppercase mb-1">Senha</label><input type="password" id="login_pass" required class="w-full p-2.5 rounded text-sm font-bold tech-input"></div>
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center gap-2 text-xs font-bold text-cyan-300 cursor-pointer">
+                                    <input type="checkbox" id="login_remember" class="rounded text-cyan-500 w-4 h-4">
+                                    Lembrar credenciais de acesso
+                                </label>
+                            </div>
                             <button type="submit" class="w-full py-3 bg-cyan-600 text-slate-950 font-mono font-bold rounded shadow-md">Acessar Painel</button>
                         </form>
                     </div>
@@ -900,28 +1072,28 @@
                         <form onsubmit="salvarNovoTituloForm(event)" class="p-6 space-y-3">
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tipo</label>
+                                    <label class="block text-xs font-bold uppercase mb-1">Tipo</label>
                                     <select id="nt_tipo" class="w-full p-2 border rounded text-xs font-bold">
                                         <option value="Receber">A Receber</option>
                                         <option value="Pagar">A Pagar</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Valor (R$)</label>
+                                    <label class="block text-xs font-bold uppercase mb-1">Valor (R$)</label>
                                     <input type="number" step="0.01" id="nt_valor" required value="2500.00" class="w-full p-2 border rounded text-xs font-bold">
                                 </div>
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Histórico / Descrição</label>
+                                <label class="block text-xs font-bold uppercase mb-1">Histórico / Descrição</label>
                                 <input type="text" id="nt_hist" required placeholder="Ex: Taxa Condominial Ordinária" class="w-full p-2 border rounded text-xs font-bold">
                             </div>
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Competência</label>
+                                    <label class="block text-xs font-bold uppercase mb-1">Competência</label>
                                     <input type="text" id="nt_comp" value="10/2026" class="w-full p-2 border rounded text-xs font-bold">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Vencimento</label>
+                                    <label class="block text-xs font-bold uppercase mb-1">Vencimento</label>
                                     <input type="date" id="nt_venc" required value="2026-10-15" class="w-full p-2 border rounded text-xs font-bold">
                                 </div>
                             </div>
