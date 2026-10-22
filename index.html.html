@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         .will-change-transform { will-change: transform; }
+        /* Garantia de Alto Contraste */
         input, select, textarea { color: #0f172a !important; font-weight: 600 !important; }
         .tab-active { border-bottom: 3px solid #0d9488; background-color: #ffffff; color: #0f766e; font-weight: 700; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -17,10 +18,13 @@
 </head>
 <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
 
-    <!-- CONTÊINER DA APLICAÇÃO -->
+    <!-- CONTÊINER PRINCIPAL DA APLICAÇÃO -->
     <div id="app" class="flex-1 flex flex-col min-h-screen"></div>
 
     <script>
+        // Variable Global para Anexo de Foto/Mídia em Modais Dinâmicos
+        window.imagemAnexadaBase64 = '';
+
         // ==========================================
         // 1. SEGURANÇA E UTILITÁRIOS
         // ==========================================
@@ -263,7 +267,7 @@
         }
 
         // ==========================================
-        // 5. INTERFACE PRINCIPAL DA APLICAÇÃO
+        // 5. RENDERIZAÇÃO DA INTERFACE PRINCIPAL
         // ==========================================
         function renderApp() {
             const container = document.getElementById('app');
@@ -358,7 +362,7 @@
                         </div>
                     </aside>
 
-                    <!-- CONTEÚDO PRINCIPAL COM NAVEGAÇÃO DE ABAS -->
+                    <!-- ÁREA DE NAVEGAÇÃO MULTI-ABAS -->
                     <div class="flex-1 flex flex-col overflow-hidden">
                         <header class="bg-slate-900 text-white p-3 flex md:hidden items-center justify-between border-b border-slate-800">
                             <div class="flex items-center gap-3">
@@ -370,7 +374,6 @@
                             <button onclick="encerrarSessao()" class="text-xs bg-red-600/20 text-red-400 px-2.5 py-1.5 rounded-md">Sair</button>
                         </header>
 
-                        <!-- BARRA DE ABAS SIMULTÂNEAS -->
                         <div class="bg-slate-200 border-b border-slate-300 flex items-center overflow-x-auto px-2 pt-2 gap-1">
                             ${tabsState.openTabs.map(tabId => `
                                 <div onclick="abrirModulo('${tabId}')" class="flex items-center gap-2 px-3 py-2 rounded-t-lg text-xs font-semibold cursor-pointer transition select-none ${tabsState.activeTab === tabId ? 'tab-active shadow-sm' : 'bg-slate-300 text-slate-600 hover:bg-slate-300/80'}">
@@ -400,23 +403,30 @@
         // ==========================================
         // 6. RENDERIZAÇÃO DE MÓDULOS E BOTÕES "NOVO"
         // ==========================================
-        function renderModuleContent(moduloId) {
-            const getButtonConfig = (id) => {
-                switch(id) {
-                    case 'financeiro': return { title: 'Novo Título Financeiro', fn: 'renderModalNovoTitulo()' };
-                    case 'plano_contas': return { title: 'Nova Conta Contábil', fn: 'renderModalGen("plano_contas", "Plano de Contas", [{key:"codigo", label:"Código"}, {key:"nome", label:"Nome da Conta"}, {key:"tipo", label:"Tipo (Receita/Despesa)"}])' };
-                    case 'contas_bancarias': return { title: 'Nova Conta / Caixinha', fn: 'renderModalGen("contas_bancarias", "Conta Bancária", [{key:"banco", label:"Banco / Caixinha"}, {key:"agencia", label:"Agência"}, {key:"conta", label:"Número da Conta"}, {key:"saldo", label:"Saldo Inicial (R$)"}])' };
-                    case 'moradores': return { title: 'Novo Morador', fn: 'renderModalGen("moradores", "Morador", [{key:"bloco", label:"Bloco"}, {key:"apartamento", label:"Apartamento"}, {key:"nome", label:"Nome Completo"}, {key:"email", label:"E-mail"}, {key:"telefone", label:"Telefone / WhatsApp"}, {key:"tipo", label:"Tipo (Proprietário/Inquilino)"}])' };
-                    case 'fornecedores': return { title: 'Novo Fornecedor', fn: 'renderModalGen("fornecedores", "Fornecedor", [{key:"nome", label:"Razão Social / Nome"}, {key:"cnpj", label:"CNPJ / CPF"}, {key:"telefone", label:"Telefone"}, {key:"servico", label:"Serviço Prestado"}])' };
-                    case 'estoque': return { title: 'Novo Item no Estoque', fn: 'renderModalGen("estoque", "Item do Estoque", [{key:"item", label:"Nome do Produto"}, {key:"categoria", label:"Categoria"}, {key:"qtd", label:"Quantidade"}, {key:"minimo", label:"Estoque Mínimo"}, {key:"localizacao", label:"Localização"}])' };
-                    case 'patrimonio': return { title: 'Novo Ativo / Patrimônio', fn: 'renderModalGen("patrimonio", "Patrimônio", [{key:"codigo", label:"Código / Placa"}, {key:"item", label:"Descrição do Item"}, {key:"local", label:"Localização"}, {key:"valor", label:"Valor Estimado (R$)"}, {key:"estado", label:"Estado de Conservação"}])' };
-                    case 'documentos': return { title: 'Novo Documento', fn: 'renderModalGen("documentos", "Documento", [{key:"titulo", label:"Título do Documento"}, {key:"categoria", label:"Categoria"}, {key:"data", label:"Data (AAAA-MM-DD)"}])' };
-                    case 'usuarios': return { title: 'Novo Usuário', fn: 'renderModalUsuario()' };
-                    default: return null;
-                }
-            };
+        function getCamposConfigModulo(id) {
+            switch(id) {
+                case 'plano_contas': return { nome: "Plano de Contas", campos: [{key:"codigo", label:"Código"}, {key:"nome", label:"Nome da Conta"}, {key:"tipo", label:"Tipo (Receita/Despesa)"}] };
+                case 'contas_bancarias': return { nome: "Conta Bancária", campos: [{key:"banco", label:"Banco / Caixinha"}, {key:"agencia", label:"Agência"}, {key:"conta", label:"Número da Conta"}, {key:"saldo", label:"Saldo Inicial (R$)"}] };
+                case 'moradores': return { nome: "Morador", campos: [{key:"bloco", label:"Bloco"}, {key:"apartamento", label:"Apartamento"}, {key:"nome", label:"Nome Completo"}, {key:"email", label:"E-mail"}, {key:"telefone", label:"Telefone / WhatsApp"}, {key:"tipo", label:"Tipo (Proprietário/Inquilino)"}] };
+                case 'fornecedores': return { nome: "Fornecedor", campos: [{key:"nome", label:"Razão Social / Nome"}, {key:"cnpj", label:"CNPJ / CPF"}, {key:"telefone", label:"Telefone"}, {key:"servico", label:"Serviço Prestado"}] };
+                case 'estoque': return { nome: "Item do Estoque", campos: [{key:"item", label:"Nome do Produto"}, {key:"categoria", label:"Categoria"}, {key:"qtd", label:"Quantidade"}, {key:"minimo", label:"Estoque Mínimo"}, {key:"localizacao", label:"Localização"}] };
+                case 'patrimonio': return { nome: "Patrimônio", campos: [{key:"codigo", label:"Código / Placa"}, {key:"item", label:"Descrição do Item"}, {key:"local", label:"Localização"}, {key:"valor", label:"Valor Estimado (R$)"}, {key:"estado", label:"Estado de Conservação"}] };
+                case 'documentos': return { nome: "Documento", campos: [{key:"titulo", label:"Título do Documento"}, {key:"categoria", label:"Categoria"}, {key:"data", label:"Data (AAAA-MM-DD)"}] };
+                default: return null;
+            }
+        }
 
-            const btnConfig = getButtonConfig(moduloId);
+        function renderModuleContent(moduloId) {
+            const camposCfg = getCamposConfigModulo(moduloId);
+
+            let btnNovoHtml = '';
+            if (moduloId === 'financeiro') {
+                btnNovoHtml = `<button onclick="renderModalNovoTitulo()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm flex items-center gap-2 transition"><i class="fa-solid fa-plus"></i> Novo Título Financeiro</button>`;
+            } else if (moduloId === 'usuarios') {
+                btnNovoHtml = `<button onclick="renderModalUsuario()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm flex items-center gap-2 transition"><i class="fa-solid fa-plus"></i> Novo Usuário</button>`;
+            } else if (camposCfg) {
+                btnNovoHtml = `<button onclick="renderModalGen('${moduloId}', null)" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm flex items-center gap-2 transition"><i class="fa-solid fa-plus"></i> Novo ${camposCfg.nome}</button>`;
+            }
 
             const headerGlobal = `
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -425,11 +435,7 @@
                         <p class="text-xs text-slate-500">Gestão Condominial - Sistema Ativo</p>
                     </div>
                     <div class="flex items-center gap-2">
-                        ${btnConfig ? `
-                            <button onclick="${btnConfig.fn}" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm flex items-center gap-2 transition">
-                                <i class="fa-solid fa-plus"></i> ${btnConfig.title}
-                            </button>
-                        ` : ''}
+                        ${btnNovoHtml}
                         <button onclick="renderModalAuditLog('${moduloId}')" class="bg-slate-800 hover:bg-slate-900 text-white text-xs px-3.5 py-2 rounded-lg font-medium shadow-sm flex items-center gap-2 transition">
                             <i class="fa-solid fa-shield-halved text-teal-400"></i> Rastrear Modificações
                         </button>
@@ -447,7 +453,7 @@
         }
 
         // ==========================================
-        // 7. TABELAS GENÉRICAS E GRAVAÇÃO DE DADOS
+        // 7. TABELAS E MODAIS DINÂMICOS (CRUD)
         // ==========================================
         function renderGenericDataList(modKey) {
             const list = db[modKey] || [];
@@ -481,10 +487,9 @@
                                         ${keys.map(k => `
                                             <td class="p-3 font-semibold text-slate-800">${escapeHTML(String(item[k] || ''))}</td>
                                         `).join('')}
-                                        <td class="p-3 text-right">
-                                            <button onclick="excluirItemGenerico('${modKey}', '${item.id}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Excluir">
-                                                <i class="fa-solid fa-trash-can"></i>
-                                            </button>
+                                        <td class="p-3 text-right space-x-1">
+                                            <button onclick="renderModalGen('${modKey}', '${item.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+                                            <button onclick="excluirItemGenerico('${modKey}', '${item.id}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Excluir"><i class="fa-solid fa-trash-can"></i></button>
                                         </td>
                                     </tr>
                                 `).join('')}
@@ -495,22 +500,25 @@
             `;
         }
 
-        let imagemAnexadaBase64 = '';
+        function renderModalGen(modKey, itemId = null) {
+            window.imagemAnexadaBase64 = '';
+            const cfg = getCamposConfigModulo(modKey);
+            if (!cfg) return;
 
-        function renderModalGen(modKey, nomeModulo, campos) {
-            imagemAnexadaBase64 = '';
+            const existingItem = itemId ? (db[modKey] || []).find(x => x.id === itemId) : null;
+
             const html = `
                 <div id="modal_gen" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
                         <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
-                            <h3 class="font-bold text-sm">Novo Cadastro - ${nomeModulo}</h3>
+                            <h3 class="font-bold text-sm">${existingItem ? 'Editar' : 'Novo Cadastro'} - ${cfg.nome}</h3>
                             <button onclick="fecharModal('modal_gen')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
                         </div>
-                        <form onsubmit="salvarItemGenerico(event, '${modKey}')" class="p-6 space-y-3">
-                            ${campos.map(c => `
+                        <form onsubmit="salvarItemGenerico(event, '${modKey}', '${itemId || ''}')" class="p-6 space-y-3">
+                            ${cfg.campos.map(c => `
                                 <div>
                                     <label class="block text-xs font-bold text-slate-700 uppercase mb-1">${c.label}</label>
-                                    <input type="text" data-key="${c.key}" required class="input_gen_field w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                                    <input type="text" data-key="${c.key}" required value="${existingItem ? escapeHTML(String(existingItem[c.key] || '')) : ''}" class="input_gen_field w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
                                 </div>
                             `).join('')}
 
@@ -541,43 +549,52 @@
         async function processarFotoModalGen(e) {
             const file = e.target.files[0];
             if (file) {
-                imagemAnexadaBase64 = await compressImage(file);
+                window.imagemAnexadaBase64 = await compressImage(file);
                 const lbl = document.getElementById('lbl_foto_gen');
                 if (lbl) lbl.classList.remove('hidden');
             }
         }
 
-        function salvarItemGenerico(e, modKey) {
+        window.salvarItemGenerico = function(e, modKey, itemId = '') {
             e.preventDefault();
             const inputs = document.querySelectorAll('.input_gen_field');
-            const novoObjeto = { id: modKey.substr(0, 3) + '_' + Date.now() };
-
-            inputs.forEach(input => {
-                const key = input.getAttribute('data-key');
-                let val = input.value.trim();
-                if (key === 'saldo' || key === 'valor' || key === 'qtd') {
-                    val = parseFloat(val) || 0;
-                }
-                novoObjeto[key] = val;
-            });
-
-            if (imagemAnexadaBase64) {
-                novoObjeto.foto = imagemAnexadaBase64;
-            }
 
             if (!db[modKey]) db[modKey] = [];
-            db[modKey].push(novoObjeto);
 
-            registrarLog(MODULE_NAMES[modKey] || modKey, 'Criação', `Novo registo gravado com sucesso.`);
+            if (itemId) {
+                const idx = db[modKey].findIndex(x => x.id === itemId);
+                if (idx !== -1) {
+                    inputs.forEach(input => {
+                        const key = input.getAttribute('data-key');
+                        let val = input.value.trim();
+                        if (key === 'saldo' || key === 'valor' || key === 'qtd') val = parseFloat(val) || 0;
+                        db[modKey][idx][key] = val;
+                    });
+                    if (window.imagemAnexadaBase64) db[modKey][idx].foto = window.imagemAnexadaBase64;
+                    registrarLog(MODULE_NAMES[modKey] || modKey, 'Edição', `Registro ${itemId} atualizado.`);
+                }
+            } else {
+                const novoObjeto = { id: modKey.substr(0, 3) + '_' + Date.now() };
+                inputs.forEach(input => {
+                    const key = input.getAttribute('data-key');
+                    let val = input.value.trim();
+                    if (key === 'saldo' || key === 'valor' || key === 'qtd') val = parseFloat(val) || 0;
+                    novoObjeto[key] = val;
+                });
+                if (window.imagemAnexadaBase64) novoObjeto.foto = window.imagemAnexadaBase64;
+                db[modKey].push(novoObjeto);
+                registrarLog(MODULE_NAMES[modKey] || modKey, 'Criação', `Novo registro salvo com sucesso.`);
+            }
+
             salvarDados(db);
             fecharModal('modal_gen');
             renderApp();
-        }
+        };
 
         function excluirItemGenerico(modKey, itemId) {
             if (confirm('Tem certeza de que deseja excluir este registo?')) {
                 db[modKey] = db[modKey].filter(x => x.id !== itemId);
-                registrarLog(MODULE_NAMES[modKey] || modKey, 'Exclusão', `Registo removido.`);
+                registrarLog(MODULE_NAMES[modKey] || modKey, 'Exclusão', `Registro ${itemId} removido.`);
                 salvarDados(db);
                 renderApp();
             }
@@ -866,9 +883,9 @@
                                         <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-800">${escapeHTML(u.perfil)}</span></td>
                                         <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${u.status === 'Ativo' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${escapeHTML(u.status)}</span></td>
                                         <td class="p-3 text-right space-x-1">
-                                            <button onclick="renderModalUsuario('${u.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
-                                            <button onclick="toggleStatusUsuario('${u.id}')" class="p-1.5 text-amber-600 hover:bg-amber-50 rounded"><i class="fa-solid fa-user-slash"></i></button>
-                                            <button onclick="excluirUsuario('${u.id}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
+                                            <button onclick="renderModalUsuario('${u.id}')" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded" title="Editar"><i class="fa-solid fa-pen-to-square"></i></button>
+                                            <button onclick="toggleStatusUsuario('${u.id}')" class="p-1.5 text-amber-600 hover:bg-amber-50 rounded" title="Status"><i class="fa-solid fa-user-slash"></i></button>
+                                            <button onclick="excluirUsuario('${u.id}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Excluir"><i class="fa-solid fa-trash-can"></i></button>
                                         </td>
                                     </tr>
                                 `).join('')}
