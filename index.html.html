@@ -100,18 +100,31 @@
                 if (!parsed.formas_monetarias) parsed.formas_monetarias = DEFAULT_DATA.formas_monetarias;
                 if (!parsed.usuarios) parsed.usuarios = DEFAULT_DATA.usuarios;
                 if (!parsed.dre_config) parsed.dre_config = DEFAULT_DATA.dre_config;
+                if (!parsed.financeiro) parsed.financeiro = DEFAULT_DATA.financeiro;
+                if (!parsed.contas_bancarias) parsed.contas_bancarias = DEFAULT_DATA.contas_bancarias;
+                if (!parsed.moradores) parsed.moradores = DEFAULT_DATA.moradores;
+                if (!parsed.estoque) parsed.estoque = DEFAULT_DATA.estoque;
                 return parsed;
             } catch (e) {
+                console.error('Erro ao carregar localStorage:', e);
                 return DEFAULT_DATA;
             }
         }
 
         function salvarDados(data) {
-            try { localStorage.setItem('guardioes_bravo_db', JSON.stringify(data)); } catch (e) {}
+            try { localStorage.setItem('guardioes_bravo_db', JSON.stringify(data)); } catch (e) { console.error('Erro ao salvar:', e); }
         }
 
         let db = carregarDados();
-        let sessao = { usuarioLogado: JSON.parse(sessionStorage.getItem('guardioes_sessao')) || null };
+        let sessao = { usuarioLogado: null };
+
+        try {
+            const sessaoData = sessionStorage.getItem('guardioes_sessao');
+            if (sessaoData) sessao.usuarioLogado = JSON.parse(sessaoData);
+        } catch (e) {
+            sessao.usuarioLogado = null;
+        }
+
         let tabsState = { openTabs: ['dashboard'], activeTab: 'dashboard' };
         let finFiltros = { competencia: '', status: 'Todos', tipo: 'Todos', busca: '' };
         let itensGridBaixa = [];
@@ -167,9 +180,6 @@
             }
         }
 
-        // ==========================================
-        // FUNÇÃO DE EXPORTAÇÃO EXCEL & PDF
-        // ==========================================
         function exportarParaExcel(dados, nomeArquivo = 'relatorio.csv') {
             if (!dados || dados.length === 0) {
                 alert('Não há dados disponíveis para exportação.');
@@ -209,13 +219,14 @@
             if (userFound && userFound.senhaHash === senhaInput) {
                 if (matrixInterval) clearInterval(matrixInterval);
                 sessao.usuarioLogado = userFound;
-                sessionStorage.setItem('guardioes_sessao', JSON.stringify(userFound));
-
-                if (lembrar) {
-                    localStorage.setItem('guardioes_remember_user', userInput);
-                } else {
-                    localStorage.removeItem('guardioes_remember_user');
-                }
+                try {
+                    sessionStorage.setItem('guardioes_sessao', JSON.stringify(userFound));
+                    if (lembrar) {
+                        localStorage.setItem('guardioes_remember_user', userInput);
+                    } else {
+                        localStorage.removeItem('guardioes_remember_user');
+                    }
+                } catch (err) {}
 
                 registrarLog('Segurança', 'Login Sucesso', `Usuário ${userFound.usuario} logou.`);
                 renderApp();
@@ -226,20 +237,23 @@
 
         function encerrarSessao() {
             sessao.usuarioLogado = null;
-            sessionStorage.removeItem('guardioes_sessao');
+            try { sessionStorage.removeItem('guardioes_sessao'); } catch (e) {}
             renderApp();
         }
 
         function renderApp() {
             const container = document.getElementById('app');
+            if (!container) return;
 
             if (!sessao.usuarioLogado) {
                 container.innerHTML = renderTelaLogin();
-                const savedUser = localStorage.getItem('guardioes_remember_user');
-                if (savedUser && document.getElementById('login_user')) {
-                    document.getElementById('login_user').value = savedUser;
-                    document.getElementById('login_remember').checked = true;
-                }
+                try {
+                    const savedUser = localStorage.getItem('guardioes_remember_user');
+                    if (savedUser && document.getElementById('login_user')) {
+                        document.getElementById('login_user').value = savedUser;
+                        document.getElementById('login_remember').checked = true;
+                    }
+                } catch (e) {}
                 if (isTechMode) setTimeout(iniciarAnimacaoMatrix, 50);
                 return;
             }
@@ -359,9 +373,6 @@
             exportarParaExcel(dataExport, `relatorio_${moduloId}_${Date.now()}.xlsx`);
         }
 
-        // ==========================================
-        // DASHBOARD COM GRÁFICOS
-        // ==========================================
         function renderDashboardView() {
             const recAberto = db.financeiro.filter(f=>f.tipo==='Receber' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0);
             const pagAberto = db.financeiro.filter(f=>f.tipo==='Pagar' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0);
@@ -393,6 +404,7 @@
         }
 
         function renderDashboardCharts() {
+            if (typeof Chart === 'undefined') return;
             const ctxDonut = document.getElementById('chartDonut');
             const ctxBar = document.getElementById('chartBar');
 
@@ -431,9 +443,6 @@
             }
         }
 
-        // ==========================================
-        // MÓDULO GESTÃO DE USUÁRIOS
-        // ==========================================
         function renderUsuariosView() {
             const list = db.usuarios || [];
             return `
@@ -530,9 +539,6 @@
             salvarDados(db); fecharModal('modal_usr'); renderApp();
         }
 
-        // ==========================================
-        // MÓDULO RELATÓRIOS & DRE DINÂMICO
-        // ==========================================
         function calcularValorLinhaDRE(row, valoresAcumulados) {
             const recTotal = db.financeiro.filter(f => f.tipo === 'Receber' && f.status === 'Baixado').reduce((a, b) => a + b.valor, 0);
             const pagTotal = db.financeiro.filter(f => f.tipo === 'Pagar' && f.status === 'Baixado').reduce((a, b) => a + b.valor, 0);
@@ -581,7 +587,7 @@
 
                     <div class="bg-white p-6 rounded-xl shadow-sm border space-y-4">
                         <div class="flex items-center justify-between border-b pb-3">
-                            <h3 class="font-bold text-base text-slate-800">Demonstração do Resultado do Exercício (DRE) - Customizável</h3>
+                            <h3 class="font-bold text-base text-slate-800">Demonstração do Resultado do Exercício (DRE)</h3>
                             <span class="px-3 py-1 rounded-full text-xs font-extrabold ${resultadoFinal >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
                                 ${resultadoFinal >= 0 ? 'RESULTADO LÍQUIDO' : 'DEFICIT'}: R$ ${Math.abs(resultadoFinal).toFixed(2)}
                             </span>
@@ -717,9 +723,6 @@
             }
         }
 
-        // ==========================================
-        // MÓDULO MORADORES
-        // ==========================================
         function renderMoradoresView() {
             const list = db.moradores || [];
             return `
@@ -813,9 +816,6 @@
             salvarDados(db); fecharModal('modal_mor'); renderApp();
         }
 
-        // ==========================================
-        // MÓDULO CONTAS BANCÁRIAS
-        // ==========================================
         function renderContasBancariasView() {
             const list = db.contas_bancarias || [];
             return `
@@ -895,9 +895,6 @@
             salvarDados(db); fecharModal('modal_cb'); renderApp();
         }
 
-        // ==========================================
-        // MÓDULO ESTOQUE & INVENTÁRIO
-        // ==========================================
         function renderEstoqueView() {
             const list = db.estoque || [];
             const hoje = new Date().toISOString().split('T')[0];
@@ -1027,9 +1024,6 @@
             salvarDados(db); fecharModal('modal_est'); renderApp();
         }
 
-        // ==========================================
-        // FINANCEIRO & TELA DE BAIXA PARCIAL COMPLETA
-        // ==========================================
         function renderFinanceiroView() {
             let lista = db.financeiro || [];
 
@@ -1371,9 +1365,6 @@
             renderApp();
         }
 
-        // ==========================================
-        // MÓDULO FORMAS MONETÁRIAS
-        // ==========================================
         function renderFormasMonetariasView() {
             return `
                 <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
@@ -1600,7 +1591,15 @@
             if (el) el.remove();
         }
 
-        window.addEventListener('DOMContentLoaded', () => { renderApp(); });
+        function iniciarAplicacao() {
+            renderApp();
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', iniciarAplicacao);
+        } else {
+            iniciarAplicacao();
+        }
     </script>
 </body>
 </html>
