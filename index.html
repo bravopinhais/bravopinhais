@@ -4,16 +4,219 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Guardiões do Bravo</title>
+
     <script src="https://cdn.tailwindcss.com"></script>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <link rel="stylesheet" href="styles.css" />
+
+    <style>
+      :root {
+        --bg: #f1f5f9;
+        --panel: #ffffff;
+        --sidebar: #0f172a;
+        --primary: #0d9488;
+        --primary-dark: #0f766e;
+        --text: #0f172a;
+        --muted: #64748b;
+        --danger: #ef4444;
+        --warning: #f59e0b;
+        --success: #10b981;
+        --info: #3b82f6;
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        min-height: 100%;
+        font-family: Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .app-shell { display: flex; min-height: 100vh; }
+      .sidebar { width: 250px; background: var(--sidebar); color: #e2e8f0; padding: 18px 14px; display: flex; flex-direction: column; }
+      .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; padding: 8px 10px; }
+      .brand-mark { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: var(--primary); color: white; font-size: 18px; }
+      .brand h1 { margin: 0; color: white; font-size: 1.1rem; }
+      .brand small { color: #5eead4; }
+      .nav-menu { display: flex; flex-direction: column; gap: 8px; }
+      .nav-item { width: 100%; border: none; background: transparent; color: #cbd5e1; padding: 12px 14px; text-align: left; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 700; }
+      .nav-item.active { background: var(--primary); color: white; }
+      .sidebar-user { margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.12); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+      .logout-btn { border: 1px solid rgba(248,113,113,0.4); background: rgba(239,68,68,0.1); color: #fecaca; border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+      .main-panel { flex: 1; padding: 26px; }
+      .section-header { margin-bottom: 22px; }
+      .section-header h2 { margin: 0; font-size: 1.8rem; }
+      .section-header p { margin: 6px 0 0; color: var(--muted); }
+      .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+      .stat-card { background: white; border-radius: 16px; padding: 22px; box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06); border-top: 4px solid var(--primary); }
+      .stat-card.success { border-top-color: var(--success); }
+      .stat-card.danger { border-top-color: var(--danger); }
+      .stat-card.warning { border-top-color: var(--warning); }
+      .stat-card.info { border-top-color: var(--info); }
+      .stat-card span { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; }
+      .stat-card strong { display: block; margin-top: 10px; font-size: 1.7rem; }
+      .toolbar { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 18px; }
+      .toolbar input, .toolbar select { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; color: var(--text); background: white; }
+      .table-wrap { background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06); }
+      .table-wrap table { width: 100%; border-collapse: collapse; }
+      .table-wrap th, .table-wrap td { padding: 12px 14px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+      .table-wrap thead { background: #f8fafc; }
+      .badge { display: inline-block; padding: 5px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
+      .badge-success { background: #dcfce7; color: #166534; }
+      .badge-danger { background: #fee2e2; color: #991b1b; }
+      .badge-warning { background: #fef3c7; color: #92400e; }
+      .empty-state { color: var(--muted); text-align: center; padding: 24px; }
+      .login-screen { min-height: 100vh; display: grid; place-items: center; background: linear-gradient(135deg, #0f172a, #1e293b); }
+      .login-box { width: min(420px, 92vw); background: rgba(255,255,255,0.96); border-radius: 18px; padding: 30px 24px; box-shadow: 0 16px 40px rgba(15, 23, 42, 0.25); }
+      .login-logo { width: 68px; height: 68px; margin: 0 auto 12px; border-radius: 16px; display: grid; place-items: center; background: linear-gradient(135deg, #0d9488, #14b8a6); color: white; font-size: 1.8rem; }
+      .login-box h2 { margin: 0; text-align: center; font-size: 1.8rem; }
+      .login-box p { margin: 8px 0 20px; color: #64748b; text-align: center; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.72rem; font-weight: 700; }
+      .login-form { display: flex; flex-direction: column; gap: 12px; }
+      .login-form label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #475569; }
+      .login-form input { padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 1rem; }
+      .login-form button { margin-top: 8px; padding: 12px 18px; border: none; border-radius: 10px; background: var(--primary); color: white; font-weight: 700; cursor: pointer; }
+    </style>
   </head>
   <body>
     <div id="app"></div>
-    <script type="module" src="app.js"></script>
+
+    <script>
+      const STORAGE_KEY = 'guardioes_bravo_db_v3';
+
+      const DEFAULT_DATA = {
+        usuarios: [
+          { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', perfil: 'Admin', status: 'Ativo', senhaHash: 'Admin@12345' }
+        ],
+        financeiro: [
+          { id: 'fin_1', tipo: 'Receber', historico: 'Taxa Condominial Ordinária - Ap 101', valor: 2500.00, vencimento: '2026-10-15', status: 'Aberto' },
+          { id: 'fin_2', tipo: 'Pagar', historico: 'Manutenção Elevador Otis', valor: 850.00, vencimento: '2026-10-20', status: 'Aberto' }
+        ],
+        estoque: [
+          { id: 'est_1', item: 'Lâmpada LED 12W', categoria: 'Elétrica', qtd: 4, minimo: 10, localizacao: 'Almoxarifado' },
+          { id: 'est_2', item: 'Cloro Granulado 10kg', categoria: 'Piscina', qtd: 15, minimo: 5, localizacao: 'DML' }
+        ],
+        documentos: [
+          { id: 'doc_1', titulo: 'Ata da Assembleia 2026', pasta: 'Atas de Assembleia', data: '2026-03-10', observacao: 'Eleição do síndico' }
+        ],
+        moradores: [
+          { id: 'mor_1', bloco: 'A', apartamento: '101', nome: 'Carlos Eduardo', tipo: 'Proprietário', email: 'carlos@email.com' }
+        ],
+        categorias: [
+          { id: 'cat_1', nome: 'Atas de Assembleia', modulo: 'Documentos' },
+          { id: 'cat_2', nome: 'Elétrica', modulo: 'Estoque' }
+        ]
+      };
+
+      function formatCurrency(value) {
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value || 0));
+      }
+
+      function loadDb() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          return raw ? JSON.parse(raw) : DEFAULT_DATA;
+        } catch (e) {
+          return DEFAULT_DATA;
+        }
+      }
+
+      function saveDb(data) {
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+      }
+
+      const state = {
+        db: loadDb(),
+        user: JSON.parse(sessionStorage.getItem('guardioes_user') || 'null'),
+        activeTab: 'dashboard',
+        filters: {
+          financeiro: { busca: '', status: 'Todos', tipo: 'Todos' },
+          estoque: { busca: '', categoria: 'Todas', status: 'Todos' },
+          documentos: { busca: '', pasta: 'Todas', dataIni: '', dataFim: '' },
+          moradores: { busca: '', bloco: 'Todos', tipo: 'Todos' },
+          usuarios: { busca: '', perfil: 'Todos', status: 'Todos' }
+        }
+      };
+
+      function renderLogin() {
+        return `
+          <div class="login-screen">
+            <div class="login-box">
+              <div class="login-logo"><i class="fa-solid fa-shield-halved"></i></div>
+              <h2>Guardiões do Bravo</h2>
+              <p>Acesso ao Sistema Condominial</p>
+              <form id="loginForm" class="login-form">
+                <label>Usuário / E-mail</label>
+                <input id="login_user" type="text" value="admin" required />
+                <label>Senha</label>
+                <input id="login_pass" type="password" value="Admin@12345" required />
+                <button type="submit">Entrar no Sistema</button>
+              </form>
+            </div>
+          </div>
+        `;
+      }
+
+      function renderDashboard() {
+        return `
+          <section class="section-header">
+            <h2>Dashboard</h2>
+            <p>Resumo geral da administração</p>
+          </section>
+          <div class="stats-grid">
+            <div class="stat-card success"><span>Sistema Online</span><strong>Operacional</strong></div>
+          </div>
+        `;
+      }
+
+      function renderApp() {
+        const root = document.getElementById('app');
+        if (!state.user) {
+          root.innerHTML = renderLogin();
+          document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const u = document.getElementById('login_user').value;
+            const p = document.getElementById('login_pass').value;
+            const found = state.db.usuarios.find(x => (x.usuario === u || x.email === u) && x.senhaHash === p);
+            if (found) {
+              state.user = found;
+              sessionStorage.setItem('guardioes_user', JSON.stringify(found));
+              renderApp();
+            } else {
+              alert('Credenciais inválidas!');
+            }
+          });
+          return;
+        }
+
+        root.innerHTML = `
+          <div class="app-shell">
+            <aside class="sidebar">
+              <div class="brand">
+                <div class="brand-mark"><i class="fa-solid fa-shield-halved"></i></div>
+                <div><h1>Guardiões</h1><small>Gestão</small></div>
+              </div>
+              <nav class="nav-menu">
+                <button class="nav-item active" data-tab="dashboard"><i class="fa-solid fa-gauge-high"></i> Dashboard</button>
+              </nav>
+              <div class="sidebar-user">
+                <span>${state.user.nome}</span>
+                <button id="logoutBtn" class="logout-btn">Sair</button>
+              </div>
+            </aside>
+            <main class="main-panel"><div id="content">${renderDashboard()}</div></main>
+          </div>
+        `;
+
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+          state.user = null;
+          sessionStorage.removeItem('guardioes_user');
+          renderApp();
+        });
+      }
+
+      renderApp();
+    </script>
   </body>
 </html>
