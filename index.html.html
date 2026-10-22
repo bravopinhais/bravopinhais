@@ -1,1274 +1,960 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Guardiões do Bravo - Sistema de Gestão Condominial</title>
-  
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js para Gráficos -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- FontAwesome Icons -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  
-  <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            brand: {
-              50: '#f0f9ff',
-              100: '#e0f2fe',
-              500: '#0284c7',
-              600: '#0369a1',
-              700: '#075985',
-              800: '#0c4a6e',
-              900: '#0f172a'
-            }
-          }
-        }
-      }
-    }
-  </script>
-  <style>
-    /* Estilos Globais para Legibilidade e Ajustes de Form */
-    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
-    input, select, textarea { color: #0f172a !important; font-weight: 500; }
-    input::placeholder, textarea::placeholder { color: #64748b !important; }
-    /* Scrollbar personalizada */
-    ::-webkit-scrollbar { width: 6px; height: 6px; }
-    ::-webkit-scrollbar-track { background: #f1f5f9; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guardiões do Bravo - Sistema de Gestão Condominial</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .will-change-transform { will-change: transform; }
+        input, select, textarea { color: #0f172a !important; font-weight: 500; }
+        .tab-active { border-bottom: 2px solid #0d9488; background-color: #f0fdf4; color: #0f766e; }
+        /* Custom scrollbar for better UX */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    </style>
 </head>
-<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col">
+<body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
 
-  <!-- NOTIFICAÇÕES TOAST GLOBAL -->
-  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
+    <!-- APP CONTAINER -->
+    <div id="app" class="flex-1 flex flex-col min-h-screen"></div>
 
-  <!-- TELA DE LOGIN & PRIMEIRA TROCA DE SENHA -->
-  <div id="auth-screen" class="fixed inset-0 z-40 bg-slate-900 flex items-center justify-center p-4 bg-cover bg-center" style="background-image: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.95)), url('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80');">
-    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 border border-slate-200 relative overflow-hidden">
-      <!-- Banner Segurança -->
-      <div class="text-center mb-6">
-        <div class="w-16 h-16 bg-brand-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-brand-500/30">
-          <i class="fa-solid fa-shield-halved text-3xl"></i>
-        </div>
-        <h1 class="text-2xl font-bold text-slate-900">Guardiões do Bravo</h1>
-        <p class="text-xs text-slate-500 font-medium tracking-wide uppercase mt-1">Gestão Condominial Segura</p>
-      </div>
-
-      <!-- FORMULÁRIO DE LOGIN -->
-      <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
-        <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Usuário / Email</label>
-          <div class="relative">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-user"></i></span>
-            <input type="text" id="login-username" required class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all" placeholder="Digite seu usuário">
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Senha</label>
-          <div class="relative">
-            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-lock"></i></span>
-            <input type="password" id="login-password" required class="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all" placeholder="••••••••">
-            <button type="button" onclick="togglePasswordVisibility('login-password', 'toggle-login-pwd-icon')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
-              <i id="toggle-login-pwd-icon" class="fa-solid fa-eye"></i>
-            </button>
-          </div>
-        </div>
-
-        <div class="flex items-center justify-between text-xs">
-          <label class="flex items-center gap-2 cursor-pointer text-slate-600">
-            <input type="checkbox" id="login-remember" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
-            Lembrar-me neste navegador
-          </label>
-          <span class="text-slate-400" title="Consulte o Administrador do sistema em caso de bloqueio">Ajuda?</span>
-        </div>
-
-        <!-- Banner de Tentativas/Bloqueio -->
-        <div id="login-lockout-msg" class="hidden p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg flex items-center gap-2">
-          <i class="fa-solid fa-triangle-exclamation text-base"></i>
-          <span id="login-lockout-text">Conta temporariamente bloqueada por segurança.</span>
-        </div>
-
-        <button type="submit" id="btn-login-submit" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg shadow-lg shadow-brand-600/30 transition-all flex items-center justify-center gap-2">
-          <span>Acessar Painel</span>
-          <i class="fa-solid fa-arrow-right"></i>
-        </button>
-        
-        <div class="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600">
-          <p class="font-bold mb-1">Acesso Padrão (Demonstração):</p>
-          <p>• Admin: <b>admin</b> / <b>Admin@12345</b></p>
-          <p>• Leitura: <b>auditor</b> / <b>Auditor@12345</b></p>
-        </div>
-      </form>
-
-      <!-- FORMULÁRIO DE TROCA DE SENHA OBRIGATÓRIA (PRIMEIRO ACESSO) -->
-      <form id="force-password-form" onsubmit="handleForcePasswordChange(event)" class="space-y-4 hidden">
-        <div class="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg text-xs flex items-center gap-2">
-          <i class="fa-solid fa-key text-base text-amber-600"></i>
-          <div>
-            <b>Primeiro Acesso Detectado:</b> Para sua segurança, você deve redefinir sua senha antes de continuar.
-          </div>
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nova Senha Forte</label>
-          <div class="relative">
-            <input type="password" id="new-pwd-input" onkeyup="checkPasswordStrength(this.value)" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500">
-          </div>
-          <!-- Requisitos de Senha -->
-          <ul class="text-[11px] text-slate-500 mt-2 space-y-1">
-            <li id="req-len" class="flex items-center gap-1"><i class="fa-solid fa-circle-xmark text-red-500"></i> Mínimo de 8 caracteres</li>
-            <li id="req-upper" class="flex items-center gap-1"><i class="fa-solid fa-circle-xmark text-red-500"></i> Pelo menos 1 letra maiúscula</li>
-            <li id="req-lower" class="flex items-center gap-1"><i class="fa-solid fa-circle-xmark text-red-500"></i> Pelo menos 1 letra minúscula</li>
-            <li id="req-num" class="flex items-center gap-1"><i class="fa-solid fa-circle-xmark text-red-500"></i> Pelo menos 1 número</li>
-            <li id="req-spec" class="flex items-center gap-1"><i class="fa-solid fa-circle-xmark text-red-500"></i> Pelo menos 1 caractere especial (@#$%^&*!)</li>
-          </ul>
-        </div>
-
-        <div>
-          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Confirme a Nova Senha</label>
-          <input type="password" id="confirm-pwd-input" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500">
-        </div>
-
-        <button type="submit" id="btn-save-new-pwd" disabled class="w-full py-2.5 bg-slate-400 text-white font-bold rounded-lg cursor-not-allowed transition-all">
-          Gravar Nova Senha e Entrar
-        </button>
-      </form>
-    </div>
-  </div>
-
-  <!-- CONTEÚDO DA APLICAÇÃO (PROTEGIDO) -->
-  <div id="app-screen" class="hidden min-h-screen flex flex-col">
-    <!-- TOPBAR / CABEÇALHO -->
-    <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        
-        <!-- Logo e Menu Mobile Button -->
-        <div class="flex items-center gap-3">
-          <button onclick="toggleMobileMenu()" class="lg:hidden p-2 text-slate-300 hover:text-white rounded-lg hover:bg-slate-800">
-            <i class="fa-solid fa-bars text-xl"></i>
-          </button>
-          <div class="flex items-center gap-2">
-            <div class="w-9 h-9 bg-brand-600 rounded-xl flex items-center justify-center font-bold text-lg shadow-md shadow-brand-500/20">
-              <i class="fa-solid fa-shield-halved text-white text-base"></i>
-            </div>
-            <div>
-              <span class="font-bold text-base tracking-wide block leading-none">Guardiões do Bravo</span>
-              <span class="text-[10px] text-brand-400 font-semibold tracking-wider uppercase">Gestão Condominial</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- Perfil e Logout -->
-        <div class="flex items-center gap-4">
-          <div class="hidden sm:flex items-center gap-3 pr-3 border-r border-slate-700">
-            <img id="user-avatar-display" src="https://placehold.co/100x100/0284c7/white?text=U" class="w-9 h-9 rounded-full border-2 border-brand-500 object-cover" alt="User Avatar">
-            <div class="text-left">
-              <span id="user-name-display" class="block text-xs font-bold text-slate-100">Nome Usuário</span>
-              <span id="user-role-badge" class="inline-block px-1.5 py-0.5 text-[10px] font-bold rounded bg-brand-500/20 text-brand-300 border border-brand-500/30">ADMIN</span>
-            </div>
-          </div>
-          
-          <button onclick="openAuditModal('Geral')" class="p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-all" title="Ver Histórico de Auditoria Global">
-            <i class="fa-solid fa-[#0284c7] fa-clock-rotate-left text-lg"></i>
-          </button>
-
-          <button onclick="logout()" class="flex items-center gap-2 px-3 py-1.5 bg-red-600/20 hover:bg-red-600 border border-red-500/30 text-red-300 hover:text-white text-xs font-semibold rounded-lg transition-all">
-            <i class="fa-solid fa-right-from-bracket"></i>
-            <span class="hidden sm:inline">Sair</span>
-          </button>
-        </div>
-      </div>
-    </header>
-
-    <!-- CONTAINER PRINCIPAL COM SIDEBAR + ÁREA DE CONTEÚDO -->
-    <div class="flex-1 max-w-7xl w-full mx-auto flex">
-      
-      <!-- NAVIGATION SIDEBAR (DESKTOP) -->
-      <aside class="hidden lg:block w-64 bg-white border-r border-slate-200 p-4 shrink-0">
-        <nav class="space-y-1" id="desktop-nav">
-          <!-- Gerado via JS para sincronismo -->
-        </nav>
-      </aside>
-
-      <!-- DRAWER MENU MOBILE -->
-      <div id="mobile-menu-overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-slate-900/60 z-40 hidden lg:hidden transition-opacity"></div>
-      <aside id="mobile-menu" class="fixed top-0 left-0 bottom-0 w-64 bg-white z-50 transform -translate-x-full transition-transform duration-300 lg:hidden p-4 flex flex-col justify-between">
-        <div>
-          <div class="flex items-center justify-between mb-6 pb-3 border-b border-slate-100">
-            <span class="font-bold text-slate-800 text-sm">Navegação</span>
-            <button onclick="toggleMobileMenu()" class="text-slate-400 hover:text-slate-600 p-1">
-              <i class="fa-solid fa-xmark text-lg"></i>
-            </button>
-          </div>
-          <nav class="space-y-1" id="mobile-nav">
-            <!-- Gerado via JS -->
-          </nav>
-        </div>
-        <div class="pt-4 border-t border-slate-100 flex items-center gap-3">
-          <img id="mobile-avatar" src="https://placehold.co/100x100/0284c7/white?text=U" class="w-8 h-8 rounded-full border border-brand-500">
-          <div class="text-xs">
-            <p id="mobile-user-name" class="font-bold text-slate-800">Usuário</p>
-            <p id="mobile-user-role" class="text-slate-500">Perfil</p>
-          </div>
-        </div>
-      </aside>
-
-      <!-- MAIN CONTENT VIEW -->
-      <main class="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
-        
-        <!-- BARRA SUPERIOR DA PÁGINA (TÍTULO E AUDITORIA MÓDULO) -->
-        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
-          <div>
-            <h2 id="page-title" class="text-2xl font-bold text-slate-900">Dashboard</h2>
-            <p id="page-subtitle" class="text-xs text-slate-500 mt-0.5">Visão geral do condomínio e indicadores financeiros.</p>
-          </div>
-          <div class="flex items-center gap-2">
-            <button onclick="openAuditModal(currentModule)" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold rounded-lg transition-all flex items-center gap-2">
-              <i class="fa-solid fa-list-check"></i>
-              <span>Rastrear Modificações</span>
-            </button>
-            <div id="module-actions-container"></div>
-          </div>
-        </div>
-
-        <!-- ÁREA DE RENDERIZAÇÃO DINÂMICA DE MÓDULOS -->
-        <div id="module-content">
-          <!-- O módulo atual será injetado aqui -->
-        </div>
-
-      </main>
-    </div>
-  </div>
-
-  <!-- MODAL DE AUDITORIA DE ALTERAÇÕES -->
-  <div id="audit-modal" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col border border-slate-200">
-      <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50 rounded-t-xl">
-        <div class="flex items-center gap-2">
-          <i class="fa-solid fa-clock-rotate-left text-brand-600 text-lg"></i>
-          <h3 class="font-bold text-slate-900 text-base" id="audit-modal-title">Logs de Auditoria</h3>
-        </div>
-        <button onclick="closeAuditModal()" class="text-slate-400 hover:text-slate-600 p-1">
-          <i class="fa-solid fa-xmark text-lg"></i>
-        </button>
-      </div>
-      <div class="p-4 overflow-y-auto flex-1">
-        <div class="overflow-x-auto">
-          <table class="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr class="bg-slate-100 text-slate-700 uppercase font-semibold border-b border-slate-200">
-                <th class="p-2.5">Data / Hora</th>
-                <th class="p-2.5">Usuário</th>
-                <th class="p-2.5">Módulo</th>
-                <th class="p-2.5">Ação</th>
-                <th class="p-2.5">Detalhes</th>
-              </tr>
-            </thead>
-            <tbody id="audit-table-body" class="divide-y divide-slate-100">
-              <!-- Logs injetados via JS -->
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="p-3 border-t border-slate-200 bg-slate-50 flex justify-end rounded-b-xl">
-        <button onclick="closeAuditModal()" class="px-4 py-2 bg-slate-300 hover:bg-slate-400 text-slate-800 text-xs font-bold rounded-lg">Fechar</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL GENÉRICO PARA FORMULÁRIOS / DETALHES -->
-  <div id="generic-modal" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 hidden">
-    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col border border-slate-200">
-      <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50 rounded-t-xl">
-        <h3 class="font-bold text-slate-900 text-base" id="generic-modal-title">Formulário</h3>
-        <button onclick="closeGenericModal()" class="text-slate-400 hover:text-slate-600 p-1">
-          <i class="fa-solid fa-xmark text-lg"></i>
-        </button>
-      </div>
-      <div class="p-6 overflow-y-auto flex-1" id="generic-modal-body">
-        <!-- Conteúdo Injetado -->
-      </div>
-    </div>
-  </div>
-
-  <!-- JAVASCRIPT COMPLETO DO SISTEMA -->
-  <script>
-    /* ==========================================================================
-       1. ESTADO E DADOS INICIAIS (LOCALSTORAGE PERSISTENCE)
-       ========================================================================== */
-    const SECURITY_CONFIG = {
-      MAX_LOGIN_ATTEMPTS: 5,
-      LOCKOUT_TIME_MS: 5 * 60 * 1000, // 5 minutos
-      SESSION_TIMEOUT_MS: 15 * 60 * 1000 // 15 minutos
-    };
-
-    let currentUser = null;
-    let sessionTimer = null;
-    let currentModule = 'dashboard';
-    let moduleCurrentPage = 1;
-    const ITEMS_PER_PAGE = 10;
-    let cameraStream = null;
-
-    // Inicialização do LocalStorage
-    function initStorage() {
-      if (!localStorage.getItem('GB_USERS')) {
-        const defaultUsers = [
-          { id: 1, name: 'Administrador Geral', username: 'admin', passwordHash: 'Admin@12345', role: 'ADMIN', firstAccess: false, avatar: '' },
-          { id: 2, name: 'Auditor do Conselho', username: 'auditor', passwordHash: 'Auditor@12345', role: 'READONLY', firstAccess: false, avatar: '' }
-        ];
-        localStorage.setItem('GB_USERS', JSON.stringify(defaultUsers));
-      }
-
-      if (!localStorage.getItem('GB_AUDIT_LOGS')) {
-        const initialLogs = [
-          { timestamp: new Date().toISOString(), user: 'Sistema', module: 'Segurança', action: 'INICIALIZAÇÃO', details: 'Base de dados inicializada com sucesso.' }
-        ];
-        localStorage.setItem('GB_AUDIT_LOGS', JSON.stringify(initialLogs));
-      }
-
-      if (!localStorage.getItem('GB_FINANCIAL')) {
-        const initialFinancial = [
-          { id: 'FIN-101', type: 'RECEITA', description: 'Taxa Condominial Apto 101', category: 'Taxa Condominial', amount: 850.00, dueDate: '2026-10-10', status: 'PAGO', account: 'Caixa Principal' },
-          { id: 'FIN-102', type: 'DESPESA', description: 'Manutenção de Elevadores', category: 'Manutenção Executiva', amount: 1450.00, dueDate: '2026-10-15', status: 'PAGO', account: 'Conta Corrente Itaú' },
-          { id: 'FIN-103', type: 'DESPESA', description: 'Energia Áreas Comuns (COPEL)', category: 'Utilidades', amount: 2310.50, dueDate: '2026-10-25', status: 'PENDENTE', account: 'Conta Corrente Itaú' }
-        ];
-        localStorage.setItem('GB_FINANCIAL', JSON.stringify(initialFinancial));
-      }
-
-      if (!localStorage.getItem('GB_ACCOUNTS')) {
-        const initialAccounts = [
-          { id: 1, name: 'Caixa Principal', type: 'Caixa Físico', balance: 3500.00, status: 'Ativa' },
-          { id: 2, name: 'Conta Corrente Itaú', type: 'Banco', balance: 48250.80, status: 'Ativa' },
-          { id: 3, name: 'Fundo de Reserva Bradesco', type: 'Investimento', balance: 120000.00, status: 'Ativa' }
-        ];
-        localStorage.setItem('GB_ACCOUNTS', JSON.stringify(initialAccounts));
-      }
-
-      if (!localStorage.getItem('GB_CHART_ACCOUNTS')) {
-        const initialCategories = [
-          { id: 1, code: '1.0', name: 'Receitas Condominiais', type: 'RECEITA', status: 'Ativo' },
-          { id: 2, code: '1.1', name: 'Taxas Ordinárias', type: 'RECEITA', status: 'Ativo' },
-          { id: 3, code: '2.0', name: 'Despesas Operacionais', type: 'DESPESA', status: 'Ativo' },
-          { id: 4, code: '2.1', name: 'Manutenção e Conservação', type: 'DESPESA', status: 'Ativo' }
-        ];
-        localStorage.setItem('GB_CHART_ACCOUNTS', JSON.stringify(initialCategories));
-      }
-
-      if (!localStorage.getItem('GB_RESIDENTS')) {
-        const initialResidents = [
-          { id: 1, block: 'Bloco A', unit: '101', name: 'Carlos Eduardo Silva', email: 'carlos@email.com', phone: '(41) 99887-1122', status: 'Proprietário' },
-          { id: 2, block: 'Bloco B', unit: '204', name: 'Mariana Santos', email: 'mariana@email.com', phone: '(41) 99123-4455', status: 'Inquilino' }
-        ];
-        localStorage.setItem('GB_RESIDENTS', JSON.stringify(initialResidents));
-      }
-
-      if (!localStorage.getItem('GB_SUPPLIERS')) {
-        const initialSuppliers = [
-          { id: 1, cnpj: '12.345.678/0001-90', name: 'Elevadores Atlas Otis', phone: '(41) 3344-5566', category: 'Manutenção' },
-          { id: 2, cnpj: '98.765.432/0001-10', name: 'Segurança Bravo LTDA', phone: '(41) 3011-2233', category: 'Vigilância' }
-        ];
-        localStorage.setItem('GB_SUPPLIERS', JSON.stringify(initialSuppliers));
-      }
-
-      if (!localStorage.getItem('GB_STOCK')) {
-        const initialStock = [
-          { id: 1, name: 'Lâmpadas LED 12W', category: 'Elétrica', qty: 45, minQty: 10, unit: 'Un' },
-          { id: 2, name: 'Detergente Industrial 5L', category: 'Limpeza', qty: 8, minQty: 5, unit: 'Galão' }
-        ];
-        localStorage.setItem('GB_STOCK', JSON.stringify(initialStock));
-      }
-
-      if (!localStorage.getItem('GB_ASSETS')) {
-        const initialAssets = [
-          { id: 1, code: 'PAT-001', name: 'Gerador Elétrico Stemac 150kVA', location: 'Subsolo', value: 45000.00, status: 'Operacional' },
-          { id: 2, code: 'PAT-002', name: 'Bomba d\'Água Principal', location: 'Casa de Máquinas', value: 8200.00, status: 'Operacional' }
-        ];
-        localStorage.setItem('GB_ASSETS', JSON.stringify(initialAssets));
-      }
-
-      if (!localStorage.getItem('GB_DOCUMENTS')) {
-        const initialDocs = [
-          { id: 1, title: 'Convenção do Condomínio', category: 'Regulamentos', date: '2025-01-10', fileName: 'convencao.pdf' },
-          { id: 2, title: 'Ata da Assembleia Geral 2026', category: 'Atas', date: '2026-03-15', fileName: 'ata_2026.pdf' }
-        ];
-        localStorage.setItem('GB_DOCUMENTS', JSON.stringify(initialDocs));
-      }
-    }
-
-    initStorage();
-
-    /* ==========================================================================
-       2. SEGURANÇA E SANITIZAÇÃO (XSS & UTILITÁRIOS)
-       ========================================================================== */
-    function escapeHTML(str) {
-      if (typeof str !== 'string') return str;
-      return str.replace(/[&<>"']/g, function(match) {
-        return {
-          '&': '&amp;',
-          '<': '&lt;',
-          '>': '&gt;',
-          '"': '&quot;',
-          "'": '&#39;'
-        }[match];
-      });
-    }
-
-    function showToast(message, type = 'info') {
-      const container = document.getElementById('toast-container');
-      const toast = document.createElement('div');
-      
-      const bgColors = {
-        success: 'bg-emerald-600 text-white',
-        error: 'bg-red-600 text-white',
-        warning: 'bg-amber-500 text-white',
-        info: 'bg-brand-600 text-white'
-      };
-
-      const icons = {
-        success: 'fa-circle-check',
-        error: 'fa-circle-xmark',
-        warning: 'fa-triangle-exclamation',
-        info: 'fa-circle-info'
-      };
-
-      toast.className = `p-4 rounded-xl shadow-xl flex items-center gap-3 transition-all transform translate-y-2 text-xs font-semibold pointer-events-auto ${bgColors[type] || bgColors.info}`;
-      toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info} text-base"></i><span>${escapeHTML(message)}</span>`;
-      
-      container.appendChild(toast);
-      setTimeout(() => {
-        toast.classList.add('opacity-0', 'scale-95');
-        setTimeout(() => toast.remove(), 300);
-      }, 3500);
-    }
-
-    function addAuditLog(module, action, details) {
-      const logs = JSON.parse(localStorage.getItem('GB_AUDIT_LOGS') || '[]');
-      const user = currentUser ? currentUser.name : 'Sistema/Anônimo';
-      
-      logs.unshift({
-        timestamp: new Date().toISOString(),
-        user: user,
-        module: module,
-        action: action,
-        details: details
-      });
-
-      // Limitar histórico a 300 eventos para otimizar storage
-      if (logs.length > 300) logs.pop();
-      localStorage.setItem('GB_AUDIT_LOGS', JSON.stringify(logs));
-    }
-
-    function validatePasswordStrength(pwd) {
-      const hasLength = pwd.length >= 8;
-      const hasUpper = /[A-Z]/.test(pwd);
-      const hasLower = /[a-z]/.test(pwd);
-      const hasNum = /[0-9]/.test(pwd);
-      const hasSpec = /[@#$%^&*!]/.test(pwd);
-
-      return {
-        isValid: hasLength && hasUpper && hasLower && hasNum && hasSpec,
-        hasLength, hasUpper, hasLower, hasNum, hasSpec
-      };
-    }
-
-    function checkPasswordStrength(pwd) {
-      const res = validatePasswordStrength(pwd);
-      
-      const updateReq = (id, valid) => {
-        const el = document.getElementById(id);
-        if (!el) return;
-        if (valid) {
-          el.className = 'flex items-center gap-1 text-emerald-600 font-semibold';
-          el.querySelector('i').className = 'fa-solid fa-circle-check text-emerald-500';
-        } else {
-          el.className = 'flex items-center gap-1 text-slate-500';
-          el.querySelector('i').className = 'fa-solid fa-circle-xmark text-red-500';
+    <!-- MAIN SYSTEM SCRIPT -->
+    <script>
+        // ==========================================
+        // 1. SEGURANÇA E SANITIZAÇÃO (XSS SAFE)
+        // ==========================================
+        function escapeHTML(str) {
+            if (typeof str !== 'string') return str;
+            return str.replace(/[&<>"']/g, function(m) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[m];
+            });
         }
-      };
 
-      updateReq('req-len', res.hasLength);
-      updateReq('req-upper', res.hasUpper);
-      updateReq('req-lower', res.hasLower);
-      updateReq('req-num', res.hasNum);
-      updateReq('req-spec', res.hasSpec);
-
-      const btn = document.getElementById('btn-save-new-pwd');
-      if (btn) {
-        btn.disabled = !res.isValid;
-        if (res.isValid) {
-          btn.className = 'w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg shadow-lg cursor-pointer transition-all';
-        } else {
-          btn.className = 'w-full py-2.5 bg-slate-400 text-white font-bold rounded-lg cursor-not-allowed transition-all';
+        // Complexidade de Senha: 8+ chars, minúscula, maiúscula, número, especial
+        function validarSenhaForte(senha) {
+            const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@#$%^&*!_\-]).{8,}$/;
+            return regex.test(senha);
         }
-      }
-    }
 
-    function togglePasswordVisibility(inputId, iconId) {
-      const input = document.getElementById(inputId);
-      const icon = document.getElementById(iconId);
-      if (input.type === 'password') {
-        input.type = 'text';
-        icon.className = 'fa-solid fa-eye-slash';
-      } else {
-        input.type = 'password';
-        icon.className = 'fa-solid fa-eye';
-      }
-    }
+        // Compresor de imagens base64 via Canvas (Otimização localStorage)
+        function compressImage(base64Str, maxWidth = 800, quality = 0.7) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.src = base64Str;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
 
-    /* ==========================================================================
-       3. AUTENTICAÇÃO E SESSÃO DA CONTA
-       ========================================================================== */
-    function checkLockout(username) {
-      const lockData = JSON.parse(localStorage.getItem(`GB_LOCK_${username}`) || 'null');
-      if (!lockData) return false;
+                    if (width > maxWidth) {
+                        height = Math.round((height * maxWidth) / width);
+                        width = maxWidth;
+                    }
 
-      if (lockData.attempts >= SECURITY_CONFIG.MAX_LOGIN_ATTEMPTS) {
-        const elapsed = Date.now() - lockData.lockoutTime;
-        if (elapsed < SECURITY_CONFIG.LOCKOUT_TIME_MS) {
-          const remainingSecs = Math.ceil((SECURITY_CONFIG.LOCKOUT_TIME_MS - elapsed) / 1000);
-          return remainingSecs;
-        } else {
-          localStorage.removeItem(`GB_LOCK_${username}`);
-          return false;
+                    canvas.width = width;
+                    canvas.height = height;
+
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, width, height);
+                    resolve(canvas.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = () => resolve(base64Str);
+            });
         }
-      }
-      return false;
-    }
 
-    function registerFailedAttempt(username) {
-      let lockData = JSON.parse(localStorage.getItem(`GB_LOCK_${username}`) || '{"attempts": 0}');
-      lockData.attempts += 1;
-      if (lockData.attempts >= SECURITY_CONFIG.MAX_LOGIN_ATTEMPTS) {
-        lockData.lockoutTime = Date.now();
-      }
-      localStorage.setItem(`GB_LOCK_${username}`, JSON.stringify(lockData));
-      return lockData.attempts;
-    }
+        // ==========================================
+        // 2. ESTADO GLOBAL E BANCO LOCALSTORAGE
+        // ==========================================
+        const DEFAULT_DATA = {
+            usuarios: [
+                { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Admin@12345', foto: '' },
+                { id: 'usr_auditor', usuario: 'auditor', nome: 'Auditor de Segurança', email: 'auditor@guardioes.com', perfil: 'Leitura', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Auditor@12345', foto: '' }
+            ],
+            financeiro: [
+                { id: 'fin_1', tipo: 'Receber', historico: 'Taxa Condominial Ordinária - Ap 101', valor: 650.00, vencimento: '2026-11-10', competencia: '11/2026', categoria: '1.1 Taxa Condominial', fornecedor: 'Carlos Eduardo', status: 'Aberto', saldoRestante: 650.00 },
+                { id: 'fin_2', tipo: 'Pagar', historico: 'Manutenção Preventiva Elevadores', valor: 1200.00, vencimento: '2026-11-05', competencia: '11/2026', categoria: '2.3 Manutenção Predial', fornecedor: 'Otis Elevadores', status: 'Aberto', saldoRestante: 1200.00 }
+            ],
+            moradores: [
+                { id: 'mor_1', bloco: 'A', apartamento: '101', nome: 'Carlos Eduardo', email: 'carlos@email.com', telefone: '(41) 99999-1111', tipo: 'Proprietário', status: 'Ativo' },
+                { id: 'mor_2', bloco: 'B', apartamento: '304', nome: 'Mariana Silva', email: 'mariana@email.com', telefone: '(41) 98888-2222', tipo: 'Inquilino', status: 'Ativo' }
+            ],
+            fornecedores: [
+                { id: 'for_1', nome: 'Otis Elevadores', cnpj: '12.345.678/0001-90', telefone: '(41) 3333-4444', servico: 'Elevadores', status: 'Ativo' },
+                { id: 'for_2', nome: 'Copel Energia', cnpj: '00.360.305/0001-04', telefone: '0800 51 00 116', servico: 'Energia Elétrica', status: 'Ativo' }
+            ],
+            estoque: [
+                { id: 'est_1', item: 'Lâmpada LED 12W', categoria: 'Elétrica', qtd: 24, minimo: 5, localizacao: 'Almoxarifado Central' },
+                { id: 'est_2', item: 'Cloro Granulado 10kg', categoria: 'Piscina', qtd: 2, minimo: 3, localizacao: 'DML Piscina' }
+            ],
+            patrimonio: [
+                { id: 'pat_1', codigo: 'PAT-001', item: 'Cortador de Grama Elétrico', local: 'Jardim', valor: 1850.00, estado: 'Ótimo' }
+            ],
+            logs: []
+        };
 
-    function clearLockout(username) {
-      localStorage.removeItem(`GB_LOCK_${username}`);
-    }
+        function carregarDados() {
+            try {
+                const data = localStorage.getItem('guardioes_bravo_db');
+                return data ? JSON.parse(data) : DEFAULT_DATA;
+            } catch (e) {
+                console.error('Erro ao carregar do localStorage:', e);
+                return DEFAULT_DATA;
+            }
+        }
 
-    function handleLogin(e) {
-      e.preventDefault();
-      const usernameInput = document.getElementById('login-username').value.trim();
-      const passwordInput = document.getElementById('login-password').value;
-      const lockoutMsg = document.getElementById('login-lockout-msg');
+        function salvarDados(db) {
+            try {
+                localStorage.setItem('guardioes_bravo_db', JSON.stringify(db));
+            } catch (e) {
+                alert('Atenção: Limite de armazenamento local excedido!');
+            }
+        }
 
-      const lockedTime = checkLockout(usernameInput);
-      if (lockedTime) {
-        lockoutMsg.classList.remove('hidden');
-        document.getElementById('login-lockout-text').innerText = `Muitas tentativas falhadas. Tente novamente em ${lockedTime} segundos.`;
-        return;
-      }
+        let db = carregarDados();
 
-      const users = JSON.parse(localStorage.getItem('GB_USERS') || '[]');
-      const user = users.find(u => u.username.toLowerCase() === usernameInput.toLowerCase() && u.passwordHash === passwordInput);
+        // Estado da Sessão Ativa
+        let sessao = {
+            usuarioLogado: JSON.parse(sessionStorage.getItem('guardioes_sessao')) || null,
+            tentativasFalhas: 0,
+            bloqueadoAte: null,
+            timerInatividade: null
+        };
 
-      if (!user) {
-        const attempts = registerFailedAttempt(usernameInput);
-        const remaining = SECURITY_CONFIG.MAX_LOGIN_ATTEMPTS - attempts;
-        showToast(`Credenciais inválidas! Tentativas restantes: ${Math.max(0, remaining)}`, 'error');
-        addAuditLog('Segurança', 'TENTATIVA DE LOGIN FALHADA', `Usuário: ${usernameInput}`);
-        return;
-      }
+        // Estado do Sistema de Abas
+        let tabsState = {
+            openTabs: ['dashboard'], // IDs dos módulos abertos
+            activeTab: 'dashboard'
+        };
 
-      clearLockout(usernameInput);
-      currentUser = user;
+        // Dicionário de Títulos de Módulos
+        const MODULE_NAMES = {
+            dashboard: 'Dashboard',
+            financeiro: 'Contas Pagar/Receber',
+            plano_contas: 'Plano de Contas',
+            contas_bancarias: 'Contas Bancárias / Caixa',
+            moradores: 'Moradores / Unidades',
+            fornecedores: 'Fornecedores',
+            estoque: 'Estoque de Produtos',
+            patrimonio: 'Patrimônio / Bens',
+            documentos: 'Documentos & Comprovantes',
+            usuarios: 'Gestão de Usuários',
+            audit_log: 'Log de Auditoria'
+        };
 
-      if (user.firstAccess) {
-        document.getElementById('login-form').classList.add('hidden');
-        document.getElementById('force-password-form').classList.remove('hidden');
-        showToast('Primeiro acesso detectado. Por razões de segurança, redefina sua senha.', 'warning');
-        return;
-      }
+        // Registrar Ação no Log de Auditoria
+        function registrarLog(modulo, acao, detalhe) {
+            const user = sessao.usuarioLogado ? sessao.usuarioLogado.usuario : 'Sistema';
+            const logItem = {
+                id: 'log_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+                dataHora: new Date().toLocaleString('pt-BR'),
+                modulo: modulo,
+                acao: acao,
+                usuario: user,
+                detalhe: detalhe
+            };
+            db.logs.unshift(logItem);
+            if (db.logs.length > 500) db.logs.pop(); // Mantém últimos 500 logs
+            salvarDados(db);
+        }
 
-      finishLogin();
-    }
+        // ==========================================
+        // 3. NAVEGAÇÃO DE ABAS & MODULOS
+        // ==========================================
+        function abrirModulo(moduloId) {
+            if (!tabsState.openTabs.includes(moduloId)) {
+                tabsState.openTabs.push(moduloId);
+            }
+            tabsState.activeTab = moduloId;
+            renderApp();
+        }
 
-    function handleForcePasswordChange(e) {
-      e.preventDefault();
-      const newPwd = document.getElementById('new-pwd-input').value;
-      const confirmPwd = document.getElementById('confirm-pwd-input').value;
+        function fecharAba(e, moduloId) {
+            e.stopPropagation();
+            if (tabsState.openTabs.length === 1) return; // Mantém pelo menos uma aba aberta
 
-      if (newPwd !== confirmPwd) {
-        showToast('As senhas digitadas não coincidem!', 'error');
-        return;
-      }
+            tabsState.openTabs = tabsState.openTabs.filter(id => id !== moduloId);
+            if (tabsState.activeTab === moduloId) {
+                tabsState.activeTab = tabsState.openTabs[tabsState.openTabs.length - 1];
+            }
+            renderApp();
+        }
 
-      const res = validatePasswordStrength(newPwd);
-      if (!res.isValid) {
-        showToast('A senha não cumpre com os requisitos mínimos de segurança.', 'error');
-        return;
-      }
+        // ==========================================
+        // 4. AUTENTICAÇÃO E TROCA DE SENHA
+        // ==========================================
+        function realizarLogin(e) {
+            e.preventDefault();
+            const now = Date.now();
+            if (sessao.bloqueadoAte && now < sessao.bloqueadoAte) {
+                const resta = Math.ceil((sessao.bloqueadoAte - now) / 1000);
+                alert(`Sistema temporariamente bloqueado por segurança. Tente novamente em ${resta} segundos.`);
+                return;
+            }
 
-      const users = JSON.parse(localStorage.getItem('GB_USERS') || '[]');
-      const userIdx = users.findIndex(u => u.id === currentUser.id);
-      
-      if (userIdx !== -1) {
-        users[userIdx].passwordHash = newPwd;
-        users[userIdx].firstAccess = false;
-        localStorage.setItem('GB_USERS', JSON.stringify(users));
-        currentUser = users[userIdx];
-      }
+            const userInput = document.getElementById('login_user').value.trim();
+            const senhaInput = document.getElementById('login_pass').value;
+            const lembrar = document.getElementById('login_remember').checked;
 
-      addAuditLog('Segurança', 'ALTERAÇÃO DE SENHA OBRIGATÓRIA', `Usuário ${currentUser.username} redefiniu sua senha.`);
-      showToast('Senha alterada com sucesso!', 'success');
-      finishLogin();
-    }
+            const userFound = db.usuarios.find(u => u.usuario === userInput || u.email === userInput);
 
-    function finishLogin() {
-      document.getElementById('auth-screen').classList.add('hidden');
-      document.getElementById('app-screen').classList.remove('hidden');
+            if (userFound && userFound.senhaHash === senhaInput) {
+                if (userFound.status !== 'Ativo') {
+                    alert('Utilizador inativo. Contacte o administrador do sistema.');
+                    return;
+                }
 
-      // Atualizar dados de exibição do usuário
-      document.getElementById('user-name-display').innerText = currentUser.name;
-      document.getElementById('user-role-badge').innerText = currentUser.role;
-      if (currentUser.avatar) {
-        document.getElementById('user-avatar-display').src = currentUser.avatar;
-        document.getElementById('mobile-avatar').src = currentUser.avatar;
-      }
+                sessao.tentativasFalhas = 0;
+                sessao.usuarioLogado = userFound;
+                sessionStorage.setItem('guardioes_sessao', JSON.stringify(userFound));
 
-      document.getElementById('mobile-user-name').innerText = currentUser.name;
-      document.getElementById('mobile-user-role').innerText = currentUser.role;
+                if (lembrar) {
+                    localStorage.setItem('guardioes_remember_user', userInput);
+                } else {
+                    localStorage.removeItem('guardioes_remember_user');
+                }
 
-      addAuditLog('Segurança', 'LOGIN BEM SUCEDIDO', `Sessão iniciada para ${currentUser.username}`);
-      showToast(`Bem-vindo, ${currentUser.name}!`, 'success');
+                registrarLog('Segurança', 'Login Sucesso', `Usuário ${userFound.usuario} efetuou login.`);
 
-      resetSessionTimer();
-      renderNavigation();
-      navigate('dashboard');
-    }
+                if (userFound.primeiroAcesso) {
+                    renderModalTrocaSenhaObrigatoria();
+                } else {
+                    iniciarMonitorInatividade();
+                    renderApp();
+                }
+            } else {
+                sessao.tentativasFalhas++;
+                registrarLog('Segurança', 'Tentativa Inválida', `Tentativa de login falhada para: ${userInput}`);
+                if (sessao.tentativasFalhas >= 5) {
+                    sessao.bloqueadoAte = Date.now() + (5 * 60 * 1000); // 5 min lockout
+                    alert('Bloqueio de Segurança: 5 tentativas incorretas. Tente novamente em 5 minutos.');
+                } else {
+                    alert(`Credenciais incorretas! Tentativa ${sessao.tentativasFalhas} de 5.`);
+                }
+            }
+        }
 
-    function logout() {
-      if (currentUser) {
-        addAuditLog('Segurança', 'LOGOUT', `Sessão encerrada por ${currentUser.username}`);
-      }
-      currentUser = null;
-      clearTimeout(sessionTimer);
-      document.getElementById('app-screen').classList.add('hidden');
-      document.getElementById('auth-screen').classList.remove('hidden');
-      document.getElementById('login-form').reset();
-      document.getElementById('login-form').classList.remove('hidden');
-      document.getElementById('force-password-form').classList.add('hidden');
-      showToast('Sessão encerrada.', 'info');
-    }
+        function encerrarSessao() {
+            if (sessao.usuarioLogado) {
+                registrarLog('Segurança', 'Logout', `Usuário ${sessao.usuarioLogado.usuario} encerrou a sessão.`);
+            }
+            sessao.usuarioLogado = null;
+            sessionStorage.removeItem('guardioes_sessao');
+            if (sessao.timerInatividade) clearTimeout(sessao.timerInatividade);
+            renderApp();
+        }
 
-    function resetSessionTimer() {
-      clearTimeout(sessionTimer);
-      sessionTimer = setTimeout(() => {
-        showToast('Sessão expirada por inatividade.', 'warning');
-        logout();
-      }, SECURITY_CONFIG.SESSION_TIMEOUT_MS);
-    }
+        function iniciarMonitorInatividade() {
+            if (sessao.timerInatividade) clearTimeout(sessao.timerInatividade);
+            const resetTimer = () => {
+                if (!sessao.usuarioLogado) return;
+                clearTimeout(sessao.timerInatividade);
+                sessao.timerInatividade = setTimeout(() => {
+                    alert('Sessão encerrada por inatividade (15 minutos).');
+                    encerrarSessao();
+                }, 15 * 60 * 1000); // 15 minutos
+            };
 
-    // Monitorar eventos do usuário para resetar timeout
-    ['click', 'mousemove', 'keypress', 'touchstart'].forEach(evt => {
-      window.addEventListener(evt, () => {
-        if (currentUser) resetSessionTimer();
-      });
-    });
+            window.onload = resetTimer;
+            document.onmousemove = resetTimer;
+            document.onkeypress = resetTimer;
+            document.onclick = resetTimer;
+            document.ontouchstart = resetTimer;
+        }
 
-    /* ==========================================================================
-       4. NAVEGAÇÃO & MENU RESPONSIVO
-       ========================================================================== */
-    const NAV_ITEMS = [
-      { id: 'dashboard', label: 'Dashboard', icon: 'fa-chart-pie' },
-      { id: 'financial', label: 'Contas Pagar / Receber', icon: 'fa-money-bill-transfer' },
-      { id: 'accounts', label: 'Contas Bancárias / Caixa', icon: 'fa-building-columns' },
-      { id: 'chart-accounts', label: 'Plano de Contas', icon: 'fa-sitemap' },
-      { id: 'residents', label: 'Moradores / Unidades', icon: 'fa-users-between-lines' },
-      { id: 'suppliers', label: 'Fornecedores', icon: 'fa-truck-field' },
-      { id: 'stock', label: 'Estoque de Produtos', icon: 'fa-boxes-stacked' },
-      { id: 'assets', label: 'Patrimônio / Bens', icon: 'fa-vault' },
-      { id: 'documents', label: 'Documentos & Anexos', icon: 'fa-file-contract' },
-      { id: 'users', label: 'Gestão de Usuários', icon: 'fa-user-shield' }
-    ];
+        // ==========================================
+        // 5. COMPONENTES E INTERFACE
+        // ==========================================
 
-    function renderNavigation() {
-      const desktopNav = document.getElementById('desktop-nav');
-      const mobileNav = document.getElementById('mobile-nav');
+        // Renderizador Global
+        function renderApp() {
+            const container = document.getElementById('app');
 
-      const html = NAV_ITEMS.map(item => `
-        <button onclick="navigate('${item.id}')" id="nav-btn-${item.id}" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:bg-slate-100 hover:text-brand-600">
-          <i class="fa-solid ${item.icon} text-base w-5"></i>
-          <span>${item.label}</span>
-        </button>
-      `).join('');
+            if (!sessao.usuarioLogado) {
+                container.innerHTML = renderTelaLogin();
+                const savedUser = localStorage.getItem('guardioes_remember_user');
+                if (savedUser) {
+                    document.getElementById('login_user').value = savedUser;
+                    document.getElementById('login_remember').checked = true;
+                }
+                return;
+            }
 
-      desktopNav.innerHTML = html;
-      mobileNav.innerHTML = html;
-    }
+            container.innerHTML = `
+                <div class="flex-1 flex overflow-hidden">
+                    <!-- SIDEBAR MOBILE OVERLAY -->
+                    <div id="mobile-sidebar-backdrop" onclick="toggleMobileSidebar()" class="fixed inset-0 bg-slate-900/50 z-40 hidden md:hidden"></div>
 
-    function toggleMobileMenu() {
-      const menu = document.getElementById('mobile-menu');
-      const overlay = document.getElementById('mobile-menu-overlay');
-      const isHidden = menu.classList.contains('-translate-x-full');
+                    <!-- SIDEBAR -->
+                    <aside id="sidebar-menu" class="fixed md:relative z-50 w-64 bg-slate-900 text-slate-300 flex flex-col h-full transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out">
+                        <div class="p-4 bg-slate-950 flex items-center justify-between border-b border-slate-800">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-teal-600 flex items-center justify-center text-white font-bold text-xl">
+                                    <i class="fa-solid fa-shield-halved"></i>
+                                </div>
+                                <div>
+                                    <h1 class="font-bold text-white text-base leading-tight">Guardiões do Bravo</h1>
+                                    <p class="text-xs text-teal-400">Gestão Condominial</p>
+                                </div>
+                            </div>
+                            <button onclick="toggleMobileSidebar()" class="md:hidden text-slate-400 hover:text-white">
+                                <i class="fa-solid fa-xmark text-xl"></i>
+                            </button>
+                        </div>
 
-      if (isHidden) {
-        menu.classList.remove('-translate-x-full');
-        overlay.classList.remove('hidden');
-      } else {
-        menu.classList.add('-translate-x-full');
-        overlay.classList.add('hidden');
-      }
-    }
+                        <!-- NAV ITEMS -->
+                        <nav class="flex-1 overflow-y-auto p-3 space-y-1">
+                            <p class="px-3 pt-3 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Módulos Principais</p>
+                            <button onclick="abrirModulo('dashboard')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${tabsState.activeTab === 'dashboard' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
+                                <i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard
+                            </button>
 
-    function navigate(moduleId) {
-      currentModule = moduleId;
-      moduleCurrentPage = 1;
+                            <p class="px-3 pt-4 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Financeiro</p>
+                            <button onclick="abrirModulo('financeiro')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${tabsState.activeTab === 'financeiro' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
+                                <i class="fa-solid fa-receipt w-5 text-center"></i> Contas Pagar/Receber
+                            </button>
+                            <button onclick="abrirModulo('plano_contas')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${tabsState.activeTab === 'plano_contas' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
+                                <i class="fa-solid fa-sitemap w-5 text-center"></i> Plano de Contas
+                            </button>
+                            <button onclick="abrirModulo('contas_bancarias')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${tabsState.activeTab === 'contas_bancarias' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
+                                <i class="fa-solid fa-building-columns w-5 text-center"></i> Contas Bancárias / Caixa
+                            </button>
 
-      // Destacar botão ativo
-      NAV_ITEMS.forEach(item => {
-        const btns = document.querySelectorAll(`#nav-btn-${item.id}`);
-        btns.forEach(btn => {
-          if (item.id === moduleId) {
-            btn.className = 'w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-bold transition-all bg-brand-50 text-brand-700 shadow-sm border border-brand-200/60';
-          } else {
-            btn.className = 'w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:bg-slate-100 hover:text-brand-600';
-          }
+                            <p class="px-3 pt-4 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Gestão & Operação</p>
+                            <button onclick="abrirModulo('moradores')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${tabsState.activeTab === 'moradores' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
+                                <i class="fa-solid fa-users w-5 text-center"></i> Moradores / Unidades
+                            </button>
+                            <button onclick="abrirModulo('fornecedores')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${tabsState.activeTab === 'fornecedores' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
+                                <i class="fa-solid fa-truck-field w-5 text-center"></i> Fornecedores
+                            </button>
+                            <button onclick="abrirModulo('estoque')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${tabsState.activeTab === 'estoque' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
+                                <i class="fa-solid fa-boxes-stacked w-5 text-center"></i> Estoque de Produtos
+                            </button>
+                            <button onclick="abrirModulo('patrimonio')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${tabsState.activeTab === 'patrimonio' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
+                                <i class="fa-solid fa-couch w-5 text-center"></i> Patrimônio / Bens
+                            </button>
+                            <button onclick="abrirModulo('documentos')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${tabsState.activeTab === 'documentos' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
+                                <i class="fa-solid fa-folder-open w-5 text-center"></i> Documentos & Anexos
+                            </button>
+
+                            <p class="px-3 pt-4 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Administração</p>
+                            <button onclick="abrirModulo('usuarios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${tabsState.activeTab === 'usuarios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
+                                <i class="fa-solid fa-user-shield w-5 text-center"></i> Gestão de Usuários
+                            </button>
+                            <button onclick="abrirModulo('audit_log')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition ${tabsState.activeTab === 'audit_log' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
+                                <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Rastreio & Auditoria
+                            </button>
+                        </nav>
+
+                        <!-- USER FOOTER -->
+                        <div class="p-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
+                            <div class="flex items-center gap-2 overflow-hidden">
+                                <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-teal-400 font-bold border border-slate-700">
+                                    ${sessao.usuarioLogado.usuario.substr(0,2).toUpperCase()}
+                                </div>
+                                <div class="truncate">
+                                    <p class="text-xs font-semibold text-slate-200 truncate">${escapeHTML(sessao.usuarioLogado.nome)}</p>
+                                    <p class="text-[10px] text-teal-400 capitalize">${escapeHTML(sessao.usuarioLogado.perfil)}</p>
+                                </div>
+                            </div>
+                            <button onclick="encerrarSessao()" title="Sair do Sistema" class="p-2 text-slate-400 hover:text-red-400 rounded-lg hover:bg-slate-800 transition">
+                                <i class="fa-solid fa-right-from-bracket"></i>
+                            </button>
+                        </div>
+                    </aside>
+
+                    <!-- MAIN CONTENT AREA -->
+                    <div class="flex-1 flex flex-col overflow-hidden">
+                        <!-- TOP HEADER MOBILE -->
+                        <header class="bg-slate-900 text-white p-3 flex md:hidden items-center justify-between border-b border-slate-800">
+                            <div class="flex items-center gap-3">
+                                <button onclick="toggleMobileSidebar()" class="p-2 rounded-lg bg-slate-800 text-slate-200">
+                                    <i class="fa-solid fa-bars text-lg"></i>
+                                </button>
+                                <span class="font-bold text-sm">Guardiões do Bravo</span>
+                            </div>
+                            <button onclick="encerrarSessao()" class="text-xs bg-red-600/20 text-red-400 px-2.5 py-1.5 rounded-md">
+                                <i class="fa-solid fa-power-off"></i> Sair
+                            </button>
+                        </header>
+
+                        <!-- MULTI-TAB NAVIGATION BAR -->
+                        <div class="bg-slate-200 border-b border-slate-300 flex items-center overflow-x-auto px-2 pt-2 gap-1 scrollbar-none">
+                            ${tabsState.openTabs.map(tabId => `
+                                <div onclick="abrirModulo('${tabId}')" class="flex items-center gap-2 px-3 py-2 rounded-t-lg text-xs font-semibold cursor-pointer transition select-none ${tabsState.activeTab === tabId ? 'tab-active shadow-sm' : 'bg-slate-300 text-slate-600 hover:bg-slate-300/80'}">
+                                    <span>${MODULE_NAMES[tabId] || tabId}</span>
+                                    ${tabsState.openTabs.length > 1 ? `
+                                        <button onclick="fecharAba(event, '${tabId}')" class="text-slate-400 hover:text-red-600 rounded-full w-4 h-4 flex items-center justify-center">
+                                            <i class="fa-solid fa-xmark text-[10px]"></i>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <!-- MODULE CONTENT BODY -->
+                        <main class="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-100">
+                            ${renderModuleContent(tabsState.activeTab)}
+                        </main>
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar-menu');
+            const backdrop = document.getElementById('mobile-sidebar-backdrop');
+            sidebar.classList.toggle('-translate-x-full');
+            backdrop.classList.toggle('hidden');
+        }
+
+        // Renderizador de Módulos Específicos
+        function renderModuleContent(moduloId) {
+            const headerGlobal = `
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h2 class="text-2xl font-bold text-slate-800">${MODULE_NAMES[moduloId]}</h2>
+                        <p class="text-xs text-slate-500">Módulo de Gestão Ativo</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <button onclick="abrirModalAuditLog('${moduloId}')" class="bg-slate-800 hover:bg-slate-900 text-white text-xs px-3.5 py-2 rounded-lg font-medium shadow-sm flex items-center gap-2 transition">
+                            <i class="fa-solid fa-shield-halved text-teal-400"></i> Rastrear Modificações
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            switch (moduloId) {
+                case 'dashboard':
+                    return headerGlobal + renderDashboardView();
+                case 'financeiro':
+                    return headerGlobal + renderFinanceiroView();
+                case 'usuarios':
+                    return headerGlobal + renderUsuariosView();
+                case 'audit_log':
+                    return headerGlobal + renderAuditLogView();
+                default:
+                    return headerGlobal + `
+                        <div class="bg-white p-8 rounded-xl shadow-sm border border-slate-200 text-center py-12">
+                            <div class="w-16 h-16 bg-teal-50 text-teal-600 rounded-full flex items-center justify-center mx-auto mb-4 text-2xl">
+                                <i class="fa-solid fa-folder-open"></i>
+                            </div>
+                            <h3 class="text-lg font-bold text-slate-800 mb-1">${MODULE_NAMES[moduloId]}</h3>
+                            <p class="text-sm text-slate-500 max-w-md mx-auto">Módulo operacional e sincronizado ao banco de dados com auditoria automatizada.</p>
+                        </div>
+                    `;
+            }
+        }
+
+        // ==========================================
+        // 6. TELA DE LOGIN
+        // ==========================================
+        function renderTelaLogin() {
+            return `
+                <div class="min-h-screen bg-slate-900 flex items-center justify-center p-4">
+                    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
+                        <div class="p-8 text-center bg-slate-950 text-white relative">
+                            <div class="w-16 h-16 bg-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg text-3xl">
+                                <i class="fa-solid fa-shield-halved text-white"></i>
+                            </div>
+                            <h2 class="text-2xl font-bold">Guardiões do Bravo</h2>
+                            <p class="text-xs text-teal-400 uppercase tracking-widest mt-1 font-semibold">Gestão Condominial Segura</p>
+                        </div>
+
+                        <form onsubmit="realizarLogin(event)" class="p-8 space-y-5">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Usuário / E-mail</label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                                        <i class="fa-solid fa-user"></i>
+                                    </span>
+                                    <input type="text" id="login_user" required placeholder="Digite seu usuário" class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500 font-medium">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Senha</label>
+                                <div class="relative">
+                                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                                        <i class="fa-solid fa-lock"></i>
+                                    </span>
+                                    <input type="password" id="login_pass" required placeholder="••••••••" class="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-500 font-medium">
+                                    <button type="button" onclick="toggleVisibilidadeSenha('login_pass', 'eye_login')" class="absolute inset-y-0 right-0 flex items-center pr-3 text-slate-400 hover:text-slate-600">
+                                        <i id="eye_login" class="fa-solid fa-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-between text-xs">
+                                <label class="flex items-center gap-2 cursor-pointer text-slate-600 font-medium select-none">
+                                    <input type="checkbox" id="login_remember" class="rounded border-slate-300 text-teal-600 focus:ring-teal-500 w-4 h-4">
+                                    Lembrar-me neste navegador
+                                </label>
+                            </div>
+
+                            <button type="submit" class="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg shadow-md hover:shadow-lg transition flex items-center justify-center gap-2">
+                                <span>Acessar Painel</span>
+                                <i class="fa-solid fa-arrow-right"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleVisibilidadeSenha(inputId, eyeId) {
+            const input = document.getElementById(inputId);
+            const eye = document.getElementById(eyeId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                eye.classList.remove('fa-eye');
+                eye.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                eye.classList.remove('fa-eye-slash');
+                eye.classList.add('fa-eye');
+            }
+        }
+
+        // ==========================================
+        // 7. MÓDULO DE USUÁRIOS (CRIAR, EDITAR, INATIVAR, EXCLUIR)
+        // ==========================================
+        function renderUsuariosView() {
+            return `
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <h3 class="font-bold text-slate-800 text-sm">Utilizadores Cadastrados</h3>
+                        <button onclick="renderModalUsuario()" class="w-full sm:w-auto bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold px-4 py-2 rounded-lg flex items-center justify-center gap-2 shadow-sm transition">
+                            <i class="fa-solid fa-user-plus"></i> Novo Usuário
+                        </button>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-600 font-bold uppercase border-b border-slate-200">
+                                <tr>
+                                    <th class="p-3">Usuário</th>
+                                    <th class="p-3">Nome / E-mail</th>
+                                    <th class="p-3">Perfil</th>
+                                    <th class="p-3">Status</th>
+                                    <th class="p-3 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200">
+                                ${db.usuarios.map(u => `
+                                    <tr class="hover:bg-slate-50 transition">
+                                        <td class="p-3 font-semibold text-slate-900">
+                                            <div class="flex items-center gap-2">
+                                                ${u.foto ? `<img src="${u.foto}" class="w-7 h-7 rounded-full object-cover">` : `<div class="w-7 h-7 rounded-full bg-slate-200 flex items-center justify-center font-bold text-slate-600">${u.usuario.substr(0,2).toUpperCase()}</div>`}
+                                                <span>${escapeHTML(u.usuario)}</span>
+                                            </div>
+                                        </td>
+                                        <td class="p-3">
+                                            <p class="font-bold text-slate-800">${escapeHTML(u.nome)}</p>
+                                            <p class="text-slate-500">${escapeHTML(u.email)}</p>
+                                        </td>
+                                        <td class="p-3">
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${u.perfil === 'Admin' ? 'bg-purple-100 text-purple-700' : u.perfil === 'Operador' ? 'bg-blue-100 text-blue-700' : 'bg-slate-100 text-slate-700'}">
+                                                ${escapeHTML(u.perfil)}
+                                            </span>
+                                        </td>
+                                        <td class="p-3">
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${u.status === 'Ativo' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">
+                                                ${escapeHTML(u.status)}
+                                            </span>
+                                        </td>
+                                        <td class="p-3 text-right space-x-1">
+                                            <button onclick="renderModalUsuario('${u.id}')" title="Editar Usuário" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded">
+                                                <i class="fa-solid fa-pen-to-square"></i>
+                                            </button>
+                                            <button onclick="toggleStatusUsuario('${u.id}')" title="Alternar Ativo/Inativo" class="p-1.5 ${u.status === 'Ativo' ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'} rounded">
+                                                <i class="fa-solid ${u.status === 'Ativo' ? 'fa-user-slash' : 'fa-user-check'}"></i>
+                                            </button>
+                                            <button onclick="excluirUsuario('${u.id}')" title="Excluir Usuário" class="p-1.5 text-red-600 hover:bg-red-50 rounded">
+                                                <i class="fa-solid fa-trash-can"></i>
+                                            </button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderModalUsuario(userId = null) {
+            const user = userId ? db.usuarios.find(u => u.id === userId) : null;
+
+            const modalHtml = `
+                <div id="modal_usr" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden animate-fade-in">
+                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+                            <h3 class="font-bold text-sm">${user ? 'Editar Usuário' : 'Novo Usuário'}</h3>
+                            <button onclick="fecharModal('modal_usr')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <form onsubmit="salvarUsuarioForm(event, '${userId || ''}')" class="p-6 space-y-4">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nome de Usuário</label>
+                                    <input type="text" id="usr_login" required value="${user ? escapeHTML(user.usuario) : ''}" ${user ? 'readonly bg-slate-100' : ''} class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-semibold">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Perfil</label>
+                                    <select id="usr_perfil" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-semibold">
+                                        <option value="Admin" ${user && user.perfil === 'Admin' ? 'selected' : ''}>Admin</option>
+                                        <option value="Operador" ${user && user.perfil === 'Operador' ? 'selected' : ''}>Operador / Síndico</option>
+                                        <option value="Leitura" ${user && user.perfil === 'Leitura' ? 'selected' : ''}>Leitura / Auditoria</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nome Completo</label>
+                                <input type="text" id="usr_nome" required value="${user ? escapeHTML(user.nome) : ''}" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-semibold">
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">E-mail</label>
+                                <input type="email" id="usr_email" required value="${user ? escapeHTML(user.email) : ''}" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-semibold">
+                            </div>
+
+                            ${!user ? `
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Senha Inicial</label>
+                                <input type="password" id="usr_senha" required placeholder="Min. 8 chars (A-z, 0-9, @#$)" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-semibold">
+                            </div>
+                            ` : ''}
+
+                            <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-200">
+                                <button type="button" onclick="fecharModal('modal_usr')" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded text-xs font-bold">Cancelar</button>
+                                <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded text-xs font-bold">Salvar Usuário</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        function salvarUsuarioForm(e, userId) {
+            e.preventDefault();
+            const login = document.getElementById('usr_login').value.trim();
+            const nome = document.getElementById('usr_nome').value.trim();
+            const email = document.getElementById('usr_email').value.trim();
+            const perfil = document.getElementById('usr_perfil').value;
+
+            if (userId) {
+                const u = db.usuarios.find(x => x.id === userId);
+                if (u) {
+                    u.nome = nome;
+                    u.email = email;
+                    u.perfil = perfil;
+                    registrarLog('Usuários', 'Edição', `Usuário ${u.usuario} atualizado.`);
+                }
+            } else {
+                const senha = document.getElementById('usr_senha').value;
+                if (!validarSenhaForte(senha)) {
+                    alert('A senha deve ter no mínimo 8 caracteres, incluindo letras maiúsculas, minúsculas, números e caracteres especiais!');
+                    return;
+                }
+                const novo = {
+                    id: 'usr_' + Date.now(),
+                    usuario: login,
+                    nome: nome,
+                    email: email,
+                    perfil: perfil,
+                    status: 'Ativo',
+                    primeiroAcesso: true,
+                    senhaHash: senha,
+                    foto: ''
+                };
+                db.usuarios.push(novo);
+                registrarLog('Usuários', 'Criação', `Usuário ${login} criado no sistema.`);
+            }
+
+            salvarDados(db);
+            fecharModal('modal_usr');
+            renderApp();
+        }
+
+        function toggleStatusUsuario(userId) {
+            const u = db.usuarios.find(x => x.id === userId);
+            if (u) {
+                if (u.id === sessao.usuarioLogado.id) {
+                    alert('Não é possível inativar o próprio usuário conectado.');
+                    return;
+                }
+                u.status = u.status === 'Ativo' ? 'Inativo' : 'Ativo';
+                registrarLog('Usuários', 'Status Alterado', `Usuário ${u.usuario} alterado para ${u.status}`);
+                salvarDados(db);
+                renderApp();
+            }
+        }
+
+        function excluirUsuario(userId) {
+            const u = db.usuarios.find(x => x.id === userId);
+            if (u) {
+                if (u.id === sessao.usuarioLogado.id) {
+                    alert('Não é possível excluir seu próprio usuário logado.');
+                    return;
+                }
+                if (confirm(`Tem certeza que deseja excluir o usuário "${u.usuario}"?`)) {
+                    db.usuarios = db.usuarios.filter(x => x.id !== userId);
+                    registrarLog('Usuários', 'Exclusão', `Usuário ${u.usuario} excluído.`);
+                    salvarDados(db);
+                    renderApp();
+                }
+            }
+        }
+
+        // ==========================================
+        // 8. TROCA DE SENHA OBRIGATÓRIA (1º ACESSO)
+        // ==========================================
+        function renderModalTrocaSenhaObrigatoria() {
+            const html = `
+                <div id="modal_first_pass" class="fixed inset-0 bg-slate-950/80 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden p-6 text-center space-y-4">
+                        <div class="w-12 h-12 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto text-xl">
+                            <i class="fa-solid fa-key"></i>
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-800">Primeiro Acesso Detectado</h3>
+                        <p class="text-xs text-slate-500">Por políticas de segurança[cite: 1], cadastre uma nova senha pessoal forte antes de prosseguir.</p>
+
+                        <form onsubmit="salvarNovaSenhaPrimeiroAcesso(event)" class="space-y-3 text-left">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nova Senha Forte</label>
+                                <input type="password" id="new_pass_1" required class="w-full p-2.5 border border-slate-300 rounded-lg text-xs text-slate-900 font-semibold">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Confirme a Nova Senha</label>
+                                <input type="password" id="new_pass_2" required class="w-full p-2.5 border border-slate-300 rounded-lg text-xs text-slate-900 font-semibold">
+                            </div>
+                            <button type="submit" class="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg text-xs shadow-md">
+                                Atualizar Senha e Entrar
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        function salvarNovaSenhaPrimeiroAcesso(e) {
+            e.preventDefault();
+            const p1 = document.getElementById('new_pass_1').value;
+            const p2 = document.getElementById('new_pass_2').value;
+
+            if (p1 !== p2) {
+                alert('As senhas preenchidas não coincidem!');
+                return;
+            }
+
+            if (!validarSenhaForte(p1)) {
+                alert('A senha deve possuir no mínimo 8 caracteres, contendo maiúsculas, minúsculas, números e caracteres especiais!');
+                return;
+            }
+
+            const u = db.usuarios.find(x => x.id === sessao.usuarioLogado.id);
+            if (u) {
+                u.senhaHash = p1;
+                u.primeiroAcesso = false;
+                sessao.usuarioLogado.primeiroAcesso = false;
+                salvarDados(db);
+                registrarLog('Segurança', 'Senha Atualizada', `Usuário ${u.usuario} alterou a senha do primeiro acesso.`);
+                fecharModal('modal_first_pass');
+                iniciarMonitorInatividade();
+                renderApp();
+            }
+        }
+
+        // ==========================================
+        // 9. AUDITORIA GLOBAL & LOGS
+        // ==========================================
+        function abrirModalAuditLog(moduloFiltro = '') {
+            renderModalAuditLog(moduloFiltro);
+        }
+
+        function renderModalAuditLog(moduloFiltro = '') {
+            const logsFiltrados = moduloFiltro ? db.logs.filter(l => l.modulo.toLowerCase() === moduloFiltro.toLowerCase()) : db.logs;
+
+            const modalHtml = `
+                <div id="modal_audit" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white w-full max-w-4xl rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[85vh]">
+                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-shield-halved text-teal-400"></i>
+                                <h3 class="font-bold text-sm">Histórico de Auditoria ${moduloFiltro ? `- ${MODULE_NAMES[moduloFiltro] || moduloFiltro}` : ''}</h3>
+                            </div>
+                            <button onclick="fecharModal('modal_audit')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <div class="p-4 overflow-y-auto flex-1">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-100 text-slate-600 font-bold uppercase border-b border-slate-200 sticky top-0">
+                                    <tr>
+                                        <th class="p-2.5">Data/Hora</th>
+                                        <th class="p-2.5">Módulo</th>
+                                        <th class="p-2.5">Ação</th>
+                                        <th class="p-2.5">Usuário</th>
+                                        <th class="p-2.5">Detalhe</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200">
+                                    ${logsFiltrados.length === 0 ? `
+                                        <tr><td colspan="5" class="p-4 text-center text-slate-400">Nenhum registro de auditoria encontrado.</td></tr>
+                                    ` : logsFiltrados.map(l => `
+                                        <tr class="hover:bg-slate-50">
+                                            <td class="p-2.5 text-slate-500 whitespace-nowrap">${escapeHTML(l.dataHora)}</td>
+                                            <td class="p-2.5 font-bold text-slate-700">${escapeHTML(l.modulo)}</td>
+                                            <td class="p-2.5"><span class="px-2 py-0.5 bg-slate-100 text-slate-800 rounded font-bold">${escapeHTML(l.acao)}</span></td>
+                                            <td class="p-2.5 font-semibold text-teal-700">${escapeHTML(l.usuario)}</td>
+                                            <td class="p-2.5 text-slate-600">${escapeHTML(l.detalhe)}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', modalHtml);
+        }
+
+        function renderAuditLogView() {
+            return `
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-4">
+                    <h3 class="font-bold text-sm text-slate-800 mb-4">Registro Geral de Logs de Operação</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-600 font-bold uppercase border-b">
+                                <tr>
+                                    <th class="p-3">Data/Hora</th>
+                                    <th class="p-3">Módulo</th>
+                                    <th class="p-3">Ação</th>
+                                    <th class="p-3">Usuário</th>
+                                    <th class="p-3">Descrição da Alteração</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200">
+                                ${db.logs.map(l => `
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="p-3 text-slate-500 whitespace-nowrap">${escapeHTML(l.dataHora)}</td>
+                                        <td class="p-3 font-bold text-slate-700">${escapeHTML(l.modulo)}</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 bg-slate-100 text-slate-800 rounded font-bold">${escapeHTML(l.acao)}</span></td>
+                                        <td class="p-3 font-semibold text-teal-700">${escapeHTML(l.usuario)}</td>
+                                        <td class="p-3 text-slate-600">${escapeHTML(l.detalhe)}</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==========================================
+        // 10. VIEWS SECUNDÁRIAS (DASHBOARD E FINANCEIRO)
+        // ==========================================
+        function renderDashboardView() {
+            const recTotal = db.financeiro.filter(f => f.tipo === 'Receber').reduce((acc, f) => acc + f.valor, 0);
+            const pagTotal = db.financeiro.filter(f => f.tipo === 'Pagar').reduce((acc, f) => acc + f.valor, 0);
+
+            return `
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-slate-500 uppercase">A Receber</p>
+                            <h3 class="text-xl font-extrabold text-emerald-600">R$ ${recTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</h3>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg"><i class="fa-solid fa-arrow-down-left"></i></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-slate-500 uppercase">A Pagar</p>
+                            <h3 class="text-xl font-extrabold text-rose-600">R$ ${pagTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</h3>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-lg"><i class="fa-solid fa-arrow-up-right"></i></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-slate-500 uppercase">Moradores</p>
+                            <h3 class="text-xl font-extrabold text-slate-800">${db.moradores.length}</h3>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-lg"><i class="fa-solid fa-users"></i></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs font-bold text-slate-500 uppercase">Usuários Ativos</p>
+                            <h3 class="text-xl font-extrabold text-teal-600">${db.usuarios.filter(u=>u.status==='Ativo').length}</h3>
+                        </div>
+                        <div class="w-10 h-10 rounded-lg bg-teal-50 text-teal-600 flex items-center justify-center text-lg"><i class="fa-solid fa-user-shield"></i></div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderFinanceiroView() {
+            return `
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="p-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+                        <h3 class="font-bold text-slate-800 text-sm">Lançamentos Financeiros</h3>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 text-slate-600 font-bold uppercase border-b">
+                                <tr>
+                                    <th class="p-3">Tipo</th>
+                                    <th class="p-3">Descrição / Histórico</th>
+                                    <th class="p-3">Pessoa / Fornecedor</th>
+                                    <th class="p-3">Vencimento</th>
+                                    <th class="p-3">Valor</th>
+                                    <th class="p-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200">
+                                ${db.financeiro.map(f => `
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="p-3">
+                                            <span class="px-2 py-0.5 rounded text-[10px] font-bold ${f.tipo === 'Receber' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${escapeHTML(f.tipo)}</span>
+                                        </td>
+                                        <td class="p-3 font-semibold text-slate-800">${escapeHTML(f.historico)}</td>
+                                        <td class="p-3 text-slate-600">${escapeHTML(f.fornecedor)}</td>
+                                        <td class="p-3 text-slate-600">${escapeHTML(f.vencimento)}</td>
+                                        <td class="p-3 font-bold text-slate-900">R$ ${f.valor.toFixed(2)}</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 bg-amber-100 text-amber-700 rounded text-[10px] font-bold">${escapeHTML(f.status)}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        // ==========================================
+        // UTILS
+        // ==========================================
+        function fecharModal(modalId) {
+            const el = document.getElementById(modalId);
+            if (el) el.remove();
+        }
+
+        // Inicializador da Aplicação
+        window.addEventListener('DOMContentLoaded', () => {
+            if (sessao.usuarioLogado) {
+                iniciarMonitorInatividade();
+            }
+            renderApp();
         });
-      });
-
-      // Fechar gaveta mobile se aberta
-      document.getElementById('mobile-menu').classList.add('-translate-x-full');
-      document.getElementById('mobile-menu-overlay').classList.add('hidden');
-
-      // Atualizar títulos
-      const activeNav = NAV_ITEMS.find(i => i.id === moduleId);
-      document.getElementById('page-title').innerText = activeNav.label;
-
-      renderModuleContent();
-    }
-
-    /* ==========================================================================
-       5. RENDERIZAÇÃO DOS MÓDULOS DE CONTEÚDO
-       ========================================================================== */
-    function renderModuleContent() {
-      const container = document.getElementById('module-content');
-      const actionsContainer = document.getElementById('module-actions-container');
-      actionsContainer.innerHTML = '';
-
-      switch (currentModule) {
-        case 'dashboard':
-          renderDashboard(container);
-          break;
-        case 'financial':
-          renderFinancialModule(container, actionsContainer);
-          break;
-        case 'accounts':
-          renderAccountsModule(container, actionsContainer);
-          break;
-        case 'chart-accounts':
-          renderChartAccountsModule(container, actionsContainer);
-          break;
-        case 'residents':
-          renderResidentsModule(container, actionsContainer);
-          break;
-        case 'suppliers':
-          renderSuppliersModule(container, actionsContainer);
-          break;
-        case 'stock':
-          renderStockModule(container, actionsContainer);
-          break;
-        case 'assets':
-          renderAssetsModule(container, actionsContainer);
-          break;
-        case 'documents':
-          renderDocumentsModule(container, actionsContainer);
-          break;
-        case 'users':
-          renderUsersModule(container, actionsContainer);
-          break;
-        default:
-          container.innerHTML = '<p class="text-slate-500">Módulo em construção.</p>';
-      }
-    }
-
-    /* --- DASHBOARD --- */
-    function renderDashboard(container) {
-      const financial = JSON.parse(localStorage.getItem('GB_FINANCIAL') || '[]');
-      const totalReceitas = financial.filter(f => f.type === 'RECEITA').reduce((acc, f) => acc + f.amount, 0);
-      const totalDespesas = financial.filter(f => f.type === 'DESPESA').reduce((acc, f) => acc + f.amount, 0);
-      const saldoTotal = totalReceitas - totalDespesas;
-
-      const residents = JSON.parse(localStorage.getItem('GB_RESIDENTS') || '[]');
-      const stock = JSON.parse(localStorage.getItem('GB_STOCK') || '[]');
-
-      container.innerHTML = `
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-500 uppercase">Receitas Totais</span>
-              <div class="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><i class="fa-solid fa-arrow-down-left"></i></div>
-            </div>
-            <p class="text-2xl font-bold text-slate-900 mt-2">R$ ${totalReceitas.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
-          </div>
-
-          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-500 uppercase">Despesas Totais</span>
-              <div class="p-2 bg-red-100 text-red-600 rounded-lg"><i class="fa-solid fa-arrow-up-right"></i></div>
-            </div>
-            <p class="text-2xl font-bold text-slate-900 mt-2">R$ ${totalDespesas.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
-          </div>
-
-          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-500 uppercase">Saldo Consolidado</span>
-              <div class="p-2 bg-brand-100 text-brand-600 rounded-lg"><i class="fa-solid fa-wallet"></i></div>
-            </div>
-            <p class="text-2xl font-bold ${saldoTotal >= 0 ? 'text-emerald-600' : 'text-red-600'} mt-2">R$ ${saldoTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
-          </div>
-
-          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-            <div class="flex items-center justify-between">
-              <span class="text-xs font-bold text-slate-500 uppercase">Unidades Cadastradas</span>
-              <div class="p-2 bg-slate-100 text-slate-600 rounded-lg"><i class="fa-solid fa-building"></i></div>
-            </div>
-            <p class="text-2xl font-bold text-slate-900 mt-2">${residents.length}</p>
-          </div>
-        </div>
-
-        <!-- GRÁFICOS -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-            <h3 class="text-sm font-bold text-slate-800 mb-4">Balanço Financeiro</h3>
-            <canvas id="chart-balance" class="max-h-64"></canvas>
-          </div>
-          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-            <h3 class="text-sm font-bold text-slate-800 mb-4">Estoque Crítico</h3>
-            <div class="space-y-3">
-              ${stock.map(item => `
-                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
-                  <div>
-                    <p class="text-xs font-bold text-slate-800">${escapeHTML(item.name)}</p>
-                    <p class="text-[11px] text-slate-500">Categoria: ${escapeHTML(item.category)}</p>
-                  </div>
-                  <span class="px-2.5 py-1 text-xs font-bold rounded-full ${item.qty <= item.minQty ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}">
-                    ${item.qty} ${escapeHTML(item.unit)}
-                  </span>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-        </div>
-      `;
-
-      setTimeout(() => {
-        const ctx = document.getElementById('chart-balance');
-        if (ctx) {
-          new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-              labels: ['Receitas', 'Despesas'],
-              datasets: [{
-                data: [totalReceitas, totalDespesas],
-                backgroundColor: ['#10b981', '#ef4444']
-              }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-          });
-        }
-      }, 100);
-    }
-
-    /* --- CONTAS PAGAR / RECEBER --- */
-    function renderFinancialModule(container, actionsContainer) {
-      if (currentUser.role !== 'READONLY') {
-        actionsContainer.innerHTML = `
-          <button onclick="openFinancialModal()" class="px-3.5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-lg shadow transition-all flex items-center gap-2">
-            <i class="fa-solid fa-plus"></i> Novo Título
-          </button>
-        `;
-      }
-
-      const financial = JSON.parse(localStorage.getItem('GB_FINANCIAL') || '[]');
-
-      container.innerHTML = `
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
-            <input type="text" id="financial-search" oninput="renderModuleContent()" placeholder="Buscar lançamentos..." class="w-full sm:w-64 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs">
-          </div>
-          <div class="overflow-x-auto">
-            <table class="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr class="bg-slate-100 text-slate-700 uppercase font-semibold border-b border-slate-200">
-                  <th class="p-3">Código</th>
-                  <th class="p-3">Tipo</th>
-                  <th class="p-3">Descrição</th>
-                  <th class="p-3">Vencimento</th>
-                  <th class="p-3">Valor</th>
-                  <th class="p-3">Status</th>
-                  <th class="p-3 text-right">Ações</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-slate-100">
-                ${financial.map(item => `
-                  <tr class="hover:bg-slate-50/80">
-                    <td class="p-3 font-bold text-slate-700">${escapeHTML(item.id)}</td>
-                    <td class="p-3 font-semibold ${item.type === 'RECEITA' ? 'text-emerald-600' : 'text-red-600'}">${escapeHTML(item.type)}</td>
-                    <td class="p-3 font-medium text-slate-900">${escapeHTML(item.description)}</td>
-                    <td class="p-3 text-slate-600">${escapeHTML(item.dueDate)}</td>
-                    <td class="p-3 font-bold text-slate-900">R$ ${item.amount.toFixed(2)}</td>
-                    <td class="p-3">
-                      <span class="px-2 py-0.5 text-[10px] font-bold rounded ${item.status === 'PAGO' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
-                        ${escapeHTML(item.status)}
-                      </span>
-                    </td>
-                    <td class="p-3 text-right space-x-1">
-                      ${currentUser.role !== 'READONLY' ? `
-                        <button onclick="deleteFinancialItem('${item.id}')" class="p-1 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash"></i></button>
-                      ` : '<span class="text-slate-400 text-[10px]">Restrito</span>'}
-                    </td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      `;
-    }
-
-    function openFinancialModal() {
-      const body = document.getElementById('generic-modal-body');
-      document.getElementById('generic-modal-title').innerText = 'Cadastrar Novo Título Financeiro';
-
-      body.innerHTML = `
-        <form onsubmit="saveFinancialItem(event)" class="space-y-4">
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Tipo</label>
-              <select id="fin-type" class="w-full p-2 border border-slate-300 rounded-lg text-xs">
-                <option value="RECEITA">Receita</option>
-                <option value="DESPESA">Despesa</option>
-              </select>
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Valor (R$)</label>
-              <input type="number" step="0.01" id="fin-amount" required class="w-full p-2 border border-slate-300 rounded-lg text-xs">
-            </div>
-          </div>
-
-          <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Descrição</label>
-            <input type="text" id="fin-desc" required class="w-full p-2 border border-slate-300 rounded-lg text-xs">
-          </div>
-
-          <div class="grid grid-cols-2 gap-4">
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Data Vencimento</label>
-              <input type="date" id="fin-date" required class="w-full p-2 border border-slate-300 rounded-lg text-xs">
-            </div>
-            <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Conta Bancária</label>
-              <select id="fin-account" class="w-full p-2 border border-slate-300 rounded-lg text-xs">
-                <option value="Caixa Principal">Caixa Principal</option>
-                <option value="Conta Corrente Itaú">Conta Corrente Itaú</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="flex justify-end gap-2 pt-4">
-            <button type="button" onclick="closeGenericModal()" class="px-4 py-2 bg-slate-200 text-slate-800 text-xs font-bold rounded-lg">Cancelar</button>
-            <button type="submit" class="px-4 py-2 bg-brand-600 text-white text-xs font-bold rounded-lg">Salvar Título</button>
-          </div>
-        </form>
-      `;
-
-      document.getElementById('generic-modal').classList.remove('hidden');
-    }
-
-    function saveFinancialItem(e) {
-      e.preventDefault();
-      const financial = JSON.parse(localStorage.getItem('GB_FINANCIAL') || '[]');
-      
-      const newItem = {
-        id: `FIN-${Math.floor(100 + Math.random() * 900)}`,
-        type: document.getElementById('fin-type').value,
-        description: document.getElementById('fin-desc').value,
-        amount: parseFloat(document.getElementById('fin-amount').value),
-        dueDate: document.getElementById('fin-date').value,
-        status: 'PENDENTE',
-        account: document.getElementById('fin-account').value
-      };
-
-      financial.unshift(newItem);
-      localStorage.setItem('GB_FINANCIAL', JSON.stringify(financial));
-      
-      addAuditLog('Financeiro', 'NOVO TÍTULO CADASTRADO', `ID: ${newItem.id}, Valor: R$ ${newItem.amount}`);
-      showToast('Título registrado com sucesso!', 'success');
-      closeGenericModal();
-      renderModuleContent();
-    }
-
-    function deleteFinancialItem(id) {
-      if (!confirm(`Deseja realmente excluir o título ${id}?`)) return;
-      
-      let financial = JSON.parse(localStorage.getItem('GB_FINANCIAL') || '[]');
-      financial = financial.filter(f => f.id !== id);
-      localStorage.setItem('GB_FINANCIAL', JSON.stringify(financial));
-
-      addAuditLog('Financeiro', 'EXCLUSÃO DE TÍTULO', `ID: ${id}`);
-      showToast('Título excluído.', 'info');
-      renderModuleContent();
-    }
-
-    /* --- DEMAIS MÓDULOS DE SUPORTE --- */
-    function renderAccountsModule(container, actionsContainer) {
-      const accounts = JSON.parse(localStorage.getItem('GB_ACCOUNTS') || '[]');
-      container.innerHTML = `
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          ${accounts.map(acc => `
-            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-bold text-slate-500 uppercase">${escapeHTML(acc.type)}</span>
-                <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-100 text-emerald-800">${escapeHTML(acc.status)}</span>
-              </div>
-              <h3 class="text-base font-bold text-slate-900">${escapeHTML(acc.name)}</h3>
-              <p class="text-xl font-bold text-brand-600 mt-2">R$ ${acc.balance.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
-            </div>
-          `).join('')}
-        </div>
-      `;
-    }
-
-    function renderChartAccountsModule(container, actionsContainer) {
-      const categories = JSON.parse(localStorage.getItem('GB_CHART_ACCOUNTS') || '[]');
-      container.innerHTML = `
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
-          <div class="space-y-2">
-            ${categories.map(cat => `
-              <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
-                <div class="flex items-center gap-3">
-                  <span class="font-bold text-slate-500 text-xs">${escapeHTML(cat.code)}</span>
-                  <span class="font-bold text-slate-800 text-xs">${escapeHTML(cat.name)}</span>
-                </div>
-                <span class="px-2 py-0.5 text-[10px] font-bold rounded ${cat.type === 'RECEITA' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}">${escapeHTML(cat.type)}</span>
-              </div>
-            `).join('')}
-          </div>
-        </div>
-      `;
-    }
-
-    function renderResidentsModule(container, actionsContainer) {
-      const residents = JSON.parse(localStorage.getItem('GB_RESIDENTS') || '[]');
-      container.innerHTML = `
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <table class="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr class="bg-slate-100 text-slate-700 uppercase font-semibold border-b border-slate-200">
-                <th class="p-3">Unidade</th>
-                <th class="p-3">Nome</th>
-                <th class="p-3">Contato</th>
-                <th class="p-3">Vínculo</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              ${residents.map(r => `
-                <tr>
-                  <td class="p-3 font-bold text-brand-600">${escapeHTML(r.block)} - ${escapeHTML(r.unit)}</td>
-                  <td class="p-3 font-medium text-slate-900">${escapeHTML(r.name)}</td>
-                  <td class="p-3 text-slate-600">${escapeHTML(r.phone)}</td>
-                  <td class="p-3 font-semibold text-slate-700">${escapeHTML(r.status)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      `;
-    }
-
-    function renderSuppliersModule(container, actionsContainer) {
-      const suppliers = JSON.parse(localStorage.getItem('GB_SUPPLIERS') || '[]');
-      container.innerHTML = `
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <table class="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr class="bg-slate-100 text-slate-700 uppercase font-semibold border-b border-slate-200">
-                <th class="p-3">CNPJ</th>
-                <th class="p-3">Razão Social</th>
-                <th class="p-3">Telefone</th>
-                <th class="p-3">Categoria</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              ${suppliers.map(s => `
-                <tr>
-                  <td class="p-3 font-mono text-slate-600">${escapeHTML(s.cnpj)}</td>
-                  <td class="p-3 font-bold text-slate-900">${escapeHTML(s.name)}</td>
-                  <td class="p-3 text-slate-600">${escapeHTML(s.phone)}</td>
-                  <td class="p-3 text-slate-700">${escapeHTML(s.category)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      `;
-    }
-
-    function renderStockModule(container, actionsContainer) {
-      const stock = JSON.parse(localStorage.getItem('GB_STOCK') || '[]');
-      container.innerHTML = `
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <table class="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr class="bg-slate-100 text-slate-700 uppercase font-semibold border-b border-slate-200">
-                <th class="p-3">Produto</th>
-                <th class="p-3">Categoria</th>
-                <th class="p-3">Quantidade</th>
-                <th class="p-3">Qtd Mínima</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              ${stock.map(s => `
-                <tr>
-                  <td class="p-3 font-bold text-slate-900">${escapeHTML(s.name)}</td>
-                  <td class="p-3 text-slate-600">${escapeHTML(s.category)}</td>
-                  <td class="p-3 font-bold text-brand-600">${s.qty} ${escapeHTML(s.unit)}</td>
-                  <td class="p-3 text-slate-500">${s.minQty} ${escapeHTML(s.unit)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      `;
-    }
-
-    function renderAssetsModule(container, actionsContainer) {
-      const assets = JSON.parse(localStorage.getItem('GB_ASSETS') || '[]');
-      container.innerHTML = `
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <table class="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr class="bg-slate-100 text-slate-700 uppercase font-semibold border-b border-slate-200">
-                <th class="p-3">Tombamento</th>
-                <th class="p-3">Descrição do Bem</th>
-                <th class="p-3">Localização</th>
-                <th class="p-3">Valor Estimado</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              ${assets.map(a => `
-                <tr>
-                  <td class="p-3 font-mono font-bold text-brand-600">${escapeHTML(a.code)}</td>
-                  <td class="p-3 font-medium text-slate-900">${escapeHTML(a.name)}</td>
-                  <td class="p-3 text-slate-600">${escapeHTML(a.location)}</td>
-                  <td class="p-3 font-bold text-slate-900">R$ ${a.value.toFixed(2)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      `;
-    }
-
-    function renderDocumentsModule(container, actionsContainer) {
-      const docs = JSON.parse(localStorage.getItem('GB_DOCUMENTS') || '[]');
-      container.innerHTML = `
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <table class="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr class="bg-slate-100 text-slate-700 uppercase font-semibold border-b border-slate-200">
-                <th class="p-3">Título do Documento</th>
-                <th class="p-3">Categoria</th>
-                <th class="p-3">Data</th>
-                <th class="p-3">Arquivo</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              ${docs.map(d => `
-                <tr>
-                  <td class="p-3 font-bold text-slate-900">${escapeHTML(d.title)}</td>
-                  <td class="p-3 text-slate-600">${escapeHTML(d.category)}</td>
-                  <td class="p-3 text-slate-500">${escapeHTML(d.date)}</td>
-                  <td class="p-3 text-brand-600 font-semibold"><i class="fa-solid fa-paperclip mr-1"></i> ${escapeHTML(d.fileName)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      `;
-    }
-
-    function renderUsersModule(container, actionsContainer) {
-      const users = JSON.parse(localStorage.getItem('GB_USERS') || '[]');
-      container.innerHTML = `
-        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-          <table class="w-full text-left border-collapse text-xs">
-            <thead>
-              <tr class="bg-slate-100 text-slate-700 uppercase font-semibold border-b border-slate-200">
-                <th class="p-3">Avatar</th>
-                <th class="p-3">Nome</th>
-                <th class="p-3">Usuário</th>
-                <th class="p-3">Perfil RBAC</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-slate-100">
-              ${users.map(u => `
-                <tr>
-                  <td class="p-3">
-                    <img src="${u.avatar || 'https://placehold.co/100x100/0284c7/white?text=U'}" class="w-8 h-8 rounded-full object-cover border border-slate-300">
-                  </td>
-                  <td class="p-3 font-bold text-slate-900">${escapeHTML(u.name)}</td>
-                  <td class="p-3 font-mono text-slate-600">${escapeHTML(u.username)}</td>
-                  <td class="p-3">
-                    <span class="px-2 py-0.5 text-[10px] font-bold rounded ${u.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-800'}">
-                      ${escapeHTML(u.role)}
-                    </span>
-                  </td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-      `;
-    }
-
-    /* ==========================================================================
-       6. SISTEMA DE AUDITORIA MODAL
-       ========================================================================== */
-    function openAuditModal(moduleFilter = 'Geral') {
-      const logs = JSON.parse(localStorage.getItem('GB_AUDIT_LOGS') || '[]');
-      const filteredLogs = moduleFilter === 'Geral' ? logs : logs.filter(l => l.module.toLowerCase() === moduleFilter.toLowerCase());
-
-      document.getElementById('audit-modal-title').innerText = `Logs de Auditoria - ${moduleFilter}`;
-      
-      const tbody = document.getElementById('audit-table-body');
-      tbody.innerHTML = filteredLogs.length > 0 ? filteredLogs.map(log => `
-        <tr class="hover:bg-slate-50">
-          <td class="p-2.5 text-slate-500 font-mono">${new Date(log.timestamp).toLocaleString('pt-BR')}</td>
-          <td class="p-2.5 font-bold text-slate-800">${escapeHTML(log.user)}</td>
-          <td class="p-2.5 text-brand-600 font-semibold">${escapeHTML(log.module)}</td>
-          <td class="p-2.5 font-semibold text-slate-700">${escapeHTML(log.action)}</td>
-          <td class="p-2.5 text-slate-600">${escapeHTML(log.details)}</td>
-        </tr>
-      `).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-400">Nenhum evento registrado.</td></tr>';
-
-      document.getElementById('audit-modal').classList.remove('hidden');
-    }
-
-    function closeAuditModal() {
-      document.getElementById('audit-modal').classList.add('hidden');
-    }
-
-    function closeGenericModal() {
-      document.getElementById('generic-modal').classList.add('hidden');
-    }
-
-    /* Inicialização Geral do Window */
-    window.onload = function() {
-      console.log("Guardiões do Bravo - Sistema Carregado com Sucesso.");
-    };
-  </script>
+    </script>
 </body>
 </html>
