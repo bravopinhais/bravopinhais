@@ -7,7 +7,6 @@
 
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
       :root {
@@ -35,50 +34,139 @@
       }
 
       .app-shell { display: flex; min-height: 100vh; }
-      .sidebar { width: 250px; background: var(--sidebar); color: #e2e8f0; padding: 18px 14px; display: flex; flex-direction: column; }
-      .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; padding: 8px 10px; }
-      .brand-mark { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: var(--primary); color: white; font-size: 18px; }
+      .sidebar {
+        width: 250px;
+        background: var(--sidebar);
+        color: #e2e8f0;
+        padding: 18px 14px;
+        display: flex;
+        flex-direction: column;
+      }
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 28px;
+        padding: 8px 10px;
+      }
+      .brand-mark {
+        width: 42px; height: 42px; border-radius: 12px;
+        display: grid; place-items: center;
+        background: var(--primary); color: white; font-size: 18px;
+      }
       .brand h1 { margin: 0; color: white; font-size: 1.1rem; }
       .brand small { color: #5eead4; }
       .nav-menu { display: flex; flex-direction: column; gap: 8px; }
-      .nav-item { width: 100%; border: none; background: transparent; color: #cbd5e1; padding: 12px 14px; text-align: left; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 700; }
+      .nav-item {
+        width: 100%; border: none; background: transparent;
+        color: #cbd5e1; padding: 12px 14px; text-align: left;
+        border-radius: 10px; cursor: pointer; display: flex; gap: 10px; align-items: center;
+      }
       .nav-item.active { background: var(--primary); color: white; }
-      .sidebar-user { margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.12); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
-      .logout-btn { border: 1px solid rgba(248,113,113,0.4); background: rgba(239,68,68,0.1); color: #fecaca; border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+      .sidebar-user {
+        margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.12);
+        display: flex; justify-content: space-between; align-items: center; gap: 8px;
+      }
+      .logout-btn {
+        border: 1px solid rgba(248,113,113,0.4);
+        background: rgba(239,68,68,0.1); color: #fecaca;
+        border-radius: 8px; padding: 8px 10px; cursor: pointer;
+      }
       .main-panel { flex: 1; padding: 26px; }
       .section-header { margin-bottom: 22px; }
       .section-header h2 { margin: 0; font-size: 1.8rem; }
       .section-header p { margin: 6px 0 0; color: var(--muted); }
-      .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
-      .stat-card { background: white; border-radius: 16px; padding: 22px; box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06); border-top: 4px solid var(--primary); }
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 18px;
+      }
+      .stat-card {
+        background: white; border-radius: 16px; padding: 22px;
+        box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+        border-top: 4px solid var(--primary);
+      }
       .stat-card.success { border-top-color: var(--success); }
       .stat-card.danger { border-top-color: var(--danger); }
       .stat-card.warning { border-top-color: var(--warning); }
       .stat-card.info { border-top-color: var(--info); }
-      .stat-card span { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; }
+      .stat-card span {
+        display: block; font-size: 0.72rem; text-transform: uppercase;
+        letter-spacing: 0.08em; color: var(--muted); font-weight: 700;
+      }
       .stat-card strong { display: block; margin-top: 10px; font-size: 1.7rem; }
-      .toolbar { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 18px; }
-      .toolbar input, .toolbar select { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; color: var(--text); background: white; }
-      .table-wrap { background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06); }
+
+      .toolbar {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 12px;
+        margin-bottom: 18px;
+      }
+      .toolbar input, .toolbar select {
+        width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1;
+        border-radius: 10px; color: var(--text); background: white;
+      }
+
+      .table-wrap {
+        background: white; border-radius: 14px; overflow: hidden;
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
+      }
       .table-wrap table { width: 100%; border-collapse: collapse; }
-      .table-wrap th, .table-wrap td { padding: 12px 14px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+      .table-wrap th, .table-wrap td {
+        padding: 12px 14px; border-bottom: 1px solid #e2e8f0; text-align: left;
+      }
       .table-wrap thead { background: #f8fafc; }
-      .badge { display: inline-block; padding: 5px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
+
+      .badge {
+        display: inline-block; padding: 5px 8px; border-radius: 999px;
+        font-size: 0.7rem; font-weight: 700;
+      }
       .badge-success { background: #dcfce7; color: #166534; }
       .badge-danger { background: #fee2e2; color: #991b1b; }
       .badge-warning { background: #fef3c7; color: #92400e; }
       .empty-state { color: var(--muted); text-align: center; padding: 24px; }
-      .login-screen { min-height: 100vh; display: grid; place-items: center; background: linear-gradient(135deg, #0f172a, #1e293b); }
-      .login-box { width: min(420px, 92vw); background: rgba(255,255,255,0.96); border-radius: 18px; padding: 30px 24px; box-shadow: 0 16px 40px rgba(15, 23, 42, 0.25); }
-      .login-logo { width: 68px; height: 68px; margin: 0 auto 12px; border-radius: 16px; display: grid; place-items: center; background: linear-gradient(135deg, #0d9488, #14b8a6); color: white; font-size: 1.8rem; }
+
+      .login-screen {
+        min-height: 100vh; display: grid; place-items: center;
+        background: linear-gradient(135deg, #0f172a, #1e293b);
+      }
+      .login-box {
+        width: min(420px, 92vw); background: rgba(255,255,255,0.96);
+        border-radius: 18px; padding: 30px 24px;
+        box-shadow: 0 16px 40px rgba(15,23,42,0.25);
+      }
+      .login-logo {
+        width: 68px; height: 68px; margin: 0 auto 12px;
+        border-radius: 16px; display: grid; place-items: center;
+        background: linear-gradient(135deg, #0d9488, #14b8a6);
+        color: white; font-size: 2rem;
+      }
       .login-box h2 { margin: 0; text-align: center; font-size: 1.8rem; }
-      .login-box p { margin: 8px 0 20px; color: #64748b; text-align: center; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.72rem; font-weight: 700; }
+      .login-box p {
+        margin: 8px 0 20px; color: #64748b; text-align: center;
+        text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.72rem; font-weight: 700;
+      }
       .login-form { display: flex; flex-direction: column; gap: 12px; }
-      .login-form label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #475569; }
-      .login-form input { padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 1rem; }
-      .login-form button { margin-top: 8px; padding: 12px 18px; border: none; border-radius: 10px; background: var(--primary); color: white; font-weight: 700; cursor: pointer; }
+      .login-form label {
+        font-size: 0.72rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.08em; color: #475569;
+      }
+      .login-form input {
+        padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 1rem;
+      }
+      .login-form button {
+        margin-top: 8px; padding: 12px 18px; border: none; border-radius: 10px;
+        background: var(--primary); color: white; font-weight: 700; cursor: pointer;
+      }
+
+      @media (max-width: 768px) {
+        .app-shell { flex-direction: column; }
+        .sidebar { width: 100%; }
+        .main-panel { padding: 16px; }
+      }
     </style>
   </head>
+
   <body>
     <div id="app"></div>
 
@@ -91,26 +179,51 @@
         ],
         financeiro: [
           { id: 'fin_1', tipo: 'Receber', historico: 'Taxa Condominial Ordinária - Ap 101', valor: 2500.00, vencimento: '2026-10-15', status: 'Aberto' },
-          { id: 'fin_2', tipo: 'Pagar', historico: 'Manutenção Elevador Otis', valor: 850.00, vencimento: '2026-10-20', status: 'Aberto' }
+          { id: 'fin_2', tipo: 'Pagar', historico: 'Manutenção Elevador Otis', valor: 850.00, vencimento: '2026-10-20', status: 'Aberto' },
+          { id: 'fin_3', tipo: 'Receber', historico: 'Aluguel de espaço comercial', valor: 1800.00, vencimento: '2026-10-18', status: 'Pago' },
+          { id: 'fin_4', tipo: 'Pagar', historico: 'Energia elétrica', valor: 640.00, vencimento: '2026-10-25', status: 'Aberto' }
         ],
         estoque: [
           { id: 'est_1', item: 'Lâmpada LED 12W', categoria: 'Elétrica', qtd: 4, minimo: 10, localizacao: 'Almoxarifado' },
-          { id: 'est_2', item: 'Cloro Granulado 10kg', categoria: 'Piscina', qtd: 15, minimo: 5, localizacao: 'DML' }
+          { id: 'est_2', item: 'Cloro Granulado 10kg', categoria: 'Piscina', qtd: 15, minimo: 5, localizacao: 'DML' },
+          { id: 'est_3', item: 'Filtro de água', categoria: 'Piscina', qtd: 2, minimo: 4, localizacao: 'DML' },
+          { id: 'est_4', item: 'Parafuso 8x40', categoria: 'Ferragens', qtd: 26, minimo: 12, localizacao: 'Depósito 2' }
         ],
         documentos: [
-          { id: 'doc_1', titulo: 'Ata da Assembleia 2026', pasta: 'Atas de Assembleia', data: '2026-03-10', observacao: 'Eleição do síndico' }
+          { id: 'doc_1', titulo: 'Ata da Assembleia 2026', pasta: 'Atas de Assembleia', data: '2026-03-10', observacao: 'Eleição do síndico' },
+          { id: 'doc_2', titulo: 'Contrato de limpeza', pasta: 'Contratos', data: '2026-04-12', observacao: 'Vigência anual' },
+          { id: 'doc_3', titulo: 'Orçamento de pintura', pasta: 'Manutenção', data: '2026-05-02', observacao: 'Bloco B' }
         ],
         moradores: [
-          { id: 'mor_1', bloco: 'A', apartamento: '101', nome: 'Carlos Eduardo', tipo: 'Proprietário', email: 'carlos@email.com' }
+          { id: 'mor_1', bloco: 'A', apartamento: '101', nome: 'Carlos Eduardo', tipo: 'Proprietário', email: 'carlos@email.com' },
+          { id: 'mor_2', bloco: 'A', apartamento: '102', nome: 'Fernanda Lima', tipo: 'Inquilino', email: 'fernanda@email.com' },
+          { id: 'mor_3', bloco: 'B', apartamento: '201', nome: 'José da Silva', tipo: 'Proprietário', email: 'jose@email.com' }
         ],
         categorias: [
           { id: 'cat_1', nome: 'Atas de Assembleia', modulo: 'Documentos' },
-          { id: 'cat_2', nome: 'Elétrica', modulo: 'Estoque' }
+          { id: 'cat_2', nome: 'Elétrica', modulo: 'Estoque' },
+          { id: 'cat_3', nome: 'Piscina', modulo: 'Estoque' }
         ]
       };
 
+      const state = {
+        db: loadDb(),
+        user: JSON.parse(sessionStorage.getItem('guardioes_user') || 'null'),
+        activeTab: 'dashboard',
+        filters: {
+          financeiro: { busca: '', status: 'Todos', tipo: 'Todos' },
+          estoque: { busca: '', categoria: 'Todas' },
+          documentos: { busca: '', pasta: 'Todas' },
+          moradores: { busca: '', bloco: 'Todos', tipo: 'Todos' },
+          usuarios: { busca: '', perfil: 'Todos', status: 'Todos' }
+        }
+      };
+
       function formatCurrency(value) {
-        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value || 0));
+        return new Intl.NumberFormat('pt-BR', {
+          style: 'currency',
+          currency: 'BRL'
+        }).format(Number(value || 0));
       }
 
       function loadDb() {
@@ -122,22 +235,11 @@
         }
       }
 
-      function saveDb(data) {
-        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
+      function saveDb() {
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(state.db));
+        } catch (e) {}
       }
-
-      const state = {
-        db: loadDb(),
-        user: JSON.parse(sessionStorage.getItem('guardioes_user') || 'null'),
-        activeTab: 'dashboard',
-        filters: {
-          financeiro: { busca: '', status: 'Todos', tipo: 'Todos' },
-          estoque: { busca: '', categoria: 'Todas', status: 'Todos' },
-          documentos: { busca: '', pasta: 'Todas', dataIni: '', dataFim: '' },
-          moradores: { busca: '', bloco: 'Todos', tipo: 'Todos' },
-          usuarios: { busca: '', perfil: 'Todos', status: 'Todos' }
-        }
-      };
 
       function renderLogin() {
         return `
@@ -158,27 +260,485 @@
         `;
       }
 
+      function getFilteredFinanceiro() {
+        const f = state.filters.financeiro;
+        return state.db.financeiro.filter(item => {
+          const busca = f.busca.toLowerCase();
+          const buscaMatch = !busca || item.historico.toLowerCase().includes(busca) || item.tipo.toLowerCase().includes(busca);
+          const tipoMatch = f.tipo === 'Todos' || item.tipo === f.tipo;
+          const statusMatch = f.status === 'Todos' || item.status === f.status;
+          return buscaMatch && tipoMatch && statusMatch;
+        });
+      }
+
+      function getFilteredEstoque() {
+        const f = state.filters.estoque;
+        return state.db.estoque.filter(item => {
+          const busca = f.busca.toLowerCase();
+          const buscaMatch = !busca || item.item.toLowerCase().includes(busca) || item.categoria.toLowerCase().includes(busca);
+          const categoriaMatch = f.categoria === 'Todas' || item.categoria === f.categoria;
+          return buscaMatch && categoriaMatch;
+        });
+      }
+
+      function getFilteredDocumentos() {
+        const f = state.filters.documentos;
+        return state.db.documentos.filter(item => {
+          const busca = f.busca.toLowerCase();
+          const buscaMatch = !busca || item.titulo.toLowerCase().includes(busca) || item.observacao.toLowerCase().includes(busca);
+          const pastaMatch = f.pasta === 'Todas' || item.pasta === f.pasta;
+          return buscaMatch && pastaMatch;
+        });
+      }
+
+      function getFilteredMoradores() {
+        const f = state.filters.moradores;
+        return state.db.moradores.filter(item => {
+          const busca = f.busca.toLowerCase();
+          const buscaMatch = !busca || item.nome.toLowerCase().includes(busca) || item.email.toLowerCase().includes(busca);
+          const blocoMatch = f.bloco === 'Todos' || item.bloco === f.bloco;
+          const tipoMatch = f.tipo === 'Todos' || item.tipo === f.tipo;
+          return buscaMatch && blocoMatch && tipoMatch;
+        });
+      }
+
+      function getFilteredUsuarios() {
+        const f = state.filters.usuarios;
+        return state.db.usuarios.filter(item => {
+          const busca = f.busca.toLowerCase();
+          const buscaMatch = !busca || item.nome.toLowerCase().includes(busca) || item.usuario.toLowerCase().includes(busca) || item.email.toLowerCase().includes(busca);
+          const perfilMatch = f.perfil === 'Todos' || item.perfil === f.perfil;
+          const statusMatch = f.status === 'Todos' || item.status === f.status;
+          return buscaMatch && perfilMatch && statusMatch;
+        });
+      }
+
       function renderDashboard() {
+        const totalReceber = state.db.financeiro
+          .filter(item => item.tipo === 'Receber')
+          .reduce((sum, item) => sum + Number(item.valor || 0), 0);
+
+        const totalPagar = state.db.financeiro
+          .filter(item => item.tipo === 'Pagar')
+          .reduce((sum, item) => sum + Number(item.valor || 0), 0);
+
+        const estoqueBaixo = state.db.estoque.filter(item => Number(item.qtd) <= Number(item.minimo)).length;
+
         return `
           <section class="section-header">
             <h2>Dashboard</h2>
             <p>Resumo geral da administração</p>
           </section>
+
           <div class="stats-grid">
-            <div class="stat-card success"><span>Sistema Online</span><strong>Operacional</strong></div>
+            <div class="stat-card success">
+              <span>Receitas</span>
+              <strong>${formatCurrency(totalReceber)}</strong>
+            </div>
+            <div class="stat-card danger">
+              <span>Despesas</span>
+              <strong>${formatCurrency(totalPagar)}</strong>
+            </div>
+            <div class="stat-card warning">
+              <span>Estoque baixo</span>
+              <strong>${estoqueBaixo}</strong>
+            </div>
+            <div class="stat-card info">
+              <span>Moradores</span>
+              <strong>${state.db.moradores.length}</strong>
+            </div>
           </div>
         `;
       }
 
+      function renderFinanceiro() {
+        const itens = getFilteredFinanceiro();
+        const tipos = Array.from(new Set(state.db.financeiro.map(item => item.tipo)));
+        const statusList = ['Todos', 'Aberto', 'Pago'];
+
+        return `
+          <section class="section-header">
+            <h2>Financeiro</h2>
+            <p>Controle de receitas e despesas</p>
+          </section>
+
+          <div class="toolbar">
+            <input id="finBusca" placeholder="Buscar histórico" value="${state.filters.financeiro.busca}" />
+            <select id="finTipo">
+              <option value="Todos" ${state.filters.financeiro.tipo === 'Todos' ? 'selected' : ''}>Todos</option>
+              ${tipos.map(tipo => `<option value="${tipo}" ${state.filters.financeiro.tipo === tipo ? 'selected' : ''}>${tipo}</option>`).join('')}
+            </select>
+            <select id="finStatus">
+              ${statusList.map(status => `<option value="${status}" ${state.filters.financeiro.status === status ? 'selected' : ''}>${status}</option>`).join('')}
+            </select>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Tipo</th>
+                  <th>Histórico</th>
+                  <th>Valor</th>
+                  <th>Vencimento</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itens.length ? itens.map(item => `
+                  <tr>
+                    <td>${item.tipo}</td>
+                    <td>${item.historico}</td>
+                    <td>${formatCurrency(item.valor)}</td>
+                    <td>${item.vencimento}</td>
+                    <td>
+                      <span class="badge ${item.status === 'Pago' ? 'badge-success' : 'badge-warning'}">${item.status}</span>
+                    </td>
+                  </tr>
+                `).join('') : `<tr><td colspan="5" class="empty-state">Nenhum registro encontrado.</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      function renderEstoque() {
+        const itens = getFilteredEstoque();
+        const categorias = Array.from(new Set(state.db.estoque.map(item => item.categoria)));
+
+        return `
+          <section class="section-header">
+            <h2>Estoque</h2>
+            <p>Controle de materiais e insumos</p>
+          </section>
+
+          <div class="toolbar">
+            <input id="estBusca" placeholder="Buscar item ou categoria" value="${state.filters.estoque.busca}" />
+            <select id="estCategoria">
+              <option value="Todas" ${state.filters.estoque.categoria === 'Todas' ? 'selected' : ''}>Todas</option>
+              ${categorias.map(cat => `<option value="${cat}" ${state.filters.estoque.categoria === cat ? 'selected' : ''}>${cat}</option>`).join('')}
+            </select>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Item</th>
+                  <th>Categoria</th>
+                  <th>Qtd</th>
+                  <th>Mínimo</th>
+                  <th>Localização</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itens.length ? itens.map(item => `
+                  <tr>
+                    <td>${item.item}</td>
+                    <td>${item.categoria}</td>
+                    <td>${item.qtd}</td>
+                    <td>${item.minimo}</td>
+                    <td>${item.localizacao}</td>
+                  </tr>
+                `).join('') : `<tr><td colspan="5" class="empty-state">Nenhum item encontrado.</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      function renderDocumentos() {
+        const itens = getFilteredDocumentos();
+        const pastas = Array.from(new Set(state.db.documentos.map(item => item.pasta)));
+
+        return `
+          <section class="section-header">
+            <h2>Documentos</h2>
+            <p>Pasta e arquivos do condomínio</p>
+          </section>
+
+          <div class="toolbar">
+            <input id="docBusca" placeholder="Buscar título ou observação" value="${state.filters.documentos.busca}" />
+            <select id="docPasta">
+              <option value="Todas" ${state.filters.documentos.pasta === 'Todas' ? 'selected' : ''}>Todas</option>
+              ${pastas.map(pasta => `<option value="${pasta}" ${state.filters.documentos.pasta === pasta ? 'selected' : ''}>${pasta}</option>`).join('')}
+            </select>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Título</th>
+                  <th>Pasta</th>
+                  <th>Data</th>
+                  <th>Observação</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itens.length ? itens.map(item => `
+                  <tr>
+                    <td>${item.titulo}</td>
+                    <td>${item.pasta}</td>
+                    <td>${item.data}</td>
+                    <td>${item.observacao}</td>
+                  </tr>
+                `).join('') : `<tr><td colspan="4" class="empty-state">Nenhum documento encontrado.</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      function renderMoradores() {
+        const itens = getFilteredMoradores();
+        const blocos = Array.from(new Set(state.db.moradores.map(item => item.bloco)));
+        const tipos = Array.from(new Set(state.db.moradores.map(item => item.tipo)));
+
+        return `
+          <section class="section-header">
+            <h2>Moradores</h2>
+            <p>Cadastro e perfil dos moradores</p>
+          </section>
+
+          <div class="toolbar">
+            <input id="morBusca" placeholder="Buscar nome ou e-mail" value="${state.filters.moradores.busca}" />
+            <select id="morBloco">
+              <option value="Todos" ${state.filters.moradores.bloco === 'Todos' ? 'selected' : ''}>Todos</option>
+              ${blocos.map(bloco => `<option value="${bloco}" ${state.filters.moradores.bloco === bloco ? 'selected' : ''}>${bloco}</option>`).join('')}
+            </select>
+            <select id="morTipo">
+              <option value="Todos" ${state.filters.moradores.tipo === 'Todos' ? 'selected' : ''}>Todos</option>
+              ${tipos.map(tipo => `<option value="${tipo}" ${state.filters.moradores.tipo === tipo ? 'selected' : ''}>${tipo}</option>`).join('')}
+            </select>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Bloco</th>
+                  <th>Apartamento</th>
+                  <th>Nome</th>
+                  <th>Tipo</th>
+                  <th>Email</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itens.length ? itens.map(item => `
+                  <tr>
+                    <td>${item.bloco}</td>
+                    <td>${item.apartamento}</td>
+                    <td>${item.nome}</td>
+                    <td>${item.tipo}</td>
+                    <td>${item.email}</td>
+                  </tr>
+                `).join('') : `<tr><td colspan="5" class="empty-state">Nenhum morador encontrado.</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      function renderUsuarios() {
+        const itens = getFilteredUsuarios();
+        const perfis = Array.from(new Set(state.db.usuarios.map(item => item.perfil)));
+        const statusList = ['Todos', 'Ativo', 'Inativo'];
+
+        return `
+          <section class="section-header">
+            <h2>Usuários</h2>
+            <p>Gestão de acessos e perfis</p>
+          </section>
+
+          <div class="toolbar">
+            <input id="usrBusca" placeholder="Buscar usuário ou nome" value="${state.filters.usuarios.busca}" />
+            <select id="usrPerfil">
+              <option value="Todos" ${state.filters.usuarios.perfil === 'Todos' ? 'selected' : ''}>Todos</option>
+              ${perfis.map(perfil => `<option value="${perfil}" ${state.filters.usuarios.perfil === perfil ? 'selected' : ''}>${perfil}</option>`).join('')}
+            </select>
+            <select id="usrStatus">
+              ${statusList.map(status => `<option value="${status}" ${state.filters.usuarios.status === status ? 'selected' : ''}>${status}</option>`).join('')}
+            </select>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Usuário</th>
+                  <th>Nome</th>
+                  <th>Email</th>
+                  <th>Perfil</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itens.length ? itens.map(item => `
+                  <tr>
+                    <td>${item.usuario}</td>
+                    <td>${item.nome}</td>
+                    <td>${item.email}</td>
+                    <td>${item.perfil}</td>
+                    <td>
+                      <span class="badge ${item.status === 'Ativo' ? 'badge-success' : 'badge-danger'}">${item.status}</span>
+                    </td>
+                  </tr>
+                `).join('') : `<tr><td colspan="5" class="empty-state">Nenhum usuário encontrado.</td></tr>`}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      function renderContent() {
+        switch (state.activeTab) {
+          case 'dashboard':
+            return renderDashboard();
+          case 'financeiro':
+            return renderFinanceiro();
+          case 'estoque':
+            return renderEstoque();
+          case 'documentos':
+            return renderDocumentos();
+          case 'moradores':
+            return renderMoradores();
+          case 'usuarios':
+            return renderUsuarios();
+          default:
+            return renderDashboard();
+        }
+      }
+
+      function attachTabEvents() {
+        document.querySelectorAll('.nav-item').forEach(btn => {
+          btn.addEventListener('click', () => {
+            state.activeTab = btn.dataset.tab;
+            renderApp();
+          });
+        });
+
+        const logoutBtn = document.getElementById('logoutBtn');
+        if (logoutBtn) {
+          logoutBtn.addEventListener('click', () => {
+            state.user = null;
+            sessionStorage.removeItem('guardioes_user');
+            renderApp();
+          });
+        }
+
+        if (state.activeTab === 'financeiro') {
+          const finBusca = document.getElementById('finBusca');
+          const finTipo = document.getElementById('finTipo');
+          const finStatus = document.getElementById('finStatus');
+
+          finBusca?.addEventListener('input', (e) => {
+            state.filters.financeiro.busca = e.target.value;
+            renderApp();
+          });
+
+          finTipo?.addEventListener('change', (e) => {
+            state.filters.financeiro.tipo = e.target.value;
+            renderApp();
+          });
+
+          finStatus?.addEventListener('change', (e) => {
+            state.filters.financeiro.status = e.target.value;
+            renderApp();
+          });
+        }
+
+        if (state.activeTab === 'estoque') {
+          const estBusca = document.getElementById('estBusca');
+          const estCategoria = document.getElementById('estCategoria');
+
+          estBusca?.addEventListener('input', (e) => {
+            state.filters.estoque.busca = e.target.value;
+            renderApp();
+          });
+
+          estCategoria?.addEventListener('change', (e) => {
+            state.filters.estoque.categoria = e.target.value;
+            renderApp();
+          });
+        }
+
+        if (state.activeTab === 'documentos') {
+          const docBusca = document.getElementById('docBusca');
+          const docPasta = document.getElementById('docPasta');
+
+          docBusca?.addEventListener('input', (e) => {
+            state.filters.documentos.busca = e.target.value;
+            renderApp();
+          });
+
+          docPasta?.addEventListener('change', (e) => {
+            state.filters.documentos.pasta = e.target.value;
+            renderApp();
+          });
+        }
+
+        if (state.activeTab === 'moradores') {
+          const morBusca = document.getElementById('morBusca');
+          const morBloco = document.getElementById('morBloco');
+          const morTipo = document.getElementById('morTipo');
+
+          morBusca?.addEventListener('input', (e) => {
+            state.filters.moradores.busca = e.target.value;
+            renderApp();
+          });
+
+          morBloco?.addEventListener('change', (e) => {
+            state.filters.moradores.bloco = e.target.value;
+            renderApp();
+          });
+
+          morTipo?.addEventListener('change', (e) => {
+            state.filters.moradores.tipo = e.target.value;
+            renderApp();
+          });
+        }
+
+        if (state.activeTab === 'usuarios') {
+          const usrBusca = document.getElementById('usrBusca');
+          const usrPerfil = document.getElementById('usrPerfil');
+          const usrStatus = document.getElementById('usrStatus');
+
+          usrBusca?.addEventListener('input', (e) => {
+            state.filters.usuarios.busca = e.target.value;
+            renderApp();
+          });
+
+          usrPerfil?.addEventListener('change', (e) => {
+            state.filters.usuarios.perfil = e.target.value;
+            renderApp();
+          });
+
+          usrStatus?.addEventListener('change', (e) => {
+            state.filters.usuarios.status = e.target.value;
+            renderApp();
+          });
+        }
+      }
+
       function renderApp() {
         const root = document.getElementById('app');
+
         if (!state.user) {
           root.innerHTML = renderLogin();
-          document.getElementById('loginForm').addEventListener('submit', (e) => {
+
+          const loginForm = document.getElementById('loginForm');
+          loginForm?.addEventListener('submit', (e) => {
             e.preventDefault();
-            const u = document.getElementById('login_user').value;
-            const p = document.getElementById('login_pass').value;
-            const found = state.db.usuarios.find(x => (x.usuario === u || x.email === u) && x.senhaHash === p);
+
+            const loginUser = document.getElementById('login_user').value.trim();
+            const loginPass = document.getElementById('login_pass').value;
+
+            const found = state.db.usuarios.find(user =>
+              (user.usuario === loginUser || user.email === loginUser) &&
+              user.senhaHash === loginPass
+            );
+
             if (found) {
               state.user = found;
               sessionStorage.setItem('guardioes_user', JSON.stringify(found));
@@ -187,6 +747,7 @@
               alert('Credenciais inválidas!');
             }
           });
+
           return;
         }
 
@@ -195,25 +756,46 @@
             <aside class="sidebar">
               <div class="brand">
                 <div class="brand-mark"><i class="fa-solid fa-shield-halved"></i></div>
-                <div><h1>Guardiões</h1><small>Gestão</small></div>
+                <div>
+                  <h1>Guardiões</h1>
+                  <small>Gestão</small>
+                </div>
               </div>
+
               <nav class="nav-menu">
-                <button class="nav-item active" data-tab="dashboard"><i class="fa-solid fa-gauge-high"></i> Dashboard</button>
+                <button class="nav-item ${state.activeTab === 'dashboard' ? 'active' : ''}" data-tab="dashboard">
+                  <i class="fa-solid fa-gauge-high"></i> Dashboard
+                </button>
+                <button class="nav-item ${state.activeTab === 'financeiro' ? 'active' : ''}" data-tab="financeiro">
+                  <i class="fa-solid fa-wallet"></i> Financeiro
+                </button>
+                <button class="nav-item ${state.activeTab === 'estoque' ? 'active' : ''}" data-tab="estoque">
+                  <i class="fa-solid fa-boxes-stacked"></i> Estoque
+                </button>
+                <button class="nav-item ${state.activeTab === 'documentos' ? 'active' : ''}" data-tab="documentos">
+                  <i class="fa-solid fa-folder-open"></i> Documentos
+                </button>
+                <button class="nav-item ${state.activeTab === 'moradores' ? 'active' : ''}" data-tab="moradores">
+                  <i class="fa-solid fa-users"></i> Moradores
+                </button>
+                <button class="nav-item ${state.activeTab === 'usuarios' ? 'active' : ''}" data-tab="usuarios">
+                  <i class="fa-solid fa-user-shield"></i> Usuários
+                </button>
               </nav>
+
               <div class="sidebar-user">
                 <span>${state.user.nome}</span>
                 <button id="logoutBtn" class="logout-btn">Sair</button>
               </div>
             </aside>
-            <main class="main-panel"><div id="content">${renderDashboard()}</div></main>
+
+            <main class="main-panel">
+              <div id="content">${renderContent()}</div>
+            </main>
           </div>
         `;
 
-        document.getElementById('logoutBtn').addEventListener('click', () => {
-          state.user = null;
-          sessionStorage.removeItem('guardioes_user');
-          renderApp();
-        });
+        attachTabEvents();
       }
 
       renderApp();
