@@ -15,6 +15,32 @@
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         
+        /* Tema Tecnologia / Cyberpunk para Tela de Login */
+        .tech-mode {
+            background-color: #030712 !important;
+            color: #22d3ee !important;
+            font-family: monospace !important;
+        }
+        .tech-card {
+            background: rgba(15, 23, 42, 0.9) !important;
+            border: 1px solid #06b6d4 !important;
+            box-shadow: 0 0 25px rgba(6, 182, 212, 0.3) !important;
+        }
+        .tech-input {
+            background-color: #020617 !important;
+            border-color: #0891b2 !important;
+            color: #22d3ee !important;
+        }
+
+        /* Efeito de Destaque no Tour */
+        .tour-highlight {
+            position: relative;
+            z-index: 100 !important;
+            box-shadow: 0 0 0 9999px rgba(15, 23, 42, 0.75), 0 0 15px #0d9488 !important;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
         @media print {
             aside, header, .no-print, button { display: none !important; }
             body { background: white !important; color: black !important; }
@@ -29,6 +55,46 @@
 
     <script>
         window.imagemAnexadaBase64 = '';
+        let isTechMode = false;
+
+        // Estado do Tour Guiado
+        let tourState = {
+            ativo: false,
+            passoAtual: 0
+        };
+
+        const TOUR_STEPS = [
+            {
+                modulo: 'dashboard',
+                targetId: 'sidebar-menu',
+                titulo: '1. Bem-vindo ao Guardiões do Bravo!',
+                texto: 'Este é o sistema completo de gestão condominial. Vamos fazer um tour rápido de 1 minuto para conhecer as principais ferramentas.'
+            },
+            {
+                modulo: 'dashboard',
+                targetId: 'app',
+                titulo: '2. Dashboard & Métricas',
+                texto: 'Aqui você visualiza indicadores financeiros em tempo real, saldo consolidado e gráficos interativos de receitas vs despesas e censo de moradores.'
+            },
+            {
+                modulo: 'financeiro',
+                targetId: 'app',
+                titulo: '3. Contas Pagar / Receber',
+                texto: 'No módulo financeiro você pode lançar títulos simples ou recorrentes (parcelamentos), aplicar baixas/compensações e filtrar por competência (MM/AAAA).'
+            },
+            {
+                modulo: 'moradores',
+                targetId: 'app',
+                titulo: '4. Moradores & Inquilinos',
+                texto: 'Cadastre moradores especificando se são Proprietários ou Inquilinos, com acompanhamento dinâmico do pagamento da Taxa de Mudança.'
+            },
+            {
+                modulo: 'relatorios',
+                targetId: 'app',
+                titulo: '5. Relatórios & DRE Condominial',
+                texto: 'Gere demonstrativos contábeis completos (DRE) com personalização de fórmulas matemáticas e exportação limpa para PDF/Impressão.'
+            }
+        ];
 
         // ==========================================
         // 1. SEGURANÇA E UTILITÁRIOS
@@ -122,7 +188,13 @@
         function carregarDados() {
             try {
                 const data = localStorage.getItem('guardioes_bravo_db');
-                return data ? JSON.parse(data) : DEFAULT_DATA;
+                if (!data) return DEFAULT_DATA;
+                const parsed = JSON.parse(data);
+                // Garantir fallback da DRE caso inexistente no localStorage antigo
+                if (!parsed.dre_config || parsed.dre_config.length === 0) {
+                    parsed.dre_config = DEFAULT_DATA.dre_config;
+                }
+                return parsed;
             } catch (e) {
                 return DEFAULT_DATA;
             }
@@ -150,18 +222,8 @@
             activeTab: 'dashboard'
         };
 
-        let finFiltros = {
-            competencia: '',
-            status: 'Todos',
-            tipo: 'Todos',
-            busca: ''
-        };
-
-        let relatorioFiltros = {
-            tipo: 'geral',
-            dataInicio: '2026-01-01',
-            dataFim: '2026-12-31'
-        };
+        let finFiltros = { competencia: '', status: 'Todos', tipo: 'Todos', busca: '' };
+        let relatorioFiltros = { tipo: 'geral', dataInicio: '2026-01-01', dataFim: '2026-12-31' };
 
         const MODULE_NAMES = {
             dashboard: 'Dashboard',
@@ -254,6 +316,11 @@
                 } else {
                     iniciarMonitorInatividade();
                     renderApp();
+
+                    // Disparar tour guiado se for a primeira vez no dispositivo
+                    if (!localStorage.getItem('guardioes_tour_concluido')) {
+                        setTimeout(iniciarTourGuiado, 500);
+                    }
                 }
             } else {
                 sessao.tentativasFalhas++;
@@ -295,7 +362,7 @@
         }
 
         // ==========================================
-        // 5. INTERFACE PRINCIPAL
+        // 5. INTERFACE PRINCIPAL DA APLICAÇÃO
         // ==========================================
         function renderApp() {
             const container = document.getElementById('app');
@@ -318,7 +385,7 @@
                     <aside id="sidebar-menu" class="fixed md:relative z-50 w-64 bg-slate-900 text-slate-300 flex flex-col h-full transform -translate-x-full md:translate-x-0 transition-transform duration-200 ease-in-out">
                         <div class="p-4 bg-slate-950 flex items-center justify-between border-b border-slate-800">
                             <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-teal-600 flex items-center justify-center text-white font-bold text-xl">
+                                <div class="w-10 h-10 rounded-lg bg-teal-600 flex items-center justify-center text-white font-bold text-xl shadow-md">
                                     <i class="fa-solid fa-shield-halved"></i>
                                 </div>
                                 <div>
@@ -375,6 +442,12 @@
                             <button onclick="abrirModulo('audit_log')" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition ${tabsState.activeTab === 'audit_log' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}">
                                 <i class="fa-solid fa-clock-rotate-left w-5 text-center"></i> Rastreio & Auditoria
                             </button>
+
+                            <div class="pt-2">
+                                <button onclick="iniciarTourGuiado()" class="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-300 hover:bg-amber-500/30 transition">
+                                    <i class="fa-solid fa-circle-question w-5 text-center"></i> Tour Guiado
+                                </button>
+                            </div>
                         </nav>
 
                         <div class="p-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
@@ -429,6 +502,10 @@
             if (tabsState.activeTab === 'dashboard') {
                 setTimeout(renderDashboardCharts, 100);
             }
+
+            if (tourState.ativo) {
+                renderTourOverlay();
+            }
         }
 
         function toggleMobileSidebar() {
@@ -437,7 +514,80 @@
         }
 
         // ==========================================
-        // 6. RENDERIZAÇÃO DE MÓDULOS E BOTÕES "NOVO"
+        // 6. TOUR GUIADO DE PRIMEIRO ACESSO
+        // ==========================================
+        function iniciarTourGuiado() {
+            tourState.ativo = true;
+            tourState.passoAtual = 0;
+            abrirModulo(TOUR_STEPS[0].modulo);
+        }
+
+        function proximoPassoTour() {
+            if (tourState.passoAtual < TOUR_STEPS.length - 1) {
+                tourState.passoAtual++;
+                abrirModulo(TOUR_STEPS[tourState.passoAtual].modulo);
+            } else {
+                encerrarTourGuiado();
+            }
+        }
+
+        function passoAnteriorTour() {
+            if (tourState.passoAtual > 0) {
+                tourState.passoAtual--;
+                abrirModulo(TOUR_STEPS[tourState.passoAtual].modulo);
+            }
+        }
+
+        function encerrarTourGuiado() {
+            tourState.ativo = false;
+            localStorage.setItem('guardioes_tour_concluido', 'true');
+            fecharModal('modal_tour');
+            renderApp();
+        }
+
+        function renderTourOverlay() {
+            fecharModal('modal_tour');
+            const step = TOUR_STEPS[tourState.passoAtual];
+
+            const html = `
+                <div id="modal_tour" class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 no-print">
+                    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden border-2 border-teal-500 animate-fade-in">
+                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+                            <div class="flex items-center gap-2">
+                                <span class="w-6 h-6 rounded-full bg-teal-600 text-white flex items-center justify-center text-xs font-bold">${tourState.passoAtual + 1}</span>
+                                <h3 class="font-bold text-sm">${step.titulo}</h3>
+                            </div>
+                            <button onclick="encerrarTourGuiado()" title="Encerrar Tour" class="text-slate-400 hover:text-white text-lg">
+                                <i class="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+                        <div class="p-6 space-y-4">
+                            <p class="text-xs text-slate-700 leading-relaxed font-semibold">${step.texto}</p>
+                            
+                            <div class="flex items-center justify-between pt-4 border-t border-slate-200">
+                                <button onclick="encerrarTourGuiado()" class="text-xs font-bold text-slate-400 hover:text-slate-600 underline">
+                                    Pular Tour
+                                </button>
+                                <div class="flex items-center gap-2">
+                                    ${tourState.passoAtual > 0 ? `
+                                        <button onclick="passoAnteriorTour()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 rounded text-xs font-bold text-slate-800">
+                                            Anterior
+                                        </button>
+                                    ` : ''}
+                                    <button onclick="proximoPassoTour()" class="px-4 py-1.5 bg-teal-600 hover:bg-teal-700 text-white rounded text-xs font-bold shadow-md">
+                                        ${tourState.passoAtual === TOUR_STEPS.length - 1 ? 'Concluir e Começar' : 'Próximo'}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        // ==========================================
+        // 7. RENDERIZAÇÃO DE MÓDULOS E BOTÕES "NOVO"
         // ==========================================
         function getCamposConfigModulo(id) {
             switch(id) {
@@ -494,7 +644,7 @@
         }
 
         // ==========================================
-        // 7. DASHBOARD COM GRÁFICOS (CHART.JS)
+        // 8. DASHBOARD COM GRÁFICOS (CHART.JS)
         // ==========================================
         function renderDashboardView() {
             const recTotal = db.financeiro.filter(f=>f.tipo==='Receber' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0);
@@ -502,7 +652,6 @@
 
             return `
                 <div class="space-y-6">
-                    <!-- CARDS DE METRICAS -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex items-center justify-between">
                             <div>
@@ -534,7 +683,6 @@
                         </div>
                     </div>
 
-                    <!-- ÁREA DE GRÁFICOS DINÂMICOS -->
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div class="bg-white p-5 rounded-xl shadow-sm border border-slate-200 space-y-3">
                             <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2"><i class="fa-solid fa-chart-column text-teal-600"></i> Receitas vs. Despesas (Aberto x Baixado)</h4>
@@ -590,7 +738,312 @@
         }
 
         // ==========================================
-        // 8. MÓDULO DE ESTOQUE COM SENSOR MÍN/MÁX
+        // 9. MÓDULO FINANCEIRO
+        // ==========================================
+        function renderFinanceiroView() {
+            let lista = db.financeiro || [];
+
+            if (finFiltros.competencia.trim() !== '') {
+                lista = lista.filter(f => (f.competencia || '').toLowerCase().includes(finFiltros.competencia.trim().toLowerCase()));
+            }
+            if (finFiltros.status !== 'Todos') {
+                lista = lista.filter(f => f.status === finFiltros.status);
+            }
+            if (finFiltros.tipo !== 'Todos') {
+                lista = lista.filter(f => f.tipo === finFiltros.tipo);
+            }
+            if (finFiltros.busca.trim() !== '') {
+                const b = finFiltros.busca.toLowerCase();
+                lista = lista.filter(f => (f.historico || '').toLowerCase().includes(b) || (f.fornecedor || '').toLowerCase().includes(b));
+            }
+
+            return `
+                <div class="space-y-4">
+                    <div class="bg-white p-3.5 rounded-xl shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 items-center">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Competência (MM/AAAA)</label>
+                            <input type="text" id="flt_comp" value="${escapeHTML(finFiltros.competencia)}" placeholder="Ex: 11/2026" oninput="atualizarFiltrosFinanceiros()" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Status do Título</label>
+                            <select id="flt_status" onchange="atualizarFiltrosFinanceiros()" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                                <option value="Todos" ${finFiltros.status === 'Todos' ? 'selected' : ''}>Todos os Status</option>
+                                <option value="Aberto" ${finFiltros.status === 'Aberto' ? 'selected' : ''}>Aberto</option>
+                                <option value="Baixado" ${finFiltros.status === 'Baixado' ? 'selected' : ''}>Baixado (Compensado)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Tipo de Operação</label>
+                            <select id="flt_tipo" onchange="atualizarFiltrosFinanceiros()" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                                <option value="Todos" ${finFiltros.tipo === 'Todos' ? 'selected' : ''}>Todos os Tipos</option>
+                                <option value="Receber" ${finFiltros.tipo === 'Receber' ? 'selected' : ''}>A Receber</option>
+                                <option value="Pagar" ${finFiltros.tipo === 'Pagar' ? 'selected' : ''}>A Pagar</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Buscar por Descrição</label>
+                            <input type="text" id="flt_busca" value="${escapeHTML(finFiltros.busca)}" placeholder="Digite para filtrar..." oninput="atualizarFiltrosFinanceiros()" class="w-full p-2 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-100 text-slate-600 font-bold uppercase border-b">
+                                    <tr>
+                                        <th class="p-3">Tipo</th>
+                                        <th class="p-3">Descrição / Histórico</th>
+                                        <th class="p-3">Competência</th>
+                                        <th class="p-3">Vencimento</th>
+                                        <th class="p-3">Valor</th>
+                                        <th class="p-3">Status</th>
+                                        <th class="p-3 text-right">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-200">
+                                    ${lista.length === 0 ? `
+                                        <tr><td colspan="7" class="p-6 text-center text-slate-400 font-medium">Nenhum título financeiro encontrado para os filtros selecionados.</td></tr>
+                                    ` : lista.map(f => `
+                                        <tr class="hover:bg-slate-50 transition">
+                                            <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${f.tipo === 'Receber' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${escapeHTML(f.tipo)}</span></td>
+                                            <td class="p-3 font-semibold text-slate-900">
+                                                <p class="font-bold text-slate-800">${escapeHTML(f.historico)}</p>
+                                                <p class="text-[10px] text-slate-500">${escapeHTML(f.fornecedor || '')}</p>
+                                            </td>
+                                            <td class="p-3 font-semibold text-slate-700">${escapeHTML(f.competencia || 'N/A')}</td>
+                                            <td class="p-3 text-slate-700">${escapeHTML(f.vencimento)}</td>
+                                            <td class="p-3 font-bold text-slate-900">R$ ${Number(f.valor).toFixed(2)}</td>
+                                            <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${f.status === 'Baixado' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${escapeHTML(f.status)}</span></td>
+                                            <td class="p-3 text-right space-x-1">
+                                                <button onclick="alternarBaixaTitulo('${f.id}')" title="${f.status === 'Baixado' ? 'Reabrir Título' : 'Marcar como Baixado/Compensado'}" class="p-1.5 ${f.status === 'Baixado' ? 'text-amber-600 hover:bg-amber-50' : 'text-emerald-600 hover:bg-emerald-50'} rounded">
+                                                    <i class="fa-solid ${f.status === 'Baixado' ? 'fa-rotate-left' : 'fa-circle-check'}"></i>
+                                                </button>
+                                                <button onclick="renderModalNovoTitulo('${f.id}')" title="Editar Título" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded">
+                                                    <i class="fa-solid fa-pen-to-square"></i>
+                                                </button>
+                                                <button onclick="excluirItemGenerico('financeiro', '${f.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function atualizarFiltrosFinanceiros() {
+            finFiltros.competencia = document.getElementById('flt_comp').value;
+            finFiltros.status = document.getElementById('flt_status').value;
+            finFiltros.tipo = document.getElementById('flt_tipo').value;
+            finFiltros.busca = document.getElementById('flt_busca').value;
+            renderApp();
+        }
+
+        function alternarBaixaTitulo(id) {
+            const f = db.financeiro.find(x => x.id === id);
+            if (f) {
+                f.status = f.status === 'Baixado' ? 'Aberto' : 'Baixado';
+                registrarLog('Financeiro', 'Status Alterado', `Título "${f.historico}" alterado para ${f.status}`);
+                salvarDados(db);
+                renderApp();
+            }
+        }
+
+        function renderModalNovoTitulo(tituloId = null) {
+            const item = tituloId ? db.financeiro.find(x => x.id === tituloId) : null;
+
+            const html = `
+                <div id="modal_fin" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden max-h-[90vh] flex flex-col">
+                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+                            <h3 class="font-bold text-sm">${item ? 'Editar Título Financeiro' : 'Novo Título Financeiro'}</h3>
+                            <button onclick="fecharModal('modal_fin')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <div class="p-6 overflow-y-auto space-y-4">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Tipo de Operação</label>
+                                    <select id="fin_tipo" class="w-full p-2.5 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                                        <option value="Receber" ${item && item.tipo === 'Receber' ? 'selected' : ''}>A Receber</option>
+                                        <option value="Pagar" ${item && item.tipo === 'Pagar' ? 'selected' : ''}>A Pagar</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Valor Original (R$)</label>
+                                    <input type="number" step="0.01" id="fin_valor" required value="${item ? item.valor : ''}" class="w-full p-2.5 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Histórico / Descrição</label>
+                                <input type="text" id="fin_historico" required value="${item ? escapeHTML(item.historico) : ''}" class="w-full p-2.5 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                            </div>
+
+                            <div class="grid grid-cols-3 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Pessoa / Fornecedor</label>
+                                    <input type="text" id="fin_fornecedor" value="${item ? escapeHTML(item.fornecedor || '') : ''}" class="w-full p-2.5 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Competência (MM/AAAA)</label>
+                                    <input type="text" id="fin_competencia" value="${item ? escapeHTML(item.competencia || '') : ''}" placeholder="Ex: 11/2026" class="w-full p-2.5 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Data Vencimento</label>
+                                    <input type="date" id="fin_vencimento" required value="${item ? item.vencimento : ''}" class="w-full p-2.5 border border-slate-300 rounded text-xs text-slate-900 font-bold">
+                                </div>
+                            </div>
+
+                            ${!item ? `
+                            <div class="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                                <label class="flex items-center gap-2 cursor-pointer font-bold text-xs text-teal-800">
+                                    <input type="checkbox" id="chk_recorrencia" onchange="toggleBoxRecorrencia()" class="rounded border-slate-300 text-teal-600 w-4 h-4">
+                                    Gerar Recorrência / Parcelamento?
+                                </label>
+
+                                <div id="box_recorrencia" class="hidden space-y-3 pt-2 border-t border-slate-200">
+                                    <div class="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-600 uppercase">Periodicidade</label>
+                                            <select id="rec_periodo" class="w-full p-2 border rounded text-xs text-slate-900 font-bold">
+                                                <option value="mensal">Mensal</option>
+                                                <option value="semanal">Semanal</option>
+                                                <option value="anual">Anual</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label class="block text-[10px] font-bold text-slate-600 uppercase">Qtd de Parcelas</label>
+                                            <input type="number" id="rec_qtd" value="12" min="2" max="60" class="w-full p-2 border rounded text-xs text-slate-900 font-bold">
+                                        </div>
+                                    </div>
+                                    <button type="button" onclick="gerarPreviewParcelas()" class="w-full py-2 bg-slate-800 text-white rounded text-xs font-bold hover:bg-slate-900">
+                                        <i class="fa-solid fa-list-check"></i> Pré-visualizar e Editar Parcelas
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="area_preview_parcelas"></div>
+                            ` : ''}
+
+                            <div class="flex items-center justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModal('modal_fin')" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 rounded text-xs font-bold">Cancelar</button>
+                                <button type="button" onclick="salvarTituloFinanceiroCompleto('${tituloId || ''}')" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded text-xs font-bold">Salvar Título</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+        }
+
+        function toggleBoxRecorrencia() {
+            const checked = document.getElementById('chk_recorrencia').checked;
+            document.getElementById('box_recorrencia').classList.toggle('hidden', !checked);
+            if (!checked) document.getElementById('area_preview_parcelas').innerHTML = '';
+        }
+
+        function gerarPreviewParcelas() {
+            const val = parseFloat(document.getElementById('fin_valor').value) || 0;
+            const dataInic = document.getElementById('fin_vencimento').value;
+            const qtd = parseInt(document.getElementById('rec_qtd').value) || 1;
+
+            if (!dataInic) { alert('Informe a data do 1º vencimento.'); return; }
+
+            let html = `
+                <div class="p-3 bg-teal-50 border border-teal-200 rounded-lg space-y-2">
+                    <p class="text-xs font-bold text-teal-900">Edite as Datas/Valores das Parcelas antes de salvar:</p>
+                    <div class="max-h-40 overflow-y-auto space-y-2 pr-1">
+            `;
+
+            let baseDate = new Date(dataInic + 'T00:00:00');
+
+            for(let i = 1; i <= qtd; i++) {
+                let current = new Date(baseDate);
+                current.setMonth(current.getMonth() + (i - 1));
+                let dateStr = current.toISOString().split('T')[0];
+                let compStr = `${String(current.getMonth()+1).padStart(2,'0')}/${current.getFullYear()}`;
+
+                html += `
+                    <div class="grid grid-cols-3 gap-2 items-center bg-white p-2 rounded border border-slate-200">
+                        <span class="text-xs font-bold text-slate-700">Parcela ${i}/${qtd}</span>
+                        <input type="date" value="${dateStr}" class="rec_item_venc p-1 border rounded text-xs text-slate-900 font-bold">
+                        <input type="text" value="${compStr}" class="rec_item_comp p-1 border rounded text-xs text-slate-900 font-bold" placeholder="MM/AAAA">
+                    </div>
+                `;
+            }
+
+            html += `</div></div>`;
+            document.getElementById('area_preview_parcelas').innerHTML = html;
+        }
+
+        function salvarTituloFinanceiroCompleto(tituloId = '') {
+            const tipo = document.getElementById('fin_tipo').value;
+            const valor = parseFloat(document.getElementById('fin_valor').value) || 0;
+            const historico = document.getElementById('fin_historico').value.trim();
+            const fornecedor = document.getElementById('fin_fornecedor').value.trim();
+            const comp = document.getElementById('fin_competencia') ? document.getElementById('fin_competencia').value.trim() : '';
+            const venc = document.getElementById('fin_vencimento').value;
+
+            if (!historico || !valor || !venc) {
+                alert('Preencha os campos obrigatórios!');
+                return;
+            }
+
+            if (tituloId) {
+                const item = db.financeiro.find(x => x.id === tituloId);
+                if (item) {
+                    item.tipo = tipo;
+                    item.valor = valor;
+                    item.historico = historico;
+                    item.fornecedor = fornecedor;
+                    item.competencia = comp || venc.substr(0,7).split('-').reverse().join('/');
+                    item.vencimento = venc;
+                    registrarLog('Financeiro', 'Edição', `Título "${historico}" modificado.`);
+                }
+            } else {
+                const chk = document.getElementById('chk_recorrencia');
+                const isRec = chk ? chk.checked : false;
+
+                if (isRec && document.querySelectorAll('.rec_item_venc').length > 0) {
+                    const vencs = document.querySelectorAll('.rec_item_venc');
+                    const comps = document.querySelectorAll('.rec_item_comp');
+
+                    vencs.forEach((el, idx) => {
+                        db.financeiro.push({
+                            id: 'fin_' + Date.now() + '_' + idx,
+                            tipo: tipo,
+                            historico: `${historico} (${idx+1}/${vencs.length})`,
+                            valor: valor,
+                            vencimento: el.value,
+                            competencia: comps[idx].value,
+                            fornecedor: fornecedor,
+                            status: 'Aberto'
+                        });
+                    });
+                    registrarLog('Financeiro', 'Recorrência Gerada', `${vencs.length} parcelas de "${historico}" criadas.`);
+                } else {
+                    db.financeiro.push({
+                        id: 'fin_' + Date.now(),
+                        tipo: tipo,
+                        historico: historico,
+                        valor: valor,
+                        vencimento: venc,
+                        competencia: comp || venc.substr(0,7).split('-').reverse().join('/'),
+                        fornecedor: fornecedor,
+                        status: 'Aberto'
+                    });
+                    registrarLog('Financeiro', 'Título Criado', `Título "${historico}" gravado.`);
+                }
+            }
+
+            salvarDados(db);
+            fecharModal('modal_fin');
+            renderApp();
+        }
+
+        // ==========================================
+        // 10. ESTOQUE DE PRODUTOS
         // ==========================================
         function renderEstoqueView() {
             const list = db.estoque || [];
@@ -598,7 +1051,6 @@
 
             return `
                 <div class="space-y-4">
-                    <!-- CARDS DE ALERTA DE ESTOQUE -->
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200">
                             <p class="text-xs font-bold text-slate-500 uppercase">Total de Itens</p>
@@ -642,7 +1094,7 @@
                                                 <td class="p-3">
                                                     ${isCritico ? `
                                                         <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700 animate-pulse">
-                                                            <i class="fa-solid fa-triangle-exclamation"></i> Crítico (Comprar ${e.maximo ? e.maximo - e.qtd : 'Urgeste'})
+                                                            <i class="fa-solid fa-triangle-exclamation"></i> Crítico (Comprar ${e.maximo ? e.maximo - e.qtd : 'Urgente'})
                                                         </span>
                                                     ` : isAtencao ? `
                                                         <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-700">
@@ -756,16 +1208,18 @@
         }
 
         // ==========================================
-        // 9. RELATÓRIOS CONSOLIDADOS & DRE PERSONALIZÁVEL
+        // 11. RELATÓRIOS CONSOLIDADOS & DRE
         // ==========================================
         function renderRelatoriosView() {
             const recTotal = db.financeiro.filter(f => f.tipo === 'Receber' && f.status === 'Baixado').reduce((a, b) => a + b.valor, 0);
             const pagTotal = db.financeiro.filter(f => f.tipo === 'Pagar' && f.status === 'Baixado').reduce((a, b) => a + b.valor, 0);
             const pendTotal = db.financeiro.filter(f => f.tipo === 'Receber' && f.status === 'Aberto').reduce((a, b) => a + b.valor, 0);
 
-            // Cálculo da DRE Personalizável baseado nas Fórmulas
+            // Lista DRE com fallback garantido
+            const listDRE = (db.dre_config && db.dre_config.length > 0) ? db.dre_config : DEFAULT_DATA.dre_config;
+
             const calculosDRE = {};
-            (db.dre_config || []).forEach(item => {
+            listDRE.forEach(item => {
                 if (item.tipo === 'direto') {
                     if (item.operacao === 'somar_receitas') calculosDRE[item.id] = recTotal;
                     else if (item.operacao === 'somar_pendencias') calculosDRE[item.id] = pendTotal;
@@ -780,7 +1234,6 @@
 
             return `
                 <div class="space-y-6">
-                    <!-- BARRA DE FILTROS E EXPORTAÇÃO DE RELATÓRIO -->
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3 no-print">
                         <div class="flex items-center gap-2 w-full sm:w-auto">
                             <button onclick="setPeriodoRelatorio('mes')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-bold">Este Mês</button>
@@ -796,7 +1249,6 @@
                         </div>
                     </div>
 
-                    <!-- SEÇÃO DRE CONDOMINIAL -->
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 space-y-4">
                         <div class="flex items-center justify-between border-b pb-3">
                             <div>
@@ -819,7 +1271,7 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-200">
-                                    ${(db.dre_config || []).map(row => `
+                                    ${listDRE.map(row => `
                                         <tr class="${row.tipo === 'formula' ? 'bg-slate-50 font-bold' : ''}">
                                             <td class="p-3 font-extrabold text-teal-700">${row.id}</td>
                                             <td class="p-3 ${row.tipo === 'formula' ? 'text-slate-900' : 'text-slate-700'}">${escapeHTML(row.label)}</td>
@@ -851,6 +1303,8 @@
         }
 
         function renderModalConfigDRE() {
+            const listDRE = (db.dre_config && db.dre_config.length > 0) ? db.dre_config : DEFAULT_DATA.dre_config;
+
             const html = `
                 <div id="modal_dre_cfg" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden">
@@ -861,7 +1315,7 @@
                         <div class="p-6 space-y-4">
                             <p class="text-xs text-slate-600">Edite as fórmulas de cálculo e os rótulos das contas da DRE:</p>
                             <div class="space-y-2 max-h-60 overflow-y-auto pr-1">
-                                ${(db.dre_config || []).map(item => `
+                                ${listDRE.map(item => `
                                     <div class="p-2 border rounded bg-slate-50 space-y-1">
                                         <div class="flex items-center justify-between">
                                             <span class="font-bold text-xs text-teal-700">Linha [${item.id}]</span>
@@ -889,6 +1343,8 @@
             const labels = document.querySelectorAll('.dre_label_input');
             const formulas = document.querySelectorAll('.dre_formula_input');
 
+            if (!db.dre_config) db.dre_config = DEFAULT_DATA.dre_config;
+
             labels.forEach(input => {
                 const id = input.getAttribute('data-id');
                 const item = db.dre_config.find(x => x.id === id);
@@ -908,7 +1364,7 @@
         }
 
         // ==========================================
-        // 10. MÓDULOS DE MORADORES, USUÁRIOS E OUTROS
+        // 12. MORADORES, USUÁRIOS E OUTROS
         // ==========================================
         function renderMoradoresView() {
             const list = db.moradores || [];
@@ -1214,39 +1670,55 @@
         }
 
         // ==========================================
-        // 11. AUTENTICAÇÃO E AUDITORIA
+        // 13. TELA DE LOGIN COM MODO TECNOLOGIA
         // ==========================================
+        function toggleTechMode() {
+            isTechMode = !isTechMode;
+            renderApp();
+        }
+
         function renderTelaLogin() {
             return `
-                <div class="min-h-screen bg-slate-900 flex items-center justify-center p-4">
-                    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
-                        <div class="p-8 text-center bg-slate-950 text-white">
-                            <div class="w-16 h-16 bg-teal-600 rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg text-3xl">
+                <div class="min-h-screen ${isTechMode ? 'tech-mode' : 'bg-slate-900'} flex items-center justify-center p-4 transition-all duration-300">
+                    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden ${isTechMode ? 'tech-card' : ''}">
+                        <div class="p-8 text-center ${isTechMode ? 'bg-slate-950 text-cyan-400 border-b border-cyan-800' : 'bg-slate-950 text-white'}">
+                            <div class="w-16 h-16 ${isTechMode ? 'bg-cyan-900/50 text-cyan-400 border border-cyan-500 shadow-cyan-500/50 shadow-lg' : 'bg-teal-600'} rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg text-3xl">
                                 <i class="fa-solid fa-shield-halved"></i>
                             </div>
-                            <h2 class="text-2xl font-bold">Guardiões do Bravo</h2>
-                            <p class="text-xs text-teal-400 font-semibold uppercase mt-1">Gestão Condominial Segura</p>
+                            <h2 class="text-2xl font-bold tracking-wide">${isTechMode ? 'SYSTEM://GUARDIÕES' : 'Guardiões do Bravo'}</h2>
+                            <p class="text-xs ${isTechMode ? 'text-cyan-300 font-mono' : 'text-teal-400 font-semibold'} uppercase mt-1">
+                                ${isTechMode ? '[SECURE_TERMINAL_V4]' : 'Gestão Condominial Segura'}
+                            </p>
                         </div>
                         <form onsubmit="realizarLogin(event)" class="p-8 space-y-5">
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Usuário / E-mail</label>
-                                <input type="text" id="login_user" required placeholder="Digite seu usuário" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 font-bold">
+                                <label class="block text-xs font-bold ${isTechMode ? 'text-cyan-300' : 'text-slate-700'} uppercase mb-1">
+                                    ${isTechMode ? '> ID_USUÁRIO' : 'Usuário / E-mail'}
+                                </label>
+                                <input type="text" id="login_user" required placeholder="${isTechMode ? 'admin' : 'Digite seu usuário'}" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 font-bold ${isTechMode ? 'tech-input' : ''}">
                             </div>
                             <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Senha</label>
+                                <label class="block text-xs font-bold ${isTechMode ? 'text-cyan-300' : 'text-slate-700'} uppercase mb-1">
+                                    ${isTechMode ? '> CREDENCIAL_ACESSO' : 'Senha'}
+                                </label>
                                 <div class="relative">
-                                    <input type="password" id="login_pass" required placeholder="••••••••" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 font-bold pr-10">
+                                    <input type="password" id="login_pass" required placeholder="••••••••" class="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm text-slate-900 font-bold pr-10 ${isTechMode ? 'tech-input' : ''}">
                                     <button type="button" onclick="toggleEye('login_pass', 'eye_icon')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400">
                                         <i id="eye_icon" class="fa-solid fa-eye"></i>
                                     </button>
                                 </div>
                             </div>
-                            <label class="flex items-center gap-2 text-xs font-medium text-slate-600 cursor-pointer">
-                                <input type="checkbox" id="login_remember" class="rounded border-slate-300 text-teal-600 w-4 h-4">
-                                Lembrar-me neste navegador
-                            </label>
-                            <button type="submit" class="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg shadow-md transition">
-                                Acessar Painel
+                            <div class="flex items-center justify-between">
+                                <label class="flex items-center gap-2 text-xs font-medium ${isTechMode ? 'text-cyan-400' : 'text-slate-600'} cursor-pointer">
+                                    <input type="checkbox" id="login_remember" class="rounded border-slate-300 text-teal-600 w-4 h-4">
+                                    Lembrar acesso
+                                </label>
+                                <button type="button" onclick="toggleTechMode()" class="text-[11px] font-bold ${isTechMode ? 'text-cyan-300 hover:text-white' : 'text-teal-600 hover:text-teal-800'} underline">
+                                    ${isTechMode ? 'Modo Normal' : '⚡ Modo Tecnologia'}
+                                </button>
+                            </div>
+                            <button type="submit" class="w-full py-3 ${isTechMode ? 'bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-mono shadow-cyan-500/50 shadow-md' : 'bg-teal-600 hover:bg-teal-700 text-white'} font-bold rounded-lg shadow-md transition">
+                                ${isTechMode ? 'INICIAR_SESSAO.EXE' : 'Acessar Painel'}
                             </button>
                         </form>
                     </div>
@@ -1447,6 +1919,7 @@
                 fecharModal('modal_first');
                 iniciarMonitorInatividade();
                 renderApp();
+                setTimeout(iniciarTourGuiado, 500);
             }
         }
 
