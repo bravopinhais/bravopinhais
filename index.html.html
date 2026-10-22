@@ -41,8 +41,6 @@
         let isTechMode = true;
         let matrixInterval = null;
 
-        let tourState = { ativo: false, passoAtual: 0 };
-
         function escapeHTML(str) {
             if (typeof str !== 'string') return str || '';
             return str.replace(/[&<>"']/g, function(m) {
@@ -129,6 +127,7 @@
         function abrirModulo(moduloId) {
             if (!tabsState.openTabs.includes(moduloId)) tabsState.openTabs.push(moduloId);
             tabsState.activeTab = moduloId;
+            fecharMenuMobile();
             renderApp();
         }
 
@@ -138,6 +137,24 @@
             tabsState.openTabs = tabsState.openTabs.filter(id => id !== moduloId);
             if (tabsState.activeTab === moduloId) tabsState.activeTab = tabsState.openTabs[tabsState.openTabs.length - 1];
             renderApp();
+        }
+
+        function toggleMenuMobile() {
+            const sidebar = document.getElementById('sidebar-menu');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (sidebar && backdrop) {
+                sidebar.classList.toggle('-translate-x-full');
+                backdrop.classList.toggle('hidden');
+            }
+        }
+
+        function fecharMenuMobile() {
+            const sidebar = document.getElementById('sidebar-menu');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (sidebar && backdrop && !sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
         }
 
         function realizarLogin(e) {
@@ -186,13 +203,21 @@
             }
 
             container.innerHTML = `
-                <div class="flex-1 flex overflow-hidden">
-                    <aside id="sidebar-menu" class="w-64 bg-slate-900 text-slate-300 flex flex-col h-full border-r border-slate-800">
+                <div class="flex-1 flex flex-col md:flex-row h-screen overflow-hidden">
+                    
+                    <!-- MASCARA BACKDROP MOBILE -->
+                    <div id="sidebar-backdrop" onclick="fecharMenuMobile()" class="fixed inset-0 bg-slate-900/60 z-40 hidden md:hidden"></div>
+
+                    <!-- SIDEBAR RESPONSIVA ALTURA TOTAL -->
+                    <aside id="sidebar-menu" class="fixed md:static inset-y-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 flex flex-col h-full border-r border-slate-800 transform -translate-x-full md:translate-x-0 transition-transform duration-200">
                         <div class="p-4 bg-slate-950 flex items-center justify-between border-b border-slate-800">
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-lg bg-teal-600 flex items-center justify-center text-white font-bold text-xl"><i class="fa-solid fa-shield-halved"></i></div>
                                 <div><h1 class="font-bold text-white text-base leading-tight">Guardiões</h1><p class="text-xs text-teal-400">Gestão Condominial</p></div>
                             </div>
+                            <button onclick="fecharMenuMobile()" class="md:hidden text-slate-400 hover:text-white p-2">
+                                <i class="fa-solid fa-xmark text-lg"></i>
+                            </button>
                         </div>
 
                         <nav class="flex-1 overflow-y-auto p-3 space-y-1">
@@ -207,12 +232,23 @@
                         </nav>
 
                         <div class="p-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
-                            <span class="text-xs font-bold text-slate-200">${escapeHTML(sessao.usuarioLogado.nome)}</span>
-                            <button onclick="encerrarSessao()" class="p-2 text-slate-400 hover:text-red-400"><i class="fa-solid fa-right-from-bracket"></i></button>
+                            <span class="text-xs font-bold text-slate-200 truncate pr-2">${escapeHTML(sessao.usuarioLogado.nome)}</span>
+                            <button onclick="encerrarSessao()" title="Sair" class="p-2 text-slate-400 hover:text-red-400"><i class="fa-solid fa-right-from-bracket"></i></button>
                         </div>
                     </aside>
 
-                    <div class="flex-1 flex flex-col overflow-hidden">
+                    <!-- CONTEÚDO PRINCIPAL COM BARRA TOPO MOBILE -->
+                    <div class="flex-1 flex flex-col h-full overflow-hidden">
+                        <header class="bg-slate-900 text-white p-3 flex md:hidden items-center justify-between border-b border-slate-800 no-print">
+                            <div class="flex items-center gap-3">
+                                <button onclick="toggleMenuMobile()" class="p-2 rounded-lg bg-slate-800 text-slate-200 hover:bg-slate-700">
+                                    <i class="fa-solid fa-bars text-lg"></i>
+                                </button>
+                                <span class="font-bold text-sm">Guardiões do Bravo</span>
+                            </div>
+                            <button onclick="encerrarSessao()" class="text-xs bg-red-600/20 text-red-400 px-2.5 py-1.5 rounded-md font-bold">Sair</button>
+                        </header>
+
                         <div class="bg-slate-200 border-b border-slate-300 flex items-center overflow-x-auto px-2 pt-2 gap-1 no-print">
                             ${tabsState.openTabs.map(tabId => `
                                 <div onclick="abrirModulo('${tabId}')" class="flex items-center gap-2 px-3 py-2 rounded-t-lg text-xs font-semibold cursor-pointer ${tabsState.activeTab === tabId ? 'tab-active shadow-sm' : 'bg-slate-300 text-slate-600'}">
@@ -234,15 +270,15 @@
 
         function renderModuleContent(moduloId) {
             let btnNovoHtml = '';
-            if (moduloId === 'financeiro') btnNovoHtml = `<button onclick="renderModalNovoTitulo()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Título</button>`;
-            else if (moduloId === 'formas_monetarias') btnNovoHtml = `<button onclick="renderModalFormaMonetaria()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Nova Forma Monetária</button>`;
-            else if (moduloId === 'moradores') btnNovoHtml = `<button onclick="renderModalMorador()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Morador</button>`;
-            else if (moduloId === 'contas_bancarias') btnNovoHtml = `<button onclick="renderModalContaBancaria()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Nova Conta Bancária</button>`;
-            else if (moduloId === 'estoque') btnNovoHtml = `<button onclick="renderModalEstoque()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Item no Estoque</button>`;
+            if (moduloId === 'financeiro') btnNovoHtml = `<button onclick="renderModalNovoTitulo()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm"><i class="fa-solid fa-plus"></i> Novo Título</button>`;
+            else if (moduloId === 'formas_monetarias') btnNovoHtml = `<button onclick="renderModalFormaMonetaria()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm"><i class="fa-solid fa-plus"></i> Nova Forma Monetária</button>`;
+            else if (moduloId === 'moradores') btnNovoHtml = `<button onclick="renderModalMorador()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm"><i class="fa-solid fa-plus"></i> Novo Morador</button>`;
+            else if (moduloId === 'contas_bancarias') btnNovoHtml = `<button onclick="renderModalContaBancaria()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm"><i class="fa-solid fa-plus"></i> Nova Conta Bancária</button>`;
+            else if (moduloId === 'estoque') btnNovoHtml = `<button onclick="renderModalEstoque()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm"><i class="fa-solid fa-plus"></i> Novo Item no Estoque</button>`;
 
             const headerGlobal = `
-                <div class="flex items-center justify-between mb-6">
-                    <div><h2 class="text-2xl font-bold text-slate-800">${MODULE_NAMES[moduloId]}</h2><p class="text-xs text-slate-500">Módulo Ativo</p></div>
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
+                    <div><h2 class="text-xl md:text-2xl font-bold text-slate-800">${MODULE_NAMES[moduloId]}</h2><p class="text-xs text-slate-500">Módulo Ativo</p></div>
                     <div class="flex items-center gap-2">${btnNovoHtml}</div>
                 </div>
             `;
@@ -266,33 +302,35 @@
             const list = db.moradores || [];
             return `
                 <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
-                    <table class="w-full text-left text-xs">
-                        <thead class="bg-slate-100 font-bold uppercase border-b">
-                            <tr>
-                                <th class="p-3">Bloco / Ap</th>
-                                <th class="p-3">Nome do Morador</th>
-                                <th class="p-3">Contato</th>
-                                <th class="p-3">Tipo</th>
-                                <th class="p-3">Taxa de Mudança</th>
-                                <th class="p-3 text-right">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y">
-                            ${list.map(m => `
-                                <tr class="hover:bg-slate-50">
-                                    <td class="p-3 font-bold text-slate-900">${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</td>
-                                    <td class="p-3 font-bold text-slate-800">${escapeHTML(m.nome)}</td>
-                                    <td class="p-3 text-slate-600">${escapeHTML(m.telefone)} / ${escapeHTML(m.email)}</td>
-                                    <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.tipo === 'Proprietário' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}">${escapeHTML(m.tipo)}</span></td>
-                                    <td class="p-3 font-semibold">${escapeHTML(m.taxaMudanca)}</td>
-                                    <td class="p-3 text-right space-x-1">
-                                        <button onclick="renderModalMorador('${m.id}')" title="Editar" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
-                                        <button onclick="excluirItemGenerico('moradores', '${m.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
-                                    </td>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 font-bold uppercase border-b">
+                                <tr>
+                                    <th class="p-3">Bloco / Ap</th>
+                                    <th class="p-3">Nome do Morador</th>
+                                    <th class="p-3">Contato</th>
+                                    <th class="p-3">Tipo</th>
+                                    <th class="p-3">Taxa de Mudança</th>
+                                    <th class="p-3 text-right">Ações</th>
                                 </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody class="divide-y">
+                                ${list.map(m => `
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="p-3 font-bold text-slate-900">${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</td>
+                                        <td class="p-3 font-bold text-slate-800">${escapeHTML(m.nome)}</td>
+                                        <td class="p-3 text-slate-600">${escapeHTML(m.telefone)} / ${escapeHTML(m.email)}</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.tipo === 'Proprietário' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'}">${escapeHTML(m.tipo)}</span></td>
+                                        <td class="p-3 font-semibold">${escapeHTML(m.taxaMudanca)}</td>
+                                        <td class="p-3 text-right space-x-1">
+                                            <button onclick="renderModalMorador('${m.id}')" title="Editar" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+                                            <button onclick="excluirItemGenerico('moradores', '${m.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             `;
         }
@@ -360,31 +398,33 @@
             const list = db.contas_bancarias || [];
             return `
                 <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
-                    <table class="w-full text-left text-xs">
-                        <thead class="bg-slate-100 font-bold uppercase border-b">
-                            <tr>
-                                <th class="p-3">Banco / Caixinha</th>
-                                <th class="p-3">Agência</th>
-                                <th class="p-3">Número da Conta</th>
-                                <th class="p-3">Saldo Inicial / Atual</th>
-                                <th class="p-3 text-right">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y">
-                            ${list.map(c => `
-                                <tr class="hover:bg-slate-50">
-                                    <td class="p-3 font-bold text-slate-800">${escapeHTML(c.banco)}</td>
-                                    <td class="p-3 text-slate-600">${escapeHTML(c.agencia)}</td>
-                                    <td class="p-3 text-slate-600">${escapeHTML(c.conta)}</td>
-                                    <td class="p-3 font-extrabold text-teal-800">R$ ${Number(c.saldo || 0).toFixed(2)}</td>
-                                    <td class="p-3 text-right space-x-1">
-                                        <button onclick="renderModalContaBancaria('${c.id}')" title="Editar" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
-                                        <button onclick="excluirItemGenerico('contas_bancarias', '${c.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
-                                    </td>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 font-bold uppercase border-b">
+                                <tr>
+                                    <th class="p-3">Banco / Caixinha</th>
+                                    <th class="p-3">Agência</th>
+                                    <th class="p-3">Número da Conta</th>
+                                    <th class="p-3">Saldo Inicial / Atual</th>
+                                    <th class="p-3 text-right">Ações</th>
                                 </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody class="divide-y">
+                                ${list.map(c => `
+                                    <tr class="hover:bg-slate-50">
+                                        <td class="p-3 font-bold text-slate-800">${escapeHTML(c.banco)}</td>
+                                        <td class="p-3 text-slate-600">${escapeHTML(c.agencia)}</td>
+                                        <td class="p-3 text-slate-600">${escapeHTML(c.conta)}</td>
+                                        <td class="p-3 font-extrabold text-teal-800">R$ ${Number(c.saldo || 0).toFixed(2)}</td>
+                                        <td class="p-3 text-right space-x-1">
+                                            <button onclick="renderModalContaBancaria('${c.id}')" title="Editar" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+                                            <button onclick="excluirItemGenerico('contas_bancarias', '${c.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             `;
         }
@@ -467,47 +507,49 @@
                     </div>
 
                     <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
-                        <table class="w-full text-left text-xs">
-                            <thead class="bg-slate-100 font-bold uppercase border-b">
-                                <tr>
-                                    <th class="p-3">Item / Produto</th>
-                                    <th class="p-3">Categoria</th>
-                                    <th class="p-3">Qtd Atual</th>
-                                    <th class="p-3">Localização</th>
-                                    <th class="p-3">Próximo Balanço</th>
-                                    <th class="p-3">Status do Sensor</th>
-                                    <th class="p-3 text-right">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y">
-                                ${list.map(e => {
-                                    const isCritico = e.qtd <= e.minimo;
-                                    const balancoPendente = e.proximoBalanco && e.proximoBalanco <= hoje;
-                                    return `
-                                        <tr class="hover:bg-slate-50">
-                                            <td class="p-3 font-bold text-slate-900">${escapeHTML(e.item)}</td>
-                                            <td class="p-3 text-slate-600">${escapeHTML(e.categoria)}</td>
-                                            <td class="p-3 font-extrabold text-slate-900">${e.qtd}</td>
-                                            <td class="p-3 text-slate-600">${escapeHTML(e.localizacao || 'Central')}</td>
-                                            <td class="p-3 font-bold">
-                                                ${e.proximoBalanco ? `
-                                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold ${balancoPendente ? 'bg-rose-100 text-rose-700 border border-rose-300 animate-pulse' : 'bg-slate-100 text-slate-700'}">
-                                                        <i class="fa-solid fa-calendar-day"></i> ${e.proximoBalanco} ${balancoPendente ? '(Realizar Hoje!)' : ''}
-                                                    </span>
-                                                ` : '<span class="text-slate-400">Não programado</span>'}
-                                            </td>
-                                            <td class="p-3">
-                                                ${isCritico ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700">Estoque Mínimo</span>` : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700">Estoque OK</span>`}
-                                            </td>
-                                            <td class="p-3 text-right space-x-1">
-                                                <button onclick="renderModalEstoque('${e.id}')" title="Editar Item" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
-                                                <button onclick="excluirItemGenerico('estoque', '${e.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
-                                            </td>
-                                        </tr>
-                                    `;
-                                }).join('')}
-                            </tbody>
-                        </table>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-100 font-bold uppercase border-b">
+                                    <tr>
+                                        <th class="p-3">Item / Produto</th>
+                                        <th class="p-3">Categoria</th>
+                                        <th class="p-3">Qtd Atual</th>
+                                        <th class="p-3">Localização</th>
+                                        <th class="p-3">Próximo Balanço</th>
+                                        <th class="p-3">Status do Sensor</th>
+                                        <th class="p-3 text-right">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    ${list.map(e => {
+                                        const isCritico = e.qtd <= e.minimo;
+                                        const balancoPendente = e.proximoBalanco && e.proximoBalanco <= hoje;
+                                        return `
+                                            <tr class="hover:bg-slate-50">
+                                                <td class="p-3 font-bold text-slate-900">${escapeHTML(e.item)}</td>
+                                                <td class="p-3 text-slate-600">${escapeHTML(e.categoria)}</td>
+                                                <td class="p-3 font-extrabold text-slate-900">${e.qtd}</td>
+                                                <td class="p-3 text-slate-600">${escapeHTML(e.localizacao || 'Central')}</td>
+                                                <td class="p-3 font-bold">
+                                                    ${e.proximoBalanco ? `
+                                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${balancoPendente ? 'bg-rose-100 text-rose-700 border border-rose-300 animate-pulse' : 'bg-slate-100 text-slate-700'}">
+                                                            <i class="fa-solid fa-calendar-day"></i> ${e.proximoBalanco} ${balancoPendente ? '(Realizar Hoje!)' : ''}
+                                                        </span>
+                                                    ` : '<span class="text-slate-400">Não programado</span>'}
+                                                </td>
+                                                <td class="p-3">
+                                                    ${isCritico ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700">Estoque Mínimo</span>` : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700">Estoque OK</span>`}
+                                                </td>
+                                                <td class="p-3 text-right space-x-1">
+                                                    <button onclick="renderModalEstoque('${e.id}')" title="Editar Item" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+                                                    <button onclick="excluirItemGenerico('estoque', '${e.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             `;
@@ -601,44 +643,46 @@
                     </div>
 
                     <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
-                        <table class="w-full text-left text-xs">
-                            <thead class="bg-slate-100 font-bold uppercase border-b">
-                                <tr>
-                                    <th class="p-3">Tipo</th>
-                                    <th class="p-3">Descrição / Histórico</th>
-                                    <th class="p-3">Competência</th>
-                                    <th class="p-3">Vencimento</th>
-                                    <th class="p-3">Valor</th>
-                                    <th class="p-3">Status</th>
-                                    <th class="p-3 text-right">Ações de Baixa</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y">
-                                ${lista.map(f => `
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${f.tipo === 'Receber' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${escapeHTML(f.tipo)}</span></td>
-                                        <td class="p-3 font-bold text-slate-800">${escapeHTML(f.historico)}</td>
-                                        <td class="p-3">${escapeHTML(f.competencia || 'N/A')}</td>
-                                        <td class="p-3">${escapeHTML(f.vencimento)}</td>
-                                        <td class="p-3 font-bold">R$ ${Number(f.valor).toFixed(2)}</td>
-                                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${f.status === 'Baixado' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${escapeHTML(f.status)}</span></td>
-                                        <td class="p-3 text-right space-x-1">
-                                            ${f.status === 'Aberto' ? `
-                                                <button onclick="abrirTelaPagarParcial('${f.id}', 'total')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[11px] inline-flex items-center gap-1 shadow-sm">
-                                                    <i class="fa-solid fa-check"></i> Total
-                                                </button>
-                                                <button onclick="abrirTelaPagarParcial('${f.id}', 'parcial')" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded font-bold text-[11px] inline-flex items-center gap-1 shadow-sm">
-                                                    <i class="fa-solid fa-scissors"></i> Parcial
-                                                </button>
-                                            ` : `
-                                                <span class="text-emerald-600 font-bold text-xs"><i class="fa-solid fa-circle-check"></i> Liquidado</span>
-                                            `}
-                                            <button onclick="excluirItemGenerico('financeiro', '${f.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
-                                        </td>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-100 font-bold uppercase border-b">
+                                    <tr>
+                                        <th class="p-3">Tipo</th>
+                                        <th class="p-3">Descrição / Histórico</th>
+                                        <th class="p-3">Competência</th>
+                                        <th class="p-3">Vencimento</th>
+                                        <th class="p-3">Valor</th>
+                                        <th class="p-3">Status</th>
+                                        <th class="p-3 text-right">Ações de Baixa</th>
                                     </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody class="divide-y">
+                                    ${lista.map(f => `
+                                        <tr class="hover:bg-slate-50">
+                                            <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${f.tipo === 'Receber' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${escapeHTML(f.tipo)}</span></td>
+                                            <td class="p-3 font-bold text-slate-800">${escapeHTML(f.historico)}</td>
+                                            <td class="p-3">${escapeHTML(f.competencia || 'N/A')}</td>
+                                            <td class="p-3">${escapeHTML(f.vencimento)}</td>
+                                            <td class="p-3 font-bold">R$ ${Number(f.valor).toFixed(2)}</td>
+                                            <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${f.status === 'Baixado' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${escapeHTML(f.status)}</span></td>
+                                            <td class="p-3 text-right space-x-1">
+                                                ${f.status === 'Aberto' ? `
+                                                    <button onclick="abrirTelaPagarParcial('${f.id}', 'total')" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[11px] inline-flex items-center gap-1 shadow-sm">
+                                                        <i class="fa-solid fa-check"></i> Total
+                                                    </button>
+                                                    <button onclick="abrirTelaPagarParcial('${f.id}', 'parcial')" class="px-2.5 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded font-bold text-[11px] inline-flex items-center gap-1 shadow-sm">
+                                                        <i class="fa-solid fa-scissors"></i> Parcial
+                                                    </button>
+                                                ` : `
+                                                    <span class="text-emerald-600 font-bold text-xs"><i class="fa-solid fa-circle-check"></i> Liquidado</span>
+                                                `}
+                                                <button onclick="excluirItemGenerico('financeiro', '${f.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             `;
@@ -746,22 +790,24 @@
                             </div>
 
                             <div class="border rounded-xl overflow-hidden bg-white mt-4">
-                                <table class="w-full text-left text-[11px]">
-                                    <thead class="bg-slate-100 border-b font-bold uppercase text-slate-600">
-                                        <tr>
-                                            <th class="p-2.5">FORMA</th>
-                                            <th class="p-2.5">VALOR BRUTO</th>
-                                            <th class="p-2.5">MULTA</th>
-                                            <th class="p-2.5">JUROS</th>
-                                            <th class="p-2.5">TX. ADICIC</th>
-                                            <th class="p-2.5">DESCONTO</th>
-                                            <th class="p-2.5">VALOR LÍQUIDO</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="tbl_body_grid_baixa" class="divide-y">
-                                        <tr><td colspan="7" class="p-4 text-center text-slate-400">Clique em "Adicionar" para incluir o detalhamento do recebimento.</td></tr>
-                                    </tbody>
-                                </table>
+                                <div class="overflow-x-auto">
+                                    <table class="w-full text-left text-[11px]">
+                                        <thead class="bg-slate-100 border-b font-bold uppercase text-slate-600">
+                                            <tr>
+                                                <th class="p-2.5">FORMA</th>
+                                                <th class="p-2.5">VALOR BRUTO</th>
+                                                <th class="p-2.5">MULTA</th>
+                                                <th class="p-2.5">JUROS</th>
+                                                <th class="p-2.5">TX. ADICIC</th>
+                                                <th class="p-2.5">DESCONTO</th>
+                                                <th class="p-2.5">VALOR LÍQUIDO</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="tbl_body_grid_baixa" class="divide-y">
+                                            <tr><td colspan="7" class="p-4 text-center text-slate-400">Clique em "Adicionar" para incluir o detalhamento do recebimento.</td></tr>
+                                        </tbody>
+                                    </table>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -880,35 +926,37 @@
         function renderFormasMonetariasView() {
             return `
                 <div class="bg-white rounded-xl shadow-sm border overflow-hidden">
-                    <table class="w-full text-left text-xs">
-                        <thead class="bg-slate-100 font-bold uppercase border-b">
-                            <tr>
-                                <th class="p-3">Nome da Forma Monetária</th>
-                                <th class="p-3">Multa Padrão (%)</th>
-                                <th class="p-3">Juros Dia (%)</th>
-                                <th class="p-3">Conta Bancária Vinculada</th>
-                                <th class="p-3">Status</th>
-                                <th class="p-3 text-right">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y">
-                            ${db.formas_monetarias.map(m => {
-                                const conta = db.contas_bancarias.find(c => c.id === m.contaId);
-                                return `
-                                    <tr class="hover:bg-slate-50">
-                                        <td class="p-3 font-bold text-slate-800">${escapeHTML(m.nome)}</td>
-                                        <td class="p-3 font-bold text-slate-700">${(m.multaPct || 0).toFixed(2)}%</td>
-                                        <td class="p-3 font-bold text-slate-700">${(m.jurosDiaPct || 0).toFixed(3)}%</td>
-                                        <td class="p-3 font-semibold text-teal-700">${conta ? escapeHTML(conta.banco) : 'Caixa Interno'}</td>
-                                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.status === 'Ativo' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${m.status}</span></td>
-                                        <td class="p-3 text-right space-x-1">
-                                            <button onclick="excluirItemGenerico('formas_monetarias', '${m.id}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Excluir"><i class="fa-solid fa-trash-can"></i></button>
-                                        </td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 font-bold uppercase border-b">
+                                <tr>
+                                    <th class="p-3">Nome da Forma Monetária</th>
+                                    <th class="p-3">Multa Padrão (%)</th>
+                                    <th class="p-3">Juros Dia (%)</th>
+                                    <th class="p-3">Conta Bancária Vinculada</th>
+                                    <th class="p-3">Status</th>
+                                    <th class="p-3 text-right">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                ${db.formas_monetarias.map(m => {
+                                    const conta = db.contas_bancarias.find(c => c.id === m.contaId);
+                                    return `
+                                        <tr class="hover:bg-slate-50">
+                                            <td class="p-3 font-bold text-slate-800">${escapeHTML(m.nome)}</td>
+                                            <td class="p-3 font-bold text-slate-700">${(m.multaPct || 0).toFixed(2)}%</td>
+                                            <td class="p-3 font-bold text-slate-700">${(m.jurosDiaPct || 0).toFixed(3)}%</td>
+                                            <td class="p-3 font-semibold text-teal-700">${conta ? escapeHTML(conta.banco) : 'Caixa Interno'}</td>
+                                            <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.status === 'Ativo' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${m.status}</span></td>
+                                            <td class="p-3 text-right space-x-1">
+                                                <button onclick="excluirItemGenerico('formas_monetarias', '${m.id}')" class="p-1.5 text-red-600 hover:bg-red-50 rounded" title="Excluir"><i class="fa-solid fa-trash-can"></i></button>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             `;
         }
@@ -985,17 +1033,19 @@
                                 ${calculosDRE.E >= 0 ? 'SUPERÁVIT' : 'DEFICIT'}: R$ ${Math.abs(calculosDRE.E).toFixed(2)}
                             </span>
                         </div>
-                        <table class="w-full text-left text-xs">
-                            <tbody class="divide-y">
-                                ${(db.dre_config || []).map(row => `
-                                    <tr class="${row.tipo === 'formula' ? 'bg-slate-50 font-bold' : ''}">
-                                        <td class="p-3 font-extrabold text-teal-700">${row.id}</td>
-                                        <td class="p-3">${escapeHTML(row.label)}</td>
-                                        <td class="p-3 text-right font-bold">R$ ${(calculosDRE[row.id] || 0).toFixed(2)}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <tbody class="divide-y">
+                                    ${(db.dre_config || []).map(row => `
+                                        <tr class="${row.tipo === 'formula' ? 'bg-slate-50 font-bold' : ''}">
+                                            <td class="p-3 font-extrabold text-teal-700">${row.id}</td>
+                                            <td class="p-3">${escapeHTML(row.label)}</td>
+                                            <td class="p-3 text-right font-bold">R$ ${(calculosDRE[row.id] || 0).toFixed(2)}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             `;
@@ -1004,9 +1054,9 @@
         function renderDashboardView() {
             return `
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div class="bg-white p-4 rounded-xl border"><p class="text-xs font-bold text-slate-500 uppercase">A Receber em Aberto</p><h3 class="text-xl font-extrabold text-emerald-600">R$ ${db.financeiro.filter(f=>f.tipo==='Receber' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0).toFixed(2)}</h3></div>
-                    <div class="bg-white p-4 rounded-xl border"><p class="text-xs font-bold text-slate-500 uppercase">A Pagar em Aberto</p><h3 class="text-xl font-extrabold text-rose-600">R$ ${db.financeiro.filter(f=>f.tipo==='Pagar' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0).toFixed(2)}</h3></div>
-                    <div class="bg-white p-4 rounded-xl border"><p class="text-xs font-bold text-slate-500 uppercase">Itens no Estoque</p><h3 class="text-xl font-extrabold text-slate-800">${db.estoque.length}</h3></div>
+                    <div class="bg-white p-4 rounded-xl border shadow-sm"><p class="text-xs font-bold text-slate-500 uppercase">A Receber em Aberto</p><h3 class="text-xl font-extrabold text-emerald-600">R$ ${db.financeiro.filter(f=>f.tipo==='Receber' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0).toFixed(2)}</h3></div>
+                    <div class="bg-white p-4 rounded-xl border shadow-sm"><p class="text-xs font-bold text-slate-500 uppercase">A Pagar em Aberto</p><h3 class="text-xl font-extrabold text-rose-600">R$ ${db.financeiro.filter(f=>f.tipo==='Pagar' && f.status==='Aberto').reduce((a,b)=>a+b.valor,0).toFixed(2)}</h3></div>
+                    <div class="bg-white p-4 rounded-xl border shadow-sm"><p class="text-xs font-bold text-slate-500 uppercase">Itens no Estoque</p><h3 class="text-xl font-extrabold text-slate-800">${db.estoque.length}</h3></div>
                 </div>
             `;
         }
