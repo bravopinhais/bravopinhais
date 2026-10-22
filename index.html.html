@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guardiões do Bravo - Gestão Condominial</title>
+    <title>Guardiões do Bravo - Gestão Condominial Segura</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -17,6 +17,7 @@
 </head>
 <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
 
+    <!-- CONTÊINER DA APLICAÇÃO -->
     <div id="app" class="flex-1 flex flex-col min-h-screen"></div>
 
     <script>
@@ -63,7 +64,7 @@
         }
 
         // ==========================================
-        // 2. BANCO DE DADOS E ESTRUTURA
+        // 2. BANCO DE DADOS LOCALSTORAGE
         // ==========================================
         const DEFAULT_DATA = {
             usuarios: [
@@ -262,7 +263,7 @@
         }
 
         // ==========================================
-        // 5. INTERFACE PRINCIPAL
+        // 5. INTERFACE PRINCIPAL DA APLICAÇÃO
         // ==========================================
         function renderApp() {
             const container = document.getElementById('app');
@@ -357,7 +358,7 @@
                         </div>
                     </aside>
 
-                    <!-- CONTEÚDO -->
+                    <!-- CONTEÚDO PRINCIPAL COM NAVEGAÇÃO DE ABAS -->
                     <div class="flex-1 flex flex-col overflow-hidden">
                         <header class="bg-slate-900 text-white p-3 flex md:hidden items-center justify-between border-b border-slate-800">
                             <div class="flex items-center gap-3">
@@ -369,7 +370,7 @@
                             <button onclick="encerrarSessao()" class="text-xs bg-red-600/20 text-red-400 px-2.5 py-1.5 rounded-md">Sair</button>
                         </header>
 
-                        <!-- BARRA DE ABAS -->
+                        <!-- BARRA DE ABAS SIMULTÂNEAS -->
                         <div class="bg-slate-200 border-b border-slate-300 flex items-center overflow-x-auto px-2 pt-2 gap-1">
                             ${tabsState.openTabs.map(tabId => `
                                 <div onclick="abrirModulo('${tabId}')" class="flex items-center gap-2 px-3 py-2 rounded-t-lg text-xs font-semibold cursor-pointer transition select-none ${tabsState.activeTab === tabId ? 'tab-active shadow-sm' : 'bg-slate-300 text-slate-600 hover:bg-slate-300/80'}">
@@ -383,7 +384,6 @@
                             `).join('')}
                         </div>
 
-                        <!-- BODY DO MÓDULO -->
                         <main class="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-100">
                             ${renderModuleContent(tabsState.activeTab)}
                         </main>
@@ -398,7 +398,7 @@
         }
 
         // ==========================================
-        // 6. RENDERIZAÇÃO DE MÓDULOS E TABELAS
+        // 6. RENDERIZAÇÃO DE MÓDULOS E BOTÕES "NOVO"
         // ==========================================
         function renderModuleContent(moduloId) {
             const getButtonConfig = (id) => {
@@ -447,7 +447,7 @@
         }
 
         // ==========================================
-        // 7. RENDERIZAÇÃO GENÉRICA DE DADOS E TABELAS
+        // 7. TABELAS GENÉRICAS E GRAVAÇÃO DE DADOS
         // ==========================================
         function renderGenericDataList(modKey) {
             const list = db[modKey] || [];
@@ -495,9 +495,6 @@
             `;
         }
 
-        // ==========================================
-        // 8. MODAL GENÉRICO DE CRIAÇÃO REAL
-        // ==========================================
         let imagemAnexadaBase64 = '';
 
         function renderModalGen(modKey, nomeModulo, campos) {
@@ -587,7 +584,7 @@
         }
 
         // ==========================================
-        // 9. DEMAIS FUNÇÕES E MODAIS
+        // 8. FINANCEIRO E USUÁRIOS
         // ==========================================
         function renderFinanceiroView() {
             return `
