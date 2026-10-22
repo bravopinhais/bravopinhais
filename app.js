@@ -4,6 +4,10 @@ import { renderLogin } from './js/auth.js';
 import { renderDashboard } from './js/modules/dashboard.js';
 import { renderFinanceiro } from './js/modules/financeiro.js';
 import { renderEstoque } from './js/modules/estoque.js';
+import { renderDocumentos } from './js/modules/documentos.js';
+import { renderMoradores } from './js/modules/moradores.js';
+import { renderUsuarios } from './js/modules/usuarios.js';
+import { renderRelatorios } from './js/modules/relatorios.js';
 
 const state = {
   db: loadDb() || DEFAULT_DATA,
@@ -18,6 +22,22 @@ const state = {
     estoque: {
       busca: '',
       categoria: 'Todas',
+      status: 'Todos'
+    },
+    documentos: {
+      busca: '',
+      pasta: 'Todas',
+      dataIni: '',
+      dataFim: ''
+    },
+    moradores: {
+      busca: '',
+      bloco: 'Todos',
+      tipo: 'Todos'
+    },
+    usuarios: {
+      busca: '',
+      perfil: 'Todos',
       status: 'Todos'
     }
   }
@@ -57,6 +77,18 @@ function renderCurrentModule() {
       break;
     case 'estoque':
       renderEstoque(state);
+      break;
+    case 'documentos':
+      renderDocumentos(state);
+      break;
+    case 'moradores':
+      renderMoradores(state);
+      break;
+    case 'usuarios':
+      renderUsuarios(state);
+      break;
+    case 'relatorios':
+      renderRelatorios(state);
       break;
     default:
       content.innerHTML = '<p>Módulo em desenvolvimento.</p>';
@@ -118,7 +150,7 @@ function renderApp() {
           </div>
         </div>
 
-        <nav>
+        <nav class="nav-menu">
           <button class="nav-item ${state.activeTab === 'dashboard' ? 'active' : ''}" data-tab="dashboard">
             <i class="fa-solid fa-gauge-high"></i> Dashboard
           </button>
@@ -127,6 +159,18 @@ function renderApp() {
           </button>
           <button class="nav-item ${state.activeTab === 'estoque' ? 'active' : ''}" data-tab="estoque">
             <i class="fa-solid fa-boxes-stacked"></i> Estoque
+          </button>
+          <button class="nav-item ${state.activeTab === 'documentos' ? 'active' : ''}" data-tab="documentos">
+            <i class="fa-solid fa-folder-open"></i> Documentos
+          </button>
+          <button class="nav-item ${state.activeTab === 'moradores' ? 'active' : ''}" data-tab="moradores">
+            <i class="fa-solid fa-user-tie"></i> Moradores
+          </button>
+          <button class="nav-item ${state.activeTab === 'usuarios' ? 'active' : ''}" data-tab="usuarios">
+            <i class="fa-solid fa-users"></i> Usuários
+          </button>
+          <button class="nav-item ${state.activeTab === 'relatorios' ? 'active' : ''}" data-tab="relatorios">
+            <i class="fa-solid fa-chart-column"></i> Relatórios
           </button>
         </nav>
 
