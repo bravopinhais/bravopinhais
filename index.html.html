@@ -34,7 +34,6 @@
 
     <script>
         let tempBase64 = ''; 
-        let matrixInterval = null;
 
         function escapeHTML(str) {
             if (typeof str !== 'string') return str || '';
@@ -126,7 +125,6 @@
         } catch (e) { sessao.usuarioLogado = null; }
 
         let tabsState = { openTabs: ['dashboard'], activeTab: 'dashboard' };
-        let itensGridBaixa = [];
 
         // Estado dos Filtros para Cada Módulo
         let dashFiltro = { dtIni: '', dtFim: '' };
@@ -250,7 +248,7 @@
         }
 
         // =====================================
-        // LOGIN & LOGIN SHELL
+        // LOGIN & TELA PRINCIPAL
         // =====================================
         function realizarLogin(e) {
             e.preventDefault();
@@ -392,18 +390,18 @@
                 </button>
             `;
 
-            // MAPEAMENTO DEFINITIVO DOS BOTÕES DE INSERÇÃO
-            if (moduloId === 'financeiro') btnNovoHtml = `<button onclick="renderModalNovoTitulo()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Título</button>`;
-            else if (moduloId === 'formas_monetarias') btnNovoHtml = `<button onclick="renderModalFormaMonetaria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Nova Forma</button>`;
-            else if (moduloId === 'moradores') btnNovoHtml = `<button onclick="renderModalMorador()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Morador</button>`;
-            else if (moduloId === 'contas_bancarias') btnNovoHtml = `<button onclick="renderModalContaBancaria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Nova Conta</button>`;
-            else if (moduloId === 'categorias') btnNovoHtml = `<button onclick="renderModalCategoria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Nova Categoria/Pasta</button>`;
-            else if (moduloId === 'estoque') btnNovoHtml = `<button onclick="renderModalEstoque()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Item</button>`;
-            else if (moduloId === 'documentos') btnNovoHtml = `<button onclick="renderModalDocumento()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-upload"></i> Subir Documento</button>`;
-            else if (moduloId === 'usuarios') btnNovoHtml = `<button onclick="renderModalUsuario()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-user-plus"></i> Novo Usuário</button>`;
+            // MAPEAMENTO GLOBAL CORRIGIDO PARA OS BOTÕES DE INSERÇÃO
+            if (moduloId === 'financeiro') btnNovoHtml = `<button onclick="window.renderModalNovoTitulo()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Título</button>`;
+            else if (moduloId === 'formas_monetarias') btnNovoHtml = `<button onclick="window.renderModalFormaMonetaria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Nova Forma</button>`;
+            else if (moduloId === 'moradores') btnNovoHtml = `<button onclick="window.renderModalMorador()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Morador</button>`;
+            else if (moduloId === 'contas_bancarias') btnNovoHtml = `<button onclick="window.renderModalContaBancaria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Nova Conta</button>`;
+            else if (moduloId === 'categorias') btnNovoHtml = `<button onclick="window.renderModalCategoria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Nova Pasta / Categoria</button>`;
+            else if (moduloId === 'estoque') btnNovoHtml = `<button onclick="window.renderModalEstoque()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Item</button>`;
+            else if (moduloId === 'documentos') btnNovoHtml = `<button onclick="window.renderModalDocumento()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-upload"></i> Subir Documento</button>`;
+            else if (moduloId === 'usuarios') btnNovoHtml = `<button onclick="window.renderModalUsuario()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-user-plus"></i> Novo Usuário</button>`;
             else if (moduloId === 'relatorios') btnNovoHtml = `
                 <button onclick="restaurarDREPadrao()" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5"><i class="fa-solid fa-rotate-left"></i> Restaurar DRE</button>
-                <button onclick="renderModalDRELinha()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Linha DRE</button>
+                <button onclick="window.renderModalDRELinha()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Linha DRE</button>
             `;
 
             const headerGlobal = `
@@ -444,7 +442,7 @@
         }
 
         // =====================================
-        // DASHBOARD COM FILTRO DE BUSCA POR DATA
+        // DASHBOARD COM FILTRO POR DATA
         // =====================================
         function renderDashboardView() {
             let lista = db.financeiro || [];
@@ -459,7 +457,6 @@
 
             return `
                 <div class="space-y-6">
-                    <!-- Painel de Busca por Data no Dashboard -->
                     <div class="bg-white p-4 rounded-xl shadow-sm border space-y-3 no-print">
                         <div class="flex items-center justify-between border-b pb-2">
                             <h4 class="font-bold text-xs uppercase text-slate-700 flex items-center gap-2">
@@ -487,7 +484,6 @@
                         </div>
                     </div>
 
-                    <!-- Indicadores Chave -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div class="bg-white p-4 rounded-xl border shadow-sm border-l-4 border-l-emerald-500">
                             <p class="text-[10px] font-extrabold uppercase text-slate-400">Receitas Liquidadas</p>
@@ -507,7 +503,6 @@
                         </div>
                     </div>
 
-                    <!-- Gráficos -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="bg-white p-5 rounded-xl border shadow-sm h-64 flex flex-col justify-center"><h4 class="font-bold text-xs uppercase text-slate-500 mb-4 text-center">Entradas vs Saídas</h4><canvas id="chartDonut"></canvas></div>
                         <div class="bg-white p-5 rounded-xl border shadow-sm h-64 flex flex-col justify-center"><h4 class="font-bold text-xs uppercase text-slate-500 mb-4 text-center">Pendências por Tipo</h4><canvas id="chartBar"></canvas></div>
@@ -560,7 +555,7 @@
         }
 
         // =====================================
-        // MÓDULO FINANCEIRO (+ FILTROS)
+        // FINANCEIRO (+ FILTROS)
         // =====================================
         function renderFinanceiroView() {
             let lista = db.financeiro || [];
@@ -615,7 +610,7 @@
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y">
-                                    ${lista.length === 0 ? `<tr><td colspan="6" class="p-6 text-center text-slate-500 font-bold">Nenhum registro encontrado com estes filtros.</td></tr>` : ''}
+                                    ${lista.length === 0 ? `<tr><td colspan="6" class="p-6 text-center text-slate-500 font-bold">Nenhum registro encontrado.</td></tr>` : ''}
                                     ${lista.map(f => `
                                         <tr class="hover:bg-slate-50">
                                             <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${f.tipo === 'Receber' ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}">${escapeHTML(f.tipo)}</span></td>
@@ -625,10 +620,9 @@
                                             <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${f.status === 'Baixado' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}">${escapeHTML(f.status)}</span></td>
                                             <td class="p-3 text-right space-x-1 whitespace-nowrap">
                                                 ${f.status === 'Aberto' ? `
-                                                    <button onclick="abrirTelaPagarParcial('${f.id}', 'total')" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[11px]"><i class="fa-solid fa-check"></i> Total</button>
-                                                    <button onclick="abrirTelaPagarParcial('${f.id}', 'parcial')" class="px-2 py-1 bg-amber-600 hover:bg-amber-700 text-white rounded font-bold text-[11px]"><i class="fa-solid fa-scissors"></i> Parcial</button>
+                                                    <button onclick="abrirTelaPagarParcial('${f.id}', 'total')" class="px-2 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded font-bold text-[11px]"><i class="fa-solid fa-check"></i> Baixar</button>
                                                 ` : `<span class="text-emerald-600 font-bold text-xs mr-2"><i class="fa-solid fa-circle-check"></i> Liquidado</span>`}
-                                                <button onclick="renderModalNovoTitulo('${f.id}')" title="Editar" class="p-1 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+                                                <button onclick="window.renderModalNovoTitulo('${f.id}')" title="Editar" class="p-1 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
                                                 <button onclick="excluirItemGenerico('financeiro', '${f.id}')" title="Excluir" class="p-1 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
                                             </td>
                                         </tr>
@@ -655,7 +649,7 @@
                 <div id="modal_novo_t" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
                         <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
-                            <h3 class="font-bold text-sm"><i class="fa-solid fa-file-invoice mr-1"></i> ${f ? 'Editar Título Financeiro' : 'Novo Título Financeiro'}</h3>
+                            <h3 class="font-bold text-sm"><i class="fa-solid fa-file-invoice mr-1"></i> ${f ? 'Editar Título' : 'Novo Título Financeiro'}</h3>
                             <button onclick="fecharModal('modal_novo_t')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                         <form onsubmit="salvarNovoTituloForm(event, '${tituloId || ''}')" class="p-6 space-y-3">
@@ -697,7 +691,7 @@
         }
 
         // =====================================
-        // MÓDULO ESTOQUE (+ FILTROS DEDICADOS)
+        // ESTOQUE (+ FILTROS)
         // =====================================
         function renderEstoqueView() {
             let list = db.estoque || [];
@@ -715,7 +709,6 @@
 
             return `
                 <div class="space-y-4">
-                    <!-- Filtros Dedicados do Estoque -->
                     <div class="bg-white p-3.5 rounded-xl shadow-sm border grid grid-cols-1 sm:grid-cols-3 gap-3 no-print">
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Buscar Produto</label>
@@ -732,8 +725,8 @@
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Nível de Estoque</label>
                             <select id="flt_est_status" onchange="atualizarFiltrosEstoque()" class="w-full p-2 border rounded text-xs font-bold bg-white">
                                 <option value="Todos" ${estFiltros.status === 'Todos' ? 'selected' : ''}>Todos os Níveis</option>
-                                <option value="Critico" ${estFiltros.status === 'Critico' ? 'selected' : ''}>Apenas Baixo Estoque (Crítico)</option>
-                                <option value="OK" ${estFiltros.status === 'OK' ? 'selected' : ''}>Apenas Estoque Normal</option>
+                                <option value="Critico" ${estFiltros.status === 'Critico' ? 'selected' : ''}>Baixo Estoque (Crítico)</option>
+                                <option value="OK" ${estFiltros.status === 'OK' ? 'selected' : ''}>Estoque Normal</option>
                             </select>
                         </div>
                     </div>
@@ -748,17 +741,15 @@
                                         <th class="p-3">Categoria</th>
                                         <th class="p-3">Qtd Atual</th>
                                         <th class="p-3">Localização</th>
-                                        <th class="p-3">Próximo Balanço</th>
                                         <th class="p-3">Status</th>
                                         <th class="p-3 text-right">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y">
-                                    ${list.length === 0 ? `<tr><td colspan="8" class="p-6 text-center text-slate-500 font-bold">Nenhum item de estoque encontrado.</td></tr>` : ''}
+                                    ${list.length === 0 ? `<tr><td colspan="7" class="p-6 text-center text-slate-500 font-bold">Nenhum item encontrado.</td></tr>` : ''}
                                     ${list.map(e => {
                                         const isCritico = e.qtd <= e.minimo;
-                                        const balancoPendente = e.proximoBalanco && e.proximoBalanco <= hoje;
-                                        const thumb = e.fotoBase64 ? `<img src="${e.fotoBase64}" class="w-10 h-10 object-cover rounded shadow border cursor-pointer hover:opacity-80">` : `<div class="w-10 h-10 bg-slate-200 rounded flex items-center justify-center text-slate-400"><i class="fa-solid fa-image"></i></div>`;
+                                        const thumb = e.fotoBase64 ? `<img src="${e.fotoBase64}" class="w-10 h-10 object-cover rounded shadow border">` : `<div class="w-10 h-10 bg-slate-200 rounded flex items-center justify-center text-slate-400"><i class="fa-solid fa-image"></i></div>`;
                                         return `
                                             <tr class="hover:bg-slate-50">
                                                 <td class="p-3 flex justify-center">${thumb}</td>
@@ -766,18 +757,11 @@
                                                 <td class="p-3 text-slate-600"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200 border text-slate-700">${escapeHTML(e.categoria)}</span></td>
                                                 <td class="p-3 font-extrabold text-slate-900 text-sm">${e.qtd}</td>
                                                 <td class="p-3 text-slate-600">${escapeHTML(e.localizacao || 'Central')}</td>
-                                                <td class="p-3 font-bold">
-                                                    ${e.proximoBalanco ? `
-                                                        <span class="px-2 py-0.5 rounded text-[10px] font-bold ${balancoPendente ? 'bg-rose-100 text-rose-700 border border-rose-300 animate-pulse' : 'bg-slate-100 text-slate-700'}">
-                                                            <i class="fa-solid fa-calendar-day"></i> ${e.proximoBalanco}
-                                                        </span>
-                                                    ` : '<span class="text-slate-400">Não prog.</span>'}
-                                                </td>
                                                 <td class="p-3">
                                                     ${isCritico ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700">Baixo Estoque</span>` : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700">OK</span>`}
                                                 </td>
                                                 <td class="p-3 text-right space-x-1">
-                                                    <button onclick="renderModalEstoque('${e.id}')" title="Editar Item" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+                                                    <button onclick="window.renderModalEstoque('${e.id}')" title="Editar Item" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
                                                     <button onclick="excluirItemGenerico('estoque', '${e.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
                                                 </td>
                                             </tr>
@@ -807,7 +791,7 @@
                 <div id="modal_est" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
                         <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
-                            <h3 class="font-bold text-sm"><i class="fa-solid fa-boxes-stacked mr-1"></i> ${e ? 'Editar Item do Estoque' : 'Novo Item no Estoque'}</h3>
+                            <h3 class="font-bold text-sm"><i class="fa-solid fa-boxes-stacked mr-1"></i> ${e ? 'Editar Item' : 'Novo Item no Estoque'}</h3>
                             <button onclick="fecharModal('modal_est')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                         <form onsubmit="salvarEstoqueForm(event, '${itemId || ''}')" class="p-6 space-y-3 overflow-y-auto">
@@ -825,7 +809,6 @@
                                 <div><label class="block text-xs font-bold uppercase mb-1">Qtd Atual</label><input type="number" id="est_qtd" required value="${e ? e.qtd : 10}" class="w-full p-2 border rounded text-xs font-bold"></div>
                                 <div><label class="block text-xs font-bold uppercase mb-1">Qtd Mínima</label><input type="number" id="est_min" required value="${e ? e.minimo : 5}" class="w-full p-2 border rounded text-xs font-bold"></div>
                             </div>
-                            <div><label class="block text-xs font-bold uppercase mb-1">Data Próximo Balanço</label><input type="date" id="est_balanco" value="${e ? (e.proximoBalanco || '') : ''}" class="w-full p-2 border rounded text-xs font-bold"></div>
                             
                             <div class="border-2 border-dashed border-slate-300 rounded-xl p-4 text-center bg-slate-50 space-y-3 mt-4">
                                 <label class="block text-xs font-bold text-slate-500 uppercase">Foto do Produto (Câmera ou Arquivo)</label>
@@ -861,20 +844,19 @@
             const cat = document.getElementById('est_categoria').value;
             const qtd = parseInt(document.getElementById('est_qtd').value) || 0;
             const min = parseInt(document.getElementById('est_min').value) || 0;
-            const bal = document.getElementById('est_balanco').value;
 
             if (itemId) {
                 const e = db.estoque.find(x => x.id === itemId);
-                if (e) { e.item = item; e.categoria = cat; e.qtd = qtd; e.minimo = min; e.proximoBalanco = bal; e.fotoBase64 = tempBase64; }
+                if (e) { e.item = item; e.categoria = cat; e.qtd = qtd; e.minimo = min; e.fotoBase64 = tempBase64; }
             } else {
-                db.estoque.push({ id: 'est_' + Date.now(), item, categoria: cat, qtd, minimo: min, proximoBalanco: bal, fotoBase64: tempBase64 });
+                db.estoque.push({ id: 'est_' + Date.now(), item, categoria: cat, qtd, minimo: min, fotoBase64: tempBase64 });
             }
 
             salvarDados(db); fecharModal('modal_est'); renderApp();
         }
 
         // =====================================
-        // MÓDULO DOCUMENTOS (+ FILTROS DEDICADOS)
+        // DOCUMENTOS (+ FILTROS)
         // =====================================
         function renderDocumentosView() {
             let list = db.documentos || [];
@@ -890,7 +872,6 @@
 
             return `
                 <div class="space-y-4">
-                    <!-- Filtros Dedicados de Documentos -->
                     <div class="bg-white p-3.5 rounded-xl shadow-sm border grid grid-cols-1 sm:grid-cols-4 gap-3 no-print">
                         <div>
                             <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Buscar por Título</label>
@@ -941,7 +922,7 @@
                                             <td class="p-3 text-slate-500 italic max-w-xs truncate">${escapeHTML(d.observacao)}</td>
                                             <td class="p-3 text-right space-x-1">
                                                 <button onclick="visualizarDocumento('${d.id}')" title="Visualizar" class="p-1.5 text-emerald-600 hover:bg-emerald-50 rounded"><i class="fa-solid fa-eye"></i></button>
-                                                <button onclick="renderModalDocumento('${d.id}')" title="Editar" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+                                                <button onclick="window.renderModalDocumento('${d.id}')" title="Editar" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
                                                 <button onclick="excluirItemGenerico('documentos', '${d.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
                                             </td>
                                         </tr>
@@ -971,7 +952,7 @@
                 <div id="modal_doc" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white w-full max-w-lg rounded-2xl shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
                         <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
-                            <h3 class="font-bold text-sm"><i class="fa-solid fa-folder-open mr-1"></i> ${d ? 'Editar Documento' : 'Fazer Upload de Documento'}</h3>
+                            <h3 class="font-bold text-sm"><i class="fa-solid fa-folder-open mr-1"></i> ${d ? 'Editar Documento' : 'Subir Documento'}</h3>
                             <button onclick="fecharModal('modal_doc')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                         <form onsubmit="salvarDocumentoForm(event, '${docId || ''}')" class="p-6 space-y-4 overflow-y-auto">
@@ -1062,7 +1043,7 @@
         }
 
         // =====================================
-        // MÓDULO MORADORES (+ MODAL / FILTROS)
+        // MORADORES (+ FILTROS)
         // =====================================
         function renderMoradoresView() {
             let list = db.moradores || [];
@@ -1122,7 +1103,7 @@
                                             <td class="p-3 text-slate-600">${escapeHTML(m.telefone)}</td>
                                             <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.tipo === 'Proprietário' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}">${escapeHTML(m.tipo)}</span></td>
                                             <td class="p-3 text-right space-x-1">
-                                                <button onclick="renderModalMorador('${m.id}')" title="Editar" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+                                                <button onclick="window.renderModalMorador('${m.id}')" title="Editar" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
                                                 <button onclick="excluirItemGenerico('moradores', '${m.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
                                             </td>
                                         </tr>
@@ -1199,7 +1180,7 @@
         }
 
         // =====================================
-        // MÓDULO CATEGORIAS (+ MODAL / FILTROS)
+        // CATEGORIAS & PASTAS (+ FILTROS)
         // =====================================
         function renderCategoriasView() {
             let list = db.categorias || [];
@@ -1248,7 +1229,7 @@
                                             </td>
                                             <td class="p-3 font-semibold text-slate-600">${escapeHTML(c.modulo)}</td>
                                             <td class="p-3 text-right space-x-1">
-                                                <button onclick="renderModalCategoria('${c.id}')" title="Editar" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+                                                <button onclick="window.renderModalCategoria('${c.id}')" title="Editar" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
                                                 <button onclick="excluirItemGenerico('categorias', '${c.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
                                             </td>
                                         </tr>
@@ -1324,7 +1305,7 @@
         }
 
         // =====================================
-        // MÓDULOS SIMPLES (FORMAS, CONTAS, USUÁRIOS)
+        // FORMAS MONETÁRIAS, CONTAS E USUÁRIOS
         // =====================================
         function renderFormasMonetariasView() {
             let list = db.formas_monetarias || [];
@@ -1370,7 +1351,7 @@
                                         <td class="p-3 font-semibold text-slate-600">${m.jurosDiaPct}%</td>
                                         <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">${escapeHTML(m.status)}</span></td>
                                         <td class="p-3 text-right space-x-1">
-                                            <button onclick="renderModalFormaMonetaria('${m.id}')" title="Editar" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+                                            <button onclick="window.renderModalFormaMonetaria('${m.id}')" title="Editar" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
                                             <button onclick="excluirItemGenerico('formas_monetarias', '${m.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
                                         </td>
                                     </tr>
@@ -1463,7 +1444,7 @@
                                         <td class="p-3 text-slate-600 font-semibold">${escapeHTML(c.conta)}</td>
                                         <td class="p-3 font-extrabold text-teal-700">R$ ${c.saldo.toFixed(2)}</td>
                                         <td class="p-3 text-right space-x-1">
-                                            <button onclick="renderModalContaBancaria('${c.id}')" title="Editar" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+                                            <button onclick="window.renderModalContaBancaria('${c.id}')" title="Editar" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
                                             <button onclick="excluirItemGenerico('contas_bancarias', '${c.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
                                         </td>
                                     </tr>
@@ -1486,7 +1467,7 @@
                 <div id="modal_cb" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden">
                         <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
-                            <h3 class="font-bold text-sm"><i class="fa-solid fa-building-columns mr-1"></i> ${c ? 'Editar Conta Bancária' : 'Nova Conta Bancária'}</h3>
+                            <h3 class="font-bold text-sm"><i class="fa-solid fa-building-columns mr-1"></i> ${c ? 'Editar Conta' : 'Nova Conta Bancária'}</h3>
                             <button onclick="fecharModal('modal_cb')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                         <form onsubmit="salvarContaBancariaForm(event, '${cbId || ''}')" class="p-6 space-y-3">
@@ -1577,7 +1558,7 @@
                                         <td class="p-3 text-slate-600">${escapeHTML(u.email)}</td>
                                         <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200 text-slate-800">${escapeHTML(u.perfil)}</span></td>
                                         <td class="p-3 text-right space-x-1">
-                                            <button onclick="renderModalUsuario('${u.id}')" title="Editar" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+                                            <button onclick="window.renderModalUsuario('${u.id}')" title="Editar" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
                                             <button onclick="excluirItemGenerico('usuarios', '${u.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
                                         </td>
                                     </tr>
@@ -1618,7 +1599,7 @@
                             </div>
                             <div><label class="block text-xs font-bold uppercase mb-1">Nome Completo</label><input type="text" id="usr_nome" required value="${u ? escapeHTML(u.nome) : ''}" class="w-full p-2 border rounded text-xs font-bold"></div>
                             <div><label class="block text-xs font-bold uppercase mb-1">E-mail</label><input type="email" id="usr_email" required value="${u ? escapeHTML(u.email) : ''}" class="w-full p-2 border rounded text-xs font-bold"></div>
-                            <div><label class="block text-xs font-bold uppercase mb-1">Senha de Acesso</label><input type="password" id="usr_senha" required value="${u ? escapeHTML(u.senhaHash) : '123456'}" class="w-full p-2 border rounded text-xs font-bold"></div>
+                            <div><label class="block text-xs font-bold uppercase mb-1">Senha</label><input type="password" id="usr_senha" required value="${u ? escapeHTML(u.senhaHash) : '123456'}" class="w-full p-2 border rounded text-xs font-bold"></div>
                             <div class="flex items-center justify-end gap-2 pt-3 border-t">
                                 <button type="button" onclick="fecharModal('modal_usr')" class="px-3 py-2 bg-slate-200 rounded text-xs font-bold">Cancelar</button>
                                 <button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded text-xs font-bold shadow">Salvar Usuário</button>
@@ -1649,7 +1630,7 @@
         }
 
         // =====================================
-        // CENTRAL DE RELATÓRIOS & DRE
+        // RELATÓRIOS & DRE
         // =====================================
         function renderRelatoriosView() {
             const valoresAcumulados = {};
@@ -1664,19 +1645,17 @@
 
             return `
                 <div class="space-y-6">
-                    <div class="bg-gradient-to-r from-slate-800 to-slate-900 p-6 rounded-xl shadow-lg border border-slate-700 text-white relative overflow-hidden">
-                        <div class="relative z-10 flex flex-col md:flex-row items-center justify-between gap-4">
-                            <div>
-                                <h3 class="text-lg font-extrabold text-cyan-400 mb-1">Central de Relatórios Personalizados</h3>
-                                <p class="text-xs text-slate-300">Gere extratos filtrados, balanços, e exportações consolidadas de qualquer módulo do sistema.</p>
-                            </div>
-                            <button onclick="abrirModalGeradorRelatorio()" class="px-5 py-3 bg-cyan-600 hover:bg-cyan-500 text-slate-950 font-bold rounded-lg shadow-lg shadow-cyan-500/30 transition whitespace-nowrap flex items-center gap-2">
-                                <i class="fa-solid fa-filter"></i> Gerar Novo Relatório
-                            </button>
+                    <div class="bg-slate-900 p-6 rounded-xl shadow-lg border border-slate-800 text-white flex flex-col md:flex-row items-center justify-between gap-4">
+                        <div>
+                            <h3 class="text-lg font-bold text-teal-400 mb-1">Central de Relatórios Personalizados</h3>
+                            <p class="text-xs text-slate-300">Gere extratos filtrados, balanços, e exportações consolidadas.</p>
                         </div>
+                        <button onclick="abrirModalGeradorRelatorio()" class="px-5 py-2.5 bg-teal-600 hover:bg-teal-500 text-white font-bold rounded-lg shadow transition text-xs flex items-center gap-2">
+                            <i class="fa-solid fa-filter"></i> Gerar Relatório
+                        </button>
                     </div>
 
-                    <div class="bg-white p-6 rounded-xl shadow-sm border space-y-4 print-break">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border space-y-4">
                         <div class="flex items-center justify-between border-b pb-3">
                             <h3 class="font-bold text-base text-slate-800">Demonstração do Resultado do Exercício (DRE)</h3>
                             <span class="px-3 py-1 rounded-full text-xs font-extrabold ${resultadoFinal >= 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
@@ -1704,8 +1683,8 @@
                                                 <td class="p-3 text-slate-500 font-mono text-[11px]">${row.tipo === 'formula' ? escapeHTML(row.formula) : escapeHTML(row.operacao || 'direto')}</td>
                                                 <td class="p-3 text-right font-extrabold text-slate-900">R$ ${val.toFixed(2)}</td>
                                                 <td class="p-3 text-right space-x-1 actions-col no-print">
-                                                    <button onclick="renderModalDRELinha('${row.id}')" title="Editar Linha" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
-                                                    <button onclick="excluirLinhaDRE('${row.id}')" title="Excluir Linha" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
+                                                    <button onclick="window.renderModalDRELinha('${row.id}')" title="Editar" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><i class="fa-solid fa-pen-to-square"></i></button>
+                                                    <button onclick="excluirLinhaDRE('${row.id}')" title="Excluir" class="p-1.5 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash-can"></i></button>
                                                 </td>
                                             </tr>
                                         `;
@@ -1722,13 +1701,13 @@
             const html = `
                 <div id="modal_gerador_rel" class="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4">
                     <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
-                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between border-b border-cyan-800">
-                            <h3 class="font-bold text-sm text-cyan-400"><i class="fa-solid fa-filter"></i> Assistente de Relatórios</h3>
+                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+                            <h3 class="font-bold text-sm"><i class="fa-solid fa-filter"></i> Gerador de Relatórios</h3>
                             <button onclick="fecharModal('modal_gerador_rel')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
                         </div>
                         <div class="p-6 space-y-4 bg-slate-50">
                             <div>
-                                <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Selecione o Módulo Principal</label>
+                                <label class="block text-xs font-bold uppercase text-slate-700 mb-1">Selecione o Módulo</label>
                                 <select id="rel_gen_modulo" class="w-full p-2.5 border border-slate-300 rounded-lg text-sm font-bold bg-white text-slate-900 shadow-sm">
                                     <option value="financeiro">Contas a Pagar e Receber</option>
                                     <option value="estoque">Estoque e Inventário</option>
@@ -1875,34 +1854,34 @@
         function abrirTelaPagarParcial(id, modo = 'parcial') {
             const f = db.financeiro.find(x => x.id === id);
             if (!f) return;
-            itensGridBaixa = [];
-            const dataHoje = new Date().toISOString().split('T')[0];
 
             const html = `
                 <div id="modal_pagar_parcial" class="fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-3">
-                    <div class="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
+                    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col">
                         <div class="p-4 bg-slate-100 border-b flex items-center justify-between">
-                            <h3 class="text-xl font-bold text-slate-700 flex items-center gap-2"><i class="fa-solid fa-file-invoice-dollar text-teal-600"></i> Liquidação de Título</h3>
-                            <button onclick="fecharModal('modal_pagar_parcial')" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs shadow transition">Voltar</button>
+                            <h3 class="text-base font-bold text-slate-700 flex items-center gap-2"><i class="fa-solid fa-file-invoice-dollar text-teal-600"></i> Liquidação de Título</h3>
+                            <button onclick="fecharModal('modal_pagar_parcial')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark"></i></button>
                         </div>
-                        <div class="p-5 overflow-y-auto space-y-4 text-xs">
-                            <div class="grid grid-cols-1 md:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
+                        <div class="p-5 space-y-4 text-xs">
+                            <div class="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
                                 <div>
                                     <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Forma Monetária</label>
                                     <select id="bx_forma_sel" class="w-full p-2 border rounded font-bold bg-white text-slate-900">
                                         ${db.formas_monetarias.map(m => `<option value="${m.id}">${escapeHTML(m.nome)}</option>`).join('')}
                                     </select>
                                 </div>
-                                <div>
-                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Valor Original</label>
-                                    <input type="text" readonly value="R$ ${f.valor.toFixed(2)}" class="w-full p-2 border rounded font-bold bg-slate-100">
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Valor Original</label>
+                                        <input type="text" readonly value="R$ ${f.valor.toFixed(2)}" class="w-full p-2 border rounded font-bold bg-slate-100">
+                                    </div>
+                                    <div>
+                                        <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Valor Baixado</label>
+                                        <input type="number" step="0.01" id="bx_val_baixa" value="${f.valor.toFixed(2)}" class="w-full p-2 border border-teal-500 rounded font-bold bg-teal-50 text-slate-900">
+                                    </div>
                                 </div>
-                                <div>
-                                    <label class="block font-bold text-slate-600 uppercase text-[10px] mb-1">Valor Baixado</label>
-                                    <input type="number" step="0.01" id="bx_val_baixa" value="${f.valor.toFixed(2)}" class="w-full p-2 border border-teal-500 rounded font-bold bg-teal-50 text-slate-900">
-                                </div>
-                                <div class="flex items-end">
-                                    <button onclick="confirmarEFinalizarBaixa('${f.id}')" class="w-full py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs shadow"><i class="fa-solid fa-check"></i> Confirmar Baixa</button>
+                                <div class="pt-2">
+                                    <button onclick="confirmarEFinalizarBaixa('${f.id}')" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs shadow"><i class="fa-solid fa-check"></i> Confirmar Baixa</button>
                                 </div>
                             </div>
                         </div>
@@ -1948,6 +1927,30 @@
             const el = document.getElementById(id);
             if (el) el.remove();
         }
+
+        // =====================================
+        // MAPEAMENTO EXPLICITO NO ESCOPO GLOBAL (WINDOW)
+        // (Resolve o Uncaught ReferenceError de chamadas HTML)
+        // =====================================
+        window.openModalPasta = function(id = null) { renderModalCategoria(id); };
+        window.openModalCategoria = function(id = null) { renderModalCategoria(id); };
+        window.openModalNovoTitulo = function(id = null) { renderModalNovoTitulo(id); };
+        window.openModalMorador = function(id = null) { renderModalMorador(id); };
+        window.openModalContaBancaria = function(id = null) { renderModalContaBancaria(id); };
+        window.openModalFormaMonetaria = function(id = null) { renderModalFormaMonetaria(id); };
+        window.openModalEstoque = function(id = null) { renderModalEstoque(id); };
+        window.openModalDocumento = function(id = null) { renderModalDocumento(id); };
+        window.openModalUsuario = function(id = null) { renderModalUsuario(id); };
+
+        window.renderModalCategoria = renderModalCategoria;
+        window.renderModalNovoTitulo = renderModalNovoTitulo;
+        window.renderModalMorador = renderModalMorador;
+        window.renderModalContaBancaria = renderModalContaBancaria;
+        window.renderModalFormaMonetaria = renderModalFormaMonetaria;
+        window.renderModalEstoque = renderModalEstoque;
+        window.renderModalDocumento = renderModalDocumento;
+        window.renderModalUsuario = renderModalUsuario;
+        window.renderModalDRELinha = renderModalDRELinha;
 
         function iniciarAplicacao() { renderApp(); }
         if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciarAplicacao);
