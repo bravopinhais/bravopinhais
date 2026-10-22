@@ -34,490 +34,101 @@
         color: var(--text);
       }
 
-      body {
-        min-height: 100vh;
-      }
-
-      button, input, select, textarea {
-        font: inherit;
-      }
-
-      #app {
-        min-height: 100vh;
-      }
-
-      .app-shell {
-        display: flex;
-        min-height: 100vh;
-      }
-
-      .sidebar {
-        width: 250px;
-        background: var(--sidebar);
-        color: #e2e8f0;
-        padding: 18px 14px;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .brand {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 28px;
-        padding: 8px 10px;
-      }
-
-      .brand-mark {
-        width: 42px;
-        height: 42px;
-        border-radius: 12px;
-        display: grid;
-        place-items: center;
-        background: var(--primary);
-        color: white;
-        font-size: 18px;
-      }
-
-      .brand h1 {
-        margin: 0;
-        color: white;
-        font-size: 1.1rem;
-      }
-
-      .brand small {
-        color: #5eead4;
-      }
-
-      .nav-menu {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .nav-item {
-        width: 100%;
-        border: none;
-        background: transparent;
-        color: #cbd5e1;
-        padding: 12px 14px;
-        text-align: left;
-        border-radius: 10px;
-        cursor: pointer;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        font-weight: 700;
-      }
-
-      .nav-item.active {
-        background: var(--primary);
-        color: white;
-      }
-
-      .sidebar-user {
-        margin-top: auto;
-        padding-top: 16px;
-        border-top: 1px solid rgba(255,255,255,0.12);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .logout-btn {
-        border: 1px solid rgba(248,113,113,0.4);
-        background: rgba(239,68,68,0.1);
-        color: #fecaca;
-        border-radius: 8px;
-        padding: 8px 10px;
-        cursor: pointer;
-      }
-
-      .main-panel {
-        flex: 1;
-        padding: 26px;
-      }
-
-      .section-header {
-        margin-bottom: 22px;
-      }
-
-      .section-header h2 {
-        margin: 0;
-        font-size: 1.8rem;
-      }
-
-      .section-header p {
-        margin: 6px 0 0;
-        color: var(--muted);
-      }
-
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 18px;
-      }
-
-      .stat-card {
-        background: white;
-        border-radius: 16px;
-        padding: 22px;
-        box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
-        border-top: 4px solid var(--primary);
-      }
-
+      .app-shell { display: flex; min-height: 100vh; }
+      .sidebar { width: 250px; background: var(--sidebar); color: #e2e8f0; padding: 18px 14px; display: flex; flex-direction: column; }
+      .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 28px; padding: 8px 10px; }
+      .brand-mark { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: var(--primary); color: white; font-size: 18px; }
+      .brand h1 { margin: 0; color: white; font-size: 1.1rem; }
+      .brand small { color: #5eead4; }
+      .nav-menu { display: flex; flex-direction: column; gap: 8px; }
+      .nav-item { width: 100%; border: none; background: transparent; color: #cbd5e1; padding: 12px 14px; text-align: left; border-radius: 10px; cursor: pointer; display: flex; align-items: center; gap: 10px; font-weight: 700; }
+      .nav-item.active { background: var(--primary); color: white; }
+      .sidebar-user { margin-top: auto; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.12); display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+      .logout-btn { border: 1px solid rgba(248,113,113,0.4); background: rgba(239,68,68,0.1); color: #fecaca; border-radius: 8px; padding: 8px 10px; cursor: pointer; }
+      .main-panel { flex: 1; padding: 26px; }
+      .section-header { margin-bottom: 22px; }
+      .section-header h2 { margin: 0; font-size: 1.8rem; }
+      .section-header p { margin: 6px 0 0; color: var(--muted); }
+      .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 18px; }
+      .stat-card { background: white; border-radius: 16px; padding: 22px; box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06); border-top: 4px solid var(--primary); }
       .stat-card.success { border-top-color: var(--success); }
       .stat-card.danger { border-top-color: var(--danger); }
       .stat-card.warning { border-top-color: var(--warning); }
       .stat-card.info { border-top-color: var(--info); }
-
-      .stat-card span {
-        display: block;
-        font-size: 0.72rem;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--muted);
-        font-weight: 700;
-      }
-
-      .stat-card strong {
-        display: block;
-        margin-top: 10px;
-        font-size: 1.7rem;
-      }
-
-      .toolbar {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 12px;
-        margin-bottom: 18px;
-      }
-
-      .toolbar input,
-      .toolbar select,
-      .toolbar textarea {
-        width: 100%;
-        padding: 10px 12px;
-        border: 1px solid #cbd5e1;
-        border-radius: 10px;
-        color: var(--text);
-        background: white;
-      }
-
-      .table-wrap {
-        background: white;
-        border-radius: 14px;
-        overflow: hidden;
-        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
-      }
-
-      .table-wrap table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-
-      .table-wrap th,
-      .table-wrap td {
-        padding: 12px 14px;
-        border-bottom: 1px solid #e2e8f0;
-        text-align: left;
-      }
-
-      .table-wrap thead {
-        background: #f8fafc;
-      }
-
-      .badge {
-        display: inline-block;
-        padding: 5px 8px;
-        border-radius: 999px;
-        font-size: 0.7rem;
-        font-weight: 700;
-      }
-
-      .badge-success {
-        background: #dcfce7;
-        color: #166534;
-      }
-
-      .badge-danger {
-        background: #fee2e2;
-        color: #991b1b;
-      }
-
-      .badge-warning {
-        background: #fef3c7;
-        color: #92400e;
-      }
-
-      .empty-state {
-        color: var(--muted);
-        text-align: center;
-        padding: 24px;
-      }
-
-      .login-screen {
-        min-height: 100vh;
-        display: grid;
-        place-items: center;
-        background: linear-gradient(135deg, #0f172a, #1e293b);
-      }
-
-      .login-box {
-        width: min(420px, 92vw);
-        background: rgba(255,255,255,0.96);
-        border-radius: 18px;
-        padding: 30px 24px;
-        box-shadow: 0 16px 40px rgba(15, 23, 42, 0.25);
-      }
-
-      .login-logo {
-        width: 68px;
-        height: 68px;
-        margin: 0 auto 12px;
-        border-radius: 16px;
-        display: grid;
-        place-items: center;
-        background: linear-gradient(135deg, #0d9488, #14b8a6);
-        color: white;
-        font-size: 1.8rem;
-      }
-
-      .login-box h2 {
-        margin: 0;
-        text-align: center;
-        font-size: 1.8rem;
-      }
-
-      .login-box p {
-        margin: 8px 0 20px;
-        color: #64748b;
-        text-align: center;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        font-size: 0.72rem;
-        font-weight: 700;
-      }
-
-      .login-form {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .login-form label {
-        font-size: 0.72rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #475569;
-      }
-
-      .login-form input {
-        padding: 12px 14px;
-        border: 1px solid #cbd5e1;
-        border-radius: 10px;
-        font-size: 1rem;
-      }
-
-      .login-form button {
-        margin-top: 8px;
-        padding: 12px 18px;
-        border: none;
-        border-radius: 10px;
-        background: var(--primary);
-        color: white;
-        font-weight: 700;
-        cursor: pointer;
-      }
-
-      @media (max-width: 768px) {
-        .app-shell {
-          flex-direction: column;
-        }
-
-        .sidebar {
-          width: 100%;
-        }
-
-        .main-panel {
-          padding: 18px;
-        }
-      }
+      .stat-card span { display: block; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); font-weight: 700; }
+      .stat-card strong { display: block; margin-top: 10px; font-size: 1.7rem; }
+      .toolbar { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 18px; }
+      .toolbar input, .toolbar select { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 10px; color: var(--text); background: white; }
+      .table-wrap { background: white; border-radius: 14px; overflow: hidden; box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06); }
+      .table-wrap table { width: 100%; border-collapse: collapse; }
+      .table-wrap th, .table-wrap td { padding: 12px 14px; border-bottom: 1px solid #e2e8f0; text-align: left; }
+      .table-wrap thead { background: #f8fafc; }
+      .badge { display: inline-block; padding: 5px 8px; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
+      .badge-success { background: #dcfce7; color: #166534; }
+      .badge-danger { background: #fee2e2; color: #991b1b; }
+      .badge-warning { background: #fef3c7; color: #92400e; }
+      .empty-state { color: var(--muted); text-align: center; padding: 24px; }
+      .login-screen { min-height: 100vh; display: grid; place-items: center; background: linear-gradient(135deg, #0f172a, #1e293b); }
+      .login-box { width: min(420px, 92vw); background: rgba(255,255,255,0.96); border-radius: 18px; padding: 30px 24px; box-shadow: 0 16px 40px rgba(15, 23, 42, 0.25); }
+      .login-logo { width: 68px; height: 68px; margin: 0 auto 12px; border-radius: 16px; display: grid; place-items: center; background: linear-gradient(135deg, #0d9488, #14b8a6); color: white; font-size: 1.8rem; }
+      .login-box h2 { margin: 0; text-align: center; font-size: 1.8rem; }
+      .login-box p { margin: 8px 0 20px; color: #64748b; text-align: center; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.72rem; font-weight: 700; }
+      .login-form { display: flex; flex-direction: column; gap: 12px; }
+      .login-form label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #475569; }
+      .login-form input { padding: 12px 14px; border: 1px solid #cbd5e1; border-radius: 10px; font-size: 1rem; }
+      .login-form button { margin-top: 8px; padding: 12px 18px; border: none; border-radius: 10px; background: var(--primary); color: white; font-weight: 700; cursor: pointer; }
     </style>
   </head>
   <body>
     <div id="app"></div>
 
     <script>
-      const STORAGE_KEY = 'guardioes_bravo_db_v2';
+      const STORAGE_KEY = 'guardioes_bravo_db_v3';
 
       const DEFAULT_DATA = {
         usuarios: [
-          {
-            id: 'usr_admin',
-            usuario: 'admin',
-            nome: 'Administrador Principal',
-            email: 'admin@guardioes.com',
-            perfil: 'Admin',
-            status: 'Ativo',
-            primeiroAcesso: false,
-            senhaHash: 'Admin@12345'
-          }
+          { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', perfil: 'Admin', status: 'Ativo', senhaHash: 'Admin@12345' }
         ],
         financeiro: [
-          {
-            id: 'fin_1',
-            tipo: 'Receber',
-            historico: 'Taxa Condominial Ordinária - Ap 101',
-            valor: 2500.00,
-            vencimento: '2026-10-15',
-            competencia: '10/2026',
-            formaMonetariaId: 'fm_1',
-            status: 'Aberto'
-          },
-          {
-            id: 'fin_2',
-            tipo: 'Pagar',
-            historico: 'Manutenção Elevador Otis',
-            valor: 850.00,
-            vencimento: '2026-10-20',
-            competencia: '10/2026',
-            formaMonetariaId: 'fm_1',
-            fornecedor: 'Otis Elevadores',
-            status: 'Aberto'
-          }
+          { id: 'fin_1', tipo: 'Receber', historico: 'Taxa Condominial Ordinária - Ap 101', valor: 2500.00, vencimento: '2026-10-15', status: 'Aberto' },
+          { id: 'fin_2', tipo: 'Pagar', historico: 'Manutenção Elevador Otis', valor: 850.00, vencimento: '2026-10-20', status: 'Aberto' }
         ],
-        formas_monetarias: [
-          {
-            id: 'fm_1',
-            nome: 'MOVIMENTO BANCARIO',
-            contaId: 'cb_1',
-            multaPct: 2.0,
-            jurosDiaPct: 0.033,
-            baixaAutomatica: true,
-            status: 'Ativo'
-          }
+        estoque: [
+          { id: 'est_1', item: 'Lâmpada LED 12W', categoria: 'Elétrica', qtd: 4, minimo: 10, localizacao: 'Almoxarifado' },
+          { id: 'est_2', item: 'Cloro Granulado 10kg', categoria: 'Piscina', qtd: 15, minimo: 5, localizacao: 'DML' }
         ],
-        contas_bancarias: [
-          {
-            id: 'cb_1',
-            banco: 'CAIXA BARAO',
-            agencia: '1234-5',
-            conta: '98765-4',
-            saldo: 45800.00
-          }
+        documentos: [
+          { id: 'doc_1', titulo: 'Ata da Assembleia 2026', pasta: 'Atas de Assembleia', data: '2026-03-10', observacao: 'Eleição do síndico' }
         ],
         moradores: [
-          {
-            id: 'mor_1',
-            bloco: 'A',
-            apartamento: '101',
-            nome: 'Carlos Eduardo',
-            email: 'carlos@email.com',
-            telefone: '(41) 99999-1111',
-            tipo: 'Proprietário',
-            taxaMudanca: 'N/A'
-          }
+          { id: 'mor_1', bloco: 'A', apartamento: '101', nome: 'Carlos Eduardo', tipo: 'Proprietário', email: 'carlos@email.com' }
         ],
         categorias: [
           { id: 'cat_1', nome: 'Atas de Assembleia', modulo: 'Documentos' },
-          { id: 'cat_2', nome: 'Contratos', modulo: 'Documentos' },
-          { id: 'cat_3', nome: 'Prestação de Contas', modulo: 'Documentos' },
-          { id: 'cat_4', nome: 'Elétrica', modulo: 'Estoque' },
-          { id: 'cat_5', nome: 'Piscina', modulo: 'Estoque' },
-          { id: 'cat_6', nome: 'Geral', modulo: 'Geral' }
-        ],
-        estoque: [
-          {
-            id: 'est_1',
-            item: 'Lâmpada LED 12W',
-            categoria: 'Elétrica',
-            qtd: 4,
-            minimo: 10,
-            maximo: 50,
-            localizacao: 'Almoxarifado Central',
-            proximaContagem: '2026-10-25',
-            fotoBase64: ''
-          },
-          {
-            id: 'est_2',
-            item: 'Cloro Granulado 10kg',
-            categoria: 'Piscina',
-            qtd: 15,
-            minimo: 5,
-            maximo: 30,
-            localizacao: 'DML Piscina',
-            proximaContagem: '2026-11-01',
-            fotoBase64: ''
-          }
-        ],
-        documentos: [
-          {
-            id: 'doc_1',
-            titulo: 'Ata da Assembleia 2026',
-            pasta: 'Atas de Assembleia',
-            data: '2026-03-10',
-            observacao: 'Ata de eleição do síndico',
-            arquivoBase64: ''
-          }
-        ],
-        dre_config: [
-          { id: 'A', codigo: 'REC_BRUTA', label: '(+) RECEITA OPERACIONAL BRUTA', tipo: 'direto', operacao: 'somar_receitas' },
-          { id: 'B', codigo: 'INADIMP', label: '(-) INADIMPLÊNCIA / ABATIMENTOS', tipo: 'direto', operacao: 'somar_pendencias' },
-          { id: 'C', codigo: 'REC_LIQ', label: '(=) RECEITA OPERACIONAL LÍQUIDA', tipo: 'formula', formula: 'A - B' },
-          { id: 'D', codigo: 'DESP_OP', label: '(-) DESPESAS OPERACIONAIS & MANUTENÇÃO', tipo: 'direto', operacao: 'somar_despesas' },
-          { id: 'E', codigo: 'RES_LIQ', label: '(=) RESULTADO OPERACIONAL (SUPERÁVIT/DEFICIT)', tipo: 'formula', formula: 'C - D' }
-        ],
-        logs: []
+          { id: 'cat_2', nome: 'Elétrica', modulo: 'Estoque' }
+        ]
       };
 
-      function escapeHtml(str = '') {
-        return String(str)
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#039;');
-      }
-
       function formatCurrency(value) {
-        return new Intl.NumberFormat('pt-BR', {
-          style: 'currency',
-          currency: 'BRL'
-        }).format(Number(value || 0));
-      }
-
-      function generateId(prefix = 'id') {
-        if (window.crypto && window.crypto.randomUUID) {
-          return `${prefix}_${crypto.randomUUID()}`;
-        }
-        return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value || 0));
       }
 
       function loadDb() {
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
-          if (!raw) return null;
-          return JSON.parse(raw);
-        } catch (error) {
-          console.error('Erro ao carregar DB:', error);
-          return null;
+          return raw ? JSON.parse(raw) : DEFAULT_DATA;
+        } catch (e) {
+          return DEFAULT_DATA;
         }
       }
 
       function saveDb(data) {
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        } catch (error) {
-          alert('Aviso: Armazenamento local cheio.');
-        }
+        try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (e) {}
       }
 
       const state = {
-        db: loadDb() || DEFAULT_DATA,
-        user: null,
+        db: loadDb(),
+        user: JSON.parse(sessionStorage.getItem('guardioes_user') || 'null'),
         activeTab: 'dashboard',
         filters: {
           financeiro: { busca: '', status: 'Todos', tipo: 'Todos' },
@@ -528,79 +139,18 @@
         }
       };
 
-      function persistSessionUser() {
-        if (state.user) {
-          sessionStorage.setItem('guardioes_user', JSON.stringify(state.user));
-        } else {
-          sessionStorage.removeItem('guardioes_user');
-        }
-      }
-
-      function restoreSessionUser() {
-        try {
-          const raw = sessionStorage.getItem('guardioes_user');
-          if (!raw) return;
-          const parsed = JSON.parse(raw);
-          if (parsed && parsed.usuario) {
-            state.user = parsed;
-          }
-        } catch (error) {
-          console.error('Erro ao restaurar sessão:', error);
-        }
-      }
-
-      function bindLogin() {
-        const form = document.getElementById('loginForm');
-        if (!form) return;
-
-        form.addEventListener('submit', (event) => {
-          event.preventDefault();
-
-          const userInput = document.getElementById('login_user').value.trim();
-          const senhaInput = document.getElementById('login_pass').value;
-
-          const userFound = state.db.usuarios.find(u =>
-            (u.usuario === userInput || u.email === userInput) && u.senhaHash === senhaInput
-          );
-
-          if (!userFound) {
-            alert('Credenciais incorretas!');
-            return;
-          }
-
-          state.user = userFound;
-          persistSessionUser();
-          saveDb(state.db);
-          renderApp();
-        });
-      }
-
-      function bindTabs() {
-        document.querySelectorAll('[data-tab]').forEach(button => {
-          button.addEventListener('click', () => {
-            state.activeTab = button.dataset.tab;
-            renderApp();
-          });
-        });
-      }
-
       function renderLogin() {
         return `
           <div class="login-screen">
             <div class="login-box">
-              <div class="login-logo">
-                <i class="fa-solid fa-shield-halved"></i>
-              </div>
+              <div class="login-logo"><i class="fa-solid fa-shield-halved"></i></div>
               <h2>Guardiões do Bravo</h2>
               <p>Acesso ao Sistema Condominial</p>
-
               <form id="loginForm" class="login-form">
                 <label>Usuário / E-mail</label>
                 <input id="login_user" type="text" value="admin" required />
-
                 <label>Senha</label>
                 <input id="login_pass" type="password" value="Admin@12345" required />
-
                 <button type="submit">Entrar no Sistema</button>
               </form>
             </div>
@@ -609,602 +159,34 @@
       }
 
       function renderDashboard() {
-        const receitas = state.db.financeiro
-          .filter(item => item.tipo === 'Receber' && item.status === 'Baixado')
-          .reduce((sum, item) => sum + Number(item.valor || 0), 0);
-
-        const despesas = state.db.financeiro
-          .filter(item => item.tipo === 'Pagar' && item.status === 'Baixado')
-          .reduce((sum, item) => sum + Number(item.valor || 0), 0);
-
-        const abertas = state.db.financeiro
-          .filter(item => item.status === 'Aberto')
-          .reduce((sum, item) => sum + Number(item.valor || 0), 0);
-
         return `
           <section class="section-header">
-            <div>
-              <h2>Dashboard</h2>
-              <p>Resumo geral da administração</p>
-            </div>
+            <h2>Dashboard</h2>
+            <p>Resumo geral da administração</p>
           </section>
-
           <div class="stats-grid">
-            <div class="stat-card success">
-              <span>Receitas liquidadas</span>
-              <strong>${formatCurrency(receitas)}</strong>
-            </div>
-            <div class="stat-card danger">
-              <span>Despesas liquidadas</span>
-              <strong>${formatCurrency(despesas)}</strong>
-            </div>
-            <div class="stat-card warning">
-              <span>Valores em aberto</span>
-              <strong>${formatCurrency(abertas)}</strong>
-            </div>
-            <div class="stat-card info">
-              <span>Saldo operacional</span>
-              <strong>${formatCurrency(receitas - despesas)}</strong>
-            </div>
+            <div class="stat-card success"><span>Sistema Online</span><strong>Operacional</strong></div>
           </div>
         `;
-      }
-
-      function renderFinanceiro() {
-        const list = state.db.financeiro.filter(item => {
-          const busca = (state.filters.financeiro.busca || '').toLowerCase();
-
-          const matchesBusca =
-            !busca ||
-            (item.historico || '').toLowerCase().includes(busca) ||
-            (item.fornecedor || '').toLowerCase().includes(busca);
-
-          const matchesStatus =
-            state.filters.financeiro.status === 'Todos' || item.status === state.filters.financeiro.status;
-
-          const matchesTipo =
-            state.filters.financeiro.tipo === 'Todos' || item.tipo === state.filters.financeiro.tipo;
-
-          return matchesBusca && matchesStatus && matchesTipo;
-        });
-
-        return `
-          <section class="section-header">
-            <div>
-              <h2>Contas a pagar / receber</h2>
-              <p>Controle financeiro do condomínio</p>
-            </div>
-          </section>
-
-          <div class="toolbar">
-            <input id="financeiroBusca" type="text" placeholder="Buscar por descrição..." value="${state.filters.financeiro.busca}" />
-            <select id="financeiroStatus">
-              <option value="Todos" ${state.filters.financeiro.status === 'Todos' ? 'selected' : ''}>Todos</option>
-              <option value="Aberto" ${state.filters.financeiro.status === 'Aberto' ? 'selected' : ''}>Aberto</option>
-              <option value="Baixado" ${state.filters.financeiro.status === 'Baixado' ? 'selected' : ''}>Baixado</option>
-            </select>
-            <select id="financeiroTipo">
-              <option value="Todos" ${state.filters.financeiro.tipo === 'Todos' ? 'selected' : ''}>Todos</option>
-              <option value="Receber" ${state.filters.financeiro.tipo === 'Receber' ? 'selected' : ''}>Receber</option>
-              <option value="Pagar" ${state.filters.financeiro.tipo === 'Pagar' ? 'selected' : ''}>Pagar</option>
-            </select>
-          </div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Tipo</th>
-                  <th>Histórico</th>
-                  <th>Vencimento</th>
-                  <th>Valor</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${list.length === 0 ? '<tr><td colspan="5" class="empty-state">Nenhum registro encontrado.</td></tr>' : list.map(item => `
-                  <tr>
-                    <td>
-                      <span class="badge ${item.tipo === 'Receber' ? 'badge-success' : 'badge-danger'}">${item.tipo}</span>
-                    </td>
-                    <td>${escapeHtml(item.historico)}</td>
-                    <td>${escapeHtml(item.vencimento)}</td>
-                    <td>${formatCurrency(item.valor)}</td>
-                    <td>
-                      <span class="badge ${item.status === 'Baixado' ? 'badge-success' : 'badge-warning'}">${item.status}</span>
-                    </td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-        `;
-      }
-
-      function renderEstoque() {
-        const list = state.db.estoque.filter(item => {
-          const busca = (state.filters.estoque.busca || '').toLowerCase();
-
-          const matchesBusca =
-            !busca ||
-            (item.item || '').toLowerCase().includes(busca) ||
-            (item.localizacao || '').toLowerCase().includes(busca);
-
-          const matchesCategoria =
-            state.filters.estoque.categoria === 'Todas' || item.categoria === state.filters.estoque.categoria;
-
-          const critical = Number(item.qtd) <= Number(item.minimo);
-          const matchesStatus =
-            state.filters.estoque.status === 'Todos' ||
-            (state.filters.estoque.status === 'Critico' && critical) ||
-            (state.filters.estoque.status === 'OK' && !critical);
-
-          return matchesBusca && matchesCategoria && matchesStatus;
-        });
-
-        const categorias = [...new Set(state.db.estoque.map(item => item.categoria))];
-
-        return `
-          <section class="section-header">
-            <div>
-              <h2>Estoque</h2>
-              <p>Controle de produtos e níveis críticos</p>
-            </div>
-          </section>
-
-          <div class="toolbar">
-            <input id="estoqueBusca" type="text" placeholder="Buscar produto..." value="${state.filters.estoque.busca}" />
-            <select id="estoqueCategoria">
-              <option value="Todas" ${state.filters.estoque.categoria === 'Todas' ? 'selected' : ''}>Todas</option>
-              ${categorias.map(cat => `<option value="${cat}" ${state.filters.estoque.categoria === cat ? 'selected' : ''}>${cat}</option>`).join('')}
-            </select>
-            <select id="estoqueStatus">
-              <option value="Todos" ${state.filters.estoque.status === 'Todos' ? 'selected' : ''}>Todos</option>
-              <option value="Critico" ${state.filters.estoque.status === 'Critico' ? 'selected' : ''}>Crítico</option>
-              <option value="OK" ${state.filters.estoque.status === 'OK' ? 'selected' : ''}>Normal</option>
-            </select>
-          </div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Produto</th>
-                  <th>Categoria</th>
-                  <th>Quantidade</th>
-                  <th>Localização</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${list.length === 0 ? '<tr><td colspan="5" class="empty-state">Nenhum item encontrado.</td></tr>' : list.map(item => {
-                  const critical = Number(item.qtd) <= Number(item.minimo);
-                  return `
-                    <tr>
-                      <td>${escapeHtml(item.item)}</td>
-                      <td>${escapeHtml(item.categoria)}</td>
-                      <td>${item.qtd} / min ${item.minimo}</td>
-                      <td>${escapeHtml(item.localizacao || 'Almoxarifado')}</td>
-                      <td>
-                        <span class="badge ${critical ? 'badge-danger' : 'badge-success'}">${critical ? 'Crítico' : 'Normal'}</span>
-                      </td>
-                    </tr>
-                  `;
-                }).join('')}
-              </tbody>
-            </table>
-          </div>
-        `;
-      }
-
-      function renderDocumentos() {
-        const pastas = [...new Set(state.db.categorias.filter(c => c.modulo === 'Documentos' || c.modulo === 'Geral').map(c => c.nome))];
-
-        const list = state.db.documentos.filter(item => {
-          const busca = (state.filters.documentos.busca || '').toLowerCase();
-          const matchesBusca =
-            !busca ||
-            (item.titulo || '').toLowerCase().includes(busca) ||
-            (item.observacao || '').toLowerCase().includes(busca);
-
-          const matchesPasta =
-            state.filters.documentos.pasta === 'Todas' || item.pasta === state.filters.documentos.pasta;
-
-          const matchesIni = !state.filters.documentos.dataIni || item.data >= state.filters.documentos.dataIni;
-          const matchesFim = !state.filters.documentos.dataFim || item.data <= state.filters.documentos.dataFim;
-
-          return matchesBusca && matchesPasta && matchesIni && matchesFim;
-        });
-
-        return `
-          <section class="section-header">
-            <div>
-              <h2>Gestão de Documentos</h2>
-              <p>Pastas, arquivos e registros de documentos</p>
-            </div>
-          </section>
-
-          <div class="toolbar">
-            <input id="docBusca" type="text" placeholder="Buscar por título..." value="${state.filters.documentos.busca}" />
-            <select id="docPasta">
-              <option value="Todas" ${state.filters.documentos.pasta === 'Todas' ? 'selected' : ''}>Todas</option>
-              ${pastas.map(p => `<option value="${p}" ${state.filters.documentos.pasta === p ? 'selected' : ''}>${p}</option>`).join('')}
-            </select>
-            <input id="docDataIni" type="date" value="${state.filters.documentos.dataIni}" />
-            <input id="docDataFim" type="date" value="${state.filters.documentos.dataFim}" />
-          </div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Título</th>
-                  <th>Pasta</th>
-                  <th>Data</th>
-                  <th>Observação</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${list.length === 0 ? '<tr><td colspan="4" class="empty-state">Nenhum documento encontrado.</td></tr>' : list.map(item => `
-                  <tr>
-                    <td>${escapeHtml(item.titulo)}</td>
-                    <td>${escapeHtml(item.pasta)}</td>
-                    <td>${escapeHtml(item.data)}</td>
-                    <td>${escapeHtml(item.observacao || '-')}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-        `;
-      }
-
-      function renderMoradores() {
-        const blocos = [...new Set(state.db.moradores.map(item => item.bloco).filter(Boolean))];
-
-        const list = state.db.moradores.filter(item => {
-          const busca = (state.filters.moradores.busca || '').toLowerCase();
-          const matchesBusca =
-            !busca ||
-            (item.nome || '').toLowerCase().includes(busca) ||
-            (item.apartamento || '').toLowerCase().includes(busca) ||
-            (item.email || '').toLowerCase().includes(busca);
-
-          const matchesBloco =
-            state.filters.moradores.bloco === 'Todos' || item.bloco === state.filters.moradores.bloco;
-
-          const matchesTipo =
-            state.filters.moradores.tipo === 'Todos' || item.tipo === state.filters.moradores.tipo;
-
-          return matchesBusca && matchesBloco && matchesTipo;
-        });
-
-        return `
-          <section class="section-header">
-            <div>
-              <h2>Moradores / Unidades</h2>
-              <p>Cadastro de moradores e unidades habitacionais</p>
-            </div>
-          </section>
-
-          <div class="toolbar">
-            <input id="moradorBusca" type="text" placeholder="Buscar por nome..." value="${state.filters.moradores.busca}" />
-            <select id="moradorBloco">
-              <option value="Todos" ${state.filters.moradores.bloco === 'Todos' ? 'selected' : ''}>Todos</option>
-              ${blocos.map(bloco => `<option value="${bloco}" ${state.filters.moradores.bloco === bloco ? 'selected' : ''}>${bloco}</option>`).join('')}
-            </select>
-            <select id="moradorTipo">
-              <option value="Todos" ${state.filters.moradores.tipo === 'Todos' ? 'selected' : ''}>Todos</option>
-              <option value="Proprietário" ${state.filters.moradores.tipo === 'Proprietário' ? 'selected' : ''}>Proprietário</option>
-              <option value="Inquilino" ${state.filters.moradores.tipo === 'Inquilino' ? 'selected' : ''}>Inquilino</option>
-            </select>
-          </div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>Bloco</th>
-                  <th>Apartamento</th>
-                  <th>Tipo</th>
-                  <th>Email</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${list.length === 0 ? '<tr><td colspan="5" class="empty-state">Nenhum morador encontrado.</td></tr>' : list.map(item => `
-                  <tr>
-                    <td>${escapeHtml(item.nome)}</td>
-                    <td>${escapeHtml(item.bloco)}</td>
-                    <td>${escapeHtml(item.apartamento)}</td>
-                    <td>${escapeHtml(item.tipo)}</td>
-                    <td>${escapeHtml(item.email || '-')}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-        `;
-      }
-
-      function renderUsuarios() {
-        const list = state.db.usuarios.filter(item => {
-          const busca = (state.filters.usuarios.busca || '').toLowerCase();
-
-          const matchesBusca =
-            !busca ||
-            (item.nome || '').toLowerCase().includes(busca) ||
-            (item.usuario || '').toLowerCase().includes(busca) ||
-            (item.email || '').toLowerCase().includes(busca);
-
-          const matchesPerfil =
-            state.filters.usuarios.perfil === 'Todos' || item.perfil === state.filters.usuarios.perfil;
-
-          const matchesStatus =
-            state.filters.usuarios.status === 'Todos' || item.status === state.filters.usuarios.status;
-
-          return matchesBusca && matchesPerfil && matchesStatus;
-        });
-
-        return `
-          <section class="section-header">
-            <div>
-              <h2>Gestão de Usuários</h2>
-              <p>Perfis, status e administração de acessos</p>
-            </div>
-          </section>
-
-          <div class="toolbar">
-            <input id="usuarioBusca" type="text" placeholder="Buscar usuário..." value="${state.filters.usuarios.busca}" />
-            <select id="usuarioPerfil">
-              <option value="Todos" ${state.filters.usuarios.perfil === 'Todos' ? 'selected' : ''}>Todos</option>
-              <option value="Admin" ${state.filters.usuarios.perfil === 'Admin' ? 'selected' : ''}>Admin</option>
-              <option value="Operador" ${state.filters.usuarios.perfil === 'Operador' ? 'selected' : ''}>Operador</option>
-            </select>
-            <select id="usuarioStatus">
-              <option value="Todos" ${state.filters.usuarios.status === 'Todos' ? 'selected' : ''}>Todos</option>
-              <option value="Ativo" ${state.filters.usuarios.status === 'Ativo' ? 'selected' : ''}>Ativo</option>
-              <option value="Inativo" ${state.filters.usuarios.status === 'Inativo' ? 'selected' : ''}>Inativo</option>
-            </select>
-          </div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Usuário</th>
-                  <th>Nome</th>
-                  <th>Email</th>
-                  <th>Perfil</th>
-                  <th>Status</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${list.length === 0 ? '<tr><td colspan="5" class="empty-state">Nenhum usuário encontrado.</td></tr>' : list.map(item => `
-                  <tr>
-                    <td>${escapeHtml(item.usuario)}</td>
-                    <td>${escapeHtml(item.nome)}</td>
-                    <td>${escapeHtml(item.email)}</td>
-                    <td>${escapeHtml(item.perfil)}</td>
-                    <td>${escapeHtml(item.status)}</td>
-                  </tr>
-                `).join('')}
-              </tbody>
-            </table>
-          </div>
-        `;
-      }
-
-      function renderRelatorios() {
-        const receitas = state.db.financeiro
-          .filter(item => item.tipo === 'Receber' && item.status === 'Baixado')
-          .reduce((sum, item) => sum + Number(item.valor || 0), 0);
-
-        const despesas = state.db.financeiro
-          .filter(item => item.tipo === 'Pagar' && item.status === 'Baixado')
-          .reduce((sum, item) => sum + Number(item.valor || 0), 0);
-
-        const itensCriticos = state.db.estoque.filter(item => Number(item.qtd) <= Number(item.minimo));
-
-        return `
-          <section class="section-header">
-            <div>
-              <h2>Relatórios e DRE</h2>
-              <p>Indicadores consolidados e dados operacionais</p>
-            </div>
-          </section>
-
-          <div class="stats-grid">
-            <div class="stat-card success">
-              <span>Receita líquida</span>
-              <strong>R$ ${receitas.toFixed(2)}</strong>
-            </div>
-            <div class="stat-card danger">
-              <span>Despesa operacional</span>
-              <strong>R$ ${despesas.toFixed(2)}</strong>
-            </div>
-            <div class="stat-card warning">
-              <span>Itens críticos</span>
-              <strong>${itensCriticos.length}</strong>
-            </div>
-            <div class="stat-card info">
-              <span>Resultado</span>
-              <strong>R$ ${(receitas - despesas).toFixed(2)}</strong>
-            </div>
-          </div>
-        `;
-      }
-
-      function renderModuleContent() {
-        const content = document.getElementById('content');
-        if (!content) return;
-
-        switch (state.activeTab) {
-          case 'dashboard':
-            content.innerHTML = renderDashboard();
-            break;
-          case 'financeiro':
-            content.innerHTML = renderFinanceiro();
-            break;
-          case 'estoque':
-            content.innerHTML = renderEstoque();
-            break;
-          case 'documentos':
-            content.innerHTML = renderDocumentos();
-            break;
-          case 'moradores':
-            content.innerHTML = renderMoradores();
-            break;
-          case 'usuarios':
-            content.innerHTML = renderUsuarios();
-            break;
-          case 'relatorios':
-            content.innerHTML = renderRelatorios();
-            break;
-          default:
-            content.innerHTML = '<p>Módulo em desenvolvimento.</p>';
-        }
-
-        bindModuleEvents();
-      }
-
-      function bindModuleEvents() {
-        const financeiroBusca = document.getElementById('financeiroBusca');
-        if (financeiroBusca) {
-          financeiroBusca.addEventListener('input', (event) => {
-            state.filters.financeiro.busca = event.target.value;
-            renderModuleContent();
-          });
-        }
-
-        const financeiroStatus = document.getElementById('financeiroStatus');
-        if (financeiroStatus) {
-          financeiroStatus.addEventListener('change', (event) => {
-            state.filters.financeiro.status = event.target.value;
-            renderModuleContent();
-          });
-        }
-
-        const financeiroTipo = document.getElementById('financeiroTipo');
-        if (financeiroTipo) {
-          financeiroTipo.addEventListener('change', (event) => {
-            state.filters.financeiro.tipo = event.target.value;
-            renderModuleContent();
-          });
-        }
-
-        const estoqueBusca = document.getElementById('estoqueBusca');
-        if (estoqueBusca) {
-          estoqueBusca.addEventListener('input', (event) => {
-            state.filters.estoque.busca = event.target.value;
-            renderModuleContent();
-          });
-        }
-
-        const estoqueCategoria = document.getElementById('estoqueCategoria');
-        if (estoqueCategoria) {
-          estoqueCategoria.addEventListener('change', (event) => {
-            state.filters.estoque.categoria = event.target.value;
-            renderModuleContent();
-          });
-        }
-
-        const estoqueStatus = document.getElementById('estoqueStatus');
-        if (estoqueStatus) {
-          estoqueStatus.addEventListener('change', (event) => {
-            state.filters.estoque.status = event.target.value;
-            renderModuleContent();
-          });
-        }
-
-        const docBusca = document.getElementById('docBusca');
-        if (docBusca) {
-          docBusca.addEventListener('input', (event) => {
-            state.filters.documentos.busca = event.target.value;
-            renderModuleContent();
-          });
-        }
-
-        const docPasta = document.getElementById('docPasta');
-        if (docPasta) {
-          docPasta.addEventListener('change', (event) => {
-            state.filters.documentos.pasta = event.target.value;
-            renderModuleContent();
-          });
-        }
-
-        const docDataIni = document.getElementById('docDataIni');
-        if (docDataIni) {
-          docDataIni.addEventListener('change', (event) => {
-            state.filters.documentos.dataIni = event.target.value;
-            renderModuleContent();
-          });
-        }
-
-        const docDataFim = document.getElementById('docDataFim');
-        if (docDataFim) {
-          docDataFim.addEventListener('change', (event) => {
-            state.filters.documentos.dataFim = event.target.value;
-            renderModuleContent();
-          });
-        }
-
-        const moradorBusca = document.getElementById('moradorBusca');
-        if (moradorBusca) {
-          moradorBusca.addEventListener('input', (event) => {
-            state.filters.moradores.busca = event.target.value;
-            renderModuleContent();
-          });
-        }
-
-        const moradorBloco = document.getElementById('moradorBloco');
-        if (moradorBloco) {
-          moradorBloco.addEventListener('change', (event) => {
-            state.filters.moradores.bloco = event.target.value;
-            renderModuleContent();
-          });
-        }
-
-        const moradorTipo = document.getElementById('moradorTipo');
-        if (moradorTipo) {
-          moradorTipo.addEventListener('change', (event) => {
-            state.filters.moradores.tipo = event.target.value;
-            renderModuleContent();
-          });
-        }
-
-        const usuarioBusca = document.getElementById('usuarioBusca');
-        if (usuarioBusca) {
-          usuarioBusca.addEventListener('input', (event) => {
-            state.filters.usuarios.busca = event.target.value;
-            renderModuleContent();
-          });
-        }
-
-        const usuarioPerfil = document.getElementById('usuarioPerfil');
-        if (usuarioPerfil) {
-          usuarioPerfil.addEventListener('change', (event) => {
-            state.filters.usuarios.perfil = event.target.value;
-            renderModuleContent();
-          });
-        }
-
-        const usuarioStatus = document.getElementById('usuarioStatus');
-        if (usuarioStatus) {
-          usuarioStatus.addEventListener('change', (event) => {
-            state.filters.usuarios.status = event.target.value;
-            renderModuleContent();
-          });
-        }
       }
 
       function renderApp() {
         const root = document.getElementById('app');
-        if (!root) return;
-
         if (!state.user) {
           root.innerHTML = renderLogin();
-          bindLogin();
+          document.getElementById('loginForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const u = document.getElementById('login_user').value;
+            const p = document.getElementById('login_pass').value;
+            const found = state.db.usuarios.find(x => (x.usuario === u || x.email === u) && x.senhaHash === p);
+            if (found) {
+              state.user = found;
+              sessionStorage.setItem('guardioes_user', JSON.stringify(found));
+              renderApp();
+            } else {
+              alert('Credenciais inválidas!');
+            }
+          });
           return;
         }
 
@@ -1212,62 +194,28 @@
           <div class="app-shell">
             <aside class="sidebar">
               <div class="brand">
-                <div class="brand-mark">
-                  <i class="fa-solid fa-shield-halved"></i>
-                </div>
-                <div>
-                  <h1>Guardiões</h1>
-                  <small>Gestão Condominial</small>
-                </div>
+                <div class="brand-mark"><i class="fa-solid fa-shield-halved"></i></div>
+                <div><h1>Guardiões</h1><small>Gestão</small></div>
               </div>
-
               <nav class="nav-menu">
-                <button class="nav-item ${state.activeTab === 'dashboard' ? 'active' : ''}" data-tab="dashboard">
-                  <i class="fa-solid fa-gauge-high"></i> Dashboard
-                </button>
-                <button class="nav-item ${state.activeTab === 'financeiro' ? 'active' : ''}" data-tab="financeiro">
-                  <i class="fa-solid fa-money-bill-wave"></i> Financeiro
-                </button>
-                <button class="nav-item ${state.activeTab === 'estoque' ? 'active' : ''}" data-tab="estoque">
-                  <i class="fa-solid fa-boxes-stacked"></i> Estoque
-                </button>
-                <button class="nav-item ${state.activeTab === 'documentos' ? 'active' : ''}" data-tab="documentos">
-                  <i class="fa-solid fa-folder-open"></i> Documentos
-                </button>
-                <button class="nav-item ${state.activeTab === 'moradores' ? 'active' : ''}" data-tab="moradores">
-                  <i class="fa-solid fa-user-tie"></i> Moradores
-                </button>
-                <button class="nav-item ${state.activeTab === 'usuarios' ? 'active' : ''}" data-tab="usuarios">
-                  <i class="fa-solid fa-users"></i> Usuários
-                </button>
-                <button class="nav-item ${state.activeTab === 'relatorios' ? 'active' : ''}" data-tab="relatorios">
-                  <i class="fa-solid fa-chart-column"></i> Relatórios
-                </button>
+                <button class="nav-item active" data-tab="dashboard"><i class="fa-solid fa-gauge-high"></i> Dashboard</button>
               </nav>
-
               <div class="sidebar-user">
-                <span>${escapeHtml(state.user.nome)}</span>
+                <span>${state.user.nome}</span>
                 <button id="logoutBtn" class="logout-btn">Sair</button>
               </div>
             </aside>
-
-            <main class="main-panel">
-              <div id="content"></div>
-            </main>
+            <main class="main-panel"><div id="content">${renderDashboard()}</div></main>
           </div>
         `;
 
-        bindTabs();
-        document.getElementById('logoutBtn')?.addEventListener('click', () => {
+        document.getElementById('logoutBtn').addEventListener('click', () => {
           state.user = null;
-          persistSessionUser();
+          sessionStorage.removeItem('guardioes_user');
           renderApp();
         });
-
-        renderModuleContent();
       }
 
-      restoreSessionUser();
       renderApp();
     </script>
   </body>
