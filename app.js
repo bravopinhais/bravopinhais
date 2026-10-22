@@ -1,4 +1,4 @@
-import { DEFAULT_DATA } from '../data/defaultData.js';
+import { DEFAULT_DATA } from './data/defaultData.js';
 import { loadDb, saveDb } from './js/storage.js';
 import { renderLogin } from './js/auth.js';
 import { renderDashboard } from './js/modules/dashboard.js';
@@ -22,6 +22,27 @@ const state = {
     }
   }
 };
+
+function persistSessionUser() {
+  if (state.user) {
+    sessionStorage.setItem('guardioes_user', JSON.stringify(state.user));
+  } else {
+    sessionStorage.removeItem('guardioes_user');
+  }
+}
+
+function restoreSessionUser() {
+  try {
+    const raw = sessionStorage.getItem('guardioes_user');
+    if (!raw) return;
+    const parsed = JSON.parse(raw);
+    if (parsed && parsed.usuario) {
+      state.user = parsed;
+    }
+  } catch (error) {
+    console.error('Erro ao restaurar sessão:', error);
+  }
+}
 
 function renderCurrentModule() {
   const content = document.getElementById('content');
@@ -70,6 +91,7 @@ function bindLogin() {
     }
 
     state.user = userFound;
+    persistSessionUser();
     saveDb(state.db);
     renderApp();
   });
@@ -123,9 +145,11 @@ function renderApp() {
   bindTabs();
   document.getElementById('logoutBtn')?.addEventListener('click', () => {
     state.user = null;
+    persistSessionUser();
     renderApp();
   });
   renderCurrentModule();
 }
 
+restoreSessionUser();
 renderApp();
