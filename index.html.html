@@ -1,1818 +1,1274 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="h-full bg-slate-100">
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guardiões do Bravo - Sistema de Gestão Condominial</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <!-- html2pdf.js for native PDF generation -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-        body { font-family: 'Inter', sans-serif; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        /* Custom Scrollbar */
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guardiões do Bravo - Sistema de Gestão Condominial</title>
+  
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js para Gráficos -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f0f9ff',
+              100: '#e0f2fe',
+              500: '#0284c7',
+              600: '#0369a1',
+              700: '#075985',
+              800: '#0c4a6e',
+              900: '#0f172a'
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    /* Estilos Globais para Legibilidade e Ajustes de Form */
+    body { font-family: 'Inter', system-ui, -apple-system, sans-serif; }
+    input, select, textarea { color: #0f172a !important; font-weight: 500; }
+    input::placeholder, textarea::placeholder { color: #64748b !important; }
+    /* Scrollbar personalizada */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #f1f5f9; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+  </style>
 </head>
-<body class="h-full text-slate-800 antialiased bg-slate-100 flex flex-col font-sans">
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col">
 
-    <!-- LOGIN SCREEN -->
-    <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900 bg-opacity-80 p-4">
-        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 border border-slate-200">
-            <div class="text-center mb-8">
-                <div class="w-20 h-20 bg-teal-600 text-white rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg ring-4 ring-teal-100">
-                    <i class="fas fa-shield-alt text-3xl"></i>
-                </div>
-                <h1 class="text-2xl font-bold text-slate-900 tracking-tight">Guardiões do Bravo</h1>
-                <p class="text-xs font-semibold tracking-widest text-teal-600 uppercase mt-1">Sistema de Gestão Condominial</p>
-            </div>
+  <!-- NOTIFICAÇÕES TOAST GLOBAL -->
+  <div id="toast-container" class="fixed top-4 right-4 z-50 flex flex-col gap-2 max-w-sm w-full pointer-events-none"></div>
 
-            <form id="login-form" onsubmit="handleLogin(event)" class="space-y-5">
-                <div>
-                    <label class="block text-xs font-bold text-slate-600 uppercase mb-2">Usuário / E-mail de Acesso</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                            <i class="fas fa-user"></i>
-                        </span>
-                        <input type="text" id="login-username" required value="admin" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm bg-slate-50 transition" placeholder="Ex: admin">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-bold text-slate-600 uppercase mb-2">Senha de Acesso</label>
-                    <div class="relative">
-                        <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
-                            <i class="fas fa-lock"></i>
-                        </span>
-                        <input type="password" id="login-password" required value="12345678" class="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent text-sm bg-slate-50 transition" placeholder="••••••••">
-                    </div>
-                </div>
-
-                <div id="login-error" class="hidden p-3 rounded-lg bg-rose-50 border border-rose-200 text-rose-600 text-xs text-center font-medium"></div>
-
-                <button type="submit" class="w-full py-3.5 px-4 bg-teal-600 hover:bg-teal-700 text-white font-semibold rounded-xl shadow-md shadow-teal-600/30 transition duration-200 text-sm flex items-center justify-center space-x-2">
-                    <i class="fas fa-sign-in-alt"></i>
-                    <span>Entrar no Sistema</span>
-                </button>
-            </form>
-
-            <div class="mt-6 pt-6 border-t border-slate-100 text-center">
-                <p class="text-xs text-slate-500">Credenciais Padrão do Sistema:</p>
-                <p class="text-xs font-mono font-bold text-slate-700 mt-1">Usuário: <span class="text-teal-600">admin</span> | Senha: <span class="text-teal-600">12345678</span></p>
-            </div>
+  <!-- TELA DE LOGIN & PRIMEIRA TROCA DE SENHA -->
+  <div id="auth-screen" class="fixed inset-0 z-40 bg-slate-900 flex items-center justify-center p-4 bg-cover bg-center" style="background-image: linear-gradient(rgba(15, 23, 42, 0.85), rgba(15, 23, 42, 0.95)), url('https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?auto=format&fit=crop&w=1200&q=80');">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-8 border border-slate-200 relative overflow-hidden">
+      <!-- Banner Segurança -->
+      <div class="text-center mb-6">
+        <div class="w-16 h-16 bg-brand-600 text-white rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-lg shadow-brand-500/30">
+          <i class="fa-solid fa-shield-halved text-3xl"></i>
         </div>
-    </div>
+        <h1 class="text-2xl font-bold text-slate-900">Guardiões do Bravo</h1>
+        <p class="text-xs text-slate-500 font-medium tracking-wide uppercase mt-1">Gestão Condominial Segura</p>
+      </div>
 
-    <!-- MAIN APP STRUCTURE -->
-    <div id="app-container" class="hidden flex-1 flex h-screen overflow-hidden">
-
-        <!-- SIDEBAR -->
-        <aside class="w-64 bg-slate-900 text-slate-300 flex flex-col flex-shrink-0 z-20 shadow-xl">
-            <!-- Brand -->
-            <div class="p-5 flex items-center space-x-3 border-b border-slate-800 bg-slate-950">
-                <div class="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center font-bold text-xl shadow-md">
-                    <i class="fas fa-shield-alt"></i>
-                </div>
-                <div>
-                    <h2 class="text-sm font-bold text-white tracking-wide">Guardiões do Bravo</h2>
-                    <span class="text-[10px] font-semibold text-teal-400 uppercase tracking-widest block">Gestão Condominial</span>
-                </div>
-            </div>
-
-            <!-- Navigation Menu -->
-            <nav class="flex-1 p-4 space-y-1 overflow-y-auto">
-                <a href="#dashboard" onclick="switchTab('dashboard')" id="nav-dashboard" class="nav-item flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800 text-white bg-teal-600 transition">
-                    <i class="fas fa-chart-line w-5 text-center"></i>
-                    <span>Dashboard</span>
-                </a>
-
-                <div class="pt-3 pb-1 px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Módulos Financeiros</div>
-
-                <a href="#financeiro" onclick="switchTab('financeiro')" id="nav-financeiro" class="nav-item flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800 hover:text-white transition">
-                    <i class="fas fa-receipt w-5 text-center"></i>
-                    <span>Contas Pagar/Receber</span>
-                </a>
-
-                <a href="#plano-contas" onclick="switchTab('plano-contas')" id="nav-plano-contas" class="nav-item flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800 hover:text-white transition">
-                    <i class="fas fa-sitemap w-5 text-center"></i>
-                    <span>Plano de Contas</span>
-                </a>
-
-                <a href="#bancos" onclick="switchTab('bancos')" id="nav-bancos" class="nav-item flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800 hover:text-white transition">
-                    <i class="fas fa-university w-5 text-center"></i>
-                    <span>Contas Bancárias / Caixa</span>
-                </a>
-
-                <div class="pt-3 pb-1 px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Materiais & Operações</div>
-
-                <a href="#produtos" onclick="switchTab('produtos')" id="nav-produtos" class="nav-item flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800 hover:text-white transition">
-                    <i class="fas fa-boxes w-5 text-center"></i>
-                    <span>Estoque de Produtos</span>
-                </a>
-
-                <a href="#acerto-estoque" onclick="switchTab('acerto-estoque')" id="nav-acerto-estoque" class="nav-item flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800 hover:text-white transition">
-                    <i class="fas fa-exchange-alt w-5 text-center"></i>
-                    <span>Acerto de Estoque</span>
-                </a>
-
-                <a href="#patrimonio" onclick="switchTab('patrimonio')" id="nav-patrimonio" class="nav-item flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800 hover:text-white transition">
-                    <i class="fas fa-couch w-5 text-center"></i>
-                    <span>Patrimônio / Bens</span>
-                </a>
-
-                <div class="pt-3 pb-1 px-3 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Administração</div>
-
-                <a href="#documentos" onclick="switchTab('documentos')" id="nav-documentos" class="nav-item flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800 hover:text-white transition">
-                    <i class="fas fa-folder-open w-5 text-center text-teal-400"></i>
-                    <span class="font-semibold text-white">Documentos & Anexos</span>
-                </a>
-
-                <a href="#inquilinos" onclick="switchTab('inquilinos')" id="nav-inquilinos" class="nav-item flex items-center space-x-3 px-3.5 py-2.5 rounded-xl text-sm font-medium hover:bg-slate-800 hover:text-white transition">
-                    <i class="fas fa-users w-5 text-center"></i>
-                    <span>Moradores & Inquilinos</span>
-                </a>
-            </nav>
-
-            <!-- User Info & Logout -->
-            <div class="p-4 border-t border-slate-800 bg-slate-950/60 flex items-center justify-between">
-                <div class="flex items-center space-x-3 overflow-hidden">
-                    <div class="w-8 h-8 rounded-full bg-teal-600 text-white flex items-center justify-center font-bold text-xs flex-shrink-0">
-                        AD
-                    </div>
-                    <div class="truncate">
-                        <p class="text-xs font-bold text-white truncate">Administrador</p>
-                        <p class="text-[10px] text-slate-400 truncate">admin@guardioes.com</p>
-                    </div>
-                </div>
-                <button onclick="handleLogout()" title="Sair do Sistema" class="text-slate-400 hover:text-rose-400 transition p-2 rounded-lg">
-                    <i class="fas fa-power-off"></i>
-                </button>
-            </div>
-        </aside>
-
-        <!-- MAIN VIEW PORT -->
-        <div class="flex-1 flex flex-col overflow-hidden bg-slate-100">
-
-            <!-- HEADER BAR -->
-            <header class="bg-white border-b border-slate-200 px-8 py-4 flex items-center justify-between shadow-sm z-10">
-                <div class="flex items-center space-x-4">
-                    <h1 id="page-title" class="text-xl font-bold text-slate-800">Dashboard Geral</h1>
-                    <span id="page-badge" class="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-50 text-teal-700 border border-teal-200">
-                        Modo Administrativo
-                    </span>
-                </div>
-
-                <div class="flex items-center space-x-3">
-                    <button onclick="exportCurrentViewPDF()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl border border-slate-300 transition flex items-center space-x-2">
-                        <i class="fas fa-file-pdf text-rose-600"></i>
-                        <span>Exportar PDF</span>
-                    </button>
-                    <button onclick="exportCurrentViewCSV()" class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl shadow-sm transition flex items-center space-x-2">
-                        <i class="fas fa-file-excel"></i>
-                        <span>Exportar Excel (CSV)</span>
-                    </button>
-                </div>
-            </header>
-
-            <!-- TAB CONTENT AREA -->
-            <main class="flex-1 overflow-y-auto p-8 space-y-6" id="printable-area">
-
-                <!-- TAB 1: DASHBOARD -->
-                <section id="tab-dashboard" class="tab-content active space-y-6">
-                    <!-- KPI Cards -->
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-                            <div>
-                                <p class="text-xs font-bold uppercase text-slate-400 tracking-wider">A Receber (Aberto)</p>
-                                <h3 id="dash-receber" class="text-2xl font-bold text-emerald-600 mt-1">R$ 0,00</h3>
-                                <p class="text-[11px] text-slate-500 mt-1"><i class="fas fa-arrow-up text-emerald-500 mr-1"></i>Títulos pendentes</p>
-                            </div>
-                            <div class="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl">
-                                <i class="fas fa-hand-holding-usd"></i>
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-                            <div>
-                                <p class="text-xs font-bold uppercase text-slate-400 tracking-wider">A Pagar (Aberto)</p>
-                                <h3 id="dash-pagar" class="text-2xl font-bold text-rose-600 mt-1">R$ 0,00</h3>
-                                <p class="text-[11px] text-slate-500 mt-1"><i class="fas fa-arrow-down text-rose-500 mr-1"></i>Contas a liquidar</p>
-                            </div>
-                            <div class="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-xl">
-                                <i class="fas fa-file-invoice-dollar"></i>
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-                            <div>
-                                <p class="text-xs font-bold uppercase text-slate-400 tracking-wider">Saldo Bancário Total</p>
-                                <h3 id="dash-saldo" class="text-2xl font-bold text-slate-800 mt-1">R$ 0,00</h3>
-                                <p class="text-[11px] text-slate-500 mt-1"><i class="fas fa-university text-blue-500 mr-1"></i>Consolidado bancos</p>
-                            </div>
-                            <div class="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center text-xl">
-                                <i class="fas fa-wallet"></i>
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-                            <div>
-                                <p class="text-xs font-bold uppercase text-slate-400 tracking-wider">Documentos Anexados</p>
-                                <h3 id="dash-docs-count" class="text-2xl font-bold text-teal-600 mt-1">0</h3>
-                                <p class="text-[11px] text-slate-500 mt-1"><i class="fas fa-paperclip text-teal-500 mr-1"></i>Arquivos salvos</p>
-                            </div>
-                            <div class="w-12 h-12 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center text-xl">
-                                <i class="fas fa-folder"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Quick Overview Tables -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                            <div class="flex items-center justify-between border-b pb-4">
-                                <h3 class="font-bold text-slate-800 flex items-center"><i class="fas fa-clock text-amber-500 mr-2"></i> Próximos Vencimentos</h3>
-                                <button onclick="switchTab('financeiro')" class="text-xs font-bold text-teal-600 hover:underline">Ver Todos</button>
-                            </div>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-left text-xs">
-                                    <thead>
-                                        <tr class="text-slate-400 border-b">
-                                            <th class="pb-2">Título</th>
-                                            <th class="pb-2">Vencimento</th>
-                                            <th class="pb-2">Valor</th>
-                                            <th class="pb-2 text-right">Tipo</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="dash-vencimentos-table" class="divide-y text-slate-600">
-                                        <!-- Dynamic JS -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                            <div class="flex items-center justify-between border-b pb-4">
-                                <h3 class="font-bold text-slate-800 flex items-center"><i class="fas fa-boxes text-indigo-500 mr-2"></i> Alerta de Estoque Mínimo</h3>
-                                <button onclick="switchTab('produtos')" class="text-xs font-bold text-teal-600 hover:underline">Ir ao Estoque</button>
-                            </div>
-                            <div class="overflow-x-auto">
-                                <table class="w-full text-left text-xs">
-                                    <thead>
-                                        <tr class="text-slate-400 border-b">
-                                            <th class="pb-2">Produto</th>
-                                            <th class="pb-2">Qtd Atual</th>
-                                            <th class="pb-2">Mínimo</th>
-                                            <th class="pb-2 text-right">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="dash-estoque-table" class="divide-y text-slate-600">
-                                        <!-- Dynamic JS -->
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- TAB 2: CONTAS A PAGAR E RECEBER -->
-                <section id="tab-financeiro" class="tab-content space-y-6">
-                    <!-- Filters Bar -->
-                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
-                            <div class="flex items-center space-x-2">
-                                <i class="fas fa-filter text-teal-600"></i>
-                                <h3 class="font-bold text-slate-800 text-sm">Filtros Avançados de Pesquisa</h3>
-                            </div>
-                            <button onclick="openModalNovoTitulo()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-600/20 transition flex items-center space-x-2">
-                                <i class="fas fa-plus"></i>
-                                <span>Novo Título Financeiro</span>
-                            </button>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-3">
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Buscar por Fornecedor/Histórico</label>
-                                <input type="text" id="filter-fin-text" oninput="renderFinanceiroTable()" placeholder="Ex: Copel, Portaria..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Data Início (Vencimento)</label>
-                                <input type="date" id="filter-fin-date-start" onchange="renderFinanceiroTable()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Data Fim (Vencimento)</label>
-                                <input type="date" id="filter-fin-date-end" onchange="renderFinanceiroTable()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Status do Título</label>
-                                <select id="filter-fin-status" onchange="renderFinanceiroTable()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
-                                    <option value="todos">Todos os Status</option>
-                                    <option value="Aberto">Apenas Abertos (Pendente/Vencido)</option>
-                                    <option value="Baixado">Apenas Baixados (Liquidados/Parciais)</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Tipo de Operação</label>
-                                <select id="filter-fin-tipo" onchange="renderFinanceiroTable()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
-                                    <option value="todos">Todos (Pagar e Receber)</option>
-                                    <option value="Pagar">A Pagar</option>
-                                    <option value="Receber">A Receber</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Main Titles Table -->
-                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs">
-                                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
-                                    <tr>
-                                        <th class="p-4">Tipo</th>
-                                        <th class="p-4">Histórico / Fornecedor</th>
-                                        <th class="p-4">Plano de Contas</th>
-                                        <th class="p-4">Vencimento</th>
-                                        <th class="p-4">Valor Original</th>
-                                        <th class="p-4">Saldo Restante</th>
-                                        <th class="p-4">Status</th>
-                                        <th class="p-4 text-center">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="financeiro-table-body" class="divide-y divide-slate-100 text-slate-700">
-                                    <!-- Dynamic JS -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- TAB 3: PLANO DE CONTAS -->
-                <section id="tab-plano-contas" class="tab-content space-y-6">
-                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-base">Plano de Contas Estruturado</h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Categorização analítica e sintética das receitas e despesas condominiais</p>
-                        </div>
-                        <button onclick="openModalPlanoConta()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center space-x-2">
-                            <i class="fas fa-plus"></i>
-                            <span>Nova Categoria</span>
-                        </button>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <!-- Receitas -->
-                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                            <h4 class="font-bold text-emerald-600 text-sm border-b pb-3 flex items-center">
-                                <i class="fas fa-arrow-circle-up mr-2"></i> 1. RECEITAS CONDOMINIAIS
-                            </h4>
-                            <ul id="plano-receitas-list" class="space-y-2 text-xs">
-                                <!-- Dynamic JS -->
-                            </ul>
-                        </div>
-                        <!-- Despesas -->
-                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                            <h4 class="font-bold text-rose-600 text-sm border-b pb-3 flex items-center">
-                                <i class="fas fa-arrow-circle-down mr-2"></i> 2. DESPESAS OPERACIONAIS
-                            </h4>
-                            <ul id="plano-despesas-list" class="space-y-2 text-xs">
-                                <!-- Dynamic JS -->
-                            </ul>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- TAB 4: BANCOS / CAIXA -->
-                <section id="tab-bancos" class="tab-content space-y-6">
-                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-base">Contas Bancárias e Caixas Monetários</h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Gestão de saldos reais para liquidação de títulos e baixas financeiras</p>
-                        </div>
-                        <button onclick="openModalNovaContaBancaria()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center space-x-2">
-                            <i class="fas fa-plus"></i>
-                            <span>Cadastrar Conta/Caixa</span>
-                        </button>
-                    </div>
-
-                    <div id="bancos-cards-container" class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <!-- Dynamic Cards -->
-                    </div>
-                </section>
-
-                <!-- TAB 5: ESTOQUE DE PRODUTOS -->
-                <section id="tab-produtos" class="tab-content space-y-6">
-                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
-                            <div>
-                                <h3 class="font-bold text-slate-800 text-sm">Catálogo & Estoque de Produtos</h3>
-                                <p class="text-xs text-slate-500">Materiais de consumo, limpeza e manutenção do condomínio</p>
-                            </div>
-                            <button onclick="openModalNovoProduto()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center space-x-2">
-                                <i class="fas fa-plus"></i>
-                                <span>Novo Produto</span>
-                            </button>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Buscar por Nome do Produto</label>
-                                <input type="text" id="filter-prod-text" oninput="renderProdutosTable()" placeholder="Ex: Lâmpada LED, Detergente..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Categoria</label>
-                                <select id="filter-prod-cat" onchange="renderProdutosTable()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
-                                    <option value="todas">Todas as Categorias</option>
-                                    <option value="Limpeza">Limpeza & Higiene</option>
-                                    <option value="Manutenção">Manutenção Geral</option>
-                                    <option value="Elétrica">Elétrica & Iluminação</option>
-                                    <option value="Segurança">Segurança & Portaria</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Status de Estoque</label>
-                                <select id="filter-prod-status" onchange="renderProdutosTable()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
-                                    <option value="todos">Todos</option>
-                                    <option value="baixo">Abaixo do Estoque Mínimo</option>
-                                    <option value="ok">Estoque Normal</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs">
-                                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
-                                    <tr>
-                                        <th class="p-4">Foto</th>
-                                        <th class="p-4">Produto</th>
-                                        <th class="p-4">Categoria</th>
-                                        <th class="p-4">Qtd Atual</th>
-                                        <th class="p-4">Mínimo</th>
-                                        <th class="p-4">Unidade</th>
-                                        <th class="p-4">Status</th>
-                                        <th class="p-4 text-center">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="produtos-table-body" class="divide-y divide-slate-100 text-slate-700">
-                                    <!-- Dynamic JS -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- TAB 6: ACERTO DE ESTOQUE -->
-                <section id="tab-acerto-estoque" class="tab-content space-y-6">
-                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-base">Módulo de Acerto de Estoque (Entradas e Saídas)</h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Lançamento direto de ajustes com recalculo automático do catálogo</p>
-                        </div>
-                        <button onclick="openModalAcertoEstoque()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center space-x-2">
-                            <i class="fas fa-exchange-alt"></i>
-                            <span>Lançar Acerto de Estoque</span>
-                        </button>
-                    </div>
-
-                    <!-- Audit Log Table -->
-                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden space-y-4 p-6">
-                        <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider">Histórico de Movimentações e Motivos</h4>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs">
-                                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase">
-                                    <tr>
-                                        <th class="p-3">Data/Hora</th>
-                                        <th class="p-3">Produto</th>
-                                        <th class="p-3">Tipo</th>
-                                        <th class="p-3">Quantidade</th>
-                                        <th class="p-3">Motivo / Justificativa</th>
-                                        <th class="p-3">Responsável</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="acerto-historico-body" class="divide-y divide-slate-100 text-slate-600">
-                                    <!-- Dynamic JS -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- TAB 7: PATRIMÔNIO -->
-                <section id="tab-patrimonio" class="tab-content space-y-6">
-                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
-                        <div>
-                            <h3 class="font-bold text-slate-800 text-base">Inventário de Bens & Patrimônio</h3>
-                            <p class="text-xs text-slate-500 mt-0.5">Móveis, máquinas e equipamentos cadastrados por Tombamento</p>
-                        </div>
-                        <button onclick="openModalNovoPatrimonio()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center space-x-2">
-                            <i class="fas fa-plus"></i>
-                            <span>Novo Bem / Tombamento</span>
-                        </button>
-                    </div>
-
-                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs">
-                                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
-                                    <tr>
-                                        <th class="p-4">Foto</th>
-                                        <th class="p-4">Nº Tombamento</th>
-                                        <th class="p-4">Descrição do Bem</th>
-                                        <th class="p-4">Localização</th>
-                                        <th class="p-4">Estado</th>
-                                        <th class="p-4">Valor Estimado</th>
-                                        <th class="p-4 text-center">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="patrimonio-table-body" class="divide-y divide-slate-100 text-slate-700">
-                                    <!-- Dynamic JS -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- TAB 8: DOCUMENTOS E ANEXOS (NEW ENHANCED MODULE) -->
-                <section id="tab-documentos" class="tab-content space-y-6">
-                    <!-- Top Control Bar -->
-                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
-                            <div>
-                                <h3 class="font-bold text-slate-800 text-base flex items-center">
-                                    <i class="fas fa-folder-open text-teal-600 mr-2"></i> Gestão de Documentos & Anexos
-                                </h3>
-                                <p class="text-xs text-slate-500 mt-0.5">Repositório central de contratos, atas, notas fiscais, garantias e comprovantes</p>
-                            </div>
-                            <button onclick="openModalNovoDocumento()" class="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-600/20 transition flex items-center space-x-2">
-                                <i class="fas fa-paperclip"></i>
-                                <span>Anexar Novo Documento</span>
-                            </button>
-                        </div>
-
-                        <!-- Filters for Documents -->
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-3">
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Buscar por Título / Palavra-chave</label>
-                                <input type="text" id="filter-doc-text" oninput="renderDocumentosTable()" placeholder="Ex: Contrato de Manutenção, Ata 2026..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Classificação / Categoria</label>
-                                <select id="filter-doc-categoria" onchange="renderDocumentosTable()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
-                                    <option value="todas">Todas as Categorias</option>
-                                    <option value="Contratos">Contratos de Prestadores</option>
-                                    <option value="Atas de Reunião">Atas & Assembleias</option>
-                                    <option value="Notas Fiscais">Notas Fiscais & Cupons</option>
-                                    <option value="Comprovantes">Comprovantes Bancários</option>
-                                    <option value="Manutenção">Laudos & Manutenção</option>
-                                    <option value="Regulamento Interno">Regulamento & Convenção</option>
-                                    <option value="Outros">Outros Documentos</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Vínculo / Referência</label>
-                                <select id="filter-doc-referencia" onchange="renderDocumentosTable()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
-                                    <option value="todos">Todos os Vínculos</option>
-                                    <option value="Geral">Geral Condomínio</option>
-                                    <option value="Financeiro">Título Financeiro</option>
-                                    <option value="Morador">Morador / Inquilino</option>
-                                    <option value="Patrimônio">Patrimônio / Equipamento</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Ações de Filtro</label>
-                                <button onclick="resetDocumentFilters()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl border border-slate-200 transition flex items-center justify-center space-x-1">
-                                    <i class="fas fa-undo text-slate-400"></i>
-                                    <span>Limpar Filtros</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Document List Table -->
-                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs">
-                                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
-                                    <tr>
-                                        <th class="p-4">Documento / Nome</th>
-                                        <th class="p-4">Classificação</th>
-                                        <th class="p-4">Vínculo / Ref.</th>
-                                        <th class="p-4">Tamanho</th>
-                                        <th class="p-4">Data do Envio</th>
-                                        <th class="p-4 text-center">Visualização / Baixar</th>
-                                        <th class="p-4 text-center">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="documentos-table-body" class="divide-y divide-slate-100 text-slate-700">
-                                    <!-- Dynamic JS -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-
-                <!-- TAB 9: MORADORES & INQUILINOS -->
-                <section id="tab-inquilinos" class="tab-content space-y-6">
-                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                        <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 pb-4">
-                            <div>
-                                <h3 class="font-bold text-slate-800 text-sm">Cadastro de Moradores & Inquilinos</h3>
-                                <p class="text-xs text-slate-500">Gestão de contatos, unidades e veículos dos moradores</p>
-                            </div>
-                            <button onclick="openModalNovoMorador()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-sm transition flex items-center space-x-2">
-                                <i class="fas fa-user-plus"></i>
-                                <span>Cadastrar Morador</span>
-                            </button>
-                        </div>
-
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Buscar por Nome / Unidade</label>
-                                <input type="text" id="filter-morador-text" oninput="renderInquilinosTable()" placeholder="Ex: Carlos, Ap 102..." class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Tipo de Residente</label>
-                                <select id="filter-morador-tipo" onchange="renderInquilinosTable()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
-                                    <option value="todos">Todos os Tipos</option>
-                                    <option value="Proprietário">Proprietário</option>
-                                    <option value="Inquilino">Inquilino</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 uppercase mb-1">Bloco / Torre</label>
-                                <select id="filter-morador-bloco" onchange="renderInquilinosTable()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none">
-                                    <option value="todos">Todos os Blocos</option>
-                                    <option value="Bloco A">Bloco A</option>
-                                    <option value="Bloco B">Bloco B</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs">
-                                <thead class="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider">
-                                    <tr>
-                                        <th class="p-4">Nome do Morador</th>
-                                        <th class="p-4">Unidade / Bloco</th>
-                                        <th class="p-4">Tipo</th>
-                                        <th class="p-4">Telefone / E-mail</th>
-                                        <th class="p-4">Veículo / Placa</th>
-                                        <th class="p-4 text-center">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="inquilinos-table-body" class="divide-y divide-slate-100 text-slate-700">
-                                    <!-- Dynamic JS -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </section>
-
-            </main>
+      <!-- FORMULÁRIO DE LOGIN -->
+      <form id="login-form" onsubmit="handleLogin(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Usuário / Email</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-user"></i></span>
+            <input type="text" id="login-username" required class="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all" placeholder="Digite seu usuário">
+          </div>
         </div>
-    </div>
 
-    <!-- GENERIC MODAL CONTAINER -->
-    <div id="modal-container" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/70 p-4 hidden">
-        <div id="modal-content" class="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden border border-slate-200 max-h-[90vh] flex flex-col">
-            <!-- Dynamic Modal Inner -->
-        </div>
-    </div>
-
-    <!-- IMAGE LIGHTBOX MODAL -->
-    <div id="lightbox-modal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 hidden" onclick="closeLightbox()">
-        <div class="relative max-w-3xl w-full flex flex-col items-center">
-            <img id="lightbox-img" src="" class="max-h-[80vh] rounded-xl shadow-2xl border border-white/20 object-contain">
-            <p id="lightbox-caption" class="text-white text-xs font-semibold mt-3 bg-black/60 px-4 py-2 rounded-full"></p>
-            <button onclick="closeLightbox()" class="absolute -top-10 right-0 text-white text-xl font-bold p-2 hover:text-slate-300">
-                <i class="fas fa-times"></i> Fechar
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Senha</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400"><i class="fa-solid fa-lock"></i></span>
+            <input type="password" id="login-password" required class="w-full pl-10 pr-10 py-2.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500 focus:border-brand-500 transition-all" placeholder="••••••••">
+            <button type="button" onclick="togglePasswordVisibility('login-password', 'toggle-login-pwd-icon')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600">
+              <i id="toggle-login-pwd-icon" class="fa-solid fa-eye"></i>
             </button>
+          </div>
         </div>
+
+        <div class="flex items-center justify-between text-xs">
+          <label class="flex items-center gap-2 cursor-pointer text-slate-600">
+            <input type="checkbox" id="login-remember" class="rounded border-slate-300 text-brand-600 focus:ring-brand-500">
+            Lembrar-me neste navegador
+          </label>
+          <span class="text-slate-400" title="Consulte o Administrador do sistema em caso de bloqueio">Ajuda?</span>
+        </div>
+
+        <!-- Banner de Tentativas/Bloqueio -->
+        <div id="login-lockout-msg" class="hidden p-3 bg-red-50 border border-red-200 text-red-700 text-xs rounded-lg flex items-center gap-2">
+          <i class="fa-solid fa-triangle-exclamation text-base"></i>
+          <span id="login-lockout-text">Conta temporariamente bloqueada por segurança.</span>
+        </div>
+
+        <button type="submit" id="btn-login-submit" class="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg shadow-lg shadow-brand-600/30 transition-all flex items-center justify-center gap-2">
+          <span>Acessar Painel</span>
+          <i class="fa-solid fa-arrow-right"></i>
+        </button>
+        
+        <div class="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs text-slate-600">
+          <p class="font-bold mb-1">Acesso Padrão (Demonstração):</p>
+          <p>• Admin: <b>admin</b> / <b>Admin@12345</b></p>
+          <p>• Leitura: <b>auditor</b> / <b>Auditor@12345</b></p>
+        </div>
+      </form>
+
+      <!-- FORMULÁRIO DE TROCA DE SENHA OBRIGATÓRIA (PRIMEIRO ACESSO) -->
+      <form id="force-password-form" onsubmit="handleForcePasswordChange(event)" class="space-y-4 hidden">
+        <div class="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg text-xs flex items-center gap-2">
+          <i class="fa-solid fa-key text-base text-amber-600"></i>
+          <div>
+            <b>Primeiro Acesso Detectado:</b> Para sua segurança, você deve redefinir sua senha antes de continuar.
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Nova Senha Forte</label>
+          <div class="relative">
+            <input type="password" id="new-pwd-input" onkeyup="checkPasswordStrength(this.value)" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500">
+          </div>
+          <!-- Requisitos de Senha -->
+          <ul class="text-[11px] text-slate-500 mt-2 space-y-1">
+            <li id="req-len" class="flex items-center gap-1"><i class="fa-solid fa-circle-xmark text-red-500"></i> Mínimo de 8 caracteres</li>
+            <li id="req-upper" class="flex items-center gap-1"><i class="fa-solid fa-circle-xmark text-red-500"></i> Pelo menos 1 letra maiúscula</li>
+            <li id="req-lower" class="flex items-center gap-1"><i class="fa-solid fa-circle-xmark text-red-500"></i> Pelo menos 1 letra minúscula</li>
+            <li id="req-num" class="flex items-center gap-1"><i class="fa-solid fa-circle-xmark text-red-500"></i> Pelo menos 1 número</li>
+            <li id="req-spec" class="flex items-center gap-1"><i class="fa-solid fa-circle-xmark text-red-500"></i> Pelo menos 1 caractere especial (@#$%^&*!)</li>
+          </ul>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 uppercase mb-1">Confirme a Nova Senha</label>
+          <input type="password" id="confirm-pwd-input" required class="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-brand-500">
+        </div>
+
+        <button type="submit" id="btn-save-new-pwd" disabled class="w-full py-2.5 bg-slate-400 text-white font-bold rounded-lg cursor-not-allowed transition-all">
+          Gravar Nova Senha e Entrar
+        </button>
+      </form>
     </div>
+  </div>
 
-    <!-- JAVASCRIPT APPLICATION ENGINE -->
-    <script>
-        // GLOBAL DATA STATE
-        const state = {
-            financeiro: [
-                { id: 'FIN-101', tipo: 'Receber', historico: 'Taxa Condominial Ap 101', planoConta: '1.1 Taxa Condominial', vencimento: '2026-10-10', valorOriginal: 650.00, valorPago: 0.00, status: 'Aberto', fornecedor: 'Carlos Eduardo (Ap 101)' },
-                { id: 'FIN-102', tipo: 'Pagar', historico: 'Manutenção Preventiva Elevadores', planoConta: '2.2 Conservação e Manutenção', vencimento: '2026-10-25', valorOriginal: 1200.00, valorPago: 0.00, status: 'Aberto', fornecedor: 'Otis Elevadores Ltda' },
-                { id: 'FIN-103', tipo: 'Pagar', historico: 'Conta de Energia Iluminação Externa', planoConta: '2.1 Serviços Públicos', vencimento: '2026-10-15', valorOriginal: 840.50, valorPago: 840.50, status: 'Baixado', fornecedor: 'Copel Energia' }
-            ],
-            planoContas: [
-                { id: 'P-1', tipo: 'Receita', codigo: '1.1', nome: 'Taxa Condominial Ordinária' },
-                { id: 'P-2', tipo: 'Receita', codigo: '1.2', nome: 'Fundo de Reserva' },
-                { id: 'P-3', tipo: 'Despesa', codigo: '2.1', nome: 'Serviços Públicos (Água/Luz)' },
-                { id: 'P-4', tipo: 'Despesa', codigo: '2.2', nome: 'Conservação e Manutenção' }
-            ],
-            bancos: [
-                { id: 'B-1', nome: 'Banco do Brasil - Conta Principal', agencia: '1234-5', conta: '98765-4', saldo: 18450.20 },
-                { id: 'B-2', nome: 'Caixa Econômica - Fundo Reserva', agencia: '0456', conta: '11223-0', saldo: 32000.00 },
-                { id: 'B-3', nome: 'Caixa Interno / Portaria', agencia: '-', conta: '-', saldo: 450.00 }
-            ],
-            produtos: [
-                { id: 'PR-1', nome: 'Lâmpada LED Tubular 18W', categoria: 'Elétrica', qtd: 8, min: 10, unidade: 'Unidades', foto: 'https://images.unsplash.com/photo-1550985616-10810253b84d?w=150&auto=format&fit=crop&q=60' },
-                { id: 'PR-2', nome: 'Detergente Concentrado 5L', categoria: 'Limpeza', qtd: 15, min: 5, unidade: 'Galões', foto: 'https://images.unsplash.com/photo-1585842378054-ee2e52f94ba2?w=150&auto=format&fit=crop&q=60' }
-            ],
-            acertosEstoque: [
-                { id: 'AC-1', data: '2026-10-18 14:20', produto: 'Lâmpada LED Tubular 18W', tipo: 'Saída', qtd: 2, motivo: 'Troca de lâmpadas queimadas no Bloco A', responsavel: 'Administrador' }
-            ],
-            patrimonio: [
-                { id: 'PAT-01', tombamento: 'BRAVO-2026-001', descricao: 'Lavadora de Alta Pressão Kärcher', local: 'Garagem / Serviços', estado: 'Excelente', valor: 2400.00, foto: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=150&auto=format&fit=crop&q=60' }
-            ],
-            documentos: [
-                { 
-                    id: 'DOC-101', 
-                    titulo: 'Contrato de Manutenção de Elevadores 2026.pdf', 
-                    categoria: 'Contratos', 
-                    referencia: 'Geral', 
-                    tamanho: '2.4 MB', 
-                    dataUpload: '2026-10-01', 
-                    conteudo: 'data:application/pdf;base64,JVBERi0xLjQKJ...'
-                },
-                { 
-                    id: 'DOC-102', 
-                    titulo: 'Ata da Assembleia Geral Ordinária.pdf', 
-                    categoria: 'Atas de Reunião', 
-                    referencia: 'Geral', 
-                    tamanho: '1.1 MB', 
-                    dataUpload: '2026-09-15', 
-                    conteudo: ''
-                }
-            ],
-            inquilinos: [
-                { id: 'INQ-1', nome: 'Carlos Eduardo Santos', unidade: '101', bloco: 'Bloco A', tipo: 'Proprietário', fone: '(41) 99887-6655', email: 'carlos@email.com', veiculo: 'Toyota Corolla - ABC-1234' },
-                { id: 'INQ-2', nome: 'Mariana Oliveira', unidade: '204', bloco: 'Bloco B', tipo: 'Inquilino', fone: '(41) 99112-3344', email: 'mariana@email.com', veiculo: 'Honda Fit - XYZ-9876' }
-            ]
-        };
+  <!-- CONTEÚDO DA APLICAÇÃO (PROTEGIDO) -->
+  <div id="app-screen" class="hidden min-h-screen flex flex-col">
+    <!-- TOPBAR / CABEÇALHO -->
+    <header class="bg-slate-900 text-white sticky top-0 z-30 shadow-md">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+        
+        <!-- Logo e Menu Mobile Button -->
+        <div class="flex items-center gap-3">
+          <button onclick="toggleMobileMenu()" class="lg:hidden p-2 text-slate-300 hover:text-white rounded-lg hover:bg-slate-800">
+            <i class="fa-solid fa-bars text-xl"></i>
+          </button>
+          <div class="flex items-center gap-2">
+            <div class="w-9 h-9 bg-brand-600 rounded-xl flex items-center justify-center font-bold text-lg shadow-md shadow-brand-500/20">
+              <i class="fa-solid fa-shield-halved text-white text-base"></i>
+            </div>
+            <div>
+              <span class="font-bold text-base tracking-wide block leading-none">Guardiões do Bravo</span>
+              <span class="text-[10px] text-brand-400 font-semibold tracking-wider uppercase">Gestão Condominial</span>
+            </div>
+          </div>
+        </div>
 
-        // LOGIN ENGINE
-        function handleLogin(event) {
-            event.preventDefault();
-            const user = document.getElementById('login-username').value;
-            const pass = document.getElementById('login-password').value;
-            const errDiv = document.getElementById('login-error');
+        <!-- Perfil e Logout -->
+        <div class="flex items-center gap-4">
+          <div class="hidden sm:flex items-center gap-3 pr-3 border-r border-slate-700">
+            <img id="user-avatar-display" src="https://placehold.co/100x100/0284c7/white?text=U" class="w-9 h-9 rounded-full border-2 border-brand-500 object-cover" alt="User Avatar">
+            <div class="text-left">
+              <span id="user-name-display" class="block text-xs font-bold text-slate-100">Nome Usuário</span>
+              <span id="user-role-badge" class="inline-block px-1.5 py-0.5 text-[10px] font-bold rounded bg-brand-500/20 text-brand-300 border border-brand-500/30">ADMIN</span>
+            </div>
+          </div>
+          
+          <button onclick="openAuditModal('Geral')" class="p-2 text-slate-300 hover:text-white hover:bg-slate-800 rounded-lg transition-all" title="Ver Histórico de Auditoria Global">
+            <i class="fa-solid fa-[#0284c7] fa-clock-rotate-left text-lg"></i>
+          </button>
 
-            if (user === 'admin' && pass === '12345678') {
-                document.getElementById('login-screen').classList.add('hidden');
-                document.getElementById('app-container').classList.remove('hidden');
-                initApp();
-            } else {
-                errDiv.textContent = 'Usuário ou senha incorretos!';
-                errDiv.classList.remove('hidden');
-            }
+          <button onclick="logout()" class="flex items-center gap-2 px-3 py-1.5 bg-red-600/20 hover:bg-red-600 border border-red-500/30 text-red-300 hover:text-white text-xs font-semibold rounded-lg transition-all">
+            <i class="fa-solid fa-right-from-bracket"></i>
+            <span class="hidden sm:inline">Sair</span>
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <!-- CONTAINER PRINCIPAL COM SIDEBAR + ÁREA DE CONTEÚDO -->
+    <div class="flex-1 max-w-7xl w-full mx-auto flex">
+      
+      <!-- NAVIGATION SIDEBAR (DESKTOP) -->
+      <aside class="hidden lg:block w-64 bg-white border-r border-slate-200 p-4 shrink-0">
+        <nav class="space-y-1" id="desktop-nav">
+          <!-- Gerado via JS para sincronismo -->
+        </nav>
+      </aside>
+
+      <!-- DRAWER MENU MOBILE -->
+      <div id="mobile-menu-overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-slate-900/60 z-40 hidden lg:hidden transition-opacity"></div>
+      <aside id="mobile-menu" class="fixed top-0 left-0 bottom-0 w-64 bg-white z-50 transform -translate-x-full transition-transform duration-300 lg:hidden p-4 flex flex-col justify-between">
+        <div>
+          <div class="flex items-center justify-between mb-6 pb-3 border-b border-slate-100">
+            <span class="font-bold text-slate-800 text-sm">Navegação</span>
+            <button onclick="toggleMobileMenu()" class="text-slate-400 hover:text-slate-600 p-1">
+              <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+          </div>
+          <nav class="space-y-1" id="mobile-nav">
+            <!-- Gerado via JS -->
+          </nav>
+        </div>
+        <div class="pt-4 border-t border-slate-100 flex items-center gap-3">
+          <img id="mobile-avatar" src="https://placehold.co/100x100/0284c7/white?text=U" class="w-8 h-8 rounded-full border border-brand-500">
+          <div class="text-xs">
+            <p id="mobile-user-name" class="font-bold text-slate-800">Usuário</p>
+            <p id="mobile-user-role" class="text-slate-500">Perfil</p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- MAIN CONTENT VIEW -->
+      <main class="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        
+        <!-- BARRA SUPERIOR DA PÁGINA (TÍTULO E AUDITORIA MÓDULO) -->
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-200">
+          <div>
+            <h2 id="page-title" class="text-2xl font-bold text-slate-900">Dashboard</h2>
+            <p id="page-subtitle" class="text-xs text-slate-500 mt-0.5">Visão geral do condomínio e indicadores financeiros.</p>
+          </div>
+          <div class="flex items-center gap-2">
+            <button onclick="openAuditModal(currentModule)" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold rounded-lg transition-all flex items-center gap-2">
+              <i class="fa-solid fa-list-check"></i>
+              <span>Rastrear Modificações</span>
+            </button>
+            <div id="module-actions-container"></div>
+          </div>
+        </div>
+
+        <!-- ÁREA DE RENDERIZAÇÃO DINÂMICA DE MÓDULOS -->
+        <div id="module-content">
+          <!-- O módulo atual será injetado aqui -->
+        </div>
+
+      </main>
+    </div>
+  </div>
+
+  <!-- MODAL DE AUDITORIA DE ALTERAÇÕES -->
+  <div id="audit-modal" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl shadow-2xl max-w-3xl w-full max-h-[85vh] flex flex-col border border-slate-200">
+      <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50 rounded-t-xl">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-clock-rotate-left text-brand-600 text-lg"></i>
+          <h3 class="font-bold text-slate-900 text-base" id="audit-modal-title">Logs de Auditoria</h3>
+        </div>
+        <button onclick="closeAuditModal()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <div class="p-4 overflow-y-auto flex-1">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 uppercase font-semibold border-b border-slate-200">
+                <th class="p-2.5">Data / Hora</th>
+                <th class="p-2.5">Usuário</th>
+                <th class="p-2.5">Módulo</th>
+                <th class="p-2.5">Ação</th>
+                <th class="p-2.5">Detalhes</th>
+              </tr>
+            </thead>
+            <tbody id="audit-table-body" class="divide-y divide-slate-100">
+              <!-- Logs injetados via JS -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="p-3 border-t border-slate-200 bg-slate-50 flex justify-end rounded-b-xl">
+        <button onclick="closeAuditModal()" class="px-4 py-2 bg-slate-300 hover:bg-slate-400 text-slate-800 text-xs font-bold rounded-lg">Fechar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL GENÉRICO PARA FORMULÁRIOS / DETALHES -->
+  <div id="generic-modal" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col border border-slate-200">
+      <div class="p-4 border-b border-slate-200 flex items-center justify-between bg-slate-50 rounded-t-xl">
+        <h3 class="font-bold text-slate-900 text-base" id="generic-modal-title">Formulário</h3>
+        <button onclick="closeGenericModal()" class="text-slate-400 hover:text-slate-600 p-1">
+          <i class="fa-solid fa-xmark text-lg"></i>
+        </button>
+      </div>
+      <div class="p-6 overflow-y-auto flex-1" id="generic-modal-body">
+        <!-- Conteúdo Injetado -->
+      </div>
+    </div>
+  </div>
+
+  <!-- JAVASCRIPT COMPLETO DO SISTEMA -->
+  <script>
+    /* ==========================================================================
+       1. ESTADO E DADOS INICIAIS (LOCALSTORAGE PERSISTENCE)
+       ========================================================================== */
+    const SECURITY_CONFIG = {
+      MAX_LOGIN_ATTEMPTS: 5,
+      LOCKOUT_TIME_MS: 5 * 60 * 1000, // 5 minutos
+      SESSION_TIMEOUT_MS: 15 * 60 * 1000 // 15 minutos
+    };
+
+    let currentUser = null;
+    let sessionTimer = null;
+    let currentModule = 'dashboard';
+    let moduleCurrentPage = 1;
+    const ITEMS_PER_PAGE = 10;
+    let cameraStream = null;
+
+    // Inicialização do LocalStorage
+    function initStorage() {
+      if (!localStorage.getItem('GB_USERS')) {
+        const defaultUsers = [
+          { id: 1, name: 'Administrador Geral', username: 'admin', passwordHash: 'Admin@12345', role: 'ADMIN', firstAccess: false, avatar: '' },
+          { id: 2, name: 'Auditor do Conselho', username: 'auditor', passwordHash: 'Auditor@12345', role: 'READONLY', firstAccess: false, avatar: '' }
+        ];
+        localStorage.setItem('GB_USERS', JSON.stringify(defaultUsers));
+      }
+
+      if (!localStorage.getItem('GB_AUDIT_LOGS')) {
+        const initialLogs = [
+          { timestamp: new Date().toISOString(), user: 'Sistema', module: 'Segurança', action: 'INICIALIZAÇÃO', details: 'Base de dados inicializada com sucesso.' }
+        ];
+        localStorage.setItem('GB_AUDIT_LOGS', JSON.stringify(initialLogs));
+      }
+
+      if (!localStorage.getItem('GB_FINANCIAL')) {
+        const initialFinancial = [
+          { id: 'FIN-101', type: 'RECEITA', description: 'Taxa Condominial Apto 101', category: 'Taxa Condominial', amount: 850.00, dueDate: '2026-10-10', status: 'PAGO', account: 'Caixa Principal' },
+          { id: 'FIN-102', type: 'DESPESA', description: 'Manutenção de Elevadores', category: 'Manutenção Executiva', amount: 1450.00, dueDate: '2026-10-15', status: 'PAGO', account: 'Conta Corrente Itaú' },
+          { id: 'FIN-103', type: 'DESPESA', description: 'Energia Áreas Comuns (COPEL)', category: 'Utilidades', amount: 2310.50, dueDate: '2026-10-25', status: 'PENDENTE', account: 'Conta Corrente Itaú' }
+        ];
+        localStorage.setItem('GB_FINANCIAL', JSON.stringify(initialFinancial));
+      }
+
+      if (!localStorage.getItem('GB_ACCOUNTS')) {
+        const initialAccounts = [
+          { id: 1, name: 'Caixa Principal', type: 'Caixa Físico', balance: 3500.00, status: 'Ativa' },
+          { id: 2, name: 'Conta Corrente Itaú', type: 'Banco', balance: 48250.80, status: 'Ativa' },
+          { id: 3, name: 'Fundo de Reserva Bradesco', type: 'Investimento', balance: 120000.00, status: 'Ativa' }
+        ];
+        localStorage.setItem('GB_ACCOUNTS', JSON.stringify(initialAccounts));
+      }
+
+      if (!localStorage.getItem('GB_CHART_ACCOUNTS')) {
+        const initialCategories = [
+          { id: 1, code: '1.0', name: 'Receitas Condominiais', type: 'RECEITA', status: 'Ativo' },
+          { id: 2, code: '1.1', name: 'Taxas Ordinárias', type: 'RECEITA', status: 'Ativo' },
+          { id: 3, code: '2.0', name: 'Despesas Operacionais', type: 'DESPESA', status: 'Ativo' },
+          { id: 4, code: '2.1', name: 'Manutenção e Conservação', type: 'DESPESA', status: 'Ativo' }
+        ];
+        localStorage.setItem('GB_CHART_ACCOUNTS', JSON.stringify(initialCategories));
+      }
+
+      if (!localStorage.getItem('GB_RESIDENTS')) {
+        const initialResidents = [
+          { id: 1, block: 'Bloco A', unit: '101', name: 'Carlos Eduardo Silva', email: 'carlos@email.com', phone: '(41) 99887-1122', status: 'Proprietário' },
+          { id: 2, block: 'Bloco B', unit: '204', name: 'Mariana Santos', email: 'mariana@email.com', phone: '(41) 99123-4455', status: 'Inquilino' }
+        ];
+        localStorage.setItem('GB_RESIDENTS', JSON.stringify(initialResidents));
+      }
+
+      if (!localStorage.getItem('GB_SUPPLIERS')) {
+        const initialSuppliers = [
+          { id: 1, cnpj: '12.345.678/0001-90', name: 'Elevadores Atlas Otis', phone: '(41) 3344-5566', category: 'Manutenção' },
+          { id: 2, cnpj: '98.765.432/0001-10', name: 'Segurança Bravo LTDA', phone: '(41) 3011-2233', category: 'Vigilância' }
+        ];
+        localStorage.setItem('GB_SUPPLIERS', JSON.stringify(initialSuppliers));
+      }
+
+      if (!localStorage.getItem('GB_STOCK')) {
+        const initialStock = [
+          { id: 1, name: 'Lâmpadas LED 12W', category: 'Elétrica', qty: 45, minQty: 10, unit: 'Un' },
+          { id: 2, name: 'Detergente Industrial 5L', category: 'Limpeza', qty: 8, minQty: 5, unit: 'Galão' }
+        ];
+        localStorage.setItem('GB_STOCK', JSON.stringify(initialStock));
+      }
+
+      if (!localStorage.getItem('GB_ASSETS')) {
+        const initialAssets = [
+          { id: 1, code: 'PAT-001', name: 'Gerador Elétrico Stemac 150kVA', location: 'Subsolo', value: 45000.00, status: 'Operacional' },
+          { id: 2, code: 'PAT-002', name: 'Bomba d\'Água Principal', location: 'Casa de Máquinas', value: 8200.00, status: 'Operacional' }
+        ];
+        localStorage.setItem('GB_ASSETS', JSON.stringify(initialAssets));
+      }
+
+      if (!localStorage.getItem('GB_DOCUMENTS')) {
+        const initialDocs = [
+          { id: 1, title: 'Convenção do Condomínio', category: 'Regulamentos', date: '2025-01-10', fileName: 'convencao.pdf' },
+          { id: 2, title: 'Ata da Assembleia Geral 2026', category: 'Atas', date: '2026-03-15', fileName: 'ata_2026.pdf' }
+        ];
+        localStorage.setItem('GB_DOCUMENTS', JSON.stringify(initialDocs));
+      }
+    }
+
+    initStorage();
+
+    /* ==========================================================================
+       2. SEGURANÇA E SANITIZAÇÃO (XSS & UTILITÁRIOS)
+       ========================================================================== */
+    function escapeHTML(str) {
+      if (typeof str !== 'string') return str;
+      return str.replace(/[&<>"']/g, function(match) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#39;'
+        }[match];
+      });
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      const bgColors = {
+        success: 'bg-emerald-600 text-white',
+        error: 'bg-red-600 text-white',
+        warning: 'bg-amber-500 text-white',
+        info: 'bg-brand-600 text-white'
+      };
+
+      const icons = {
+        success: 'fa-circle-check',
+        error: 'fa-circle-xmark',
+        warning: 'fa-triangle-exclamation',
+        info: 'fa-circle-info'
+      };
+
+      toast.className = `p-4 rounded-xl shadow-xl flex items-center gap-3 transition-all transform translate-y-2 text-xs font-semibold pointer-events-auto ${bgColors[type] || bgColors.info}`;
+      toast.innerHTML = `<i class="fa-solid ${icons[type] || icons.info} text-base"></i><span>${escapeHTML(message)}</span>`;
+      
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'scale-95');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function addAuditLog(module, action, details) {
+      const logs = JSON.parse(localStorage.getItem('GB_AUDIT_LOGS') || '[]');
+      const user = currentUser ? currentUser.name : 'Sistema/Anônimo';
+      
+      logs.unshift({
+        timestamp: new Date().toISOString(),
+        user: user,
+        module: module,
+        action: action,
+        details: details
+      });
+
+      // Limitar histórico a 300 eventos para otimizar storage
+      if (logs.length > 300) logs.pop();
+      localStorage.setItem('GB_AUDIT_LOGS', JSON.stringify(logs));
+    }
+
+    function validatePasswordStrength(pwd) {
+      const hasLength = pwd.length >= 8;
+      const hasUpper = /[A-Z]/.test(pwd);
+      const hasLower = /[a-z]/.test(pwd);
+      const hasNum = /[0-9]/.test(pwd);
+      const hasSpec = /[@#$%^&*!]/.test(pwd);
+
+      return {
+        isValid: hasLength && hasUpper && hasLower && hasNum && hasSpec,
+        hasLength, hasUpper, hasLower, hasNum, hasSpec
+      };
+    }
+
+    function checkPasswordStrength(pwd) {
+      const res = validatePasswordStrength(pwd);
+      
+      const updateReq = (id, valid) => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (valid) {
+          el.className = 'flex items-center gap-1 text-emerald-600 font-semibold';
+          el.querySelector('i').className = 'fa-solid fa-circle-check text-emerald-500';
+        } else {
+          el.className = 'flex items-center gap-1 text-slate-500';
+          el.querySelector('i').className = 'fa-solid fa-circle-xmark text-red-500';
         }
+      };
 
-        function handleLogout() {
-            document.getElementById('app-container').classList.add('hidden');
-            document.getElementById('login-screen').classList.remove('hidden');
+      updateReq('req-len', res.hasLength);
+      updateReq('req-upper', res.hasUpper);
+      updateReq('req-lower', res.hasLower);
+      updateReq('req-num', res.hasNum);
+      updateReq('req-spec', res.hasSpec);
+
+      const btn = document.getElementById('btn-save-new-pwd');
+      if (btn) {
+        btn.disabled = !res.isValid;
+        if (res.isValid) {
+          btn.className = 'w-full py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold rounded-lg shadow-lg cursor-pointer transition-all';
+        } else {
+          btn.className = 'w-full py-2.5 bg-slate-400 text-white font-bold rounded-lg cursor-not-allowed transition-all';
         }
+      }
+    }
 
-        // INITIALIZATION
-        function initApp() {
-            renderDashboard();
-            renderFinanceiroTable();
-            renderPlanoContasLists();
-            renderBancosCards();
-            renderProdutosTable();
-            renderAcertoHistorico();
-            renderPatrimonioTable();
-            renderDocumentosTable();
-            renderInquilinosTable();
+    function togglePasswordVisibility(inputId, iconId) {
+      const input = document.getElementById(inputId);
+      const icon = document.getElementById(iconId);
+      if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fa-solid fa-eye-slash';
+      } else {
+        input.type = 'password';
+        icon.className = 'fa-solid fa-eye';
+      }
+    }
+
+    /* ==========================================================================
+       3. AUTENTICAÇÃO E SESSÃO DA CONTA
+       ========================================================================== */
+    function checkLockout(username) {
+      const lockData = JSON.parse(localStorage.getItem(`GB_LOCK_${username}`) || 'null');
+      if (!lockData) return false;
+
+      if (lockData.attempts >= SECURITY_CONFIG.MAX_LOGIN_ATTEMPTS) {
+        const elapsed = Date.now() - lockData.lockoutTime;
+        if (elapsed < SECURITY_CONFIG.LOCKOUT_TIME_MS) {
+          const remainingSecs = Math.ceil((SECURITY_CONFIG.LOCKOUT_TIME_MS - elapsed) / 1000);
+          return remainingSecs;
+        } else {
+          localStorage.removeItem(`GB_LOCK_${username}`);
+          return false;
         }
+      }
+      return false;
+    }
 
-        // TAB SWITCHING
-        function switchTab(tabKey) {
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(el => {
-                el.classList.remove('bg-teal-600', 'text-white');
-                el.classList.add('text-slate-300');
-            });
+    function registerFailedAttempt(username) {
+      let lockData = JSON.parse(localStorage.getItem(`GB_LOCK_${username}`) || '{"attempts": 0}');
+      lockData.attempts += 1;
+      if (lockData.attempts >= SECURITY_CONFIG.MAX_LOGIN_ATTEMPTS) {
+        lockData.lockoutTime = Date.now();
+      }
+      localStorage.setItem(`GB_LOCK_${username}`, JSON.stringify(lockData));
+      return lockData.attempts;
+    }
 
-            const targetTab = document.getElementById(`tab-${tabKey}`);
-            const targetNav = document.getElementById(`nav-${tabKey}`);
+    function clearLockout(username) {
+      localStorage.removeItem(`GB_LOCK_${username}`);
+    }
 
-            if (targetTab) targetTab.classList.add('active');
-            if (targetNav) {
-                targetNav.classList.add('bg-teal-600', 'text-white');
-                targetNav.classList.remove('text-slate-300');
-            }
+    function handleLogin(e) {
+      e.preventDefault();
+      const usernameInput = document.getElementById('login-username').value.trim();
+      const passwordInput = document.getElementById('login-password').value;
+      const lockoutMsg = document.getElementById('login-lockout-msg');
 
-            // Update Page Title
-            const titles = {
-                'dashboard': 'Dashboard Geral',
-                'financeiro': 'Contas a Pagar e Receber',
-                'plano-contas': 'Plano de Contas Estruturado',
-                'bancos': 'Contas Bancárias e Caixas',
-                'produtos': 'Estoque de Produtos',
-                'acerto-estoque': 'Módulo de Acerto de Estoque',
-                'patrimonio': 'Inventário & Patrimônio',
-                'documentos': 'Gestão de Documentos & Anexos',
-                'inquilinos': 'Moradores e Inquilinos'
-            };
-            document.getElementById('page-title').textContent = titles[tabKey] || 'Guardiões do Bravo';
+      const lockedTime = checkLockout(usernameInput);
+      if (lockedTime) {
+        lockoutMsg.classList.remove('hidden');
+        document.getElementById('login-lockout-text').innerText = `Muitas tentativas falhadas. Tente novamente em ${lockedTime} segundos.`;
+        return;
+      }
+
+      const users = JSON.parse(localStorage.getItem('GB_USERS') || '[]');
+      const user = users.find(u => u.username.toLowerCase() === usernameInput.toLowerCase() && u.passwordHash === passwordInput);
+
+      if (!user) {
+        const attempts = registerFailedAttempt(usernameInput);
+        const remaining = SECURITY_CONFIG.MAX_LOGIN_ATTEMPTS - attempts;
+        showToast(`Credenciais inválidas! Tentativas restantes: ${Math.max(0, remaining)}`, 'error');
+        addAuditLog('Segurança', 'TENTATIVA DE LOGIN FALHADA', `Usuário: ${usernameInput}`);
+        return;
+      }
+
+      clearLockout(usernameInput);
+      currentUser = user;
+
+      if (user.firstAccess) {
+        document.getElementById('login-form').classList.add('hidden');
+        document.getElementById('force-password-form').classList.remove('hidden');
+        showToast('Primeiro acesso detectado. Por razões de segurança, redefina sua senha.', 'warning');
+        return;
+      }
+
+      finishLogin();
+    }
+
+    function handleForcePasswordChange(e) {
+      e.preventDefault();
+      const newPwd = document.getElementById('new-pwd-input').value;
+      const confirmPwd = document.getElementById('confirm-pwd-input').value;
+
+      if (newPwd !== confirmPwd) {
+        showToast('As senhas digitadas não coincidem!', 'error');
+        return;
+      }
+
+      const res = validatePasswordStrength(newPwd);
+      if (!res.isValid) {
+        showToast('A senha não cumpre com os requisitos mínimos de segurança.', 'error');
+        return;
+      }
+
+      const users = JSON.parse(localStorage.getItem('GB_USERS') || '[]');
+      const userIdx = users.findIndex(u => u.id === currentUser.id);
+      
+      if (userIdx !== -1) {
+        users[userIdx].passwordHash = newPwd;
+        users[userIdx].firstAccess = false;
+        localStorage.setItem('GB_USERS', JSON.stringify(users));
+        currentUser = users[userIdx];
+      }
+
+      addAuditLog('Segurança', 'ALTERAÇÃO DE SENHA OBRIGATÓRIA', `Usuário ${currentUser.username} redefiniu sua senha.`);
+      showToast('Senha alterada com sucesso!', 'success');
+      finishLogin();
+    }
+
+    function finishLogin() {
+      document.getElementById('auth-screen').classList.add('hidden');
+      document.getElementById('app-screen').classList.remove('hidden');
+
+      // Atualizar dados de exibição do usuário
+      document.getElementById('user-name-display').innerText = currentUser.name;
+      document.getElementById('user-role-badge').innerText = currentUser.role;
+      if (currentUser.avatar) {
+        document.getElementById('user-avatar-display').src = currentUser.avatar;
+        document.getElementById('mobile-avatar').src = currentUser.avatar;
+      }
+
+      document.getElementById('mobile-user-name').innerText = currentUser.name;
+      document.getElementById('mobile-user-role').innerText = currentUser.role;
+
+      addAuditLog('Segurança', 'LOGIN BEM SUCEDIDO', `Sessão iniciada para ${currentUser.username}`);
+      showToast(`Bem-vindo, ${currentUser.name}!`, 'success');
+
+      resetSessionTimer();
+      renderNavigation();
+      navigate('dashboard');
+    }
+
+    function logout() {
+      if (currentUser) {
+        addAuditLog('Segurança', 'LOGOUT', `Sessão encerrada por ${currentUser.username}`);
+      }
+      currentUser = null;
+      clearTimeout(sessionTimer);
+      document.getElementById('app-screen').classList.add('hidden');
+      document.getElementById('auth-screen').classList.remove('hidden');
+      document.getElementById('login-form').reset();
+      document.getElementById('login-form').classList.remove('hidden');
+      document.getElementById('force-password-form').classList.add('hidden');
+      showToast('Sessão encerrada.', 'info');
+    }
+
+    function resetSessionTimer() {
+      clearTimeout(sessionTimer);
+      sessionTimer = setTimeout(() => {
+        showToast('Sessão expirada por inatividade.', 'warning');
+        logout();
+      }, SECURITY_CONFIG.SESSION_TIMEOUT_MS);
+    }
+
+    // Monitorar eventos do usuário para resetar timeout
+    ['click', 'mousemove', 'keypress', 'touchstart'].forEach(evt => {
+      window.addEventListener(evt, () => {
+        if (currentUser) resetSessionTimer();
+      });
+    });
+
+    /* ==========================================================================
+       4. NAVEGAÇÃO & MENU RESPONSIVO
+       ========================================================================== */
+    const NAV_ITEMS = [
+      { id: 'dashboard', label: 'Dashboard', icon: 'fa-chart-pie' },
+      { id: 'financial', label: 'Contas Pagar / Receber', icon: 'fa-money-bill-transfer' },
+      { id: 'accounts', label: 'Contas Bancárias / Caixa', icon: 'fa-building-columns' },
+      { id: 'chart-accounts', label: 'Plano de Contas', icon: 'fa-sitemap' },
+      { id: 'residents', label: 'Moradores / Unidades', icon: 'fa-users-between-lines' },
+      { id: 'suppliers', label: 'Fornecedores', icon: 'fa-truck-field' },
+      { id: 'stock', label: 'Estoque de Produtos', icon: 'fa-boxes-stacked' },
+      { id: 'assets', label: 'Patrimônio / Bens', icon: 'fa-vault' },
+      { id: 'documents', label: 'Documentos & Anexos', icon: 'fa-file-contract' },
+      { id: 'users', label: 'Gestão de Usuários', icon: 'fa-user-shield' }
+    ];
+
+    function renderNavigation() {
+      const desktopNav = document.getElementById('desktop-nav');
+      const mobileNav = document.getElementById('mobile-nav');
+
+      const html = NAV_ITEMS.map(item => `
+        <button onclick="navigate('${item.id}')" id="nav-btn-${item.id}" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:bg-slate-100 hover:text-brand-600">
+          <i class="fa-solid ${item.icon} text-base w-5"></i>
+          <span>${item.label}</span>
+        </button>
+      `).join('');
+
+      desktopNav.innerHTML = html;
+      mobileNav.innerHTML = html;
+    }
+
+    function toggleMobileMenu() {
+      const menu = document.getElementById('mobile-menu');
+      const overlay = document.getElementById('mobile-menu-overlay');
+      const isHidden = menu.classList.contains('-translate-x-full');
+
+      if (isHidden) {
+        menu.classList.remove('-translate-x-full');
+        overlay.classList.remove('hidden');
+      } else {
+        menu.classList.add('-translate-x-full');
+        overlay.classList.add('hidden');
+      }
+    }
+
+    function navigate(moduleId) {
+      currentModule = moduleId;
+      moduleCurrentPage = 1;
+
+      // Destacar botão ativo
+      NAV_ITEMS.forEach(item => {
+        const btns = document.querySelectorAll(`#nav-btn-${item.id}`);
+        btns.forEach(btn => {
+          if (item.id === moduleId) {
+            btn.className = 'w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-bold transition-all bg-brand-50 text-brand-700 shadow-sm border border-brand-200/60';
+          } else {
+            btn.className = 'w-full flex items-center gap-3 px-3.5 py-2.5 rounded-lg text-xs font-bold transition-all text-slate-600 hover:bg-slate-100 hover:text-brand-600';
+          }
+        });
+      });
+
+      // Fechar gaveta mobile se aberta
+      document.getElementById('mobile-menu').classList.add('-translate-x-full');
+      document.getElementById('mobile-menu-overlay').classList.add('hidden');
+
+      // Atualizar títulos
+      const activeNav = NAV_ITEMS.find(i => i.id === moduleId);
+      document.getElementById('page-title').innerText = activeNav.label;
+
+      renderModuleContent();
+    }
+
+    /* ==========================================================================
+       5. RENDERIZAÇÃO DOS MÓDULOS DE CONTEÚDO
+       ========================================================================== */
+    function renderModuleContent() {
+      const container = document.getElementById('module-content');
+      const actionsContainer = document.getElementById('module-actions-container');
+      actionsContainer.innerHTML = '';
+
+      switch (currentModule) {
+        case 'dashboard':
+          renderDashboard(container);
+          break;
+        case 'financial':
+          renderFinancialModule(container, actionsContainer);
+          break;
+        case 'accounts':
+          renderAccountsModule(container, actionsContainer);
+          break;
+        case 'chart-accounts':
+          renderChartAccountsModule(container, actionsContainer);
+          break;
+        case 'residents':
+          renderResidentsModule(container, actionsContainer);
+          break;
+        case 'suppliers':
+          renderSuppliersModule(container, actionsContainer);
+          break;
+        case 'stock':
+          renderStockModule(container, actionsContainer);
+          break;
+        case 'assets':
+          renderAssetsModule(container, actionsContainer);
+          break;
+        case 'documents':
+          renderDocumentsModule(container, actionsContainer);
+          break;
+        case 'users':
+          renderUsersModule(container, actionsContainer);
+          break;
+        default:
+          container.innerHTML = '<p class="text-slate-500">Módulo em construção.</p>';
+      }
+    }
+
+    /* --- DASHBOARD --- */
+    function renderDashboard(container) {
+      const financial = JSON.parse(localStorage.getItem('GB_FINANCIAL') || '[]');
+      const totalReceitas = financial.filter(f => f.type === 'RECEITA').reduce((acc, f) => acc + f.amount, 0);
+      const totalDespesas = financial.filter(f => f.type === 'DESPESA').reduce((acc, f) => acc + f.amount, 0);
+      const saldoTotal = totalReceitas - totalDespesas;
+
+      const residents = JSON.parse(localStorage.getItem('GB_RESIDENTS') || '[]');
+      const stock = JSON.parse(localStorage.getItem('GB_STOCK') || '[]');
+
+      container.innerHTML = `
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-500 uppercase">Receitas Totais</span>
+              <div class="p-2 bg-emerald-100 text-emerald-600 rounded-lg"><i class="fa-solid fa-arrow-down-left"></i></div>
+            </div>
+            <p class="text-2xl font-bold text-slate-900 mt-2">R$ ${totalReceitas.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+          </div>
+
+          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-500 uppercase">Despesas Totais</span>
+              <div class="p-2 bg-red-100 text-red-600 rounded-lg"><i class="fa-solid fa-arrow-up-right"></i></div>
+            </div>
+            <p class="text-2xl font-bold text-slate-900 mt-2">R$ ${totalDespesas.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+          </div>
+
+          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-500 uppercase">Saldo Consolidado</span>
+              <div class="p-2 bg-brand-100 text-brand-600 rounded-lg"><i class="fa-solid fa-wallet"></i></div>
+            </div>
+            <p class="text-2xl font-bold ${saldoTotal >= 0 ? 'text-emerald-600' : 'text-red-600'} mt-2">R$ ${saldoTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+          </div>
+
+          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-bold text-slate-500 uppercase">Unidades Cadastradas</span>
+              <div class="p-2 bg-slate-100 text-slate-600 rounded-lg"><i class="fa-solid fa-building"></i></div>
+            </div>
+            <p class="text-2xl font-bold text-slate-900 mt-2">${residents.length}</p>
+          </div>
+        </div>
+
+        <!-- GRÁFICOS -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <h3 class="text-sm font-bold text-slate-800 mb-4">Balanço Financeiro</h3>
+            <canvas id="chart-balance" class="max-h-64"></canvas>
+          </div>
+          <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+            <h3 class="text-sm font-bold text-slate-800 mb-4">Estoque Crítico</h3>
+            <div class="space-y-3">
+              ${stock.map(item => `
+                <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-100">
+                  <div>
+                    <p class="text-xs font-bold text-slate-800">${escapeHTML(item.name)}</p>
+                    <p class="text-[11px] text-slate-500">Categoria: ${escapeHTML(item.category)}</p>
+                  </div>
+                  <span class="px-2.5 py-1 text-xs font-bold rounded-full ${item.qty <= item.minQty ? 'bg-red-100 text-red-700' : 'bg-emerald-100 text-emerald-700'}">
+                    ${item.qty} ${escapeHTML(item.unit)}
+                  </span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        </div>
+      `;
+
+      setTimeout(() => {
+        const ctx = document.getElementById('chart-balance');
+        if (ctx) {
+          new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+              labels: ['Receitas', 'Despesas'],
+              datasets: [{
+                data: [totalReceitas, totalDespesas],
+                backgroundColor: ['#10b981', '#ef4444']
+              }]
+            },
+            options: { responsive: true, maintainAspectRatio: false }
+          });
         }
+      }, 100);
+    }
 
-        // FORMATTERS
-        const formatBRL = (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(val || 0);
+    /* --- CONTAS PAGAR / RECEBER --- */
+    function renderFinancialModule(container, actionsContainer) {
+      if (currentUser.role !== 'READONLY') {
+        actionsContainer.innerHTML = `
+          <button onclick="openFinancialModal()" class="px-3.5 py-2 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-lg shadow transition-all flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i> Novo Título
+          </button>
+        `;
+      }
 
-        // 1. DASHBOARD RENDER
-        function renderDashboard() {
-            const recAberto = state.financeiro.filter(f => f.tipo === 'Receber' && f.status === 'Aberto').reduce((acc, c) => acc + (c.valorOriginal - c.valorPago), 0);
-            const pagAberto = state.financeiro.filter(f => f.tipo === 'Pagar' && f.status === 'Aberto').reduce((acc, c) => acc + (c.valorOriginal - c.valorPago), 0);
-            const saldoTotal = state.bancos.reduce((acc, b) => acc + b.saldo, 0);
+      const financial = JSON.parse(localStorage.getItem('GB_FINANCIAL') || '[]');
 
-            document.getElementById('dash-receber').textContent = formatBRL(recAberto);
-            document.getElementById('dash-pagar').textContent = formatBRL(pagAberto);
-            document.getElementById('dash-saldo').textContent = formatBRL(saldoTotal);
-            document.getElementById('dash-docs-count').textContent = state.documentos.length;
+      container.innerHTML = `
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-4">
+            <input type="text" id="financial-search" oninput="renderModuleContent()" placeholder="Buscar lançamentos..." class="w-full sm:w-64 px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs">
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-100 text-slate-700 uppercase font-semibold border-b border-slate-200">
+                  <th class="p-3">Código</th>
+                  <th class="p-3">Tipo</th>
+                  <th class="p-3">Descrição</th>
+                  <th class="p-3">Vencimento</th>
+                  <th class="p-3">Valor</th>
+                  <th class="p-3">Status</th>
+                  <th class="p-3 text-right">Ações</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100">
+                ${financial.map(item => `
+                  <tr class="hover:bg-slate-50/80">
+                    <td class="p-3 font-bold text-slate-700">${escapeHTML(item.id)}</td>
+                    <td class="p-3 font-semibold ${item.type === 'RECEITA' ? 'text-emerald-600' : 'text-red-600'}">${escapeHTML(item.type)}</td>
+                    <td class="p-3 font-medium text-slate-900">${escapeHTML(item.description)}</td>
+                    <td class="p-3 text-slate-600">${escapeHTML(item.dueDate)}</td>
+                    <td class="p-3 font-bold text-slate-900">R$ ${item.amount.toFixed(2)}</td>
+                    <td class="p-3">
+                      <span class="px-2 py-0.5 text-[10px] font-bold rounded ${item.status === 'PAGO' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">
+                        ${escapeHTML(item.status)}
+                      </span>
+                    </td>
+                    <td class="p-3 text-right space-x-1">
+                      ${currentUser.role !== 'READONLY' ? `
+                        <button onclick="deleteFinancialItem('${item.id}')" class="p-1 text-red-600 hover:bg-red-50 rounded"><i class="fa-solid fa-trash"></i></button>
+                      ` : '<span class="text-slate-400 text-[10px]">Restrito</span>'}
+                    </td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
 
-            // Vencimentos Table
-            const vencBody = document.getElementById('dash-vencimentos-table');
-            vencBody.innerHTML = state.financeiro.filter(f => f.status === 'Aberto').map(f => `
+    function openFinancialModal() {
+      const body = document.getElementById('generic-modal-body');
+      document.getElementById('generic-modal-title').innerText = 'Cadastrar Novo Título Financeiro';
+
+      body.innerHTML = `
+        <form onsubmit="saveFinancialItem(event)" class="space-y-4">
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Tipo</label>
+              <select id="fin-type" class="w-full p-2 border border-slate-300 rounded-lg text-xs">
+                <option value="RECEITA">Receita</option>
+                <option value="DESPESA">Despesa</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Valor (R$)</label>
+              <input type="number" step="0.01" id="fin-amount" required class="w-full p-2 border border-slate-300 rounded-lg text-xs">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Descrição</label>
+            <input type="text" id="fin-desc" required class="w-full p-2 border border-slate-300 rounded-lg text-xs">
+          </div>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Data Vencimento</label>
+              <input type="date" id="fin-date" required class="w-full p-2 border border-slate-300 rounded-lg text-xs">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Conta Bancária</label>
+              <select id="fin-account" class="w-full p-2 border border-slate-300 rounded-lg text-xs">
+                <option value="Caixa Principal">Caixa Principal</option>
+                <option value="Conta Corrente Itaú">Conta Corrente Itaú</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-2 pt-4">
+            <button type="button" onclick="closeGenericModal()" class="px-4 py-2 bg-slate-200 text-slate-800 text-xs font-bold rounded-lg">Cancelar</button>
+            <button type="submit" class="px-4 py-2 bg-brand-600 text-white text-xs font-bold rounded-lg">Salvar Título</button>
+          </div>
+        </form>
+      `;
+
+      document.getElementById('generic-modal').classList.remove('hidden');
+    }
+
+    function saveFinancialItem(e) {
+      e.preventDefault();
+      const financial = JSON.parse(localStorage.getItem('GB_FINANCIAL') || '[]');
+      
+      const newItem = {
+        id: `FIN-${Math.floor(100 + Math.random() * 900)}`,
+        type: document.getElementById('fin-type').value,
+        description: document.getElementById('fin-desc').value,
+        amount: parseFloat(document.getElementById('fin-amount').value),
+        dueDate: document.getElementById('fin-date').value,
+        status: 'PENDENTE',
+        account: document.getElementById('fin-account').value
+      };
+
+      financial.unshift(newItem);
+      localStorage.setItem('GB_FINANCIAL', JSON.stringify(financial));
+      
+      addAuditLog('Financeiro', 'NOVO TÍTULO CADASTRADO', `ID: ${newItem.id}, Valor: R$ ${newItem.amount}`);
+      showToast('Título registrado com sucesso!', 'success');
+      closeGenericModal();
+      renderModuleContent();
+    }
+
+    function deleteFinancialItem(id) {
+      if (!confirm(`Deseja realmente excluir o título ${id}?`)) return;
+      
+      let financial = JSON.parse(localStorage.getItem('GB_FINANCIAL') || '[]');
+      financial = financial.filter(f => f.id !== id);
+      localStorage.setItem('GB_FINANCIAL', JSON.stringify(financial));
+
+      addAuditLog('Financeiro', 'EXCLUSÃO DE TÍTULO', `ID: ${id}`);
+      showToast('Título excluído.', 'info');
+      renderModuleContent();
+    }
+
+    /* --- DEMAIS MÓDULOS DE SUPORTE --- */
+    function renderAccountsModule(container, actionsContainer) {
+      const accounts = JSON.parse(localStorage.getItem('GB_ACCOUNTS') || '[]');
+      container.innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          ${accounts.map(acc => `
+            <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+              <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-slate-500 uppercase">${escapeHTML(acc.type)}</span>
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded bg-emerald-100 text-emerald-800">${escapeHTML(acc.status)}</span>
+              </div>
+              <h3 class="text-base font-bold text-slate-900">${escapeHTML(acc.name)}</h3>
+              <p class="text-xl font-bold text-brand-600 mt-2">R$ ${acc.balance.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</p>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+
+    function renderChartAccountsModule(container, actionsContainer) {
+      const categories = JSON.parse(localStorage.getItem('GB_CHART_ACCOUNTS') || '[]');
+      container.innerHTML = `
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm p-4">
+          <div class="space-y-2">
+            ${categories.map(cat => `
+              <div class="flex items-center justify-between p-3 bg-slate-50 rounded-lg border border-slate-200">
+                <div class="flex items-center gap-3">
+                  <span class="font-bold text-slate-500 text-xs">${escapeHTML(cat.code)}</span>
+                  <span class="font-bold text-slate-800 text-xs">${escapeHTML(cat.name)}</span>
+                </div>
+                <span class="px-2 py-0.5 text-[10px] font-bold rounded ${cat.type === 'RECEITA' ? 'bg-emerald-100 text-emerald-800' : 'bg-red-100 text-red-800'}">${escapeHTML(cat.type)}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderResidentsModule(container, actionsContainer) {
+      const residents = JSON.parse(localStorage.getItem('GB_RESIDENTS') || '[]');
+      container.innerHTML = `
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 uppercase font-semibold border-b border-slate-200">
+                <th class="p-3">Unidade</th>
+                <th class="p-3">Nome</th>
+                <th class="p-3">Contato</th>
+                <th class="p-3">Vínculo</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${residents.map(r => `
                 <tr>
-                    <td class="py-2.5 font-semibold text-slate-800">${f.historico}</td>
-                    <td class="py-2.5">${f.vencimento}</td>
-                    <td class="py-2.5 font-bold">${formatBRL(f.valorOriginal - f.valorPago)}</td>
-                    <td class="py-2.5 text-right"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${f.tipo === 'Receber' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${f.tipo}</span></td>
+                  <td class="p-3 font-bold text-brand-600">${escapeHTML(r.block)} - ${escapeHTML(r.unit)}</td>
+                  <td class="p-3 font-medium text-slate-900">${escapeHTML(r.name)}</td>
+                  <td class="p-3 text-slate-600">${escapeHTML(r.phone)}</td>
+                  <td class="p-3 font-semibold text-slate-700">${escapeHTML(r.status)}</td>
                 </tr>
-            `).join('') || `<tr><td colspan="4" class="py-4 text-center text-slate-400">Nenhum título pendente.</td></tr>`;
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
 
-            // Estoque Alerta
-            const estBody = document.getElementById('dash-estoque-table');
-            estBody.innerHTML = state.produtos.map(p => {
-                const baixo = p.qtd <= p.min;
-                return `
-                    <tr>
-                        <td class="py-2.5 font-semibold text-slate-800">${p.nome}</td>
-                        <td class="py-2.5 font-bold ${baixo ? 'text-rose-600' : 'text-slate-700'}">${p.qtd} ${p.unidade}</td>
-                        <td class="py-2.5 text-slate-400">${p.min}</td>
-                        <td class="py-2.5 text-right"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${baixo ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}">${baixo ? 'Baixo' : 'OK'}</span></td>
-                    </tr>
-                `;
-            }).join('');
-        }
-
-        // 2. FINANCEIRO & ENHANCED PARCIAL WRITE-OFF
-        function renderFinanceiroTable() {
-            const filterText = document.getElementById('filter-fin-text').value.toLowerCase();
-            const filterStart = document.getElementById('filter-fin-date-start').value;
-            const filterEnd = document.getElementById('filter-fin-date-end').value;
-            const filterStatus = document.getElementById('filter-fin-status').value;
-            const filterTipo = document.getElementById('filter-fin-tipo').value;
-
-            const filtered = state.financeiro.filter(f => {
-                const matchText = f.historico.toLowerCase().includes(filterText) || f.fornecedor.toLowerCase().includes(filterText);
-                const matchStatus = filterStatus === 'todos' || f.status === filterStatus;
-                const matchTipo = filterTipo === 'todos' || f.tipo === filterTipo;
-                const matchStart = !filterStart || f.vencimento >= filterStart;
-                const matchEnd = !filterEnd || f.vencimento <= filterEnd;
-
-                return matchText && matchStatus && matchTipo && matchStart && matchEnd;
-            });
-
-            const tbody = document.getElementById('financeiro-table-body');
-            tbody.innerHTML = filtered.map(f => {
-                const saldoRestante = f.valorOriginal - f.valorPago;
-                return `
-                    <tr class="hover:bg-slate-50 transition">
-                        <td class="p-4">
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${f.tipo === 'Receber' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${f.tipo}</span>
-                        </td>
-                        <td class="p-4">
-                            <p class="font-bold text-slate-800">${f.historico}</p>
-                            <p class="text-[11px] text-slate-400"><i class="fas fa-building mr-1"></i>${f.fornecedor}</p>
-                        </td>
-                        <td class="p-4 text-slate-600">${f.planoConta}</td>
-                        <td class="p-4 font-mono font-medium">${f.vencimento}</td>
-                        <td class="p-4 font-bold text-slate-800">${formatBRL(f.valorOriginal)}</td>
-                        <td class="p-4 font-bold ${saldoRestante > 0 ? 'text-amber-600' : 'text-emerald-600'}">${formatBRL(saldoRestante)}</td>
-                        <td class="p-4">
-                            <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${f.status === 'Baixado' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${f.status}</span>
-                        </td>
-                        <td class="p-4 text-center space-x-1">
-                            ${f.status === 'Aberto' ? `
-                                <button onclick="openModalBaixaTotal('${f.id}')" title="Baixa Total" class="px-2 py-1 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 text-[11px] font-semibold"><i class="fas fa-check mr-1"></i>Pagar/Receber</button>
-                                <button onclick="openModalBaixaParcial('${f.id}')" title="Baixa Parcial" class="px-2 py-1 bg-amber-500 text-white rounded-lg hover:bg-amber-600 text-[11px] font-semibold"><i class="fas fa-percentage mr-1"></i>Baixa Parcial</button>
-                            ` : `<span class="text-[11px] text-emerald-600 font-bold"><i class="fas fa-check-circle mr-1"></i>Liquidado</span>`}
-                            <button onclick="deleteTitulo('${f.id}')" class="p-1 text-rose-500 hover:text-rose-700"><i class="fas fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `;
-            }).join('') || `<tr><td colspan="8" class="p-8 text-center text-slate-400">Nenhum título localizado com os filtros selecionados.</td></tr>`;
-        }
-
-        // OPEN BAIXA PARCIAL MODAL (ENHANCED SPECIFICATION)
-        function openModalBaixaParcial(id) {
-            const titulo = state.financeiro.find(f => f.id === id);
-            if (!titulo) return;
-
-            const saldoDevedor = titulo.valorOriginal - titulo.valorPago;
-            const bancosOptions = state.bancos.map(b => `<option value="${b.id}">${b.nome} (Saldo: ${formatBRL(b.saldo)})</option>`).join('');
-
-            const modalContent = document.getElementById('modal-content');
-            modalContent.innerHTML = `
-                <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                    <h3 class="font-bold text-slate-800 text-sm flex items-center">
-                        <i class="fas fa-percentage text-amber-500 mr-2"></i> Baixa Parcial e Geração de Resíduo
-                    </h3>
-                    <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
-                </div>
-                <form onsubmit="executeBaixaParcial(event, '${titulo.id}')" class="p-6 space-y-4 text-xs">
-                    <div class="p-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-900 space-y-1">
-                        <p class="font-bold">${titulo.historico} - ${titulo.fornecedor}</p>
-                        <p>Valor Saldo Atual: <strong>${formatBRL(saldoDevedor)}</strong></p>
-                    </div>
-
-                    <div>
-                        <label class="block font-bold text-slate-600 mb-1">Forma Monetária / Conta Bancária de Destino</label>
-                        <select id="baixa-banco" required class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500">
-                            ${bancosOptions}
-                        </select>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">Valor a Baixar Agora (R$)</label>
-                            <input type="number" step="0.01" max="${saldoDevedor - 0.01}" id="baixa-valor" required class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500" placeholder="0.00" oninput="calcResiduo(${saldoDevedor})">
-                        </div>
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">Resíduo / Novo Título (R$)</label>
-                            <input type="text" id="baixa-residuo-display" readonly class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-slate-100 font-bold text-slate-700" value="${formatBRL(saldoDevedor)}">
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block font-bold text-slate-600 mb-1">Novo Vencimento para o Título Residual</label>
-                        <input type="date" id="baixa-novo-vencimento" required class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-amber-500" value="${new Date(Date.now() + 30*24*60*60*1000).toISOString().split('T')[0]}">
-                    </div>
-
-                    <div class="pt-4 flex justify-end space-x-2">
-                        <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold">Cancelar</button>
-                        <button type="submit" class="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-semibold shadow-md shadow-amber-500/30">Efetuar Baixa & Gerar Resíduo</button>
-                    </div>
-                </form>
-            `;
-            document.getElementById('modal-container').classList.remove('hidden');
-        }
-
-        function calcResiduo(saldoAtual) {
-            const val = parseFloat(document.getElementById('baixa-valor').value) || 0;
-            const diff = Math.max(0, saldoAtual - val);
-            document.getElementById('baixa-residuo-display').value = formatBRL(diff);
-        }
-
-        function executeBaixaParcial(e, id) {
-            e.preventDefault();
-            const tituloOriginal = state.financeiro.find(f => f.id === id);
-            if (!tituloOriginal) return;
-
-            const bancoId = document.getElementById('baixa-banco').value;
-            const valorBaixa = parseFloat(document.getElementById('baixa-valor').value);
-            const novoVencimento = document.getElementById('baixa-novo-vencimento').value;
-
-            const banco = state.bancos.find(b => b.id === bancoId);
-            if (!banco) return;
-
-            // 1. Process payment into Bank Account Balance
-            if (tituloOriginal.tipo === 'Receber') {
-                banco.saldo += valorBaixa;
-            } else {
-                banco.saldo -= valorBaixa;
-            }
-
-            // 2. Mark current title as Baixado (Partial)
-            const saldoAnterior = tituloOriginal.valorOriginal - tituloOriginal.valorPago;
-            const valorResiduo = saldoAnterior - valorBaixa;
-
-            tituloOriginal.valorPago += valorBaixa;
-            tituloOriginal.status = 'Baixado';
-            tituloOriginal.historico += ` (Baixa Parcial R$ ${valorBaixa.toFixed(2)})`;
-
-            // 3. Automatically Create NEW Residual Title
-            const newResidual = {
-                id: 'FIN-' + Math.floor(Math.random() * 900 + 100),
-                tipo: tituloOriginal.tipo,
-                historico: `${tituloOriginal.historico.split(' (Baixa')[0]} (Resíduo / Parcela)`,
-                planoConta: tituloOriginal.planoConta,
-                vencimento: novoVencimento,
-                valorOriginal: valorResiduo,
-                valorPago: 0.00,
-                status: 'Aberto',
-                fornecedor: tituloOriginal.fornecedor
-            };
-
-            state.financeiro.push(newResidual);
-
-            closeModal();
-            renderDashboard();
-            renderFinanceiroTable();
-            renderBancosCards();
-            alert(`Baixa Parcial efetuada! Valor de ${formatBRL(valorBaixa)} lançado no banco ${banco.nome}. Novo título residual de ${formatBRL(valorResiduo)} gerado com sucesso.`);
-        }
-
-        function openModalBaixaTotal(id) {
-            const titulo = state.financeiro.find(f => f.id === id);
-            if (!titulo) return;
-
-            const saldoDevedor = titulo.valorOriginal - titulo.valorPago;
-            const bancosOptions = state.bancos.map(b => `<option value="${b.id}">${b.nome} (Saldo: ${formatBRL(b.saldo)})</option>`).join('');
-
-            const modalContent = document.getElementById('modal-content');
-            modalContent.innerHTML = `
-                <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                    <h3 class="font-bold text-slate-800 text-sm flex items-center text-emerald-600">
-                        <i class="fas fa-check-circle mr-2"></i> Baixa Total de Título
-                    </h3>
-                    <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
-                </div>
-                <form onsubmit="executeBaixaTotal(event, '${titulo.id}')" class="p-6 space-y-4 text-xs">
-                    <div class="p-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-900 space-y-1">
-                        <p class="font-bold">${titulo.historico} - ${titulo.fornecedor}</p>
-                        <p>Valor a Liquidar: <strong>${formatBRL(saldoDevedor)}</strong></p>
-                    </div>
-
-                    <div>
-                        <label class="block font-bold text-slate-600 mb-1">Forma Monetária / Conta Bancária</label>
-                        <select id="baixa-total-banco" required class="w-full px-3 py-2 rounded-xl border border-slate-300 focus:ring-2 focus:ring-emerald-500">
-                            ${bancosOptions}
-                        </select>
-                    </div>
-
-                    <div class="pt-4 flex justify-end space-x-2">
-                        <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-semibold">Cancelar</button>
-                        <button type="submit" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold shadow-md shadow-emerald-600/30">Confirmar Liquidação</button>
-                    </div>
-                </form>
-            `;
-            document.getElementById('modal-container').classList.remove('hidden');
-        }
-
-        function executeBaixaTotal(e, id) {
-            e.preventDefault();
-            const titulo = state.financeiro.find(f => f.id === id);
-            const bancoId = document.getElementById('baixa-total-banco').value;
-            const banco = state.bancos.find(b => b.id === bancoId);
-
-            if (titulo && banco) {
-                const valorLiquidar = titulo.valorOriginal - titulo.valorPago;
-                if (titulo.tipo === 'Receber') banco.saldo += valorLiquidar;
-                else banco.saldo -= valorLiquidar;
-
-                titulo.valorPago = titulo.valorOriginal;
-                titulo.status = 'Baixado';
-
-                closeModal();
-                renderDashboard();
-                renderFinanceiroTable();
-                renderBancosCards();
-            }
-        }
-
-        function deleteTitulo(id) {
-            if (confirm('Deseja realmente remover este título financeiro?')) {
-                state.financeiro = state.financeiro.filter(f => f.id !== id);
-                renderDashboard();
-                renderFinanceiroTable();
-            }
-        }
-
-        function openModalNovoTitulo() {
-            const planoOptions = state.planoContas.map(p => `<option value="${p.codigo} ${p.nome}">${p.codigo} ${p.nome}</option>`).join('');
-
-            const modalContent = document.getElementById('modal-content');
-            modalContent.innerHTML = `
-                <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                    <h3 class="font-bold text-slate-800 text-sm">Novo Título Financeiro</h3>
-                    <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
-                </div>
-                <form onsubmit="saveNovoTitulo(event)" class="p-6 space-y-4 text-xs">
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">Tipo Operação</label>
-                            <select id="novo-tipo" class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                                <option value="Pagar">A Pagar</option>
-                                <option value="Receber">A Receber</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">Valor Original (R$)</label>
-                            <input type="number" step="0.01" id="novo-valor" required class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block font-bold text-slate-600 mb-1">Histórico / Descrição</label>
-                        <input type="text" id="novo-historico" required class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                    </div>
-                    <div>
-                        <label class="block font-bold text-slate-600 mb-1">Fornecedor / Pagador</label>
-                        <input type="text" id="novo-fornecedor" required class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">Plano de Contas</label>
-                            <select id="novo-plano" class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                                ${planoOptions}
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">Vencimento</label>
-                            <input type="date" id="novo-vencimento" required class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                        </div>
-                    </div>
-                    <div class="pt-4 flex justify-end space-x-2">
-                        <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-semibold">Cancelar</button>
-                        <button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-xl font-semibold shadow-md">Salvar Título</button>
-                    </div>
-                </form>
-            `;
-            document.getElementById('modal-container').classList.remove('hidden');
-        }
-
-        function saveNovoTitulo(e) {
-            e.preventDefault();
-            const newObj = {
-                id: 'FIN-' + Math.floor(Math.random() * 900 + 100),
-                tipo: document.getElementById('novo-tipo').value,
-                historico: document.getElementById('novo-historico').value,
-                planoConta: document.getElementById('novo-plano').value,
-                vencimento: document.getElementById('novo-vencimento').value,
-                valorOriginal: parseFloat(document.getElementById('novo-valor').value),
-                valorPago: 0.00,
-                status: 'Aberto',
-                fornecedor: document.getElementById('novo-fornecedor').value
-            };
-            state.financeiro.push(newObj);
-            closeModal();
-            renderDashboard();
-            renderFinanceiroTable();
-        }
-
-        // 3. PLANO DE CONTAS & BANCOS
-        function renderPlanoContasLists() {
-            const recList = document.getElementById('plano-receitas-list');
-            const despList = document.getElementById('plano-despesas-list');
-
-            recList.innerHTML = state.planoContas.filter(p => p.tipo === 'Receita').map(p => `
-                <li class="p-2.5 rounded-xl bg-slate-50 border border-slate-100 font-semibold flex justify-between">
-                    <span>${p.codigo} - ${p.nome}</span>
-                    <button onclick="deletePlano('${p.id}')" class="text-rose-500 hover:text-rose-700"><i class="fas fa-times"></i></button>
-                </li>
-            `).join('');
-
-            despList.innerHTML = state.planoContas.filter(p => p.tipo === 'Despesa').map(p => `
-                <li class="p-2.5 rounded-xl bg-slate-50 border border-slate-100 font-semibold flex justify-between">
-                    <span>${p.codigo} - ${p.nome}</span>
-                    <button onclick="deletePlano('${p.id}')" class="text-rose-500 hover:text-rose-700"><i class="fas fa-times"></i></button>
-                </li>
-            `).join('');
-        }
-
-        function deletePlano(id) {
-            state.planoContas = state.planoContas.filter(p => p.id !== id);
-            renderPlanoContasLists();
-        }
-
-        function renderBancosCards() {
-            const container = document.getElementById('bancos-cards-container');
-            container.innerHTML = state.bancos.map(b => `
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-3 relative overflow-hidden">
-                    <div class="flex items-center justify-between">
-                        <span class="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-lg"><i class="fas fa-university"></i></span>
-                        <button onclick="deleteBanco('${b.id}')" class="text-slate-400 hover:text-rose-500"><i class="fas fa-trash"></i></button>
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-slate-800 text-sm">${b.nome}</h4>
-                        <p class="text-[11px] text-slate-400">Ag: ${b.agencia} | Conta: ${b.conta}</p>
-                    </div>
-                    <div class="pt-3 border-t border-slate-100">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase">Saldo Disponível</span>
-                        <p class="text-xl font-bold text-slate-900 mt-0.5">${formatBRL(b.saldo)}</p>
-                    </div>
-                </div>
-            `).join('');
-        }
-
-        function deleteBanco(id) {
-            state.bancos = state.bancos.filter(b => b.id !== id);
-            renderDashboard();
-            renderBancosCards();
-        }
-
-        // 4. ESTOQUE & ACERTO DE ESTOQUE
-        function renderProdutosTable() {
-            const filterText = document.getElementById('filter-prod-text').value.toLowerCase();
-            const filterCat = document.getElementById('filter-prod-cat').value;
-            const filterStatus = document.getElementById('filter-prod-status').value;
-
-            const filtered = state.produtos.filter(p => {
-                const matchText = p.nome.toLowerCase().includes(filterText);
-                const matchCat = filterCat === 'todas' || p.categoria === filterCat;
-                const baixo = p.qtd <= p.min;
-                const matchStatus = filterStatus === 'todos' || (filterStatus === 'baixo' && baixo) || (filterStatus === 'ok' && !baixo);
-                return matchText && matchCat && matchStatus;
-            });
-
-            const tbody = document.getElementById('produtos-table-body');
-            tbody.innerHTML = filtered.map(p => `
-                <tr class="hover:bg-slate-50 transition">
-                    <td class="p-4">
-                        <img src="${p.foto}" onclick="openLightbox('${p.foto}', '${p.nome}')" class="w-10 h-10 rounded-lg object-cover cursor-pointer hover:opacity-80 border border-slate-200">
-                    </td>
-                    <td class="p-4 font-bold text-slate-800">${p.nome}</td>
-                    <td class="p-4 text-slate-600">${p.categoria}</td>
-                    <td class="p-4 font-bold ${p.qtd <= p.min ? 'text-rose-600' : 'text-slate-800'}">${p.qtd}</td>
-                    <td class="p-4 text-slate-400">${p.min}</td>
-                    <td class="p-4 text-slate-600">${p.unidade}</td>
-                    <td class="p-4">
-                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${p.qtd <= p.min ? 'bg-rose-100 text-rose-800' : 'bg-emerald-100 text-emerald-800'}">
-                            ${p.qtd <= p.min ? 'Estoque Baixo' : 'Normal'}
-                        </span>
-                    </td>
-                    <td class="p-4 text-center">
-                        <button onclick="deleteProduto('${p.id}')" class="text-rose-500 hover:text-rose-700 p-1"><i class="fas fa-trash"></i></button>
-                    </td>
+    function renderSuppliersModule(container, actionsContainer) {
+      const suppliers = JSON.parse(localStorage.getItem('GB_SUPPLIERS') || '[]');
+      container.innerHTML = `
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 uppercase font-semibold border-b border-slate-200">
+                <th class="p-3">CNPJ</th>
+                <th class="p-3">Razão Social</th>
+                <th class="p-3">Telefone</th>
+                <th class="p-3">Categoria</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${suppliers.map(s => `
+                <tr>
+                  <td class="p-3 font-mono text-slate-600">${escapeHTML(s.cnpj)}</td>
+                  <td class="p-3 font-bold text-slate-900">${escapeHTML(s.name)}</td>
+                  <td class="p-3 text-slate-600">${escapeHTML(s.phone)}</td>
+                  <td class="p-3 text-slate-700">${escapeHTML(s.category)}</td>
                 </tr>
-            `).join('');
-        }
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
 
-        function deleteProduto(id) {
-            state.produtos = state.produtos.filter(p => p.id !== id);
-            renderDashboard();
-            renderProdutosTable();
-        }
-
-        function openModalNovoProduto() {
-            const modalContent = document.getElementById('modal-content');
-            modalContent.innerHTML = `
-                <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                    <h3 class="font-bold text-slate-800 text-sm">Cadastrar Novo Produto</h3>
-                    <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
-                </div>
-                <form onsubmit="saveNovoProduto(event)" class="p-6 space-y-4 text-xs">
-                    <div>
-                        <label class="block font-bold text-slate-600 mb-1">Nome do Produto</label>
-                        <input type="text" id="prod-nome" required class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">Categoria</label>
-                            <select id="prod-cat" class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                                <option value="Limpeza">Limpeza & Higiene</option>
-                                <option value="Manutenção">Manutenção Geral</option>
-                                <option value="Elétrica">Elétrica & Iluminação</option>
-                                <option value="Segurança">Segurança & Portaria</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">Unidade Medida</label>
-                            <input type="text" id="prod-unidade" required placeholder="Ex: Unidades, Caixas" class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">Quantidade Inicial</label>
-                            <input type="number" id="prod-qtd" required class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                        </div>
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">Estoque Mínimo</label>
-                            <input type="number" id="prod-min" required class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block font-bold text-slate-600 mb-1">Foto do Produto (Arquivo Local ou URL)</label>
-                        <input type="file" id="prod-foto-file" accept="image/*" class="w-full text-xs text-slate-500 mb-2">
-                        <input type="text" id="prod-foto-url" placeholder="Ou cole a URL da Imagem" class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                    </div>
-                    <div class="pt-4 flex justify-end space-x-2">
-                        <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-semibold">Cancelar</button>
-                        <button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-xl font-semibold shadow-md">Salvar Produto</button>
-                    </div>
-                </form>
-            `;
-            document.getElementById('modal-container').classList.remove('hidden');
-        }
-
-        function saveNovoProduto(e) {
-            e.preventDefault();
-            const fileInput = document.getElementById('prod-foto-file');
-            const urlInput = document.getElementById('prod-foto-url').value;
-            let imgFinal = urlInput || 'https://images.unsplash.com/photo-1584820927498-cfe5007dda84?w=150&auto=format&fit=crop&q=60';
-
-            const processSave = (fotoUrl) => {
-                const newProd = {
-                    id: 'PR-' + (state.produtos.length + 1),
-                    nome: document.getElementById('prod-nome').value,
-                    categoria: document.getElementById('prod-cat').value,
-                    unidade: document.getElementById('prod-unidade').value,
-                    qtd: parseInt(document.getElementById('prod-qtd').value),
-                    min: parseInt(document.getElementById('prod-min').value),
-                    foto: fotoUrl
-                };
-                state.produtos.push(newProd);
-                closeModal();
-                renderDashboard();
-                renderProdutosTable();
-            };
-
-            if (fileInput.files && fileInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(evt) {
-                    processSave(evt.target.result);
-                };
-                reader.readAsDataURL(fileInput.files[0]);
-            } else {
-                processSave(imgFinal);
-            }
-        }
-
-        // ACERTO DE ESTOQUE
-        function renderAcertoHistorico() {
-            const tbody = document.getElementById('acerto-historico-body');
-            tbody.innerHTML = state.acertosEstoque.map(a => `
-                <tr class="hover:bg-slate-50 transition">
-                    <td class="p-3 font-mono">${a.data}</td>
-                    <td class="p-3 font-bold text-slate-800">${a.produto}</td>
-                    <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${a.tipo === 'Entrada' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${a.tipo}</span></td>
-                    <td class="p-3 font-bold">${a.qtd}</td>
-                    <td class="p-3 text-slate-600">${a.motivo}</td>
-                    <td class="p-3 text-slate-500">${a.responsavel}</td>
+    function renderStockModule(container, actionsContainer) {
+      const stock = JSON.parse(localStorage.getItem('GB_STOCK') || '[]');
+      container.innerHTML = `
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 uppercase font-semibold border-b border-slate-200">
+                <th class="p-3">Produto</th>
+                <th class="p-3">Categoria</th>
+                <th class="p-3">Quantidade</th>
+                <th class="p-3">Qtd Mínima</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${stock.map(s => `
+                <tr>
+                  <td class="p-3 font-bold text-slate-900">${escapeHTML(s.name)}</td>
+                  <td class="p-3 text-slate-600">${escapeHTML(s.category)}</td>
+                  <td class="p-3 font-bold text-brand-600">${s.qty} ${escapeHTML(s.unit)}</td>
+                  <td class="p-3 text-slate-500">${s.minQty} ${escapeHTML(s.unit)}</td>
                 </tr>
-            `).join('') || `<tr><td colspan="6" class="p-4 text-center text-slate-400">Nenhum acerto registrado.</td></tr>`;
-        }
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
 
-        function openModalAcertoEstoque() {
-            const prodOptions = state.produtos.map(p => `<option value="${p.id}">${p.nome} (Estoque Atual: ${p.qtd})</option>`).join('');
-
-            const modalContent = document.getElementById('modal-content');
-            modalContent.innerHTML = `
-                <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                    <h3 class="font-bold text-slate-800 text-sm flex items-center"><i class="fas fa-exchange-alt text-indigo-600 mr-2"></i> Lançar Acerto de Estoque</h3>
-                    <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
-                </div>
-                <form onsubmit="saveAcertoEstoque(event)" class="p-6 space-y-4 text-xs">
-                    <div>
-                        <label class="block font-bold text-slate-600 mb-1">Selecione o Produto</label>
-                        <select id="acerto-prod-id" class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                            ${prodOptions}
-                        </select>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">Tipo de Ajuste</label>
-                            <select id="acerto-tipo" class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                                <option value="Entrada">Entrada (Aumento)</option>
-                                <option value="Saída">Saída (Consumo/Avaria)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">Quantidade Ajustada</label>
-                            <input type="number" id="acerto-qtd" min="1" required class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block font-bold text-slate-600 mb-1">Motivo / Justificativa Detalhada</label>
-                        <textarea id="acerto-motivo" required rows="3" placeholder="Ex: Queima de lâmpadas, devolução de compra..." class="w-full px-3 py-2 rounded-xl border border-slate-300"></textarea>
-                    </div>
-                    <div class="pt-4 flex justify-end space-x-2">
-                        <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-semibold">Cancelar</button>
-                        <button type="submit" class="px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold shadow-md">Confirmar Ajuste</button>
-                    </div>
-                </form>
-            `;
-            document.getElementById('modal-container').classList.remove('hidden');
-        }
-
-        function saveAcertoEstoque(e) {
-            e.preventDefault();
-            const prodId = document.getElementById('acerto-prod-id').value;
-            const tipo = document.getElementById('acerto-tipo').value;
-            const qtd = parseInt(document.getElementById('acerto-qtd').value);
-            const motivo = document.getElementById('acerto-motivo').value;
-
-            const prod = state.produtos.find(p => p.id === prodId);
-            if (prod) {
-                if (tipo === 'Entrada') prod.qtd += qtd;
-                else prod.qtd = Math.max(0, prod.qtd - qtd);
-
-                state.acertosEstoque.unshift({
-                    id: 'AC-' + Math.floor(Math.random() * 900 + 100),
-                    data: new Date().toLocaleString('pt-BR'),
-                    produto: prod.nome,
-                    tipo: tipo,
-                    qtd: qtd,
-                    motivo: motivo,
-                    responsavel: 'Administrador'
-                });
-
-                closeModal();
-                renderDashboard();
-                renderProdutosTable();
-                renderAcertoHistorico();
-            }
-        }
-
-        // 5. PATRIMÔNIO
-        function renderPatrimonioTable() {
-            const tbody = document.getElementById('patrimonio-table-body');
-            tbody.innerHTML = state.patrimonio.map(p => `
-                <tr class="hover:bg-slate-50 transition">
-                    <td class="p-4">
-                        <img src="${p.foto}" onclick="openLightbox('${p.foto}', '${p.descricao}')" class="w-10 h-10 rounded-lg object-cover cursor-pointer border border-slate-200">
-                    </td>
-                    <td class="p-4 font-mono font-bold text-teal-700">${p.tombamento}</td>
-                    <td class="p-4 font-bold text-slate-800">${p.descricao}</td>
-                    <td class="p-4 text-slate-600">${p.local}</td>
-                    <td class="p-4"><span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 text-blue-800">${p.estado}</span></td>
-                    <td class="p-4 font-bold">${formatBRL(p.valor)}</td>
-                    <td class="p-4 text-center">
-                        <button onclick="deletePatrimonio('${p.id}')" class="text-rose-500 hover:text-rose-700 p-1"><i class="fas fa-trash"></i></button>
-                    </td>
+    function renderAssetsModule(container, actionsContainer) {
+      const assets = JSON.parse(localStorage.getItem('GB_ASSETS') || '[]');
+      container.innerHTML = `
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 uppercase font-semibold border-b border-slate-200">
+                <th class="p-3">Tombamento</th>
+                <th class="p-3">Descrição do Bem</th>
+                <th class="p-3">Localização</th>
+                <th class="p-3">Valor Estimado</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${assets.map(a => `
+                <tr>
+                  <td class="p-3 font-mono font-bold text-brand-600">${escapeHTML(a.code)}</td>
+                  <td class="p-3 font-medium text-slate-900">${escapeHTML(a.name)}</td>
+                  <td class="p-3 text-slate-600">${escapeHTML(a.location)}</td>
+                  <td class="p-3 font-bold text-slate-900">R$ ${a.value.toFixed(2)}</td>
                 </tr>
-            `).join('');
-        }
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
 
-        function deletePatrimonio(id) {
-            state.patrimonio = state.patrimonio.filter(p => p.id !== id);
-            renderPatrimonioTable();
-        }
-
-        function openModalNovoPatrimonio() {
-            const modalContent = document.getElementById('modal-content');
-            modalContent.innerHTML = `
-                <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                    <h3 class="font-bold text-slate-800 text-sm">Cadastrar Novo Patrimônio / Bem</h3>
-                    <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
-                </div>
-                <form onsubmit="saveNovoPatrimonio(event)" class="p-6 space-y-4 text-xs">
-                    <div>
-                        <label class="block font-bold text-slate-600 mb-1">Descrição do Bem</label>
-                        <input type="text" id="pat-desc" required class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">Localização</label>
-                            <input type="text" id="pat-local" required placeholder="Ex: Portaria, Salão" class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                        </div>
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">Estado Conservação</label>
-                            <select id="pat-estado" class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                                <option value="Excelente">Excelente</option>
-                                <option value="Bom">Bom</option>
-                                <option value="Regular">Regular</option>
-                                <option value="Necessita Reparo">Necessita Reparo</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block font-bold text-slate-600 mb-1">Valor Estimado (R$)</label>
-                        <input type="number" step="0.01" id="pat-valor" required class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                    </div>
-                    <div>
-                        <label class="block font-bold text-slate-600 mb-1">Foto do Bem</label>
-                        <input type="file" id="pat-foto-file" accept="image/*" class="w-full text-xs text-slate-500 mb-2">
-                        <input type="text" id="pat-foto-url" placeholder="Ou URL da imagem" class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                    </div>
-                    <div class="pt-4 flex justify-end space-x-2">
-                        <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-semibold">Cancelar</button>
-                        <button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-xl font-semibold shadow-md">Salvar Patrimônio</button>
-                    </div>
-                </form>
-            `;
-            document.getElementById('modal-container').classList.remove('hidden');
-        }
-
-        function saveNovoPatrimonio(e) {
-            e.preventDefault();
-            const fileInput = document.getElementById('pat-foto-file');
-            const urlInput = document.getElementById('pat-foto-url').value;
-            let imgFinal = urlInput || 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?w=150&auto=format&fit=crop&q=60';
-
-            const processSave = (fotoUrl) => {
-                const newPat = {
-                    id: 'PAT-' + Math.floor(Math.random() * 900 + 100),
-                    tombamento: 'BRAVO-2026-' + String(state.patrimonio.length + 1).padStart(3, '0'),
-                    descricao: document.getElementById('pat-desc').value,
-                    local: document.getElementById('pat-local').value,
-                    estado: document.getElementById('pat-estado').value,
-                    valor: parseFloat(document.getElementById('pat-valor').value),
-                    foto: fotoUrl
-                };
-                state.patrimonio.push(newPat);
-                closeModal();
-                renderPatrimonioTable();
-            };
-
-            if (fileInput.files && fileInput.files[0]) {
-                const reader = new FileReader();
-                reader.onload = function(evt) {
-                    processSave(evt.target.result);
-                };
-                reader.readAsDataURL(fileInput.files[0]);
-            } else {
-                processSave(imgFinal);
-            }
-        }
-
-        // 6. NEW ENHANCED DOCUMENT MANAGEMENT MODULE
-        function renderDocumentosTable() {
-            const filterText = document.getElementById('filter-doc-text').value.toLowerCase();
-            const filterCat = document.getElementById('filter-doc-categoria').value;
-            const filterRef = document.getElementById('filter-doc-referencia').value;
-
-            const filtered = state.documentos.filter(d => {
-                const matchText = d.titulo.toLowerCase().includes(filterText);
-                const matchCat = filterCat === 'todas' || d.categoria === filterCat;
-                const matchRef = filterRef === 'todos' || d.referencia === filterRef;
-                return matchText && matchCat && matchRef;
-            });
-
-            const tbody = document.getElementById('documentos-table-body');
-            tbody.innerHTML = filtered.map(d => `
-                <tr class="hover:bg-slate-50 transition">
-                    <td class="p-4 font-bold text-slate-800 flex items-center space-x-2">
-                        <i class="fas fa-file-pdf text-rose-500 text-lg"></i>
-                        <span>${d.titulo}</span>
-                    </td>
-                    <td class="p-4">
-                        <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-teal-100 text-teal-800">${d.categoria}</span>
-                    </td>
-                    <td class="p-4 text-slate-600 font-medium">${d.referencia}</td>
-                    <td class="p-4 text-slate-400 font-mono">${d.tamanho}</td>
-                    <td class="p-4 text-slate-500 font-mono">${d.dataUpload}</td>
-                    <td class="p-4 text-center">
-                        <button onclick="downloadDocumento('${d.id}')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs transition">
-                            <i class="fas fa-download mr-1"></i> Visualizar/Baixar
-                        </button>
-                    </td>
-                    <td class="p-4 text-center">
-                        <button onclick="deleteDocumento('${d.id}')" class="text-rose-500 hover:text-rose-700 p-1"><i class="fas fa-trash"></i></button>
-                    </td>
+    function renderDocumentsModule(container, actionsContainer) {
+      const docs = JSON.parse(localStorage.getItem('GB_DOCUMENTS') || '[]');
+      container.innerHTML = `
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 uppercase font-semibold border-b border-slate-200">
+                <th class="p-3">Título do Documento</th>
+                <th class="p-3">Categoria</th>
+                <th class="p-3">Data</th>
+                <th class="p-3">Arquivo</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${docs.map(d => `
+                <tr>
+                  <td class="p-3 font-bold text-slate-900">${escapeHTML(d.title)}</td>
+                  <td class="p-3 text-slate-600">${escapeHTML(d.category)}</td>
+                  <td class="p-3 text-slate-500">${escapeHTML(d.date)}</td>
+                  <td class="p-3 text-brand-600 font-semibold"><i class="fa-solid fa-paperclip mr-1"></i> ${escapeHTML(d.fileName)}</td>
                 </tr>
-            `).join('') || `<tr><td colspan="7" class="p-8 text-center text-slate-400">Nenhum documento anexado localizado.</td></tr>`;
-        }
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
 
-        function resetDocumentFilters() {
-            document.getElementById('filter-doc-text').value = '';
-            document.getElementById('filter-doc-categoria').value = 'todas';
-            document.getElementById('filter-doc-referencia').value = 'todos';
-            renderDocumentosTable();
-        }
-
-        function openModalNovoDocumento() {
-            const modalContent = document.getElementById('modal-content');
-            modalContent.innerHTML = `
-                <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                    <h3 class="font-bold text-slate-800 text-sm flex items-center">
-                        <i class="fas fa-paperclip text-teal-600 mr-2"></i> Anexar Novo Documento
-                    </h3>
-                    <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
-                </div>
-                <form onsubmit="saveNovoDocumento(event)" class="p-6 space-y-4 text-xs">
-                    <div>
-                        <label class="block font-bold text-slate-600 mb-1">Título do Documento</label>
-                        <input type="text" id="doc-titulo" required placeholder="Ex: Contrato Limpeza 2026.pdf" class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">Classificação / Categoria</label>
-                            <select id="doc-categoria" class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                                <option value="Contratos">Contratos de Prestadores</option>
-                                <option value="Atas de Reunião">Atas & Assembleias</option>
-                                <option value="Notas Fiscais">Notas Fiscais & Cupons</option>
-                                <option value="Comprovantes">Comprovantes Bancários</option>
-                                <option value="Manutenção">Laudos & Manutenção</option>
-                                <option value="Regulamento Interno">Regulamento & Convenção</option>
-                                <option value="Outros">Outros Documentos</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">Vínculo / Referência</label>
-                            <select id="doc-referencia" class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                                <option value="Geral">Geral Condomínio</option>
-                                <option value="Financeiro">Título Financeiro</option>
-                                <option value="Morador">Morador / Inquilino</option>
-                                <option value="Patrimônio">Patrimônio / Equipamento</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block font-bold text-slate-600 mb-1">Selecione o Arquivo (PDF, Imagens, Word, ZIP)</label>
-                        <input type="file" id="doc-file" required class="w-full text-xs text-slate-500 p-2 border border-slate-200 rounded-xl bg-slate-50">
-                    </div>
-                    <div class="pt-4 flex justify-end space-x-2">
-                        <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-semibold">Cancelar</button>
-                        <button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-xl font-semibold shadow-md">Upload & Anexar</button>
-                    </div>
-                </form>
-            `;
-            document.getElementById('modal-container').classList.remove('hidden');
-        }
-
-        function saveNovoDocumento(e) {
-            e.preventDefault();
-            const fileInput = document.getElementById('doc-file');
-            const file = fileInput.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                const newDoc = {
-                    id: 'DOC-' + Math.floor(Math.random() * 900 + 100),
-                    titulo: document.getElementById('doc-titulo').value || file.name,
-                    categoria: document.getElementById('doc-categoria').value,
-                    referencia: document.getElementById('doc-referencia').value,
-                    tamanho: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
-                    dataUpload: new Date().toISOString().split('T')[0],
-                    conteudo: evt.target.result
-                };
-                state.documentos.push(newDoc);
-                closeModal();
-                renderDashboard();
-                renderDocumentosTable();
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function downloadDocumento(id) {
-            const docObj = state.documentos.find(d => d.id === id);
-            if (docObj && docObj.conteudo) {
-                const a = document.createElement('a');
-                a.href = docObj.conteudo;
-                a.download = docObj.titulo;
-                a.click();
-            } else {
-                alert('Arquivo indisponível para download direto.');
-            }
-        }
-
-        function deleteDocumento(id) {
-            state.documentos = state.documentos.filter(d => d.id !== id);
-            renderDashboard();
-            renderDocumentosTable();
-        }
-
-        // 7. INQUILINOS / MORADORES
-        function renderInquilinosTable() {
-            const filterText = document.getElementById('filter-morador-text').value.toLowerCase();
-            const filterTipo = document.getElementById('filter-morador-tipo').value;
-            const filterBloco = document.getElementById('filter-morador-bloco').value;
-
-            const filtered = state.inquilinos.filter(m => {
-                const matchText = m.nome.toLowerCase().includes(filterText) || m.unidade.toLowerCase().includes(filterText);
-                const matchTipo = filterTipo === 'todos' || m.tipo === filterTipo;
-                const matchBloco = filterBloco === 'todos' || m.bloco === filterBloco;
-                return matchText && matchTipo && matchBloco;
-            });
-
-            const tbody = document.getElementById('inquilinos-table-body');
-            tbody.innerHTML = filtered.map(m => `
-                <tr class="hover:bg-slate-50 transition">
-                    <td class="p-4 font-bold text-slate-800">${m.nome}</td>
-                    <td class="p-4 font-mono font-semibold text-teal-700">${m.unidade} - ${m.bloco}</td>
-                    <td class="p-4"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${m.tipo === 'Proprietário' ? 'bg-indigo-100 text-indigo-800' : 'bg-teal-100 text-teal-800'}">${m.tipo}</span></td>
-                    <td class="p-4 text-slate-600">${m.fone}<br><span class="text-[11px] text-slate-400">${m.email}</span></td>
-                    <td class="p-4 text-slate-600">${m.veiculo}</td>
-                    <td class="p-4 text-center">
-                        <button onclick="deleteInquilino('${m.id}')" class="text-rose-500 hover:text-rose-700 p-1"><i class="fas fa-trash"></i></button>
-                    </td>
+    function renderUsersModule(container, actionsContainer) {
+      const users = JSON.parse(localStorage.getItem('GB_USERS') || '[]');
+      container.innerHTML = `
+        <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+          <table class="w-full text-left border-collapse text-xs">
+            <thead>
+              <tr class="bg-slate-100 text-slate-700 uppercase font-semibold border-b border-slate-200">
+                <th class="p-3">Avatar</th>
+                <th class="p-3">Nome</th>
+                <th class="p-3">Usuário</th>
+                <th class="p-3">Perfil RBAC</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+              ${users.map(u => `
+                <tr>
+                  <td class="p-3">
+                    <img src="${u.avatar || 'https://placehold.co/100x100/0284c7/white?text=U'}" class="w-8 h-8 rounded-full object-cover border border-slate-300">
+                  </td>
+                  <td class="p-3 font-bold text-slate-900">${escapeHTML(u.name)}</td>
+                  <td class="p-3 font-mono text-slate-600">${escapeHTML(u.username)}</td>
+                  <td class="p-3">
+                    <span class="px-2 py-0.5 text-[10px] font-bold rounded ${u.role === 'ADMIN' ? 'bg-purple-100 text-purple-800' : 'bg-slate-100 text-slate-800'}">
+                      ${escapeHTML(u.role)}
+                    </span>
+                  </td>
                 </tr>
-            `).join('');
-        }
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
 
-        function deleteInquilino(id) {
-            state.inquilinos = state.inquilinos.filter(m => m.id !== id);
-            renderInquilinosTable();
-        }
+    /* ==========================================================================
+       6. SISTEMA DE AUDITORIA MODAL
+       ========================================================================== */
+    function openAuditModal(moduleFilter = 'Geral') {
+      const logs = JSON.parse(localStorage.getItem('GB_AUDIT_LOGS') || '[]');
+      const filteredLogs = moduleFilter === 'Geral' ? logs : logs.filter(l => l.module.toLowerCase() === moduleFilter.toLowerCase());
 
-        function openModalNovoMorador() {
-            const modalContent = document.getElementById('modal-content');
-            modalContent.innerHTML = `
-                <div class="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                    <h3 class="font-bold text-slate-800 text-sm">Cadastrar Morador / Inquilino</h3>
-                    <button onclick="closeModal()" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
-                </div>
-                <form onsubmit="saveNovoMorador(event)" class="p-6 space-y-4 text-xs">
-                    <div>
-                        <label class="block font-bold text-slate-600 mb-1">Nome Completo</label>
-                        <input type="text" id="mor-nome" required class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                    </div>
-                    <div class="grid grid-cols-3 gap-3">
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">Unidade / Ap</label>
-                            <input type="text" id="mor-unidade" required placeholder="Ex: 101" class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                        </div>
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">Bloco / Torre</label>
-                            <select id="mor-bloco" class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                                <option value="Bloco A">Bloco A</option>
-                                <option value="Bloco B">Bloco B</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">Tipo</label>
-                            <select id="mor-tipo" class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                                <option value="Proprietário">Proprietário</option>
-                                <option value="Inquilino">Inquilino</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">Telefone / Celular</label>
-                            <input type="text" id="mor-fone" required class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                        </div>
-                        <div>
-                            <label class="block font-bold text-slate-600 mb-1">E-mail</label>
-                            <input type="email" id="mor-email" required class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                        </div>
-                    </div>
-                    <div>
-                        <label class="block font-bold text-slate-600 mb-1">Veículo / Placa</label>
-                        <input type="text" id="mor-veiculo" placeholder="Ex: Toyota Corolla - ABC-1234" class="w-full px-3 py-2 rounded-xl border border-slate-300">
-                    </div>
-                    <div class="pt-4 flex justify-end space-x-2">
-                        <button type="button" onclick="closeModal()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-semibold">Cancelar</button>
-                        <button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-xl font-semibold shadow-md">Salvar Morador</button>
-                    </div>
-                </form>
-            `;
-            document.getElementById('modal-container').classList.remove('hidden');
-        }
+      document.getElementById('audit-modal-title').innerText = `Logs de Auditoria - ${moduleFilter}`;
+      
+      const tbody = document.getElementById('audit-table-body');
+      tbody.innerHTML = filteredLogs.length > 0 ? filteredLogs.map(log => `
+        <tr class="hover:bg-slate-50">
+          <td class="p-2.5 text-slate-500 font-mono">${new Date(log.timestamp).toLocaleString('pt-BR')}</td>
+          <td class="p-2.5 font-bold text-slate-800">${escapeHTML(log.user)}</td>
+          <td class="p-2.5 text-brand-600 font-semibold">${escapeHTML(log.module)}</td>
+          <td class="p-2.5 font-semibold text-slate-700">${escapeHTML(log.action)}</td>
+          <td class="p-2.5 text-slate-600">${escapeHTML(log.details)}</td>
+        </tr>
+      `).join('') : '<tr><td colspan="5" class="p-4 text-center text-slate-400">Nenhum evento registrado.</td></tr>';
 
-        function saveNovoMorador(e) {
-            e.preventDefault();
-            const newMor = {
-                id: 'INQ-' + Math.floor(Math.random() * 900 + 100),
-                nome: document.getElementById('mor-nome').value,
-                unidade: document.getElementById('mor-unidade').value,
-                bloco: document.getElementById('mor-bloco').value,
-                tipo: document.getElementById('mor-tipo').value,
-                fone: document.getElementById('mor-fone').value,
-                email: document.getElementById('mor-email').value,
-                veiculo: document.getElementById('mor-veiculo').value || '-'
-            };
-            state.inquilinos.push(newMor);
-            closeModal();
-            renderInquilinosTable();
-        }
+      document.getElementById('audit-modal').classList.remove('hidden');
+    }
 
-        // UTILS: MODAL & LIGHTBOX
-        function closeModal() {
-            document.getElementById('modal-container').classList.add('hidden');
-        }
+    function closeAuditModal() {
+      document.getElementById('audit-modal').classList.add('hidden');
+    }
 
-        function openLightbox(url, title) {
-            document.getElementById('lightbox-img').src = url;
-            document.getElementById('lightbox-caption').textContent = title || 'Visualização do Item';
-            document.getElementById('lightbox-modal').classList.remove('hidden');
-        }
+    function closeGenericModal() {
+      document.getElementById('generic-modal').classList.add('hidden');
+    }
 
-        function closeLightbox() {
-            document.getElementById('lightbox-modal').classList.add('hidden');
-        }
-
-        // EXPORT PDF & CSV
-        function exportCurrentViewPDF() {
-            const element = document.getElementById('printable-area');
-            const opt = {
-                margin: 0.3,
-                filename: `Guardioes_Do_Bravo_Relatorio_${new Date().toISOString().split('T')[0]}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'in', format: 'letter', orientation: 'landscape' }
-            };
-            html2pdf().set(opt).from(element).save();
-        }
-
-        function exportCurrentViewCSV() {
-            let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
-            csvContent += "=== RELATÓRIO FINANCEIRO GUARDIOES DO BRAVO ===\n";
-            csvContent += "ID,Tipo,Historico,PlanoContas,Vencimento,ValorOriginal,ValorPago,SaldoRestante,Status,Fornecedor\n";
-
-            state.financeiro.forEach(f => {
-                const diff = f.valorOriginal - f.valorPago;
-                csvContent += `"${f.id}","${f.tipo}","${f.historico}","${f.planoConta}","${f.vencimento}",${f.valorOriginal},${f.valorPago},${diff},"${f.status}","${f.fornecedor}"\n`;
-            });
-
-            const encodedUri = encodeURI(csvContent);
-            const link = document.createElement("a");
-            link.setAttribute("href", encodedUri);
-            link.setAttribute("download", `Relatorio_Bravo_${new Date().getTime()}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-        }
-    </script>
+    /* Inicialização Geral do Window */
+    window.onload = function() {
+      console.log("Guardiões do Bravo - Sistema Carregado com Sucesso.");
+    };
+  </script>
 </body>
 </html>
