@@ -29,9 +29,11 @@
 <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
 
     <div id="app" class="flex-1 flex flex-col min-h-screen"></div>
+    <div id="modal-container"></div>
 
     <script>
         let tempBase64 = ''; 
+        let activeCharts = {};
 
         function escapeHTML(str) {
             if (typeof str !== 'string') return str || '';
@@ -89,16 +91,7 @@
                 const data = localStorage.getItem('guardioes_bravo_db');
                 if (!data) return DEFAULT_DATA;
                 const parsed = JSON.parse(data);
-                if (!parsed.categorias) parsed.categorias = DEFAULT_DATA.categorias;
-                if (!parsed.documentos) parsed.documentos = DEFAULT_DATA.documentos;
-                if (!parsed.formas_monetarias) parsed.formas_monetarias = DEFAULT_DATA.formas_monetarias;
-                if (!parsed.usuarios) parsed.usuarios = DEFAULT_DATA.usuarios;
-                if (!parsed.dre_config) parsed.dre_config = DEFAULT_DATA.dre_config;
-                if (!parsed.estoque) parsed.estoque = DEFAULT_DATA.estoque;
-                if (!parsed.moradores) parsed.moradores = DEFAULT_DATA.moradores;
-                if (!parsed.contas_bancarias) parsed.contas_bancarias = DEFAULT_DATA.contas_bancarias;
-                if (!parsed.financeiro) parsed.financeiro = DEFAULT_DATA.financeiro;
-                return parsed;
+                return { ...DEFAULT_DATA, ...parsed };
             } catch (e) {
                 console.error('Erro ao carregar dados:', e);
                 return DEFAULT_DATA;
@@ -125,9 +118,6 @@
         let docFiltros = { pasta: 'Todas', dtIni: '', dtFim: '', busca: '' };
         let morFiltros = { bloco: 'Todos', tipo: 'Todos', busca: '' };
         let catFiltros = { modulo: 'Todos', busca: '' };
-        let fmFiltros = { status: 'Todos', busca: '' };
-        let cbFiltros = { busca: '' };
-        let usrFiltros = { perfil: 'Todos', status: 'Todos', busca: '' };
 
         const MODULE_NAMES = {
             dashboard: 'Dashboard',
@@ -224,16 +214,8 @@
                 tempBase64 = e.target.result;
                 const imgEl = document.getElementById(targetImgId);
                 if (imgEl) {
-                    if (file.type.startsWith('image/')) {
-                        imgEl.src = tempBase64;
-                        imgEl.classList.remove('hidden');
-                    } else if (file.type === 'application/pdf') {
-                        imgEl.src = 'https://upload.wikimedia.org/wikipedia/commons/8/87/PDF_file_icon.svg';
-                        imgEl.classList.remove('hidden');
-                    } else {
-                        imgEl.src = 'https://upload.wikimedia.org/wikipedia/commons/0/0c/File-icon.png';
-                        imgEl.classList.remove('hidden');
-                    }
+                    imgEl.src = tempBase64;
+                    imgEl.classList.remove('hidden');
                 }
             };
             reader.readAsDataURL(file);
@@ -288,6 +270,15 @@
                     </div>
                 </div>
             `;
+        }
+
+        // Renderiza apenas a área de conteúdo principal para evitar perda de foco e re-renderização completa da página
+        function renderMainOnly() {
+            const mainEl = document.querySelector('main');
+            if (mainEl) {
+                mainEl.innerHTML = renderModuleContent(tabsState.activeTab);
+                if (tabsState.activeTab === 'dashboard') setTimeout(renderDashboardCharts, 50);
+            }
         }
 
         function renderApp() {
@@ -365,7 +356,7 @@
                 </div>
             `;
 
-            if (tabsState.activeTab === 'dashboard') setTimeout(renderDashboardCharts, 100);
+            if (tabsState.activeTab === 'dashboard') setTimeout(renderDashboardCharts, 50);
         }
 
         function renderModuleContent(moduloId) {
@@ -389,7 +380,6 @@
             else if (moduloId === 'usuarios') btnNovoHtml = `<button onclick="window.renderModalUsuario()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-user-plus"></i> Novo Usuário</button>`;
             else if (moduloId === 'relatorios') btnNovoHtml = `
                 <button onclick="restaurarDREPadrao()" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5"><i class="fa-solid fa-rotate-left"></i> Restaurar DRE</button>
-                <button onclick="window.renderModalDRELinha()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Linha DRE</button>
             `;
 
             const headerGlobal = `
@@ -415,47 +405,27 @@
         }
 
         function exportarModuloExcel(moduloId) {
-            let dataExport = [];
-            if (moduloId === 'financeiro') dataExport = db.financeiro;
-            else if (moduloId === 'formas_monetarias') dataExport = db.formas_monetarias;
-            else if (moduloId === 'contas_bancarias') dataExport = db.contas_bancarias;
-            else if (moduloId === 'moradores') dataExport = db.moradores;
-            else if (moduloId === 'categorias') dataExport = db.categorias;
-            else if (moduloId === 'estoque') dataExport = db.estoque;
-            else if (moduloId === 'documentos') dataExport = db.documentos;
-            else if (moduloId === 'usuarios') dataExport = db.usuarios;
-            else if (moduloId === 'relatorios') dataExport = db.dre_config;
-
+            let dataExport = db[moduloId] || [];
             exportarParaExcel(dataExport, `relatorio_${moduloId}_${Date.now()}.xlsx`);
         }
 
         // =====================================
-        // ESTOQUE COM AVISO DE ESTOQUE E AGENDAMENTO DE INVENTÁRIO
+        // ESTOQUE
         // =====================================
         function renderEstoqueView() {
             let list = db.estoque || [];
-            const hoje = new Date().toISOString().split('T')[0];
-
-            // Identificação de Produtos Críticos (Abaixo ou no limite mínimo)
             const itensCriticos = list.filter(e => Number(e.qtd) <= Number(e.minimo));
 
-            // Identificação de Balanços/Inventários Pendentes ou Vencendo em 3 Dias
             const tresDiasDepois = new Date();
             tresDiasDepois.setDate(tresDiasDepois.getDate() + 3);
             const dataLimite = tresDiasDepois.toISOString().split('T')[0];
-
             const itensInventarioPendente = list.filter(e => e.proximaContagem && e.proximaContagem <= dataLimite);
 
-            // Filtros da Interface
             if (estFiltros.categoria !== 'Todas') list = list.filter(e => e.categoria === estFiltros.categoria);
             
-            if (estFiltros.status === 'Critico') {
-                list = list.filter(e => Number(e.qtd) <= Number(e.minimo));
-            } else if (estFiltros.status === 'OK') {
-                list = list.filter(e => Number(e.qtd) > Number(e.minimo));
-            } else if (estFiltros.status === 'InventarioPendente') {
-                list = list.filter(e => e.proximaContagem && e.proximaContagem <= dataLimite);
-            }
+            if (estFiltros.status === 'Critico') list = list.filter(e => Number(e.qtd) <= Number(e.minimo));
+            else if (estFiltros.status === 'OK') list = list.filter(e => Number(e.qtd) > Number(e.minimo));
+            else if (estFiltros.status === 'InventarioPendente') list = list.filter(e => e.proximaContagem && e.proximaContagem <= dataLimite);
 
             if (estFiltros.busca.trim() !== '') {
                 const b = estFiltros.busca.toLowerCase();
@@ -466,9 +436,7 @@
 
             return `
                 <div class="space-y-4">
-                    <!-- CARDS DE ALERTA E AVISOS AUTOMÁTICOS -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 no-print">
-                        <!-- Card de Produtos Acabando -->
                         <div class="bg-rose-50 border border-rose-200 rounded-xl p-4 flex items-start gap-3 shadow-sm">
                             <div class="p-3 bg-rose-500 text-white rounded-lg"><i class="fa-solid fa-triangle-exclamation text-xl"></i></div>
                             <div class="flex-1">
@@ -477,7 +445,6 @@
                             </div>
                         </div>
 
-                        <!-- Card de Inventário Agendado -->
                         <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3 shadow-sm">
                             <div class="p-3 bg-amber-500 text-white rounded-lg"><i class="fa-solid fa-clipboard-list text-xl"></i></div>
                             <div class="flex-1">
@@ -487,22 +454,21 @@
                         </div>
                     </div>
 
-                    <!-- BARRA DE FILTROS -->
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-3 items-center no-print">
                         <div class="flex-1 min-w-[200px]">
                             <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Buscar Item/Local</label>
-                            <input type="text" value="${escapeHTML(estFiltros.busca)}" oninput="estFiltros.busca = this.value; renderApp();" placeholder="Ex: Lâmpada, Almoxarifado..." class="w-full p-2 border rounded-lg text-xs">
+                            <input type="text" value="${escapeHTML(estFiltros.busca)}" oninput="estFiltros.busca = this.value; renderMainOnly();" placeholder="Ex: Lâmpada, Almoxarifado..." class="w-full p-2 border rounded-lg text-xs">
                         </div>
                         <div class="w-40">
                             <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Categoria</label>
-                            <select onchange="estFiltros.categoria = this.value; renderApp();" class="w-full p-2 border rounded-lg text-xs font-semibold">
+                            <select onchange="estFiltros.categoria = this.value; renderMainOnly();" class="w-full p-2 border rounded-lg text-xs font-semibold">
                                 <option value="Todas">Todas</option>
                                 ${categoriasDisponiveis.map(c => `<option value="${escapeHTML(c)}" ${estFiltros.categoria === c ? 'selected' : ''}>${escapeHTML(c)}</option>`).join('')}
                             </select>
                         </div>
                         <div class="w-48">
                             <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Situação / Alerta</label>
-                            <select onchange="estFiltros.status = this.value; renderApp();" class="w-full p-2 border rounded-lg text-xs font-semibold">
+                            <select onchange="estFiltros.status = this.value; renderMainOnly();" class="w-full p-2 border rounded-lg text-xs font-semibold">
                                 <option value="Todos" ${estFiltros.status === 'Todos' ? 'selected' : ''}>Todos os Itens</option>
                                 <option value="Critico" ${estFiltros.status === 'Critico' ? 'selected' : ''}>⚠️ Estoque Crítico</option>
                                 <option value="OK" ${estFiltros.status === 'OK' ? 'selected' : ''}>✅ Estoque Normal</option>
@@ -511,7 +477,6 @@
                         </div>
                     </div>
 
-                    <!-- TABELA DE PRODUCTOS -->
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                         <div class="overflow-x-auto">
                             <table class="w-full text-left border-collapse text-xs">
@@ -573,7 +538,17 @@
             db.estoque = db.estoque.filter(e => e.id !== id);
             salvarDados(db);
             registrarLog('Estoque', 'Exclusão', `Item ID ${id} removido.`);
-            renderApp();
+            renderMainOnly();
+        }
+
+        function abrirModalContainer(html) {
+            const container = document.getElementById('modal-container');
+            if (container) container.innerHTML = html;
+        }
+
+        function fecharModalContainer() {
+            const container = document.getElementById('modal-container');
+            if (container) container.innerHTML = '';
         }
 
         window.renderModalEstoque = function(id = null) {
@@ -582,12 +557,12 @@
 
             const categoriasOps = db.categorias.filter(c => c.modulo === 'Estoque' || c.modulo === 'Geral').map(c => `<option value="${escapeHTML(c.nome)}" ${item.categoria === c.nome ? 'selected' : ''}>${escapeHTML(c.nome)}</option>`).join('');
 
-            const modalHtml = `
-                <div id="modal_estoque" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
                         <div class="flex justify-between items-center border-b pb-3">
                             <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Item no Estoque' : 'Novo Item no Estoque'}</h3>
-                            <button onclick="fecharModal('modal_estoque')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
                         </div>
                         <form onsubmit="salvarModalEstoque(event, '${id}')" class="space-y-3">
                             <div>
@@ -628,14 +603,13 @@
                                 <img id="preview_est_img" src="${tempBase64}" class="mt-2 h-20 object-cover rounded-lg border ${tempBase64 ? '' : 'hidden'}">
                             </div>
                             <div class="flex justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModal('modal_estoque')" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
+                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
                                 <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold">Salvar Item</button>
                             </div>
                         </form>
                     </div>
                 </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            `);
         };
 
         function salvarModalEstoque(e, id) {
@@ -661,12 +635,12 @@
 
             salvarDados(db);
             registrarLog('Estoque', id ? 'Edição' : 'Criação', `Item ${newItem.item} salvo.`);
-            fecharModal('modal_estoque');
-            renderApp();
+            fecharModalContainer();
+            renderMainOnly();
         }
 
         // =====================================
-        // DASHBOARD VIEW & CHARTS
+        // DASHBOARD
         // =====================================
         function renderDashboardView() {
             let fin = db.financeiro || [];
@@ -682,10 +656,10 @@
                 <div class="space-y-6">
                     <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-3 items-center no-print">
                         <span class="text-xs font-bold text-slate-600 uppercase">Filtrar Período Dashboard:</span>
-                        <input type="date" value="${dashFiltro.dtIni}" onchange="dashFiltro.dtIni = this.value; renderApp();" class="p-2 border rounded-lg text-xs font-bold">
+                        <input type="date" value="${dashFiltro.dtIni}" onchange="dashFiltro.dtIni = this.value; renderMainOnly();" class="p-2 border rounded-lg text-xs font-bold">
                         <span class="text-xs text-slate-400">até</span>
-                        <input type="date" value="${dashFiltro.dtFim}" onchange="dashFiltro.dtFim = this.value; renderApp();" class="p-2 border rounded-lg text-xs font-bold">
-                        <button onclick="dashFiltro = {dtIni:'', dtFim:''}; renderApp();" class="px-3 py-2 bg-slate-200 text-slate-700 font-bold rounded-lg text-xs">Limpar</button>
+                        <input type="date" value="${dashFiltro.dtFim}" onchange="dashFiltro.dtFim = this.value; renderMainOnly();" class="p-2 border rounded-lg text-xs font-bold">
+                        <button onclick="dashFiltro = {dtIni:'', dtFim:''}; renderMainOnly();" class="px-3 py-2 bg-slate-200 text-slate-700 font-bold rounded-lg text-xs">Limpar</button>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -722,12 +696,17 @@
         }
 
         function renderDashboardCharts() {
+            // Destrói instâncias anteriores dos gráficos para evitar vazamento de memória e sobreposição
+            if (activeCharts.balanco) activeCharts.balanco.destroy();
+            if (activeCharts.estoque) activeCharts.estoque.destroy();
+
             const ctx1 = document.getElementById('chartBalanco');
             if (ctx1) {
                 const fin = db.financeiro || [];
                 const recTot = fin.filter(f => f.tipo === 'Receber' && f.status === 'Baixado').reduce((acc, f) => acc + Number(f.valor), 0);
                 const despTot = fin.filter(f => f.tipo === 'Pagar' && f.status === 'Baixado').reduce((acc, f) => acc + Number(f.valor), 0);
-                new Chart(ctx1, {
+                
+                activeCharts.balanco = new Chart(ctx1, {
                     type: 'bar',
                     data: {
                         labels: ['Receitas', 'Despesas'],
@@ -742,7 +721,8 @@
                 const est = db.estoque || [];
                 const catMap = {};
                 est.forEach(e => { catMap[e.categoria] = (catMap[e.categoria] || 0) + Number(e.qtd); });
-                new Chart(ctx2, {
+                
+                activeCharts.estoque = new Chart(ctx2, {
                     type: 'doughnut',
                     data: {
                         labels: Object.keys(catMap),
@@ -771,11 +751,11 @@
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-3 items-center no-print">
                         <div class="flex-1 min-w-[200px]">
                             <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Buscar Histórico / Pagador</label>
-                            <input type="text" value="${escapeHTML(finFiltros.busca)}" oninput="finFiltros.busca = this.value; renderApp();" placeholder="Ex: Taxa, Otis..." class="w-full p-2 border rounded-lg text-xs">
+                            <input type="text" value="${escapeHTML(finFiltros.busca)}" oninput="finFiltros.busca = this.value; renderMainOnly();" placeholder="Ex: Taxa, Otis..." class="w-full p-2 border rounded-lg text-xs">
                         </div>
                         <div class="w-32">
                             <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Tipo</label>
-                            <select onchange="finFiltros.tipo = this.value; renderApp();" class="w-full p-2 border rounded-lg text-xs font-semibold">
+                            <select onchange="finFiltros.tipo = this.value; renderMainOnly();" class="w-full p-2 border rounded-lg text-xs font-semibold">
                                 <option value="Todos">Todos</option>
                                 <option value="Receber" ${finFiltros.tipo === 'Receber' ? 'selected' : ''}>Receber</option>
                                 <option value="Pagar" ${finFiltros.tipo === 'Pagar' ? 'selected' : ''}>Pagar</option>
@@ -783,7 +763,7 @@
                         </div>
                         <div class="w-32">
                             <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Status</label>
-                            <select onchange="finFiltros.status = this.value; renderApp();" class="w-full p-2 border rounded-lg text-xs font-semibold">
+                            <select onchange="finFiltros.status = this.value; renderMainOnly();" class="w-full p-2 border rounded-lg text-xs font-semibold">
                                 <option value="Todos">Todos</option>
                                 <option value="Aberto" ${finFiltros.status === 'Aberto' ? 'selected' : ''}>Aberto</option>
                                 <option value="Baixado" ${finFiltros.status === 'Baixado' ? 'selected' : ''}>Baixado</option>
@@ -837,7 +817,7 @@
             item.status = 'Baixado';
             salvarDados(db);
             registrarLog('Financeiro', 'Baixa de Título', `Título ${item.historico} baixado.`);
-            renderApp();
+            renderMainOnly();
         }
 
         function excluirTitulo(id) {
@@ -845,20 +825,19 @@
             db.financeiro = db.financeiro.filter(f => f.id !== id);
             salvarDados(db);
             registrarLog('Financeiro', 'Exclusão', `Título ID ${id} excluído.`);
-            renderApp();
+            renderMainOnly();
         }
 
         window.renderModalNovoTitulo = function(id = null) {
             const item = id ? db.financeiro.find(f => f.id === id) : { id: '', tipo: 'Receber', historico: '', valor: 0, vencimento: new Date().toISOString().split('T')[0], competencia: '10/2026', formaMonetariaId: 'fm_1', fornecedor: '', status: 'Aberto' };
-
             const fms = db.formas_monetarias.map(fm => `<option value="${fm.id}" ${item.formaMonetariaId === fm.id ? 'selected' : ''}>${escapeHTML(fm.nome)}</option>`).join('');
 
-            const modalHtml = `
-                <div id="modal_titulo" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4">
                         <div class="flex justify-between items-center border-b pb-3">
                             <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Título Financeiro' : 'Novo Título Financeiro'}</h3>
-                            <button onclick="fecharModal('modal_titulo')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
                         </div>
                         <form onsubmit="salvarModalTitulo(event, '${id}')" class="space-y-3">
                             <div class="grid grid-cols-2 gap-3">
@@ -900,14 +879,13 @@
                                 </div>
                             </div>
                             <div class="flex justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModal('modal_titulo')" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
+                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
                                 <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold">Salvar Título</button>
                             </div>
                         </form>
                     </div>
                 </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            `);
         };
 
         function salvarModalTitulo(e, id) {
@@ -933,8 +911,8 @@
 
             salvarDados(db);
             registrarLog('Financeiro', id ? 'Edição' : 'Criação', `Título ${newItem.historico} salvo.`);
-            fecharModal('modal_titulo');
-            renderApp();
+            fecharModalContainer();
+            renderMainOnly();
         }
 
         // =====================================
@@ -981,12 +959,12 @@
             const item = id ? db.formas_monetarias.find(f => f.id === id) : { id: '', nome: '', contaId: 'cb_1', multaPct: 2.0, jurosDiaPct: 0.033, baixaAutomatica: true, status: 'Ativo' };
             const contasOps = db.contas_bancarias.map(c => `<option value="${c.id}" ${item.contaId === c.id ? 'selected' : ''}>${escapeHTML(c.banco)}</option>`).join('');
 
-            const modalHtml = `
-                <div id="modal_fm" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <div class="flex justify-between items-center border-b pb-3">
                             <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Forma Monetária' : 'Nova Forma Monetária'}</h3>
-                            <button onclick="fecharModal('modal_fm')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
                         </div>
                         <form onsubmit="salvarModalFormaMonetaria(event, '${id}')" class="space-y-3">
                             <div>
@@ -1008,14 +986,13 @@
                                 </div>
                             </div>
                             <div class="flex justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModal('modal_fm')" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
+                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
                                 <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold">Salvar</button>
                             </div>
                         </form>
                     </div>
                 </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            `);
         };
 
         function salvarModalFormaMonetaria(e, id) {
@@ -1038,8 +1015,8 @@
             }
 
             salvarDados(db);
-            fecharModal('modal_fm');
-            renderApp();
+            fecharModalContainer();
+            renderMainOnly();
         }
 
         function renderContasBancariasView() {
@@ -1063,12 +1040,12 @@
         }
 
         window.renderModalContaBancaria = function() {
-            const modalHtml = `
-                <div id="modal_cb" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <div class="flex justify-between items-center border-b pb-3">
                             <h3 class="font-bold text-lg text-slate-800">Nova Conta Bancária</h3>
-                            <button onclick="fecharModal('modal_cb')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
                         </div>
                         <form onsubmit="salvarModalContaBancaria(event)" class="space-y-3">
                             <div>
@@ -1090,14 +1067,13 @@
                                 <input type="number" step="0.01" id="m_cb_saldo" required value="0.00" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
                             </div>
                             <div class="flex justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModal('modal_cb')" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
+                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
                                 <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold">Salvar Conta</button>
                             </div>
                         </form>
                     </div>
                 </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            `);
         };
 
         function salvarModalContaBancaria(e) {
@@ -1110,8 +1086,8 @@
                 saldo: Number(document.getElementById('m_cb_saldo').value)
             });
             salvarDados(db);
-            fecharModal('modal_cb');
-            renderApp();
+            fecharModalContainer();
+            renderMainOnly();
         }
 
         // =====================================
@@ -1127,7 +1103,7 @@
             return `
                 <div class="space-y-4">
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex gap-3 items-center no-print">
-                        <input type="text" value="${escapeHTML(morFiltros.busca)}" oninput="morFiltros.busca = this.value; renderApp();" placeholder="Buscar por Nome ou Unidade..." class="w-full p-2 border rounded-lg text-xs">
+                        <input type="text" value="${escapeHTML(morFiltros.busca)}" oninput="morFiltros.busca = this.value; renderMainOnly();" placeholder="Buscar por Nome ou Unidade..." class="w-full p-2 border rounded-lg text-xs">
                     </div>
                     <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
                         <table class="w-full text-left border-collapse text-xs">
@@ -1163,12 +1139,12 @@
 
         window.renderModalMorador = function(id = null) {
             const m = id ? db.moradores.find(x => x.id === id) : { id: '', bloco: 'A', apartamento: '', nome: '', email: '', telefone: '', tipo: 'Proprietário' };
-            const modalHtml = `
-                <div id="modal_mor" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <div class="flex justify-between items-center border-b pb-3">
                             <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Morador' : 'Novo Morador'}</h3>
-                            <button onclick="fecharModal('modal_mor')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
                         </div>
                         <form onsubmit="salvarModalMorador(event, '${id}')" class="space-y-3">
                             <div class="grid grid-cols-2 gap-3">
@@ -1196,14 +1172,13 @@
                                 </div>
                             </div>
                             <div class="flex justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModal('modal_mor')" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
+                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
                                 <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold">Salvar Morador</button>
                             </div>
                         </form>
                     </div>
                 </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            `);
         };
 
         function salvarModalMorador(e, id) {
@@ -1226,8 +1201,8 @@
             }
 
             salvarDados(db);
-            fecharModal('modal_mor');
-            renderApp();
+            fecharModalContainer();
+            renderMainOnly();
         }
 
         // =====================================
@@ -1262,12 +1237,12 @@
         }
 
         window.renderModalCategoria = function() {
-            const modalHtml = `
-                <div id="modal_cat" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white rounded-2xl max-w-sm w-full p-6 shadow-2xl space-y-4">
                         <div class="flex justify-between items-center border-b pb-3">
                             <h3 class="font-bold text-lg text-slate-800">Nova Pasta / Categoria</h3>
-                            <button onclick="fecharModal('modal_cat')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
                         </div>
                         <form onsubmit="salvarModalCategoria(event)" class="space-y-3">
                             <div>
@@ -1283,14 +1258,13 @@
                                 </select>
                             </div>
                             <div class="flex justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModal('modal_cat')" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
+                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
                                 <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold">Salvar Pasta</button>
                             </div>
                         </form>
                     </div>
                 </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            `);
         };
 
         function salvarModalCategoria(e) {
@@ -1301,15 +1275,15 @@
                 modulo: document.getElementById('m_cat_mod').value
             });
             salvarDados(db);
-            fecharModal('modal_cat');
-            renderApp();
+            fecharModalContainer();
+            renderMainOnly();
         }
 
         function excluirCategoria(id) {
             if (!confirm('Deseja excluir esta categoria?')) return;
             db.categorias = db.categorias.filter(c => c.id !== id);
             salvarDados(db);
-            renderApp();
+            renderMainOnly();
         }
 
         // =====================================
@@ -1350,12 +1324,12 @@
         window.renderModalDocumento = function() {
             const pastasOps = db.categorias.filter(c => c.modulo === 'Documentos').map(c => `<option value="${escapeHTML(c.nome)}">${escapeHTML(c.nome)}</option>`).join('');
 
-            const modalHtml = `
-                <div id="modal_doc" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <div class="flex justify-between items-center border-b pb-3">
                             <h3 class="font-bold text-lg text-slate-800">Enviar Documento</h3>
-                            <button onclick="fecharModal('modal_doc')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
                         </div>
                         <form onsubmit="salvarModalDocumento(event)" class="space-y-3">
                             <div>
@@ -1376,14 +1350,13 @@
                                 <img id="preview_doc" class="mt-2 h-16 hidden">
                             </div>
                             <div class="flex justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModal('modal_doc')" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
+                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
                                 <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold">Salvar Documento</button>
                             </div>
                         </form>
                     </div>
                 </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            `);
         };
 
         function salvarModalDocumento(e) {
@@ -1397,15 +1370,15 @@
                 arquivoBase64: tempBase64
             });
             salvarDados(db);
-            fecharModal('modal_doc');
-            renderApp();
+            fecharModalContainer();
+            renderMainOnly();
         }
 
         function excluirDocumento(id) {
             if (!confirm('Deseja excluir este documento?')) return;
             db.documentos = db.documentos.filter(d => d.id !== id);
             salvarDados(db);
-            renderApp();
+            renderMainOnly();
         }
 
         // =====================================
@@ -1451,7 +1424,7 @@
         function restaurarDREPadrao() {
             db.dre_config = DEFAULT_DATA.dre_config;
             salvarDados(db);
-            renderApp();
+            renderMainOnly();
         }
 
         // =====================================
@@ -1492,12 +1465,12 @@
         }
 
         window.renderModalUsuario = function() {
-            const modalHtml = `
-                <div id="modal_usr" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <div class="flex justify-between items-center border-b pb-3">
                             <h3 class="font-bold text-lg text-slate-800">Novo Usuário</h3>
-                            <button onclick="fecharModal('modal_usr')" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
                         </div>
                         <form onsubmit="salvarModalUsuario(event)" class="space-y-3">
                             <div>
@@ -1517,14 +1490,13 @@
                                 <input type="password" id="m_usr_senha" required class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
                             </div>
                             <div class="flex justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModal('modal_usr')" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
+                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
                                 <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold">Criar Usuário</button>
                             </div>
                         </form>
                     </div>
                 </div>
-            `;
-            document.body.insertAdjacentHTML('beforeend', modalHtml);
+            `);
         };
 
         function salvarModalUsuario(e) {
@@ -1540,20 +1512,15 @@
                 senhaHash: document.getElementById('m_usr_senha').value
             });
             salvarDados(db);
-            fecharModal('modal_usr');
-            renderApp();
+            fecharModalContainer();
+            renderMainOnly();
         }
 
         function excluirUsuario(id) {
             if (!confirm('Deseja realmente remover este usuário?')) return;
             db.usuarios = db.usuarios.filter(u => u.id !== id);
             salvarDados(db);
-            renderApp();
-        }
-
-        function fecharModal(modalId) {
-            const el = document.getElementById(modalId);
-            if (el) el.remove();
+            renderMainOnly();
         }
 
         // Inicialização da aplicação
