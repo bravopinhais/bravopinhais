@@ -1,2166 +1,779 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Guardiões do Bravo</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guardiões do Bravo - Gestão Condominial Segura</title>
+    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- HTML5 Barcode/QR Code Reader CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
     <style>
-      :root {
-        --bg: #f1f5f9;
-        --sidebar: #0f172a;
-        --primary: #0d9488;
-        --text: #0f172a;
-        --muted: #64748b;
-        --danger: #ef4444;
-        --warning: #f59e0b;
-        --success: #10b981;
-        --info: #3b82f6;
-      }
-
-      * { box-sizing: border-box; }
-
-      html, body {
-        margin: 0;
-        min-height: 100%;
-        font-family: Arial, sans-serif;
-        background: var(--bg);
-        color: var(--text);
-      }
-
-      button, input, select, textarea {
-        font: inherit;
-      }
-
-      .app-shell {
-        display: flex;
-        min-height: 100vh;
-      }
-
-      .sidebar {
-        width: 250px;
-        background: var(--sidebar);
-        color: #e2e8f0;
-        padding: 18px 14px;
-        display: flex;
-        flex-direction: column;
-      }
-
-      .brand {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        margin-bottom: 28px;
-        padding: 8px 10px;
-      }
-
-      .brand-mark {
-        width: 42px;
-        height: 42px;
-        border-radius: 12px;
-        background: var(--primary);
-        color: white;
-        display: grid;
-        place-items: center;
-        font-size: 18px;
-      }
-
-      .brand h1 {
-        margin: 0;
-        color: white;
-        font-size: 1.1rem;
-      }
-
-      .brand small {
-        color: #5eead4;
-      }
-
-      .nav-menu {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .nav-item {
-        width: 100%;
-        border: none;
-        background: transparent;
-        color: #cbd5e1;
-        padding: 12px 14px;
-        text-align: left;
-        border-radius: 10px;
-        cursor: pointer;
-        display: flex;
-        gap: 10px;
-        align-items: center;
-      }
-
-      .nav-item.active {
-        background: var(--primary);
-        color: white;
-      }
-
-      .sidebar-user {
-        margin-top: auto;
-        padding-top: 16px;
-        border-top: 1px solid rgba(255,255,255,0.12);
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        gap: 8px;
-      }
-
-      .logout-btn {
-        border: 1px solid rgba(248,113,113,0.4);
-        background: rgba(239,68,68,0.1);
-        color: #fecaca;
-        border-radius: 8px;
-        padding: 8px 10px;
-        cursor: pointer;
-      }
-
-      .main-panel {
-        flex: 1;
-        padding: 26px;
-      }
-
-      .section-header {
-        margin-bottom: 22px;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-      }
-
-      .section-header h2 {
-        margin: 0;
-        font-size: 1.8rem;
-      }
-
-      .section-header p {
-        margin: 6px 0 0;
-        color: var(--muted);
-      }
-
-      .primary-btn, .outline-btn {
-        border: none;
-        border-radius: 10px;
-        padding: 10px 14px;
-        cursor: pointer;
-        font-weight: 700;
-      }
-
-      .primary-btn {
-        background: var(--primary);
-        color: white;
-      }
-
-      .outline-btn {
-        background: white;
-        color: var(--primary);
-        border: 1px solid var(--primary);
-      }
-
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 18px;
-      }
-
-      .stat-card {
-        background: white;
-        border-radius: 16px;
-        padding: 22px;
-        box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
-        border-top: 4px solid var(--primary);
-      }
-
-      .stat-card.success { border-top-color: var(--success); }
-      .stat-card.danger { border-top-color: var(--danger); }
-      .stat-card.warning { border-top-color: var(--warning); }
-      .stat-card.info { border-top-color: var(--info); }
-
-      .stat-card span {
-        display: block;
-        font-size: 0.72rem;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: var(--muted);
-        font-weight: 700;
-      }
-
-      .stat-card strong {
-        display: block;
-        margin-top: 10px;
-        font-size: 1.7rem;
-      }
-
-      .toolbar {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-        gap: 12px;
-        margin-bottom: 18px;
-      }
-
-      .toolbar input, .toolbar select, .form-grid input, .form-grid select, .form-grid textarea {
-        width: 100%;
-        padding: 10px 12px;
-        border: 1px solid #cbd5e1;
-        border-radius: 10px;
-        background: white;
-        color: var(--text);
-      }
-
-      .table-wrap {
-        background: white;
-        border-radius: 14px;
-        overflow: hidden;
-        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.06);
-      }
-
-      .table-wrap table {
-        width: 100%;
-        border-collapse: collapse;
-      }
-
-      .table-wrap th, .table-wrap td {
-        padding: 12px 14px;
-        border-bottom: 1px solid #e2e8f0;
-        text-align: left;
-        vertical-align: middle;
-      }
-
-      .table-wrap thead { background: #f8fafc; }
-
-      .actions {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        flex-wrap: wrap;
-      }
-
-      .action-btn {
-        padding: 7px 10px;
-        border: none;
-        border-radius: 8px;
-        cursor: pointer;
-        font-weight: 700;
-      }
-
-      .edit-btn {
-        background: #dbeafe;
-        color: #1d4ed8;
-      }
-
-      .delete-btn {
-        background: #fee2e2;
-        color: #991b1b;
-      }
-
-      .pay-btn {
-        background: #dcfce7;
-        color: #166534;
-      }
-
-      .badge {
-        display: inline-block;
-        padding: 5px 8px;
-        border-radius: 999px;
-        font-size: 0.7rem;
-        font-weight: 700;
-      }
-
-      .badge-success { background: #dcfce7; color: #166534; }
-      .badge-danger { background: #fee2e2; color: #991b1b; }
-      .badge-warning { background: #fef3c7; color: #92400e; }
-      .badge-info { background: #dbeafe; color: #1d4ed8; }
-
-      .empty-state {
-        color: var(--muted);
-        text-align: center;
-        padding: 24px;
-      }
-
-      .login-screen {
-        min-height: 100vh;
-        display: grid;
-        place-items: center;
-        background: linear-gradient(135deg, #0f172a, #1e293b);
-      }
-
-      .login-box {
-        width: min(420px, 92vw);
-        background: rgba(255,255,255,0.96);
-        border-radius: 18px;
-        padding: 30px 24px;
-        box-shadow: 0 16px 40px rgba(15,23,42,0.25);
-      }
-
-      .login-logo {
-        width: 68px;
-        height: 68px;
-        margin: 0 auto 12px;
-        border-radius: 16px;
-        display: grid;
-        place-items: center;
-        background: linear-gradient(135deg, #0d9488, #14b8a6);
-        color: white;
-        font-size: 2rem;
-      }
-
-      .login-box h2 {
-        margin: 0;
-        text-align: center;
-        font-size: 1.8rem;
-      }
-
-      .login-box p {
-        margin: 8px 0 20px;
-        color: #64748b;
-        text-align: center;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        font-size: 0.72rem;
-        font-weight: 700;
-      }
-
-      .login-form {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-
-      .login-form label {
-        font-size: 0.72rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #475569;
-      }
-
-      .login-form input {
-        padding: 12px 14px;
-        border: 1px solid #cbd5e1;
-        border-radius: 10px;
-        font-size: 1rem;
-      }
-
-      .login-form button {
-        margin-top: 8px;
-        padding: 12px 18px;
-        border: none;
-        border-radius: 10px;
-        background: var(--primary);
-        color: white;
-        font-weight: 700;
-        cursor: pointer;
-      }
-
-      .modal-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(15,23,42,0.55);
-        display: grid;
-        place-items: center;
-        padding: 20px;
-        z-index: 1000;
-      }
-
-      .modal {
-        width: min(800px, 92vw);
-        background: white;
-        border-radius: 18px;
-        box-shadow: 0 18px 50px rgba(15,23,42,0.25);
-        overflow: hidden;
-      }
-
-      .modal-header {
-        padding: 18px 22px;
-        border-bottom: 1px solid #e2e8f0;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-      }
-
-      .modal-header h3 {
-        margin: 0;
-        font-size: 1.2rem;
-      }
-
-      .close-modal {
-        border: none;
-        background: transparent;
-        font-size: 1.5rem;
-        cursor: pointer;
-        color: var(--muted);
-      }
-
-      .modal-body {
-        padding: 20px 22px 12px;
-      }
-
-      .form-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 16px;
-      }
-
-      .form-field {
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-
-      .form-field label {
-        font-size: 0.72rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #475569;
-      }
-
-      .form-footer {
-        display: flex;
-        justify-content: flex-end;
-        gap: 10px;
-        padding: 16px 22px 22px;
-      }
-
-      .chart-card {
-        background: white;
-        border-radius: 16px;
-        padding: 20px;
-        box-shadow: 0 2px 10px rgba(15,23,42,0.06);
-      }
-
-      .alert-box {
-        border-left: 4px solid var(--danger);
-        background: #fff1f2;
-        color: #9f1239;
-        padding: 12px 14px;
-        border-radius: 10px;
-        margin-bottom: 18px;
-        font-weight: 700;
-      }
-
-      @media (max-width: 768px) {
-        .app-shell { flex-direction: column; }
-        .sidebar { width: 100%; }
-        .main-panel { padding: 16px; }
-      }
+        html, body { height: 100%; margin: 0; padding: 0; }
+        input, select, textarea { color: #0f172a !important; font-weight: 600 !important; }
+        .tab-active { border-bottom: 3px solid #0d9488; background-color: #ffffff; color: #0f766e; font-weight: 800; shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        .sidebar-full { height: 100vh; position: sticky; top: 0; }
+        @media print {
+            aside, header, .no-print, button, .actions-col { display: none !important; }
+            body { background: white !important; color: black !important; }
+            main { padding: 0 !important; }
+            .print-break { page-break-before: always; }
+        }
     </style>
-  </head>
+</head>
+<body class="bg-slate-900 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
 
-  <body>
-    <div id="app"></div>
+    <div id="app" class="flex-1 flex flex-col min-h-screen"></div>
 
     <script>
-      const STORAGE_KEY = 'guardioes_bravo_db_final_v1';
+        const STORAGE_KEY = 'guardioes_bravo_db';
+        let tempBase64 = '';
+        let html5QrCodeScannerInstance = null;
+        let chartFluxoInstance = null;
+        let chartDespesasInstance = null;
 
-      const DEFAULT_DATA = {
-        usuarios: [
-          { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', perfil: 'Admin', status: 'Ativo', senhaHash: 'Admin@12345' }
-        ],
+        const DEFAULT_DATA = {
+            configuracoes: { whatsappNotificacao: '5541999999999' },
+            usuarios: [
+                { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Admin@12345' }
+            ],
+            financeiro: [
+                { id: 'fin_1', tipo: 'Receber', historico: 'Taxa Condominial Ordinária - Ap 101', valor: 38500.00, vencimento: '2026-10-15', competencia: '10/2026', fornecedor: 'Carlos Eduardo (Apto 101)', status: 'Baixado' },
+                { id: 'fin_2', tipo: 'Pagar', historico: 'Manutenção Preventiva Elevadores', valor: 3200.00, vencimento: '2026-10-20', competencia: '10/2026', fornecedor: 'Otis Elevadores LTDA', status: 'Baixado' },
+                { id: 'fin_3', tipo: 'Pagar', historico: 'Energia Elétrica Áreas Comuns', valor: 4150.00, vencimento: '2026-10-25', competencia: '10/2026', fornecedor: 'Copel Energia S.A.', status: 'Aberto' },
+                { id: 'fin_4', tipo: 'Receber', historico: 'Reserva Salão de Festas - Ap 204', valor: 250.00, vencimento: '2026-10-18', competencia: '10/2026', fornecedor: 'Mariana Costa (Apto 204)', status: 'Baixado' }
+            ],
+            fornecedores: [
+                { id: 'for_1', nome: 'Otis Elevadores LTDA', cnpj: '12.345.678/0001-90', telefone: '(41) 3333-4444', categoria: 'Manutenção Elevadores' },
+                { id: 'for_2', nome: 'Copel Energia S.A.', cnpj: '00.123.456/0001-00', telefone: '0800 51 00 116', categoria: 'Concessionária' },
+                { id: 'for_3', nome: 'Piscina Limpa Serviços', cnpj: '98.765.432/0001-10', telefone: '(41) 98888-2222', categoria: 'Manutenção Piscina' }
+            ],
+            moradores: [
+                { id: 'mor_1', bloco: 'A', apartamento: '101', nome: 'Carlos Eduardo', email: 'carlos@email.com', telefone: '(41) 99999-1111', tipo: 'Proprietário' },
+                { id: 'mor_2', bloco: 'A', apartamento: '204', nome: 'Mariana Costa', email: 'mariana@email.com', telefone: '(41) 98888-3333', tipo: 'Inquilino' },
+                { id: 'mor_3', bloco: 'B', apartamento: '302', nome: 'Roberto Almeida', email: 'roberto@email.com', telefone: '(41) 97777-4444', tipo: 'Proprietário' }
+            ],
+            categorias: [
+                { id: 'cat_1', nome: 'Elétrica & Iluminação', modulo: 'Estoque' },
+                { id: 'cat_2', nome: 'Produtos de Limpeza & Piscina', modulo: 'Estoque' },
+                { id: 'cat_3', nome: 'Móveis & Equipamentos', modulo: 'Patrimonio' }
+            ],
+            estoque: [
+                { id: 'est_1', item: 'Lâmpada LED Tubular 18W', codigoBarras: '7891234567890', categoria: 'Elétrica & Iluminação', qtd: 4, minimo: 12, maximo: 50, localizacao: 'Almoxarifado Central', fotoBase64: '' },
+                { id: 'est_2', item: 'Cloro Granulado Ação Choque 10kg', codigoBarras: '7899876543210', categoria: 'Produtos de Limpeza & Piscina', qtd: 18, minimo: 5, maximo: 30, localizacao: 'DML Piscina', fotoBase64: '' }
+            ],
+            movimentacoes_estoque: [],
+            patrimonio: [],
+            documentos: [],
+            logs: []
+        };
 
-        documentoCategorias: [
-          { id: 'doccat_1', nome: 'Atas de Assembleia', descricao: 'Atas e registros das reuniões' },
-          { id: 'doccat_2', nome: 'Contratos', descricao: 'Contratos e acordos' },
-          { id: 'doccat_3', nome: 'Manutenção', descricao: 'Orçamentos e demandas de manutenção' },
-          { id: 'doccat_4', nome: 'Financeiro', descricao: 'Comprovantes e documentos financeiros' }
-        ],
+        class DBRepository {
+            static load() {
+                try {
+                    const rawData = localStorage.getItem(STORAGE_KEY);
+                    if (!rawData) return DEFAULT_DATA;
+                    const parsed = JSON.parse(rawData);
+                    if (!parsed.patrimonio) parsed.patrimonio = DEFAULT_DATA.patrimonio;
+                    if (!parsed.estoque) parsed.estoque = DEFAULT_DATA.estoque;
+                    if (!parsed.financeiro) parsed.financeiro = DEFAULT_DATA.financeiro;
+                    if (!parsed.moradores) parsed.moradores = DEFAULT_DATA.moradores;
+                    if (!parsed.fornecedores) parsed.fornecedores = DEFAULT_DATA.fornecedores;
+                    return parsed;
+                } catch (e) { return DEFAULT_DATA; }
+            }
 
-        documentos: [
-          { id: 'doc_1', titulo: 'Ata da Assembleia 2026', categoriaId: 'doccat_1', arquivoNome: 'ata-assembleia-2026.pdf', mimeType: 'application/pdf', arquivoData: '', data: '2026-03-10', observacao: 'Eleição do síndico' },
-          { id: 'doc_2', titulo: 'Contrato de limpeza', categoriaId: 'doccat_2', arquivoNome: 'contrato-limpeza.pdf', mimeType: 'application/pdf', arquivoData: '', data: '2026-04-12', observacao: 'Vigência anual' },
-          { id: 'doc_3', titulo: 'Orçamento de pintura', categoriaId: 'doccat_3', arquivoNome: 'orcamento-pintura.pdf', mimeType: 'application/pdf', arquivoData: '', data: '2026-05-02', observacao: 'Bloco B' }
-        ],
-
-        financeiro: [
-          { id: 'fin_1', tipo: 'Receber', historico: 'Taxa Condominial Ordinária - Ap 101', valorTotal: 2500, valorPago: 1500, vencimento: '2026-10-15', status: 'Parcial', observacao: 'Faltando parcela' },
-          { id: 'fin_2', tipo: 'Pagar', historico: 'Manutenção Elevador Otis', valorTotal: 850, valorPago: 850, vencimento: '2026-10-20', status: 'Pago', observacao: 'Pagamento concluído' },
-          { id: 'fin_3', tipo: 'Receber', historico: 'Aluguel de espaço comercial', valorTotal: 1800, valorPago: 900, vencimento: '2026-10-18', status: 'Parcial', observacao: 'Saldo pendente' },
-          { id: 'fin_4', tipo: 'Pagar', historico: 'Energia elétrica', valorTotal: 640, valorPago: 0, vencimento: '2026-10-25', status: 'Pendente', observacao: 'Aguardando liquidação' }
-        ],
-
-        estoque: [
-          { id: 'est_1', item: 'Lâmpada LED 12W', categoria: 'Elétrica', qtd: 4, minimo: 10, localizacao: 'Almoxarifado', proximoInventario: '2026-10-29', ultimoInventario: '2026-10-01' },
-          { id: 'est_2', item: 'Cloro Granulado 10kg', categoria: 'Piscina', qtd: 15, minimo: 5, localizacao: 'DML', proximoInventario: '2026-10-30', ultimoInventario: '2026-10-05' },
-          { id: 'est_3', item: 'Filtro de água', categoria: 'Piscina', qtd: 2, minimo: 4, localizacao: 'DML', proximoInventario: '2026-10-15', ultimoInventario: '2026-10-04' },
-          { id: 'est_4', item: 'Parafuso 8x40', categoria: 'Ferragens', qtd: 26, minimo: 12, localizacao: 'Depósito 2', proximoInventario: '2026-11-05', ultimoInventario: '2026-10-02' }
-        ],
-
-        moradores: [
-          { id: 'mor_1', nome: 'Carlos Eduardo', bloco: 'A', apartamento: '101', tipo: 'Proprietário', cpf: '123.456.789-00', telefone: '(11) 99999-0001', email: 'carlos@email.com', status: 'Ativo', dataEntrada: '2020-01-10', observacao: 'Titular do apartamento' },
-          { id: 'mor_2', nome: 'Fernanda Lima', bloco: 'A', apartamento: '102', tipo: 'Inquilino', cpf: '987.654.321-00', telefone: '(11) 98888-0002', email: 'fernanda@email.com', status: 'Ativo', dataEntrada: '2024-02-12', observacao: 'Contrato em vigor' }
-        ],
-
-        inquilinos: [
-          { id: 'inq_1', nome: 'Fernanda Lima', bloco: 'A', apartamento: '102', cpf: '987.654.321-00', telefone: '(11) 98888-0002', email: 'fernanda@email.com', proprietario: 'Carlos Eduardo', valorAluguel: 2200, dataInicio: '2024-02-12', dataFim: '2025-02-11', status: 'Ativo' }
-        ],
-
-        fornecedores: [
-          { id: 'for_1', razaoSocial: 'Clean Service Ltda', nomeContato: 'Marcos Silva', cnpj: '12.345.678/0001-99', categoria: 'Limpeza', telefone: '(11) 97777-1234', email: 'contato@cleanservice.com', endereco: 'Rua das Flores, 150', status: 'Ativo', observacao: 'Fornecedor de limpeza' }
-        ]
-      };
-
-      function loadDb() {
-        try {
-          const raw = localStorage.getItem(STORAGE_KEY);
-          return raw ? JSON.parse(raw) : DEFAULT_DATA;
-        } catch {
-          return DEFAULT_DATA;
+            static save(data) {
+                try {
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                    return true;
+                } catch (e) {
+                    alert('Aviso: Limite de armazenamento atingido.');
+                    return false;
+                }
+            }
         }
-      }
 
-      function saveDb() {
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(state.db));
-        } catch {}
-      }
+        let db = DBRepository.load();
+        let sessao = { usuarioLogado: db.usuarios[0] };
 
-      function generateId(prefix) {
-        return prefix + '_' + Date.now() + '_' + Math.random().toString(16).slice(2, 8);
-      }
+        let tabsState = { 
+            openTabs: ['dashboard'], 
+            activeTab: 'dashboard' 
+        };
 
-      function formatCurrency(value) {
-        return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(Number(value || 0));
-      }
+        let dashFiltros = { dtIni: '', dtFim: '', preset: 'tudo' };
+        let abaEstoqueInterna = 'consumo';
+        let estFiltros = { categoria: 'Todas', busca: '' };
+        let patFiltros = { busca: '', conservacao: 'Todas' };
+        let finFiltros = { tipo: 'Todos', status: 'Todos', busca: '' };
 
-      function escapeHtml(str) {
-        return String(str ?? '')
-          .replace(/&/g, '&amp;')
-          .replace(/</g, '&lt;')
-          .replace(/>/g, '&gt;')
-          .replace(/"/g, '&quot;')
-          .replace(/'/g, '&#039;');
-      }
+        const MODULE_NAMES = {
+            dashboard: 'Dashboard Executivo',
+            financeiro: 'Financeiro (Pagar/Receber)',
+            estoque: 'Estoque & Patrimônio',
+            moradores: 'Moradores & Unidades',
+            documentos: 'Gestão de Documentos'
+        };
 
-      function exportCsv(rows, filename) {
-        if (!rows.length) return;
-
-        const headers = Object.keys(rows[0]);
-        const csv = [
-          headers.join(','),
-          ...rows.map(row =>
-            headers.map(header => `"${String(row[header]).replace(/"/g, '""')}"`).join(',')
-          )
-        ].join('\n');
-
-        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        link.href = URL.createObjectURL(blob);
-        link.setAttribute('download', filename);
-        link.click();
-        URL.revokeObjectURL(link.href);
-      }
-
-      function getFinanceStatus(item) {
-        const total = Number(item.valorTotal || 0);
-        const pago = Number(item.valorPago || 0);
-        const restante = total - pago;
-
-        if (restante <= 0) return 'Pago';
-        if (pago > 0 && restante > 0) return 'Parcial';
-        return 'Pendente';
-      }
-
-      function getRemaining(item) {
-        return Number(item.valorTotal || 0) - Number(item.valorPago || 0);
-      }
-
-      function getEstoqueStatus(item) {
-        const qtd = Number(item.qtd || 0);
-        const minimo = Number(item.minimo || 0);
-
-        if (qtd <= 0) return { text: 'Sem estoque', className: 'badge-danger' };
-        if (qtd <= minimo) return { text: 'Baixo', className: 'badge-warning' };
-        return { text: 'OK', className: 'badge-success' };
-      }
-
-      function getEstoqueAlerts() {
-        return state.db.estoque.filter(item => {
-          const qtd = Number(item.qtd || 0);
-          const min = Number(item.minimo || 0);
-          const today = new Date();
-          const next = item.proximoInventario ? new Date(item.proximoInventario) : null;
-          const withinWeek = next && next <= new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
-          return qtd <= 0 || qtd <= min || withinWeek;
-        });
-      }
-
-      const state = {
-        db: loadDb(),
-        user: JSON.parse(sessionStorage.getItem('guardioes_user') || 'null'),
-        activeTab: 'dashboard',
-        modal: null,
-        filters: {
-          financeiro: { busca: '', status: 'Todos', tipo: 'Todos' },
-          estoque: { busca: '', categoria: 'Todas' },
-          documentos: { busca: '', categoriaId: 'Todas' },
-          moradores: { busca: '', bloco: 'Todos', tipo: 'Todos' },
-          usuarios: { busca: '', perfil: 'Todos', status: 'Todos' }
-        }
-      };
-
-      function renderLogin() {
-        return `
-          <div class="login-screen">
-            <div class="login-box">
-              <div class="login-logo"><i class="fa-solid fa-shield-halved"></i></div>
-              <h2>Guardiões do Bravo</h2>
-              <p>Acesso ao Sistema Condominial</p>
-              <form id="loginForm" class="login-form">
-                <label>Usuário / E-mail</label>
-                <input id="login_user" type="text" value="admin" required />
-                <label>Senha</label>
-                <input id="login_pass" type="password" value="Admin@12345" required />
-                <button type="submit">Entrar no Sistema</button>
-              </form>
-            </div>
-          </div>
-        `;
-      }
-
-      function renderDashboard() {
-        const receitas = state.db.financeiro.filter(item => item.tipo === 'Receber').reduce((sum, item) => sum + Number(item.valorPago || 0), 0);
-        const despesas = state.db.financeiro.filter(item => item.tipo === 'Pagar').reduce((sum, item) => sum + Number(item.valorPago || 0), 0);
-        const pendentes = state.db.financeiro.filter(item => getFinanceStatus(item) !== 'Pago').length;
-        const alertas = getEstoqueAlerts();
-
-        setTimeout(() => {
-          const existing = document.getElementById('dashboardChart');
-          if (existing) {
-            if (window.dashboardChartInstance) window.dashboardChartInstance.destroy();
-            window.dashboardChartInstance = new Chart(existing, {
-              type: 'bar',
-              data: {
-                labels: ['Receitas', 'Despesas', 'Pendentes', 'Moradores'],
-                datasets: [{
-                  label: 'Resumo geral',
-                  data: [receitas, despesas, pendentes, state.db.moradores.length],
-                  backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#3b82f6'],
-                  borderRadius: 8
-                }]
-              },
-              options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true } }
-              }
+        function escapeHTML(str) {
+            if (typeof str !== 'string') return str || '';
+            return str.replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
             });
-          }
-        }, 0);
-
-        return `
-          <section class="section-header">
-            <div>
-              <h2>Dashboard</h2>
-              <p>Resumo geral da administração</p>
-            </div>
-            <button class="primary-btn" id="exportDashboardCsv">Exportar CSV</button>
-          </section>
-
-          ${alertas.length ? `
-            <div class="alert-box">
-              <i class="fa-solid fa-triangle-exclamation"></i>
-              Há ${alertas.length} itens com atenção no estoque.
-            </div>
-          ` : ''}
-
-          <div class="stats-grid">
-            <div class="stat-card success">
-              <span>Receitas líquidas</span>
-              <strong>${formatCurrency(receitas)}</strong>
-            </div>
-            <div class="stat-card danger">
-              <span>Despesas pagas</span>
-              <strong>${formatCurrency(despesas)}</strong>
-            </div>
-            <div class="stat-card warning">
-              <span>Pendentes</span>
-              <strong>${pendentes}</strong>
-            </div>
-            <div class="stat-card info">
-              <span>Moradores</span>
-              <strong>${state.db.moradores.length}</strong>
-            </div>
-          </div>
-
-          <div class="chart-card" style="margin-top: 22px;">
-            <canvas id="dashboardChart" height="220"></canvas>
-          </div>
-        `;
-      }
-
-      function getFilteredFinanceiro() {
-        const f = state.filters.financeiro;
-
-        return state.db.financeiro.filter(item => {
-          const busca = (f.busca || '').toLowerCase();
-          const statusAtual = getFinanceStatus(item);
-          item.status = statusAtual;
-
-          const buscaMatch = !busca || item.historico.toLowerCase().includes(busca) || item.tipo.toLowerCase().includes(busca);
-          const tipoMatch = f.tipo === 'Todos' || item.tipo === f.tipo;
-          const statusMatch = f.status === 'Todos' || statusAtual === f.status;
-          return buscaMatch && tipoMatch && statusMatch;
-        });
-      }
-
-      function renderFinanceiro() {
-        const itens = getFilteredFinanceiro();
-        const tipos = Array.from(new Set(state.db.financeiro.map(x => x.tipo)));
-        const statusList = ['Todos', 'Pendente', 'Parcial', 'Pago'];
-
-        return `
-          <section class="section-header">
-            <div>
-              <h2>Financeiro</h2>
-              <p>Controle de receitas e despesas</p>
-            </div>
-            <div class="actions">
-              <button class="outline-btn" id="exportFinanceiroCsv">Exportar CSV</button>
-              <button class="primary-btn" data-action="add" data-module="financeiro">+ Novo lançamento</button>
-            </div>
-          </section>
-
-          <div class="toolbar">
-            <input id="finBusca" placeholder="Buscar histórico" value="${escapeHtml(state.filters.financeiro.busca)}" />
-            <select id="finTipo">
-              <option value="Todos" ${state.filters.financeiro.tipo === 'Todos' ? 'selected' : ''}>Todos</option>
-              ${tipos.map(tipo => `<option value="${tipo}" ${state.filters.financeiro.tipo === tipo ? 'selected' : ''}>${tipo}</option>`).join('')}
-            </select>
-            <select id="finStatus">
-              ${statusList.map(status => `<option value="${status}" ${state.filters.financeiro.status === status ? 'selected' : ''}>${status}</option>`).join('')}
-            </select>
-          </div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Tipo</th>
-                  <th>Histórico</th>
-                  <th>Valor total</th>
-                  <th>Pago</th>
-                  <th>Restante</th>
-                  <th>Vencimento</th>
-                  <th>Status</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${itens.length ? itens.map(item => {
-                  const status = getFinanceStatus(item);
-                  const restante = getRemaining(item);
-
-                  return `
-                    <tr>
-                      <td>${escapeHtml(item.tipo)}</td>
-                      <td>${escapeHtml(item.historico)}</td>
-                      <td>${formatCurrency(item.valorTotal)}</td>
-                      <td>${formatCurrency(item.valorPago)}</td>
-                      <td>${formatCurrency(restante)}</td>
-                      <td>${escapeHtml(item.vencimento)}</td>
-                      <td>
-                        <span class="badge ${status === 'Pago' ? 'badge-success' : status === 'Parcial' ? 'badge-warning' : 'badge-info'}">${status}</span>
-                      </td>
-                      <td>
-                        <div class="actions">
-                          <button class="action-btn pay-btn" data-action="pay" data-module="financeiro" data-id="${item.id}">Baixar</button>
-                          <button class="action-btn edit-btn" data-action="edit" data-module="financeiro" data-id="${item.id}">Editar</button>
-                          <button class="action-btn delete-btn" data-action="delete" data-module="financeiro" data-id="${item.id}">Excluir</button>
-                        </div>
-                      </td>
-                    </tr>
-                  `;
-                }).join('') : `<tr><td colspan="8" class="empty-state">Nenhum registro encontrado.</td></tr>`}
-              </tbody>
-            </table>
-          </div>
-        `;
-      }
-
-      function getFilteredEstoque() {
-        const f = state.filters.estoque;
-        return state.db.estoque.filter(item => {
-          const busca = (f.busca || '').toLowerCase();
-          const buscaMatch = !busca || item.item.toLowerCase().includes(busca) || item.categoria.toLowerCase().includes(busca);
-          const categoriaMatch = f.categoria === 'Todas' || item.categoria === f.categoria;
-          return buscaMatch && categoriaMatch;
-        });
-      }
-
-      function renderEstoque() {
-        const itens = getFilteredEstoque();
-        const categorias = Array.from(new Set(state.db.estoque.map(item => item.categoria)));
-
-        return `
-          <section class="section-header">
-            <div>
-              <h2>Estoque</h2>
-              <p>Controle de materiais e insumos</p>
-            </div>
-            <div class="actions">
-              <button class="outline-btn" id="exportEstoqueCsv">Exportar CSV</button>
-              <button class="primary-btn" data-action="add" data-module="estoque">+ Novo item</button>
-            </div>
-          </section>
-
-          <div class="toolbar">
-            <input id="estBusca" placeholder="Buscar item ou categoria" value="${escapeHtml(state.filters.estoque.busca || '')}" />
-            <select id="estCategoria">
-              <option value="Todas" ${state.filters.estoque.categoria === 'Todas' ? 'selected' : ''}>Todas</option>
-              ${categorias.map(cat => `<option value="${cat}" ${state.filters.estoque.categoria === cat ? 'selected' : ''}>${cat}</option>`).join('')}
-            </select>
-          </div>
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th>Categoria</th>
-                  <th>Qtd</th>
-                  <th>Mínimo</th>
-                  <th>Localização</th>
-                  <th>Próx. inventário</th>
-                  <th>Status</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${itens.length ? itens.map(item => {
-                  const status = getEstoqueStatus(item);
-
-                  return `
-                    <tr>
-                      <td>${escapeHtml(item.item)}</td>
-                      <td>${escapeHtml(item.categoria)}</td>
-                      <td>${escapeHtml(item.qtd)}</td>
-                      <td>${escapeHtml(item.minimo)}</td>
-                      <td>${escapeHtml(item.localizacao)}</td>
-                      <td>${escapeHtml(item.proximoInventario || '-')}</td>
-                      <td><span class="badge ${status.className}">${status.text}</span></td>
-                      <td>
-                        <div class="actions">
-                          <button class="action-btn edit-btn" data-action="edit" data-module="estoque" data-id="${item.id}">Editar</button>
-                          <button class="action-btn delete-btn" data-action="delete" data-module="estoque" data-id="${item.id}">Excluir</button>
-                        </div>
-                      </td>
-                    </tr>
-                  `;
-                }).join('') : `<tr><td colspan="8" class="empty-state">Nenhum item encontrado.</td></tr>`}
-              </tbody>
-            </table>
-          </div>
-        `;
-      }
-
-      function renderCategoriasDocumentos() {
-        const categorias = state.db.documentoCategorias || [];
-
-        return `
-          <div class="table-wrap" style="margin-bottom:22px;">
-            <div style="padding:14px 16px; background:#f8fafc; border-bottom:1px solid #e2e8f0; font-weight:700; display:flex; justify-content:space-between; align-items:center;">
-              <span>Categorias de documentos</span>
-              <button class="primary-btn" data-action="add-categoria-doc" style="padding:8px 12px;">+ Nova categoria</button>
-            </div>
-
-            <table>
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>Descrição</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${categorias.length ? categorias.map(cat => `
-                  <tr>
-                    <td>${escapeHtml(cat.nome)}</td>
-                    <td>${escapeHtml(cat.descricao || '-')}</td>
-                    <td>
-                      <div class="actions">
-                        <button class="action-btn edit-btn" data-action="edit-categoria-doc" data-id="${cat.id}">Editar</button>
-                        <button class="action-btn delete-btn" data-action="delete-categoria-doc" data-id="${cat.id}">Excluir</button>
-                      </div>
-                    </td>
-                  </tr>
-                `).join('') : `<tr><td colspan="3" class="empty-state">Nenhuma categoria criada.</td></tr>`}
-              </tbody>
-            </table>
-          </div>
-        `;
-      }
-
-      function getFilteredDocumentos() {
-        const f = state.filters.documentos || {};
-        const categoriaFiltro = f.categoriaId || 'Todas';
-
-        return (state.db.documentos || []).filter(item => {
-          const busca = (f.busca || '').toLowerCase();
-          const nomeCategoria = (state.db.documentoCategorias || []).find(cat => cat.id === item.categoriaId)?.nome || '';
-
-          const buscaMatch =
-            !busca ||
-            (item.titulo || '').toLowerCase().includes(busca) ||
-            (item.observacao || '').toLowerCase().includes(busca) ||
-            nomeCategoria.toLowerCase().includes(busca);
-
-          const categoriaMatch = categoriaFiltro === 'Todas' || item.categoriaId === categoriaFiltro;
-
-          return buscaMatch && categoriaMatch;
-        });
-      }
-
-      function renderDocumentos() {
-        const itens = getFilteredDocumentos();
-        const categorias = state.db.documentoCategorias || [];
-        const filtroCategoria = state.filters.documentos.categoriaId || 'Todas';
-
-        return `
-          <section class="section-header">
-            <div>
-              <h2>Documentos</h2>
-              <p>Arquivos, contratos e registros</p>
-            </div>
-            <div class="actions">
-              <button class="outline-btn" id="exportDocumentosCsv">Exportar CSV</button>
-              <button class="primary-btn" data-action="add-documento">+ Novo documento</button>
-            </div>
-          </section>
-
-          <div class="toolbar">
-            <input id="docBusca" placeholder="Buscar título ou observação" value="${escapeHtml(state.filters.documentos.busca || '')}" />
-            <select id="docCategoriaFiltro">
-              <option value="Todas" ${filtroCategoria === 'Todas' ? 'selected' : ''}>Todas</option>
-              ${categorias.map(cat => `
-                <option value="${cat.id}" ${filtroCategoria === cat.id ? 'selected' : ''}>${escapeHtml(cat.nome)}</option>
-              `).join('')}
-            </select>
-          </div>
-
-          ${renderCategoriasDocumentos()}
-
-          <div class="table-wrap">
-            <table>
-              <thead>
-                <tr>
-                  <th>Arquivo</th>
-                  <th>Título</th>
-                  <th>Categoria</th>
-                  <th>Data</th>
-                  <th>Observação</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${itens.length ? itens.map(item => {
-                  const categoria = (state.db.documentoCategorias || []).find(cat => cat.id === item.categoriaId);
-                  const nomeCategoria = categoria ? categoria.nome : 'Sem categoria';
-
-                  return `
-                    <tr>
-                      <td>
-                        ${item.arquivoData
-                          ? `<a href="${item.arquivoData}" target="_blank" style="color:#0d9488;font-weight:700;">${escapeHtml(item.arquivoNome || 'Arquivo')}</a>`
-                          : `<span style="color:#64748b;">Sem arquivo</span>`}
-                      </td>
-                      <td>${escapeHtml(item.titulo)}</td>
-                      <td>${escapeHtml(nomeCategoria)}</td>
-                      <td>${escapeHtml(item.data)}</td>
-                      <td>${escapeHtml(item.observacao || '-')}</td>
-                      <td>
-                        <div class="actions">
-                          <button class="action-btn edit-btn" data-action="edit-documento" data-id="${item.id}">Editar</button>
-                          <button class="action-btn delete-btn" data-action="delete-documento" data-id="${item.id}">Excluir</button>
-                        </div>
-                      </td>
-                    </tr>
-                  `;
-                }).join('') : `<tr><td colspan="6" class="empty-state">Nenhum documento encontrado.</td></tr>`}
-              </tbody>
-            </table>
-          </div>
-        `;
-      }
-
-      function renderCadastros() {
-        const moradores = state.db.moradores || [];
-        const inquilinos = state.db.inquilinos || [];
-        const fornecedores = state.db.fornecedores || [];
-
-        return `
-          <section class="section-header">
-            <div>
-              <h2>Cadastros</h2>
-              <p>Moradores, inquilinos e fornecedores</p>
-            </div>
-            <button class="primary-btn" data-action="add-cadastro" data-type="morador">+ Novo cadastro</button>
-          </section>
-
-          <div class="stats-grid" style="margin-bottom:22px;">
-            <div class="stat-card info">
-              <span>Moradores</span>
-              <strong>${moradores.length}</strong>
-            </div>
-            <div class="stat-card warning">
-              <span>Inquilinos</span>
-              <strong>${inquilinos.length}</strong>
-            </div>
-            <div class="stat-card success">
-              <span>Fornecedores</span>
-              <strong>${fornecedores.length}</strong>
-            </div>
-          </div>
-
-          <div class="table-wrap" style="margin-bottom:22px;">
-            <div style="padding:14px 16px; background:#f8fafc; border-bottom:1px solid #e2e8f0; font-weight:700;">
-              Moradores
-            </div>
-
-            <table>
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>Bloco</th>
-                  <th>Apartamento</th>
-                  <th>Tipo</th>
-                  <th>Telefone</th>
-                  <th>Status</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${moradores.length ? moradores.map(item => `
-                  <tr>
-                    <td>${escapeHtml(item.nome)}</td>
-                    <td>${escapeHtml(item.bloco)}</td>
-                    <td>${escapeHtml(item.apartamento)}</td>
-                    <td>${escapeHtml(item.tipo)}</td>
-                    <td>${escapeHtml(item.telefone)}</td>
-                    <td><span class="badge ${item.status === 'Ativo' ? 'badge-success' : 'badge-danger'}">${escapeHtml(item.status)}</span></td>
-                    <td>
-                      <div class="actions">
-                        <button class="action-btn edit-btn" data-action="edit-cadastro" data-type="morador" data-id="${item.id}">Editar</button>
-                        <button class="action-btn delete-btn" data-action="delete-cadastro" data-type="morador" data-id="${item.id}">Excluir</button>
-                      </div>
-                    </td>
-                  </tr>
-                `).join('') : `<tr><td colspan="7" class="empty-state">Nenhum morador cadastrado.</td></tr>`}
-              </tbody>
-            </table>
-          </div>
-
-          <div class="table-wrap" style="margin-bottom:22px;">
-            <div style="padding:14px 16px; background:#f8fafc; border-bottom:1px solid #e2e8f0; font-weight:700;">
-              Inquilinos
-            </div>
-
-            <table>
-              <thead>
-                <tr>
-                  <th>Nome</th>
-                  <th>Bloco</th>
-                  <th>Apartamento</th>
-                  <th>Proprietário</th>
-                  <th>Aluguel</th>
-                  <th>Status</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${inquilinos.length ? inquilinos.map(item => `
-                  <tr>
-                    <td>${escapeHtml(item.nome)}</td>
-                    <td>${escapeHtml(item.bloco)}</td>
-                    <td>${escapeHtml(item.apartamento)}</td>
-                    <td>${escapeHtml(item.proprietario)}</td>
-                    <td>${formatCurrency(item.valorAluguel)}</td>
-                    <td><span class="badge ${item.status === 'Ativo' ? 'badge-success' : 'badge-danger'}">${escapeHtml(item.status)}</span></td>
-                    <td>
-                      <div class="actions">
-                        <button class="action-btn edit-btn" data-action="edit-cadastro" data-type="inquilino" data-id="${item.id}">Editar</button>
-                        <button class="action-btn delete-btn" data-action="delete-cadastro" data-type="inquilino" data-id="${item.id}">Excluir</button>
-                      </div>
-                    </td>
-                  </tr>
-                `).join('') : `<tr><td colspan="7" class="empty-state">Nenhum inquilino cadastrado.</td></tr>`}
-              </tbody>
-            </table>
-          </div>
-
-          <div class="table-wrap">
-            <div style="padding:14px 16px; background:#f8fafc; border-bottom:1px solid #e2e8f0; font-weight:700;">
-              Fornecedores
-            </div>
-
-            <table>
-              <thead>
-                <tr>
-                  <th>Razão Social</th>
-                  <th>Categoria</th>
-                  <th>Contato</th>
-                  <th>Telefone</th>
-                  <th>Status</th>
-                  <th>Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                ${fornecedores.length ? fornecedores.map(item => `
-                  <tr>
-                    <td>${escapeHtml(item.razaoSocial)}</td>
-                    <td>${escapeHtml(item.categoria)}</td>
-                    <td>${escapeHtml(item.nomeContato)}</td>
-                    <td>${escapeHtml(item.telefone)}</td>
-                    <td><span class="badge ${item.status === 'Ativo' ? 'badge-success' : 'badge-danger'}">${escapeHtml(item.status)}</span></td>
-                    <td>
-                      <div class="actions">
-                        <button class="action-btn edit-btn" data-action="edit-cadastro" data-type="fornecedor" data-id="${item.id}">Editar</button>
-                        <button class="action-btn delete-btn" data-action="delete-cadastro" data-type="fornecedor" data-id="${item.id}">Excluir</button>
-                      </div>
-                    </td>
-                  </tr>
-                `).join('') : `<tr><td colspan="6" class="empty-state">Nenhum fornecedor cadastrado.</td></tr>`}
-              </tbody>
-            </table>
-          </div>
-        `;
-      }
-
-      function renderContent() {
-        switch (state.activeTab) {
-          case 'dashboard':
-            return renderDashboard();
-          case 'financeiro':
-            return renderFinanceiro();
-          case 'estoque':
-            return renderEstoque();
-          case 'documentos':
-            return renderDocumentos();
-          case 'cadastros':
-            return renderCadastros();
-          default:
-            return renderDashboard();
-        }
-      }
-
-      function openCadastroModal(type, mode, id = null) {
-        const current = id ? state.db[type].find(item => item.id === id) : null;
-        let form = '';
-
-        if (type === 'morador') {
-          form = `
-            <div class="form-grid">
-              <div class="form-field">
-                <label>Nome</label>
-                <input id="cad_nome" value="${escapeHtml(current ? current.nome : '')}" />
-              </div>
-              <div class="form-field">
-                <label>Bloco</label>
-                <input id="cad_bloco" value="${escapeHtml(current ? current.bloco : '')}" />
-              </div>
-              <div class="form-field">
-                <label>Apartamento</label>
-                <input id="cad_apartamento" value="${escapeHtml(current ? current.apartamento : '')}" />
-              </div>
-              <div class="form-field">
-                <label>Tipo</label>
-                <select id="cad_tipo">
-                  <option value="Proprietário" ${current && current.tipo === 'Proprietário' ? 'selected' : ''}>Proprietário</option>
-                  <option value="Inquilino" ${current && current.tipo === 'Inquilino' ? 'selected' : ''}>Inquilino</option>
-                </select>
-              </div>
-              <div class="form-field">
-                <label>CPF</label>
-                <input id="cad_cpf" value="${escapeHtml(current ? current.cpf : '')}" />
-              </div>
-              <div class="form-field">
-                <label>Telefone</label>
-                <input id="cad_telefone" value="${escapeHtml(current ? current.telefone : '')}" />
-              </div>
-              <div class="form-field">
-                <label>Email</label>
-                <input id="cad_email" value="${escapeHtml(current ? current.email : '')}" />
-              </div>
-              <div class="form-field">
-                <label>Status</label>
-                <select id="cad_status">
-                  <option value="Ativo" ${current && current.status === 'Ativo' ? 'selected' : ''}>Ativo</option>
-                  <option value="Inativo" ${current && current.status === 'Inativo' ? 'selected' : ''}>Inativo</option>
-                </select>
-              </div>
-              <div class="form-field" style="grid-column: 1 / -1;">
-                <label>Data de entrada</label>
-                <input id="cad_data_entrada" type="date" value="${current ? current.dataEntrada : ''}" />
-              </div>
-              <div class="form-field" style="grid-column: 1 / -1;">
-                <label>Observação</label>
-                <textarea id="cad_obs">${escapeHtml(current ? current.observacao : '')}</textarea>
-              </div>
-            </div>
-          `;
         }
 
-        if (type === 'inquilino') {
-          form = `
-            <div class="form-grid">
-              <div class="form-field">
-                <label>Nome</label>
-                <input id="inq_nome" value="${escapeHtml(current ? current.nome : '')}" />
-              </div>
-              <div class="form-field">
-                <label>Bloco</label>
-                <input id="inq_bloco" value="${escapeHtml(current ? current.bloco : '')}" />
-              </div>
-              <div class="form-field">
-                <label>Apartamento</label>
-                <input id="inq_apartamento" value="${escapeHtml(current ? current.apartamento : '')}" />
-              </div>
-              <div class="form-field">
-                <label>CPF</label>
-                <input id="inq_cpf" value="${escapeHtml(current ? current.cpf : '')}" />
-              </div>
-              <div class="form-field">
-                <label>Telefone</label>
-                <input id="inq_telefone" value="${escapeHtml(current ? current.telefone : '')}" />
-              </div>
-              <div class="form-field">
-                <label>Email</label>
-                <input id="inq_email" value="${escapeHtml(current ? current.email : '')}" />
-              </div>
-              <div class="form-field">
-                <label>Proprietário</label>
-                <input id="inq_proprietario" value="${escapeHtml(current ? current.proprietario : '')}" />
-              </div>
-              <div class="form-field">
-                <label>Valor do aluguel</label>
-                <input id="inq_valor" type="number" step="0.01" value="${current ? current.valorAluguel : '0'}" />
-              </div>
-              <div class="form-field">
-                <label>Data início</label>
-                <input id="inq_data_inicio" type="date" value="${current ? current.dataInicio : ''}" />
-              </div>
-              <div class="form-field">
-                <label>Data fim</label>
-                <input id="inq_data_fim" type="date" value="${current ? current.dataFim : ''}" />
-              </div>
-              <div class="form-field">
-                <label>Status</label>
-                <select id="inq_status">
-                  <option value="Ativo" ${current && current.status === 'Ativo' ? 'selected' : ''}>Ativo</option>
-                  <option value="Inativo" ${current && current.status === 'Inativo' ? 'selected' : ''}>Inativo</option>
-                </select>
-              </div>
-            </div>
-          `;
+        function salvarDados(data) { DBRepository.save(data); }
+
+        function abrirModulo(moduloId) {
+            if (!tabsState.openTabs.includes(moduloId)) {
+                tabsState.openTabs.push(moduloId);
+            }
+            tabsState.activeTab = moduloId;
+            renderApp();
         }
 
-        if (type === 'fornecedor') {
-          form = `
-            <div class="form-grid">
-              <div class="form-field">
-                <label>Razão Social</label>
-                <input id="for_razao" value="${escapeHtml(current ? current.razaoSocial : '')}" />
-              </div>
-              <div class="form-field">
-                <label>Nome do contato</label>
-                <input id="for_contato" value="${escapeHtml(current ? current.nomeContato : '')}" />
-              </div>
-              <div class="form-field">
-                <label>CNPJ</label>
-                <input id="for_cnpj" value="${escapeHtml(current ? current.cnpj : '')}" />
-              </div>
-              <div class="form-field">
-                <label>Categoria</label>
-                <input id="for_categoria" value="${escapeHtml(current ? current.categoria : '')}" />
-              </div>
-              <div class="form-field">
-                <label>Telefone</label>
-                <input id="for_telefone" value="${escapeHtml(current ? current.telefone : '')}" />
-              </div>
-              <div class="form-field">
-                <label>Email</label>
-                <input id="for_email" value="${escapeHtml(current ? current.email : '')}" />
-              </div>
-              <div class="form-field" style="grid-column: 1 / -1;">
-                <label>Endereço</label>
-                <input id="for_endereco" value="${escapeHtml(current ? current.endereco : '')}" />
-              </div>
-              <div class="form-field">
-                <label>Status</label>
-                <select id="for_status">
-                  <option value="Ativo" ${current && current.status === 'Ativo' ? 'selected' : ''}>Ativo</option>
-                  <option value="Inativo" ${current && current.status === 'Inativo' ? 'selected' : ''}>Inativo</option>
-                </select>
-              </div>
-              <div class="form-field" style="grid-column: 1 / -1;">
-                <label>Observação</label>
-                <textarea id="for_obs">${escapeHtml(current ? current.observacao : '')}</textarea>
-              </div>
-            </div>
-          `;
+        function fecharAba(e, moduloId) {
+            e.stopPropagation();
+            if (tabsState.openTabs.length === 1) return;
+
+            tabsState.openTabs = tabsState.openTabs.filter(id => id !== moduloId);
+            if (tabsState.activeTab === moduloId) {
+                tabsState.activeTab = tabsState.openTabs[tabsState.openTabs.length - 1];
+            }
+            renderApp();
         }
 
-        const root = document.getElementById('app');
-        root.insertAdjacentHTML('beforeend', `
-          <div class="modal-backdrop" id="cadastroModalBackdrop">
-            <div class="modal">
-              <div class="modal-header">
-                <h3>${mode === 'add' ? 'Adicionar cadastro' : 'Editar cadastro'}</h3>
-                <button class="close-modal" id="closeCadastroModalBtn">×</button>
-              </div>
-              <div class="modal-body">${form}</div>
-              <div class="form-footer">
-                <button class="outline-btn" id="cancelCadastroModalBtn">Cancelar</button>
-                <button class="primary-btn" id="saveCadastroBtn">Salvar</button>
-              </div>
-            </div>
-          </div>
-        `);
+        function setDashPreset(preset) {
+            dashFiltros.preset = preset;
+            const hoje = new Date();
 
-        document.getElementById('closeCadastroModalBtn').addEventListener('click', closeCadastroModal);
-        document.getElementById('cancelCadastroModalBtn').addEventListener('click', closeCadastroModal);
-        document.getElementById('saveCadastroBtn').addEventListener('click', () => saveCadastro(type, mode, id));
-      }
-
-      function closeCadastroModal() {
-        const modal = document.getElementById('cadastroModalBackdrop');
-        if (modal) modal.remove();
-      }
-
-      function saveCadastro(type, mode, id) {
-        if (type === 'morador') {
-          const payload = {
-            nome: document.getElementById('cad_nome').value.trim(),
-            bloco: document.getElementById('cad_bloco').value.trim(),
-            apartamento: document.getElementById('cad_apartamento').value.trim(),
-            tipo: document.getElementById('cad_tipo').value,
-            cpf: document.getElementById('cad_cpf').value.trim(),
-            telefone: document.getElementById('cad_telefone').value.trim(),
-            email: document.getElementById('cad_email').value.trim(),
-            status: document.getElementById('cad_status').value,
-            dataEntrada: document.getElementById('cad_data_entrada').value,
-            observacao: document.getElementById('cad_obs').value.trim()
-          };
-
-          if (!payload.nome || !payload.apartamento || !payload.email) {
-            alert('Preencha nome, apartamento e email.');
-            return;
-          }
-
-          if (mode === 'edit' && id) {
-            const idx = state.db.moradores.findIndex(item => item.id === id);
-            if (idx >= 0) state.db.moradores[idx] = { ...state.db.moradores[idx], ...payload };
-          } else {
-            state.db.moradores.unshift({ id: generateId('mor'), ...payload });
-          }
-        }
-
-        if (type === 'inquilino') {
-          const payload = {
-            nome: document.getElementById('inq_nome').value.trim(),
-            bloco: document.getElementById('inq_bloco').value.trim(),
-            apartamento: document.getElementById('inq_apartamento').value.trim(),
-            cpf: document.getElementById('inq_cpf').value.trim(),
-            telefone: document.getElementById('inq_telefone').value.trim(),
-            email: document.getElementById('inq_email').value.trim(),
-            proprietario: document.getElementById('inq_proprietario').value.trim(),
-            valorAluguel: Number(document.getElementById('inq_valor').value || 0),
-            dataInicio: document.getElementById('inq_data_inicio').value,
-            dataFim: document.getElementById('inq_data_fim').value,
-            status: document.getElementById('inq_status').value
-          };
-
-          if (!payload.nome || !payload.apartamento || !payload.email) {
-            alert('Preencha nome, apartamento e e-mail.');
-            return;
-          }
-
-          if (mode === 'edit' && id) {
-            const idx = state.db.inquilinos.findIndex(item => item.id === id);
-            if (idx >= 0) state.db.inquilinos[idx] = { ...state.db.inquilinos[idx], ...payload };
-          } else {
-            state.db.inquilinos.unshift({ id: generateId('inq'), ...payload });
-          }
-        }
-
-        if (type === 'fornecedor') {
-          const payload = {
-            razaoSocial: document.getElementById('for_razao').value.trim(),
-            nomeContato: document.getElementById('for_contato').value.trim(),
-            cnpj: document.getElementById('for_cnpj').value.trim(),
-            categoria: document.getElementById('for_categoria').value.trim(),
-            telefone: document.getElementById('for_telefone').value.trim(),
-            email: document.getElementById('for_email').value.trim(),
-            endereco: document.getElementById('for_endereco').value.trim(),
-            status: document.getElementById('for_status').value,
-            observacao: document.getElementById('for_obs').value.trim()
-          };
-
-          if (!payload.razaoSocial || !payload.categoria || !payload.telefone) {
-            alert('Preencha razão social, categoria e telefone.');
-            return;
-          }
-
-          if (mode === 'edit' && id) {
-            const idx = state.db.fornecedores.findIndex(item => item.id === id);
-            if (idx >= 0) state.db.fornecedores[idx] = { ...state.db.fornecedores[idx], ...payload };
-          } else {
-            state.db.fornecedores.unshift({ id: generateId('for'), ...payload });
-          }
-        }
-
-        saveDb();
-        closeCadastroModal();
-        renderApp();
-      }
-
-      function openDocumentoModal(mode, id = null) {
-        const current = id ? state.db.documentos.find(item => item.id === id) : null;
-        const categorias = state.db.documentoCategorias || [];
-
-        const root = document.getElementById('app');
-        root.insertAdjacentHTML('beforeend', `
-          <div class="modal-backdrop" id="documentoModalBackdrop">
-            <div class="modal">
-              <div class="modal-header">
-                <h3>${mode === 'add' ? 'Adicionar documento' : 'Editar documento'}</h3>
-                <button class="close-modal" id="closeDocumentoModalBtn">×</button>
-              </div>
-              <div class="modal-body">
-                <div class="form-grid">
-                  <div class="form-field">
-                    <label>Título</label>
-                    <input id="doc_titulo" value="${escapeHtml(current ? current.titulo : '')}" />
-                  </div>
-                  <div class="form-field">
-                    <label>Categoria</label>
-                    <select id="doc_categoria">
-                      <option value="">Selecione</option>
-                      ${categorias.map(cat => `
-                        <option value="${cat.id}" ${current && current.categoriaId === cat.id ? 'selected' : ''}>${escapeHtml(cat.nome)}</option>
-                      `).join('')}
-                    </select>
-                  </div>
-                  <div class="form-field">
-                    <label>Data</label>
-                    <input id="doc_data" type="date" value="${current ? current.data : ''}" />
-                  </div>
-                  <div class="form-field">
-                    <label>Arquivo</label>
-                    <input id="doc_file" type="file" />
-                  </div>
-                  <div class="form-field" style="grid-column: 1 / -1;">
-                    <label>Observação</label>
-                    <textarea id="doc_observacao" rows="4">${escapeHtml(current ? current.observacao : '')}</textarea>
-                  </div>
-                </div>
-              </div>
-              <div class="form-footer">
-                <button class="outline-btn" id="cancelDocumentoModalBtn">Cancelar</button>
-                <button class="primary-btn" id="saveDocumentoBtn">Salvar</button>
-              </div>
-            </div>
-          </div>
-        `);
-
-        document.getElementById('closeDocumentoModalBtn').addEventListener('click', closeDocumentoModal);
-        document.getElementById('cancelDocumentoModalBtn').addEventListener('click', closeDocumentoModal);
-        document.getElementById('saveDocumentoBtn').addEventListener('click', () => saveDocumento(mode, id));
-      }
-
-      function closeDocumentoModal() {
-        const modal = document.getElementById('documentoModalBackdrop');
-        if (modal) modal.remove();
-      }
-
-      function saveDocumento(mode, id) {
-        const titulo = document.getElementById('doc_titulo').value.trim();
-        const categoriaId = document.getElementById('doc_categoria').value;
-        const data = document.getElementById('doc_data').value;
-        const observacao = document.getElementById('doc_observacao').value.trim();
-        const fileInput = document.getElementById('doc_file');
-
-        let arquivoNome = '';
-        let mimeType = '';
-        let arquivoData = '';
-
-        if (fileInput && fileInput.files && fileInput.files[0]) {
-          const file = fileInput.files[0];
-          arquivoNome = file.name;
-          mimeType = file.type;
-
-          const reader = new FileReader();
-          reader.onload = function (e) {
-            const payload = {
-              titulo,
-              categoriaId,
-              arquivoNome,
-              mimeType,
-              arquivoData: e.target.result,
-              data,
-              observacao
-            };
-
-            if (mode === 'edit' && id) {
-              const idx = state.db.documentos.findIndex(item => item.id === id);
-              if (idx >= 0) state.db.documentos[idx] = { ...state.db.documentos[idx], ...payload };
+            if (preset === 'hoje') {
+                const str = hoje.toISOString().split('T')[0];
+                dashFiltros.dtIni = str;
+                dashFiltros.dtFim = str;
+            } else if (preset === 'semana') {
+                const diaSemana = hoje.getDay();
+                const primeiroDia = new Date(hoje);
+                primeiroDia.setDate(hoje.getDate() - diaSemana);
+                const ultimoDia = new Date(hoje);
+                ultimoDia.setDate(hoje.getDate() + (6 - diaSemana));
+                dashFiltros.dtIni = primeiroDia.toISOString().split('T')[0];
+                dashFiltros.dtFim = ultimoDia.toISOString().split('T')[0];
+            } else if (preset === 'mes') {
+                const primeiroDia = new Date(hoje.getFullYear(), hoje.getMonth(), 1);
+                const ultimoDia = new Date(hoje.getFullYear(), hoje.getMonth() + 1, 0);
+                dashFiltros.dtIni = primeiroDia.toISOString().split('T')[0];
+                dashFiltros.dtFim = ultimoDia.toISOString().split('T')[0];
+            } else if (preset === 'ano') {
+                dashFiltros.dtIni = `${hoje.getFullYear()}-01-01`;
+                dashFiltros.dtFim = `${hoje.getFullYear()}-12-31`;
             } else {
-              state.db.documentos.unshift({ id: generateId('doc'), ...payload });
+                dashFiltros.dtIni = '';
+                dashFiltros.dtFim = '';
+            }
+            renderApp();
+        }
+
+        function renderApp() {
+            const container = document.getElementById('app');
+            if (!container) return;
+
+            container.innerHTML = `
+                <div class="flex-1 flex flex-col md:flex-row min-h-screen bg-slate-900 text-slate-100">
+                    <!-- SIDEBAR -->
+                    <aside class="w-full md:w-64 bg-slate-950 border-r border-slate-800 flex flex-col no-print">
+                        <div class="p-5 border-b border-slate-800/80 flex items-center gap-3">
+                            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-teal-600 to-emerald-500 flex items-center justify-center text-white text-xl font-black shadow-lg shadow-teal-500/20">
+                                <i class="fa-solid fa-shield-halved"></i>
+                            </div>
+                            <div>
+                                <h1 class="font-extrabold text-white text-base tracking-wide">Guardiões</h1>
+                                <p class="text-[10px] text-teal-400 font-bold uppercase tracking-wider">Gestão Condominial</p>
+                            </div>
+                        </div>
+
+                        <nav class="flex-1 p-3 space-y-1 overflow-y-auto">
+                            <p class="px-3 pt-3 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-widest">Módulos</p>
+                            
+                            <button onclick="abrirModulo('dashboard')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition ${tabsState.activeTab === 'dashboard' ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/30' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'}">
+                                <i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard
+                            </button>
+                            <button onclick="abrirModulo('financeiro')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition ${tabsState.activeTab === 'financeiro' ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/30' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'}">
+                                <i class="fa-solid fa-receipt w-5 text-center"></i> Financeiro
+                            </button>
+                            <button onclick="abrirModulo('estoque')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition ${tabsState.activeTab === 'estoque' ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/30' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'}">
+                                <i class="fa-solid fa-boxes-stacked w-5 text-center"></i> Estoque & Patrimônio
+                            </button>
+                            <button onclick="abrirModulo('moradores')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition ${tabsState.activeTab === 'moradores' ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/30' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'}">
+                                <i class="fa-solid fa-users w-5 text-center"></i> Moradores & Unidades
+                            </button>
+                            <button onclick="abrirModulo('documentos')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition ${tabsState.activeTab === 'documentos' ? 'bg-teal-600 text-white shadow-lg shadow-teal-600/30' : 'text-slate-400 hover:bg-slate-900 hover:text-slate-200'}">
+                                <i class="fa-solid fa-folder-open w-5 text-center"></i> Documentos
+                            </button>
+                        </nav>
+                    </aside>
+
+                    <!-- ÁREA CENTRAL COM NAVEGAÇÃO POR ABAS -->
+                    <div class="flex-1 flex flex-col bg-slate-100 text-slate-800 min-h-screen">
+                        
+                        <!-- BARRA DE ABAS SUPERIOR -->
+                        <div class="bg-slate-200 border-b border-slate-300 flex items-center overflow-x-auto px-2 pt-2 gap-1.5 no-print shadow-inner">
+                            ${tabsState.openTabs.map(tabId => `
+                                <div onclick="abrirModulo('${tabId}')" class="flex items-center gap-2 px-3.5 py-2 rounded-t-xl text-xs font-bold cursor-pointer transition select-none ${tabsState.activeTab === tabId ? 'tab-active shadow-md' : 'bg-slate-300 text-slate-600 hover:bg-slate-350'}">
+                                    <span>${MODULE_NAMES[tabId] || tabId}</span>
+                                    ${tabsState.openTabs.length > 1 ? `
+                                        <button onclick="fecharAba(event, '${tabId}')" class="p-0.5 text-slate-400 hover:text-rose-600 rounded-full hover:bg-slate-200 transition">
+                                            <i class="fa-solid fa-xmark text-xs"></i>
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <!-- CABEÇALHO DO MÓDULO -->
+                        <header class="bg-white border-b border-slate-200 p-4 px-6 flex items-center justify-between no-print shadow-sm">
+                            <div class="flex items-center gap-3">
+                                <h2 class="text-lg font-black text-slate-900 tracking-tight">${MODULE_NAMES[tabsState.activeTab]}</h2>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                ${tabsState.activeTab === 'financeiro' ? `
+                                    <button onclick="renderModalTituloFinanceiro()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow transition flex items-center gap-2">
+                                        <i class="fa-solid fa-plus"></i> Novo Título (Pagar / Receber)
+                                    </button>
+                                ` : ''}
+                                <button onclick="window.print()" class="px-3.5 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold transition flex items-center gap-1.5">
+                                    <i class="fa-solid fa-print"></i> PDF
+                                </button>
+                            </div>
+                        </header>
+
+                        <main class="flex-1 p-4 md:p-6 space-y-6 overflow-y-auto">
+                            ${tabsState.activeTab === 'dashboard' ? renderModernDashboardView() : ''}
+                            ${tabsState.activeTab === 'financeiro' ? renderFinanceiroModule() : ''}
+                            ${tabsState.activeTab === 'estoque' ? renderEstoqueEPatrimonioModule() : ''}
+                            ${tabsState.activeTab === 'moradores' ? renderMoradoresModule() : ''}
+                            ${tabsState.activeTab === 'documentos' ? renderDocumentosModule() : ''}
+                        </main>
+                    </div>
+                </div>
+            `;
+
+            if (tabsState.activeTab === 'dashboard') {
+                setTimeout(renderDashboardCharts, 100);
+            }
+        }
+
+        // DASHBOARD EXECUTIVO
+        function renderModernDashboardView() {
+            let finLista = db.financeiro || [];
+
+            if (dashFiltros.dtIni) finLista = finLista.filter(f => f.vencimento >= dashFiltros.dtIni);
+            if (dashFiltros.dtFim) finLista = finLista.filter(f => f.vencimento <= dashFiltros.dtFim);
+
+            const receitasTotal = finLista.filter(f => f.tipo === 'Receber' && f.status === 'Baixado').reduce((acc, c) => acc + Number(c.valor), 0);
+            const despesasTotal = finLista.filter(f => f.tipo === 'Pagar' && f.status === 'Baixado').reduce((acc, c) => acc + Number(c.valor), 0);
+            const pendenteReceber = finLista.filter(f => f.tipo === 'Receber' && f.status === 'Aberto').reduce((acc, c) => acc + Number(c.valor), 0);
+            const saldoCaixa = (db.contas_bancarias[0] ? db.contas_bancarias[0].saldo : 0) + (receitasTotal - despesasTotal);
+
+            return `
+                <div class="space-y-6">
+                    <div class="bg-slate-900 text-white p-4 rounded-2xl shadow-md border border-slate-800 space-y-3">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-8 h-8 rounded-lg bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold">
+                                    <i class="fa-solid fa-calendar-days"></i>
+                                </div>
+                                <div>
+                                    <h4 class="font-extrabold text-xs uppercase tracking-wider text-teal-400">Período de Análise Executiva</h4>
+                                    <p class="text-[10px] text-slate-400">Selecione o intervalo de datas para recalculo dos totais</p>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap gap-1.5">
+                                <button onclick="setDashPreset('hoje')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${dashFiltros.preset === 'hoje' ? 'bg-teal-600 text-white shadow' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">Hoje</button>
+                                <button onclick="setDashPreset('semana')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${dashFiltros.preset === 'semana' ? 'bg-teal-600 text-white shadow' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">Esta Semana</button>
+                                <button onclick="setDashPreset('mes')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${dashFiltros.preset === 'mes' ? 'bg-teal-600 text-white shadow' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">Este Mês</button>
+                                <button onclick="setDashPreset('ano')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${dashFiltros.preset === 'ano' ? 'bg-teal-600 text-white shadow' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">Este Ano</button>
+                                <button onclick="setDashPreset('tudo')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition ${dashFiltros.preset === 'tudo' ? 'bg-teal-600 text-white shadow' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'}">Todo Período</button>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Data Inicial</label>
+                                <input type="date" value="${dashFiltros.dtIni}" onchange="dashFiltros.dtIni = this.value; dashFiltros.preset='custom'; renderApp();" class="w-full p-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-white">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-400 uppercase mb-1">Data Final</label>
+                                <input type="date" value="${dashFiltros.dtFim}" onchange="dashFiltros.dtFim = this.value; dashFiltros.preset='custom'; renderApp();" class="w-full p-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-white">
+                            </div>
+                            <div>
+                                <button onclick="setDashPreset('tudo')" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-bold text-xs transition border border-slate-700">Limpar Intervalo</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <div class="bg-slate-900 text-white p-5 rounded-2xl shadow-md border border-slate-800 flex flex-col justify-between relative overflow-hidden">
+                            <div class="flex items-center justify-between z-10">
+                                <span class="text-[11px] font-bold uppercase tracking-wider text-teal-400">Saldo Liquidados</span>
+                                <span class="px-2 py-0.5 bg-teal-500/20 text-teal-300 text-[10px] font-extrabold rounded-full border border-teal-500/30">Caixa</span>
+                            </div>
+                            <div class="mt-4 z-10">
+                                <h3 class="text-2xl md:text-3xl font-black text-white">R$ ${saldoCaixa.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
+                                <p class="text-xs text-slate-400 mt-1 font-semibold flex items-center gap-1"><i class="fa-solid fa-arrow-trend-up text-teal-400"></i> Liquidez acumulada</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Receitas Arrecadadas</span>
+                                <div class="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm"><i class="fa-solid fa-arrow-down-left"></i></div>
+                            </div>
+                            <div class="mt-4">
+                                <h3 class="text-2xl font-black text-slate-900">R$ ${receitasTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
+                                <p class="text-xs text-emerald-600 mt-1 font-bold"><i class="fa-solid fa-circle-check"></i> Condomínio e Taxas</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">Despesas Realizadas</span>
+                                <div class="w-8 h-8 rounded-lg bg-rose-100 text-rose-700 flex items-center justify-center font-bold text-sm"><i class="fa-solid fa-arrow-up-right"></i></div>
+                            </div>
+                            <div class="mt-4">
+                                <h3 class="text-2xl font-black text-slate-900">R$ ${despesasTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
+                                <p class="text-xs text-slate-500 mt-1 font-bold">Manutenção e Serviços</p>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 flex flex-col justify-between">
+                            <div class="flex items-center justify-between">
+                                <span class="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">A Receber / Pendente</span>
+                                <div class="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-sm"><i class="fa-solid fa-clock"></i></div>
+                            </div>
+                            <div class="mt-4">
+                                <h3 class="text-2xl font-black text-amber-600">R$ ${pendenteReceber.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</h3>
+                                <p class="text-xs text-amber-700 mt-1 font-bold">Inadimplência sob controlo</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="lg:col-span-2 bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                            <div class="flex items-center justify-between">
+                                <h3 class="font-extrabold text-xs text-slate-400 uppercase tracking-wider">Fluxo de Caixa (Receitas vs Despesas)</h3>
+                            </div>
+                            <div class="h-64 relative">
+                                <canvas id="chartFluxo"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-4">
+                            <h3 class="font-extrabold text-xs text-slate-400 uppercase tracking-wider">Distribuição por Categoria</h3>
+                            <div class="h-64 relative flex items-center justify-center">
+                                <canvas id="chartDespesas"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderDashboardCharts() {
+            const ctxFluxo = document.getElementById('chartFluxo');
+            const ctxDespesas = document.getElementById('chartDespesas');
+
+            if (chartFluxoInstance) chartFluxoInstance.destroy();
+            if (chartDespesasInstance) chartDespesasInstance.destroy();
+
+            let finLista = db.financeiro || [];
+
+            if (dashFiltros.dtIni) finLista = finLista.filter(f => f.vencimento >= dashFiltros.dtIni);
+            if (dashFiltros.dtFim) finLista = finLista.filter(f => f.vencimento <= dashFiltros.dtFim);
+
+            const recVal = finLista.filter(f => f.tipo === 'Receber' && f.status === 'Baixado').reduce((a, b) => a + Number(b.valor), 0);
+            const despVal = finLista.filter(f => f.tipo === 'Pagar' && f.status === 'Baixado').reduce((a, b) => a + Number(b.valor), 0);
+
+            if (ctxFluxo) {
+                chartFluxoInstance = new Chart(ctxFluxo, {
+                    type: 'line',
+                    data: {
+                        labels: ['Semana 1', 'Semana 2', 'Semana 3', 'Semana 4'],
+                        datasets: [
+                            { label: 'Receitas (R$)', data: [recVal * 0.3, recVal * 0.6, recVal * 0.8, recVal || 1000], borderColor: '#0d9488', backgroundColor: 'rgba(13, 148, 136, 0.1)', tension: 0.4, fill: true, borderWidth: 3 },
+                            { label: 'Despesas (R$)', data: [despVal * 0.2, despVal * 0.5, despVal * 0.7, despVal || 500], borderColor: '#e11d48', backgroundColor: 'rgba(225, 29, 72, 0.05)', tension: 0.4, fill: true, borderWidth: 3 }
+                        ]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                });
             }
 
-            saveDb();
-            closeDocumentoModal();
-            renderApp();
-          };
-          reader.readAsDataURL(file);
-          return;
+            if (ctxDespesas) {
+                chartDespesasInstance = new Chart(ctxDespesas, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Manutenção Elevadores', 'Energia Elétrica', 'Limpeza & Piscina', 'Outros'],
+                        datasets: [{ data: [despVal * 0.4 || 3200, despVal * 0.3 || 4150, despVal * 0.2 || 1800, despVal * 0.1 || 1200], backgroundColor: ['#0f766e', '#f59e0b', '#0284c7', '#64748b'] }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+                });
+            }
         }
 
-        if (!titulo || !categoriaId) {
-          alert('Preencha título e categoria.');
-          return;
-        }
+        // MÓDULO FINANCEIRO COM AUTOCOMPLETE / SELEÇÃO DE MORADORES E FORNECEDORES
+        function renderFinanceiroModule() {
+            let list = db.financeiro || [];
 
-        const payload = {
-          titulo,
-          categoriaId,
-          arquivoNome: (id ? state.db.documentos.find(item => item.id === id)?.arquivoNome : '') || '',
-          mimeType: (id ? state.db.documentos.find(item => item.id === id)?.mimeType : '') || '',
-          arquivoData: (id ? state.db.documentos.find(item => item.id === id)?.arquivoData : '') || '',
-          data,
-          observacao
-        };
+            if (finFiltros.tipo !== 'Todos') list = list.filter(f => f.tipo === finFiltros.tipo);
+            if (finFiltros.status !== 'Todos') list = list.filter(f => f.status === finFiltros.status);
+            if (finFiltros.busca.trim() !== '') {
+                const b = finFiltros.busca.toLowerCase();
+                list = list.filter(f => (f.historico || '').toLowerCase().includes(b) || (f.fornecedor || '').toLowerCase().includes(b));
+            }
 
-        if (mode === 'edit' && id) {
-          const idx = state.db.documentos.findIndex(item => item.id === id);
-          if (idx >= 0) state.db.documentos[idx] = { ...state.db.documentos[idx], ...payload };
-        } else {
-          state.db.documentos.unshift({ id: generateId('doc'), ...payload });
-        }
+            return `
+                <div class="space-y-4">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+                        <div class="sm:col-span-2">
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Buscar por Histórico / Nome do Favorecido</label>
+                            <input type="text" value="${escapeHTML(finFiltros.busca)}" placeholder="Ex: Otís Elevadores, Apto 101..." oninput="finFiltros.busca = this.value; renderApp();" class="w-full p-2 border rounded-xl text-xs font-bold">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Filtrar por Tipo</label>
+                            <select onchange="finFiltros.tipo = this.value; renderApp();" class="w-full p-2 border rounded-xl text-xs font-bold bg-white">
+                                <option value="Todos" ${finFiltros.tipo === 'Todos' ? 'selected' : ''}>Todos os Tipos</option>
+                                <option value="Receber" ${finFiltros.tipo === 'Receber' ? 'selected' : ''}>Receita (Receber)</option>
+                                <option value="Pagar" ${finFiltros.tipo === 'Pagar' ? 'selected' : ''}>Despesa (Pagar)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-500 uppercase mb-1">Status de Liquidação</label>
+                            <select onchange="finFiltros.status = this.value; renderApp();" class="w-full p-2 border rounded-xl text-xs font-bold bg-white">
+                                <option value="Todos" ${finFiltros.status === 'Todos' ? 'selected' : ''}>Todos os Status</option>
+                                <option value="Baixado" ${finFiltros.status === 'Baixado' ? 'selected' : ''}>Baixado / Pago</option>
+                                <option value="Aberto" ${finFiltros.status === 'Aberto' ? 'selected' : ''}>Aberto / Pendente</option>
+                            </select>
+                        </div>
+                    </div>
 
-        saveDb();
-        closeDocumentoModal();
-        renderApp();
-      }
-
-      function deleteDocumento(id) {
-        if (!confirm('Deseja excluir este documento?')) return;
-        state.db.documentos = state.db.documentos.filter(item => item.id !== id);
-        saveDb();
-        renderApp();
-      }
-
-      function openCategoriaDocumentoModal(mode, id = null) {
-        const current = id ? state.db.documentoCategorias.find(item => item.id === id) : null;
-
-        const root = document.getElementById('app');
-        root.insertAdjacentHTML('beforeend', `
-          <div class="modal-backdrop" id="categoriaDocumentoModalBackdrop">
-            <div class="modal">
-              <div class="modal-header">
-                <h3>${mode === 'add' ? 'Adicionar categoria' : 'Editar categoria'}</h3>
-                <button class="close-modal" id="closeCategoriaDocumentoModalBtn">×</button>
-              </div>
-              <div class="modal-body">
-                <div class="form-grid">
-                  <div class="form-field" style="grid-column: 1 / -1;">
-                    <label>Nome da categoria</label>
-                    <input id="cat_doc_nome" value="${escapeHtml(current ? current.nome : '')}" />
-                  </div>
-                  <div class="form-field" style="grid-column: 1 / -1;">
-                    <label>Descrição</label>
-                    <textarea id="cat_doc_desc" rows="4">${escapeHtml(current ? current.descricao : '')}</textarea>
-                  </div>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-100 font-bold uppercase border-b text-slate-600">
+                                    <tr>
+                                        <th class="p-3">Tipo</th>
+                                        <th class="p-3">Favorecido / Morador / Fornecedor</th>
+                                        <th class="p-3">Histórico / Descrição</th>
+                                        <th class="p-3">Vencimento</th>
+                                        <th class="p-3">Valor (R$)</th>
+                                        <th class="p-3">Status</th>
+                                        <th class="p-3 text-right">Ações</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    ${list.length === 0 ? `<tr><td colspan="7" class="p-6 text-center text-slate-500 font-bold">Nenhum lançamento financeiro encontrado.</td></tr>` : ''}
+                                    ${list.map(f => {
+                                        const badgeTipo = f.tipo === 'Receber' ? `<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-emerald-100 text-emerald-800"><i class="fa-solid fa-arrow-down mr-1"></i> Receita</span>` : `<span class="px-2 py-0.5 rounded text-[10px] font-extrabold bg-rose-100 text-rose-800"><i class="fa-solid fa-arrow-up mr-1"></i> Despesa</span>`;
+                                        const badgeStatus = f.status === 'Baixado' ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-teal-100 text-teal-800"><i class="fa-solid fa-check mr-1"></i> Baixado</span>` : `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800"><i class="fa-solid fa-clock mr-1"></i> Em Aberto</span>`;
+                                        
+                                        return `
+                                            <tr class="hover:bg-slate-50 transition">
+                                                <td class="p-3">${badgeTipo}</td>
+                                                <td class="p-3 font-bold text-slate-900">${escapeHTML(f.fornecedor || 'Não Especificado')}</td>
+                                                <td class="p-3 font-semibold text-slate-700">${escapeHTML(f.historico)}</td>
+                                                <td class="p-3 font-mono text-slate-600">${f.vencimento}</td>
+                                                <td class="p-3 font-black text-slate-900">R$ ${Number(f.valor).toFixed(2)}</td>
+                                                <td class="p-3">${badgeStatus}</td>
+                                                <td class="p-3 text-right space-x-1">
+                                                    <button onclick="renderModalTituloFinanceiro('${f.id}')" title="Editar Título" class="p-1.5 text-blue-600 hover:bg-blue-50 rounded-lg"><i class="fa-solid fa-pen-to-square"></i></button>
+                                                    <button onclick="excluirTituloFinanceiro('${f.id}')" title="Excluir" class="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg"><i class="fa-solid fa-trash"></i></button>
+                                                </td>
+                                            </tr>
+                                        `;
+                                    }).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
-              </div>
-              <div class="form-footer">
-                <button class="outline-btn" id="cancelCategoriaDocumentoModalBtn">Cancelar</button>
-                <button class="primary-btn" id="saveCategoriaDocumentoBtn">Salvar</button>
-              </div>
-            </div>
-          </div>
-        `);
+            `;
+        }
 
-        document.getElementById('closeCategoriaDocumentoModalBtn').addEventListener('click', closeCategoriaDocumentoModal);
-        document.getElementById('cancelCategoriaDocumentoModalBtn').addEventListener('click', closeCategoriaDocumentoModal);
+        // MODAL DE TÍTULO COM BUSCA INTELIGENTE DE MORADORES E FORNECEDORES
+        function renderModalTituloFinanceiro(tituloId = null) {
+            const f = tituloId ? db.financeiro.find(x => x.id === tituloId) : null;
+            const tipoInicial = f ? f.tipo : 'Receber';
 
-        document.getElementById('saveCategoriaDocumentoBtn').addEventListener('click', () => {
-          const nome = document.getElementById('cat_doc_nome').value.trim();
-          const descricao = document.getElementById('cat_doc_desc').value.trim();
+            const html = `
+                <div id="modal_fin" class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+                        <div class="p-4 bg-slate-900 text-white flex items-center justify-between">
+                            <h3 class="font-bold text-sm"><i class="fa-solid fa-receipt mr-2 text-teal-400"></i> ${f ? 'Editar Título Financeiro' : 'Novo Título (Pagar / Receber)'}</h3>
+                            <button onclick="fecharModal('modal_fin')" class="text-slate-400 hover:text-white"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <form onsubmit="salvarTituloFinanceiro(event, '${tituloId || ''}')" class="p-6 space-y-4 overflow-y-auto">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase mb-1">Tipo de Operação</label>
+                                    <select id="fin_tipo" onchange="atualizarSelecaoFavorecido()" class="w-full p-2.5 border rounded-xl text-xs font-bold bg-white">
+                                        <option value="Receber" ${tipoInicial === 'Receber' ? 'selected' : ''}>Receita (A Receber)</option>
+                                        <option value="Pagar" ${tipoInicial === 'Pagar' ? 'selected' : ''}>Despesa (A Pagar)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase mb-1">Status de Liquidação</label>
+                                    <select id="fin_status" class="w-full p-2.5 border rounded-xl text-xs font-bold bg-white">
+                                        <option value="Aberto" ${f && f.status === 'Aberto' ? 'selected' : ''}>Em Aberto</option>
+                                        <option value="Baixado" ${!f || (f && f.status === 'Baixado') ? 'selected' : ''}>Baixado / Pago</option>
+                                    </select>
+                                </div>
+                            </div>
 
-          if (!nome) {
-            alert('Informe o nome da categoria.');
-            return;
-          }
+                            <!-- CAMPO DE LOCALIZAÇÃO DO MORADOR OU FORNECEDOR REGISTRADO -->
+                            <div>
+                                <label id="lbl_favorecido" class="block text-xs font-bold uppercase mb-1 text-teal-800">Localizar Pessoa / Morador / Fornecedor</label>
+                                <div class="space-y-2">
+                                    <select id="fin_favorecido_select" onchange="copiarFavorecidoParaCampo(this)" class="w-full p-2.5 border border-teal-300 rounded-xl text-xs font-bold bg-teal-50/50">
+                                        <!-- Preenchido via JavaScript -->
+                                    </select>
+                                    <input type="text" id="fin_favorecido_input" required value="${f ? escapeHTML(f.fornecedor) : ''}" placeholder="Ou digite o nome manualmente..." class="w-full p-2.5 border rounded-xl text-xs font-bold">
+                                </div>
+                            </div>
 
-          const payload = { nome, descricao };
+                            <div>
+                                <label class="block text-xs font-bold uppercase mb-1">Histórico / Descrição</label>
+                                <input type="text" id="fin_hist" required value="${f ? escapeHTML(f.historico) : ''}" placeholder="Ex: Taxa Condominial Apto 101" class="w-full p-2.5 border rounded-xl text-xs font-bold">
+                            </div>
 
-          if (mode === 'edit' && id) {
-            const idx = state.db.documentoCategorias.findIndex(item => item.id === id);
-            if (idx >= 0) state.db.documentoCategorias[idx] = { ...state.db.documentoCategorias[idx], ...payload };
-          } else {
-            state.db.documentoCategorias.unshift({ id: generateId('doccat'), ...payload });
-          }
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase mb-1">Valor (R$)</label>
+                                    <input type="number" step="0.01" id="fin_valor" required value="${f ? f.valor : ''}" placeholder="0,00" class="w-full p-2.5 border rounded-xl text-xs font-bold">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase mb-1">Data de Vencimento</label>
+                                    <input type="date" id="fin_venc" required value="${f ? f.vencimento : new Date().toISOString().split('T')[0]}" class="w-full p-2.5 border rounded-xl text-xs font-bold">
+                                </div>
+                            </div>
 
-          saveDb();
-          closeCategoriaDocumentoModal();
-          renderApp();
-        });
-      }
-
-      function closeCategoriaDocumentoModal() {
-        const modal = document.getElementById('categoriaDocumentoModalBackdrop');
-        if (modal) modal.remove();
-      }
-
-      function deleteCategoriaDocumento(id) {
-        if (!confirm('Deseja excluir esta categoria?')) return;
-
-        state.db.documentoCategorias = state.db.documentoCategorias.filter(item => item.id !== id);
-        state.db.documentos = state.db.documentos.map(doc => {
-          if (doc.categoriaId === id) {
-            return { ...doc, categoriaId: '' };
-          }
-          return doc;
-        });
-
-        saveDb();
-        renderApp();
-      }
-
-      function openFinanceiroModal(module, mode, itemId = null) {
-        const current = itemId ? state.db[module].find(item => item.id === itemId) : null;
-
-        const root = document.getElementById('app');
-        root.insertAdjacentHTML('beforeend', `
-          <div class="modal-backdrop" id="financeiroModalBackdrop">
-            <div class="modal">
-              <div class="modal-header">
-                <h3>${mode === 'add' ? 'Adicionar lançamento' : 'Editar lançamento'}</h3>
-                <button class="close-modal" id="closeFinanceiroModalBtn">×</button>
-              </div>
-              <div class="modal-body">
-                <div class="form-grid">
-                  <div class="form-field">
-                    <label>Tipo</label>
-                    <select id="fin_tipo">
-                      <option value="Receber" ${current && current.tipo === 'Receber' ? 'selected' : ''}>Receber</option>
-                      <option value="Pagar" ${current && current.tipo === 'Pagar' ? 'selected' : ''}>Pagar</option>
-                    </select>
-                  </div>
-                  <div class="form-field">
-                    <label>Vencimento</label>
-                    <input id="fin_vencimento" type="date" value="${current ? current.vencimento : ''}" />
-                  </div>
-                  <div class="form-field" style="grid-column: 1 / -1;">
-                    <label>Histórico</label>
-                    <input id="fin_historico" value="${escapeHtml(current ? current.historico : '')}" />
-                  </div>
-                  <div class="form-field">
-                    <label>Valor total</label>
-                    <input id="fin_valor_total" type="number" step="0.01" value="${current ? current.valorTotal : '0'}" />
-                  </div>
-                  <div class="form-field">
-                    <label>Valor pago</label>
-                    <input id="fin_valor_pago" type="number" step="0.01" value="${current ? current.valorPago : '0'}" />
-                  </div>
-                  <div class="form-field" style="grid-column: 1 / -1;">
-                    <label>Observação</label>
-                    <textarea id="fin_observacao" rows="3">${escapeHtml(current ? current.observacao : '')}</textarea>
-                  </div>
+                            <div class="flex items-center justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModal('modal_fin')" class="px-4 py-2 bg-slate-200 rounded-xl text-xs font-bold">Cancelar</button>
+                                <button type="submit" class="px-5 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow">Salvar Título</button>
+                            </div>
+                        </form>
+                    </div>
                 </div>
-              </div>
-              <div class="form-footer">
-                <button class="outline-btn" id="cancelFinanceiroModalBtn">Cancelar</button>
-                <button class="primary-btn" id="saveFinanceiroBtn">Salvar</button>
-              </div>
-            </div>
-          </div>
-        `);
-
-        document.getElementById('closeFinanceiroModalBtn').addEventListener('click', closeFinanceiroModal);
-        document.getElementById('cancelFinanceiroModalBtn').addEventListener('click', closeFinanceiroModal);
-        document.getElementById('saveFinanceiroBtn').addEventListener('click', () => saveFinanceiroItem(mode, itemId));
-      }
-
-      function closeFinanceiroModal() {
-        const modal = document.getElementById('financeiroModalBackdrop');
-        if (modal) modal.remove();
-      }
-
-      function saveFinanceiroItem(mode, itemId) {
-        const payload = {
-          tipo: document.getElementById('fin_tipo').value,
-          historico: document.getElementById('fin_historico').value.trim(),
-          valorTotal: Number(document.getElementById('fin_valor_total').value || 0),
-          valorPago: Number(document.getElementById('fin_valor_pago').value || 0),
-          vencimento: document.getElementById('fin_vencimento').value,
-          observacao: document.getElementById('fin_observacao').value.trim()
-        };
-
-        if (!payload.historico || !payload.vencimento || payload.valorTotal <= 0) {
-          alert('Preencha histórico, vencimento e valor total.');
-          return;
+            `;
+            document.body.insertAdjacentHTML('beforeend', html);
+            atualizarSelecaoFavorecido(f ? f.fornecedor : '');
         }
 
-        if (payload.valorPago > payload.valorTotal) {
-          alert('O valor pago não pode ser maior que o valor total.');
-          return;
+        function atualizarSelecaoFavorecido(valorAtual = '') {
+            const tipo = document.getElementById('fin_tipo').value;
+            const selectEl = document.getElementById('fin_favorecido_select');
+            const labelEl = document.getElementById('lbl_favorecido');
+
+            selectEl.innerHTML = '';
+
+            if (tipo === 'Receber') {
+                labelEl.innerText = 'Localizar Morador / Unidade Cadastrada';
+                selectEl.innerHTML += `<option value="">-- Selecione o Morador Cadastrado --</option>`;
+                (db.moradores || []).forEach(m => {
+                    const nomeStr = `${m.nome} (Bloco ${m.bloco} - Apto ${m.apartamento})`;
+                    const sel = valorAtual === nomeStr ? 'selected' : '';
+                    selectEl.innerHTML += `<option value="${escapeHTML(nomeStr)}" ${sel}>${escapeHTML(nomeStr)}</option>`;
+                });
+            } else {
+                labelEl.innerText = 'Localizar Fornecedor / Empresa Cadastrada';
+                selectEl.innerHTML += `<option value="">-- Selecione o Fornecedor Cadastrado --</option>`;
+                (db.fornecedores || []).forEach(forn => {
+                    const nomeStr = `${forn.nome} (${forn.categoria})`;
+                    const sel = valorAtual === nomeStr ? 'selected' : '';
+                    selectEl.innerHTML += `<option value="${escapeHTML(nomeStr)}" ${sel}>${escapeHTML(nomeStr)}</option>`;
+                });
+            }
+            selectEl.innerHTML += `<option value="outro">-- Outro (Digitar Nome Manualmente) --</option>`;
         }
 
-        payload.status = getFinanceStatus(payload);
-
-        if (mode === 'edit' && itemId) {
-          const idx = state.db.financeiro.findIndex(item => item.id === itemId);
-          if (idx >= 0) state.db.financeiro[idx] = { ...state.db.financeiro[idx], ...payload };
-        } else {
-          state.db.financeiro.unshift({ id: generateId('fin'), ...payload });
+        function copiarFavorecidoParaCampo(selectEl) {
+            const val = selectEl.value;
+            const inputEl = document.getElementById('fin_favorecido_input');
+            if (val && val !== 'outro') {
+                inputEl.value = val;
+            } else if (val === 'outro') {
+                inputEl.value = '';
+                inputEl.focus();
+            }
         }
 
-        saveDb();
-        closeFinanceiroModal();
-        renderApp();
-      }
-
-      function openPartialPaymentModal(itemId) {
-        const item = state.db.financeiro.find(x => x.id === itemId);
-        if (!item) return;
-
-        const root = document.getElementById('app');
-        root.insertAdjacentHTML('beforeend', `
-          <div class="modal-backdrop" id="partialModalBackdrop">
-            <div class="modal">
-              <div class="modal-header">
-                <h3>Baixa parcial</h3>
-                <button class="close-modal" id="closePartialModalBtn">×</button>
-              </div>
-              <div class="modal-body">
-                <div class="form-grid">
-                  <div class="form-field">
-                    <label>Histórico</label>
-                    <input type="text" value="${escapeHtml(item.historico)}" readonly />
-                  </div>
-                  <div class="form-field">
-                    <label>Valor total</label>
-                    <input type="text" value="${formatCurrency(item.valorTotal)}" readonly />
-                  </div>
-                  <div class="form-field">
-                    <label>Valor já pago</label>
-                    <input type="text" value="${formatCurrency(item.valorPago)}" readonly />
-                  </div>
-                  <div class="form-field">
-                    <label>Saldo restante</label>
-                    <input type="text" value="${formatCurrency(getRemaining(item))}" readonly />
-                  </div>
-                  <div class="form-field" style="grid-column: 1 / -1;">
-                    <label>Valor da baixa</label>
-                    <input id="partial_amount" type="number" step="0.01" min="0" max="${getRemaining(item)}" value="${getRemaining(item)}" />
-                  </div>
-                </div>
-              </div>
-              <div class="form-footer">
-                <button class="outline-btn" id="cancelPartialModalBtn">Cancelar</button>
-                <button class="primary-btn" id="savePartialPaymentBtn">Confirmar baixa</button>
-              </div>
-            </div>
-          </div>
-        `);
-
-        document.getElementById('closePartialModalBtn').addEventListener('click', closePartialModal);
-        document.getElementById('cancelPartialModalBtn').addEventListener('click', closePartialModal);
-
-        document.getElementById('savePartialPaymentBtn').addEventListener('click', () => {
-          const amount = Number(document.getElementById('partial_amount').value || 0);
-
-          if (!amount || amount <= 0) {
-            alert('Informe um valor válido para a baixa.');
-            return;
-          }
-
-          if (amount > getRemaining(item)) {
-            alert('O valor informado é maior que o saldo restante.');
-            return;
-          }
-
-          const idx = state.db.financeiro.findIndex(x => x.id === itemId);
-          if (idx >= 0) {
-            state.db.financeiro[idx].valorPago = Number(state.db.financeiro[idx].valorPago || 0) + amount;
-            state.db.financeiro[idx].status = getFinanceStatus(state.db.financeiro[idx]);
-          }
-
-          saveDb();
-          closePartialModal();
-          renderApp();
-        });
-      }
-
-      function closePartialModal() {
-        const modal = document.getElementById('partialModalBackdrop');
-        if (modal) modal.remove();
-      }
-
-      function openEstoqueModal(module, mode, itemId = null) {
-        const current = itemId ? state.db.estoque.find(item => item.id === itemId) : null;
-
-        const root = document.getElementById('app');
-        root.insertAdjacentHTML('beforeend', `
-          <div class="modal-backdrop" id="estoqueModalBackdrop">
-            <div class="modal">
-              <div class="modal-header">
-                <h3>${mode === 'add' ? 'Adicionar item' : 'Editar item'}</h3>
-                <button class="close-modal" id="closeEstoqueModalBtn">×</button>
-              </div>
-              <div class="modal-body">
-                <div class="form-grid">
-                  <div class="form-field">
-                    <label>Item</label>
-                    <input id="est_item" value="${escapeHtml(current ? current.item : '')}" />
-                  </div>
-                  <div class="form-field">
-                    <label>Categoria</label>
-                    <input id="est_categoria" value="${escapeHtml(current ? current.categoria : '')}" />
-                  </div>
-                  <div class="form-field">
-                    <label>Quantidade</label>
-                    <input id="est_qtd" type="number" value="${current ? current.qtd : 0}" />
-                  </div>
-                  <div class="form-field">
-                    <label>Mínimo</label>
-                    <input id="est_minimo" type="number" value="${current ? current.minimo : 0}" />
-                  </div>
-                  <div class="form-field">
-                    <label>Localização</label>
-                    <input id="est_localizacao" value="${escapeHtml(current ? current.localizacao : '')}" />
-                  </div>
-                  <div class="form-field">
-                    <label>Próximo inventário</label>
-                    <input id="est_proximo_inventario" type="date" value="${current ? current.proximoInventario : ''}" />
-                  </div>
-                  <div class="form-field">
-                    <label>Último inventário</label>
-                    <input id="est_ultimo_inventario" type="date" value="${current ? current.ultimoInventario : ''}" />
-                  </div>
-                </div>
-              </div>
-              <div class="form-footer">
-                <button class="outline-btn" id="cancelEstoqueModalBtn">Cancelar</button>
-                <button class="primary-btn" id="saveEstoqueBtn">Salvar</button>
-              </div>
-            </div>
-          </div>
-        `);
-
-        document.getElementById('closeEstoqueModalBtn').addEventListener('click', closeEstoqueModal);
-        document.getElementById('cancelEstoqueModalBtn').addEventListener('click', closeEstoqueModal);
-        document.getElementById('saveEstoqueBtn').addEventListener('click', () => saveEstoqueItem(mode, itemId));
-      }
-
-      function closeEstoqueModal() {
-        const modal = document.getElementById('estoqueModalBackdrop');
-        if (modal) modal.remove();
-      }
-
-      function saveEstoqueItem(mode, itemId) {
-        const payload = {
-          item: document.getElementById('est_item').value.trim(),
-          categoria: document.getElementById('est_categoria').value.trim(),
-          qtd: Number(document.getElementById('est_qtd').value || 0),
-          minimo: Number(document.getElementById('est_minimo').value || 0),
-          localizacao: document.getElementById('est_localizacao').value.trim(),
-          proximoInventario: document.getElementById('est_proximo_inventario').value,
-          ultimoInventario: document.getElementById('est_ultimo_inventario').value
-        };
-
-        if (!payload.item || !payload.categoria || !payload.localizacao) {
-          alert('Preencha item, categoria e localização.');
-          return;
-        }
-
-        if (mode === 'edit' && itemId) {
-          const idx = state.db.estoque.findIndex(item => item.id === itemId);
-          if (idx >= 0) state.db.estoque[idx] = { ...state.db.estoque[idx], ...payload };
-        } else {
-          state.db.estoque.unshift({ id: generateId('est'), ...payload });
-        }
-
-        saveDb();
-        closeEstoqueModal();
-        renderApp();
-      }
-
-      function deleteItem(module, id) {
-        const msgMap = {
-          financeiro: 'Deseja excluir este lançamento financeiro?',
-          estoque: 'Deseja excluir este item do estoque?',
-          documentos: 'Deseja excluir este documento?',
-          moradores: 'Deseja excluir este morador?',
-          inquilinos: 'Deseja excluir este inquilino?',
-          fornecedores: 'Deseja excluir este fornecedor?',
-          usuarios: 'Deseja excluir este usuário?'
-        };
-
-        if (!confirm(msgMap[module] || 'Deseja excluir este item?')) return;
-        state.db[module] = state.db[module].filter(item => item.id !== id);
-        saveDb();
-        renderApp();
-      }
-
-      function attachGlobalEvents() {
-        document.querySelectorAll('.nav-item').forEach(btn => {
-          btn.addEventListener('click', () => {
-            state.activeTab = btn.dataset.tab;
-            renderApp();
-          });
-        });
-
-        document.getElementById('logoutBtn')?.addEventListener('click', () => {
-          state.user = null;
-          sessionStorage.removeItem('guardioes_user');
-          renderApp();
-        });
-
-        document.querySelectorAll('[data-action="add"]').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const module = btn.dataset.module;
-            if (module === 'financeiro') openFinanceiroModal(module, 'add');
-            if (module === 'estoque') openEstoqueModal(module, 'add');
-          });
-        });
-
-        document.querySelectorAll('[data-action="edit"]').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const module = btn.dataset.module;
-            if (module === 'financeiro') openFinanceiroModal(module, 'edit', btn.dataset.id);
-            if (module === 'estoque') openEstoqueModal(module, 'edit', btn.dataset.id);
-          });
-        });
-
-        document.querySelectorAll('[data-action="delete"]').forEach(btn => {
-          btn.addEventListener('click', () => deleteItem(btn.dataset.module, btn.dataset.id));
-        });
-
-        document.querySelectorAll('[data-action="pay"]').forEach(btn => {
-          btn.addEventListener('click', () => openPartialPaymentModal(btn.dataset.id));
-        });
-
-        document.querySelectorAll('[data-action="add-cadastro"]').forEach(btn => {
-          btn.addEventListener('click', () => openCadastroModal(btn.dataset.type, 'add'));
-        });
-
-        document.querySelectorAll('[data-action="edit-cadastro"]').forEach(btn => {
-          btn.addEventListener('click', () => openCadastroModal(btn.dataset.type, 'edit', btn.dataset.id));
-        });
-
-        document.querySelectorAll('[data-action="delete-cadastro"]').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const type = btn.dataset.type;
-            const id = btn.dataset.id;
-
-            let msg = 'Deseja excluir este item?';
-            if (type === 'morador') msg = 'Deseja excluir este morador?';
-            if (type === 'inquilino') msg = 'Deseja excluir este inquilino?';
-            if (type === 'fornecedor') msg = 'Deseja excluir este fornecedor?';
-
-            if (!confirm(msg)) return;
-
-            if (type === 'morador') state.db.moradores = state.db.moradores.filter(item => item.id !== id);
-            if (type === 'inquilino') state.db.inquilinos = state.db.inquilinos.filter(item => item.id !== id);
-            if (type === 'fornecedor') state.db.fornecedores = state.db.fornecedores.filter(item => item.id !== id);
-
-            saveDb();
-            renderApp();
-          });
-        });
-
-        document.querySelectorAll('[data-action="add-documento"]').forEach(btn => {
-          btn.addEventListener('click', () => openDocumentoModal('add'));
-        });
-
-        document.querySelectorAll('[data-action="edit-documento"]').forEach(btn => {
-          btn.addEventListener('click', () => openDocumentoModal('edit', btn.dataset.id));
-        });
-
-        document.querySelectorAll('[data-action="delete-documento"]').forEach(btn => {
-          btn.addEventListener('click', () => deleteDocumento(btn.dataset.id));
-        });
-
-        document.querySelectorAll('[data-action="add-categoria-doc"]').forEach(btn => {
-          btn.addEventListener('click', () => openCategoriaDocumentoModal('add'));
-        });
-
-        document.querySelectorAll('[data-action="edit-categoria-doc"]').forEach(btn => {
-          btn.addEventListener('click', () => openCategoriaDocumentoModal('edit', btn.dataset.id));
-        });
-
-        document.querySelectorAll('[data-action="delete-categoria-doc"]').forEach(btn => {
-          btn.addEventListener('click', () => deleteCategoriaDocumento(btn.dataset.id));
-        });
-
-        document.getElementById('exportDashboardCsv')?.addEventListener('click', () => {
-          exportCsv([
-            { categoria: 'Receitas', valor: state.db.financeiro.filter(i => i.tipo === 'Receber').reduce((s, v) => s + Number(v.valorPago || 0), 0) },
-            { categoria: 'Despesas', valor: state.db.financeiro.filter(i => i.tipo === 'Pagar').reduce((s, v) => s + Number(v.valorPago || 0), 0) },
-            { categoria: 'Pendentes', valor: state.db.financeiro.filter(i => getFinanceStatus(i) !== 'Pago').length },
-            { categoria: 'Moradores', valor: state.db.moradores.length }
-          ], 'dashboard.csv');
-        });
-
-        document.getElementById('exportFinanceiroCsv')?.addEventListener('click', () => {
-          const payload = getFilteredFinanceiro().map(item => ({
-            tipo: item.tipo,
-            historico: item.historico,
-            valorTotal: item.valorTotal,
-            valorPago: item.valorPago,
-            restante: getRemaining(item),
-            vencimento: item.vencimento,
-            status: getFinanceStatus(item)
-          }));
-          exportCsv(payload, 'financeiro.csv');
-        });
-
-        document.getElementById('exportEstoqueCsv')?.addEventListener('click', () => {
-          exportCsv(getFilteredEstoque(), 'estoque.csv');
-        });
-
-        document.getElementById('exportDocumentosCsv')?.addEventListener('click', () => {
-          exportCsv(getFilteredDocumentos(), 'documentos.csv');
-        });
-
-        if (state.activeTab === 'financeiro') {
-          const finBusca = document.getElementById('finBusca');
-          const finTipo = document.getElementById('finTipo');
-          const finStatus = document.getElementById('finStatus');
-
-          finBusca?.addEventListener('input', (e) => {
-            state.filters.financeiro.busca = e.target.value;
-            renderApp();
-          });
-
-          finTipo?.addEventListener('change', (e) => {
-            state.filters.financeiro.tipo = e.target.value;
-            renderApp();
-          });
-
-          finStatus?.addEventListener('change', (e) => {
-            state.filters.financeiro.status = e.target.value;
-            renderApp();
-          });
-        }
-
-        if (state.activeTab === 'estoque') {
-          const estBusca = document.getElementById('estBusca');
-          const estCategoria = document.getElementById('estCategoria');
-
-          estBusca?.addEventListener('input', (e) => {
-            state.filters.estoque.busca = e.target.value;
-            renderApp();
-          });
-
-          estCategoria?.addEventListener('change', (e) => {
-            state.filters.estoque.categoria = e.target.value;
-            renderApp();
-          });
-        }
-
-        if (state.activeTab === 'documentos') {
-          const docBusca = document.getElementById('docBusca');
-          const docCategoriaFiltro = document.getElementById('docCategoriaFiltro');
-
-          docBusca?.addEventListener('input', (e) => {
-            state.filters.documentos.busca = e.target.value;
-            renderApp();
-          });
-
-          docCategoriaFiltro?.addEventListener('change', (e) => {
-            state.filters.documentos.categoriaId = e.target.value;
-            renderApp();
-          });
-        }
-      }
-
-      function renderApp() {
-        const root = document.getElementById('app');
-
-        if (!state.user) {
-          root.innerHTML = renderLogin();
-          document.getElementById('loginForm').addEventListener('submit', (e) => {
+        function salvarTituloFinanceiro(e, tituloId = '') {
             e.preventDefault();
+            const tipo = document.getElementById('fin_tipo').value;
+            const status = document.getElementById('fin_status').value;
+            const fornecedor = document.getElementById('fin_favorecido_input').value.trim();
+            const historico = document.getElementById('fin_hist').value.trim();
+            const valor = parseFloat(document.getElementById('fin_valor').value) || 0;
+            const vencimento = document.getElementById('fin_venc').value;
 
-            const loginUser = document.getElementById('login_user').value.trim();
-            const loginPass = document.getElementById('login_pass').value;
-
-            const found = state.db.usuarios.find(user =>
-              (user.usuario === loginUser || user.email === loginUser) &&
-              user.senhaHash === loginPass
-            );
-
-            if (found) {
-              state.user = found;
-              sessionStorage.setItem('guardioes_user', JSON.stringify(found));
-              renderApp();
+            if (tituloId) {
+                const f = db.financeiro.find(x => x.id === tituloId);
+                if (f) { f.tipo = tipo; f.status = status; f.fornecedor = fornecedor; f.historico = historico; f.valor = valor; f.vencimento = vencimento; }
             } else {
-              alert('Credenciais inválidas!');
+                db.financeiro.push({ id: 'fin_' + Date.now(), tipo, status, fornecedor, historico, valor, vencimento, competencia: vencimento.substring(0,7) });
             }
-          });
-          return;
+
+            salvarDados(db); fecharModal('modal_fin'); renderApp();
         }
 
-        root.innerHTML = `
-          <div class="app-shell">
-            <aside class="sidebar">
-              <div class="brand">
-                <div class="brand-mark"><i class="fa-solid fa-shield-halved"></i></div>
-                <div>
-                  <h1>Guardiões</h1>
-                  <small>Gestão</small>
+        function excluirTituloFinanceiro(id) {
+            if (confirm('Deseja realmente remover este lançamento financeiro?')) {
+                db.financeiro = db.financeiro.filter(x => x.id !== id);
+                salvarDados(db); renderApp();
+            }
+        }
+
+        function renderEstoqueEPatrimonioModule() {
+            return `
+                <div class="space-y-4">
+                    <div class="flex bg-slate-200 p-1.5 rounded-2xl w-fit gap-1 border border-slate-300">
+                        <button onclick="abaEstoqueInterna = 'consumo'; renderApp();" class="px-4 py-2 rounded-xl text-xs font-bold transition ${abaEstoqueInterna === 'consumo' ? 'bg-teal-700 text-white shadow' : 'text-slate-600 hover:text-slate-900'}">
+                            <i class="fa-solid fa-boxes-stacked mr-1.5"></i> Materiais de Consumo
+                        </button>
+                        <button onclick="abaEstoqueInterna = 'patrimonio'; renderApp();" class="px-4 py-2 rounded-xl text-xs font-bold transition ${abaEstoqueInterna === 'patrimonio' ? 'bg-teal-700 text-white shadow' : 'text-slate-600 hover:text-slate-900'}">
+                            <i class="fa-solid fa-couch mr-1.5"></i> Inventário de Móveis e Bens
+                        </button>
+                    </div>
+
+                    ${abaEstoqueInterna === 'consumo' ? renderConsumoSubView() : renderPatrimonioSubView()}
                 </div>
-              </div>
+            `;
+        }
 
-              <nav class="nav-menu">
-                <button class="nav-item ${state.activeTab === 'dashboard' ? 'active' : ''}" data-tab="dashboard">
-                  <i class="fa-solid fa-gauge-high"></i> Dashboard
-                </button>
+        function renderConsumoSubView() {
+            let list = db.estoque || [];
+            if (estFiltros.busca.trim() !== '') {
+                const b = estFiltros.busca.toLowerCase();
+                list = list.filter(e => (e.item || '').toLowerCase().includes(b) || (e.codigoBarras || '').toLowerCase().includes(b));
+            }
 
-                <button class="nav-item ${state.activeTab === 'financeiro' ? 'active' : ''}" data-tab="financeiro">
-                  <i class="fa-solid fa-wallet"></i> Financeiro
-                </button>
+            return `
+                <div class="space-y-4">
+                    <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200 flex flex-col sm:flex-row gap-3 items-center justify-between">
+                        <div class="flex-1 w-full flex items-center gap-2">
+                            <input type="text" value="${escapeHTML(estFiltros.busca)}" placeholder="Buscar por Produto ou Código de Barras..." oninput="estFiltros.busca = this.value; renderApp();" class="w-full p-2.5 border rounded-xl text-xs font-bold">
+                        </div>
+                    </div>
 
-                <button class="nav-item ${state.activeTab === 'estoque' ? 'active' : ''}" data-tab="estoque">
-                  <i class="fa-solid fa-boxes-stacked"></i> Estoque
-                </button>
+                    <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead class="bg-slate-100 font-bold uppercase border-b text-slate-600">
+                                    <tr>
+                                        <th class="p-3">Item / Produto</th>
+                                        <th class="p-3">Código de Barras</th>
+                                        <th class="p-3">Categoria</th>
+                                        <th class="p-3">Qtd Atual</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    ${list.map(e => `
+                                        <tr class="hover:bg-slate-50 transition">
+                                            <td class="p-3 font-bold text-slate-900">${escapeHTML(e.item)}</td>
+                                            <td class="p-3 font-mono text-slate-600">${escapeHTML(e.codigoBarras || 'Sem código')}</td>
+                                            <td class="p-3"><span class="px-2.5 py-1 rounded-md text-[10px] font-bold bg-slate-200">${escapeHTML(e.categoria)}</span></td>
+                                            <td class="p-3 font-extrabold ${Number(e.qtd) <= Number(e.minimo) ? 'text-rose-600' : 'text-slate-800'}">${e.qtd} un.</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
-                <button class="nav-item ${state.activeTab === 'documentos' ? 'active' : ''}" data-tab="documentos">
-                  <i class="fa-solid fa-folder-open"></i> Documentos
-                </button>
+        function renderPatrimonioSubView() {
+            let list = db.patrimonio || [];
+            return `
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden p-4 space-y-4">
+                    <h3 class="font-extrabold text-xs text-slate-400 uppercase tracking-wider">Bens Patrimoniais Registrados</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 font-bold uppercase border-b text-slate-600">
+                                <tr>
+                                    <th class="p-3">Tombamento</th>
+                                    <th class="p-3">Nome do Bem</th>
+                                    <th class="p-3">Localização</th>
+                                    <th class="p-3">Situação</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                ${list.map(p => `
+                                    <tr class="hover:bg-slate-50 transition">
+                                        <td class="p-3 font-mono font-bold text-teal-700">${escapeHTML(p.tombamento)}</td>
+                                        <td class="p-3 font-bold text-slate-900">${escapeHTML(p.nome)}</td>
+                                        <td class="p-3 text-slate-600">${escapeHTML(p.localizacao)}</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200">${escapeHTML(p.conservacao)}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
 
-                <button class="nav-item ${state.activeTab === 'cadastros' ? 'active' : ''}" data-tab="cadastros">
-                  <i class="fa-solid fa-address-card"></i> Cadastros
-                </button>
-              </nav>
+        function renderMoradoresModule() {
+            const list = db.moradores || [];
+            return `
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-4">
+                    <h3 class="font-extrabold text-xs text-slate-400 uppercase tracking-wider">Cadastro de Moradores & Unidades</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead class="bg-slate-100 font-bold uppercase border-b text-slate-600">
+                                <tr>
+                                    <th class="p-3">Bloco / Apto</th>
+                                    <th class="p-3">Nome do Residentes</th>
+                                    <th class="p-3">Contato / Telefone</th>
+                                    <th class="p-3">Tipo</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                ${list.map(m => `
+                                    <tr class="hover:bg-slate-50 transition">
+                                        <td class="p-3 font-bold text-teal-700">Bloco ${m.bloco} - Ap ${m.apartamento}</td>
+                                        <td class="p-3 font-bold text-slate-900">${escapeHTML(m.nome)}</td>
+                                        <td class="p-3 text-slate-600 font-semibold">${escapeHTML(m.telefone)}</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-200">${escapeHTML(m.tipo)}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
 
-              <div class="sidebar-user">
-                <span>${escapeHtml(state.user.nome)}</span>
-                <button id="logoutBtn" class="logout-btn">Sair</button>
-              </div>
-            </aside>
+        function renderDocumentosModule() {
+            return `<div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 font-bold text-xs text-slate-600">Módulo de Documentos Ativo.</div>`;
+        }
 
-            <main class="main-panel">
-              <div id="content">${renderContent()}</div>
-            </main>
-          </div>
-        `;
+        function fecharModal(id) {
+            const el = document.getElementById(id);
+            if (el) el.remove();
+        }
 
-        attachGlobalEvents();
-      }
-
-      renderApp();
+        function iniciarAplicacao() { renderApp(); }
+        if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', iniciarAplicacao);
+        else iniciarAplicacao();
     </script>
-  </body>
+</body>
 </html>
