@@ -68,11 +68,12 @@
                 { id: 'cat_3', nome: 'Prestação de Contas', modulo: 'Documentos' },
                 { id: 'cat_4', nome: 'Elétrica', modulo: 'Estoque' },
                 { id: 'cat_5', nome: 'Piscina', modulo: 'Estoque' },
-                { id: 'cat_6', nome: 'Geral', modulo: 'Geral' }
+                { id: 'cat_6', nome: 'Equipamentos e Bens', modulo: 'Estoque' },
+                { id: 'cat_7', nome: 'Geral', modulo: 'Geral' }
             ],
             estoque: [
-                { id: 'est_1', item: 'Lâmpada LED 12W', categoria: 'Elétrica', qtd: 4, minimo: 10, maximo: 50, localizacao: 'Almoxarifado Central', proximaContagem: '2026-10-25', fotoBase64: '' },
-                { id: 'est_2', item: 'Cloro Granulado 10kg', categoria: 'Piscina', qtd: 15, minimo: 5, maximo: 30, localizacao: 'DML Piscina', proximaContagem: '2026-11-01', fotoBase64: '' }
+                { id: 'est_1', item: 'Lâmpada LED 12W', categoria: 'Elétrica', qtd: 4, minimo: 10, maximo: 50, localizacao: 'Almoxarifado Central', proximaContagem: '2026-10-25', tombamento: 'N/A', conservacao: 'Bom', valorEstimado: 15.00, fotoBase64: '' },
+                { id: 'est_2', item: 'Gerador Elétrico Principal', categoria: 'Equipamentos e Bens', qtd: 1, minimo: 1, maximo: 1, localizacao: 'Subsolo 1', proximaContagem: '2026-11-01', tombamento: 'PAT-2026-001', conservacao: 'Excelente', valorEstimado: 35000.00, fotoBase64: '' }
             ],
             documentos: [
                 { id: 'doc_1', titulo: 'Ata da Assembleia 2026', pasta: 'Atas de Assembleia', data: '2026-03-10', observacao: 'Ata de eleição do síndico', arquivoBase64: '' }
@@ -126,7 +127,7 @@
             contas_bancarias: 'Contas Bancárias / Caixa',
             moradores: 'Moradores / Unidades',
             categorias: 'Pastas & Categorias',
-            estoque: 'Estoque de Produtos',
+            estoque: 'Estoque & Bens / Inventário',
             documentos: 'Gestão de Documentos',
             relatorios: 'Relatórios & DRE',
             usuarios: 'Gestão de Usuários'
@@ -359,7 +360,7 @@
                             
                             <p class="px-3 pt-3 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Estoque & Documentos</p>
                             <button onclick="abrirModulo('categorias')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'categorias' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-folder-tree w-5 text-center"></i> Pastas & Categorias</button>
-                            <button onclick="abrirModulo('estoque')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'estoque' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-boxes-stacked w-5 text-center"></i> Estoque & Inventário</button>
+                            <button onclick="abrirModulo('estoque')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'estoque' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-boxes-stacked w-5 text-center"></i> Estoque & Bens</button>
                             <button onclick="abrirModulo('documentos')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'documentos' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-folder-open w-5 text-center"></i> Documentos</button>
                             
                             <p class="px-3 pt-3 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Gestão & Configurações</p>
@@ -419,7 +420,7 @@
             else if (moduloId === 'moradores') btnNovoHtml = `<button onclick="window.renderModalMorador()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Morador</button>`;
             else if (moduloId === 'contas_bancarias') btnNovoHtml = `<button onclick="window.renderModalContaBancaria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Nova Conta</button>`;
             else if (moduloId === 'categorias') btnNovoHtml = `<button onclick="window.renderModalCategoria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Nova Pasta / Categoria</button>`;
-            else if (moduloId === 'estoque') btnNovoHtml = `<button onclick="window.renderModalEstoque()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Item</button>`;
+            else if (moduloId === 'estoque') btnNovoHtml = `<button onclick="window.renderModalEstoque()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Item / Bem</button>`;
             else if (moduloId === 'documentos') btnNovoHtml = `<button onclick="window.renderModalDocumento()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-upload"></i> Subir Documento</button>`;
             else if (moduloId === 'usuarios') btnNovoHtml = `<button onclick="window.renderModalUsuario()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-user-plus"></i> Novo Usuário</button>`;
             else if (moduloId === 'relatorios') btnNovoHtml = `
@@ -454,7 +455,7 @@
         }
 
         // =====================================
-        // ESTOQUE COM CÂMERA
+        // ESTOQUE E PATRIMÔNIO / BENS
         // =====================================
         function renderEstoqueView() {
             let list = db.estoque || [];
@@ -473,7 +474,7 @@
 
             if (estFiltros.busca.trim() !== '') {
                 const b = estFiltros.busca.toLowerCase();
-                list = list.filter(e => (e.item || '').toLowerCase().includes(b) || (e.localizacao || '').toLowerCase().includes(b));
+                list = list.filter(e => (e.item || '').toLowerCase().includes(b) || (e.localizacao || '').toLowerCase().includes(b) || (e.tombamento || '').toLowerCase().includes(b));
             }
 
             const categoriasDisponiveis = db.categorias.filter(c => c.modulo === 'Estoque' || c.modulo === 'Geral').map(c => c.nome);
@@ -500,8 +501,8 @@
 
                     <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-3 items-center no-print">
                         <div class="flex-1 min-w-[200px]">
-                            <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Buscar Item/Local</label>
-                            <input type="text" value="${escapeHTML(estFiltros.busca)}" oninput="estFiltros.busca = this.value; renderMainOnly();" placeholder="Ex: Lâmpada, Almoxarifado..." class="w-full p-2 border rounded-lg text-xs">
+                            <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Buscar Item / Local / Tombamento</label>
+                            <input type="text" value="${escapeHTML(estFiltros.busca)}" oninput="estFiltros.busca = this.value; renderMainOnly();" placeholder="Ex: Lâmpada, PAT-2026..." class="w-full p-2 border rounded-lg text-xs">
                         </div>
                         <div class="w-40">
                             <label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Categoria</label>
@@ -528,16 +529,16 @@
                                     <tr class="bg-slate-800 text-white font-bold uppercase tracking-wider text-[11px]">
                                         <th class="p-3">Foto</th>
                                         <th class="p-3">Item / Categoria</th>
+                                        <th class="p-3">Tombamento / Patrimônio</th>
                                         <th class="p-3">Localização</th>
-                                        <th class="p-3 text-center">Qtd Atual</th>
-                                        <th class="p-3 text-center">Min / Max</th>
+                                        <th class="p-3 text-center">Qtd</th>
+                                        <th class="p-3 text-center">Conservação</th>
                                         <th class="p-3">Próx. Contagem</th>
-                                        <th class="p-3 text-center">Status</th>
                                         <th class="p-3 text-center actions-col">Ações</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
-                                    ${list.length === 0 ? `<tr><td colspan="8" class="p-6 text-center text-slate-400 font-semibold">Nenhum item encontrado no estoque.</td></tr>` : list.map(e => {
+                                    ${list.length === 0 ? `<tr><td colspan="8" class="p-6 text-center text-slate-400 font-semibold">Nenhum item/bem encontrado no inventário.</td></tr>` : list.map(e => {
                                         const isCritico = Number(e.qtd) <= Number(e.minimo);
                                         const isInventarioVencendo = e.proximaContagem && e.proximaContagem <= dataLimite;
                                         return `
@@ -549,16 +550,18 @@
                                                     <div class="font-bold text-slate-900">${escapeHTML(e.item)}</div>
                                                     <span class="text-[10px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-bold border">${escapeHTML(e.categoria)}</span>
                                                 </td>
+                                                <td class="p-3">
+                                                    ${e.tombamento && e.tombamento !== 'N/A' ? `<span class="font-mono font-bold bg-teal-50 text-teal-800 px-2 py-1 rounded border border-teal-200">${escapeHTML(e.tombamento)}</span>` : '<span class="text-slate-400">Consumível</span>'}
+                                                </td>
                                                 <td class="p-3 text-slate-600">${escapeHTML(e.localizacao || 'N/A')}</td>
                                                 <td class="p-3 text-center font-black text-sm ${isCritico ? 'text-rose-600' : 'text-slate-800'}">${e.qtd}</td>
-                                                <td class="p-3 text-center text-slate-500">${e.minimo} / ${e.maximo}</td>
+                                                <td class="p-3 text-center">
+                                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold ${e.conservacao === 'Excelente' ? 'bg-emerald-100 text-emerald-800' : e.conservacao === 'Danificado' ? 'bg-rose-100 text-rose-800' : 'bg-slate-100 text-slate-700'}">${escapeHTML(e.conservacao || 'Bom')}</span>
+                                                </td>
                                                 <td class="p-3">
                                                     <div class="flex items-center gap-1.5 ${isInventarioVencendo ? 'text-amber-600 font-bold' : 'text-slate-600'}">
                                                         <i class="fa-regular fa-calendar"></i> ${e.proximaContagem ? e.proximaContagem.split('-').reverse().join('/') : 'Não agendado'}
                                                     </div>
-                                                </td>
-                                                <td class="p-3 text-center">
-                                                    ${isCritico ? `<span class="px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 text-[10px] font-bold border border-rose-300">⚠️ Crítico</span>` : `<span class="px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 text-[10px] font-bold border border-emerald-300">OK</span>`}
                                                 </td>
                                                 <td class="p-3 text-center actions-col">
                                                     <div class="flex items-center justify-center gap-1">
@@ -597,7 +600,7 @@
         }
 
         window.renderModalEstoque = function(id = null) {
-            const item = id ? db.estoque.find(e => e.id === id) : { id: '', item: '', categoria: 'Elétrica', qtd: 0, minimo: 5, maximo: 50, localizacao: '', proximaContagem: '', fotoBase64: '' };
+            const item = id ? db.estoque.find(e => e.id === id) : { id: '', item: '', categoria: 'Equipamentos e Bens', qtd: 1, minimo: 1, maximo: 50, localizacao: '', proximaContagem: '', tombamento: '', conservacao: 'Excelente', valorEstimado: 0.00, fotoBase64: '' };
             tempBase64 = item.fotoBase64 || '';
 
             const categoriasOps = db.categorias.filter(c => c.modulo === 'Estoque' || c.modulo === 'Geral').map(c => `<option value="${escapeHTML(c.nome)}" ${item.categoria === c.nome ? 'selected' : ''}>${escapeHTML(c.nome)}</option>`).join('');
@@ -606,14 +609,36 @@
                 <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
                         <div class="flex justify-between items-center border-b pb-3">
-                            <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Item no Estoque' : 'Novo Item no Estoque'}</h3>
+                            <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Item/Bem no Inventário' : 'Novo Registro de Item / Bem (Patrimônio)'}</h3>
                             <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
                         </div>
                         <form onsubmit="salvarModalEstoque(event, '${id}')" class="space-y-3">
                             <div>
-                                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Descrição do Item</label>
-                                <input type="text" id="m_est_item" required value="${escapeHTML(item.item)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
+                                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Descrição do Item / Bem</label>
+                                <input type="text" id="m_est_item" required value="${escapeHTML(item.item)}" placeholder="Ex: Gerador, Furadeira, Lâmpada..." class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
                             </div>
+
+                            <!-- CAMPOS DE PATRIMÔNIO E BENS -->
+                            <div class="p-3 bg-teal-50/50 border border-teal-200 rounded-xl space-y-3">
+                                <p class="text-[10px] font-bold uppercase text-teal-800 tracking-wider"><i class="fa-solid fa-id-card"></i> Identificação de Patrimônio / Tombamento</p>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nº Tombamento / Patrimônio</label>
+                                        <input type="text" id="m_est_tomb" value="${escapeHTML(item.tombamento || '')}" placeholder="Ex: PAT-2026-001 (Opcional)" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-white">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Estado de Conservação</label>
+                                        <select id="m_est_cons" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-white">
+                                            <option value="Excelente" ${item.conservacao === 'Excelente' ? 'selected' : ''}>Excelente</option>
+                                            <option value="Bom" ${item.conservacao === 'Bom' ? 'selected' : ''}>Bom</option>
+                                            <option value="Regular" ${item.conservacao === 'Regular' ? 'selected' : ''}>Regular</option>
+                                            <option value="Danificado" ${item.conservacao === 'Danificado' ? 'selected' : ''}>Danificado</option>
+                                            <option value="Em Manutenção" ${item.conservacao === 'Em Manutenção' ? 'selected' : ''}>Em Manutenção</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="grid grid-cols-2 gap-3">
                                 <div>
                                     <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Categoria</label>
@@ -621,9 +646,10 @@
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Localização</label>
-                                    <input type="text" id="m_est_loc" value="${escapeHTML(item.localizacao)}" placeholder="Ex: Almoxarifado" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
+                                    <input type="text" id="m_est_loc" value="${escapeHTML(item.localizacao)}" placeholder="Ex: Subsolo 1, Almoxarifado" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
                                 </div>
                             </div>
+
                             <div class="grid grid-cols-3 gap-3">
                                 <div>
                                     <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Qtd Atual</label>
@@ -634,18 +660,19 @@
                                     <input type="number" id="m_est_min" min="0" required value="${item.minimo}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
                                 </div>
                                 <div>
-                                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Qtd Máxima</label>
-                                    <input type="number" id="m_est_max" min="0" required value="${item.maximo}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
+                                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Valor Estimado (R$)</label>
+                                    <input type="number" step="0.01" id="m_est_val" min="0" value="${item.valorEstimado || 0}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
                                 </div>
                             </div>
+
                             <div>
                                 <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Data Agendada para Inventário/Balanço</label>
                                 <input type="date" id="m_est_prox" value="${item.proximaContagem}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
                             </div>
 
-                            <!-- FOTO DO PRODUTO + OPÇÃO DE CÂMERA -->
+                            <!-- FOTO DO PRODUTO / BEM -->
                             <div class="border border-slate-200 rounded-xl p-3 bg-slate-50/50 space-y-2">
-                                <label class="block text-xs font-bold uppercase text-slate-600">Foto do Produto (Opcional)</label>
+                                <label class="block text-xs font-bold uppercase text-slate-600">Foto do Bem / Etiqueta de Patrimônio</label>
                                 
                                 <div class="flex flex-wrap gap-2 items-center">
                                     <label class="cursor-pointer px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold flex items-center gap-1.5 transition">
@@ -658,7 +685,6 @@
                                     </button>
                                 </div>
 
-                                <!-- CAIXA DA CÂMERA AO VIVO -->
                                 <div id="camera_stream_box" class="hidden mt-2 p-2 bg-slate-900 rounded-xl space-y-2">
                                     <video id="camera_video" autoplay playsinline class="w-full h-48 object-cover rounded-lg border border-slate-700"></video>
                                     <div class="flex justify-between items-center">
@@ -674,7 +700,7 @@
 
                             <div class="flex justify-end gap-2 pt-3 border-t">
                                 <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
-                                <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold">Salvar Item</button>
+                                <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold">Salvar Item/Bem</button>
                             </div>
                         </form>
                     </div>
@@ -687,11 +713,13 @@
             const newItem = {
                 id: id || 'est_' + Date.now(),
                 item: document.getElementById('m_est_item').value.trim(),
+                tombamento: document.getElementById('m_est_tomb').value.trim() || 'N/A',
+                conservacao: document.getElementById('m_est_cons').value,
                 categoria: document.getElementById('m_est_cat').value,
                 localizacao: document.getElementById('m_est_loc').value.trim(),
                 qtd: Number(document.getElementById('m_est_qtd').value),
                 minimo: Number(document.getElementById('m_est_min').value),
-                maximo: Number(document.getElementById('m_est_max').value),
+                valorEstimado: Number(document.getElementById('m_est_val').value || 0),
                 proximaContagem: document.getElementById('m_est_prox').value,
                 fotoBase64: tempBase64
             };
@@ -704,7 +732,7 @@
             }
 
             salvarDados(db);
-            registrarLog('Estoque', id ? 'Edição' : 'Criação', `Item ${newItem.item} salvo.`);
+            registrarLog('Estoque', id ? 'Edição' : 'Criação', `Bem/Item ${newItem.item} salvo.`);
             fecharModalContainer();
             renderMainOnly();
         }
@@ -1414,7 +1442,6 @@
                                 <textarea id="m_doc_obs" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50 h-20"></textarea>
                             </div>
 
-                            <!-- FOTO OU DOCUMENTO + CÂMERA -->
                             <div class="border border-slate-200 rounded-xl p-3 bg-slate-50/50 space-y-2">
                                 <label class="block text-xs font-bold uppercase text-slate-600">Arquivo / Foto do Documento</label>
                                 
@@ -1429,7 +1456,6 @@
                                     </button>
                                 </div>
 
-                                <!-- CAIXA DA CÂMERA AO VIVO -->
                                 <div id="camera_stream_box" class="hidden mt-2 p-2 bg-slate-900 rounded-xl space-y-2">
                                     <video id="camera_video" autoplay playsinline class="w-full h-48 object-cover rounded-lg border border-slate-700"></video>
                                     <div class="flex justify-between items-center">
