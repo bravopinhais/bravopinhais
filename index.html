@@ -35,6 +35,7 @@
         let tempBase64 = ''; 
         let activeCharts = {};
         let mediaStream = null;
+        let tipoRelatorioSelecionado = 'dre'; // Guarda o relatório atualmente ativo
 
         function escapeHTML(str) {
             if (typeof str !== 'string') return str || '';
@@ -130,7 +131,7 @@
             categorias: 'Pastas & Categorias',
             estoque: 'Estoque & Bens / Inventário',
             documentos: 'Gestão de Documentos',
-            relatorios: 'Relatórios & DRE',
+            relatorios: 'Central de Relatórios & DRE',
             usuarios: 'Gestão de Usuários'
         };
 
@@ -364,7 +365,7 @@
                             <button onclick="abrirModulo('documentos')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'documentos' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-folder-open w-5 text-center"></i> Documentos</button>
                             
                             <p class="px-3 pt-3 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Gestão & Configurações</p>
-                            <button onclick="abrirModulo('relatorios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'relatorios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i> Relatórios & DRE</button>
+                            <button onclick="abrirModulo('relatorios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'relatorios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i> Central de Relatórios</button>
                             <button onclick="abrirModulo('usuarios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'usuarios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-user-gear w-5 text-center"></i> Gestão de Usuários</button>
                         </nav>
 
@@ -423,9 +424,7 @@
             else if (moduloId === 'estoque') btnNovoHtml = `<button onclick="window.renderModalEstoque()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Item / Bem</button>`;
             else if (moduloId === 'documentos') btnNovoHtml = `<button onclick="window.renderModalDocumento()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-upload"></i> Subir Documento</button>`;
             else if (moduloId === 'usuarios') btnNovoHtml = `<button onclick="window.renderModalUsuario()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-user-plus"></i> Novo Usuário</button>`;
-            else if (moduloId === 'relatorios') btnNovoHtml = `
-                <button onclick="restaurarDREPadrao()" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-bold shadow transition flex items-center gap-1.5"><i class="fa-solid fa-rotate-left"></i> Restaurar DRE</button>
-            `;
+            else if (moduloId === 'relatorios') btnNovoHtml = '';
 
             const headerGlobal = `
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
@@ -443,7 +442,7 @@
                 case 'categorias': return headerGlobal + renderCategoriasView();
                 case 'estoque': return headerGlobal + renderEstoqueView();
                 case 'documentos': return headerGlobal + renderDocumentosView();
-                case 'relatorios': return headerGlobal + renderRelatoriosView();
+                case 'relatorios': return headerGlobal + renderRelatoriosCentralView();
                 case 'usuarios': return headerGlobal + renderUsuariosView();
                 default: return headerGlobal + `<div class="bg-white p-6 rounded-xl border">Módulo Ativo.</div>`;
             }
@@ -451,7 +450,14 @@
 
         function exportarModuloExcel(moduloId) {
             let dataExport = db[moduloId] || [];
-            exportarParaExcel(dataExport, `relatorio_${moduloId}_${Date.now()}.xlsx`);
+            if (moduloId === 'relatorios') {
+                if (tipoRelatorioSelecionado === 'financeiro') dataExport = db.financeiro;
+                else if (tipoRelatorioSelecionado === 'estoque') dataExport = db.estoque;
+                else if (tipoRelatorioSelecionado === 'moradores') dataExport = db.moradores;
+                else if (tipoRelatorioSelecionado === 'documentos') dataExport = db.documentos;
+                else if (tipoRelatorioSelecionado === 'usuarios') dataExport = db.usuarios;
+            }
+            exportarParaExcel(dataExport, `relatorio_${tipoRelatorioSelecionado || moduloId}_${Date.now()}.xlsx`);
         }
 
         function abrirModalContainer(html) {
@@ -466,7 +472,298 @@
         }
 
         // =====================================
-        // MORADORES / UNIDADES (ATUALIZADO)
+        // CENTRAL DE RELATÓRIOS MULTI-MÓDULO
+        // =====================================
+        function renderRelatoriosCentralView() {
+            return `
+                <div class="space-y-6">
+                    <!-- SELETOR DE RELATÓRIOS -->
+                    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-2 no-print">
+                        <button onclick="tipoRelatorioSelecionado = 'dre'; renderMainOnly();" class="px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 ${tipoRelatorioSelecionado === 'dre' ? 'bg-teal-600 text-white shadow' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}">
+                            <i class="fa-solid fa-chart-line"></i> DRE Gerencial
+                        </button>
+                        <button onclick="tipoRelatorioSelecionado = 'financeiro'; renderMainOnly();" class="px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 ${tipoRelatorioSelecionado === 'financeiro' ? 'bg-teal-600 text-white shadow' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}">
+                            <i class="fa-solid fa-receipt"></i> Relatório Financeiro
+                        </button>
+                        <button onclick="tipoRelatorioSelecionado = 'estoque'; renderMainOnly();" class="px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 ${tipoRelatorioSelecionado === 'estoque' ? 'bg-teal-600 text-white shadow' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}">
+                            <i class="fa-solid fa-boxes-stacked"></i> Relatório de Estoque/Bens
+                        </button>
+                        <button onclick="tipoRelatorioSelecionado = 'moradores'; renderMainOnly();" class="px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 ${tipoRelatorioSelecionado === 'moradores' ? 'bg-teal-600 text-white shadow' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}">
+                            <i class="fa-solid fa-users"></i> Relatório de Moradores
+                        </button>
+                        <button onclick="tipoRelatorioSelecionado = 'documentos'; renderMainOnly();" class="px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 ${tipoRelatorioSelecionado === 'documentos' ? 'bg-teal-600 text-white shadow' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}">
+                            <i class="fa-solid fa-folder-open"></i> Relatório de Documentos
+                        </button>
+                        <button onclick="tipoRelatorioSelecionado = 'usuarios'; renderMainOnly();" class="px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 ${tipoRelatorioSelecionado === 'usuarios' ? 'bg-teal-600 text-white shadow' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}">
+                            <i class="fa-solid fa-user-shield"></i> Relatório de Usuários
+                        </button>
+                    </div>
+
+                    <!-- EXIBIÇÃO DO RELATÓRIO SELECIONADO -->
+                    <div id="conteudo-relatorio">
+                        ${renderConteudoRelatorioEspecifico(tipoRelatorioSelecionado)}
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderConteudoRelatorioEspecifico(tipo) {
+            switch (tipo) {
+                case 'dre': return renderRelatorioDRE();
+                case 'financeiro': return renderRelatorioFinanceiro();
+                case 'estoque': return renderRelatorioEstoque();
+                case 'moradores': return renderRelatorioMoradores();
+                case 'documentos': return renderRelatorioDocumentos();
+                case 'usuarios': return renderRelatorioUsuarios();
+                default: return renderRelatorioDRE();
+            }
+        }
+
+        // 1. DRE Gerencial
+        function renderRelatorioDRE() {
+            const fin = db.financeiro || [];
+            const recTot = fin.filter(f => f.tipo === 'Receber' && f.status === 'Baixado').reduce((acc, f) => acc + Number(f.valor), 0);
+            const pendTot = fin.filter(f => f.tipo === 'Receber' && f.status === 'Aberto').reduce((acc, f) => acc + Number(f.valor), 0);
+            const recLiq = recTot - pendTot;
+            const despTot = fin.filter(f => f.tipo === 'Pagar' && f.status === 'Baixado').reduce((acc, f) => acc + Number(f.valor), 0);
+            const resFinal = recLiq - despTot;
+
+            return `
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="flex justify-between items-center border-b pb-3">
+                        <h3 class="font-black text-slate-800 text-lg uppercase tracking-wider">Demonstrativo do Resultado do Exercício (DRE)</h3>
+                        <span class="text-xs font-bold bg-slate-100 text-slate-600 px-3 py-1 rounded-full">Atualizado em Tempo Real</span>
+                    </div>
+                    <div class="space-y-2 text-xs">
+                        <div class="flex justify-between p-3 bg-emerald-50 text-emerald-900 font-bold rounded-lg">
+                            <span>(+) RECEITA OPERACIONAL BRUTA</span>
+                            <span>R$ ${recTot.toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>
+                        </div>
+                        <div class="flex justify-between p-3 bg-rose-50 text-rose-900 font-bold rounded-lg">
+                            <span>(-) INADIMPLÊNCIA / PENDÊNCIAS</span>
+                            <span>R$ ${pendTot.toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>
+                        </div>
+                        <div class="flex justify-between p-3 bg-slate-100 text-slate-800 font-black rounded-lg border">
+                            <span>(=) RECEITA OPERACIONAL LÍQUIDA</span>
+                            <span>R$ ${recLiq.toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>
+                        </div>
+                        <div class="flex justify-between p-3 bg-rose-50 text-rose-900 font-bold rounded-lg">
+                            <span>(-) DESPESAS OPERACIONAIS</span>
+                            <span>R$ ${despTot.toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>
+                        </div>
+                        <div class="flex justify-between p-4 ${resFinal >= 0 ? 'bg-teal-600 text-white' : 'bg-rose-600 text-white'} font-black text-sm rounded-xl shadow">
+                            <span>(=) RESULTADO OPERACIONAL LÍQUIDO</span>
+                            <span>R$ ${resFinal.toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // 2. Relatório de Finanças
+        function renderRelatorioFinanceiro() {
+            const list = db.financeiro || [];
+            const recPagas = list.filter(f => f.tipo === 'Receber' && f.status === 'Baixado').reduce((a, b) => a + Number(b.valor), 0);
+            const despPagas = list.filter(f => f.tipo === 'Pagar' && f.status === 'Baixado').reduce((a, b) => a + Number(b.valor), 0);
+            const emAberto = list.filter(f => f.status === 'Aberto').reduce((a, b) => a + Number(b.valor), 0);
+
+            return `
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-black text-slate-800 text-lg border-b pb-3 uppercase tracking-wider">Relatório Sintético de Contas a Pagar e Receber</h3>
+                    
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="p-3 bg-emerald-50 rounded-lg text-center"><p class="text-[10px] uppercase font-bold text-emerald-700">Receitas Liquidadas</p><p class="text-base font-black text-emerald-800">R$ ${recPagas.toLocaleString('pt-BR', {minimumFractionDigits:2})}</p></div>
+                        <div class="p-3 bg-rose-50 rounded-lg text-center"><p class="text-[10px] uppercase font-bold text-rose-700">Despesas Liquidadas</p><p class="text-base font-black text-rose-800">R$ ${despPagas.toLocaleString('pt-BR', {minimumFractionDigits:2})}</p></div>
+                        <div class="p-3 bg-amber-50 rounded-lg text-center"><p class="text-[10px] uppercase font-bold text-amber-700">Total Aberto / Pendente</p><p class="text-base font-black text-amber-800">R$ ${emAberto.toLocaleString('pt-BR', {minimumFractionDigits:2})}</p></div>
+                    </div>
+
+                    <table class="w-full text-left border-collapse text-xs mt-4">
+                        <thead>
+                            <tr class="bg-slate-800 text-white font-bold uppercase text-[10px]">
+                                <th class="p-2.5">Tipo</th>
+                                <th class="p-2.5">Histórico</th>
+                                <th class="p-2.5">Fornecedor/Pessoa</th>
+                                <th class="p-2.5 text-right">Valor</th>
+                                <th class="p-2.5">Vencimento</th>
+                                <th class="p-2.5 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200">
+                            ${list.map(f => `
+                                <tr>
+                                    <td class="p-2.5"><span class="px-2 py-0.5 rounded font-bold text-[10px] ${f.tipo === 'Receber' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${f.tipo}</span></td>
+                                    <td class="p-2.5 font-bold">${escapeHTML(f.historico)}</td>
+                                    <td class="p-2.5">${escapeHTML(f.fornecedor || 'N/A')}</td>
+                                    <td class="p-2.5 text-right font-black">R$ ${Number(f.valor).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
+                                    <td class="p-2.5">${f.vencimento.split('-').reverse().join('/')}</td>
+                                    <td class="p-2.5 text-center font-bold">${f.status}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // 3. Relatório de Estoque
+        function renderRelatorioEstoque() {
+            const list = db.estoque || [];
+            const valorTotalPatrimonio = list.reduce((a, b) => a + (Number(b.qtd) * Number(b.valorEstimado || 0)), 0);
+            const criticos = list.filter(e => Number(e.qtd) <= Number(e.minimo)).length;
+
+            return `
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-black text-slate-800 text-lg border-b pb-3 uppercase tracking-wider">Relatório de Estoque, Patrimônio & Inventário</h3>
+                    
+                    <div class="grid grid-cols-2 gap-3">
+                        <div class="p-3 bg-teal-50 rounded-lg text-center"><p class="text-[10px] uppercase font-bold text-teal-700">Valor Estimado em Bens/Estoque</p><p class="text-base font-black text-teal-800">R$ ${valorTotalPatrimonio.toLocaleString('pt-BR', {minimumFractionDigits:2})}</p></div>
+                        <div class="p-3 bg-rose-50 rounded-lg text-center"><p class="text-[10px] uppercase font-bold text-rose-700">Itens em Alerta Crítico</p><p class="text-base font-black text-rose-800">${criticos} item(ns)</p></div>
+                    </div>
+
+                    <table class="w-full text-left border-collapse text-xs mt-4">
+                        <thead>
+                            <tr class="bg-slate-800 text-white font-bold uppercase text-[10px]">
+                                <th class="p-2.5">Item</th>
+                                <th class="p-2.5">Patrimônio / Tombamento</th>
+                                <th class="p-2.5">Categoria</th>
+                                <th class="p-2.5 text-center">Qtd Atual</th>
+                                <th class="p-2.5 text-center">Estado</th>
+                                <th class="p-2.5 text-right">Valor Est. Total</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200">
+                            ${list.map(e => `
+                                <tr>
+                                    <td class="p-2.5 font-bold">${escapeHTML(e.item)}</td>
+                                    <td class="p-2.5 font-mono">${escapeHTML(e.tombamento || 'N/A')}</td>
+                                    <td class="p-2.5">${escapeHTML(e.categoria)}</td>
+                                    <td class="p-2.5 text-center font-bold ${Number(e.qtd) <= Number(e.minimo) ? 'text-rose-600' : ''}">${e.qtd}</td>
+                                    <td class="p-2.5 text-center">${escapeHTML(e.conservacao || 'Bom')}</td>
+                                    <td class="p-2.5 text-right font-black">R$ ${(Number(e.qtd) * Number(e.valorEstimado || 0)).toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // 4. Relatório de Moradores
+        function renderRelatorioMoradores() {
+            const list = db.moradores || [];
+            const proprietarios = list.filter(m => m.tipo === 'Proprietário').length;
+            const inquilinos = list.filter(m => m.tipo === 'Inquilino').length;
+
+            return `
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-black text-slate-800 text-lg border-b pb-3 uppercase tracking-wider">Relatório Geral de Moradores e Ocupação</h3>
+                    
+                    <div class="grid grid-cols-3 gap-3">
+                        <div class="p-3 bg-slate-100 rounded-lg text-center"><p class="text-[10px] uppercase font-bold text-slate-600">Total de Unidades</p><p class="text-base font-black text-slate-800">${list.length}</p></div>
+                        <div class="p-3 bg-teal-50 rounded-lg text-center"><p class="text-[10px] uppercase font-bold text-teal-700">Proprietários Residentes</p><p class="text-base font-black text-teal-800">${proprietarios}</p></div>
+                        <div class="p-3 bg-amber-50 rounded-lg text-center"><p class="text-[10px] uppercase font-bold text-amber-700">Inquilinos</p><p class="text-base font-black text-amber-800">${inquilinos}</p></div>
+                    </div>
+
+                    <table class="w-full text-left border-collapse text-xs mt-4">
+                        <thead>
+                            <tr class="bg-slate-800 text-white font-bold uppercase text-[10px]">
+                                <th class="p-2.5">Bloco/Ap</th>
+                                <th class="p-2.5">Nome do Morador</th>
+                                <th class="p-2.5">Contato</th>
+                                <th class="p-2.5">Tipo</th>
+                                <th class="p-2.5">Observações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200">
+                            ${list.map(m => `
+                                <tr>
+                                    <td class="p-2.5 font-bold text-teal-700">Bloco ${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</td>
+                                    <td class="p-2.5 font-bold">${escapeHTML(m.nome)}</td>
+                                    <td class="p-2.5">${escapeHTML(m.telefone)} / ${escapeHTML(m.email)}</td>
+                                    <td class="p-2.5"><span class="px-2 py-0.5 rounded text-[10px] font-bold ${m.tipo === 'Inquilino' ? 'bg-amber-100 text-amber-800' : 'bg-teal-100 text-teal-800'}">${escapeHTML(m.tipo || 'Proprietário')}</span></td>
+                                    <td class="p-2.5 text-slate-500">${escapeHTML(m.observacoes || 'Nenhuma')}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // 5. Relatório de Documentos
+        function renderRelatorioDocumentos() {
+            const list = db.documentos || [];
+            return `
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-black text-slate-800 text-lg border-b pb-3 uppercase tracking-wider">Inventário de Documentos & Atas Cadastradas</h3>
+                    
+                    <p class="text-xs text-slate-500">Total de arquivos digitais catalogados: <b>${list.length}</b></p>
+
+                    <table class="w-full text-left border-collapse text-xs mt-4">
+                        <thead>
+                            <tr class="bg-slate-800 text-white font-bold uppercase text-[10px]">
+                                <th class="p-2.5">Título</th>
+                                <th class="p-2.5">Pasta/Categoria</th>
+                                <th class="p-2.5">Data de Inclusão</th>
+                                <th class="p-2.5">Observação</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200">
+                            ${list.map(d => `
+                                <tr>
+                                    <td class="p-2.5 font-bold">${escapeHTML(d.titulo)}</td>
+                                    <td class="p-2.5"><span class="px-2 py-0.5 rounded bg-slate-100 font-bold">${escapeHTML(d.pasta)}</span></td>
+                                    <td class="p-2.5">${d.data ? d.data.split('-').reverse().join('/') : 'N/A'}</td>
+                                    <td class="p-2.5 text-slate-500">${escapeHTML(d.observacao || 'Sem observação')}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // 6. Relatório de Usuários
+        function renderRelatorioUsuarios() {
+            const list = db.usuarios || [];
+            return `
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-black text-slate-800 text-lg border-b pb-3 uppercase tracking-wider">Relatório de Controle de Acesso e Usuários</h3>
+                    
+                    <table class="w-full text-left border-collapse text-xs mt-4">
+                        <thead>
+                            <tr class="bg-slate-800 text-white font-bold uppercase text-[10px]">
+                                <th class="p-2.5">Usuário (Login)</th>
+                                <th class="p-2.5">Nome Completo</th>
+                                <th class="p-2.5">E-mail</th>
+                                <th class="p-2.5">Perfil</th>
+                                <th class="p-2.5 text-center">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200">
+                            ${list.map(u => `
+                                <tr>
+                                    <td class="p-2.5 font-bold">${escapeHTML(u.usuario)}</td>
+                                    <td class="p-2.5">${escapeHTML(u.nome)}</td>
+                                    <td class="p-2.5">${escapeHTML(u.email)}</td>
+                                    <td class="p-2.5"><span class="px-2 py-0.5 rounded font-bold bg-teal-100 text-teal-800 text-[10px]">${u.perfil}</span></td>
+                                    <td class="p-2.5 text-center font-bold text-emerald-700">${u.status}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function restaurarDREPadrao() {
+            db.dre_config = DEFAULT_DATA.dre_config;
+            salvarDados(db);
+            renderMainOnly();
+        }
+
+        // =====================================
+        // MORADORES / UNIDADES
         // =====================================
         function renderMoradoresView() {
             let list = db.moradores || [];
@@ -557,7 +854,6 @@
                                 </div>
                             </div>
                             
-                            <!-- TIPO DE MORADOR -->
                             <div>
                                 <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Tipo de Morador</label>
                                 <select id="m_mor_tipo" required class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
@@ -568,7 +864,6 @@
                                 </select>
                             </div>
 
-                            <!-- OBSERVAÇÕES -->
                             <div>
                                 <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Observações</label>
                                 <textarea id="m_mor_obs" placeholder="Ex: Informações sobre veículos, dependentes, vigência do contrato..." class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50 h-20">${escapeHTML(m.observacoes || '')}</textarea>
@@ -1437,14 +1732,17 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
-                            ${list.map(d => `
+                            ${list.length === 0 ? `<tr><td colspan="5" class="p-6 text-center text-slate-400 font-semibold">Nenhum documento encontrado.</td></tr>` : list.map(d => `
                                 <tr class="hover:bg-slate-50 transition">
                                     <td class="p-3 font-bold text-slate-900"><i class="fa-solid fa-file-pdf text-rose-600 mr-2"></i> ${escapeHTML(d.titulo)}</td>
                                     <td class="p-3"><span class="px-2 py-0.5 rounded bg-slate-100 font-bold">${escapeHTML(d.pasta)}</span></td>
                                     <td class="p-3">${d.data ? d.data.split('-').reverse().join('/') : 'N/A'}</td>
                                     <td class="p-3 text-slate-500">${escapeHTML(d.observacao || '')}</td>
                                     <td class="p-3 text-center actions-col">
-                                        <button onclick="excluirDocumento('${d.id}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-md"><i class="fa-solid fa-trash"></i></button>
+                                        <div class="flex items-center justify-center gap-1">
+                                            <button onclick="window.renderModalDocumento('${d.id}')" title="Editar Documento" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition"><i class="fa-solid fa-pen"></i></button>
+                                            <button onclick="excluirDocumento('${d.id}')" title="Excluir" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-md transition"><i class="fa-solid fa-trash"></i></button>
+                                        </div>
                                     </td>
                                 </tr>
                             `).join('')}
@@ -1454,20 +1752,23 @@
             `;
         }
 
-        window.renderModalDocumento = function() {
-            const pastasOps = db.categorias.filter(c => c.modulo === 'Documentos').map(c => `<option value="${escapeHTML(c.nome)}">${escapeHTML(c.nome)}</option>`).join('');
+        window.renderModalDocumento = function(id = null) {
+            const doc = id ? db.documentos.find(d => d.id === id) : { id: '', titulo: '', pasta: 'Atas de Assembleia', observacao: '', arquivoBase64: '' };
+            tempBase64 = doc.arquivoBase64 || '';
+
+            const pastasOps = db.categorias.filter(c => c.modulo === 'Documentos').map(c => `<option value="${escapeHTML(c.nome)}" ${doc.pasta === c.nome ? 'selected' : ''}>${escapeHTML(c.nome)}</option>`).join('');
 
             abrirModalContainer(`
                 <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
                         <div class="flex justify-between items-center border-b pb-3">
-                            <h3 class="font-bold text-lg text-slate-800">Enviar Documento</h3>
+                            <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Documento' : 'Enviar Documento'}</h3>
                             <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
                         </div>
-                        <form onsubmit="salvarModalDocumento(event)" class="space-y-3">
+                        <form onsubmit="salvarModalDocumento(event, '${id}')" class="space-y-3">
                             <div>
                                 <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Título do Documento</label>
-                                <input type="text" id="m_doc_titulo" required class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
+                                <input type="text" id="m_doc_titulo" required value="${escapeHTML(doc.titulo)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Pasta</label>
@@ -1475,7 +1776,7 @@
                             </div>
                             <div>
                                 <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Observação</label>
-                                <textarea id="m_doc_obs" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50 h-20"></textarea>
+                                <textarea id="m_doc_obs" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50 h-20">${escapeHTML(doc.observacao || '')}</textarea>
                             </div>
 
                             <div class="border border-slate-200 rounded-xl p-3 bg-slate-50/50 space-y-2">
@@ -1502,7 +1803,7 @@
                                     </div>
                                 </div>
 
-                                <img id="preview_doc" class="mt-2 h-20 object-cover rounded-lg border border-slate-300 shadow-sm hidden">
+                                <img id="preview_doc" src="${tempBase64}" class="mt-2 h-20 object-cover rounded-lg border border-slate-300 shadow-sm ${tempBase64 ? '' : 'hidden'}">
                             </div>
 
                             <div class="flex justify-end gap-2 pt-3 border-t">
@@ -1515,17 +1816,26 @@
             `);
         };
 
-        function salvarModalDocumento(e) {
+        function salvarModalDocumento(e, id) {
             e.preventDefault();
-            db.documentos.push({
-                id: 'doc_' + Date.now(),
+            const newDoc = {
+                id: id || 'doc_' + Date.now(),
                 titulo: document.getElementById('m_doc_titulo').value.trim(),
                 pasta: document.getElementById('m_doc_pasta').value,
-                data: new Date().toISOString().split('T')[0],
+                data: id ? (db.documentos.find(d => d.id === id)?.data || new Date().toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
                 observacao: document.getElementById('m_doc_obs').value.trim(),
                 arquivoBase64: tempBase64
-            });
+            };
+
+            if (id) {
+                const idx = db.documentos.findIndex(d => d.id === id);
+                if (idx !== -1) db.documentos[idx] = newDoc;
+            } else {
+                db.documentos.push(newDoc);
+            }
+
             salvarDados(db);
+            registrarLog('Documentos', id ? 'Edição' : 'Criação', `Documento ${newDoc.titulo} salvo.`);
             fecharModalContainer();
             renderMainOnly();
         }
@@ -1534,52 +1844,7 @@
             if (!confirm('Deseja excluir este documento?')) return;
             db.documentos = db.documentos.filter(d => d.id !== id);
             salvarDados(db);
-            renderMainOnly();
-        }
-
-        // =====================================
-        // RELATÓRIOS & DRE
-        // =====================================
-        function renderRelatoriosView() {
-            const fin = db.financeiro || [];
-            const recTot = fin.filter(f => f.tipo === 'Receber' && f.status === 'Baixado').reduce((acc, f) => acc + Number(f.valor), 0);
-            const pendTot = fin.filter(f => f.tipo === 'Receber' && f.status === 'Aberto').reduce((acc, f) => acc + Number(f.valor), 0);
-            const recLiq = recTot - pendTot;
-            const despTot = fin.filter(f => f.tipo === 'Pagar' && f.status === 'Baixado').reduce((acc, f) => acc + Number(f.valor), 0);
-            const resFinal = recLiq - despTot;
-
-            return `
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                    <h3 class="font-black text-slate-800 text-lg border-b pb-3 uppercase tracking-wider">Demonstrativo do Resultado do Exercício (DRE)</h3>
-                    <div class="space-y-2 text-xs">
-                        <div class="flex justify-between p-3 bg-emerald-50 text-emerald-900 font-bold rounded-lg">
-                            <span>(+) RECEITA OPERACIONAL BRUTA</span>
-                            <span>R$ ${recTot.toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>
-                        </div>
-                        <div class="flex justify-between p-3 bg-rose-50 text-rose-900 font-bold rounded-lg">
-                            <span>(-) INADIMPLÊNCIA / PENDÊNCIAS</span>
-                            <span>R$ ${pendTot.toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>
-                        </div>
-                        <div class="flex justify-between p-3 bg-slate-100 text-slate-800 font-black rounded-lg border">
-                            <span>(=) RECEITA OPERACIONAL LÍQUIDA</span>
-                            <span>R$ ${recLiq.toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>
-                        </div>
-                        <div class="flex justify-between p-3 bg-rose-50 text-rose-900 font-bold rounded-lg">
-                            <span>(-) DESPESAS OPERACIONAIS</span>
-                            <span>R$ ${despTot.toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>
-                        </div>
-                        <div class="flex justify-between p-4 ${resFinal >= 0 ? 'bg-teal-600 text-white' : 'bg-rose-600 text-white'} font-black text-sm rounded-xl shadow">
-                            <span>(=) RESULTADO OPERACIONAL LÍQUIDO</span>
-                            <span>R$ ${resFinal.toLocaleString('pt-BR', {minimumFractionDigits:2})}</span>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function restaurarDREPadrao() {
-            db.dre_config = DEFAULT_DATA.dre_config;
-            salvarDados(db);
+            registrarLog('Documentos', 'Exclusão', `Documento ID ${id} removido.`);
             renderMainOnly();
         }
 
