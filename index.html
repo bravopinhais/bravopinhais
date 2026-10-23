@@ -87,7 +87,7 @@
                     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
                     return true;
                 } catch (e) {
-                    alert('Erro ao guardar dados.');
+                    alert('Erro ao salvar os dados.');
                     return false;
                 }
             }
@@ -380,7 +380,7 @@
             `;
         }
 
-        // MODAL DO FINANCEIRO (NOVO E EDIÇÃO DE TÍTULO)
+        // MODAL FINANCEIRO
         function renderModalTituloFinanceiro(tituloId = null) {
             const f = tituloId ? db.financeiro.find(x => x.id === tituloId) : null;
             const tipoInicial = f ? f.tipo : 'Receber';
@@ -411,7 +411,7 @@
                             </div>
 
                             <div>
-                                <label id="lbl_favorecido" class="block text-xs font-bold uppercase mb-1">Pessoa / Morador / Fornecedor</label>
+                                <label class="block text-xs font-bold uppercase mb-1">Pessoa / Morador / Fornecedor</label>
                                 <div class="space-y-2">
                                     <select id="fin_favorecido_select" onchange="document.getElementById('fin_favorecido_input').value = this.value === 'outro' ? '' : this.value" class="w-full p-2.5 border rounded-xl text-xs font-bold bg-slate-50">
                                     </select>
@@ -679,21 +679,29 @@
         function renderDocumentosModule() {
             let list = db.documentos || [];
             return `
-                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 p-4 space-y-4">
+                    <div class="flex items-center justify-between border-b pb-3">
+                        <h3 class="font-extrabold text-xs text-slate-500 uppercase tracking-wider">Gestão de Documentos</h3>
+                    </div>
                     <table class="w-full text-left text-xs">
                         <thead class="bg-slate-100 font-bold border-b">
                             <tr>
                                 <th class="p-3">Título</th>
                                 <th class="p-3">Pasta</th>
                                 <th class="p-3">Data</th>
+                                <th class="p-3 text-right">Ações</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y">
+                            ${list.length === 0 ? `<tr><td colspan="4" class="p-6 text-center text-slate-500 font-bold">Nenhum documento encontrado.</td></tr>` : ''}
                             ${list.map(d => `
                                 <tr>
                                     <td class="p-3 font-bold">${escapeHTML(d.titulo)}</td>
                                     <td class="p-3">${escapeHTML(d.pasta)}</td>
                                     <td class="p-3 font-mono">${d.data}</td>
+                                    <td class="p-3 text-right">
+                                        <button onclick="excluirDocumento('${d.id}')" title="Excluir" class="p-1.5 text-rose-600 hover:bg-rose-50 rounded-lg"><i class="fa-solid fa-trash"></i></button>
+                                    </td>
                                 </tr>
                             `).join('')}
                         </tbody>
@@ -729,6 +737,13 @@
             const data = document.getElementById('doc_data').value;
             db.documentos.push({ id: 'doc_' + Date.now(), titulo, pasta, data });
             salvarDados(db); fecharModal('modal_doc'); renderApp();
+        }
+
+        function excluirDocumento(id) {
+            if (confirm('Deseja excluir este documento?')) {
+                db.documentos = db.documentos.filter(x => x.id !== id);
+                salvarDados(db); renderApp();
+            }
         }
 
         function fecharModal(id) {
