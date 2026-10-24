@@ -63,7 +63,8 @@
                 { id: 'cons_2', nome: 'Carlos Eduardo', cargo: 'Subsíndico', BlocoAp: 'Bloco 1 - Ap 102', telefone: '(41) 98888-8888', inicioMandato: '2026-01-01', fimMandato: '2027-12-31', status: 'Ativo' }
             ],
             usuarios: [
-                { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Admin@12345' }
+                { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Admin@12345' },
+                { id: 'usr_sheila', usuario: 'sheila', nome: 'Sheila (Subsíndica/Operadora)', email: 'sheila@guardioes.com', perfil: 'Síndico', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Sheila@123' }
             ],
             financeiro: [
                 { id: 'fin_1', tipo: 'Receber', historico: 'Taxa Condominial Ordinária - Ap 137', valor: 2500.00, vencimento: '2026-10-15', competencia: '10/2026', formaMonetariaId: 'fm_1', fornecedor: 'Alan Reis', status: 'Aberto' }
@@ -137,11 +138,10 @@
             }
         }
 
-        // Sincronização em tempo real entre abas / usuários
+        // SINCRONIZAÇÃO EM TEMPO REAL ENTRE DISPOSITIVOS / USUÁRIOS (Alan <-> Sheila)
         window.addEventListener('storage', (event) => {
             if (event.key === 'guardioes_bravo_db') {
                 db = carregarDados();
-                // Se o usuário logado foi alterado ou excluído por outro admin, atualiza sessão
                 if (sessao.usuarioLogado) {
                     const atualizado = (db.usuarios || []).find(u => u.id === sessao.usuarioLogado.id);
                     if (!atualizado || atualizado.status === 'Inativo') {
@@ -157,6 +157,7 @@
         });
 
         function fazerBackupCompleto() {
+            db = carregarDados();
             const dadosStr = JSON.stringify(db, null, 2);
             const blob = new Blob([dadosStr], { type: 'application/json' });
             const url = URL.createObjectURL(blob);
@@ -367,14 +368,8 @@
             const novaSenha = document.getElementById('primeira_senha').value;
             const confirmaSenha = document.getElementById('primeira_senha_confirma').value;
 
-            if (novaSenha.length < 6) {
-                alert('A nova senha deve ter pelo menos 6 caracteres.');
-                return;
-            }
-            if (novaSenha !== confirmaSenha) {
-                alert('As senhas não conferem.');
-                return;
-            }
+            if (novaSenha.length < 6) { alert('A nova senha deve ter pelo menos 6 caracteres.'); return; }
+            if (novaSenha !== confirmaSenha) { alert('As senhas não conferem.'); return; }
 
             db = carregarDados();
             const uIndex = (db.usuarios || []).findIndex(u => u.id === sessao.usuarioLogado.id);
@@ -387,8 +382,6 @@
                 alert('Senha alterada com sucesso! Bem-vindo ao sistema.');
                 renderApp();
                 setTimeout(inicializarGraficosDashboard, 50);
-            } else {
-                alert('Erro ao localizar usuário.');
             }
         }
 
@@ -1520,7 +1513,6 @@
                 email: document.getElementById('m_usr_email').value.trim(),
                 perfil: document.getElementById('m_usr_perfil').value,
                 status: document.getElementById('m_usr_status').value,
-                // Se for novo usuário ou se a senha foi alterada no form, marca como primeiro acesso obrigatório
                 primeiroAcesso: isNovo ? true : (usuarioExistente ? (usuarioExistente.senhaHash !== senhaDigitada ? true : usuarioExistente.primeiroAcesso) : true),
                 senhaHash: senhaDigitada || (usuarioExistente ? usuarioExistente.senhaHash : 'Condo@2026')
             };
