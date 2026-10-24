@@ -110,7 +110,7 @@
                     return {
                         condominio: parsed.condominio || DEFAULT_DATA.condominio,
                         conselheiros: parsed.conselheiros || DEFAULT_DATA.conselheiros,
-                        usuarios: parsed.usuarios || DEFAULT_DATA.usuarios,
+                        usuarios: parsed.usuarios && parsed.usuarios.length > 0 ? parsed.usuarios : DEFAULT_DATA.usuarios,
                         financeiro: parsed.financeiro || DEFAULT_DATA.financeiro,
                         formas_monetarias: parsed.formas_monetarias || DEFAULT_DATA.formas_monetarias,
                         contas_bancarias: parsed.contas_bancarias || DEFAULT_DATA.contas_bancarias,
@@ -136,6 +136,16 @@
                 alert('Aviso: Armazenamento local cheio.'); 
             }
         }
+
+        // Sincronização em tempo real entre abas / usuários
+        window.addEventListener('storage', (event) => {
+            if (event.key === 'guardioes_bravo_db') {
+                db = carregarDados();
+                if (sessao.usuarioLogado) {
+                    renderMainOnly();
+                }
+            }
+        });
 
         function fazerBackupCompleto() {
             const dadosStr = JSON.stringify(db, null, 2);
@@ -264,12 +274,73 @@
             document.body.removeChild(a);
         }
 
+        function importarPlanilhaCSV(event, moduloId) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const text = e.target.result;
+                    const lines = text.split('\n').filter(l => l.trim() !== '');
+                    if (lines.length < 2) {
+                        alert('O arquivo CSV parece estar vazio ou inválido.');
+                        return;
+                    }
+                    // Remove BOM se presente
+                    let headerLine = lines[0].replace(/^\uFEFF/, '');
+                    const headers = headerLine.split(';').map(h => h.replace(/"/g, '').trim());
+
+                    let novosRegistros = [];
+                    for (let i = 1; i < lines.length; i++) {
+                        let currentLine = lines[i];
+                        // Parse simples de CSV com separador ponto e vírgula
+                        let values = [];
+                        let inQuotes = false;
+                        let currentValue = '';
+                        for (let char of currentLine) {
+                            if (char === '"') {
+                                inQuotes = !inQuotes;
+                            } else if (char === ';' && !inQuotes) {
+                                values.push(currentValue.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+                                currentValue = '';
+                            } else {
+                                currentValue += char;
+                            }
+                        }
+                        values.push(currentValue.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
+
+                        let obj = {};
+                        headers.forEach((h, index) => {
+                            obj[h] = values[index] !== undefined ? values[index] : '';
+                        });
+                        if (!obj.id) {
+                            obj.id = moduloId.slice(0, 3) + '_' + Date.now() + '_' + i;
+                        }
+                        novosRegistros.push(obj);
+                    }
+
+                    db = carregarDados();
+                    if (!db[moduloId]) db[moduloId] = [];
+                    // Adiciona ou substitui os registros importados
+                    db[moduloId] = novosRegistros;
+                    salvarDados(db);
+                    alert(`Planilha importada com sucesso! ${novosRegistros.length} registro(s) carregado(s).`);
+                    renderMainOnly();
+                } catch (err) {
+                    alert('Erro ao processar o arquivo CSV. Verifique se o formato está correto.');
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+            event.target.value = ''; // Reseta o input file
+        }
+
         function exportarParaPDF() { window.print(); }
 
         function realizarLogin(e) {
             e.preventDefault();
             const userInput = document.getElementById('login_user').value.trim();
             const senhaInput = document.getElementById('login_pass').value;
+            db = carregarDados();
             const userFound = (db.usuarios || []).find(u => u.usuario === userInput || u.email === userInput);
             if (userFound && userFound.senhaHash === senhaInput) {
                 sessao.usuarioLogado = userFound;
@@ -325,6 +396,7 @@
         }
 
         function renderApp() {
+            db = carregarDados();
             const container = document.getElementById('app');
             if (!container) return;
             if (!sessao.usuarioLogado) {
@@ -425,6 +497,10 @@
                 <button onclick="exportarModuloExcel('${moduloId}')" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-xs shadow transition flex items-center gap-1.5">
                     <i class="fa-solid fa-file-excel"></i> Exportar Excel
                 </button>
+                <label class="px-3 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg font-bold text-xs shadow transition flex items-center gap-1.5 cursor-pointer">
+                    <i class="fa-solid fa-file-arrow-up"></i> Importar Planilha
+                    <input type="file" accept=".csv" onchange="importarPlanilhaCSV(event, '${moduloId}')" class="hidden">
+                </label>
             `;
 
             if (moduloId === 'condominio') btnNovoHtml = `<button onclick="window.renderModalConselheiro()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Membro do Conselho</button>`;
@@ -466,6 +542,7 @@
         }
 
         function exportarModuloExcel(moduloId) {
+            db = carregarDados();
             let dataExport = db[moduloId] || [];
             exportarParaExcel(dataExport, `relatorio_${moduloId}_${Date.now()}.csv`);
         }
@@ -484,6 +561,7 @@
         // DASHBOARD
         // =====================================
         function renderDashboardView() {
+            db = carregarDados();
             const totalMoradores = (db.moradores || []).length;
             const totalFornecedores = (db.fornecedores || []).length;
             const totalEmpregados = (db.empregados || []).length;
@@ -524,6 +602,7 @@
             if (activeCharts.moradores) activeCharts.moradores.destroy();
             if (activeCharts.financeiro) activeCharts.financeiro.destroy();
 
+            db = carregarDados();
             const ctxMoradores = document.getElementById('chartMoradoresTipo');
             if (ctxMoradores) {
                 const moradores = db.moradores || [];
@@ -556,6 +635,7 @@
         // MÓDULO: DADOS DO CONDOMÍNIO & CONSELHO
         // =====================================
         function renderCondominioView() {
+            db = carregarDados();
             const cond = db.condominio || {};
             const conselheiros = db.conselheiros || [];
 
@@ -655,6 +735,7 @@
         }
 
         function salvarDadosCondominio() {
+            db = carregarDados();
             db.condominio = {
                 nome: document.getElementById('cond_nome').value.trim(),
                 cnpj: document.getElementById('cond_cnpj').value.trim(),
@@ -672,6 +753,7 @@
         }
 
         window.renderModalConselheiro = function(id = null) {
+            db = carregarDados();
             if (!db.conselheiros) db.conselheiros = [];
             const item = id ? db.conselheiros.find(x => x.id === id) : { id: '', nome: '', cargo: 'Conselheiro Fiscal', BlocoAp: '', telefone: '', inicioMandato: '', fimMandato: '' };
             abrirModalContainer(`
@@ -728,6 +810,7 @@
 
         window.salvarModalConselheiro = function(e, id) {
             e.preventDefault();
+            db = carregarDados();
             if (!db.conselheiros) db.conselheiros = [];
             const newItem = {
                 id: id && id !== 'null' ? id : 'cons_' + Date.now(),
@@ -750,6 +833,7 @@
         // MÓDULO: FINANCEIRO
         // =====================================
         function renderFinanceiroView() {
+            db = carregarDados();
             const list = db.financeiro || [];
             return `
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -787,6 +871,7 @@
         }
 
         window.renderModalNovoTitulo = function(id = null) {
+            db = carregarDados();
             if (!db.financeiro) db.financeiro = [];
             const item = id ? db.financeiro.find(x => x.id === id) : { id: '', tipo: 'Receber', historico: '', valor: '', vencimento: '', status: 'Aberto' };
             abrirModalContainer(`
@@ -830,6 +915,7 @@
 
         window.salvarModalFinanceiro = function(e, id) {
             e.preventDefault();
+            db = carregarDados();
             if (!db.financeiro) db.financeiro = [];
             const newItem = {
                 id: id && id !== 'null' ? id : 'fin_' + Date.now(),
@@ -857,6 +943,7 @@
         }
 
         function renderMoradoresView() {
+            db = carregarDados();
             if (!db.moradores) db.moradores = [];
             let list = [...db.moradores];
             const blocosUnicos = [...new Set(list.map(m => `Bloco ${m.bloco} - Ap ${m.apartamento}`))].sort();
@@ -933,6 +1020,7 @@
         }
 
         window.renderModalMorador = function(id = null) {
+            db = carregarDados();
             if (!db.moradores) db.moradores = [];
             const m = id ? db.moradores.find(x => x.id === id) : { 
                 id: '', bloco: '1', apartamento: '', nome: '', email: '', telefone: '', tipo: 'Proprietário', 
@@ -1002,6 +1090,7 @@
 
         window.salvarModalMorador = function(e, id) {
             e.preventDefault();
+            db = carregarDados();
             if (!db.moradores) db.moradores = [];
             const newItem = {
                 id: id && id !== 'null' ? id : 'mor_' + Date.now(),
@@ -1033,6 +1122,7 @@
         // MÓDULO: FORNECEDORES
         // =====================================
         function renderFornecedoresView() {
+            db = carregarDados();
             const list = db.fornecedores || [];
             return `
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -1066,6 +1156,7 @@
         }
 
         window.renderModalFornecedor = function(id = null) {
+            db = carregarDados();
             if (!db.fornecedores) db.fornecedores = [];
             const item = id ? db.fornecedores.find(x => x.id === id) : { id: '', cnpj: '', razaoSocial: '', email: '', telefone: '' };
             abrirModalContainer(`
@@ -1094,6 +1185,7 @@
 
         window.salvarModalFornecedor = function(e, id) {
             e.preventDefault();
+            db = carregarDados();
             if (!db.fornecedores) db.fornecedores = [];
             const newItem = {
                 id: id && id !== 'null' ? id : 'for_' + Date.now(),
@@ -1114,6 +1206,7 @@
         // MÓDULO: EMPREGADOS
         // =====================================
         function renderEmpregadosView() {
+            db = carregarDados();
             const list = db.empregados || [];
             return `
                 <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
@@ -1149,6 +1242,7 @@
         }
 
         window.renderModalEmpregado = function(id = null) {
+            db = carregarDados();
             if (!db.empregados) db.empregados = [];
             const item = id ? db.empregados.find(x => x.id === id) : { id: '', nome: '', cargo: '', funcao: '', telefone: '' };
             abrirModalContainer(`
@@ -1180,6 +1274,7 @@
 
         window.salvarModalEmpregado = function(e, id) {
             e.preventDefault();
+            db = carregarDados();
             if (!db.empregados) db.empregados = [];
             const newItem = {
                 id: id && id !== 'null' ? id : 'emp_' + Date.now(),
@@ -1191,6 +1286,117 @@
             const idx = db.empregados.findIndex(x => x.id === newItem.id);
             if (idx !== -1) db.empregados[idx] = newItem;
             else db.empregados.push(newItem);
+            salvarDados(db);
+            fecharModalContainer();
+            renderMainOnly();
+        };
+
+        // =====================================
+        // MÓDULO: GESTÃO DE USUÁRIOS
+        // =====================================
+        function renderUsuariosView() {
+            db = carregarDados();
+            const list = db.usuarios || [];
+            return `
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-800 text-white font-bold uppercase tracking-wider text-[11px]">
+                                <th class="p-3">Usuário</th>
+                                <th class="p-3">Nome Completo</th>
+                                <th class="p-3">E-mail</th>
+                                <th class="p-3">Perfil</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3 text-center actions-col">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
+                            ${list.length === 0 ? `<tr><td colspan="6" class="p-6 text-center text-slate-400">Nenhum usuário cadastrado.</td></tr>` : list.map(u => `
+                                <tr>
+                                    <td class="p-3 font-bold text-teal-700">${escapeHTML(u.usuario)}</td>
+                                    <td class="p-3 font-bold text-slate-900">${escapeHTML(u.nome)}</td>
+                                    <td class="p-3">${escapeHTML(u.email)}</td>
+                                    <td class="p-3"><span class="px-2 py-0.5 bg-slate-100 text-slate-800 rounded font-bold">${escapeHTML(u.perfil)}</span></td>
+                                    <td class="p-3"><span class="px-2 py-0.5 rounded font-bold ${u.status === 'Ativo' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${escapeHTML(u.status || 'Ativo')}</span></td>
+                                    <td class="p-3 text-center actions-col">
+                                        <div class="flex items-center justify-center gap-1">
+                                            <button onclick="window.renderModalUsuario('${u.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition" title="Editar Usuário"><i class="fa-solid fa-pen"></i></button>
+                                            ${u.id !== 'usr_admin' ? `<button onclick="excluirRegistro('usuarios', '${u.id}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-md transition" title="Excluir Usuário"><i class="fa-solid fa-trash"></i></button>` : ''}
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        window.renderModalUsuario = function(id = null) {
+            db = carregarDados();
+            if (!db.usuarios) db.usuarios = [];
+            const item = id ? db.usuarios.find(x => x.id === id) : { id: '', usuario: '', nome: '', email: '', perfil: 'Operador', status: 'Ativo', senhaHash: '' };
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <div class="flex justify-between items-center border-b pb-3">
+                            <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Usuário do Sistema' : 'Novo Usuário do Sistema'}</h3>
+                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+                        </div>
+                        <form id="form_usuario_modal" onsubmit="window.salvarModalUsuario(event, '${id}')" class="space-y-3">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Login (Usuário)</label><input type="text" id="m_usr_login" required value="${escapeHTML(item.usuario)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Perfil</label>
+                                    <select id="m_usr_perfil" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
+                                        <option value="Admin" ${item.perfil === 'Admin' ? 'selected' : ''}>Admin</option>
+                                        <option value="Síndico" ${item.perfil === 'Síndico' ? 'selected' : ''}>Síndico</option>
+                                        <option value="Operador" ${item.perfil === 'Operador' ? 'selected' : ''}>Operador</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome Completo</label><input type="text" id="m_usr_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">E-mail</label><input type="email" id="m_usr_email" required value="${escapeHTML(item.email)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Senha ${id ? '(Deixe em branco para manter)' : ''}</label><input type="password" id="m_usr_senha" ${id ? '' : 'required'} placeholder="••••••••" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Status</label>
+                                <select id="m_usr_status" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
+                                    <option value="Ativo" ${item.status === 'Ativo' ? 'selected' : ''}>Ativo</option>
+                                    <option value="Inativo" ${item.status === 'Inativo' ? 'selected' : ''}>Inativo</option>
+                                </select>
+                            </div>
+                            <div class="flex justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
+                                <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold">Salvar Usuário</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        window.salvarModalUsuario = function(e, id) {
+            e.preventDefault();
+            db = carregarDados();
+            if (!db.usuarios) db.usuarios = [];
+            const senhaDigitada = document.getElementById('m_usr_senha').value;
+            const usuarioExistente = id && id !== 'null' ? db.usuarios.find(x => x.id === id) : null;
+            
+            const newItem = {
+                id: id && id !== 'null' ? id : 'usr_' + Date.now(),
+                usuario: document.getElementById('m_usr_login').value.trim(),
+                nome: document.getElementById('m_usr_nome').value.trim(),
+                email: document.getElementById('m_usr_email').value.trim(),
+                perfil: document.getElementById('m_usr_perfil').value,
+                status: document.getElementById('m_usr_status').value,
+                primeiroAcesso: false,
+                senhaHash: senhaDigitada ? senhaDigitada : (usuarioExistente ? usuarioExistente.senhaHash : 'Admin@12345')
+            };
+
+            const idx = db.usuarios.findIndex(x => x.id === newItem.id);
+            if (idx !== -1) db.usuarios[idx] = newItem;
+            else db.usuarios.push(newItem);
+            
             salvarDados(db);
             fecharModalContainer();
             renderMainOnly();
@@ -1214,12 +1420,10 @@
         function renderDocumentosView() {
             return `<div class="bg-white p-6 rounded-2xl border"><h3 class="font-bold">Módulo Documentos</h3></div>`;
         }
-        function renderUsuariosView() {
-            return `<div class="bg-white p-6 rounded-2xl border"><h3 class="font-bold">Módulo Gestão de Usuários</h3></div>`;
-        }
 
         function excluirRegistro(colecao, id) {
             if (!confirm('Deseja realmente remover este registro?')) return;
+            db = carregarDados();
             if (db[colecao]) {
                 db[colecao] = db[colecao].filter(x => x.id !== id);
                 salvarDados(db);
@@ -1228,6 +1432,7 @@
         }
 
         function renderRelatoriosCentralView() {
+            db = carregarDados();
             return `
                 <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                     <h3 class="font-black text-slate-800 text-lg border-b pb-3 uppercase tracking-wider">Demonstrativo do Resultado do Exercício (DRE)</h3>
