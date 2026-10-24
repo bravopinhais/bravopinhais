@@ -10,11 +10,8 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Pako (Compressão Gzip) -->
+    <!-- Pako (Compressão Gzip para economizar localStorage) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
-    <!-- Firebase SDK (v9 Compat) -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <style>
         html, body { height: 100%; margin: 0; padding: 0; }
         input, select, textarea { color: #0f172a !important; font-weight: 600 !important; }
@@ -40,7 +37,6 @@
         let tempArquivoNome = ''; 
         let tempArquivoGzip = ''; 
         let activeCharts = {};
-        let firebaseDb = null;
 
         function escapeHTML(str) {
             if (typeof str !== 'string') return str || '';
@@ -67,13 +63,13 @@
                 { id: 'cons_2', nome: 'Carlos Eduardo', cargo: 'Subsíndico', BlocoAp: 'Bloco 1 - Ap 102', telefone: '(41) 98888-8888', inicioMandato: '2026-01-01', fimMandato: '2027-12-31', status: 'Ativo' }
             ],
             usuarios: [
-                { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', perfil: 'Admin', status: 'Ativo', senhaHash: 'Admin@12345' }
+                { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Admin@12345' }
             ],
             financeiro: [
-                { id: 'fin_1', tipo: 'Receber', historico: 'Taxa Condominial Ordinária - Ap 137', valor: 2500.00, vencimento: '2026-10-15', status: 'Aberto' }
+                { id: 'fin_1', tipo: 'Receber', historico: 'Taxa Condominial Ordinária - Ap 137', valor: 2500.00, vencimento: '2026-10-15', competencia: '10/2026', formaMonetariaId: 'fm_1', fornecedor: 'Alan Reis', status: 'Aberto' }
             ],
             formas_monetarias: [
-                { id: 'fm_1', nome: 'MOVIMENTO BANCARIO', multaPct: 2.0, jurosDiaPct: 0.033, status: 'Ativo' }
+                { id: 'fm_1', nome: 'MOVIMENTO BANCARIO', contaId: 'cb_1', multaPct: 2.0, jurosDiaPct: 0.033, baixaAutomatica: true, status: 'Ativo' }
             ],
             contas_bancarias: [
                 { id: 'cb_1', banco: 'CAIXA BARAO', agencia: '1234-5', conta: '98765-4', saldo: 45800.00 }
@@ -93,14 +89,17 @@
                 { id: 'emp_1', nome: 'João da Silva', cargo: 'Porteiro', funcao: 'Controle de Acesso', telefone: '(41) 98888-1111' }
             ],
             categorias: [
-                { id: 'cat_1', nome: 'Atas de Assembleia', modulo: 'Documentos' }
+                { id: 'cat_1', nome: 'Atas de Assembleia', modulo: 'Documentos' },
+                { id: 'cat_2', nome: 'Contratos', modulo: 'Documentos' },
+                { id: 'cat_3', nome: 'Prestação de Contas', modulo: 'Documentos' }
             ],
             estoque: [
                 { id: 'est_1', item: 'Extintor ABC', categoria: 'Segurança', qtd: 4, localizacao: 'Hall Principal' }
             ],
             documentos: [
                 { id: 'doc_1', titulo: 'Ata Assembleia Outubro', pasta: 'Atas de Assembleia', nomeArquivo: 'ata_out.pdf' }
-            ]
+            ],
+            logs: []
         };
 
         function carregarDados() {
@@ -108,7 +107,21 @@
                 const data = localStorage.getItem('guardioes_bravo_db');
                 if (data) {
                     const parsed = JSON.parse(data);
-                    return { ...DEFAULT_DATA, ...parsed };
+                    return {
+                        condominio: parsed.condominio || DEFAULT_DATA.condominio,
+                        conselheiros: parsed.conselheiros || DEFAULT_DATA.conselheiros,
+                        usuarios: parsed.usuarios || DEFAULT_DATA.usuarios,
+                        financeiro: parsed.financeiro || DEFAULT_DATA.financeiro,
+                        formas_monetarias: parsed.formas_monetarias || DEFAULT_DATA.formas_monetarias,
+                        contas_bancarias: parsed.contas_bancarias || DEFAULT_DATA.contas_bancarias,
+                        moradores: parsed.moradores && parsed.moradores.length > 0 ? parsed.moradores : DEFAULT_DATA.moradores,
+                        fornecedores: parsed.fornecedores || DEFAULT_DATA.fornecedores,
+                        empregados: parsed.empregados || DEFAULT_DATA.empregados,
+                        categorias: parsed.categorias || DEFAULT_DATA.categorias,
+                        estoque: parsed.estoque || DEFAULT_DATA.estoque,
+                        documentos: parsed.documentos || DEFAULT_DATA.documentos,
+                        logs: parsed.logs || DEFAULT_DATA.logs
+                    };
                 }
                 return JSON.parse(JSON.stringify(DEFAULT_DATA));
             } catch (e) {
@@ -122,6 +135,40 @@
             } catch (e) { 
                 alert('Aviso: Armazenamento local cheio.'); 
             }
+        }
+
+        function fazerBackupCompleto() {
+            const dadosStr = JSON.stringify(db, null, 2);
+            const blob = new Blob([dadosStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `backup_guardioes_bravo_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function restaurarBackupCompleto(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const dadosImportados = JSON.parse(e.target.result);
+                    if (dadosImportados && dadosImportados.moradores) {
+                        db = dadosImportados;
+                        salvarDados(db);
+                        alert('Backup restaurado com sucesso!');
+                        renderApp();
+                    } else {
+                        alert('Arquivo de backup inválido.');
+                    }
+                } catch (err) {
+                    alert('Erro ao ler o arquivo JSON de backup.');
+                }
+            };
+            reader.readAsDataURL(file);
         }
 
         let db = carregarDados();
@@ -145,7 +192,7 @@
             fornecedores: 'Fornecedores',
             empregados: 'Empregados',
             categorias: 'Pastas & Categorias',
-            estoque: 'Estoque & Bens',
+            estoque: 'Estoque & Bens / Inventário',
             documentos: 'Gestão de Documentos',
             relatorios: 'Central de Relatórios & DRE',
             usuarios: 'Gestão de Usuários'
@@ -184,6 +231,37 @@
                 sidebar.classList.add('-translate-x-full');
                 backdrop.classList.add('hidden');
             }
+        }
+
+        function exportarParaExcel(dados, nomeArquivo = 'relatorio.csv') {
+            if (!dados || dados.length === 0) {
+                alert('Não há dados disponíveis para exportação.');
+                return;
+            }
+            const sanitizeData = dados.map(item => {
+                let obj = { ...item };
+                delete obj.fotoBase64;
+                delete obj.arquivoBase64;
+                delete obj.arquivoCompactadoGzip;
+                return obj;
+            });
+            const keys = Object.keys(sanitizeData[0]);
+            let csvContent = '\uFEFF' + keys.join(';') + '\n';
+            sanitizeData.forEach(row => {
+                const values = keys.map(k => {
+                    let val = row[k] === null || row[k] === undefined ? '' : row[k];
+                    return `"${String(val).replace(/"/g, '""')}"`;
+                });
+                csvContent += values.join(';') + '\n';
+            });
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = nomeArquivo;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
         }
 
         function exportarParaPDF() { window.print(); }
@@ -288,6 +366,18 @@
                             <p class="px-3 pt-3 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Gestão & Configurações</p>
                             <button onclick="abrirModulo('relatorios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'relatorios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i> Central de Relatórios</button>
                             <button onclick="abrirModulo('usuarios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'usuarios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-user-gear w-5 text-center"></i> Gestão de Usuários</button>
+
+                            <!-- BOTÕES DE BACKUP E SEGURANÇA -->
+                            <div class="pt-4 mt-4 border-t border-slate-800 space-y-2 px-1">
+                                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Segurança de Dados</p>
+                                <button onclick="fazerBackupCompleto()" class="w-full py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-600/30 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition">
+                                    <i class="fa-solid fa-cloud-arrow-down"></i> Baixar Backup JSON
+                                </button>
+                                <label class="w-full py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-600/30 rounded-lg text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i> Restaurar Backup
+                                    <input type="file" accept=".json" onchange="restaurarBackupCompleto(event)" class="hidden">
+                                </label>
+                            </div>
                         </nav>
 
                         <div class="p-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
@@ -332,13 +422,23 @@
                 <button onclick="exportarParaPDF()" class="px-3 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-lg font-bold text-xs shadow transition flex items-center gap-1.5">
                     <i class="fa-solid fa-file-pdf"></i> Exportar PDF
                 </button>
+                <button onclick="exportarModuloExcel('${moduloId}')" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-xs shadow transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-file-excel"></i> Exportar Excel
+                </button>
             `;
 
             if (moduloId === 'condominio') btnNovoHtml = `<button onclick="window.renderModalConselheiro()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Membro do Conselho</button>`;
             else if (moduloId === 'financeiro') btnNovoHtml = `<button onclick="window.renderModalNovoTitulo()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Título</button>`;
+            else if (moduloId === 'formas_monetarias') btnNovoHtml = `<button onclick="window.renderModalFormaMonetaria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Nova Forma</button>`;
+            else if (moduloId === 'contas_bancarias') btnNovoHtml = `<button onclick="window.renderModalContaBancaria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Nova Conta</button>`;
             else if (moduloId === 'moradores') btnNovoHtml = `<button onclick="window.renderModalMorador()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Morador</button>`;
-            else if (moduloId === 'empregados') btnNovoHtml = `<button onclick="window.renderModalEmpregado()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Empregado</button>`;
             else if (moduloId === 'fornecedores') btnNovoHtml = `<button onclick="window.renderModalFornecedor()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Fornecedor</button>`;
+            else if (moduloId === 'empregados') btnNovoHtml = `<button onclick="window.renderModalEmpregado()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Empregado</button>`;
+            else if (moduloId === 'categorias') btnNovoHtml = `<button onclick="window.renderModalCategoria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Nova Pasta / Categoria</button>`;
+            else if (moduloId === 'estoque') btnNovoHtml = `<button onclick="window.renderModalEstoque()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Item / Bem</button>`;
+            else if (moduloId === 'documentos') btnNovoHtml = `<button onclick="window.renderModalDocumento()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-upload"></i> Subir Documento</button>`;
+            else if (moduloId === 'usuarios') btnNovoHtml = `<button onclick="window.renderModalUsuario()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-user-plus"></i> Novo Usuário</button>`;
+            else if (moduloId === 'relatorios') btnExportHtml = '';
 
             const headerGlobal = `
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
@@ -351,12 +451,23 @@
                 case 'dashboard': return headerGlobal + renderDashboardView();
                 case 'condominio': return headerGlobal + renderCondominioView();
                 case 'financeiro': return headerGlobal + renderFinanceiroView();
+                case 'formas_monetarias': return headerGlobal + renderFormasMonetariasView();
+                case 'contas_bancarias': return headerGlobal + renderContasBancariasView();
                 case 'moradores': return headerGlobal + renderMoradoresView();
                 case 'fornecedores': return headerGlobal + renderFornecedoresView();
                 case 'empregados': return headerGlobal + renderEmpregadosView();
+                case 'categorias': return headerGlobal + renderCategoriasView();
+                case 'estoque': return headerGlobal + renderEstoqueView();
+                case 'documentos': return headerGlobal + renderDocumentosView();
+                case 'usuarios': return headerGlobal + renderUsuariosView();
                 case 'relatorios': return headerGlobal + renderRelatoriosCentralView();
                 default: return headerGlobal + `<div class="bg-white p-6 rounded-xl border font-bold text-slate-700">Módulo ${MODULE_NAMES[moduloId]} Ativo.</div>`;
             }
+        }
+
+        function exportarModuloExcel(moduloId) {
+            let dataExport = db[moduloId] || [];
+            exportarParaExcel(dataExport, `relatorio_${moduloId}_${Date.now()}.csv`);
         }
 
         function abrirModalContainer(html) {
@@ -370,7 +481,79 @@
         }
 
         // =====================================
-        // MÓDULO: DADOS DO CONDOMÍNO & CONSELHO
+        // DASHBOARD
+        // =====================================
+        function renderDashboardView() {
+            const totalMoradores = (db.moradores || []).length;
+            const totalFornecedores = (db.fornecedores || []).length;
+            const totalEmpregados = (db.empregados || []).length;
+
+            return `
+                <div class="space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div><p class="text-xs font-bold text-slate-400 uppercase">Total de Moradores</p><h3 class="text-2xl font-black text-slate-800">${totalMoradores}</h3></div>
+                            <div class="w-12 h-12 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center text-xl"><i class="fa-solid fa-users"></i></div>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div><p class="text-xs font-bold text-slate-400 uppercase">Fornecedores</p><h3 class="text-2xl font-black text-slate-800">${totalFornecedores}</h3></div>
+                            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl"><i class="fa-solid fa-truck-fast"></i></div>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div><p class="text-xs font-bold text-slate-400 uppercase">Empregados</p><h3 class="text-2xl font-black text-slate-800">${totalEmpregados}</h3></div>
+                            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl"><i class="fa-solid fa-user-tie"></i></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <h3 class="font-bold text-slate-800 text-sm mb-4">Distribuição de Moradores por Tipo</h3>
+                            <div class="relative h-64"><canvas id="chartMoradoresTipo"></canvas></div>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <h3 class="font-bold text-slate-800 text-sm mb-4">Resumo Financeiro Operacional</h3>
+                            <div class="relative h-64"><canvas id="chartFinanceiroResumo"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function inicializarGraficosDashboard() {
+            if (tabsState.activeTab !== 'dashboard') return;
+            if (activeCharts.moradores) activeCharts.moradores.destroy();
+            if (activeCharts.financeiro) activeCharts.financeiro.destroy();
+
+            const ctxMoradores = document.getElementById('chartMoradoresTipo');
+            if (ctxMoradores) {
+                const moradores = db.moradores || [];
+                const proprietarios = moradores.filter(m => (m.tipo || 'Proprietário') === 'Proprietário').length;
+                const inquilinos = moradores.filter(m => m.tipo === 'Inquilino').length;
+                activeCharts.moradores = new Chart(ctxMoradores, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Proprietários', 'Inquilinos'],
+                        datasets: [{ data: [proprietarios, inquilinos], backgroundColor: ['#0d9488', '#f59e0b'] }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+
+            const ctxFin = document.getElementById('chartFinanceiroResumo');
+            if (ctxFin) {
+                activeCharts.financeiro = new Chart(ctxFin, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Receitas', 'Despesas'],
+                        datasets: [{ label: 'Valor (R$)', data: [2500, 850], backgroundColor: ['#10b981', '#ef4444'] }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+        }
+
+        // =====================================
+        // MÓDULO: DADOS DO CONDOMÍNIO & CONSELHO
         // =====================================
         function renderCondominioView() {
             const cond = db.condominio || {};
@@ -378,7 +561,6 @@
 
             return `
                 <div class="space-y-6">
-                    <!-- DADOS CADASTRAIS DO CONDOMÍNIO -->
                     <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
                         <div class="flex justify-between items-center border-b pb-3">
                             <h3 class="font-bold text-lg text-slate-800 flex items-center gap-2">
@@ -432,7 +614,6 @@
                         </form>
                     </div>
 
-                    <!-- TABELA DE CONSELHEIROS E CORPO DIRETIVO -->
                     <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
                         <div class="p-4 bg-slate-900 text-white flex justify-between items-center">
                             <h3 class="font-bold text-sm flex items-center gap-2">
@@ -565,18 +746,480 @@
             renderMainOnly();
         }
 
-        // Dashboard e demais telas seguem a lógica unificada
-        function renderDashboardView() {
-            return `<div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm"><h3 class="font-bold text-slate-800">Painel Principal Guardiões do Bravo</h3></div>`;
+        // =====================================
+        // MÓDULO: FINANCEIRO
+        // =====================================
+        function renderFinanceiroView() {
+            const list = db.financeiro || [];
+            return `
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-800 text-white font-bold uppercase tracking-wider text-[11px]">
+                                <th class="p-3">Tipo</th>
+                                <th class="p-3">Histórico</th>
+                                <th class="p-3">Valor</th>
+                                <th class="p-3">Vencimento</th>
+                                <th class="p-3">Status</th>
+                                <th class="p-3 text-center actions-col">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
+                            ${list.length === 0 ? `<tr><td colspan="6" class="p-6 text-center text-slate-400">Nenhum título cadastrado.</td></tr>` : list.map(f => `
+                                <tr>
+                                    <td class="p-3"><span class="px-2 py-0.5 rounded font-bold text-[10px] ${f.tipo === 'Receber' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${f.tipo}</span></td>
+                                    <td class="p-3 font-bold">${escapeHTML(f.historico)}</td>
+                                    <td class="p-3 font-bold">R$ ${(Number(f.valor) || 0).toFixed(2)}</td>
+                                    <td class="p-3">${escapeHTML(f.vencimento)}</td>
+                                    <td class="p-3">${escapeHTML(f.status)}</td>
+                                    <td class="p-3 text-center actions-col">
+                                        <div class="flex items-center justify-center gap-1">
+                                            <button onclick="window.renderModalNovoTitulo('${f.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition"><i class="fa-solid fa-pen"></i></button>
+                                            <button onclick="excluirRegistro('financeiro', '${f.id}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-md transition"><i class="fa-solid fa-trash"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
         }
-        function renderFinanceiroView() { return `<div class="bg-white p-6 rounded-2xl border"><h3 class="font-bold">Módulo Financeiro</h3></div>`; }
-        function renderMoradoresView() { return `<div class="bg-white p-6 rounded-2xl border"><h3 class="font-bold">Módulo Moradores</h3></div>`; }
-        function renderFornecedoresView() { return `<div class="bg-white p-6 rounded-2xl border"><h3 class="font-bold">Módulo Fornecedores</h3></div>`; }
-        function renderEmpregadosView() { return `<div class="bg-white p-6 rounded-2xl border"><h3 class="font-bold">Módulo Empregados</h3></div>`; }
-        function renderRelatoriosCentralView() { return `<div class="bg-white p-6 rounded-2xl border"><h3 class="font-bold">Central de Relatórios</h3></div>`; }
+
+        window.renderModalNovoTitulo = function(id = null) {
+            if (!db.financeiro) db.financeiro = [];
+            const item = id ? db.financeiro.find(x => x.id === id) : { id: '', tipo: 'Receber', historico: '', valor: '', vencimento: '', status: 'Aberto' };
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <div class="flex justify-between items-center border-b pb-3">
+                            <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Título' : 'Novo Título'}</h3>
+                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+                        </div>
+                        <form onsubmit="salvarModalFinanceiro(event, '${id}')" class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Tipo</label>
+                                <select id="m_fin_tipo" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
+                                    <option value="Receber" ${item.tipo === 'Receber' ? 'selected' : ''}>Receber</option>
+                                    <option value="Pagar" ${item.tipo === 'Pagar' ? 'selected' : ''}>Pagar</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Histórico</label>
+                                <input type="text" id="m_fin_hist" required value="${escapeHTML(item.historico)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Valor (R$)</label>
+                                    <input type="number" step="0.01" id="m_fin_valor" required value="${item.valor || ''}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Vencimento</label>
+                                    <input type="date" id="m_fin_venc" required value="${item.vencimento || ''}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
+                                </div>
+                            </div>
+                            <div class="flex justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
+                                <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold">Salvar Título</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        function salvarModalFinanceiro(e, id) {
+            e.preventDefault();
+            if (!db.financeiro) db.financeiro = [];
+            const newItem = {
+                id: id && id !== 'null' ? id : 'fin_' + Date.now(),
+                tipo: document.getElementById('m_fin_tipo').value,
+                historico: document.getElementById('m_fin_hist').value.trim(),
+                valor: parseFloat(document.getElementById('m_fin_valor').value) || 0,
+                vencimento: document.getElementById('m_fin_venc').value,
+                status: 'Aberto'
+            };
+            const idx = db.financeiro.findIndex(x => x.id === newItem.id);
+            if (idx !== -1) db.financeiro[idx] = newItem;
+            else db.financeiro.push(newItem);
+            salvarDados(db);
+            fecharModalContainer();
+            renderMainOnly();
+        }
+
+        // =====================================
+        // MÓDULO: MORADORES / UNIDADES
+        // =====================================
+        function ordenarMoradores(campo) {
+            if (morFiltros.ordenacao === campo) morFiltros.direcao = morFiltros.direcao === 'asc' ? 'desc' : 'asc';
+            else { morFiltros.ordenacao = campo; morFiltros.direcao = 'asc'; }
+            renderMainOnly();
+        }
+
+        function renderMoradoresView() {
+            if (!db.moradores) db.moradores = [];
+            let list = [...db.moradores];
+            const blocosUnicos = [...new Set(list.map(m => `Bloco ${m.bloco} - Ap ${m.apartamento}`))].sort();
+
+            if (morFiltros.busca.trim() !== '') {
+                const b = morFiltros.busca.toLowerCase();
+                list = list.filter(m => (m.nome || '').toLowerCase().includes(b) || (m.apartamento || '').includes(b) || (m.bloco || '').toLowerCase().includes(b) || (m.petNome || '').toLowerCase().includes(b) || (m.veiculoPlaca || '').toLowerCase().includes(b) || (m.vagaGaragem || '').toLowerCase().includes(b) || (m.observacoes || '').toLowerCase().includes(b));
+            }
+            if (morFiltros.blocoApFiltro && morFiltros.blocoApFiltro !== 'Todos') {
+                list = list.filter(m => `Bloco ${m.bloco} - Ap ${m.apartamento}` === morFiltros.blocoApFiltro);
+            }
+
+            list.sort((a, b) => {
+                let valA = a[morFiltros.ordenacao], valB = b[morFiltros.ordenacao];
+                if (morFiltros.ordenacao === 'apartamento') {
+                    return morFiltros.direcao === 'asc' ? (Number(a.apartamento)||0) - (Number(b.apartamento)||0) : (Number(b.apartamento)||0) - (Number(a.apartamento)||0);
+                }
+                valA = (valA || '').toString().toLowerCase(); valB = (valB || '').toString().toLowerCase();
+                if (valA < valB) return morFiltros.direcao === 'asc' ? -1 : 1;
+                if (valA > valB) return morFiltros.direcao === 'asc' ? 1 : -1;
+                return 0;
+            });
+
+            const iconeSeta = (campo) => morFiltros.ordenacao !== campo ? '<i class="fa-solid fa-sort text-slate-400 ml-1"></i>' : (morFiltros.direcao === 'asc' ? '<i class="fa-solid fa-sort-up text-teal-400 ml-1"></i>' : '<i class="fa-solid fa-sort-down text-teal-400 ml-1"></i>');
+
+            return `
+                <div class="space-y-4">
+                    <div class="bg-white p-4 rounded-xl shadow-sm border border-slate-200 flex flex-wrap gap-3 items-center no-print">
+                        <input type="text" value="${escapeHTML(morFiltros.busca)}" oninput="morFiltros.busca = this.value; renderMainOnly();" placeholder="Buscar por Nome, Bloco, Ap, Pet, Placa, Vaga ou Observação..." class="flex-1 p-2 border rounded-lg text-xs">
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                        <table class="w-full text-left border-collapse text-xs">
+                            <thead>
+                                <tr class="bg-slate-800 text-white font-bold uppercase tracking-wider text-[11px]">
+                                    <th class="p-3">
+                                        <div class="flex items-center gap-2">
+                                            <span onclick="ordenarMoradores('bloco')" class="cursor-pointer hover:underline select-none">Bloco/Ap ${iconeSeta('bloco')}</span>
+                                            <select onchange="morFiltros.blocoApFiltro = this.value; renderMainOnly();" class="bg-slate-700 text-white text-[10px] rounded px-1.5 py-0.5 border border-slate-600 outline-none cursor-pointer">
+                                                <option value="Todos">Filtrar Bloco/Ap (Todos)</option>
+                                                ${blocosUnicos.map(ba => `<option value="${ba}" ${morFiltros.blocoApFiltro === ba ? 'selected' : ''}>${ba}</option>`).join('')}
+                                            </select>
+                                        </div>
+                                    </th>
+                                    <th onclick="ordenarMoradores('nome')" class="p-3 cursor-pointer hover:bg-slate-700 transition select-none">Nome Completo ${iconeSeta('nome')}</th>
+                                    <th onclick="ordenarMoradores('telefone')" class="p-3 cursor-pointer hover:bg-slate-700 transition select-none">Contato ${iconeSeta('telefone')}</th>
+                                    <th class="p-3">🐾 Pet</th>
+                                    <th class="p-3">🚗 Automóvel</th>
+                                    <th class="p-3">🅿️ Vaga</th>
+                                    <th class="p-3 text-center actions-col">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
+                                ${list.length === 0 ? `<tr><td colspan="7" class="p-6 text-center text-slate-400 font-semibold">Nenhum morador encontrado.</td></tr>` : list.map(m => `
+                                    <tr class="hover:bg-slate-50 transition">
+                                        <td class="p-3 font-bold text-teal-700">Bloco ${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</td>
+                                        <td class="p-3 font-bold text-slate-900">${escapeHTML(m.nome)}<br><span class="text-[10px] text-slate-400 font-normal">${escapeHTML(m.tipo || 'Proprietário')}</span></td>
+                                        <td class="p-3">${escapeHTML(m.telefone)}<br><span class="text-[10px] text-slate-500 font-normal">${escapeHTML(m.email)}</span></td>
+                                        <td class="p-3">${m.petNome ? `<span class="font-bold text-slate-800">${escapeHTML(m.petNome)}</span><br><span class="text-[10px] text-slate-500">${escapeHTML(m.petRaca || '')} (${escapeHTML(m.petCor || '')}, ${escapeHTML(m.petIdade || '')})</span>` : '<span class="text-slate-400 italic">Nenhum</span>'}</td>
+                                        <td class="p-3">${m.veiculoModelo ? `<span class="font-bold text-slate-800">${escapeHTML(m.veiculoModelo)}</span><br><span class="text-[10px] text-slate-500">Placa: ${escapeHTML(m.veiculoPlaca || '-')} (${escapeHTML(m.veiculoCor || '-')})</span>` : '<span class="text-slate-400 italic">Nenhum</span>'}</td>
+                                        <td class="p-3 font-bold text-slate-700">${escapeHTML(m.vagaGaragem || 'Nenhuma')}</td>
+                                        <td class="p-3 text-center actions-col">
+                                            <div class="flex items-center justify-center gap-1">
+                                                <button onclick="window.renderModalMorador('${m.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition" title="Editar Morador"><i class="fa-solid fa-pen"></i></button>
+                                                <button onclick="excluirRegistro('moradores', '${m.id}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-md transition" title="Excluir Morador"><i class="fa-solid fa-trash"></i></button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        window.renderModalMorador = function(id = null) {
+            if (!db.moradores) db.moradores = [];
+            const m = id ? db.moradores.find(x => x.id === id) : { 
+                id: '', bloco: '1', apartamento: '', nome: '', email: '', telefone: '', tipo: 'Proprietário', 
+                petNome: '', petRaca: '', petCor: '', petIdade: '',
+                veiculoModelo: '', veiculoPlaca: '', veiculoCor: '', vagaGaragem: '',
+                observacoes: '' 
+            };
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 overflow-y-auto">
+                    <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 my-8">
+                        <div class="flex justify-between items-center border-b pb-3">
+                            <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Cadastro de Morador' : 'Novo Morador'}</h3>
+                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+                        </div>
+                        <form onsubmit="salvarModalMorador(event, '${id}')" class="space-y-3 max-h-[75vh] overflow-y-auto pr-2">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Bloco</label><input type="text" id="m_mor_bloco" required value="${escapeHTML(m.bloco)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                                <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Apartamento</label><input type="text" id="m_mor_ap" required value="${escapeHTML(m.apartamento)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            </div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome Completo</label><input type="text" id="m_mor_nome" required value="${escapeHTML(m.nome)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">E-mail</label><input type="email" id="m_mor_email" value="${escapeHTML(m.email)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                                <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Telefone</label><input type="text" id="m_mor_tel" value="${escapeHTML(m.telefone)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Tipo</label>
+                                <select id="m_mor_tipo" required class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
+                                    <option value="Proprietário" ${m.tipo === 'Proprietário' ? 'selected' : ''}>Proprietário</option>
+                                    <option value="Inquilino" ${m.tipo === 'Inquilino' ? 'selected' : ''}>Inquilino</option>
+                                </select>
+                            </div>
+
+                            <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                                <p class="text-xs font-bold text-teal-700 uppercase"><i class="fa-solid fa-paw mr-1"></i> Dados do Animal de Estimação (Pet)</p>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div><label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Nome do Pet</label><input type="text" id="m_mor_petNome" value="${escapeHTML(m.petNome || '')}" class="w-full p-2 border rounded-lg text-xs font-bold bg-white"></div>
+                                    <div><label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Espécie / Raça</label><input type="text" id="m_mor_petRaca" value="${escapeHTML(m.petRaca || '')}" class="w-full p-2 border rounded-lg text-xs font-bold bg-white"></div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div><label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Cor</label><input type="text" id="m_mor_petCor" value="${escapeHTML(m.petCor || '')}" class="w-full p-2 border rounded-lg text-xs font-bold bg-white"></div>
+                                    <div><label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Idade</label><input type="text" id="m_mor_petIdade" value="${escapeHTML(m.petIdade || '')}" class="w-full p-2 border rounded-lg text-xs font-bold bg-white"></div>
+                                </div>
+                            </div>
+
+                            <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+                                <p class="text-xs font-bold text-teal-700 uppercase"><i class="fa-solid fa-car mr-1"></i> Dados de Automóveis e Garagem</p>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div><label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Modelo / Marca</label><input type="text" id="m_mor_veiculoModelo" value="${escapeHTML(m.veiculoModelo || '')}" class="w-full p-2 border rounded-lg text-xs font-bold bg-white"></div>
+                                    <div><label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Placa</label><input type="text" id="m_mor_veiculoPlaca" value="${escapeHTML(m.veiculoPlaca || '')}" class="w-full p-2 border rounded-lg text-xs font-bold bg-white"></div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div><label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Cor do Veículo</label><input type="text" id="m_mor_veiculoCor" value="${escapeHTML(m.veiculoCor || '')}" class="w-full p-2 border rounded-lg text-xs font-bold bg-white"></div>
+                                    <div><label class="block text-[10px] font-bold uppercase text-slate-500 mb-1">Vaga de Garagem</label><input type="text" id="m_mor_vagaGaragem" value="${escapeHTML(m.vagaGaragem || '')}" class="w-full p-2 border rounded-lg text-xs font-bold bg-white"></div>
+                                </div>
+                            </div>
+
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Observações Gerais</label><textarea id="m_mor_obs" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50 h-16">${escapeHTML(m.observacoes || '')}</textarea></div>
+                            <div class="flex justify-end gap-2 pt-3 border-t sticky bottom-0 bg-white py-2">
+                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
+                                <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold">Salvar Morador</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        function salvarModalMorador(e, id) {
+            e.preventDefault();
+            if (!db.moradores) db.moradores = [];
+            const newItem = {
+                id: id && id !== 'null' ? id : 'mor_' + Date.now(),
+                bloco: document.getElementById('m_mor_bloco').value.trim(),
+                apartamento: document.getElementById('m_mor_ap').value.trim(),
+                nome: document.getElementById('m_mor_nome').value.trim(),
+                email: document.getElementById('m_mor_email').value.trim(),
+                telefone: document.getElementById('m_mor_tel').value.trim(),
+                tipo: document.getElementById('m_mor_tipo').value,
+                petNome: document.getElementById('m_mor_petNome').value.trim(),
+                petRaca: document.getElementById('m_mor_petRaca').value.trim(),
+                petCor: document.getElementById('m_mor_petCor').value.trim(),
+                petIdade: document.getElementById('m_mor_petIdade').value.trim(),
+                veiculoModelo: document.getElementById('m_mor_veiculoModelo').value.trim(),
+                veiculoPlaca: document.getElementById('m_mor_veiculoPlaca').value.trim(),
+                veiculoCor: document.getElementById('m_mor_veiculoCor').value.trim(),
+                vagaGaragem: document.getElementById('m_mor_vagaGaragem').value.trim(),
+                observacoes: document.getElementById('m_mor_obs').value.trim()
+            };
+            const idx = db.moradores.findIndex(m => m.id === newItem.id);
+            if (idx !== -1) db.moradores[idx] = newItem;
+            else db.moradores.push(newItem);
+            salvarDados(db);
+            fecharModalContainer();
+            renderMainOnly();
+        }
+
+        // =====================================
+        // MÓDULO: FORNECEDORES
+        // =====================================
+        function renderFornecedoresView() {
+            const list = db.fornecedores || [];
+            return `
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-800 text-white font-bold uppercase tracking-wider text-[11px]">
+                                <th class="p-3">CNPJ</th>
+                                <th class="p-3">Razão Social</th>
+                                <th class="p-3">E-mail / Contato</th>
+                                <th class="p-3 text-center actions-col">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
+                            ${list.length === 0 ? `<tr><td colspan="4" class="p-6 text-center text-slate-400">Nenhum fornecedor cadastrado.</td></tr>` : list.map(f => `
+                                <tr>
+                                    <td class="p-3 font-mono">${escapeHTML(f.cnpj)}</td>
+                                    <td class="p-3 font-bold">${escapeHTML(f.razaoSocial)}</td>
+                                    <td class="p-3">${escapeHTML(f.email || f.telefone)}</td>
+                                    <td class="p-3 text-center actions-col">
+                                        <div class="flex items-center justify-center gap-1">
+                                            <button onclick="window.renderModalFornecedor('${f.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition"><i class="fa-solid fa-pen"></i></button>
+                                            <button onclick="excluirRegistro('fornecedores', '${f.id}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-md transition"><i class="fa-solid fa-trash"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        window.renderModalFornecedor = function(id = null) {
+            if (!db.fornecedores) db.fornecedores = [];
+            const item = id ? db.fornecedores.find(x => x.id === id) : { id: '', cnpj: '', razaoSocial: '', email: '', telefone: '' };
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <div class="flex justify-between items-center border-b pb-3">
+                            <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Fornecedor' : 'Novo Fornecedor'}</h3>
+                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+                        </div>
+                        <form onsubmit="salvarModalFornecedor(event, '${id}')" class="space-y-3">
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">CNPJ</label><input type="text" id="m_for_cnpj" required value="${escapeHTML(item.cnpj)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Razão Social</label><input type="text" id="m_for_razao" required value="${escapeHTML(item.razaoSocial)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">E-mail</label><input type="email" id="m_for_email" value="${escapeHTML(item.email)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                                <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Telefone</label><input type="text" id="m_for_tel" value="${escapeHTML(item.telefone)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            </div>
+                            <div class="flex justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
+                                <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold">Salvar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        function salvarModalFornecedor(e, id) {
+            e.preventDefault();
+            if (!db.fornecedores) db.fornecedores = [];
+            const newItem = {
+                id: id && id !== 'null' ? id : 'for_' + Date.now(),
+                cnpj: document.getElementById('m_for_cnpj').value.trim(),
+                razaoSocial: document.getElementById('m_for_razao').value.trim(),
+                email: document.getElementById('m_for_email').value.trim(),
+                telefone: document.getElementById('m_for_tel').value.trim()
+            };
+            const idx = db.fornecedores.findIndex(x => x.id === newItem.id);
+            if (idx !== -1) db.fornecedores[idx] = newItem;
+            else db.fornecedores.push(newItem);
+            salvarDados(db);
+            fecharModalContainer();
+            renderMainOnly();
+        }
+
+        // =====================================
+        // MÓDULO: EMPREGADOS (COM TELEFONE)
+        // =====================================
+        function renderEmpregadosView() {
+            const list = db.empregados || [];
+            return `
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-800 text-white font-bold uppercase tracking-wider text-[11px]">
+                                <th class="p-3">Nome</th>
+                                <th class="p-3">Cargo</th>
+                                <th class="p-3">Função</th>
+                                <th class="p-3">Telefone</th>
+                                <th class="p-3 text-center actions-col">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
+                            ${list.length === 0 ? `<tr><td colspan="5" class="p-6 text-center text-slate-400">Nenhum empregado cadastrado.</td></tr>` : list.map(emp => `
+                                <tr>
+                                    <td class="p-3 font-bold">${escapeHTML(emp.nome)}</td>
+                                    <td class="p-3">${escapeHTML(emp.cargo)}</td>
+                                    <td class="p-3">${escapeHTML(emp.funcao)}</td>
+                                    <td class="p-3">${escapeHTML(emp.telefone || '-')}</td>
+                                    <td class="p-3 text-center actions-col">
+                                        <div class="flex items-center justify-center gap-1">
+                                            <button onclick="window.renderModalEmpregado('${emp.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md transition"><i class="fa-solid fa-pen"></i></button>
+                                            <button onclick="excluirRegistro('empregados', '${emp.id}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-md transition"><i class="fa-solid fa-trash"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        window.renderModalEmpregado = function(id = null) {
+            if (!db.empregados) db.empregados = [];
+            const item = id ? db.empregados.find(x => x.id === id) : { id: '', nome: '', cargo: '', funcao: '', telefone: '' };
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <div class="flex justify-between items-center border-b pb-3">
+                            <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Empregado' : 'Novo Empregado'}</h3>
+                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+                        </div>
+                        <form onsubmit="salvarModalEmpregado(event, '${id}')" class="space-y-3">
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome Completo</label><input type="text" id="m_emp_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Cargo</label><input type="text" id="m_emp_cargo" required value="${escapeHTML(item.cargo)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                                <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Função</label><input type="text" id="m_emp_funcao" value="${escapeHTML(item.funcao)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Telefone de Contato</label>
+                                <input type="text" id="m_emp_tel" value="${escapeHTML(item.telefone || '')}" placeholder="(41) 99999-9999" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
+                            </div>
+                            <div class="flex justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
+                                <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold">Salvar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        function salvarModalEmpregado(e, id) {
+            e.preventDefault();
+            if (!db.empregados) db.empregados = [];
+            const newItem = {
+                id: id && id !== 'null' ? id : 'emp_' + Date.now(),
+                nome: document.getElementById('m_emp_nome').value.trim(),
+                cargo: document.getElementById('m_emp_cargo').value.trim(),
+                funcao: document.getElementById('m_emp_funcao').value.trim(),
+                telefone: document.getElementById('m_emp_tel').value.trim()
+            };
+            const idx = db.empregados.findIndex(x => x.id === newItem.id);
+            if (idx !== -1) db.empregados[idx] = newItem;
+            else db.empregados.push(newItem);
+            salvarDados(db);
+            fecharModalContainer();
+            renderMainOnly();
+        }
+
+        // =====================================
+        // OUTROS MÓDULOS ESSENCIAIS
+        // =====================================
+        function renderFormasMonetariasView() {
+            return `<div class="bg-white p-6 rounded-2xl border"><h3 class="font-bold">Módulo Formas Monetárias</h3></div>`;
+        }
+        function renderContasBancariasView() {
+            return `<div class="bg-white p-6 rounded-2xl border"><h3 class="font-bold">Módulo Contas Bancárias</h3></div>`;
+        }
+        function renderCategoriasView() {
+            return `<div class="bg-white p-6 rounded-2xl border"><h3 class="font-bold">Módulo Pastas & Categorias</h3></div>`;
+        }
+        function renderEstoqueView() {
+            return `<div class="bg-white p-6 rounded-2xl border"><h3 class="font-bold">Módulo Estoque & Bens</h3></div>`;
+        }
+        function renderDocumentosView() {
+            return `<div class="bg-white p-6 rounded-2xl border"><h3 class="font-bold">Módulo Documentos</h3></div>`;
+        }
+        function renderUsuariosView() {
+            return `<div class="bg-white p-6 rounded-2xl border"><h3 class="font-bold">Módulo Gestão de Usuários</h3></div>`;
+        }
 
         function excluirRegistro(colecao, id) {
-            if (!confirm('Deseja remover este registro?')) return;
+            if (!confirm('Deseja realmente remover este registro?')) return;
             if (db[colecao]) {
                 db[colecao] = db[colecao].filter(x => x.id !== id);
                 salvarDados(db);
@@ -584,8 +1227,31 @@
             }
         }
 
+        function renderRelatoriosCentralView() {
+            return `
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-black text-slate-800 text-lg border-b pb-3 uppercase tracking-wider">Demonstrativo do Resultado do Exercício (DRE)</h3>
+                    <div class="space-y-2 text-xs">
+                        <div class="flex justify-between p-3 bg-emerald-50 text-emerald-900 font-bold rounded-lg">
+                            <span>(+) RECEITA OPERACIONAL BRUTA</span>
+                            <span>R$ 2.500,00</span>
+                        </div>
+                        <div class="flex justify-between p-3 bg-rose-50 text-rose-900 font-bold rounded-lg">
+                            <span>(-) DESPESAS OPERACIONAIS</span>
+                            <span>R$ 850,00</span>
+                        </div>
+                        <div class="flex justify-between p-4 bg-teal-600 text-white font-black text-sm rounded-xl shadow">
+                            <span>(=) RESULTADO OPERACIONAL LÍQUIDO</span>
+                            <span>R$ 1.650,00</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             renderApp();
+            setTimeout(inicializarGraficosDashboard, 100);
         });
     </script>
 </body>
