@@ -10,7 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Pako (Compressão Gzip) -->
+    <!-- Pako (Compressão Gzip para arquivos grandes) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
     <style>
         html, body { height: 100%; margin: 0; padding: 0; }
@@ -35,7 +35,7 @@
 
     <script>
         let tempArquivoNome = ''; 
-        let tempArquivoGzip = ''; 
+        let tempArquivoGzipBase64 = ''; 
         let activeCharts = {};
 
         function escapeHTML(str) {
@@ -43,6 +43,54 @@
             return str.replace(/[&<>"']/g, function(m) {
                 return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
             });
+        }
+
+        // Funções de Compactação Gzip para Arquivos Grandes
+        function compactarArquivoParaGzip(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const arrayBuffer = e.target.result;
+                    const uint8Array = new Uint8Array(arrayBuffer);
+                    const compressed = pako.deflate(uint8Array);
+                    
+                    // Converte Uint8Array comprimido para Base64 para armazenar no JSON
+                    let binary = '';
+                    const len = compressed.byteLength;
+                    for (let i = 0; i < len; i++) {
+                        binary += String.fromCharCode(compressed[i]);
+                    }
+                    const base64Gzip = btoa(binary);
+                    callback(base64Gzip, file.name);
+                } catch (err) {
+                    alert('Erro ao compactar arquivo.');
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function extrairEDownloadArquivo(base64Gzip, nomeOriginal) {
+            try {
+                const binaryString = atob(base64Gzip);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                const decompressed = pako.inflate(bytes);
+                const blob = new Blob([decompressed]);
+                const url = URL.createObjectURL(blob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = nomeOriginal;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            } catch (err) {
+                alert('Erro ao extrair e baixar o arquivo compactado.');
+            }
         }
 
         const DEFAULT_DATA = {
@@ -67,7 +115,7 @@
                 { id: 'usr_sheila', usuario: 'sheila', nome: 'Sheila (Subsíndica/Operadora)', email: 'sheila@guardioes.com', perfil: 'Síndico', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Sheila@123' }
             ],
             financeiro: [
-                { id: 'fin_1', tipo: 'Receber', historico: 'Taxa Condominial Ordinária - Ap 137', valor: 2500.00, vencimento: '2026-10-15', competencia: '10/2026', formaMonetariaId: 'fm_1', fornecedor: 'Alan Reis', status: 'Aberto' }
+                { id: 'fin_1', tipo: 'Receber', historico: 'Taxa Condominial Ordinária - Ap 137', valor: 2500.00, vencimento: '2026-10-15', competencia: '10/2026', status: 'Aberto' }
             ],
             formas_monetarias: [
                 { id: 'fm_1', nome: 'MOVIMENTO BANCARIO', contaId: 'cb_1', multaPct: 2.0, jurosDiaPct: 0.033, baixaAutomatica: true, status: 'Ativo' }
@@ -90,15 +138,15 @@
                 { id: 'emp_1', nome: 'João da Silva', cargo: 'Porteiro', funcao: 'Controle de Acesso', telefone: '(41) 98888-1111' }
             ],
             categorias: [
-                { id: 'cat_1', nome: 'Atas de Assembleia', modulo: 'Documentos' },
-                { id: 'cat_2', nome: 'Contratos', modulo: 'Documentos' },
-                { id: 'cat_3', nome: 'Prestação de Contas', modulo: 'Documentos' }
+                { id: 'cat_1', nome: 'Atas de Assembleia' },
+                { id: 'cat_2', nome: 'Contratos' },
+                { id: 'cat_3', nome: 'Prestação de Contas' }
             ],
             estoque: [
                 { id: 'est_1', item: 'Extintor ABC', categoria: 'Segurança', qtd: 4, localizacao: 'Hall Principal' }
             ],
             documentos: [
-                { id: 'doc_1', titulo: 'Ata Assembleia Outubro', pasta: 'Atas de Assembleia', nomeArquivo: 'ata_out.pdf' }
+                { id: 'doc_1', titulo: 'Ata Assembleia Outubro', pasta: 'Atas de Assembleia', nomeArquivo: 'ata_out.pdf', dataUpload: '2026-10-01' }
             ],
             logs: []
         };
@@ -118,7 +166,7 @@
                         moradores: parsed.moradores && parsed.moradores.length > 0 ? parsed.moradores : DEFAULT_DATA.moradores,
                         fornecedores: parsed.fornecedores || DEFAULT_DATA.fornecedores,
                         empregados: parsed.empregados || DEFAULT_DATA.empregados,
-                        categorias: parsed.categorias || DEFAULT_DATA.categorias,
+                        categorias: parsed.categorias && parsed.categorias.length > 0 ? parsed.categorias : DEFAULT_DATA.categorias,
                         estoque: parsed.estoque || DEFAULT_DATA.estoque,
                         documentos: parsed.documentos || DEFAULT_DATA.documentos,
                         logs: parsed.logs || DEFAULT_DATA.logs
@@ -138,7 +186,6 @@
             }
         }
 
-        // SINCRONIZAÇÃO EM TEMPO REAL ENTRE DISPOSITIVOS / USUÁRIOS (Alan <-> Sheila)
         window.addEventListener('storage', (event) => {
             if (event.key === 'guardioes_bravo_db') {
                 db = carregarDados();
@@ -260,8 +307,6 @@
             }
             const sanitizeData = dados.map(item => {
                 let obj = { ...item };
-                delete obj.fotoBase64;
-                delete obj.arquivoBase64;
                 delete obj.arquivoCompactadoGzip;
                 return obj;
             });
@@ -282,63 +327,6 @@
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
-        }
-
-        function importarPlanilhaCSV(event, moduloId) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const text = e.target.result;
-                    const lines = text.split('\n').filter(l => l.trim() !== '');
-                    if (lines.length < 2) {
-                        alert('O arquivo CSV parece estar vazio ou inválido.');
-                        return;
-                    }
-                    let headerLine = lines[0].replace(/^\uFEFF/, '');
-                    const headers = headerLine.split(';').map(h => h.replace(/"/g, '').trim());
-
-                    let novosRegistros = [];
-                    for (let i = 1; i < lines.length; i++) {
-                        let currentLine = lines[i];
-                        let values = [];
-                        let inQuotes = false;
-                        let currentValue = '';
-                        for (let char of currentLine) {
-                            if (char === '"') {
-                                inQuotes = !inQuotes;
-                            } else if (char === ';' && !inQuotes) {
-                                values.push(currentValue.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
-                                currentValue = '';
-                            } else {
-                                currentValue += char;
-                            }
-                        }
-                        values.push(currentValue.trim().replace(/^"|"$/g, '').replace(/""/g, '"'));
-
-                        let obj = {};
-                        headers.forEach((h, index) => {
-                            obj[h] = values[index] !== undefined ? values[index] : '';
-                        });
-                        if (!obj.id) {
-                            obj.id = moduloId.slice(0, 3) + '_' + Date.now() + '_' + i;
-                        }
-                        novosRegistros.push(obj);
-                    }
-
-                    db = carregarDados();
-                    if (!db[moduloId]) db[moduloId] = [];
-                    db[moduloId] = novosRegistros;
-                    salvarDados(db);
-                    alert(`Planilha importada com sucesso! ${novosRegistros.length} registro(s) carregado(s).`);
-                    renderMainOnly();
-                } catch (err) {
-                    alert('Erro ao processar o arquivo CSV. Verifique se o formato está correto.');
-                }
-            };
-            reader.readAsText(file, 'UTF-8');
-            event.target.value = '';
         }
 
         function exportarParaPDF() { window.print(); }
@@ -552,7 +540,6 @@
                             <button onclick="abrirModulo('relatorios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'relatorios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i> Central de Relatórios</button>
                             <button onclick="abrirModulo('usuarios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'usuarios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-user-gear w-5 text-center"></i> Gestão de Usuários</button>
 
-                            <!-- BOTÕES DE BACKUP E SEGURANÇA -->
                             <div class="pt-4 mt-4 border-t border-slate-800 space-y-2 px-1">
                                 <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Segurança de Dados</p>
                                 <button onclick="fazerBackupCompleto()" class="w-full py-2 bg-emerald-600/25 hover:bg-emerald-600/35 text-emerald-400 border border-emerald-600/30 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition">
@@ -616,10 +603,6 @@
                 <button onclick="exportarModuloExcel('${moduloId}')" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg font-bold text-xs shadow transition flex items-center gap-1.5">
                     <i class="fa-solid fa-file-excel"></i> Exportar Excel
                 </button>
-                <label class="px-3 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-lg font-bold text-xs shadow transition flex items-center gap-1.5 cursor-pointer">
-                    <i class="fa-solid fa-file-arrow-up"></i> Importar Planilha
-                    <input type="file" accept=".csv" onchange="importarPlanilhaCSV(event, '${moduloId}')" class="hidden">
-                </label>
             `;
 
             if (moduloId === 'condominio') btnNovoHtml = `<button onclick="window.renderModalConselheiro()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Membro do Conselho</button>`;
@@ -631,7 +614,7 @@
             else if (moduloId === 'empregados') btnNovoHtml = `<button onclick="window.renderModalEmpregado()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Empregado</button>`;
             else if (moduloId === 'categorias') btnNovoHtml = `<button onclick="window.renderModalCategoria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Nova Pasta / Categoria</button>`;
             else if (moduloId === 'estoque') btnNovoHtml = `<button onclick="window.renderModalEstoque()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Item / Bem</button>`;
-            else if (moduloId === 'documentos') btnNovoHtml = `<button onclick="window.renderModalDocumento()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-upload"></i> Subir Documento</button>`;
+            else if (moduloId === 'documentos') btnNovoHtml = `<button onclick="window.renderModalDocumento()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-upload"></i> Inserir Documento</button>`;
             else if (moduloId === 'usuarios') btnNovoHtml = `<button onclick="window.renderModalUsuario()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-user-plus"></i> Novo Usuário</button>`;
             else if (moduloId === 'relatorios') btnExportHtml = '';
 
@@ -1411,7 +1394,185 @@
         };
 
         // =====================================
-        // MÓDULO: GESTÃO DE USUÁRIOS
+        // MÓDULO: PASTAS & CATEGORIAS
+        // =====================================
+        function renderCategoriasView() {
+            db = carregarDados();
+            const list = db.categorias || [];
+            return `
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-800 text-white font-bold uppercase tracking-wider text-[11px]">
+                                <th class="p-3">Nome da Pasta / Categoria</th>
+                                <th class="p-3 text-center actions-col">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
+                            ${list.length === 0 ? `<tr><td colspan="2" class="p-6 text-center text-slate-400">Nenhuma pasta cadastrada.</td></tr>` : list.map(c => `
+                                <tr>
+                                    <td class="p-3 font-bold text-slate-900"><i class="fa-solid fa-folder text-amber-500 mr-2"></i> ${escapeHTML(c.nome)}</td>
+                                    <td class="p-3 text-center actions-col">
+                                        <button onclick="excluirRegistro('categorias', '${c.id}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-md transition"><i class="fa-solid fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        window.renderModalCategoria = function() {
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <div class="flex justify-between items-center border-b pb-3">
+                            <h3 class="font-bold text-lg text-slate-800">Nova Pasta / Categoria</h3>
+                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+                        </div>
+                        <form onsubmit="window.salvarModalCategoria(event)" class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome da Pasta</label>
+                                <input type="text" id="m_cat_nome" required placeholder="Ex: Manutenção Predial" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
+                            </div>
+                            <div class="flex justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
+                                <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold">Salvar Pasta</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        window.salvarModalCategoria = function(e) {
+            e.preventDefault();
+            db = carregarDados();
+            if (!db.categorias) db.categorias = [];
+            const nome = document.getElementById('m_cat_nome').value.trim();
+            if (!nome) return;
+            db.categorias.push({ id: 'cat_' + Date.now(), nome: nome });
+            salvarDados(db);
+            fecharModalContainer();
+            renderMainOnly();
+        };
+
+        // =====================================
+        // MÓDULO: GESTÃO DE DOCUMENTOS (COM COMPRESSÃO GZIP)
+        // =====================================
+        function renderDocumentosView() {
+            db = carregarDados();
+            const docs = db.documentos || [];
+            return `
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <table class="w-full text-left border-collapse text-xs">
+                        <thead>
+                            <tr class="bg-slate-800 text-white font-bold uppercase tracking-wider text-[11px]">
+                                <th class="p-3">Título do Documento</th>
+                                <th class="p-3">Pasta / Categoria</th>
+                                <th class="p-3">Arquivo (Compactado)</th>
+                                <th class="p-3">Data</th>
+                                <th class="p-3 text-center actions-col">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-200 font-medium text-slate-700">
+                            ${docs.length === 0 ? `<tr><td colspan="5" class="p-6 text-center text-slate-400">Nenhum documento inserido.</td></tr>` : docs.map(d => `
+                                <tr class="hover:bg-slate-50 transition">
+                                    <td class="p-3 font-bold text-slate-900 flex items-center gap-2">
+                                        <i class="fa-solid fa-file-lines text-teal-600 text-sm"></i> ${escapeHTML(d.titulo)}
+                                    </td>
+                                    <td class="p-3"><span class="px-2 py-0.5 bg-amber-100 text-amber-800 rounded font-bold text-[10px]">${escapeHTML(d.pasta || 'Geral')}</span></td>
+                                    <td class="p-3 font-mono text-slate-500">${escapeHTML(d.nomeArquivo || 'documento')} <span class="text-[9px] text-emerald-600 font-bold bg-emerald-50 px-1.5 py-0.5 rounded">Gzip Otimizado</span></td>
+                                    <td class="p-3">${escapeHTML(d.dataUpload || '-')}</td>
+                                    <td class="p-3 text-center actions-col">
+                                        <div class="flex items-center justify-center gap-1">
+                                            ${d.arquivoCompactadoGzip ? `<button onclick="extrairEDownloadArquivo('${d.arquivoCompactadoGzip}', '${escapeHTML(d.nomeArquivo)}')" class="p-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-600 rounded-md transition" title="Baixar com Qualidade Original"><i class="fa-solid fa-download"></i></button>` : ''}
+                                            <button onclick="excluirRegistro('documentos', '${d.id}')" class="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-md transition" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        window.renderModalDocumento = function() {
+            db = carregarDados();
+            const categorias = db.categorias || [];
+            tempArquivoNome = '';
+            tempArquivoGzipBase64 = '';
+
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <div class="flex justify-between items-center border-b pb-3">
+                            <h3 class="font-bold text-lg text-slate-800">Inserir Novo Documento (Compactação Inteligente)</h3>
+                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+                        </div>
+                        <form onsubmit="window.salvarModalDocumento(event)" class="space-y-3">
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Título do Documento</label>
+                                <input type="text" id="m_doc_titulo" required placeholder="Ex: Projeto Arquitetônico Completo" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Pasta / Categoria</label>
+                                <select id="m_doc_pasta" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
+                                    ${categorias.length === 0 ? `<option value="Geral">Geral</option>` : categorias.map(c => `<option value="${escapeHTML(c.nome)}">${escapeHTML(c.nome)}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Selecionar Arquivo (PDF ou Foto Grande)</label>
+                                <input type="file" id="m_doc_arquivo" required onchange="processarArquivoDocumentoGzip(event)" class="w-full p-2 border rounded-lg text-xs bg-slate-50 cursor-pointer">
+                                <p class="text-[10px] text-teal-600 mt-1 font-semibold">O arquivo será compactado automaticamente para economizar memória.</p>
+                            </div>
+                            <div class="flex justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button>
+                                <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-xs font-bold">Salvar e Compactar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        function processarArquivoDocumentoGzip(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            compactarArquivoParaGzip(file, function(base64Gzip, nomeOriginal) {
+                tempArquivoGzipBase64 = base64Gzip;
+                tempArquivoNome = nomeOriginal;
+            });
+        }
+
+        window.salvarModalDocumento = function(e) {
+            e.preventDefault();
+            db = carregarDados();
+            if (!db.documentos) db.documentos = [];
+
+            const titulo = document.getElementById('m_doc_titulo').value.trim();
+            const pasta = document.getElementById('m_doc_pasta').value;
+
+            const novoDoc = {
+                id: 'doc_' + Date.now(),
+                titulo: titulo,
+                pasta: pasta,
+                nomeArquivo: tempArquivoNome || 'documento.pdf',
+                arquivoCompactadoGzip: tempArquivoGzipBase64 || '',
+                dataUpload: new Date().toISOString().split('T')[0]
+            };
+
+            db.documentos.push(novoDoc);
+            salvarDados(db);
+            fecharModalContainer();
+            renderMainOnly();
+            alert('Documento compactado e inserido com sucesso!');
+        };
+
+        // =====================================
+        // GESTÃO DE USUÁRIOS
         // =====================================
         function renderUsuariosView() {
             db = carregarDados();
@@ -1535,14 +1696,8 @@
         function renderContasBancariasView() {
             return `<div class="bg-white p-6 rounded-2xl border"><h3 class="font-bold">Módulo Contas Bancárias</h3></div>`;
         }
-        function renderCategoriasView() {
-            return `<div class="bg-white p-6 rounded-2xl border"><h3 class="font-bold">Módulo Pastas & Categorias</h3></div>`;
-        }
         function renderEstoqueView() {
             return `<div class="bg-white p-6 rounded-2xl border"><h3 class="font-bold">Módulo Estoque & Bens</h3></div>`;
-        }
-        function renderDocumentosView() {
-            return `<div class="bg-white p-6 rounded-2xl border"><h3 class="font-bold">Módulo Documentos</h3></div>`;
         }
 
         function excluirRegistro(colecao, id) {
