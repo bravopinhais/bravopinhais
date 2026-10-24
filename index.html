@@ -370,10 +370,10 @@
                             <!-- BOTÕES DE BACKUP E SEGURANÇA -->
                             <div class="pt-4 mt-4 border-t border-slate-800 space-y-2 px-1">
                                 <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Segurança de Dados</p>
-                                <button onclick="fazerBackupCompleto()" class="w-full py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-600/30 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition">
+                                <button onclick="fazerBackupCompleto()" class="w-full py-2 bg-emerald-600/25 hover:bg-emerald-600/35 text-emerald-400 border border-emerald-600/30 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition">
                                     <i class="fa-solid fa-cloud-arrow-down"></i> Baixar Backup JSON
                                 </button>
-                                <label class="w-full py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-600/30 rounded-lg text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition">
+                                <label class="w-full py-2 bg-amber-600/25 hover:bg-amber-600/35 text-amber-400 border border-amber-600/30 rounded-lg text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition">
                                     <i class="fa-solid fa-cloud-arrow-up"></i> Restaurar Backup
                                     <input type="file" accept=".json" onchange="restaurarBackupCompleto(event)" class="hidden">
                                 </label>
@@ -570,7 +570,7 @@
                                 <i class="fa-solid fa-floppy-disk"></i> Salvar Dados
                             </button>
                         </div>
-                        <form id="form_condominio" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <form id="form_condominio" class="grid grid-cols-1 md:grid-cols-3 gap-4" onsubmit="event.preventDefault(); salvarDadosCondominio();">
                             <div class="md:col-span-2">
                                 <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome do Condomínio</label>
                                 <input type="text" id="cond_nome" value="${escapeHTML(cond.nome)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
@@ -681,7 +681,7 @@
                             <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Conselheiro' : 'Novo Conselheiro / Membro'}</h3>
                             <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
                         </div>
-                        <form onsubmit="salvarModalConselheiro(event, '${id}')" class="space-y-3">
+                        <form id="form_conselheiro_modal" onsubmit="window.salvarModalConselheiro(event, '${id}')" class="space-y-3">
                             <div>
                                 <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome Completo</label>
                                 <input type="text" id="m_cons_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
@@ -726,7 +726,7 @@
             `);
         };
 
-        function salvarModalConselheiro(e, id) {
+        window.salvarModalConselheiro = function(e, id) {
             e.preventDefault();
             if (!db.conselheiros) db.conselheiros = [];
             const newItem = {
@@ -744,7 +744,7 @@
             salvarDados(db);
             fecharModalContainer();
             renderMainOnly();
-        }
+        };
 
         // =====================================
         // MÓDULO: FINANCEIRO
@@ -796,7 +796,7 @@
                             <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Título' : 'Novo Título'}</h3>
                             <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
                         </div>
-                        <form onsubmit="salvarModalFinanceiro(event, '${id}')" class="space-y-3">
+                        <form id="form_financeiro_modal" onsubmit="window.salvarModalFinanceiro(event, '${id}')" class="space-y-3">
                             <div>
                                 <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Tipo</label>
                                 <select id="m_fin_tipo" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50">
@@ -828,7 +828,7 @@
             `);
         };
 
-        function salvarModalFinanceiro(e, id) {
+        window.salvarModalFinanceiro = function(e, id) {
             e.preventDefault();
             if (!db.financeiro) db.financeiro = [];
             const newItem = {
@@ -845,7 +845,7 @@
             salvarDados(db);
             fecharModalContainer();
             renderMainOnly();
-        }
+        };
 
         // =====================================
         // MÓDULO: MORADORES / UNIDADES
@@ -947,7 +947,7 @@
                             <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Cadastro de Morador' : 'Novo Morador'}</h3>
                             <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
                         </div>
-                        <form onsubmit="salvarModalMorador(event, '${id}')" class="space-y-3 max-h-[75vh] overflow-y-auto pr-2">
+                        <form id="form_morador_modal" onsubmit="window.salvarModalMorador(event, '${id}')" class="space-y-3 max-h-[75vh] overflow-y-auto pr-2">
                             <div class="grid grid-cols-2 gap-3">
                                 <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Bloco</label><input type="text" id="m_mor_bloco" required value="${escapeHTML(m.bloco)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
                                 <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Apartamento</label><input type="text" id="m_mor_ap" required value="${escapeHTML(m.apartamento)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
@@ -1000,7 +1000,7 @@
             `);
         };
 
-        function salvarModalMorador(e, id) {
+        window.salvarModalMorador = function(e, id) {
             e.preventDefault();
             if (!db.moradores) db.moradores = [];
             const newItem = {
@@ -1027,7 +1027,7 @@
             salvarDados(db);
             fecharModalContainer();
             renderMainOnly();
-        }
+        };
 
         // =====================================
         // MÓDULO: FORNECEDORES
@@ -1075,7 +1075,7 @@
                             <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Fornecedor' : 'Novo Fornecedor'}</h3>
                             <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
                         </div>
-                        <form onsubmit="salvarModalFornecedor(event, '${id}')" class="space-y-3">
+                        <form id="form_fornecedor_modal" onsubmit="window.salvarModalFornecedor(event, '${id}')" class="space-y-3">
                             <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">CNPJ</label><input type="text" id="m_for_cnpj" required value="${escapeHTML(item.cnpj)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
                             <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Razão Social</label><input type="text" id="m_for_razao" required value="${escapeHTML(item.razaoSocial)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
                             <div class="grid grid-cols-2 gap-3">
@@ -1092,7 +1092,7 @@
             `);
         };
 
-        function salvarModalFornecedor(e, id) {
+        window.salvarModalFornecedor = function(e, id) {
             e.preventDefault();
             if (!db.fornecedores) db.fornecedores = [];
             const newItem = {
@@ -1108,10 +1108,10 @@
             salvarDados(db);
             fecharModalContainer();
             renderMainOnly();
-        }
+        };
 
         // =====================================
-        // MÓDULO: EMPREGADOS (COM TELEFONE)
+        // MÓDULO: EMPREGADOS
         // =====================================
         function renderEmpregadosView() {
             const list = db.empregados || [];
@@ -1158,7 +1158,7 @@
                             <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Empregado' : 'Novo Empregado'}</h3>
                             <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
                         </div>
-                        <form onsubmit="salvarModalEmpregado(event, '${id}')" class="space-y-3">
+                        <form id="form_empregado_modal" onsubmit="window.salvarModalEmpregado(event, '${id}')" class="space-y-3">
                             <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome Completo</label><input type="text" id="m_emp_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
                             <div class="grid grid-cols-2 gap-3">
                                 <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Cargo</label><input type="text" id="m_emp_cargo" required value="${escapeHTML(item.cargo)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
@@ -1178,7 +1178,7 @@
             `);
         };
 
-        function salvarModalEmpregado(e, id) {
+        window.salvarModalEmpregado = function(e, id) {
             e.preventDefault();
             if (!db.empregados) db.empregados = [];
             const newItem = {
@@ -1194,7 +1194,7 @@
             salvarDados(db);
             fecharModalContainer();
             renderMainOnly();
-        }
+        };
 
         // =====================================
         // OUTROS MÓDULOS ESSENCIAIS
