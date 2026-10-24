@@ -35,7 +35,7 @@
         let tempBase64 = ''; 
         let activeCharts = {};
         let mediaStream = null;
-        let tipoRelatorioSelecionado = 'dre'; // Guarda o relatório atualmente ativo
+        let tipoRelatorioSelecionado = 'dre';
 
         function escapeHTML(str) {
             if (typeof str !== 'string') return str || '';
@@ -93,17 +93,20 @@
         function carregarDados() {
             try {
                 const data = localStorage.getItem('guardioes_bravo_db');
-                if (!data) return DEFAULT_DATA;
-                const parsed = JSON.parse(data);
-                return { ...DEFAULT_DATA, ...parsed };
+                if (!data) return JSON.parse(JSON.stringify(DEFAULT_DATA));
+                return JSON.parse(data);
             } catch (e) {
                 console.error('Erro ao carregar dados:', e);
-                return DEFAULT_DATA;
+                return JSON.parse(JSON.stringify(DEFAULT_DATA));
             }
         }
 
         function salvarDados(data) {
-            try { localStorage.setItem('guardioes_bravo_db', JSON.stringify(data)); } catch (e) { alert('Aviso: Armazenamento local cheio.'); }
+            try { 
+                localStorage.setItem('guardioes_bravo_db', JSON.stringify(data)); 
+            } catch (e) { 
+                alert('Aviso: Armazenamento local cheio.'); 
+            }
         }
 
         let db = carregarDados();
@@ -137,6 +140,7 @@
 
         function registrarLog(modulo, acao, detalhe) {
             const user = sessao.usuarioLogado ? sessao.usuarioLogado.usuario : 'Sistema';
+            if (!db.logs) db.logs = [];
             db.logs.unshift({ id: 'log_' + Date.now(), dataHora: new Date().toLocaleString('pt-BR'), modulo, acao, usuario: user, detalhe });
             salvarDados(db);
         }
@@ -272,7 +276,7 @@
             e.preventDefault();
             const userInput = document.getElementById('login_user').value.trim();
             const senhaInput = document.getElementById('login_pass').value;
-            const userFound = db.usuarios.find(u => u.usuario === userInput || u.email === userInput);
+            const userFound = (db.usuarios || []).find(u => u.usuario === userInput || u.email === userInput);
 
             if (userFound && userFound.senhaHash === senhaInput) {
                 sessao.usuarioLogado = userFound;
@@ -477,7 +481,6 @@
         function renderRelatoriosCentralView() {
             return `
                 <div class="space-y-6">
-                    <!-- SELETOR DE RELATÓRIOS -->
                     <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap gap-2 no-print">
                         <button onclick="tipoRelatorioSelecionado = 'dre'; renderMainOnly();" class="px-3.5 py-2 rounded-lg text-xs font-bold transition flex items-center gap-2 ${tipoRelatorioSelecionado === 'dre' ? 'bg-teal-600 text-white shadow' : 'bg-slate-100 hover:bg-slate-200 text-slate-700'}">
                             <i class="fa-solid fa-chart-line"></i> DRE Gerencial
@@ -499,7 +502,6 @@
                         </button>
                     </div>
 
-                    <!-- EXIBIÇÃO DO RELATÓRIO SELECIONADO -->
                     <div id="conteudo-relatorio">
                         ${renderConteudoRelatorioEspecifico(tipoRelatorioSelecionado)}
                     </div>
@@ -519,7 +521,6 @@
             }
         }
 
-        // 1. DRE Gerencial
         function renderRelatorioDRE() {
             const fin = db.financeiro || [];
             const recTot = fin.filter(f => f.tipo === 'Receber' && f.status === 'Baixado').reduce((acc, f) => acc + Number(f.valor), 0);
@@ -560,7 +561,6 @@
             `;
         }
 
-        // 2. Relatório de Finanças
         function renderRelatorioFinanceiro() {
             const list = db.financeiro || [];
             const recPagas = list.filter(f => f.tipo === 'Receber' && f.status === 'Baixado').reduce((a, b) => a + Number(b.valor), 0);
@@ -605,7 +605,6 @@
             `;
         }
 
-        // 3. Relatório de Estoque
         function renderRelatorioEstoque() {
             const list = db.estoque || [];
             const valorTotalPatrimonio = list.reduce((a, b) => a + (Number(b.qtd) * Number(b.valorEstimado || 0)), 0);
@@ -648,7 +647,6 @@
             `;
         }
 
-        // 4. Relatório de Moradores
         function renderRelatorioMoradores() {
             const list = db.moradores || [];
             const proprietarios = list.filter(m => m.tipo === 'Proprietário').length;
@@ -690,7 +688,6 @@
             `;
         }
 
-        // 5. Relatório de Documentos
         function renderRelatorioDocumentos() {
             const list = db.documentos || [];
             return `
@@ -723,7 +720,6 @@
             `;
         }
 
-        // 6. Relatório de Usuários
         function renderRelatorioUsuarios() {
             const list = db.usuarios || [];
             return `
@@ -766,7 +762,9 @@
         // MORADORES / UNIDADES
         // =====================================
         function renderMoradoresView() {
-            let list = db.moradores || [];
+            if (!db.moradores) db.moradores = [];
+            let list = db.moradores;
+            
             if (morFiltros.busca.trim() !== '') {
                 const b = morFiltros.busca.toLowerCase();
                 list = list.filter(m => (m.nome || '').toLowerCase().includes(b) || (m.apartamento || '').includes(b) || (m.observacoes || '').toLowerCase().includes(b));
@@ -819,6 +817,7 @@
         }
 
         window.renderModalMorador = function(id = null) {
+            if (!db.moradores) db.moradores = [];
             const m = id ? db.moradores.find(x => x.id === id) : { id: '', bloco: 'A', apartamento: '', nome: '', email: '', telefone: '', tipo: 'Proprietário', observacoes: '' };
             
             abrirModalContainer(`
@@ -881,8 +880,10 @@
 
         function salvarModalMorador(e, id) {
             e.preventDefault();
+            if (!db.moradores) db.moradores = [];
+
             const newItem = {
-                id: id || 'mor_' + Date.now(),
+                id: id && id !== 'null' && id !== 'undefined' && id !== '' ? id : 'mor_' + Date.now(),
                 bloco: document.getElementById('m_mor_bloco').value.trim(),
                 apartamento: document.getElementById('m_mor_ap').value.trim(),
                 nome: document.getElementById('m_mor_nome').value.trim(),
@@ -892,13 +893,14 @@
                 observacoes: document.getElementById('m_mor_obs').value.trim()
             };
 
-            if (id) {
-                const idx = db.moradores.findIndex(m => m.id === id);
-                if (idx !== -1) db.moradores[idx] = newItem;
+            const idx = db.moradores.findIndex(m => m.id === newItem.id);
+            if (idx !== -1) {
+                db.moradores[idx] = newItem;
             } else {
                 db.moradores.push(newItem);
             }
 
+            morFiltros.busca = '';
             salvarDados(db);
             registrarLog('Moradores', id ? 'Edição' : 'Criação', `Morador ${newItem.nome} salvo.`);
             fecharModalContainer();
@@ -1156,8 +1158,10 @@
 
         function salvarModalEstoque(e, id) {
             e.preventDefault();
+            if (!db.estoque) db.estoque = [];
+
             const newItem = {
-                id: id || 'est_' + Date.now(),
+                id: id && id !== 'null' && id !== 'undefined' && id !== '' ? id : 'est_' + Date.now(),
                 item: document.getElementById('m_est_item').value.trim(),
                 tombamento: document.getElementById('m_est_tomb').value.trim() || 'N/A',
                 conservacao: document.getElementById('m_est_cons').value,
@@ -1170,9 +1174,9 @@
                 fotoBase64: tempBase64
             };
 
-            if (id) {
-                const idx = db.estoque.findIndex(e => e.id === id);
-                if (idx !== -1) db.estoque[idx] = newItem;
+            const idx = db.estoque.findIndex(e => e.id === newItem.id);
+            if (idx !== -1) {
+                db.estoque[idx] = newItem;
             } else {
                 db.estoque.push(newItem);
             }
@@ -1433,8 +1437,10 @@
 
         function salvarModalTitulo(e, id) {
             e.preventDefault();
+            if (!db.financeiro) db.financeiro = [];
+
             const newItem = {
-                id: id || 'fin_' + Date.now(),
+                id: id && id !== 'null' && id !== 'undefined' && id !== '' ? id : 'fin_' + Date.now(),
                 tipo: document.getElementById('m_fin_tipo').value,
                 formaMonetariaId: document.getElementById('m_fin_fm').value,
                 historico: document.getElementById('m_fin_hist').value.trim(),
@@ -1445,9 +1451,9 @@
                 status: document.getElementById('m_fin_status').value
             };
 
-            if (id) {
-                const idx = db.financeiro.findIndex(f => f.id === id);
-                if (idx !== -1) db.financeiro[idx] = newItem;
+            const idx = db.financeiro.findIndex(f => f.id === newItem.id);
+            if (idx !== -1) {
+                db.financeiro[idx] = newItem;
             } else {
                 db.financeiro.push(newItem);
             }
@@ -1540,8 +1546,10 @@
 
         function salvarModalFormaMonetaria(e, id) {
             e.preventDefault();
+            if (!db.formas_monetarias) db.formas_monetarias = [];
+
             const newItem = {
-                id: id || 'fm_' + Date.now(),
+                id: id && id !== 'null' && id !== 'undefined' && id !== '' ? id : 'fm_' + Date.now(),
                 nome: document.getElementById('m_fm_nome').value.trim(),
                 contaId: document.getElementById('m_fm_conta').value,
                 multaPct: Number(document.getElementById('m_fm_multa').value),
@@ -1550,9 +1558,9 @@
                 status: 'Ativo'
             };
 
-            if (id) {
-                const idx = db.formas_monetarias.findIndex(f => f.id === id);
-                if (idx !== -1) db.formas_monetarias[idx] = newItem;
+            const idx = db.formas_monetarias.findIndex(f => f.id === newItem.id);
+            if (idx !== -1) {
+                db.formas_monetarias[idx] = newItem;
             } else {
                 db.formas_monetarias.push(newItem);
             }
@@ -1621,6 +1629,8 @@
 
         function salvarModalContaBancaria(e) {
             e.preventDefault();
+            if (!db.contas_bancarias) db.contas_bancarias = [];
+
             db.contas_bancarias.push({
                 id: 'cb_' + Date.now(),
                 banco: document.getElementById('m_cb_banco').value.trim(),
@@ -1697,6 +1707,8 @@
 
         function salvarModalCategoria(e) {
             e.preventDefault();
+            if (!db.categorias) db.categorias = [];
+
             db.categorias.push({
                 id: 'cat_' + Date.now(),
                 nome: document.getElementById('m_cat_nome').value.trim(),
@@ -1818,8 +1830,10 @@
 
         function salvarModalDocumento(e, id) {
             e.preventDefault();
+            if (!db.documentos) db.documentos = [];
+
             const newDoc = {
-                id: id || 'doc_' + Date.now(),
+                id: id && id !== 'null' && id !== 'undefined' && id !== '' ? id : 'doc_' + Date.now(),
                 titulo: document.getElementById('m_doc_titulo').value.trim(),
                 pasta: document.getElementById('m_doc_pasta').value,
                 data: id ? (db.documentos.find(d => d.id === id)?.data || new Date().toISOString().split('T')[0]) : new Date().toISOString().split('T')[0],
@@ -1827,9 +1841,9 @@
                 arquivoBase64: tempBase64
             };
 
-            if (id) {
-                const idx = db.documentos.findIndex(d => d.id === id);
-                if (idx !== -1) db.documentos[idx] = newDoc;
+            const idx = db.documentos.findIndex(d => d.id === newDoc.id);
+            if (idx !== -1) {
+                db.documentos[idx] = newDoc;
             } else {
                 db.documentos.push(newDoc);
             }
@@ -1922,6 +1936,8 @@
 
         function salvarModalUsuario(e) {
             e.preventDefault();
+            if (!db.usuarios) db.usuarios = [];
+
             db.usuarios.push({
                 id: 'usr_' + Date.now(),
                 usuario: document.getElementById('m_usr_login').value.trim(),
