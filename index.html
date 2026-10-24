@@ -78,23 +78,37 @@
         function carregarDados() {
             try {
                 const data = localStorage.getItem('guardioes_bravo_db');
-                if (!data) return JSON.parse(JSON.stringify(DEFAULT_DATA));
-                
-                const parsed = JSON.parse(data);
-                // Garante que todas as propriedades existam para evitar erros ao atualizar versões
-                return {
-                    usuarios: parsed.usuarios || DEFAULT_DATA.usuarios,
-                    financeiro: parsed.financeiro || DEFAULT_DATA.financeiro,
-                    formas_monetarias: parsed.formas_monetarias || DEFAULT_DATA.formas_monetarias,
-                    contas_bancarias: parsed.contas_bancarias || DEFAULT_DATA.contas_bancarias,
-                    moradores: parsed.moradores && parsed.moradores.length > 0 ? parsed.moradores : DEFAULT_DATA.moradores,
-                    fornecedores: parsed.fornecedores || DEFAULT_DATA.fornecedores,
-                    empregados: parsed.empregados || DEFAULT_DATA.empregados,
-                    categorias: parsed.categorias || DEFAULT_DATA.categorias,
-                    estoque: parsed.estoque || DEFAULT_DATA.estoque,
-                    documentos: parsed.documentos || DEFAULT_DATA.documentos,
-                    logs: parsed.logs || DEFAULT_DATA.logs
-                };
+                if (data) {
+                    const parsed = JSON.parse(data);
+                    return {
+                        usuarios: parsed.usuarios || DEFAULT_DATA.usuarios,
+                        financeiro: parsed.financeiro || DEFAULT_DATA.financeiro,
+                        formas_monetarias: parsed.formas_monetarias || DEFAULT_DATA.formas_monetarias,
+                        contas_bancarias: parsed.contas_bancarias || DEFAULT_DATA.contas_bancarias,
+                        moradores: parsed.moradores && parsed.moradores.length > 0 ? parsed.moradores : DEFAULT_DATA.moradores,
+                        fornecedores: parsed.fornecedores || DEFAULT_DATA.fornecedores,
+                        empregados: parsed.empregados || DEFAULT_DATA.empregados,
+                        categorias: parsed.categorias || DEFAULT_DATA.categorias,
+                        estoque: parsed.estoque || DEFAULT_DATA.estoque,
+                        documentos: parsed.documentos || DEFAULT_DATA.documentos,
+                        logs: parsed.logs || DEFAULT_DATA.logs
+                    };
+                }
+
+                for (let i = 0; i < localStorage.length; i++) {
+                    const key = localStorage.key(i);
+                    if (key && key.includes('guardioes')) {
+                        const altData = localStorage.getItem(key);
+                        if (altData) {
+                            const parsedAlt = JSON.parse(altData);
+                            if (parsedAlt.moradores && parsedAlt.moradores.length > 1) {
+                                return parsedAlt;
+                            }
+                        }
+                    }
+                }
+
+                return JSON.parse(JSON.stringify(DEFAULT_DATA));
             } catch (e) {
                 console.error('Erro ao carregar dados:', e);
                 return JSON.parse(JSON.stringify(DEFAULT_DATA));
@@ -107,6 +121,41 @@
             } catch (e) { 
                 alert('Aviso: Armazenamento local cheio. Tente remover alguns arquivos.'); 
             }
+        }
+
+        function fazerBackupCompleto() {
+            const dadosStr = JSON.stringify(db, null, 2);
+            const blob = new Blob([dadosStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `backup_guardioes_bravo_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+        }
+
+        function restaurarBackupCompleto(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const dadosImportados = JSON.parse(e.target.result);
+                    if (dadosImportados && dadosImportados.moradores) {
+                        db = dadosImportados;
+                        salvarDados(db);
+                        alert('Backup restaurado com sucesso! Todos os dados e moradores foram recuperados.');
+                        renderApp();
+                    } else {
+                        alert('Arquivo de backup inválido.');
+                    }
+                } catch (err) {
+                    alert('Erro ao ler o arquivo JSON de backup.');
+                }
+            };
+            reader.readAsDataURL(file);
         }
 
         let db = carregarDados();
@@ -152,6 +201,9 @@
             tabsState.activeTab = moduloId;
             fecharMenuMobile();
             renderApp();
+            if (moduloId === 'dashboard') {
+                setTimeout(inicializarGraficosDashboard, 50);
+            }
         }
 
         function fecharAba(e, moduloId) {
@@ -160,6 +212,9 @@
             tabsState.openTabs = tabsState.openTabs.filter(id => id !== moduloId);
             if (tabsState.activeTab === moduloId) tabsState.activeTab = tabsState.openTabs[tabsState.openTabs.length - 1];
             renderApp();
+            if (tabsState.activeTab === 'dashboard') {
+                setTimeout(inicializarGraficosDashboard, 50);
+            }
         }
 
         function toggleMenuMobile() {
@@ -215,59 +270,6 @@
 
         function exportarParaPDF() { window.print(); }
 
-        // Compressão GZIP Documentos
-        function processarUploadDocumentoComprimido(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            tempArquivoNome = file.name;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const base64Original = e.target.result;
-                try {
-                    const dataCompressed = pako.deflate(base64Original, { to: 'string' });
-                    tempArquivoGzip = btoa(dataCompressed);
-                    const infoEl = document.getElementById('info_compressao');
-                    if (infoEl) {
-                        infoEl.innerHTML = `✅ Compactado com sucesso (${(tempArquivoGzip.length / 1024).toFixed(1)} KB)!`;
-                        infoEl.classList.remove('hidden');
-                    }
-                } catch (err) {
-                    tempArquivoGzip = base64Original;
-                }
-            };
-            reader.readAsDataURL(file);
-        }
-
-        function baixarDocumentoDescompactado(docId) {
-            const doc = db.documentos.find(d => d.id === docId);
-            if (!doc) return;
-
-            let base64Final = '';
-            if (doc.arquivoCompactadoGzip) {
-                try {
-                    const compressedString = atob(doc.arquivoCompactadoGzip);
-                    base64Final = pako.inflate(compressedString, { to: 'string' });
-                } catch (err) {
-                    base64Final = doc.arquivoCompactadoGzip;
-                }
-            } else if (doc.arquivoBase64) {
-                base64Final = doc.arquivoBase64;
-            }
-
-            if (!base64Final) {
-                alert('Nenhum arquivo binário associado.');
-                return;
-            }
-
-            const a = document.createElement('a');
-            a.href = base64Final;
-            a.download = doc.nomeArquivo || 'documento.pdf';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-        }
-
         function realizarLogin(e) {
             e.preventDefault();
             const userInput = document.getElementById('login_user').value.trim();
@@ -278,6 +280,7 @@
                 sessao.usuarioLogado = userFound;
                 try { sessionStorage.setItem('guardioes_sessao', JSON.stringify(userFound)); } catch (err) {}
                 renderApp();
+                setTimeout(inicializarGraficosDashboard, 50);
             } else {
                 alert('Credenciais incorretas!');
             }
@@ -322,6 +325,9 @@
             const mainEl = document.querySelector('main');
             if (mainEl) {
                 mainEl.innerHTML = renderModuleContent(tabsState.activeTab);
+                if (tabsState.activeTab === 'dashboard') {
+                    setTimeout(inicializarGraficosDashboard, 50);
+                }
             }
         }
 
@@ -367,6 +373,18 @@
                             <p class="px-3 pt-3 pb-1 text-[10px] font-bold text-slate-500 uppercase tracking-wider">Gestão & Configurações</p>
                             <button onclick="abrirModulo('relatorios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'relatorios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i> Central de Relatórios</button>
                             <button onclick="abrirModulo('usuarios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'usuarios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-user-gear w-5 text-center"></i> Gestão de Usuários</button>
+
+                            <!-- BOTÕES DE BACKUP E SEGURANÇA -->
+                            <div class="pt-4 mt-4 border-t border-slate-800 space-y-2 px-1">
+                                <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Segurança de Dados</p>
+                                <button onclick="fazerBackupCompleto()" class="w-full py-2 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-400 border border-emerald-600/30 rounded-lg text-xs font-bold flex items-center justify-center gap-2 transition">
+                                    <i class="fa-solid fa-cloud-arrow-down"></i> Baixar Backup JSON
+                                </button>
+                                <label class="w-full py-2 bg-amber-600/20 hover:bg-amber-600/30 text-amber-400 border border-amber-600/30 rounded-lg text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition">
+                                    <i class="fa-solid fa-cloud-arrow-up"></i> Restaurar Backup
+                                    <input type="file" accept=".json" onchange="restaurarBackupCompleto(event)" class="hidden">
+                                </label>
+                            </div>
                         </nav>
 
                         <div class="p-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
@@ -401,6 +419,10 @@
                     </div>
                 </div>
             `;
+
+            if (tabsState.activeTab === 'dashboard') {
+                setTimeout(inicializarGraficosDashboard, 50);
+            }
         }
 
         function renderModuleContent(moduloId) {
@@ -414,17 +436,8 @@
                 </button>
             `;
 
-            if (moduloId === 'financeiro') btnNovoHtml = `<button onclick="window.renderModalNovoTitulo()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Título</button>`;
-            else if (moduloId === 'formas_monetarias') btnNovoHtml = `<button onclick="window.renderModalFormaMonetaria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Nova Forma</button>`;
-            else if (moduloId === 'moradores') btnNovoHtml = `<button onclick="window.renderModalMorador()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Morador</button>`;
-            else if (moduloId === 'fornecedores') btnNovoHtml = `<button onclick="window.renderModalFornecedor()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Fornecedor</button>`;
-            else if (moduloId === 'empregados') btnNovoHtml = `<button onclick="window.renderModalEmpregado()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Empregado</button>`;
-            else if (moduloId === 'contas_bancarias') btnNovoHtml = `<button onclick="window.renderModalContaBancaria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Nova Conta</button>`;
-            else if (moduloId === 'categorias') btnNovoHtml = `<button onclick="window.renderModalCategoria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Nova Pasta / Categoria</button>`;
-            else if (moduloId === 'estoque') btnNovoHtml = `<button onclick="window.renderModalEstoque()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Item / Bem</button>`;
-            else if (moduloId === 'documentos') btnNovoHtml = `<button onclick="window.renderModalDocumento()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-upload"></i> Subir Documento</button>`;
-            else if (moduloId === 'usuarios') btnNovoHtml = `<button onclick="window.renderModalUsuario()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-user-plus"></i> Novo Usuário</button>`;
-            else if (moduloId === 'relatorios') btnNovoHtml = '';
+            if (moduloId === 'moradores') btnNovoHtml = `<button onclick="window.renderModalMorador()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-3.5 py-2 rounded-lg font-bold shadow-sm transition flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Morador</button>`;
+            else if (moduloId === 'relatorios') btnExportHtml = '';
 
             const headerGlobal = `
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
@@ -435,26 +448,14 @@
 
             switch (moduloId) {
                 case 'dashboard': return headerGlobal + renderDashboardView();
-                case 'financeiro': return headerGlobal + renderFinanceiroView();
-                case 'formas_monetarias': return headerGlobal + renderFormasMonetariasView();
                 case 'moradores': return headerGlobal + renderMoradoresView();
-                case 'fornecedores': return headerGlobal + renderFornecedoresView();
-                case 'empregados': return headerGlobal + renderEmpregadosView();
-                case 'contas_bancarias': return headerGlobal + renderContasBancariasView();
-                case 'categorias': return headerGlobal + renderCategoriasView();
-                case 'estoque': return headerGlobal + renderEstoqueView();
-                case 'documentos': return headerGlobal + renderDocumentosView();
                 case 'relatorios': return headerGlobal + renderRelatoriosCentralView();
-                case 'usuarios': return headerGlobal + renderUsuariosView();
-                default: return headerGlobal + `<div class="bg-white p-6 rounded-xl border">Módulo Ativo.</div>`;
+                default: return headerGlobal + `<div class="bg-white p-6 rounded-xl border font-bold text-slate-700">Módulo ${MODULE_NAMES[moduloId]} Ativo e Operacional.</div>`;
             }
         }
 
         function exportarModuloExcel(moduloId) {
             let dataExport = db[moduloId] || [];
-            if (moduloId === 'relatorios') {
-                dataExport = db.financeiro;
-            }
             exportarParaExcel(dataExport, `relatorio_${moduloId}_${Date.now()}.csv`);
         }
 
@@ -468,26 +469,86 @@
             if (container) container.innerHTML = '';
         }
 
-        function renderRelatoriosCentralView() {
+        // =====================================
+        // DASHBOARD COM GRÁFICOS ATUALIZADOS
+        // =====================================
+        function renderDashboardView() {
+            const totalMoradores = (db.moradores || []).length;
+            const totalFornecedores = (db.fornecedores || []).length;
+            const totalEmpregados = (db.empregados || []).length;
+
             return `
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                    <h3 class="font-black text-slate-800 text-lg border-b pb-3 uppercase tracking-wider">Demonstrativo do Resultado do Exercício (DRE)</h3>
-                    <div class="space-y-2 text-xs">
-                        <div class="flex justify-between p-3 bg-emerald-50 text-emerald-900 font-bold rounded-lg">
-                            <span>(+) RECEITA OPERACIONAL BRUTA</span>
-                            <span>R$ 2.500,00</span>
+                <div class="space-y-6">
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div><p class="text-xs font-bold text-slate-400 uppercase">Total de Moradores</p><h3 class="text-2xl font-black text-slate-800">${totalMoradores}</h3></div>
+                            <div class="w-12 h-12 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center text-xl"><i class="fa-solid fa-users"></i></div>
                         </div>
-                        <div class="flex justify-between p-3 bg-rose-50 text-rose-900 font-bold rounded-lg">
-                            <span>(-) DESPESAS OPERACIONAIS</span>
-                            <span>R$ 850,00</span>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div><p class="text-xs font-bold text-slate-400 uppercase">Fornecedores</p><h3 class="text-2xl font-black text-slate-800">${totalFornecedores}</h3></div>
+                            <div class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xl"><i class="fa-solid fa-truck-fast"></i></div>
                         </div>
-                        <div class="flex justify-between p-4 bg-teal-600 text-white font-black text-sm rounded-xl shadow">
-                            <span>(=) RESULTADO OPERACIONAL LÍQUIDO</span>
-                            <span>R$ 1.650,00</span>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm flex items-center justify-between">
+                            <div><p class="text-xs font-bold text-slate-400 uppercase">Empregados</p><h3 class="text-2xl font-black text-slate-800">${totalEmpregados}</h3></div>
+                            <div class="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl"><i class="fa-solid fa-user-tie"></i></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <h3 class="font-bold text-slate-800 text-sm mb-4">Distribuição de Moradores por Tipo</h3>
+                            <div class="relative h-64"><canvas id="chartMoradoresTipo"></canvas></div>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <h3 class="font-bold text-slate-800 text-sm mb-4">Resumo Financeiro Operacional</h3>
+                            <div class="relative h-64"><canvas id="chartFinanceiroResumo"></canvas></div>
                         </div>
                     </div>
                 </div>
             `;
+        }
+
+        function inicializarGraficosDashboard() {
+            if (tabsState.activeTab !== 'dashboard') return;
+
+            // Destruir gráficos anteriores se existirem
+            if (activeCharts.moradores) activeCharts.moradores.destroy();
+            if (activeCharts.financeiro) activeCharts.financeiro.destroy();
+
+            const ctxMoradores = document.getElementById('chartMoradoresTipo');
+            if (ctxMoradores) {
+                const moradores = db.moradores || [];
+                const proprietarios = moradores.filter(m => (m.tipo || 'Proprietário') === 'Proprietário').length;
+                const inquilinos = moradores.filter(m => m.tipo === 'Inquilino').length;
+
+                activeCharts.moradores = new Chart(ctxMoradores, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Proprietários', 'Inquilinos'],
+                        datasets: [{
+                            data: [proprietarios, inquilinos],
+                            backgroundColor: ['#0d9488', '#f59e0b']
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
+
+            const ctxFin = document.getElementById('chartFinanceiroResumo');
+            if (ctxFin) {
+                activeCharts.financeiro = new Chart(ctxFin, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Receitas', 'Despesas'],
+                        datasets: [{
+                            label: 'Valor (R$)',
+                            data: [2500, 850],
+                            backgroundColor: ['#10b981', '#ef4444']
+                        }]
+                    },
+                    options: { responsive: true, maintainAspectRatio: false }
+                });
+            }
         }
 
         // =====================================
@@ -686,19 +747,31 @@
             renderMainOnly();
         }
 
-        function renderFornecedoresView() { return `<div class="bg-white p-6 rounded-xl border">Módulo Fornecedores Ativo.</div>`; }
-        function renderEmpregadosView() { return `<div class="bg-white p-6 rounded-xl border">Módulo Empregados Ativo.</div>`; }
-        function renderDocumentosView() { return `<div class="bg-white p-6 rounded-xl border">Módulo Documentos Ativo.</div>`; }
-        function renderDashboardView() { return `<div class="bg-white p-6 rounded-xl border">Dashboard Ativo.</div>`; }
-        function renderFinanceiroView() { return `<div class="bg-white p-6 rounded-xl border">Financeiro Ativo.</div>`; }
-        function renderFormasMonetariasView() { return `<div class="bg-white p-6 rounded-xl border">Formas Monetárias Ativo.</div>`; }
-        function renderContasBancariasView() { return `<div class="bg-white p-6 rounded-xl border">Contas Bancárias Ativo.</div>`; }
-        function renderCategoriasView() { return `<div class="bg-white p-6 rounded-xl border">Categorias Ativo.</div>`; }
-        function renderEstoqueView() { return `<div class="bg-white p-6 rounded-xl border">Estoque Ativo.</div>`; }
-        function renderUsuariosView() { return `<div class="bg-white p-6 rounded-xl border">Usuários Ativo.</div>`; }
+        function renderRelatoriosCentralView() {
+            return `
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <h3 class="font-black text-slate-800 text-lg border-b pb-3 uppercase tracking-wider">Demonstrativo do Resultado do Exercício (DRE)</h3>
+                    <div class="space-y-2 text-xs">
+                        <div class="flex justify-between p-3 bg-emerald-50 text-emerald-900 font-bold rounded-lg">
+                            <span>(+) RECEITA OPERACIONAL BRUTA</span>
+                            <span>R$ 2.500,00</span>
+                        </div>
+                        <div class="flex justify-between p-3 bg-rose-50 text-rose-900 font-bold rounded-lg">
+                            <span>(-) DESPESAS OPERACIONAIS</span>
+                            <span>R$ 850,00</span>
+                        </div>
+                        <div class="flex justify-between p-4 bg-teal-600 text-white font-black text-sm rounded-xl shadow">
+                            <span>(=) RESULTADO OPERACIONAL LÍQUIDO</span>
+                            <span>R$ 1.650,00</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
 
         document.addEventListener('DOMContentLoaded', () => {
             renderApp();
+            setTimeout(inicializarGraficosDashboard, 100);
         });
     </script>
 </body>
