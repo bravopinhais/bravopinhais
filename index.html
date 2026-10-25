@@ -168,10 +168,6 @@
                     .eq('id', 'principal')
                     .maybeSingle();
 
-                if (error) {
-                    console.error("Erro Supabase Fetch:", error);
-                }
-
                 if (data && data.payload) {
                     db = data.payload;
                     localStorage.setItem('guardioes_bravo_db', JSON.stringify(db));
@@ -180,14 +176,12 @@
                         elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> Sincronizado com o Supabase com Sucesso!`;
                     }
                 } else {
-                    // Se não existir registo na nuvem, envia o local atual para criar o registo inicial
                     await salvarDadosNaNuvem(db);
                 }
             } catch (err) {
-                console.error("Exceção Supabase:", err);
                 if (elStatus) {
                     elStatus.className = "bg-amber-600 text-white text-[10px] font-bold py-1 px-4 text-center no-print";
-                    elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> A utilizar armazenamento local. Verifique consola (F12).`;
+                    elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> A utilizar armazenamento local.`;
                 }
             }
             renderApp();
@@ -208,10 +202,7 @@
                     .from('condominio_dados')
                     .upsert({ id: 'principal', payload: db, atualizado_em: new Date() });
 
-                if (error) {
-                    console.error("Erro Supabase Upsert:", error);
-                    throw error;
-                }
+                if (error) throw error;
 
                 if (elStatus) {
                     elStatus.className = "bg-emerald-600 text-white text-[10px] font-bold py-1 px-4 text-center no-print flex items-center justify-center gap-2";
@@ -220,7 +211,7 @@
             } catch (err) {
                 if (elStatus) {
                     elStatus.className = "bg-amber-600 text-white text-[10px] font-bold py-1 px-4 text-center no-print";
-                    elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Erro ao guardar na nuvem (Verifique RLS/Permissões)`;
+                    elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Guardado localmente (Erro na nuvem)`;
                 }
             }
         }
@@ -300,6 +291,40 @@
 
         function exportarParaPDF() { window.print(); }
 
+        // Função para Exportar Backup Completo em JSON
+        function fazerBackupGeralJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `backup_guardioes_bravo_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        // Função para Restaurar Backup via Ficheiro JSON
+        function restaurarBackupGeralJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed && parsed.condominio) {
+                        db = parsed;
+                        salvarDados(db);
+                        alert('Backup restaurado com sucesso! Os seus dados e melhorias foram aplicados.');
+                        renderApp();
+                    } else {
+                        alert('O ficheiro selecionado não parece ser um backup válido.');
+                    }
+                } catch (err) {
+                    alert('Erro ao ler o ficheiro de backup.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
         function realizarLogin(e) {
             e.preventDefault();
             const userInput = document.getElementById('login_user').value.trim();
@@ -377,6 +402,12 @@
                             <button onclick="abrirModulo('relatorios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'relatorios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i> Relatórios</button>
                             <button onclick="abrirModulo('usuarios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'usuarios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-user-gear w-5 text-center"></i> Usuários</button>
                         </nav>
+
+                        <!-- Botões de Backup e Restauração na Sidebar -->
+                        <div class="p-3 bg-slate-950 border-t border-slate-800 space-y-2 no-print">
+                            <button onclick="fazerBackupGeralJSON()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-teal-400 font-bold rounded text-[11px] flex items-center justify-center gap-2"><i class="fa-solid fa-download"></i> Baixar Backup Geral</button>
+                            <label class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold rounded text-[11px] flex items-center justify-center gap-2 cursor-pointer"><i class="fa-solid fa-upload"></i> Restaurar Backup <input type="file" accept=".json" onchange="restaurarBackupGeralJSON(event)" class="hidden"></label>
+                        </div>
 
                         <div class="p-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
                             <div class="truncate pr-2">
