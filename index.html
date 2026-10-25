@@ -58,6 +58,7 @@
         let tempEstoqueFotoGzip = '';
 
         let filtroAtivoMoradores = { bloco: '', nome: '' };
+        let moradoresSelecionados = []; // IDs dos moradores selecionados para exclusão em massa
         let usuarioPendentePrimeiroAcesso = null; 
         let chartInstanceReceitaDespesa = null;
         let chartInstanceOcupacao = null;
@@ -384,7 +385,6 @@
                     const linhas = texto.split(/\r\n|\n/);
                     if (linhas.length < 2) { alert('A planilha parece estar vazia.'); return; }
 
-                    // Ler cabeçalho para descobrir a posição exata de cada coluna automaticamente
                     const cabecalho = linhas[0].split(/,|;/).map(c => c.replace(/^["']|["']$/g, '').trim().toLowerCase());
                     
                     const idxBloco = cabecalho.findIndex(h => h.includes('bloco') || h.includes('bl'));
@@ -719,6 +719,11 @@
             else if (moduloId === 'contas_bancarias') btnNovoHtml = `<button onclick="window.renderModalContaBancaria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2.5 rounded-xl font-bold shadow-sm transition-all whitespace-nowrap flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Nova Conta</button>`;
             else if (moduloId === 'moradores') {
                 btnNovoHtml = `
+                    ${moradoresSelecionados.length > 0 ? `
+                        <button onclick="excluirMoradoresSelecionados()" class="px-4 py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold text-xs shadow-sm transition-all whitespace-nowrap flex items-center gap-1.5 animate-pulse">
+                            <i class="fa-solid fa-trash"></i> Excluir Selecionados (${moradoresSelecionados.length})
+                        </button>
+                    ` : ''}
                     <label class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow-sm transition-all whitespace-nowrap">
                         <i class="fa-solid fa-file-arrow-up"></i> Importar Planilha <input type="file" accept=".csv, .txt" onchange="importarPlanilhaMoradores(event)" class="hidden">
                     </label>
@@ -1331,6 +1336,48 @@
             salvarDados(db); fecharModalContainer(); renderMainOnly();
         };
 
+        // Funções para Seleção e Exclusão em Massa de Moradores
+        function toggleSelecionarTodosMoradores(source) {
+            let moradoresFiltrados = db.moradores || [];
+            if (filtroAtivoMoradores.bloco) {
+                moradoresFiltrados = moradoresFiltrados.filter(m => String(m.bloco).trim() === String(filtroAtivoMoradores.bloco).trim());
+            }
+            if (filtroAtivoMoradores.nome) {
+                const termo = String(filtroAtivoMoradores.nome).toLowerCase().trim();
+                moradoresFiltrados = moradoresFiltrados.filter(m => 
+                    String(m.nome || '').toLowerCase().includes(termo) || 
+                    String(m.apartamento || '').toLowerCase().includes(termo)
+                );
+            }
+
+            if (source.checked) {
+                moradoresSelecionados = moradoresFiltrados.map(m => m.id);
+            } else {
+                moradoresSelecionados = [];
+            }
+            renderMainOnly();
+        }
+
+        function toggleSelecionarMorador(id) {
+            const index = moradoresSelecionados.indexOf(id);
+            if (index > -1) {
+                moradoresSelecionados.splice(index, 1);
+            } else {
+                moradoresSelecionados.push(id);
+            }
+            renderMainOnly();
+        }
+
+        function excluirMoradoresSelecionados() {
+            if (moradoresSelecionados.length === 0) return;
+            if (!confirm(`Deseja realmente excluir os ${moradoresSelecionados.length} moradores selecionados?`)) return;
+
+            db.moradores = (db.moradores || []).filter(m => !moradoresSelecionados.includes(m.id));
+            moradoresSelecionados = [];
+            salvarDados(db);
+            renderMainOnly();
+        }
+
         function renderMoradoresView() {
             let moradores = db.moradores || [];
             
@@ -1347,6 +1394,7 @@
             }
 
             const blocosDisponiveis = [...new Set((db.moradores||[]).map(m => String(m.bloco).trim()))].filter(Boolean);
+            const todosSelecionados = moradores.length > 0 && moradores.every(m => moradoresSelecionados.includes(m.id));
 
             return `
                 <div class="space-y-4 w-full">
@@ -1358,9 +1406,12 @@
                     ` : ''}
 
                     <div class="bg-white rounded-2xl border border-slate-200/80 overflow-x-auto w-full shadow-sm">
-                        <table class="w-full text-left text-xs relative min-w-[850px]">
+                        <table class="w-full text-left text-xs relative min-w-[900px]">
                             <thead class="bg-slate-800 text-white">
                                 <tr>
+                                    <th class="p-3 w-10 text-center">
+                                        <input type="checkbox" ${todosSelecionados ? 'checked' : ''} onchange="toggleSelecionarTodosMoradores(this)" class="rounded border-slate-600 text-teal-600 focus:ring-teal-500 w-4 h-4 cursor-pointer">
+                                    </th>
                                     <th class="p-3 relative">
                                         <div class="flex items-center justify-between cursor-pointer select-none" onclick="event.stopPropagation(); toggleMenuFiltroColuna('menu-filtro-bloco')">
                                             <span>BLOCO/AP <i class="fa-solid fa-filter text-[10px] ${filtroAtivoMoradores.bloco ? 'text-teal-400' : 'text-slate-400'}"></i></span>
@@ -1398,26 +1449,32 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y">
-                                ${moradores.length === 0 ? `<tr><td colspan="7" class="p-6 text-center text-slate-400">Nenhum morador encontrado com os filtros aplicados.</td></tr>` : moradores.map(m => `
-                                    <tr class="hover:bg-slate-50 transition-colors">
-                                        <td class="p-3">
-                                            <div class="font-bold text-slate-800">Bloco ${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</div>
-                                            <div class="text-[10px] text-teal-700 font-semibold">${escapeHTML(m.nome)}</div>
-                                        </td>
-                                        <td class="p-3">
-                                            <div class="font-bold">${escapeHTML(m.nome)}</div>
-                                            <div class="text-[10px] text-slate-500">${escapeHTML(m.email || '-')}</div>
-                                        </td>
-                                        <td class="p-3 font-mono">${escapeHTML(m.cpf || '-')}</td>
-                                        <td class="p-3 font-mono">${escapeHTML(m.telefone || '-')}</td>
-                                        <td class="p-3">${m.petNome ? `<span class="px-2.5 py-1 bg-teal-50 text-teal-700 rounded-xl font-bold inline-flex items-center gap-1"><i class="fa-solid fa-paw"></i> ${escapeHTML(m.petNome)}</span>` : '-'}</td>
-                                        <td class="p-3">${m.vagaGaragem ? `<span class="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-xl font-bold inline-flex items-center gap-1"><i class="fa-solid fa-car"></i> ${escapeHTML(m.vagaGaragem)}</span>` : '-'}</td>
-                                        <td class="p-3 text-center">
-                                            <button onclick="window.renderModalMorador('${m.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1 transition-colors" title="Editar"><i class="fa-solid fa-pen"></i></button>
-                                            <button onclick="excluirRegistro('moradores','${m.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors" title="Excluir"><i class="fa-solid fa-trash"></i></button>
-                                        </td>
-                                    </tr>
-                                `).join('')}
+                                ${moradores.length === 0 ? `<tr><td colspan="8" class="p-6 text-center text-slate-400">Nenhum morador encontrado com os filtros aplicados.</td></tr>` : moradores.map(m => {
+                                    const selecionado = moradoresSelecionados.includes(m.id);
+                                    return `
+                                        <tr class="hover:bg-slate-50 transition-colors ${selecionado ? 'bg-teal-50/50' : ''}">
+                                            <td class="p-3 text-center">
+                                                <input type="checkbox" ${selecionado ? 'checked' : ''} onchange="toggleSelecionarMorador('${m.id}')" class="rounded border-slate-300 text-teal-600 focus:ring-teal-500 w-4 h-4 cursor-pointer">
+                                            </td>
+                                            <td class="p-3">
+                                                <div class="font-bold text-slate-800">Bloco ${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</div>
+                                                <div class="text-[10px] text-teal-700 font-semibold">${escapeHTML(m.nome)}</div>
+                                            </td>
+                                            <td class="p-3">
+                                                <div class="font-bold">${escapeHTML(m.nome)}</div>
+                                                <div class="text-[10px] text-slate-500">${escapeHTML(m.email || '-')}</div>
+                                            </td>
+                                            <td class="p-3 font-mono">${escapeHTML(m.cpf || '-')}</td>
+                                            <td class="p-3 font-mono">${escapeHTML(m.telefone || '-')}</td>
+                                            <td class="p-3">${m.petNome ? `<span class="px-2.5 py-1 bg-teal-50 text-teal-700 rounded-xl font-bold inline-flex items-center gap-1"><i class="fa-solid fa-paw"></i> ${escapeHTML(m.petNome)}</span>` : '-'}</td>
+                                            <td class="p-3">${m.vagaGaragem ? `<span class="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-xl font-bold inline-flex items-center gap-1"><i class="fa-solid fa-car"></i> ${escapeHTML(m.vagaGaragem)}</span>` : '-'}</td>
+                                            <td class="p-3 text-center">
+                                                <button onclick="window.renderModalMorador('${m.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1 transition-colors" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                                                <button onclick="excluirRegistro('moradores','${m.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
                             </tbody>
                         </table>
                     </div>
