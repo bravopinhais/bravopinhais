@@ -657,46 +657,65 @@
             salvarDados(db); fecharModalContainer(); renderMainOnly();
         };
 
-        // MÓDULO DE MORADORES COM FILTROS NAS COLUNAS RESTAURADOS
+        // MÓDULO DE MORADORES COM FILTROS AVANÇADOS FUNCIONANDO DIRETAMENTE
         function renderMoradoresView() {
             let moradores = db.moradores || [];
-            if (filtroAtivoMoradores.bloco) moradores = moradores.filter(m => String(m.bloco) === String(filtroAtivoMoradores.bloco));
-            if (filtroAtivoMoradores.nome) {
-                const t = filtroAtivoMoradores.nome.toLowerCase();
-                moradores = moradores.filter(m => (m.nome||'').toLowerCase().includes(t) || (m.apartamento||'').toLowerCase().includes(t));
+            
+            // Aplicar filtro de bloco ativo
+            if (filtroAtivoMoradores.bloco !== '' && filtroAtivoMoradores.bloco !== null && filtroAtivoMoradores.bloco !== undefined) {
+                moradores = moradores.filter(m => String(m.bloco).trim() === String(filtroAtivoMoradores.bloco).trim());
             }
-            const blocosDisponiveis = [...new Set((db.moradores||[]).map(m => m.bloco))];
+            
+            // Aplicar filtro de nome ou apartamento ativo
+            if (filtroAtivoMoradores.nome !== '' && filtroAtivoMoradores.nome !== null && filtroAtivoMoradores.nome !== undefined) {
+                const termo = String(filtroAtivoMoradores.nome).toLowerCase().trim();
+                moradores = moradores.filter(m => 
+                    String(m.nome || '').toLowerCase().includes(termo) || 
+                    String(m.apartamento || '').toLowerCase().includes(termo)
+                );
+            }
+
+            const blocosDisponiveis = [...new Set((db.moradores||[]).map(m => String(m.bloco).trim()))].filter(Boolean);
+
             return `
                 <div class="space-y-4">
+                    <!-- Barra de status do filtro ativo -->
+                    ${(filtroAtivoMoradores.bloco || filtroAtivoMoradores.nome) ? `
+                        <div class="bg-teal-50 border border-teal-200 p-2.5 rounded-xl text-xs font-bold text-teal-800 flex items-center justify-between no-print">
+                            <span>Filtros ativos: ${filtroAtivoMoradores.bloco ? `Bloco: ${filtroAtivoMoradores.bloco}` : ''} ${filtroAtivoMoradores.nome ? `Pesquisa: "${filtroAtivoMoradores.nome}"` : ''}</span>
+                            <button onclick="filtroAtivoMoradores = {bloco: '', nome: ''}; renderMainOnly();" class="px-2.5 py-1 bg-teal-600 text-white rounded-lg text-[10px]">Limpar Filtros</button>
+                        </div>
+                    ` : ''}
+
                     <div class="bg-white rounded-xl border overflow-visible">
                         <table class="w-full text-left text-xs relative">
                             <thead class="bg-slate-800 text-white">
                                 <tr>
                                     <th class="p-3 relative">
-                                        <div class="flex items-center justify-between cursor-pointer select-none" onclick="toggleMenuFiltroColuna('menu-filtro-bloco')">
+                                        <div class="flex items-center justify-between cursor-pointer select-none" onclick="event.stopPropagation(); toggleMenuFiltroColuna('menu-filtro-bloco')">
                                             <span>BLOCO/AP <i class="fa-solid fa-filter text-[10px] ${filtroAtivoMoradores.bloco ? 'text-teal-400' : 'text-slate-400'}"></i></span>
                                             <i class="fa-solid fa-chevron-down text-[10px]"></i>
                                         </div>
                                         <div id="menu-filtro-bloco" class="hidden absolute left-0 top-full mt-1 bg-white text-slate-800 p-3 rounded-xl shadow-2xl border w-48 z-30">
                                             <p class="font-bold text-[10px] uppercase text-slate-400 mb-2">Filtrar Bloco</p>
                                             <div class="space-y-1 max-h-40 overflow-y-auto">
-                                                <button onclick="filtrarMoradoresBloco('')" class="w-full text-left px-2 py-1.5 rounded hover:bg-slate-100 font-bold ${!filtroAtivoMoradores.bloco ? 'bg-teal-50 text-teal-700' : ''}">[ Todos ]</button>
-                                                ${blocosDisponiveis.map(b => `<button onclick="filtrarMoradoresBloco('${b}')" class="w-full text-left px-2 py-1.5 rounded hover:bg-slate-100 font-bold ${filtroAtivoMoradores.bloco===b?'bg-teal-50 text-teal-700':''}">Bloco ${escapeHTML(b)}</button>`).join('')}
+                                                <button type="button" onclick="event.stopPropagation(); filtrarMoradoresBloco('')" class="w-full text-left px-2 py-1.5 rounded hover:bg-slate-100 font-bold ${!filtroAtivoMoradores.bloco ? 'bg-teal-50 text-teal-700' : ''}">[ Todos ]</button>
+                                                ${blocosDisponiveis.map(b => `<button type="button" onclick="event.stopPropagation(); filtrarMoradoresBloco('${b}')" class="w-full text-left px-2 py-1.5 rounded hover:bg-slate-100 font-bold ${filtroAtivoMoradores.bloco===b?'bg-teal-50 text-teal-700':''}">Bloco ${escapeHTML(b)}</button>`).join('')}
                                             </div>
                                         </div>
                                     </th>
                                     <th class="p-3 relative">
-                                        <div class="flex items-center justify-between cursor-pointer select-none" onclick="toggleMenuFiltroColuna('menu-filtro-nome')">
+                                        <div class="flex items-center justify-between cursor-pointer select-none" onclick="event.stopPropagation(); toggleMenuFiltroColuna('menu-filtro-nome')">
                                             <span>NOME <i class="fa-solid fa-filter text-[10px] ${filtroAtivoMoradores.nome ? 'text-teal-400' : 'text-slate-400'}"></i></span>
                                             <i class="fa-solid fa-chevron-down text-[10px]"></i>
                                         </div>
-                                        <div id="menu-filtro-nome" class="hidden absolute left-0 top-full mt-1 bg-white text-slate-800 p-3 rounded-xl shadow-2xl border w-60 z-30">
+                                        <div id="menu-filtro-nome" class="hidden absolute left-0 top-full mt-1 bg-white text-slate-800 p-3 rounded-xl shadow-2xl border w-60 z-30" onclick="event.stopPropagation()">
                                             <p class="font-bold text-[10px] uppercase text-slate-400 mb-2">Pesquisar Nome</p>
                                             <div class="space-y-2">
-                                                <input type="text" id="input-filtro-nome-val" value="${escapeHTML(filtroAtivoMoradores.nome)}" placeholder="Pesquisar..." class="w-full p-2 border rounded-lg text-xs bg-slate-50">
+                                                <input type="text" id="input-filtro-nome-val" value="${escapeHTML(filtroAtivoMoradores.nome)}" placeholder="Nome ou Aparelho..." class="w-full p-2 border rounded-lg text-xs bg-slate-50">
                                                 <div class="flex justify-end gap-1">
-                                                    <button onclick="filtroAtivoMoradores.nome=''; renderMainOnly();" class="px-2 py-1 bg-slate-200 rounded text-[10px] font-bold">Limpar</button>
-                                                    <button onclick="filtroAtivoMoradores.nome = document.getElementById('input-filtro-nome-val').value; renderMainOnly();" class="px-2 py-1 bg-teal-600 text-white rounded text-[10px] font-bold">Filtrar</button>
+                                                    <button type="button" onclick="filtroAtivoMoradores.nome=''; document.getElementById('menu-filtro-nome').classList.add('hidden'); renderMainOnly();" class="px-2 py-1 bg-slate-200 rounded text-[10px] font-bold">Limpar</button>
+                                                    <button type="button" onclick="filtroAtivoMoradores.nome = document.getElementById('input-filtro-nome-val').value; document.getElementById('menu-filtro-nome').classList.add('hidden'); renderMainOnly();" class="px-2 py-1 bg-teal-600 text-white rounded text-[10px] font-bold">Filtrar</button>
                                                 </div>
                                             </div>
                                         </div>
@@ -706,7 +725,7 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y">
-                                ${moradores.length === 0 ? `<tr><td colspan="4" class="p-6 text-center text-slate-400">Nenhum morador registado.</td></tr>` : moradores.map(m => `
+                                ${moradores.length === 0 ? `<tr><td colspan="4" class="p-6 text-center text-slate-400">Nenhum morador encontrado com os filtros aplicados.</td></tr>` : moradores.map(m => `
                                     <tr>
                                         <td class="p-3 font-bold">Bloco ${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</td>
                                         <td class="p-3">${escapeHTML(m.nome)}</td>
@@ -727,12 +746,23 @@
         function toggleMenuFiltroColuna(menuId) {
             const menu = document.getElementById(menuId);
             if (!menu) return;
-            document.querySelectorAll('[id^="menu-filtro-"]').forEach(m => { if (m.id !== menuId) m.classList.add('hidden'); });
-            menu.classList.toggle('hidden');
+            const isOpen = !menu.classList.contains('hidden');
+            document.querySelectorAll('[id^="menu-filtro-"]').forEach(m => m.classList.add('hidden'));
+            if (isOpen) {
+                menu.classList.add('hidden');
+            } else {
+                menu.classList.remove('hidden');
+            }
         }
+
+        // Fechar menus de filtro ao clicar fora
+        window.addEventListener('click', () => {
+            document.querySelectorAll('[id^="menu-filtro-"]').forEach(m => m.classList.add('hidden'));
+        });
 
         function filtrarMoradoresBloco(bloco) {
             filtroAtivoMoradores.bloco = bloco;
+            document.querySelectorAll('[id^="menu-filtro-"]').forEach(m => m.classList.add('hidden'));
             renderMainOnly();
         }
 
@@ -817,8 +847,8 @@
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Empregado' : 'Novo Empregado'}</h3>
                         <form onsubmit="salvarModalEmpregado(event, '${id}')" class="space-y-3">
-                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_emp_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
-                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Cargo</label><input type="text" id="m_emp_cargo" required value="${escapeHTML(item.cargo)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_emp_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Cargo</label><input type="text" id="m_emp_cargo" required value="${escapeHTML(item.cargo)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
                             <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg font-bold">Salvar</button></div>
                         </form>
                     </div>
