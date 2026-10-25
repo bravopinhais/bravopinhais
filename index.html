@@ -414,9 +414,14 @@
 
         function realizarLogin(e) {
             e.preventDefault();
-            const userInput = document.getElementById('login_user').value.trim();
+            const userInput = document.getElementById('login_user').value.trim().toLowerCase();
             const senhaInput = document.getElementById('login_pass').value;
-            const userFound = (db.usuarios || []).find(u => u.usuario === userInput || u.email === userInput);
+            
+            const userFound = (db.usuarios || []).find(u => 
+                (u.usuario && u.usuario.toLowerCase() === userInput) || 
+                (u.email && u.email.toLowerCase() === userInput)
+            );
+
             if (userFound && userFound.senhaHash === senhaInput) {
                 if (userFound.status === 'Inativo') { alert('Utilizador inativo.'); return; }
                 
@@ -429,7 +434,7 @@
                 sessao.usuarioLogado = userFound;
                 try { sessionStorage.setItem('guardioes_sessao', JSON.stringify(userFound)); } catch (err) {}
                 renderApp();
-            } else { alert('Credenciais incorretas!'); }
+            } else { alert('Credenciais incorretas! Verifique o utilizador/e-mail e a palavra-passe.'); }
         }
 
         function concluirPrimeiroAcesso(e) {
@@ -472,7 +477,7 @@
                             <p class="text-xs text-teal-600 font-bold uppercase">Sincronização em Nuvem Ativa</p>
                         </div>
                         <form onsubmit="realizarLogin(event)" class="space-y-4">
-                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Utilizador</label><input type="text" id="login_user" required value="admin" class="w-full p-3 border rounded-lg text-sm font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Utilizador ou E-mail</label><input type="text" id="login_user" required value="admin" class="w-full p-3 border rounded-lg text-sm font-bold bg-slate-50" placeholder="admin ou admin@guardioes.com"></div>
                             <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Palavra-passe</label><input type="password" id="login_pass" required value="Admin@12345" class="w-full p-3 border rounded-lg text-sm font-bold bg-slate-50"></div>
                             <button type="submit" class="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg shadow-lg text-sm">Entrar no Sistema</button>
                         </form>
