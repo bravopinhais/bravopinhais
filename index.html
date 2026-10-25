@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guardiões do Bravo - Nuvem Vercel & Supabase</title>
+    <title>Guardiões do Bravo - Gestão Condominial em Nuvem</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons CDN -->
@@ -42,7 +42,7 @@
 
     <script>
         // =========================================================================
-        // CONFIGURAÇÃO DA SUA NUVEM (SUPABASE - PROJETO GUARDIÕES DO BRAVO)
+        // CONFIGURAÇÃO DA SUA NUVEM (SUPABASE)
         // =========================================================================
         const SUPABASE_URL = 'https://ycwgwtzysvizossqveiy.supabase.co'; 
         const SUPABASE_KEY = 'sb_publishable_tsVxjzBmQ6v33EXQbz_U7Q_7DTW3b3m';
@@ -507,6 +507,7 @@
         function abrirModalContainer(html) { document.getElementById('modal-container').innerHTML = html; }
         function fecharModalContainer() { document.getElementById('modal-container').innerHTML = ''; }
 
+        // MÓDULOS COMPLETOS RESTAURADOS
         function renderDashboardView() {
             return `
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
