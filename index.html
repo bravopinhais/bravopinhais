@@ -52,6 +52,9 @@
 
         let tempArquivoNome = ''; 
         let tempArquivoGzipBase64 = ''; 
+        let tempEstoqueFotoNome = '';
+        let tempEstoqueFotoGzip = '';
+
         let filtroAtivoMoradores = { bloco: '', nome: '' };
         let usuarioPendentePrimeiroAcesso = null; 
         let chartInstanceReceitaDespesa = null;
@@ -318,7 +321,7 @@
 
         function exportarParaExcel(dados, nomeArquivo = 'relatorio.csv') {
             if (!dados || dados.length === 0) { alert('Não há dados disponíveis.'); return; }
-            const sanitizeData = dados.map(item => { let obj = { ...item }; delete obj.arquivoCompactadoGzip; return obj; });
+            const sanitizeData = dados.map(item => { let obj = { ...item }; delete obj.arquivoCompactadoGzip; delete obj.fotoCompactadaGzip; return obj; });
             const keys = Object.keys(sanitizeData[0]);
             let csvContent = '\uFEFF' + keys.join(',') + '\n';
             sanitizeData.forEach(row => {
@@ -1609,7 +1612,7 @@
         };
 
         // =========================================================================
-        // MÓDULO: ESTOQUE & INVENTÁRIO (COM ALERTAS INTELIGENTES E GRÁFICO)
+        // MÓDULO: ESTOQUE & INVENTÁRIO (COM FOTO COMPACTADA E ALERTAS)
         // =========================================================================
         function renderEstoqueView() {
             const list = db.estoque || [];
@@ -1670,9 +1673,10 @@
                     </div>
 
                     <div class="bg-white rounded-2xl border overflow-x-auto w-full shadow-sm">
-                        <table class="w-full text-left text-xs min-w-[750px]">
+                        <table class="w-full text-left text-xs min-w-[800px]">
                             <thead class="bg-slate-800 text-white">
                                 <tr>
+                                    <th class="p-3 w-16 text-center">Foto</th>
                                     <th class="p-3">Etiqueta</th>
                                     <th class="p-3">Item / Descrição</th>
                                     <th class="p-3">Qtd Atual</th>
@@ -1682,7 +1686,7 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y">
-                                ${list.length === 0 ? `<tr><td colspan="6" class="p-6 text-center text-slate-400">Nenhum item registado no estoque. Clique em "Novo Item" acima.</td></tr>` : list.map(st => {
+                                ${list.length === 0 ? `<tr><td colspan="7" class="p-6 text-center text-slate-400">Nenhum item registado no estoque. Clique em "Novo Item" acima.</td></tr>` : list.map(st => {
                                     const atual = parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
                                     const minimo = parseInt(st.minimo || 0);
                                     const maximo = parseInt(st.maximo || 0);
@@ -1696,6 +1700,13 @@
 
                                     return `
                                         <tr class="${atual <= minimo ? 'bg-rose-50/40' : (maximo > 0 && atual > maximo ? 'bg-amber-50/30' : '')}">
+                                            <td class="p-3 text-center">
+                                                ${st.fotoCompactadaGzip ? `
+                                                    <button onclick="visualizarArquivo('${st.fotoCompactadaGzip}', '${escapeHTML(st.fotoNome || 'produto.jpg')}')" class="w-10 h-10 rounded-lg overflow-hidden border border-slate-300 shadow-sm inline-block hover:opacity-80" title="Ver foto ampliada">
+                                                        <img src="data:image/*;base64,${btoa(String.fromCharCode(...pako.inflate(atob(st.fotoCompactadaGzip))))}" class="w-full h-full object-cover">
+                                                    </button>
+                                                ` : `<div class="w-10 h-10 bg-slate-100 rounded-lg flex items-center justify-center text-slate-400 text-xs"><i class="fa-solid fa-image"></i></div>`}
+                                            </td>
                                             <td class="p-3 font-mono font-bold text-teal-700">${escapeHTML(st.etiqueta || '-')}</td>
                                             <td class="p-3 font-bold text-slate-800">${escapeHTML(st.item)}</td>
                                             <td class="p-3 font-mono font-bold ${atual <= minimo ? 'text-rose-600 text-sm' : 'text-slate-700'}">${atual}</td>
@@ -1761,10 +1772,13 @@
         }
 
         window.renderModalEstoque = function(id = null) {
-            const item = id ? (db.estoque||[]).find(x => x.id === id) : { id: '', item: '', quantidade: 1, minimo: 0, maximo: 10, etiqueta: '' };
+            const item = id ? (db.estoque||[]).find(x => x.id === id) : { id: '', item: '', quantidade: 1, minimo: 0, maximo: 10, etiqueta: '', fotoNome: '', fotoCompactadaGzip: '' };
+            tempEstoqueFotoGzip = item.fotoCompactadaGzip || '';
+            tempEstoqueFotoNome = item.fotoNome || '';
+
             abrirModalContainer(`
                 <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
-                    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
                         <div class="flex justify-between items-center border-b pb-3">
                             <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Item' : 'Novo Item no Estoque'}</h3>
                             <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
@@ -1779,6 +1793,11 @@
                                 <div><label class="block font-bold uppercase text-slate-600 mb-1">Saldo Mínimo</label><input type="number" id="m_est_min" value="${item.minimo !== undefined ? item.minimo : 0}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
                                 <div><label class="block font-bold uppercase text-slate-600 mb-1">Saldo Máximo</label><input type="number" id="m_est_max" value="${item.maximo !== undefined ? item.maximo : 0}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50" placeholder="Acima disto avisa p/ não comprar"></div>
                             </div>
+                            <div>
+                                <label class="block font-bold uppercase text-slate-600 mb-1">Foto do Produto (Compactação Gzip)</label>
+                                <input type="file" accept="image/*" onchange="processarFotoEstoqueGzip(event)" class="w-full p-2 border rounded-lg bg-slate-50">
+                                <p class="text-[10px] text-slate-500 mt-1">Foto atual: <span class="font-bold text-slate-700">${escapeHTML(item.fotoNome || 'Nenhuma')}</span></p>
+                            </div>
                             <div class="flex justify-end gap-2 pt-3 border-t">
                                 <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-bold">Cancelar</button>
                                 <button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg font-bold">Salvar Item</button>
@@ -1789,17 +1808,30 @@
             `);
         };
 
+        function processarFotoEstoqueGzip(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            compactarArquivoParaGzip(file, function(base64Gzip, nomeOriginal) {
+                tempEstoqueFotoGzip = base64Gzip;
+                tempEstoqueFotoNome = nomeOriginal;
+            });
+        }
+
         window.salvarModalEstoque = function(e, id) {
             e.preventDefault();
             if(!db.estoque) db.estoque = [];
             const isEdit = id && id !== 'null';
+            const itemExistente = isEdit ? db.estoque.find(x => x.id === id) : null;
+
             const obj = {
                 id: isEdit ? id : 'est_' + Date.now(),
                 item: document.getElementById('m_est_item').value,
                 quantidade: parseInt(document.getElementById('m_est_qtd').value) || 0,
                 minimo: parseInt(document.getElementById('m_est_min').value) || 0,
                 maximo: parseInt(document.getElementById('m_est_max').value) || 0,
-                etiqueta: document.getElementById('m_est_etiq').value
+                etiqueta: document.getElementById('m_est_etiq').value,
+                fotoNome: tempEstoqueFotoNome || (itemExistente ? itemExistente.fotoNome : ''),
+                fotoCompactadaGzip: tempEstoqueFotoGzip || (itemExistente ? itemExistente.fotoCompactadaGzip : '')
             };
             const idx = db.estoque.findIndex(x => x.id === obj.id);
             if(idx !== -1) db.estoque[idx] = obj; else db.estoque.push(obj);
