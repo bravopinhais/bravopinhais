@@ -266,7 +266,7 @@
 
         function exportarParaPDF() { window.print(); }
 
-        // LEITOR INTELIGENTE DE CSV (Compatível com relatórios exportados e arquivos externos)
+        // LEITOR DE CSV ROBUSTO E COMPATÍVEL COM EXPORTAÇÕES DO SISTEMA
         function importarMoradoresCSV(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -277,7 +277,11 @@
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    const text = e.target.result;
+                    let text = e.target.result;
+                    // Limpar BOM invisível se existir
+                    if (text.charCodeAt(0) === 0xFEFF) {
+                        text = text.slice(1);
+                    }
                     if (text.includes('\uFFFD') || text.startsWith('PK')) {
                         alert('O ficheiro selecionado parece ser binário ou compactado. Selecione um CSV válido.');
                         return;
@@ -285,9 +289,9 @@
                     const lines = text.split(/\r\n|\n/);
                     if (lines.length < 2) { alert('Ficheiro CSV inválido ou vazio.'); return; }
 
-                    // Detetar separador (, ou ;)
+                    // Detetar separador automático (, ou ;)
                     const headerLine = lines[0];
-                    const separator = headerLine.includes(';') ? ';' : ',';
+                    const separator = (headerLine.match(/;/g) || []).length > (headerLine.match(/,/g) || []).length ? ';' : ',';
                     const headers = headerLine.split(separator).map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
 
                     let idxBloco = headers.indexOf('bloco');
@@ -302,7 +306,6 @@
                     for (let i = 1; i < lines.length; i++) {
                         if (!lines[i].trim()) continue;
                         
-                        // Parse correto considerando valores entre aspas
                         let cols = [];
                         let inQuotes = false;
                         let currentCol = '';
@@ -321,13 +324,13 @@
                         if (cols.length >= 2) {
                             novosMoradores.push({
                                 id: 'mor_imp_' + Date.now() + '_' + i,
-                                bloco: idxBloco !== -1 && cols[idxBloco] ? cols[idxBloco] : (cols[0] || '1'),
-                                apartamento: idxAp !== -1 && cols[idxAp] ? cols[idxAp] : (cols[1] || ''),
-                                nome: idxNome !== -1 && cols[idxNome] ? cols[idxNome] : (cols[2] || 'Morador'),
-                                email: idxEmail !== -1 && cols[idxEmail] ? cols[idxEmail] : (cols[3] || ''),
-                                telefone: idxTel !== -1 && cols[idxTel] ? cols[idxTel] : (cols[4] || ''),
-                                tipo: idxTipo !== -1 && cols[idxTipo] ? cols[idxTipo] : 'Proprietário',
-                                observacoes: idxObs !== -1 && cols[idxObs] ? cols[idxObs] : (cols[7] || '')
+                                bloco: idxBloco !== -1 && cols[idxBloco] !== undefined ? cols[idxBloco] : (cols[1] || '1'),
+                                apartamento: idxAp !== -1 && cols[idxAp] !== undefined ? cols[idxAp] : (cols[2] || ''),
+                                nome: idxNome !== -1 && cols[idxNome] !== undefined ? cols[idxNome] : (cols[3] || 'Morador'),
+                                email: idxEmail !== -1 && cols[idxEmail] !== undefined ? cols[idxEmail] : (cols[4] || ''),
+                                telefone: idxTel !== -1 && cols[idxTel] !== undefined ? cols[idxTel] : (cols[5] || ''),
+                                tipo: idxTipo !== -1 && cols[idxTipo] !== undefined ? cols[idxTipo] : 'Proprietário',
+                                observacoes: idxObs !== -1 && cols[idxObs] !== undefined ? cols[idxObs] : (cols[7] || '')
                             });
                         }
                     }
