@@ -52,6 +52,7 @@
 
         let tempArquivoNome = ''; 
         let tempArquivoGzipBase64 = ''; 
+        let filtroAtivoMoradores = { bloco: '', nome: '' };
 
         function escapeHTML(str) {
             if (typeof str !== 'string') return str || '';
@@ -757,23 +758,66 @@
             salvarDados(db); fecharModalContainer(); renderMainOnly();
         };
 
+        // MÓDULO DE MORADORES COM FILTRO TIPO EXCEL NAS COLUNAS
         function renderMoradoresView() {
-            const moradores = db.moradores || [];
+            let moradores = db.moradores || [];
+            
+            // Aplicar filtros ativos
+            if (filtroAtivoMoradores.bloco) {
+                moradores = moradores.filter(m => String(m.bloco) === String(filtroAtivoMoradores.bloco));
+            }
+            if (filtroAtivoMoradores.nome) {
+                const termo = filtroAtivoMoradores.nome.toLowerCase();
+                moradores = moradores.filter(m => (m.nome || '').toLowerCase().includes(termo) || (m.apartamento || '').toLowerCase().includes(termo));
+            }
+
+            // Obter blocos únicos para o dropdown de filtro
+            const blocosDisponiveis = [...new Set((db.moradores || []).map(m => m.bloco))];
+
             return `
                 <div class="space-y-4">
-                    <div class="bg-white rounded-xl border overflow-hidden">
-                        <table class="w-full text-left text-xs">
+                    <div class="bg-white rounded-xl border overflow-visible">
+                        <table class="w-full text-left text-xs relative">
                             <thead class="bg-slate-800 text-white">
                                 <tr>
-                                    <th class="p-3">Bloco/Ap</th>
-                                    <th class="p-3">Nome</th>
+                                    <th class="p-3 relative">
+                                        <div class="flex items-center justify-between cursor-pointer select-none" onclick="toggleMenuFiltroColuna('menu-filtro-bloco')">
+                                            <span>BLOCO/AP <i class="fa-solid fa-filter text-[10px] ${filtroAtivoMoradores.bloco ? 'text-teal-400' : 'text-slate-400'}"></i></span>
+                                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                                        </div>
+                                        <!-- Menu Dropdown Estilo Excel para Bloco -->
+                                        <div id="menu-filtro-bloco" class="hidden absolute left-0 top-full mt-1 bg-white text-slate-800 p-3 rounded-xl shadow-2xl border w-48 z-30">
+                                            <p class="font-bold text-[10px] uppercase text-slate-400 mb-2">Filtrar por Bloco</p>
+                                            <div class="space-y-1 max-h-40 overflow-y-auto">
+                                                <button onclick="filtrarMoradoresBloco('')" class="w-full text-left px-2 py-1.5 rounded hover:bg-slate-100 font-bold ${!filtroAtivoMoradores.bloco ? 'bg-teal-50 text-teal-700' : ''}">[ Todos os Blocos ]</button>
+                                                ${blocosDisponiveis.map(b => `<button onclick="filtrarMoradoresBloco('${b}')" class="w-full text-left px-2 py-1.5 rounded hover:bg-slate-100 font-bold ${filtroAtivoMoradores.bloco === b ? 'bg-teal-50 text-teal-700' : ''}">Bloco ${escapeHTML(b)}</button>`).join('')}
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th class="p-3 relative">
+                                        <div class="flex items-center justify-between cursor-pointer select-none" onclick="toggleMenuFiltroColuna('menu-filtro-nome')">
+                                            <span>NOME COMPLETO <i class="fa-solid fa-filter text-[10px] ${filtroAtivoMoradores.nome ? 'text-teal-400' : 'text-slate-400'}"></i></span>
+                                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                                        </div>
+                                        <!-- Menu Dropdown Estilo Excel para Nome/Pesquisa -->
+                                        <div id="menu-filtro-nome" class="hidden absolute left-0 top-full mt-1 bg-white text-slate-800 p-3 rounded-xl shadow-2xl border w-60 z-30">
+                                            <p class="font-bold text-[10px] uppercase text-slate-400 mb-2">Pesquisar por Nome/Ap</p>
+                                            <div class="space-y-2">
+                                                <input type="text" id="input-filtro-nome-val" value="${escapeHTML(filtroAtivoMoradores.nome)}" placeholder="Digite para filtrar..." class="w-full p-2 border rounded-lg text-xs bg-slate-50">
+                                                <div class="flex justify-end gap-1">
+                                                    <button onclick="limparFiltroNome()" class="px-2 py-1 bg-slate-200 rounded text-[10px] font-bold">Limpar</button>
+                                                    <button onclick="aplicarFiltroNome()" class="px-2 py-1 bg-teal-600 text-white rounded text-[10px] font-bold">Filtrar</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </th>
                                     <th class="p-3">Pet (Nome / Raça)</th>
                                     <th class="p-3">Veículo / Vaga</th>
                                     <th class="p-3 text-center">Ações</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y">
-                                ${moradores.map(m => `
+                                ${moradores.length === 0 ? `<tr><td colspan="5" class="p-6 text-center text-slate-400">Nenhum morador encontrado com este filtro.</td></tr>` : moradores.map(m => `
                                     <tr>
                                         <td class="p-3 font-bold">Bloco ${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</td>
                                         <td class="p-3">${escapeHTML(m.nome)}</td>
@@ -790,6 +834,32 @@
                     </div>
                 </div>
             `;
+        }
+
+        function toggleMenuFiltroColuna(menuId) {
+            const menu = document.getElementById(menuId);
+            if (!menu) return;
+            // Fechar outros menus abertos
+            document.querySelectorAll('[id^="menu-filtro-"]').forEach(m => {
+                if (m.id !== menuId) m.classList.add('hidden');
+            });
+            menu.classList.toggle('hidden');
+        }
+
+        function filtrarMoradoresBloco(bloco) {
+            filtroAtivoMoradores.bloco = bloco;
+            renderMainOnly();
+        }
+
+        function aplicarFiltroNome() {
+            const val = document.getElementById('input-filtro-nome-val').value;
+            filtroAtivoMoradores.nome = val;
+            renderMainOnly();
+        }
+
+        function limparFiltroNome() {
+            filtroAtivoMoradores.nome = '';
+            renderMainOnly();
         }
 
         window.renderModalMorador = function(id = null) {
