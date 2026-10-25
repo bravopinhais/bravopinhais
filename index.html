@@ -607,6 +607,9 @@
                             <button onclick="abrirModulo('documentos')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'documentos' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-folder-open w-5 text-center"></i> Documentos</button>
                             <button onclick="abrirModulo('relatorios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'relatorios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i> Relatórios</button>
                             <button onclick="abrirModulo('usuarios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'usuarios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-user-gear w-5 text-center"></i> Usuários</button>
+                            
+                            <!-- Botão de Sair logo abaixo do módulo Usuários -->
+                            <button onclick="encerrarSessao()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold hover:bg-rose-900/40 text-rose-400 mt-2 border border-rose-900/30"><i class="fa-solid fa-right-from-bracket w-5 text-center"></i> Sair do Sistema</button>
                         </nav>
 
                         <div class="p-3 bg-slate-950 border-t border-slate-800 space-y-2 no-print">
