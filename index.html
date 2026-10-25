@@ -372,7 +372,7 @@
         }
 
         // =========================================================================
-        // IMPORTAÇÃO INTELIGENTE DE PLANILHA (MAPEAMENTO AUTOMÁTICO DE COLUNAS)
+        // IMPORTAÇÃO INTELIGENTE DE PLANILHA (MAPEAMENTO AUTOMÁTICO DE COLUNAS CORRIGIDO)
         // =========================================================================
         function importarPlanilhaMoradores(event) {
             const file = event.target.files[0];
@@ -406,9 +406,9 @@
                         
                         db.moradores.push({
                             id: 'mor_imp_' + Date.now() + '_' + i,
-                            bloco: idxBloco !== -1 ? (cols[idxBloco] || '1') : (cols[0] || '1'),
-                            apartamento: idxAp !== -1 ? (cols[idxAp] || '') : (cols[1] || ''),
-                            nome: idxNome !== -1 ? (cols[idxNome] || 'Sem Nome') : (cols[2] || 'Sem Nome'),
+                            bloco: idxBloco !== -1 ? (cols[idxBloco] || '1') : '1',
+                            apartamento: idxAp !== -1 ? (cols[idxAp] || '') : '',
+                            nome: idxNome !== -1 ? (cols[idxNome] || 'Sem Nome') : 'Sem Nome',
                             email: idxEmail !== -1 ? (cols[idxEmail] || '') : '',
                             telefone: idxTel !== -1 ? (cols[idxTel] || '') : '',
                             cpf: idxCpf !== -1 ? (cols[idxCpf] || '') : '',
@@ -420,7 +420,7 @@
 
                     if (importados > 0) {
                         salvarDados(db);
-                        alert(`${importados} moradores importados com sucesso para a nuvem com mapeamento inteligente!`);
+                        alert(`${importados} moradores importados com sucesso para a nuvem com as colunas corrigidas!`);
                         renderMainOnly();
                     } else {
                         alert('Nenhum morador válido encontrado na planilha.');
