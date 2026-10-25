@@ -445,7 +445,7 @@
                     alert('Erro ao processar o arquivo CSV.');
                 }
             };
-            reader.readAsText(file, 'UTF-8');
+            reader.readAsText(file);
         }
 
         function toggleMostrarSenha() {
@@ -1737,7 +1737,7 @@
         }
 
         // =========================================================================
-        // MÓDULO: ESTOQUE & INVENTÁRIO (COM FILTRO DINÂMICO DE CARDS)
+        // MÓDULO: ESTOQUE & INVENTÁRIO (COM FILTRO DE CARDS E ESCANEAMENTO DE CÂMERA)
         // =========================================================================
         function renderEstoqueView() {
             let list = db.estoque || [];
@@ -1760,7 +1760,6 @@
                 }
             });
 
-            // Aplicar filtro ativo do card se houver
             let listFiltrada = list;
             if (filtroAtivoEstoque === 'adequado') {
                 listFiltrada = list.filter(st => {
@@ -1832,7 +1831,7 @@
                             <thead class="bg-slate-800 text-white">
                                 <tr>
                                     <th class="p-3 w-16 text-center">Foto</th>
-                                    <th class="p-3">Etiqueta</th>
+                                    <th class="p-3">Etiqueta / Código de Barras</th>
                                     <th class="p-3">Item / Descrição</th>
                                     <th class="p-3">Qtd Atual</th>
                                     <th class="p-3">Mín / Máx</th>
@@ -1939,15 +1938,19 @@
                             <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
                         </div>
                         <form onsubmit="salvarModalEstoque(event, '${id}')" class="space-y-3 text-xs">
-                            <div class="grid grid-cols-2 gap-2">
-                                <div><label class="block font-bold uppercase text-slate-600 mb-1">Etiqueta / Código</label><input type="text" id="m_est_etiq" value="${escapeHTML(item.etiqueta || '')}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50" placeholder="Ex: ETQ-001"></div>
-                                <div><label class="block font-bold uppercase text-slate-600 mb-1">Quantidade Atual</label><input type="number" id="m_est_qtd" required value="${item.quantidade !== undefined ? item.quantidade : (item.qtd || 1)}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50"></div>
+                            <div>
+                                <label class="block font-bold uppercase text-slate-600 mb-1">Código / Código de Barras (Etiqueta)</label>
+                                <div class="flex gap-2">
+                                    <input type="text" id="m_est_etiq" value="${escapeHTML(item.etiqueta || '')}" class="flex-1 p-2.5 border rounded-xl font-bold bg-slate-50" placeholder="Ex: 7891020304050">
+                                    <button type="button" onclick="iniciarScannerCamera()" class="px-3.5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap" title="Escanear com a câmera do celular"><i class="fa-solid fa-barcode text-sm"></i> Escanear</button>
+                                </div>
                             </div>
                             <div><label class="block font-bold uppercase text-slate-600 mb-1">Item / Descrição</label><input type="text" id="m_est_item" required value="${escapeHTML(item.item || '')}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50" placeholder="Ex: Lâmpada LED 20W"></div>
                             <div class="grid grid-cols-2 gap-2">
+                                <div><label class="block font-bold uppercase text-slate-600 mb-1">Quantidade Atual</label><input type="number" id="m_est_qtd" required value="${item.quantidade !== undefined ? item.quantidade : (item.qtd || 1)}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50"></div>
                                 <div><label class="block font-bold uppercase text-slate-600 mb-1">Saldo Mínimo</label><input type="number" id="m_est_min" value="${item.minimo !== undefined ? item.minimo : 0}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50"></div>
-                                <div><label class="block font-bold uppercase text-slate-600 mb-1">Saldo Máximo</label><input type="number" id="m_est_max" value="${item.maximo !== undefined ? item.maximo : 0}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50" placeholder="Acima disto avisa p/ não comprar"></div>
                             </div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Saldo Máximo</label><input type="number" id="m_est_max" value="${item.maximo !== undefined ? item.maximo : 0}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50" placeholder="Acima disto avisa p/ não comprar"></div>
                             <div>
                                 <label class="block font-bold uppercase text-slate-600 mb-1">Foto do Produto (Compactação Gzip)</label>
                                 <input type="file" accept="image/*" onchange="processarFotoEstoqueGzip(event)" class="w-full p-2 border rounded-xl bg-slate-50">
@@ -1962,6 +1965,82 @@
                 </div>
             `);
         };
+
+        // Função para ativar a câmera do celular e escanear código de barras
+        let cameraStreamAtiva = null;
+        function iniciarScannerCamera() {
+            // Criar modal secundário para a câmera
+            const divScanner = document.createElement('div');
+            divScanner.id = 'scanner-modal-overlay';
+            divScanner.className = 'fixed inset-0 bg-slate-950/80 z-[60] flex flex-col items-center justify-center p-4 backdrop-blur-md';
+            divScanner.innerHTML = `
+                <div class="bg-white rounded-2xl max-w-sm w-full p-5 shadow-2xl flex flex-col items-center space-y-4 text-center">
+                    <div class="flex justify-between w-full items-center">
+                        <h4 class="font-bold text-slate-800 text-sm"><i class="fa-solid fa-camera text-teal-600 mr-2"></i> Apontar Câmera p/ Código de Barras</h4>
+                        <button onclick="fecharScannerCamera()" class="text-slate-400 hover:text-slate-700 text-lg"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                    <div class="relative w-full h-64 bg-black rounded-xl overflow-hidden flex items-center justify-center">
+                        <video id="video-scanner" autoplay playsinline muted class="w-full h-full object-cover"></video>
+                        <div class="absolute inset-x-8 top-1/2 -translate-y-1/2 h-16 border-2 border-dashed border-teal-400 rounded-lg pointer-events-none animate-pulse"></div>
+                    </div>
+                    <p class="text-[11px] text-slate-500 font-medium">Posicione o código de barras no centro da moldura ou digite manualmente caso prefira.</p>
+                    <div class="w-full flex gap-2">
+                        <input type="text" id="input-codigo-manual" placeholder="Ou digite o código..." class="flex-1 p-2 border rounded-xl text-xs font-bold bg-slate-50">
+                        <button type="button" onclick="confirmarCodigoDigitadoScanner()" class="px-4 py-2 bg-teal-600 text-white rounded-xl text-xs font-bold">Usar</button>
+                    </div>
+                    <button type="button" onclick="fecharScannerCamera()" class="w-full py-2 bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">Fechar Câmera</button>
+                </div>
+            `;
+            document.body.appendChild(divScanner);
+
+            const videoElement = document.getElementById('video-scanner');
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
+                .then(stream => {
+                    cameraStreamAtiva = stream;
+                    videoElement.srcObject = stream;
+                    videoElement.play();
+
+                    // Tentar detecção contínua se o navegador suportar BarcodeDetector nativo
+                    if ('BarcodeDetector' in window) {
+                        const barcodeDetector = new BarcodeDetector({ formats: ['code_128', 'ean_13', 'ean_8', 'qr_code', 'upc_a'] });
+                        const scanInterval = setInterval(async () => {
+                            if (!cameraStreamAtiva) { clearInterval(scanInterval); return; }
+                            try {
+                                const barcodes = await barcodeDetector.detect(videoElement);
+                                if (barcodes.length > 0) {
+                                    const codigoLido = barcodes[0].rawValue;
+                                    document.getElementById('m_est_etiq').value = codigoLido;
+                                    clearInterval(scanInterval);
+                                    fecharScannerCamera();
+                                    alert(`Código de barras escaneado com sucesso: ${codigoLido}`);
+                                }
+                            } catch (err) {}
+                        }, 500);
+                    }
+                })
+                .catch(err => {
+                    alert('Não foi possível aceder à câmera do dispositivo. Utilize o campo de digitação manual abaixo.');
+                });
+        }
+
+        function confirmarCodigoDigitadoScanner() {
+            const val = document.getElementById('input-codigo-manual')?.value.trim();
+            if (val) {
+                document.getElementById('m_est_etiq').value = val;
+                fecharScannerCamera();
+            } else {
+                alert('Digite ou escaneie um código válido.');
+            }
+        }
+
+        function fecharScannerCamera() {
+            if (cameraStreamAtiva) {
+                cameraStreamAtiva.getTracks().forEach(track => track.stop());
+                cameraStreamAtiva = null;
+            }
+            const modal = document.getElementById('scanner-modal-overlay');
+            if (modal) modal.remove();
+        }
 
         function processarFotoEstoqueGzip(event) {
             const file = event.target.files[0];
@@ -2120,7 +2199,6 @@
             const prodIndex = (db.estoque || []).findIndex(st => st.id === produtoId);
             if (prodIndex === -1) { alert('Produto não encontrado.'); return; }
 
-            // Atualizar o saldo do produto no estoque
             let qtdAtual = parseInt(db.estoque[prodIndex].quantidade || 0);
             if (tipo === 'Entrada') {
                 qtdAtual += quantidade;
@@ -2132,7 +2210,6 @@
             }
             db.estoque[prodIndex].quantidade = qtdAtual;
 
-            // Registar o acerto
             const novoAcerto = {
                 id: 'ac_' + Date.now(),
                 data: new Date().toLocaleString('pt-BR'),
