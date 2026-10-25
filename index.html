@@ -56,6 +56,7 @@
         let usuarioPendentePrimeiroAcesso = null; 
         let chartInstanceReceitaDespesa = null;
         let chartInstanceOcupacao = null;
+        let chartInstanceEstoque = null;
 
         function escapeHTML(str) {
             if (typeof str !== 'string') return str || '';
@@ -503,6 +504,7 @@
             if (mainEl) {
                 mainEl.innerHTML = renderModuleContent(tabsState.activeTab);
                 if (tabsState.activeTab === 'dashboard') initDashboardCharts();
+                if (tabsState.activeTab === 'estoque') initEstoqueChart();
             }
         }
 
@@ -600,6 +602,9 @@
             `;
             if (tabsState.activeTab === 'dashboard') {
                 setTimeout(initDashboardCharts, 50);
+            }
+            if (tabsState.activeTab === 'estoque') {
+                setTimeout(initEstoqueChart, 50);
             }
         }
 
@@ -1166,9 +1171,6 @@
             salvarDados(db); fecharModalContainer(); renderMainOnly();
         };
 
-        // =========================================================================
-        // MÓDULO: MORADORES (ATUALIZADO COM MAIS INFORMAÇÕES)
-        // =========================================================================
         function renderMoradoresView() {
             let moradores = db.moradores || [];
             
@@ -1490,28 +1492,181 @@
             salvarDados(db); fecharModalContainer(); renderMainOnly();
         };
 
+        // =========================================================================
+        // MÓDULO: ESTOQUE & INVENTÁRIO (COM ALERTAS INTELIGENTES E GRÁFICO)
+        // =========================================================================
         function renderEstoqueView() {
             const list = db.estoque || [];
+            
+            let totalCriticos = 0;
+            let totalExcedentes = 0;
+            let totalAdequados = 0;
+
+            list.forEach(st => {
+                const atual = parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
+                const minimo = parseInt(st.minimo || 0);
+                const maximo = parseInt(st.maximo || 0);
+
+                if (atual <= minimo) {
+                    totalCriticos++;
+                } else if (maximo > 0 && atual > maximo) {
+                    totalExcedentes++;
+                } else {
+                    totalAdequados++;
+                }
+            });
+
             return `
-                <div class="bg-white rounded-xl border overflow-x-auto w-full">
-                    <table class="w-full text-left text-xs min-w-[350px]">
-                        <thead class="bg-slate-800 text-white"><tr><th class="p-3">Item</th><th class="p-3">Qtd</th><th class="p-3 text-center">Ações</th></tr></thead>
-                        <tbody class="divide-y">${list.map(st => `<tr><td class="p-3 font-bold">${escapeHTML(st.item)}</td><td class="p-3">${st.qtd}</td><td class="p-3 text-center"><button onclick="window.renderModalEstoque('${st.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('estoque','${st.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
-                    </table>
+                <div class="space-y-6 w-full">
+                    <!-- Cards de Alertas Rápidos no Topo do Estoque -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
+                        <div class="bg-white p-4 rounded-2xl border shadow-sm flex items-center justify-between border-l-4 border-l-teal-600">
+                            <div>
+                                <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Estoque Adequado</p>
+                                <h3 class="text-xl font-black text-teal-700">${totalAdequados} itens</h3>
+                            </div>
+                            <div class="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center font-bold"><i class="fa-solid fa-circle-check"></i></div>
+                        </div>
+
+                        <div class="bg-white p-4 rounded-2xl border shadow-sm flex items-center justify-between border-l-4 border-l-rose-600">
+                            <div>
+                                <p class="text-[11px] font-extrabold text-rose-600 uppercase tracking-wider">Atenção: Estoque Insuficiente</p>
+                                <h3 class="text-xl font-black text-rose-600">${totalCriticos} itens críticos</h3>
+                            </div>
+                            <div class="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold"><i class="fa-solid fa-triangle-exclamation animate-bounce"></i></div>
+                        </div>
+
+                        <div class="bg-white p-4 rounded-2xl border shadow-sm flex items-center justify-between border-l-4 border-l-amber-500">
+                            <div>
+                                <p class="text-[11px] font-extrabold text-amber-600 uppercase tracking-wider">Excedente / Antigo (Não Comprar)</p>
+                                <h3 class="text-xl font-black text-amber-600">${totalExcedentes} itens</h3>
+                            </div>
+                            <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center font-bold"><i class="fa-solid fa-box-archive"></i></div>
+                        </div>
+                    </div>
+
+                    <!-- Dashboard Gráfico de Estoque -->
+                    <div class="bg-white p-5 rounded-2xl border shadow-sm w-full max-w-xl mx-auto flex flex-col items-center justify-center">
+                        <h3 class="font-bold text-slate-800 text-sm mb-3"><i class="fa-solid fa-chart-pie text-teal-600 mr-2"></i> Status Geral do Estoque</h3>
+                        <div class="relative h-48 w-full flex items-center justify-center">
+                            <canvas id="chartEstoqueStatus"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-2xl border overflow-x-auto w-full shadow-sm">
+                        <table class="w-full text-left text-xs min-w-[750px]">
+                            <thead class="bg-slate-800 text-white">
+                                <tr>
+                                    <th class="p-3">Etiqueta</th>
+                                    <th class="p-3">Item / Descrição</th>
+                                    <th class="p-3">Qtd Atual</th>
+                                    <th class="p-3">Mín / Máx</th>
+                                    <th class="p-3">Alerta Inteligente</th>
+                                    <th class="p-3 text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                ${list.length === 0 ? `<tr><td colspan="6" class="p-6 text-center text-slate-400">Nenhum item registado no estoque. Clique em "Novo Item" acima.</td></tr>` : list.map(st => {
+                                    const atual = parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
+                                    const minimo = parseInt(st.minimo || 0);
+                                    const maximo = parseInt(st.maximo || 0);
+
+                                    let badgeAlerta = `<span class="px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-lg font-bold inline-flex items-center gap-1"><i class="fa-solid fa-check"></i> Normal</span>`;
+                                    if (atual <= minimo) {
+                                        badgeAlerta = `<span class="px-2.5 py-1 bg-rose-50 text-rose-700 border border-rose-200 rounded-lg font-bold inline-flex items-center gap-1 animate-pulse"><i class="fa-solid fa-triangle-exclamation"></i> Insuficiente (Comprar)</span>`;
+                                    } else if (maximo > 0 && atual > maximo) {
+                                        badgeAlerta = `<span class="px-2.5 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-lg font-bold inline-flex items-center gap-1"><i class="fa-solid fa-ban"></i> Excedente / Antigo (Não Comprar)</span>`;
+                                    }
+
+                                    return `
+                                        <tr class="${atual <= minimo ? 'bg-rose-50/40' : (maximo > 0 && atual > maximo ? 'bg-amber-50/30' : '')}">
+                                            <td class="p-3 font-mono font-bold text-teal-700">${escapeHTML(st.etiqueta || '-')}</td>
+                                            <td class="p-3 font-bold text-slate-800">${escapeHTML(st.item)}</td>
+                                            <td class="p-3 font-mono font-bold ${atual <= minimo ? 'text-rose-600 text-sm' : 'text-slate-700'}">${atual}</td>
+                                            <td class="p-3 font-mono text-[11px] text-slate-500">Mín: ${minimo} / Máx: ${maximo}</td>
+                                            <td class="p-3">${badgeAlerta}</td>
+                                            <td class="p-3 text-center">
+                                                <button onclick="window.renderModalEstoque('${st.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                                                <button onclick="excluirRegistro('estoque','${st.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                                            </td>
+                                        </tr>
+                                    `;
+                                }).join('')}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             `;
         }
 
+        function initEstoqueChart() {
+            if (tabsState.activeTab !== 'estoque') return;
+            const ctx = document.getElementById('chartEstoqueStatus');
+            if (!ctx) return;
+
+            const list = db.estoque || [];
+            let qtdAdequado = 0;
+            let qtdCritico = 0;
+            let qtdExcedente = 0;
+
+            list.forEach(st => {
+                const atual = parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
+                const minimo = parseInt(st.minimo || 0);
+                const maximo = parseInt(st.maximo || 0);
+
+                if (atual <= minimo) qtdCritico++;
+                else if (maximo > 0 && atual > maximo) qtdExcedente++;
+                else qtdAdequado++;
+            });
+
+            if (list.length === 0) { qtdAdequado = 1; }
+
+            if (chartInstanceEstoque) chartInstanceEstoque.destroy();
+            chartInstanceEstoque = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Estoque Adequado', 'Estoque Insuficiente (Crítico)', 'Excedente / Antigo (Não Comprar)'],
+                    datasets: [{
+                        data: [qtdAdequado, qtdCritico, qtdExcedente],
+                        backgroundColor: ['#0d9488', '#f43f5e', '#f59e0b'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { weight: 'bold', size: 10 } } }
+                    },
+                    cutout: '65%'
+                }
+            });
+        }
+
         window.renderModalEstoque = function(id = null) {
-            const item = id ? (db.estoque||[]).find(x => x.id === id) : { id: '', item: '', qtd: 1 };
+            const item = id ? (db.estoque||[]).find(x => x.id === id) : { id: '', item: '', quantidade: 1, minimo: 0, maximo: 10, etiqueta: '' };
             abrirModalContainer(`
                 <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-                        <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Item' : 'Novo Item no Estoque'}</h3>
+                        <div class="flex justify-between items-center border-b pb-3">
+                            <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Item' : 'Novo Item no Estoque'}</h3>
+                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+                        </div>
                         <form onsubmit="salvarModalEstoque(event, '${id}')" class="space-y-3 text-xs">
-                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Item / Descrição</label><input type="text" id="m_est_item" required value="${escapeHTML(item.item)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
-                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Quantidade</label><input type="number" id="m_est_qtd" required value="${item.qtd}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
-                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg font-bold">Salvar</button></div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div><label class="block font-bold uppercase text-slate-600 mb-1">Etiqueta / Código</label><input type="text" id="m_est_etiq" value="${escapeHTML(item.etiqueta || '')}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50" placeholder="Ex: ETQ-001"></div>
+                                <div><label class="block font-bold uppercase text-slate-600 mb-1">Quantidade Atual</label><input type="number" id="m_est_qtd" required value="${item.quantidade !== undefined ? item.quantidade : (item.qtd || 1)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                            </div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Item / Descrição</label><input type="text" id="m_est_item" required value="${escapeHTML(item.item || '')}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50" placeholder="Ex: Lâmpada LED 20W"></div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div><label class="block font-bold uppercase text-slate-600 mb-1">Saldo Mínimo</label><input type="number" id="m_est_min" value="${item.minimo !== undefined ? item.minimo : 0}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                                <div><label class="block font-bold uppercase text-slate-600 mb-1">Saldo Máximo</label><input type="number" id="m_est_max" value="${item.maximo !== undefined ? item.maximo : 0}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50" placeholder="Acima disto avisa p/ não comprar"></div>
+                            </div>
+                            <div class="flex justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-bold">Cancelar</button>
+                                <button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg font-bold">Salvar Item</button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -1521,10 +1676,14 @@
         window.salvarModalEstoque = function(e, id) {
             e.preventDefault();
             if(!db.estoque) db.estoque = [];
+            const isEdit = id && id !== 'null';
             const obj = {
-                id: id && id !== 'null' ? id : 'est_' + Date.now(),
+                id: isEdit ? id : 'est_' + Date.now(),
                 item: document.getElementById('m_est_item').value,
-                qtd: parseInt(document.getElementById('m_est_qtd').value) || 1
+                quantidade: parseInt(document.getElementById('m_est_qtd').value) || 0,
+                minimo: parseInt(document.getElementById('m_est_min').value) || 0,
+                maximo: parseInt(document.getElementById('m_est_max').value) || 0,
+                etiqueta: document.getElementById('m_est_etiq').value
             };
             const idx = db.estoque.findIndex(x => x.id === obj.id);
             if(idx !== -1) db.estoque[idx] = obj; else db.estoque.push(obj);
