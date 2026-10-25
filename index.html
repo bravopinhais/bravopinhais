@@ -57,6 +57,7 @@
         let chartInstanceReceitaDespesa = null;
         let chartInstanceOcupacao = null;
         let chartInstanceEstoque = null;
+        let chartInstanceEstoqueDash = null;
 
         function escapeHTML(str) {
             if (typeof str !== 'string') return str || '';
@@ -503,7 +504,10 @@
             const mainEl = document.querySelector('main');
             if (mainEl) {
                 mainEl.innerHTML = renderModuleContent(tabsState.activeTab);
-                if (tabsState.activeTab === 'dashboard') initDashboardCharts();
+                if (tabsState.activeTab === 'dashboard') {
+                    initDashboardCharts();
+                    initDashboardEstoqueChart();
+                }
                 if (tabsState.activeTab === 'estoque') initEstoqueChart();
             }
         }
@@ -601,7 +605,10 @@
                 </div>
             `;
             if (tabsState.activeTab === 'dashboard') {
-                setTimeout(initDashboardCharts, 50);
+                setTimeout(() => {
+                    initDashboardCharts();
+                    initDashboardEstoqueChart();
+                }, 50);
             }
             if (tabsState.activeTab === 'estoque') {
                 setTimeout(initEstoqueChart, 50);
@@ -675,6 +682,25 @@
             const totalEmpregados = (db.empregados || []).length;
             const totalDocumentos = (db.documentos || []).length;
 
+            const estoqueList = db.estoque || [];
+            let totalCriticos = 0;
+            let totalExcedentes = 0;
+            let totalAdequados = 0;
+
+            estoqueList.forEach(st => {
+                const atual = parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
+                const minimo = parseInt(st.minimo || 0);
+                const maximo = parseInt(st.maximo || 0);
+
+                if (atual <= minimo) {
+                    totalCriticos++;
+                } else if (maximo > 0 && atual > maximo) {
+                    totalExcedentes++;
+                } else {
+                    totalAdequados++;
+                }
+            });
+
             const financeiroList = db.financeiro || [];
             let totalReceber = 0;
             let totalPagar = 0;
@@ -687,6 +713,7 @@
 
             return `
                 <div class="space-y-6 w-full">
+                    <!-- Cards Principais do Dashboard -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
                         <div class="bg-white p-5 rounded-2xl border shadow-sm flex items-center justify-between">
                             <div>
@@ -725,6 +752,33 @@
                         </div>
                     </div>
 
+                    <!-- Cards de Alerta de Estoque no Dashboard -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
+                        <div class="bg-white p-4 rounded-2xl border shadow-sm flex items-center justify-between border-l-4 border-l-teal-600">
+                            <div>
+                                <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Estoque Adequado</p>
+                                <h3 class="text-xl font-black text-teal-700">${totalAdequados} itens</h3>
+                            </div>
+                            <div class="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center font-bold"><i class="fa-solid fa-circle-check"></i></div>
+                        </div>
+
+                        <div onclick="abrirModulo('estoque')" class="bg-white p-4 rounded-2xl border shadow-sm flex items-center justify-between border-l-4 border-l-rose-600 cursor-pointer hover:bg-rose-50/20 transition-colors">
+                            <div>
+                                <p class="text-[11px] font-extrabold text-rose-600 uppercase tracking-wider">Atenção: Estoque Insuficiente</p>
+                                <h3 class="text-xl font-black text-rose-600">${totalCriticos} itens críticos</h3>
+                            </div>
+                            <div class="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold"><i class="fa-solid fa-triangle-exclamation animate-bounce"></i></div>
+                        </div>
+
+                        <div onclick="abrirModulo('estoque')" class="bg-white p-4 rounded-2xl border shadow-sm flex items-center justify-between border-l-4 border-l-amber-500 cursor-pointer hover:bg-amber-50/20 transition-colors">
+                            <div>
+                                <p class="text-[11px] font-extrabold text-amber-600 uppercase tracking-wider">Excedente / Antigo (Não Comprar)</p>
+                                <h3 class="text-xl font-black text-amber-600">${totalExcedentes} itens</h3>
+                            </div>
+                            <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center font-bold"><i class="fa-solid fa-box-archive"></i></div>
+                        </div>
+                    </div>
+
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
                         <div class="bg-white p-5 rounded-2xl border shadow-sm lg:col-span-2 flex flex-col justify-between">
                             <div class="flex items-center justify-between mb-4">
@@ -738,13 +792,13 @@
 
                         <div class="bg-white p-5 rounded-2xl border shadow-sm flex flex-col justify-between">
                             <div class="flex items-center justify-between mb-4">
-                                <h3 class="font-black text-slate-800 text-sm sm:text-base"><i class="fa-solid fa-chart-pie text-teal-600 mr-2"></i> Distribuição Operacional</h3>
+                                <h3 class="font-black text-slate-800 text-sm sm:text-base"><i class="fa-solid fa-boxes-stacked text-teal-600 mr-2"></i> Status do Estoque</h3>
                             </div>
                             <div class="relative h-60 w-full flex items-center justify-center">
-                                <canvas id="chartOcupacao"></canvas>
+                                <canvas id="chartEstoqueDash"></canvas>
                             </div>
                             <div class="mt-4 pt-3 border-t text-center">
-                                <span class="text-[11px] text-slate-500 font-bold">Equipe, Fornecedores e Moradores</span>
+                                <button onclick="abrirModulo('estoque')" class="text-teal-700 hover:underline text-xs font-bold">Gerenciar Estoque Completo</button>
                             </div>
                         </div>
                     </div>
@@ -822,35 +876,51 @@
                     }
                 });
             }
+        }
 
-            const ctx2 = document.getElementById('chartOcupacao');
-            if (ctx2) {
-                if (chartInstanceOcupacao) chartInstanceOcupacao.destroy();
-                const countMoradores = (db.moradores || []).length;
-                const countFornecedores = (db.fornecedores || []).length;
-                const countEmpregados = (db.empregados || []).length;
+        function initDashboardEstoqueChart() {
+            if (tabsState.activeTab !== 'dashboard') return;
+            const ctx = document.getElementById('chartEstoqueDash');
+            if (!ctx) return;
 
-                chartInstanceOcupacao = new Chart(ctx2, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Moradores', 'Fornecedores', 'Empregados'],
-                        datasets: [{
-                            data: [countMoradores || 1, countFornecedores || 1, countEmpregados || 1],
-                            backgroundColor: ['#0d9488', '#3b82f6', '#f59e0b'],
-                            borderWidth: 2,
-                            borderColor: '#ffffff'
-                        }]
+            const list = db.estoque || [];
+            let qtdAdequado = 0;
+            let qtdCritico = 0;
+            let qtdExcedente = 0;
+
+            list.forEach(st => {
+                const atual = parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
+                const minimo = parseInt(st.minimo || 0);
+                const maximo = parseInt(st.maximo || 0);
+
+                if (atual <= minimo) qtdCritico++;
+                else if (maximo > 0 && atual > maximo) qtdExcedente++;
+                else qtdAdequado++;
+            });
+
+            if (list.length === 0) { qtdAdequado = 1; }
+
+            if (chartInstanceEstoqueDash) chartInstanceEstoqueDash.destroy();
+            chartInstanceEstoqueDash = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Adequado', 'Insuficiente (Crítico)', 'Excedente (Antigo)'],
+                    datasets: [{
+                        data: [qtdAdequado, qtdCritico, qtdExcedente],
+                        backgroundColor: ['#0d9488', '#f43f5e', '#f59e0b'],
+                        borderWidth: 2,
+                        borderColor: '#ffffff'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { weight: 'bold', size: 10 } } }
                     },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom', labels: { boxWidth: 12, font: { weight: 'bold', size: 10 } } }
-                        },
-                        cutout: '70%'
-                    }
-                });
-            }
+                    cutout: '65%'
+                }
+            });
         }
 
         function renderCondominioView() {
