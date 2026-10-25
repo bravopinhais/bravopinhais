@@ -154,17 +154,7 @@
         if (dadosLocaisSalvos) {
             try {
                 db = JSON.parse(dadosLocaisSalvos);
-                if (!db.condominio) db.condominio = DEFAULT_DATA.condominio;
-                if (db.condominio.copelBloco1 === undefined) db.condominio.copelBloco1 = '';
-                if (db.condominio.copelBloco2 === undefined) db.condominio.copelBloco2 = '';
-                if (db.condominio.copelBloco3 === undefined) db.condominio.copelBloco3 = '';
-                if (db.condominio.copelBloco4 === undefined) db.condominio.copelBloco4 = '';
-                if (db.condominio.copelAreasComuns === undefined) db.condominio.copelAreasComuns = '';
-                if (db.condominio.gasSalao === undefined) db.condominio.gasSalao = '';
-                if (db.condominio.sanepar === undefined) db.condominio.sanepar = '';
-            } catch (e) {
-                db = DEFAULT_DATA;
-            }
+            } catch (e) { db = DEFAULT_DATA; }
         }
 
         let sessao = { usuarioLogado: null };
@@ -176,31 +166,28 @@
                     .from('condominio_dados')
                     .select('payload')
                     .eq('id', 'principal')
-                    .single();
+                    .maybeSingle();
+
+                if (error) {
+                    console.error("Erro Supabase Fetch:", error);
+                }
 
                 if (data && data.payload) {
                     db = data.payload;
-                    if (!db.condominio) db.condominio = DEFAULT_DATA.condominio;
-                    if (db.condominio.copelBloco1 === undefined) db.condominio.copelBloco1 = '';
-                    if (db.condominio.copelBloco2 === undefined) db.condominio.copelBloco2 = '';
-                    if (db.condominio.copelBloco3 === undefined) db.condominio.copelBloco3 = '';
-                    if (db.condominio.copelBloco4 === undefined) db.condominio.copelBloco4 = '';
-                    if (db.condominio.copelAreasComuns === undefined) db.condominio.copelAreasComuns = '';
-                    if (db.condominio.gasSalao === undefined) db.condominio.gasSalao = '';
-                    if (db.condominio.sanepar === undefined) db.condominio.sanepar = '';
-                    
                     localStorage.setItem('guardioes_bravo_db', JSON.stringify(db));
                     if (elStatus) {
                         elStatus.className = "bg-emerald-600 text-white text-[10px] font-bold py-1 px-4 text-center no-print flex items-center justify-center gap-2";
                         elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> Sincronizado com o Supabase com Sucesso!`;
                     }
                 } else {
+                    // Se não existir registo na nuvem, envia o local atual para criar o registo inicial
                     await salvarDadosNaNuvem(db);
                 }
             } catch (err) {
+                console.error("Exceção Supabase:", err);
                 if (elStatus) {
                     elStatus.className = "bg-amber-600 text-white text-[10px] font-bold py-1 px-4 text-center no-print";
-                    elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> A utilizar armazenamento local preservado.`;
+                    elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> A utilizar armazenamento local. Verifique consola (F12).`;
                 }
             }
             renderApp();
@@ -221,14 +208,19 @@
                     .from('condominio_dados')
                     .upsert({ id: 'principal', payload: db, atualizado_em: new Date() });
 
-                if (!error && elStatus) {
+                if (error) {
+                    console.error("Erro Supabase Upsert:", error);
+                    throw error;
+                }
+
+                if (elStatus) {
                     elStatus.className = "bg-emerald-600 text-white text-[10px] font-bold py-1 px-4 text-center no-print flex items-center justify-center gap-2";
                     elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado com a Nuvem em Tempo Real`;
                 }
             } catch (err) {
                 if (elStatus) {
                     elStatus.className = "bg-amber-600 text-white text-[10px] font-bold py-1 px-4 text-center no-print";
-                    elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Guardado localmente com segurança`;
+                    elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Erro ao guardar na nuvem (Verifique RLS/Permissões)`;
                 }
             }
         }
