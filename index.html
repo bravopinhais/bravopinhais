@@ -15,7 +15,7 @@
     <!-- Supabase JS Client para Banco de Dados na Nuvem -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        html, body { height: 100%; margin: 0; padding: 0; }
+        html, body { height: 100%; margin: 0; padding: 0; overflow-x: hidden; }
         input, select, textarea { color: #0f172a !important; font-weight: 600 !important; }
         .tab-active { border-bottom: 3px solid #0d9488; background-color: #ffffff; color: #0f766e; font-weight: 700; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
@@ -33,11 +33,11 @@
 <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
 
     <!-- Indicador de Status da Nuvem -->
-    <div id="status-nuvem" class="bg-teal-600 text-white text-[10px] font-bold py-1 px-4 text-center no-print flex items-center justify-center gap-2">
+    <div id="status-nuvem" class="bg-teal-600 text-white text-[10px] sm:text-xs font-bold py-1 px-2 sm:px-4 text-center no-print flex items-center justify-center gap-2">
         <i class="fa-solid fa-cloud"></i> A ligar ao Supabase na Nuvem...
     </div>
 
-    <div id="app" class="flex-1 flex flex-col min-h-screen"></div>
+    <div id="app" class="flex-1 flex flex-col min-h-screen w-full"></div>
     <div id="modal-container"></div>
 
     <script>
@@ -172,7 +172,7 @@
                     db = data.payload;
                     localStorage.setItem('guardioes_bravo_db', JSON.stringify(db));
                     if (elStatus) {
-                        elStatus.className = "bg-emerald-600 text-white text-[10px] font-bold py-1 px-4 text-center no-print flex items-center justify-center gap-2";
+                        elStatus.className = "bg-emerald-600 text-white text-[10px] sm:text-xs font-bold py-1 px-4 text-center no-print flex items-center justify-center gap-2";
                         elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> Sincronizado com o Supabase com Sucesso!`;
                     }
                 } else {
@@ -180,7 +180,7 @@
                 }
             } catch (err) {
                 if (elStatus) {
-                    elStatus.className = "bg-amber-600 text-white text-[10px] font-bold py-1 px-4 text-center no-print";
+                    elStatus.className = "bg-amber-600 text-white text-[10px] sm:text-xs font-bold py-1 px-4 text-center no-print";
                     elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> A utilizar armazenamento local.`;
                 }
             }
@@ -193,7 +193,7 @@
 
             const elStatus = document.getElementById('status-nuvem');
             if (elStatus) {
-                elStatus.className = "bg-teal-500 text-white text-[10px] font-bold py-1 px-4 text-center no-print animate-pulse";
+                elStatus.className = "bg-teal-500 text-white text-[10px] sm:text-xs font-bold py-1 px-4 text-center no-print animate-pulse";
                 elStatus.innerHTML = `<i class="fa-solid fa-rotate fa-spin"></i> A guardar na nuvem...`;
             }
 
@@ -205,12 +205,12 @@
                 if (error) throw error;
 
                 if (elStatus) {
-                    elStatus.className = "bg-emerald-600 text-white text-[10px] font-bold py-1 px-4 text-center no-print flex items-center justify-center gap-2";
+                    elStatus.className = "bg-emerald-600 text-white text-[10px] sm:text-xs font-bold py-1 px-4 text-center no-print flex items-center justify-center gap-2";
                     elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado com a Nuvem em Tempo Real`;
                 }
             } catch (err) {
                 if (elStatus) {
-                    elStatus.className = "bg-amber-600 text-white text-[10px] font-bold py-1 px-4 text-center no-print";
+                    elStatus.className = "bg-amber-600 text-white text-[10px] sm:text-xs font-bold py-1 px-4 text-center no-print";
                     elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Guardado localmente (Erro na nuvem)`;
                 }
             }
@@ -291,7 +291,6 @@
 
         function exportarParaPDF() { window.print(); }
 
-        // Função para Exportar Backup Completo em JSON
         function fazerBackupGeralJSON() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
             const downloadAnchor = document.createElement('a');
@@ -302,7 +301,6 @@
             downloadAnchor.remove();
         }
 
-        // Função para Restaurar Backup via Ficheiro JSON
         function restaurarBackupGeralJSON(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -325,7 +323,6 @@
             reader.readAsText(file);
         }
 
-        // Função para Importar Moradores via Planilha CSV
         function importarPlanilhaMoradores(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -391,11 +388,11 @@
 
         function renderTelaLogin() {
             return `
-                <div class="min-h-screen flex items-center justify-center bg-slate-900 p-4">
-                    <div class="bg-white w-full max-w-md p-8 rounded-2xl shadow-2xl space-y-6">
+                <div class="min-h-screen flex items-center justify-center bg-slate-900 p-4 w-full">
+                    <div class="bg-white w-full max-w-md p-6 sm:p-8 rounded-2xl shadow-2xl space-y-6">
                         <div class="text-center space-y-2">
                             <div class="w-16 h-16 bg-teal-600 rounded-2xl flex items-center justify-center text-white text-3xl font-bold mx-auto shadow-lg"><i class="fa-solid fa-shield-halved"></i></div>
-                            <h2 class="text-2xl font-black text-slate-800">Guardiões do Bravo</h2>
+                            <h2 class="text-xl sm:text-2xl font-black text-slate-800">Guardiões do Bravo</h2>
                             <p class="text-xs text-teal-600 font-bold uppercase">Sincronização em Nuvem Ativa</p>
                         </div>
                         <form onsubmit="realizarLogin(event)" class="space-y-4">
@@ -419,7 +416,7 @@
             if (!sessao.usuarioLogado) { container.innerHTML = renderTelaLogin(); return; }
 
             container.innerHTML = `
-                <div class="flex-1 flex flex-col md:flex-row min-h-screen">
+                <div class="flex-1 flex flex-col md:flex-row min-h-screen w-full">
                     <div id="sidebar-backdrop" onclick="fecharMenuMobile()" class="fixed inset-0 bg-slate-900/60 z-40 hidden md:hidden"></div>
 
                     <aside id="sidebar-menu" class="fixed md:sticky top-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 flex flex-col sidebar-full border-r border-slate-800 transform -translate-x-full md:translate-x-0 transition-transform duration-200">
@@ -462,22 +459,22 @@
                         </div>
                     </aside>
 
-                    <div class="flex-1 flex flex-col min-h-screen overflow-hidden">
-                        <header class="bg-slate-900 text-white p-3 flex md:hidden items-center justify-between border-b border-slate-800 no-print">
+                    <div class="flex-1 flex flex-col min-h-screen overflow-hidden w-full">
+                        <header class="bg-slate-900 text-white p-3 flex md:hidden items-center justify-between border-b border-slate-800 no-print w-full">
                             <span class="font-bold text-sm">Guardiões do Bravo</span>
                             <button onclick="toggleMenuMobile()" class="p-2 bg-slate-800 rounded-lg text-slate-200"><i class="fa-solid fa-bars"></i></button>
                         </header>
 
-                        <div class="bg-slate-200 border-b flex items-center overflow-x-auto px-2 pt-2 gap-1 no-print">
+                        <div class="bg-slate-200 border-b flex items-center overflow-x-auto px-2 pt-2 gap-1 no-print w-full">
                             ${tabsState.openTabs.map(tabId => `
-                                <div onclick="abrirModulo('${tabId}')" class="flex items-center gap-2 px-3 py-2 rounded-t-lg text-xs font-semibold cursor-pointer ${tabsState.activeTab === tabId ? 'tab-active' : 'bg-slate-300 text-slate-600'}">
+                                <div onclick="abrirModulo('${tabId}')" class="flex items-center gap-2 px-3 py-2 rounded-t-lg text-xs font-semibold cursor-pointer whitespace-nowrap ${tabsState.activeTab === tabId ? 'tab-active' : 'bg-slate-300 text-slate-600'}">
                                     <span>${MODULE_NAMES[tabId] || tabId}</span>
                                     ${tabsState.openTabs.length > 1 ? `<button onclick="fecharAba(event, '${tabId}')" class="hover:text-red-600"><i class="fa-solid fa-xmark"></i></button>` : ''}
                                 </div>
                             `).join('')}
                         </div>
 
-                        <main class="flex-1 overflow-y-auto p-4 md:p-6 bg-slate-100">
+                        <main class="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 bg-slate-100 w-full">
                             ${renderModuleContent(tabsState.activeTab)}
                         </main>
                     </div>
@@ -492,24 +489,24 @@
                 <button onclick="exportarModuloExcel('${moduloId}')" class="px-3 py-2 bg-emerald-700 text-white rounded-lg font-bold text-xs"><i class="fa-solid fa-file-excel"></i> Excel</button>
             `;
 
-            if (moduloId === 'condominio') btnNovoHtml = `<button onclick="window.renderModalConselheiro()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Conselheiro</button>`;
-            else if (moduloId === 'financeiro') btnNovoHtml = `<button onclick="window.renderModalNovoTitulo()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Título</button>`;
-            else if (moduloId === 'formas_monetarias') btnNovoHtml = `<button onclick="window.renderModalFormaMonetaria()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Nova Forma</button>`;
-            else if (moduloId === 'contas_bancarias') btnNovoHtml = `<button onclick="window.renderModalContaBancaria()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Nova Conta</button>`;
+            if (moduloId === 'condominio') btnNovoHtml = `<button onclick="window.renderModalConselheiro()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold whitespace-nowrap"><i class="fa-solid fa-plus"></i> Novo Conselheiro</button>`;
+            else if (moduloId === 'financeiro') btnNovoHtml = `<button onclick="window.renderModalNovoTitulo()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold whitespace-nowrap"><i class="fa-solid fa-plus"></i> Novo Título</button>`;
+            else if (moduloId === 'formas_monetarias') btnNovoHtml = `<button onclick="window.renderModalFormaMonetaria()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold whitespace-nowrap"><i class="fa-solid fa-plus"></i> Nova Forma</button>`;
+            else if (moduloId === 'contas_bancarias') btnNovoHtml = `<button onclick="window.renderModalContaBancaria()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold whitespace-nowrap"><i class="fa-solid fa-plus"></i> Nova Conta</button>`;
             else if (moduloId === 'moradores') {
                 btnNovoHtml = `
-                    <label class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow">
+                    <label class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow whitespace-nowrap">
                         <i class="fa-solid fa-file-arrow-up"></i> Importar Planilha <input type="file" accept=".csv, .txt" onchange="importarPlanilhaMoradores(event)" class="hidden">
                     </label>
-                    <button onclick="window.renderModalMorador()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Morador</button>
+                    <button onclick="window.renderModalMorador()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold whitespace-nowrap"><i class="fa-solid fa-plus"></i> Novo Morador</button>
                 `;
             }
-            else if (moduloId === 'fornecedores') btnNovoHtml = `<button onclick="window.renderModalFornecedor()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Fornecedor</button>`;
-            else if (moduloId === 'empregados') btnNovoHtml = `<button onclick="window.renderModalEmpregado()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Empregado</button>`;
-            else if (moduloId === 'categorias') btnNovoHtml = `<button onclick="window.renderModalCategoria()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Nova Pasta</button>`;
-            else if (moduloId === 'estoque') btnNovoHtml = `<button onclick="window.renderModalEstoque()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Item</button>`;
-            else if (moduloId === 'documentos') btnNovoHtml = `<button onclick="window.renderModalDocumento()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-upload"></i> Inserir Documento</button>`;
-            else if (moduloId === 'usuarios') btnNovoHtml = `<button onclick="window.renderModalUsuario()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-user-plus"></i> Novo Utilizador</button>`;
+            else if (moduloId === 'fornecedores') btnNovoHtml = `<button onclick="window.renderModalFornecedor()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold whitespace-nowrap"><i class="fa-solid fa-plus"></i> Novo Fornecedor</button>`;
+            else if (moduloId === 'empregados') btnNovoHtml = `<button onclick="window.renderModalEmpregado()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold whitespace-nowrap"><i class="fa-solid fa-plus"></i> Novo Empregado</button>`;
+            else if (moduloId === 'categorias') btnNovoHtml = `<button onclick="window.renderModalCategoria()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold whitespace-nowrap"><i class="fa-solid fa-plus"></i> Nova Pasta</button>`;
+            else if (moduloId === 'estoque') btnNovoHtml = `<button onclick="window.renderModalEstoque()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold whitespace-nowrap"><i class="fa-solid fa-plus"></i> Novo Item</button>`;
+            else if (moduloId === 'documentos') btnNovoHtml = `<button onclick="window.renderModalDocumento()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold whitespace-nowrap"><i class="fa-solid fa-upload"></i> Inserir Documento</button>`;
+            else if (moduloId === 'usuarios') btnNovoHtml = `<button onclick="window.renderModalUsuario()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold whitespace-nowrap"><i class="fa-solid fa-user-plus"></i> Novo Utilizador</button>`;
             else if (moduloId === 'relatorios') btnExportHtml = '';
 
             const headerGlobal = `
@@ -546,7 +543,7 @@
 
         function renderDashboardView() {
             return `
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 w-full">
                     <div class="bg-white p-5 rounded-xl border shadow-sm"><p class="text-xs font-bold text-slate-400 uppercase">Moradores</p><h3 class="text-2xl font-black text-slate-800">${(db.moradores||[]).length}</h3></div>
                     <div class="bg-white p-5 rounded-xl border shadow-sm"><p class="text-xs font-bold text-slate-400 uppercase">Fornecedores</p><h3 class="text-2xl font-black text-slate-800">${(db.fornecedores||[]).length}</h3></div>
                     <div class="bg-white p-5 rounded-xl border shadow-sm"><p class="text-xs font-bold text-slate-400 uppercase">Empregados</p><h3 class="text-2xl font-black text-slate-800">${(db.empregados||[]).length}</h3></div>
@@ -558,8 +555,8 @@
             const cond = db.condominio || {};
             const conselheiros = db.conselheiros || [];
             return `
-                <div class="space-y-6">
-                    <div class="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
+                <div class="space-y-6 w-full">
+                    <div class="bg-white p-4 sm:p-6 rounded-2xl border shadow-sm space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">Informações do Condomínio & Concessionárias</h3>
                         <form class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs" onsubmit="event.preventDefault(); salvarDadosCondominio();">
                             <div class="md:col-span-2"><label class="block font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="c_nome" value="${escapeHTML(cond.nome)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
@@ -579,9 +576,9 @@
                             <div class="md:col-span-3 pt-2"><button type="button" onclick="salvarDadosCondominio()" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-xs font-bold">Salvar Alterações</button></div>
                         </form>
                     </div>
-                    <div class="bg-white rounded-2xl border overflow-hidden">
+                    <div class="bg-white rounded-2xl border overflow-x-auto w-full">
                         <div class="p-4 bg-slate-900 text-white font-bold text-sm">Corpo Diretivo</div>
-                        <table class="w-full text-left text-xs">
+                        <table class="w-full text-left text-xs min-w-[500px]">
                             <thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3">Cargo</th><th class="p-3">Bloco/Ap</th><th class="p-3 text-center">Ações</th></tr></thead>
                             <tbody class="divide-y">${conselheiros.map(c => `<tr><td class="p-3 font-bold">${escapeHTML(c.nome)}</td><td class="p-3">${escapeHTML(c.cargo)}</td><td class="p-3">${escapeHTML(c.BlocoAp)}</td><td class="p-3 text-center"><button onclick="window.renderModalConselheiro('${c.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('conselheiros','${c.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
                         </table>
@@ -610,7 +607,7 @@
         window.renderModalConselheiro = function(id = null) {
             const item = id ? (db.conselheiros||[]).find(x => x.id === id) : { id: '', nome: '', cargo: 'Síndico', BlocoAp: '', telefone: '' };
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Conselheiro' : 'Novo Conselheiro'}</h3>
                         <form onsubmit="salvarModalConselheiro(event, '${id}')" class="space-y-3">
@@ -642,13 +639,13 @@
 
         function renderFinanceiroView() {
             const list = db.financeiro || [];
-            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Tipo</th><th class="p-3">Histórico</th><th class="p-3">Valor</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(f => `<tr><td class="p-3">${f.tipo}</td><td class="p-3 font-bold">${escapeHTML(f.historico)}</td><td class="p-3">R$ ${f.valor}</td><td class="p-3 text-center"><button onclick="window.renderModalNovoTitulo('${f.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('financeiro','${f.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+            return `<div class="bg-white rounded-xl border overflow-x-auto w-full"><table class="w-full text-left text-xs min-w-[500px]"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Tipo</th><th class="p-3">Histórico</th><th class="p-3">Valor</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(f => `<tr><td class="p-3">${f.tipo}</td><td class="p-3 font-bold">${escapeHTML(f.historico)}</td><td class="p-3">R$ ${f.valor}</td><td class="p-3 text-center"><button onclick="window.renderModalNovoTitulo('${f.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('financeiro','${f.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
         }
 
         window.renderModalNovoTitulo = function(id = null) {
             const item = id ? (db.financeiro||[]).find(x => x.id === id) : { id: '', tipo: 'Receber', historico: '', valor: '' };
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Título' : 'Novo Título'}</h3>
                         <form onsubmit="salvarModalFinanceiro(event, '${id}')" class="space-y-3">
@@ -678,13 +675,13 @@
 
         function renderFormasMonetariasView() {
             const list = db.formas_monetarias || [];
-            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3">Multa (%)</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(fm => `<tr><td class="p-3 font-bold">${escapeHTML(fm.nome)}</td><td class="p-3">${fm.multaPct}%</td><td class="p-3 text-center"><button onclick="window.renderModalFormaMonetaria('${fm.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('formas_monetarias','${fm.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+            return `<div class="bg-white rounded-xl border overflow-x-auto w-full"><table class="w-full text-left text-xs min-w-[400px]"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3">Multa (%)</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(fm => `<tr><td class="p-3 font-bold">${escapeHTML(fm.nome)}</td><td class="p-3">${fm.multaPct}%</td><td class="p-3 text-center"><button onclick="window.renderModalFormaMonetaria('${fm.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('formas_monetarias','${fm.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
         }
 
         window.renderModalFormaMonetaria = function(id = null) {
             const item = id ? (db.formas_monetarias||[]).find(x => x.id === id) : { id: '', nome: '', multaPct: 2.0 };
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Forma' : 'Nova Forma'}</h3>
                         <form onsubmit="salvarModalFormaMonetaria(event, '${id}')" class="space-y-3">
@@ -713,8 +710,8 @@
         function renderContasBancariasView() {
             const list = db.contas_bancarias || [];
             return `
-                <div class="bg-white rounded-xl border overflow-hidden">
-                    <table class="w-full text-left text-xs">
+                <div class="bg-white rounded-xl border overflow-x-auto w-full">
+                    <table class="w-full text-left text-xs min-w-[400px]">
                         <thead class="bg-slate-800 text-white"><tr><th class="p-3">Banco</th><th class="p-3">Saldo</th><th class="p-3 text-center">Ações</th></tr></thead>
                         <tbody class="divide-y">${list.map(cb => `<tr><td class="p-3 font-bold">${escapeHTML(cb.banco)}</td><td class="p-3">R$ ${cb.saldo}</td><td class="p-3 text-center"><button onclick="window.renderModalContaBancaria('${cb.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('contas_bancarias','${cb.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
                     </table>
@@ -725,7 +722,7 @@
         window.renderModalContaBancaria = function(id = null) {
             const item = id ? (db.contas_bancarias||[]).find(x => x.id === id) : { id: '', banco: '', saldo: 0 };
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Conta' : 'Nova Conta Bancária'}</h3>
                         <form onsubmit="salvarModalContaBancaria(event, '${id}')" class="space-y-3 text-xs">
@@ -769,7 +766,7 @@
             const blocosDisponiveis = [...new Set((db.moradores||[]).map(m => String(m.bloco).trim()))].filter(Boolean);
 
             return `
-                <div class="space-y-4">
+                <div class="space-y-4 w-full">
                     ${(filtroAtivoMoradores.bloco || filtroAtivoMoradores.nome) ? `
                         <div class="bg-teal-50 border border-teal-200 p-2.5 rounded-xl text-xs font-bold text-teal-800 flex items-center justify-between no-print">
                             <span>Filtros ativos: ${filtroAtivoMoradores.bloco ? `Bloco: ${filtroAtivoMoradores.bloco}` : ''} ${filtroAtivoMoradores.nome ? `Pesquisa: "${filtroAtivoMoradores.nome}"` : ''}</span>
@@ -777,8 +774,8 @@
                         </div>
                     ` : ''}
 
-                    <div class="bg-white rounded-xl border overflow-visible">
-                        <table class="w-full text-left text-xs relative">
+                    <div class="bg-white rounded-xl border overflow-x-auto w-full">
+                        <table class="w-full text-left text-xs relative min-w-[650px]">
                             <thead class="bg-slate-800 text-white">
                                 <tr>
                                     <th class="p-3 relative">
@@ -862,7 +859,7 @@
         window.renderModalMorador = function(id = null) {
             const m = id ? (db.moradores||[]).find(x => x.id === id) : { id: '', bloco: '1', apartamento: '', nome: '', telefone: '', petNome: '', vagaGaragem: '' };
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Morador' : 'Novo Morador'}</h3>
                         <form onsubmit="salvarModalMorador(event, '${id}')" class="space-y-3 text-xs">
@@ -900,13 +897,13 @@
 
         function renderFornecedoresView() {
             const list = db.fornecedores || [];
-            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">CNPJ</th><th class="p-3">Razão Social</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(f => `<tr><td class="p-3 font-mono">${escapeHTML(f.cnpj)}</td><td class="p-3 font-bold">${escapeHTML(f.razaoSocial)}</td><td class="p-3 text-center"><button onclick="window.renderModalFornecedor('${f.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('fornecedores','${f.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+            return `<div class="bg-white rounded-xl border overflow-x-auto w-full"><table class="w-full text-left text-xs min-w-[450px]"><thead class="bg-slate-800 text-white"><tr><th class="p-3">CNPJ</th><th class="p-3">Razão Social</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(f => `<tr><td class="p-3 font-mono">${escapeHTML(f.cnpj)}</td><td class="p-3 font-bold">${escapeHTML(f.razaoSocial)}</td><td class="p-3 text-center"><button onclick="window.renderModalFornecedor('${f.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('fornecedores','${f.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
         }
 
         window.renderModalFornecedor = function(id = null) {
             const item = id ? (db.fornecedores||[]).find(x => x.id === id) : { id: '', cnpj: '', razaoSocial: '' };
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Fornecedor' : 'Novo Fornecedor'}</h3>
                         <form onsubmit="salvarModalFornecedor(event, '${id}')" class="space-y-3 text-xs">
@@ -934,13 +931,13 @@
 
         function renderEmpregadosView() {
             const list = db.empregados || [];
-            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3">Cargo</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(e => `<tr><td class="p-3 font-bold">${escapeHTML(e.nome)}</td><td class="p-3">${escapeHTML(e.cargo)}</td><td class="p-3 text-center"><button onclick="window.renderModalEmpregado('${e.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('empregados','${e.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+            return `<div class="bg-white rounded-xl border overflow-x-auto w-full"><table class="w-full text-left text-xs min-w-[400px]"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3">Cargo</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(e => `<tr><td class="p-3 font-bold">${escapeHTML(e.nome)}</td><td class="p-3">${escapeHTML(e.cargo)}</td><td class="p-3 text-center"><button onclick="window.renderModalEmpregado('${e.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('empregados','${e.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
         }
 
         window.renderModalEmpregado = function(id = null) {
             const item = id ? (db.empregados||[]).find(x => x.id === id) : { id: '', nome: '', cargo: '' };
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Empregado' : 'Novo Empregado'}</h3>
                         <form onsubmit="salvarModalEmpregado(event, '${id}')" class="space-y-3">
@@ -968,12 +965,12 @@
 
         function renderCategoriasView() {
             const list = db.categorias || [];
-            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(c => `<tr><td class="p-3 font-bold">${escapeHTML(c.nome)}</td><td class="p-3 text-center"><button onclick="excluirRegistro('categorias','${c.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+            return `<div class="bg-white rounded-xl border overflow-x-auto w-full"><table class="w-full text-left text-xs min-w-[300px]"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(c => `<tr><td class="p-3 font-bold">${escapeHTML(c.nome)}</td><td class="p-3 text-center"><button onclick="excluirRegistro('categorias','${c.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
         }
 
         window.renderModalCategoria = function() {
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">Nova Pasta</h3>
                         <form onsubmit="salvarModalCategoria(event)" class="space-y-3">
@@ -995,8 +992,8 @@
         function renderEstoqueView() {
             const list = db.estoque || [];
             return `
-                <div class="bg-white rounded-xl border overflow-hidden">
-                    <table class="w-full text-left text-xs">
+                <div class="bg-white rounded-xl border overflow-x-auto w-full">
+                    <table class="w-full text-left text-xs min-w-[350px]">
                         <thead class="bg-slate-800 text-white"><tr><th class="p-3">Item</th><th class="p-3">Qtd</th><th class="p-3 text-center">Ações</th></tr></thead>
                         <tbody class="divide-y">${list.map(st => `<tr><td class="p-3 font-bold">${escapeHTML(st.item)}</td><td class="p-3">${st.qtd}</td><td class="p-3 text-center"><button onclick="window.renderModalEstoque('${st.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('estoque','${st.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
                     </table>
@@ -1007,7 +1004,7 @@
         window.renderModalEstoque = function(id = null) {
             const item = id ? (db.estoque||[]).find(x => x.id === id) : { id: '', item: '', qtd: 1 };
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Item' : 'Novo Item no Estoque'}</h3>
                         <form onsubmit="salvarModalEstoque(event, '${id}')" class="space-y-3 text-xs">
@@ -1036,9 +1033,9 @@
         function renderDocumentosView() {
             const docs = db.documentos || [];
             return `
-                <div class="space-y-3">
-                    <div class="bg-white rounded-xl border overflow-hidden">
-                        <table class="w-full text-left text-xs">
+                <div class="space-y-3 w-full">
+                    <div class="bg-white rounded-xl border overflow-x-auto w-full">
+                        <table class="w-full text-left text-xs min-w-[550px]">
                             <thead class="bg-slate-800 text-white">
                                 <tr>
                                     <th class="p-3">Pasta</th>
@@ -1079,7 +1076,7 @@
             if (categoriasDisponiveis.length === 0) categoriasDisponiveis.push('Geral', 'Assembleias', 'Financeiro', 'Manutenção');
 
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <div class="flex justify-between items-center border-b pb-3">
                             <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Documento' : 'Inserir Novo Documento'}</h3>
@@ -1139,8 +1136,8 @@
         function renderUsuariosView() {
             const users = db.usuarios || [];
             return `
-                <div class="bg-white rounded-xl border overflow-hidden shadow-sm">
-                    <table class="w-full text-left text-xs">
+                <div class="bg-white rounded-xl border overflow-x-auto shadow-sm w-full">
+                    <table class="w-full text-left text-xs min-w-[650px]">
                         <thead class="bg-slate-800 text-white">
                             <tr>
                                 <th class="p-3">Utilizador / Nome</th>
@@ -1176,7 +1173,7 @@
         window.renderModalUsuario = function(id = null) {
             const item = id ? (db.usuarios||[]).find(x => x.id === id) : { id: '', usuario: '', nome: '', email: '', cargo: '', senhaHash: 'Condo@2026' };
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Utilizador' : 'Novo Utilizador'}</h3>
                         <form onsubmit="salvarModalUsuario(event, '${id}')" class="space-y-3 text-xs">
@@ -1222,7 +1219,7 @@
             const user = (db.usuarios || []).find(x => x.id === id);
             if (!user) return;
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <div class="flex justify-between items-center border-b pb-3">
                             <h3 class="font-bold text-lg text-slate-800">Redefinir Senha: ${escapeHTML(user.usuario)}</h3>
@@ -1260,7 +1257,7 @@
 
         function renderRelatoriosCentralView() {
             return `
-                <div class="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
+                <div class="bg-white p-6 rounded-2xl border shadow-sm space-y-4 w-full">
                     <h3 class="font-black text-slate-800 text-lg border-b pb-3 uppercase">Demonstrativo do Resultado (DRE)</h3>
                     <div class="space-y-2 text-xs">
                         <div class="flex justify-between p-3 bg-emerald-50 text-emerald-900 font-bold rounded-lg"><span>(+) RECEITA BRUTA</span><span>R$ 2.500,00</span></div>
