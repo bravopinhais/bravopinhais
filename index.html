@@ -53,6 +53,9 @@
         let tempArquivoNome = ''; 
         let tempArquivoGzipBase64 = ''; 
         let filtroAtivoMoradores = { bloco: '', nome: '' };
+        let usuarioPendentePrimeiroAcesso = null; 
+        let chartInstanceReceitaDespesa = null;
+        let chartInstanceOcupacao = null;
 
         function escapeHTML(str) {
             if (typeof str !== 'string') return str || '';
@@ -135,7 +138,8 @@
             },
             conselheiros: [],
             usuarios: [
-                { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', cargo: 'Administrador', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Admin@12345' }
+                { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', cargo: 'Administrador', loja: 'Guardiões do Bravo', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Admin@12345' },
+                { id: 'usr_sheylla', usuario: 'sheylla', nome: 'Sheylla', email: 'sheylla@guardioes.com', cargo: 'Conselho Fiscal', loja: 'Guardiões do Bravo', perfil: 'Operador', status: 'Ativo', primeiroAcesso: true, senhaHash: '123456' }
             ],
             financeiro: [],
             formas_monetarias: [],
@@ -179,7 +183,7 @@
                     await salvarDadosNaNuvem(db);
                 }
 
-                // ATIVAÇÃO EM TEMPO REAL (REALTIME) - Sincronização automática entre computadores
+                // Sincronização em Tempo Real (Realtime) entre computadores
                 supabaseClient
                     .channel('mudancas-condominio')
                     .on(
@@ -400,14 +404,45 @@
             const userFound = (db.usuarios || []).find(u => u.usuario === userInput || u.email === userInput);
             if (userFound && userFound.senhaHash === senhaInput) {
                 if (userFound.status === 'Inativo') { alert('Utilizador inativo.'); return; }
+                
+                if (userFound.primeiroAcesso) {
+                    usuarioPendentePrimeiroAcesso = userFound;
+                    renderApp();
+                    return;
+                }
+
                 sessao.usuarioLogado = userFound;
                 try { sessionStorage.setItem('guardioes_sessao', JSON.stringify(userFound)); } catch (err) {}
                 renderApp();
             } else { alert('Credenciais incorretas!'); }
         }
 
+        function concluirPrimeiroAcesso(e) {
+            e.preventDefault();
+            const s1 = document.getElementById('prim_senha_nova').value;
+            const s2 = document.getElementById('prim_senha_conf').value;
+
+            if (s1.length < 6) { alert('A palavra-passe deve ter pelo menos 6 caracteres.'); return; }
+            if (s1 !== s2) { alert('As palavras-passe não coincidem.'); return; }
+
+            const userIndex = (db.usuarios || []).findIndex(u => u.id === usuarioPendentePrimeiroAcesso.id);
+            if (userIndex !== -1) {
+                db.usuarios[userIndex].senhaHash = s1;
+                db.usuarios[userIndex].primeiroAcesso = false;
+                salvarDados(db);
+
+                sessao.usuarioLogado = db.usuarios[userIndex];
+                try { sessionStorage.setItem('guardioes_sessao', JSON.stringify(sessao.usuarioLogado)); } catch (err) {}
+                
+                usuarioPendentePrimeiroAcesso = null;
+                alert('Palavra-passe alterada com sucesso! Bem-vindo(a) ao sistema.');
+                renderApp();
+            }
+        }
+
         function encerrarSessao() {
             sessao.usuarioLogado = null;
+            usuarioPendentePrimeiroAcesso = null;
             try { sessionStorage.removeItem('guardioes_sessao'); } catch (e) {}
             renderApp();
         }
@@ -431,15 +466,49 @@
             `;
         }
 
+        function renderTelaPrimeiroAcesso() {
+            return `
+                <div class="min-h-screen flex items-center justify-center bg-slate-900 p-4 w-full">
+                    <div class="bg-white w-full max-w-md p-6 sm:p-8 rounded-2xl shadow-2xl space-y-6">
+                        <div class="text-center space-y-2">
+                            <div class="w-16 h-16 bg-amber-500 rounded-2xl flex items-center justify-center text-white text-3xl font-bold mx-auto shadow-lg"><i class="fa-solid fa-key"></i></div>
+                            <h2 class="text-xl font-black text-slate-800">Primeiro Acesso</h2>
+                            <p class="text-xs text-slate-600 font-semibold">Olá, <b>${escapeHTML(usuarioPendentePrimeiroAcesso.nome)}</b>! Por segurança, por favor defina uma nova palavra-passe antes de continuar.</p>
+                        </div>
+                        <form onsubmit="concluirPrimeiroAcesso(event)" class="space-y-4 text-xs">
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Nova Palavra-passe</label><input type="password" id="prim_senha_nova" required class="w-full p-3 border rounded-lg font-bold bg-slate-50 text-sm" placeholder="Mínimo de 6 caracteres"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Confirmar Nova Palavra-passe</label><input type="password" id="prim_senha_conf" required class="w-full p-3 border rounded-lg font-bold bg-slate-50 text-sm" placeholder="Repita a palavra-passe"></div>
+                            <button type="submit" class="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg shadow-lg text-sm">Guardar Nova Senha e Entrar</button>
+                        </form>
+                    </div>
+                </div>
+            `;
+        }
+
         function renderMainOnly() {
             const mainEl = document.querySelector('main');
-            if (mainEl) mainEl.innerHTML = renderModuleContent(tabsState.activeTab);
+            if (mainEl) {
+                mainEl.innerHTML = renderModuleContent(tabsState.activeTab);
+                if (tabsState.activeTab === 'dashboard') initDashboardCharts();
+            }
         }
 
         function renderApp() {
             const container = document.getElementById('app');
             if (!container) return;
-            if (!sessao.usuarioLogado) { container.innerHTML = renderTelaLogin(); return; }
+
+            if (usuarioPendentePrimeiroAcesso) {
+                container.innerHTML = renderTelaPrimeiroAcesso();
+                return;
+            }
+
+            if (!sessao.usuarioLogado) { 
+                container.innerHTML = renderTelaLogin(); 
+                return; 
+            }
+
+            const user = sessao.usuarioLogado;
+            const msgBoasVindas = `Seja bem-vinda, ${escapeHTML(user.nome || user.usuario)} - ${escapeHTML(user.loja || 'Loja')} - ${escapeHTML(user.cargo || user.perfil || 'Cargo')}`;
 
             container.innerHTML = `
                 <div class="flex-1 flex flex-col md:flex-row min-h-screen w-full">
@@ -479,9 +548,10 @@
 
                         <div class="p-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
                             <div class="truncate pr-2">
-                                <span class="text-xs font-bold text-slate-200 block truncate">${escapeHTML(sessao.usuarioLogado.nome)}</span>
+                                <span class="text-xs font-bold text-slate-200 block truncate">${escapeHTML(user.nome)}</span>
+                                <span class="text-[10px] text-teal-400 block truncate">${escapeHTML(user.cargo || user.perfil)}</span>
                             </div>
-                            <button onclick="encerrarSessao()" class="p-2 text-slate-400 hover:text-red-400"><i class="fa-solid fa-right-from-bracket"></i></button>
+                            <button onclick="encerrarSessao()" class="p-2 text-slate-400 hover:text-red-400" title="Sair"><i class="fa-solid fa-right-from-bracket"></i></button>
                         </div>
                     </aside>
 
@@ -491,6 +561,7 @@
                             <button onclick="toggleMenuMobile()" class="p-2 bg-slate-800 rounded-lg text-slate-200"><i class="fa-solid fa-bars"></i></button>
                         </header>
 
+                        <!-- Barra de Abas -->
                         <div class="bg-slate-200 border-b flex items-center overflow-x-auto px-2 pt-2 gap-1 no-print w-full">
                             ${tabsState.openTabs.map(tabId => `
                                 <div onclick="abrirModulo('${tabId}')" class="flex items-center gap-2 px-3 py-2 rounded-t-lg text-xs font-semibold cursor-pointer whitespace-nowrap ${tabsState.activeTab === tabId ? 'tab-active' : 'bg-slate-300 text-slate-600'}">
@@ -500,12 +571,24 @@
                             `).join('')}
                         </div>
 
+                        <!-- Banner de Boas-Vindas Personalizado -->
+                        <div class="bg-teal-700 text-white px-4 py-2.5 text-xs font-bold flex items-center justify-between shadow-sm no-print">
+                            <div class="flex items-center gap-2">
+                                <i class="fa-solid fa-face-smile text-teal-300 text-sm"></i>
+                                <span>${msgBoasVindas}</span>
+                            </div>
+                            <span class="text-[10px] bg-teal-800 px-2 py-1 rounded text-teal-200 font-mono hidden sm:inline-block">Sessão Ativa</span>
+                        </div>
+
                         <main class="flex-1 overflow-y-auto p-3 sm:p-4 md:p-6 bg-slate-100 w-full">
                             ${renderModuleContent(tabsState.activeTab)}
                         </main>
                     </div>
                 </div>
             `;
+            if (tabsState.activeTab === 'dashboard') {
+                setTimeout(initDashboardCharts, 50);
+            }
         }
 
         function renderModuleContent(moduloId) {
@@ -533,7 +616,7 @@
             else if (moduloId === 'estoque') btnNovoHtml = `<button onclick="window.renderModalEstoque()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold whitespace-nowrap"><i class="fa-solid fa-plus"></i> Novo Item</button>`;
             else if (moduloId === 'documentos') btnNovoHtml = `<button onclick="window.renderModalDocumento()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold whitespace-nowrap"><i class="fa-solid fa-upload"></i> Inserir Documento</button>`;
             else if (moduloId === 'usuarios') btnNovoHtml = `<button onclick="window.renderModalUsuario()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold whitespace-nowrap"><i class="fa-solid fa-user-plus"></i> Novo Utilizador</button>`;
-            else if (moduloId === 'relatorios') btnExportHtml = '';
+            else if (moduloId === 'relatorios' || moduloId === 'dashboard') btnExportHtml = '';
 
             const headerGlobal = `
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
@@ -568,13 +651,187 @@
         function fecharModalContainer() { document.getElementById('modal-container').innerHTML = ''; }
 
         function renderDashboardView() {
+            const totalMoradores = (db.moradores || []).length;
+            const totalFornecedores = (db.fornecedores || []).length;
+            const totalEmpregados = (db.empregados || []).length;
+            const totalDocumentos = (db.documentos || []).length;
+
+            const financeiroList = db.financeiro || [];
+            let totalReceber = 0;
+            let totalPagar = 0;
+            financeiroList.forEach(f => {
+                const val = parseFloat(f.valor) || 0;
+                if (f.tipo === 'Receber') totalReceber += val;
+                else if (f.tipo === 'Pagar') totalPagar += val;
+            });
+            const saldoCaixa = totalReceber - totalPagar;
+
             return `
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6 w-full">
-                    <div class="bg-white p-5 rounded-xl border shadow-sm"><p class="text-xs font-bold text-slate-400 uppercase">Moradores</p><h3 class="text-2xl font-black text-slate-800">${(db.moradores||[]).length}</h3></div>
-                    <div class="bg-white p-5 rounded-xl border shadow-sm"><p class="text-xs font-bold text-slate-400 uppercase">Fornecedores</p><h3 class="text-2xl font-black text-slate-800">${(db.fornecedores||[]).length}</h3></div>
-                    <div class="bg-white p-5 rounded-xl border shadow-sm"><p class="text-xs font-bold text-slate-400 uppercase">Empregados</p><h3 class="text-2xl font-black text-slate-800">${(db.empregados||[]).length}</h3></div>
+                <div class="space-y-6 w-full">
+                    <!-- Cards Superiores Modernos -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
+                        <div class="bg-white p-5 rounded-2xl border shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Saldo em Caixa</p>
+                                <h3 class="text-xl sm:text-2xl font-black ${saldoCaixa >= 0 ? 'text-emerald-600' : 'text-rose-600'}">R$ ${saldoCaixa.toFixed(2)}</h3>
+                                <span class="text-[10px] text-slate-500 font-semibold">Receitas vs Despesas</span>
+                            </div>
+                            <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-xl font-bold shadow-inner"><i class="fa-solid fa-wallet"></i></div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl border shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Total Moradores</p>
+                                <h3 class="text-xl sm:text-2xl font-black text-slate-800">${totalMoradores}</h3>
+                                <span class="text-[10px] text-teal-600 font-semibold">Unidades ativas</span>
+                            </div>
+                            <div class="w-12 h-12 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center text-xl font-bold shadow-inner"><i class="fa-solid fa-users"></i></div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl border shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Fornecedores</p>
+                                <h3 class="text-xl sm:text-2xl font-black text-slate-800">${totalFornecedores}</h3>
+                                <span class="text-[10px] text-blue-600 font-semibold">Parceiros registados</span>
+                            </div>
+                            <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl font-bold shadow-inner"><i class="fa-solid fa-truck-fast"></i></div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl border shadow-sm flex items-center justify-between">
+                            <div>
+                                <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Documentos</p>
+                                <h3 class="text-xl sm:text-2xl font-black text-slate-800">${totalDocumentos}</h3>
+                                <span class="text-[10px] text-amber-600 font-semibold">Arquivos na nuvem</span>
+                            </div>
+                            <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-xl font-bold shadow-inner"><i class="fa-solid fa-folder-open"></i></div>
+                        </div>
+                    </div>
+
+                    <!-- Gráficos Elaborados -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+                        <div class="bg-white p-5 rounded-2xl border shadow-sm lg:col-span-2 flex flex-col justify-between">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-black text-slate-800 text-sm sm:text-base"><i class="fa-solid fa-chart-line text-teal-600 mr-2"></i> Panorama Financeiro (Pagar x Receber)</h3>
+                                <span class="text-[10px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg font-bold">Atualizado em tempo real</span>
+                            </div>
+                            <div class="relative h-64 sm:h-72 w-full flex items-center justify-center">
+                                <canvas id="chartReceitaDespesa"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl border shadow-sm flex flex-col justify-between">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-black text-slate-800 text-sm sm:text-base"><i class="fa-solid fa-chart-pie text-teal-600 mr-2"></i> Distribuição Operacional</h3>
+                            </div>
+                            <div class="relative h-60 w-full flex items-center justify-center">
+                                <canvas id="chartOcupacao"></canvas>
+                            </div>
+                            <div class="mt-4 pt-3 border-t text-center">
+                                <span class="text-[11px] text-slate-500 font-bold">Equipe, Fornecedores e Moradores</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tabela Resumo Recente -->
+                    <div class="bg-white rounded-2xl border shadow-sm overflow-hidden w-full">
+                        <div class="p-4 bg-slate-900 text-white font-bold text-xs sm:text-sm flex items-center justify-between">
+                            <span><i class="fa-solid fa-clock-rotate-left mr-2 text-teal-400"></i> Últimas Movimentações Financeiras</span>
+                            <button onclick="abrirModulo('financeiro')" class="text-teal-400 hover:underline text-xs">Ver Todas</button>
+                        </div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs min-w-[500px]">
+                                <thead class="bg-slate-100 text-slate-600 uppercase font-bold">
+                                    <tr>
+                                        <th class="p-3">Tipo</th>
+                                        <th class="p-3">Histórico</th>
+                                        <th class="p-3">Valor</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y">
+                                    ${financeiroList.length === 0 ? `<tr><td colspan="3" class="p-6 text-center text-slate-400">Nenhum lançamento financeiro registado.</td></tr>` : financeiroList.slice(-5).reverse().map(f => `
+                                        <tr>
+                                            <td class="p-3"><span class="px-2 py-0.5 rounded font-bold ${f.tipo === 'Receber' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">${f.tipo}</span></td>
+                                            <td class="p-3 font-bold text-slate-800">${escapeHTML(f.historico)}</td>
+                                            <td class="p-3 font-mono font-bold ${f.tipo === 'Receber' ? 'text-emerald-600' : 'text-rose-600'}">R$ ${parseFloat(f.valor||0).toFixed(2)}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             `;
+        }
+
+        function initDashboardCharts() {
+            if (tabsState.activeTab !== 'dashboard') return;
+
+            const finList = db.financeiro || [];
+            let totalReceber = 0;
+            let totalPagar = 0;
+            finList.forEach(f => {
+                const val = parseFloat(f.valor) || 0;
+                if (f.tipo === 'Receber') totalReceber += val;
+                else if (f.tipo === 'Pagar') totalPagar += val;
+            });
+
+            // Gráfico 1: Barras Financeiras
+            const ctx1 = document.getElementById('chartReceitaDespesa');
+            if (ctx1) {
+                if (chartInstanceReceitaDespesa) chartInstanceReceitaDespesa.destroy();
+                chartInstanceReceitaDespesa = new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Total a Receber', 'Total a Pagar', 'Saldo Líquido'],
+                        datasets: [{
+                            label: 'Valores em R$',
+                            data: [totalReceber, totalPagar, totalReceber - totalPagar],
+                            backgroundColor: ['#0d9488', '#f43f5e', '#3b82f6'],
+                            borderRadius: 8,
+                            barThickness: 35
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { grid: { color: '#f1f5f9' }, ticks: { font: { weight: 'bold' } } },
+                            x: { grid: { display: false }, ticks: { font: { weight: 'bold' } } }
+                        }
+                    }
+                });
+            }
+
+            // Gráfico 2: Rosca de Distribuição
+            const ctx2 = document.getElementById('chartOcupacao');
+            if (ctx2) {
+                if (chartInstanceOcupacao) chartInstanceOcupacao.destroy();
+                const countMoradores = (db.moradores || []).length;
+                const countFornecedores = (db.fornecedores || []).length;
+                const countEmpregados = (db.empregados || []).length;
+
+                chartInstanceOcupacao = new Chart(ctx2, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Moradores', 'Fornecedores', 'Empregados'],
+                        datasets: [{
+                            data: [countMoradores || 1, countFornecedores || 1, countEmpregados || 1],
+                            backgroundColor: ['#0d9488', '#3b82f6', '#f59e0b'],
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { position: 'bottom', labels: { boxWidth: 12, font: { weight: 'bold', size: 10 } } }
+                        },
+                        cutout: '70%'
+                    }
+                });
+            }
         }
 
         function renderCondominioView() {
@@ -1163,13 +1420,13 @@
             const users = db.usuarios || [];
             return `
                 <div class="bg-white rounded-xl border overflow-x-auto shadow-sm w-full">
-                    <table class="w-full text-left text-xs min-w-[650px]">
+                    <table class="w-full text-left text-xs min-w-[700px]">
                         <thead class="bg-slate-800 text-white">
                             <tr>
                                 <th class="p-3">Utilizador / Nome</th>
                                 <th class="p-3">E-mail</th>
+                                <th class="p-3">Loja / Unidade</th>
                                 <th class="p-3">Cargo</th>
-                                <th class="p-3">Palavra-passe (Senha)</th>
                                 <th class="p-3 text-center">Ações / Redefinir Senha</th>
                             </tr>
                         </thead>
@@ -1181,10 +1438,10 @@
                                         <div class="text-[10px] text-slate-500">${escapeHTML(u.nome || '')}</div>
                                     </td>
                                     <td class="p-3">${escapeHTML(u.email || '-')}</td>
+                                    <td class="p-3 font-semibold text-slate-700">${escapeHTML(u.loja || 'Guardiões do Bravo')}</td>
                                     <td class="p-3 font-semibold text-teal-700">${escapeHTML(u.cargo || u.perfil || 'Operador')}</td>
-                                    <td class="p-3 font-mono text-slate-600">••••••••</td>
                                     <td class="p-3 text-center">
-                                        <button onclick="window.renderModalRedefinirSenha('${u.id}')" class="px-2.5 py-1 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded font-bold mr-1" title="Redefinir Senha"><i class="fa-solid fa-key"></i> Redefinir Senha</button>
+                                        <button onclick="window.renderModalRedefinirSenha('${u.id}')" class="px-2.5 py-1 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded font-bold mr-1" title="Redefinir Senha"><i class="fa-solid fa-key"></i> Senha</button>
                                         <button onclick="window.renderModalUsuario('${u.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button>
                                         ${u.id !== 'usr_admin' ? `<button onclick="excluirRegistro('usuarios','${u.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button>` : ''}
                                     </td>
@@ -1197,7 +1454,7 @@
         }
 
         window.renderModalUsuario = function(id = null) {
-            const item = id ? (db.usuarios||[]).find(x => x.id === id) : { id: '', usuario: '', nome: '', email: '', cargo: '', senhaHash: 'Condo@2026' };
+            const item = id ? (db.usuarios||[]).find(x => x.id === id) : { id: '', usuario: '', nome: '', email: '', loja: 'Guardiões do Bravo', cargo: '', primeiroAcesso: true, senhaHash: 'Condo@2026' };
             abrirModalContainer(`
                 <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
@@ -1206,8 +1463,9 @@
                             <div><label class="block font-bold uppercase text-slate-600 mb-1">Login / Utilizador</label><input type="text" id="m_u_login" required value="${escapeHTML(item.usuario)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
                             <div><label class="block font-bold uppercase text-slate-600 mb-1">Nome Completo</label><input type="text" id="m_u_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
                             <div><label class="block font-bold uppercase text-slate-600 mb-1">E-mail</label><input type="email" id="m_u_email" value="${escapeHTML(item.email || '')}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
-                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Cargo</label><input type="text" id="m_u_cargo" required value="${escapeHTML(item.cargo || item.perfil || 'Operador')}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
-                            ${!id ? `<div><label class="block font-bold uppercase text-slate-600 mb-1">Palavra-passe (Senha)</label><input type="password" id="m_u_senha" required value="Condo@2026" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>` : ''}
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Loja / Unidade</label><input type="text" id="m_u_loja" required value="${escapeHTML(item.loja || 'Guardiões do Bravo')}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Cargo</label><input type="text" id="m_u_cargo" required value="${escapeHTML(item.cargo || item.perfil || 'Operador')}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50" placeholder="Ex: Conselho Fiscal"></div>
+                            ${!id ? `<div><label class="block font-bold uppercase text-slate-600 mb-1">Palavra-passe Temporária</label><input type="password" id="m_u_senha" required value="Condo@2026" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>` : ''}
                             <div class="flex justify-end gap-2 pt-3 border-t">
                                 <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-bold">Cancelar</button>
                                 <button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg font-bold">Salvar</button>
@@ -1229,11 +1487,12 @@
                 usuario: document.getElementById('m_u_login').value,
                 nome: document.getElementById('m_u_nome').value,
                 email: document.getElementById('m_u_email').value,
+                loja: document.getElementById('m_u_loja').value,
                 cargo: document.getElementById('m_u_cargo').value,
                 perfil: document.getElementById('m_u_cargo').value,
                 status: 'Ativo',
                 senhaHash: usuarioExistente ? usuarioExistente.senhaHash : document.getElementById('m_u_senha').value,
-                primeiroAcesso: usuarioExistente ? usuarioExistente.primeiroAcesso : false
+                primeiroAcesso: usuarioExistente ? usuarioExistente.primeiroAcesso : true
             };
 
             const idx = db.usuarios.findIndex(x => x.id === obj.id);
