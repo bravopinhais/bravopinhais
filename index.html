@@ -325,6 +325,53 @@
             reader.readAsText(file);
         }
 
+        // Função para Importar Moradores via Planilha CSV
+        function importarPlanilhaMoradores(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const texto = e.target.result;
+                    const linhas = texto.split(/\r\n|\n/);
+                    let importados = 0;
+
+                    if(!db.moradores) db.moradores = [];
+
+                    // Ignora o cabeçalho (linha 0) e percorre o resto
+                    for (let i = 1; i < linhas.length; i++) {
+                        const linha = linhas[i].trim();
+                        if (!linha) continue;
+                        // Divide por vírgula ou ponto e vírgula
+                        const colunas = linha.split(/,|;/).map(c => c.replace(/^["']|["']$/g, '').trim());
+                        if (colunas.length >= 3) {
+                            db.moradores.push({
+                                id: 'mor_imp_' + Date.now() + '_' + i,
+                                bloco: colunas[0] || '1',
+                                apartamento: colunas[1] || '',
+                                nome: colunas[2] || 'Sem Nome',
+                                telefone: colunas[3] || '',
+                                petNome: colunas[4] || '',
+                                vagaGaragem: colunas[5] || ''
+                            });
+                            importados++;
+                        }
+                    }
+
+                    if (importados > 0) {
+                        salvarDados(db);
+                        alert(`${importados} moradores importados com sucesso para a nuvem!`);
+                        renderMainOnly();
+                    } else {
+                        alert('Nenhum morador válido encontrado na planilha. Verifique o formato (Bloco, Apartamento, Nome, Telefone, Pet, Vaga).');
+                    }
+                } catch (err) {
+                    alert('Erro ao processar o arquivo CSV.');
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
         function realizarLogin(e) {
             e.preventDefault();
             const userInput = document.getElementById('login_user').value.trim();
@@ -451,7 +498,14 @@
             else if (moduloId === 'financeiro') btnNovoHtml = `<button onclick="window.renderModalNovoTitulo()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Título</button>`;
             else if (moduloId === 'formas_monetarias') btnNovoHtml = `<button onclick="window.renderModalFormaMonetaria()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Nova Forma</button>`;
             else if (moduloId === 'contas_bancarias') btnNovoHtml = `<button onclick="window.renderModalContaBancaria()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Nova Conta</button>`;
-            else if (moduloId === 'moradores') btnNovoHtml = `<button onclick="window.renderModalMorador()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Morador</button>`;
+            else if (moduloId === 'moradores') {
+                btnNovoHtml = `
+                    <label class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow">
+                        <i class="fa-solid fa-file-arrow-up"></i> Importar Planilha <input type="file" accept=".csv, .txt" onchange="importarPlanilhaMoradores(event)" class="hidden">
+                    </label>
+                    <button onclick="window.renderModalMorador()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Morador</button>
+                `;
+            }
             else if (moduloId === 'fornecedores') btnNovoHtml = `<button onclick="window.renderModalFornecedor()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Fornecedor</button>`;
             else if (moduloId === 'empregados') btnNovoHtml = `<button onclick="window.renderModalEmpregado()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Empregado</button>`;
             else if (moduloId === 'categorias') btnNovoHtml = `<button onclick="window.renderModalCategoria()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Nova Pasta</button>`;
