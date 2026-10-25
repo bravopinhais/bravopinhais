@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guardiões do Bravo - Gestão Condominial em Nuvem</title>
+    <title>Guardiões do Bravo - Gestão Condominial Completa</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons CDN -->
@@ -12,7 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Pako (Compressão Gzip para arquivos grandes) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
-    <!-- Supabase JS Client -->
+    <!-- Supabase JS Client para Banco de Dados na Nuvem -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         html, body { height: 100%; margin: 0; padding: 0; }
@@ -70,7 +70,9 @@
                     const compressed = pako.deflate(uint8Array);
                     let binary = '';
                     const len = compressed.byteLength;
-                    for (let i = 0; i < len; i++) { binary += String.fromCharCode(compressed[i]); }
+                    for (let i = 0; i < len; i++) {
+                        binary += String.fromCharCode(compressed[i]);
+                    }
                     callback(btoa(binary), file.name);
                 } catch (err) { alert('Erro ao compactar ficheiro.'); }
             };
@@ -506,7 +508,7 @@
         function fecharModalContainer() { document.getElementById('modal-container').innerHTML = ''; }
 
         // =========================================================================
-        // MÓDULOS COM TODOS OS BOTÕES E MODAIS DE EDIÇÃO/INSERÇÃO ATIVOS
+        // MÓDULOS COMPLETOS COM BOTÕES DE INSERIR, EDITAR E EXCLUIR
         // =========================================================================
         function renderDashboardView() {
             return `
@@ -545,7 +547,7 @@
                         <div class="p-4 bg-slate-900 text-white font-bold text-sm">Corpo Diretivo</div>
                         <table class="w-full text-left text-xs">
                             <thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3">Cargo</th><th class="p-3">Bloco/Ap</th><th class="p-3 text-center">Ações</th></tr></thead>
-                            <tbody class="divide-y">${conselheiros.map(c => `<tr><td class="p-3 font-bold">${escapeHTML(c.nome)}</td><td class="p-3">${escapeHTML(c.cargo)}</td><td class="p-3">${escapeHTML(c.BlocoAp)}</td><td class="p-3 text-center"><button onclick="window.renderModalConselheiro('${c.id}')" class="p-1 bg-slate-100 rounded mr-1"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('conselheiros','${c.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
+                            <tbody class="divide-y">${conselheiros.map(c => `<tr><td class="p-3 font-bold">${escapeHTML(c.nome)}</td><td class="p-3">${escapeHTML(c.cargo)}</td><td class="p-3">${escapeHTML(c.BlocoAp)}</td><td class="p-3 text-center"><button onclick="window.renderModalConselheiro('${c.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('conselheiros','${c.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
                         </table>
                     </div>
                 </div>
@@ -592,7 +594,7 @@
 
         function renderFinanceiroView() {
             const list = db.financeiro || [];
-            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Tipo</th><th class="p-3">Histórico</th><th class="p-3">Valor</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(f => `<tr><td class="p-3">${f.tipo}</td><td class="p-3 font-bold">${escapeHTML(f.historico)}</td><td class="p-3">R$ ${f.valor}</td><td class="p-3 text-center"><button onclick="window.renderModalNovoTitulo('${f.id}')" class="p-1 bg-slate-100 rounded mr-1"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('financeiro','${f.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Tipo</th><th class="p-3">Histórico</th><th class="p-3">Valor</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(f => `<tr><td class="p-3">${f.tipo}</td><td class="p-3 font-bold">${escapeHTML(f.historico)}</td><td class="p-3">R$ ${f.valor}</td><td class="p-3 text-center"><button onclick="window.renderModalNovoTitulo('${f.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('financeiro','${f.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
         }
 
         window.renderModalNovoTitulo = function(id = null) {
@@ -628,7 +630,7 @@
 
         function renderFormasMonetariasView() {
             const list = db.formas_monetarias || [];
-            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3">Multa (%)</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(fm => `<tr><td class="p-3 font-bold">${escapeHTML(fm.nome)}</td><td class="p-3">${fm.multaPct}%</td><td class="p-3 text-center"><button onclick="window.renderModalFormaMonetaria('${fm.id}')" class="p-1 bg-slate-100 rounded mr-1"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('formas_monetarias','${fm.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3">Multa (%)</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(fm => `<tr><td class="p-3 font-bold">${escapeHTML(fm.nome)}</td><td class="p-3">${fm.multaPct}%</td><td class="p-3 text-center"><button onclick="window.renderModalFormaMonetaria('${fm.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('formas_monetarias','${fm.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
         }
 
         window.renderModalFormaMonetaria = function(id = null) {
@@ -662,7 +664,7 @@
 
         function renderContasBancariasView() {
             const list = db.contas_bancarias || [];
-            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Banco</th><th class="p-3">Saldo</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(cb => `<tr><td class="p-3 font-bold">${escapeHTML(cb.banco)}</td><td class="p-3">R$ ${cb.saldo}</td><td class="p-3 text-center"><button onclick="window.renderModalContaBancaria('${cb.id}')" class="p-1 bg-slate-100 rounded mr-1"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('contas_bancarias','${cb.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Banco</th><th class="p-3">Saldo</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(cb => `<tr><td class="p-3 font-bold">${escapeHTML(cb.banco)}</td><td class="p-3">R$ ${cb.saldo}</td><td class="p-3 text-center"><button onclick="window.renderModalContaBancaria('${cb.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('contas_bancarias','${cb.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
         }
 
         window.renderModalContaBancaria = function(id = null) {
@@ -701,7 +703,7 @@
                     <div class="bg-white rounded-xl border overflow-hidden">
                         <table class="w-full text-left text-xs">
                             <thead class="bg-slate-800 text-white"><tr><th class="p-3">Bloco/Ap</th><th class="p-3">Nome</th><th class="p-3">Tipo</th><th class="p-3 text-center">Ações</th></tr></thead>
-                            <tbody class="divide-y">${moradores.map(m => `<tr><td class="p-3 font-bold">Bloco ${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</td><td class="p-3">${escapeHTML(m.nome)}</td><td class="p-3">${escapeHTML(m.tipo)}</td><td class="p-3 text-center"><button onclick="window.renderModalMorador('${m.id}')" class="p-1 bg-slate-100 rounded mr-1"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('moradores','${m.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
+                            <tbody class="divide-y">${moradores.map(m => `<tr><td class="p-3 font-bold">Bloco ${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</td><td class="p-3">${escapeHTML(m.nome)}</td><td class="p-3">${escapeHTML(m.tipo)}</td><td class="p-3 text-center"><button onclick="window.renderModalMorador('${m.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('moradores','${m.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
                         </table>
                     </div>
                 </div>
@@ -745,7 +747,7 @@
 
         function renderFornecedoresView() {
             const list = db.fornecedores || [];
-            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">CNPJ</th><th class="p-3">Razão Social</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(f => `<tr><td class="p-3 font-mono">${escapeHTML(f.cnpj)}</td><td class="p-3 font-bold">${escapeHTML(f.razaoSocial)}</td><td class="p-3 text-center"><button onclick="window.renderModalFornecedor('${f.id}')" class="p-1 bg-slate-100 rounded mr-1"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('fornecedores','${f.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">CNPJ</th><th class="p-3">Razão Social</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(f => `<tr><td class="p-3 font-mono">${escapeHTML(f.cnpj)}</td><td class="p-3 font-bold">${escapeHTML(f.razaoSocial)}</td><td class="p-3 text-center"><button onclick="window.renderModalFornecedor('${f.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('fornecedores','${f.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
         }
 
         window.renderModalFornecedor = function(id = null) {
@@ -779,7 +781,7 @@
 
         function renderEmpregadosView() {
             const list = db.empregados || [];
-            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3">Cargo</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(e => `<tr><td class="p-3 font-bold">${escapeHTML(e.nome)}</td><td class="p-3">${escapeHTML(e.cargo)}</td><td class="p-3 text-center"><button onclick="window.renderModalEmpregado('${e.id}')" class="p-1 bg-slate-100 rounded mr-1"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('empregados','${e.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3">Cargo</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(e => `<tr><td class="p-3 font-bold">${escapeHTML(e.nome)}</td><td class="p-3">${escapeHTML(e.cargo)}</td><td class="p-3 text-center"><button onclick="window.renderModalEmpregado('${e.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('empregados','${e.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
         }
 
         window.renderModalEmpregado = function(id = null) {
@@ -813,7 +815,7 @@
 
         function renderCategoriasView() {
             const list = db.categorias || [];
-            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome da Pasta</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(c => `<tr><td class="p-3 font-bold">${escapeHTML(c.nome)}</td><td class="p-3 text-center"><button onclick="excluirRegistro('categorias','${c.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome da Pasta</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(c => `<tr><td class="p-3 font-bold">${escapeHTML(c.nome)}</td><td class="p-3 text-center"><button onclick="excluirRegistro('categorias','${c.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
         }
 
         window.renderModalCategoria = function() {
@@ -839,7 +841,7 @@
 
         function renderEstoqueView() {
             const list = db.estoque || [];
-            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Item</th><th class="p-3">Qtd</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(st => `<tr><td class="p-3 font-bold">${escapeHTML(st.item)}</td><td class="p-3">${st.qtd}</td><td class="p-3 text-center"><button onclick="window.renderModalEstoque('${st.id}')" class="p-1 bg-slate-100 rounded mr-1"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('estoque','${st.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Item</th><th class="p-3">Qtd</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(st => `<tr><td class="p-3 font-bold">${escapeHTML(st.item)}</td><td class="p-3">${st.qtd}</td><td class="p-3 text-center"><button onclick="window.renderModalEstoque('${st.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('estoque','${st.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
         }
 
         window.renderModalEstoque = function(id = null) {
@@ -877,7 +879,7 @@
                 <div class="bg-white rounded-xl border overflow-hidden">
                     <table class="w-full text-left text-xs">
                         <thead class="bg-slate-800 text-white"><tr><th class="p-3">Título</th><th class="p-3">Ficheiro</th><th class="p-3 text-center">Ações</th></tr></thead>
-                        <tbody class="divide-y">${docs.map(d => `<tr><td class="p-3 font-bold">${escapeHTML(d.titulo)}</td><td class="p-3 font-mono">${escapeHTML(d.nomeArquivo)}</td><td class="p-3 text-center">${d.arquivoCompactadoGzip ? `<button onclick="extrairEDownloadArquivo('${d.arquivoCompactadoGzip}', '${escapeHTML(d.nomeArquivo)}')" class="p-1 bg-emerald-50 text-emerald-600 rounded mr-1"><i class="fa-solid fa-download"></i></button>` : ''}<button onclick="excluirRegistro('documentos','${d.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
+                        <tbody class="divide-y">${docs.map(d => `<tr><td class="p-3 font-bold">${escapeHTML(d.titulo)}</td><td class="p-3 font-mono">${escapeHTML(d.nomeArquivo)}</td><td class="p-3 text-center">${d.arquivoCompactadoGzip ? `<button onclick="extrairEDownloadArquivo('${d.arquivoCompactadoGzip}', '${escapeHTML(d.nomeArquivo)}')" class="p-1 bg-emerald-50 text-emerald-600 rounded mr-1" title="Baixar"><i class="fa-solid fa-download"></i></button>` : ''}<button onclick="excluirRegistro('documentos','${d.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
                     </table>
                 </div>
             `;
@@ -924,7 +926,7 @@
 
         function renderUsuariosView() {
             const users = db.usuarios || [];
-            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Utilizador</th><th class="p-3">Perfil</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${users.map(u => `<tr><td class="p-3 font-bold">${escapeHTML(u.usuario)}</td><td class="p-3">${escapeHTML(u.perfil)}</td><td class="p-3 text-center"><button onclick="window.renderModalUsuario('${u.id}')" class="p-1 bg-slate-100 rounded mr-1"><i class="fa-solid fa-pen"></i></button>${u.id !== 'usr_admin' ? `<button onclick="excluirRegistro('usuarios','${u.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button>` : ''}</td></tr>`).join('')}</tbody></table></div>`;
+            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Utilizador</th><th class="p-3">Perfil</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${users.map(u => `<tr><td class="p-3 font-bold">${escapeHTML(u.usuario)}</td><td class="p-3">${escapeHTML(u.perfil)}</td><td class="p-3 text-center"><button onclick="window.renderModalUsuario('${u.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button>${u.id !== 'usr_admin' ? `<button onclick="excluirRegistro('usuarios','${u.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button>` : ''}</td></tr>`).join('')}</tbody></table></div>`;
         }
 
         window.renderModalUsuario = function(id = null) {
