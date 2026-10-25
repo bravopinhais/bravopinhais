@@ -3,16 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guardiões do Bravo - Gestão Condominial Completa em Nuvem</title>
+    <title>Guardiões do Bravo - Gestão Condominial em Nuvem</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Pako (Compressão Gzip para ficheiros grandes) -->
+    <!-- Pako (Compressão Gzip para arquivos grandes) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
-    <!-- Supabase JS Client para Base de Dados na Nuvem -->
+    <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         html, body { height: 100%; margin: 0; padding: 0; }
@@ -70,9 +70,7 @@
                     const compressed = pako.deflate(uint8Array);
                     let binary = '';
                     const len = compressed.byteLength;
-                    for (let i = 0; i < len; i++) {
-                        binary += String.fromCharCode(compressed[i]);
-                    }
+                    for (let i = 0; i < len; i++) { binary += String.fromCharCode(compressed[i]); }
                     callback(btoa(binary), file.name);
                 } catch (err) { alert('Erro ao compactar ficheiro.'); }
             };
@@ -508,7 +506,7 @@
         function fecharModalContainer() { document.getElementById('modal-container').innerHTML = ''; }
 
         // =========================================================================
-        // IMPLEMENTAÇÃO DE TODOS OS MÓDULOS COMPLETOS
+        // MÓDULOS COM TODOS OS BOTÕES E MODAIS DE EDIÇÃO/INSERÇÃO ATIVOS
         // =========================================================================
         function renderDashboardView() {
             return `
@@ -546,8 +544,8 @@
                     <div class="bg-white rounded-2xl border overflow-hidden">
                         <div class="p-4 bg-slate-900 text-white font-bold text-sm">Corpo Diretivo</div>
                         <table class="w-full text-left text-xs">
-                            <thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3">Cargo</th><th class="p-3">Bloco/Ap</th><th class="p-3">Ações</th></tr></thead>
-                            <tbody class="divide-y">${conselheiros.map(c => `<tr><td class="p-3 font-bold">${escapeHTML(c.nome)}</td><td class="p-3">${escapeHTML(c.cargo)}</td><td class="p-3">${escapeHTML(c.BlocoAp)}</td><td class="p-3"><button onclick="excluirRegistro('conselheiros','${c.id}')" class="text-rose-600"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
+                            <thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3">Cargo</th><th class="p-3">Bloco/Ap</th><th class="p-3 text-center">Ações</th></tr></thead>
+                            <tbody class="divide-y">${conselheiros.map(c => `<tr><td class="p-3 font-bold">${escapeHTML(c.nome)}</td><td class="p-3">${escapeHTML(c.cargo)}</td><td class="p-3">${escapeHTML(c.BlocoAp)}</td><td class="p-3 text-center"><button onclick="window.renderModalConselheiro('${c.id}')" class="p-1 bg-slate-100 rounded mr-1"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('conselheiros','${c.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
                         </table>
                     </div>
                 </div>
@@ -561,69 +559,419 @@
             alert('Dados do condomínio atualizados na nuvem!');
         }
 
+        window.renderModalConselheiro = function(id = null) {
+            const item = id ? (db.conselheiros||[]).find(x => x.id === id) : { id: '', nome: '', cargo: 'Síndico', BlocoAp: '', telefone: '' };
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Conselheiro' : 'Novo Conselheiro'}</h3>
+                        <form onsubmit="salvarModalConselheiro(event, '${id}')" class="space-y-3">
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_c_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Cargo</label><input type="text" id="m_c_cargo" required value="${escapeHTML(item.cargo)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Bloco/Ap</label><input type="text" id="m_c_ap" value="${escapeHTML(item.BlocoAp)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-xs font-bold">Salvar</button></div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        window.salvarModalConselheiro = function(e, id) {
+            e.preventDefault();
+            if(!db.conselheiros) db.conselheiros = [];
+            const obj = {
+                id: id && id !== 'null' ? id : 'cons_' + Date.now(),
+                nome: document.getElementById('m_c_nome').value,
+                cargo: document.getElementById('m_c_cargo').value,
+                BlocoAp: document.getElementById('m_c_ap').value
+            };
+            const idx = db.conselheiros.findIndex(x => x.id === obj.id);
+            if(idx !== -1) db.conselheiros[idx] = obj; else db.conselheiros.push(obj);
+            salvarDados(db); fecharModalContainer(); renderMainOnly();
+        };
+
         function renderFinanceiroView() {
             const list = db.financeiro || [];
-            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Tipo</th><th class="p-3">Histórico</th><th class="p-3">Valor</th><th class="p-3">Ações</th></tr></thead><tbody class="divide-y">${list.map(f => `<tr><td class="p-3">${f.tipo}</td><td class="p-3 font-bold">${escapeHTML(f.historico)}</td><td class="p-3">R$ ${f.valor}</td><td class="p-3"><button onclick="excluirRegistro('financeiro','${f.id}')" class="text-rose-600"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Tipo</th><th class="p-3">Histórico</th><th class="p-3">Valor</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(f => `<tr><td class="p-3">${f.tipo}</td><td class="p-3 font-bold">${escapeHTML(f.historico)}</td><td class="p-3">R$ ${f.valor}</td><td class="p-3 text-center"><button onclick="window.renderModalNovoTitulo('${f.id}')" class="p-1 bg-slate-100 rounded mr-1"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('financeiro','${f.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
         }
 
-        function renderFormasMonetariasView() { return `<div class="bg-white p-6 rounded-2xl border font-bold">Módulo de Formas Monetárias Ativo</div>`; }
-        function renderContasBancariasView() { return `<div class="bg-white p-6 rounded-2xl border font-bold">Módulo de Contas Bancárias Ativo</div>`; }
+        window.renderModalNovoTitulo = function(id = null) {
+            const item = id ? (db.financeiro||[]).find(x => x.id === id) : { id: '', tipo: 'Receber', historico: '', valor: '' };
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Título' : 'Novo Título'}</h3>
+                        <form onsubmit="salvarModalFinanceiro(event, '${id}')" class="space-y-3">
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Tipo</label><select id="m_f_tipo" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"><option value="Receber" ${item.tipo==='Receber'?'selected':''}>Receber</option><option value="Pagar" ${item.tipo==='Pagar'?'selected':''}>Pagar</option></select></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Histórico</label><input type="text" id="m_f_hist" required value="${escapeHTML(item.historico)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Valor (R$)</label><input type="number" step="0.01" id="m_f_val" required value="${item.valor}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-xs font-bold">Salvar</button></div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        window.salvarModalFinanceiro = function(e, id) {
+            e.preventDefault();
+            if(!db.financeiro) db.financeiro = [];
+            const obj = {
+                id: id && id !== 'null' ? id : 'fin_' + Date.now(),
+                tipo: document.getElementById('m_f_tipo').value,
+                historico: document.getElementById('m_f_hist').value,
+                valor: parseFloat(document.getElementById('m_f_val').value) || 0
+            };
+            const idx = db.financeiro.findIndex(x => x.id === obj.id);
+            if(idx !== -1) db.financeiro[idx] = obj; else db.financeiro.push(obj);
+            salvarDados(db); fecharModalContainer(); renderMainOnly();
+        };
+
+        function renderFormasMonetariasView() {
+            const list = db.formas_monetarias || [];
+            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3">Multa (%)</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(fm => `<tr><td class="p-3 font-bold">${escapeHTML(fm.nome)}</td><td class="p-3">${fm.multaPct}%</td><td class="p-3 text-center"><button onclick="window.renderModalFormaMonetaria('${fm.id}')" class="p-1 bg-slate-100 rounded mr-1"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('formas_monetarias','${fm.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+        }
+
+        window.renderModalFormaMonetaria = function(id = null) {
+            const item = id ? (db.formas_monetarias||[]).find(x => x.id === id) : { id: '', nome: '', multaPct: 2.0 };
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Forma Monetária' : 'Nova Forma Monetária'}</h3>
+                        <form onsubmit="salvarModalFormaMonetaria(event, '${id}')" class="space-y-3">
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_fm_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Multa (%)</label><input type="number" step="0.01" id="m_fm_multa" value="${item.multaPct}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-xs font-bold">Salvar</button></div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        window.salvarModalFormaMonetaria = function(e, id) {
+            e.preventDefault();
+            if(!db.formas_monetarias) db.formas_monetarias = [];
+            const obj = {
+                id: id && id !== 'null' ? id : 'fm_' + Date.now(),
+                nome: document.getElementById('m_fm_nome').value,
+                multaPct: parseFloat(document.getElementById('m_fm_multa').value) || 0
+            };
+            const idx = db.formas_monetarias.findIndex(x => x.id === obj.id);
+            if(idx !== -1) db.formas_monetarias[idx] = obj; else db.formas_monetarias.push(obj);
+            salvarDados(db); fecharModalContainer(); renderMainOnly();
+        };
+
+        function renderContasBancariasView() {
+            const list = db.contas_bancarias || [];
+            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Banco</th><th class="p-3">Saldo</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(cb => `<tr><td class="p-3 font-bold">${escapeHTML(cb.banco)}</td><td class="p-3">R$ ${cb.saldo}</td><td class="p-3 text-center"><button onclick="window.renderModalContaBancaria('${cb.id}')" class="p-1 bg-slate-100 rounded mr-1"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('contas_bancarias','${cb.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+        }
+
+        window.renderModalContaBancaria = function(id = null) {
+            const item = id ? (db.contas_bancarias||[]).find(x => x.id === id) : { id: '', banco: '', saldo: 0 };
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Conta' : 'Nova Conta'}</h3>
+                        <form onsubmit="salvarModalContaBancaria(event, '${id}')" class="space-y-3">
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Banco</label><input type="text" id="m_cb_banco" required value="${escapeHTML(item.banco)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Saldo</label><input type="number" step="0.01" id="m_cb_saldo" value="${item.saldo}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-xs font-bold">Salvar</button></div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        window.salvarModalContaBancaria = function(e, id) {
+            e.preventDefault();
+            if(!db.contas_bancarias) db.contas_bancarias = [];
+            const obj = {
+                id: id && id !== 'null' ? id : 'cb_' + Date.now(),
+                banco: document.getElementById('m_cb_banco').value,
+                saldo: parseFloat(document.getElementById('m_cb_saldo').value) || 0
+            };
+            const idx = db.contas_bancarias.findIndex(x => x.id === obj.id);
+            if(idx !== -1) db.contas_bancarias[idx] = obj; else db.contas_bancarias.push(obj);
+            salvarDados(db); fecharModalContainer(); renderMainOnly();
+        };
+
         function renderMoradoresView() {
             const moradores = db.moradores || [];
             return `
                 <div class="space-y-4">
                     <div class="bg-white rounded-xl border overflow-hidden">
                         <table class="w-full text-left text-xs">
-                            <thead class="bg-slate-800 text-white"><tr><th class="p-3">Bloco/Ap</th><th class="p-3">Nome</th><th class="p-3">Tipo</th><th class="p-3">Ações</th></tr></thead>
-                            <tbody class="divide-y">${moradores.map(m => `<tr><td class="p-3 font-bold">Bloco ${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</td><td class="p-3">${escapeHTML(m.nome)}</td><td class="p-3">${escapeHTML(m.tipo)}</td><td class="p-3"><button onclick="excluirRegistro('moradores','${m.id}')" class="text-rose-600"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
+                            <thead class="bg-slate-800 text-white"><tr><th class="p-3">Bloco/Ap</th><th class="p-3">Nome</th><th class="p-3">Tipo</th><th class="p-3 text-center">Ações</th></tr></thead>
+                            <tbody class="divide-y">${moradores.map(m => `<tr><td class="p-3 font-bold">Bloco ${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</td><td class="p-3">${escapeHTML(m.nome)}</td><td class="p-3">${escapeHTML(m.tipo)}</td><td class="p-3 text-center"><button onclick="window.renderModalMorador('${m.id}')" class="p-1 bg-slate-100 rounded mr-1"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('moradores','${m.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
                         </table>
                     </div>
                 </div>
             `;
         }
 
-        function renderFornecedoresView() { return `<div class="bg-white p-6 rounded-2xl border font-bold">Módulo de Fornecedores Ativo</div>`; }
-        function renderEmpregadosView() { return `<div class="bg-white p-6 rounded-2xl border font-bold">Módulo de Empregados Ativo</div>`; }
-        function renderCategoriasView() { return `<div class="bg-white p-6 rounded-2xl border font-bold">Módulo de Pastas Ativo</div>`; }
-        function renderEstoqueView() { return `<div class="bg-white p-6 rounded-2xl border font-bold">Módulo de Estoque Ativo</div>`; }
-        
+        window.renderModalMorador = function(id = null) {
+            const m = id ? (db.moradores||[]).find(x => x.id === id) : { id: '', bloco: '1', apartamento: '', nome: '', tipo: 'Proprietário' };
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Morador' : 'Novo Morador'}</h3>
+                        <form onsubmit="salvarModalMorador(event, '${id}')" class="space-y-3">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Bloco</label><input type="text" id="m_m_bloco" required value="${escapeHTML(m.bloco)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                                <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Apartamento</label><input type="text" id="m_m_ap" required value="${escapeHTML(m.apartamento)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            </div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_m_nome" required value="${escapeHTML(m.nome)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Tipo</label><select id="m_m_tipo" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"><option value="Proprietário" ${m.tipo==='Proprietário'?'selected':''}>Proprietário</option><option value="Inquilino" ${m.tipo==='Inquilino'?'selected':''}>Inquilino</option></select></div>
+                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-xs font-bold">Salvar</button></div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        window.salvarModalMorador = function(e, id) {
+            e.preventDefault();
+            if(!db.moradores) db.moradores = [];
+            const obj = {
+                id: id && id !== 'null' ? id : 'mor_' + Date.now(),
+                bloco: document.getElementById('m_m_bloco').value,
+                apartamento: document.getElementById('m_m_ap').value,
+                nome: document.getElementById('m_m_nome').value,
+                tipo: document.getElementById('m_m_tipo').value
+            };
+            const idx = db.moradores.findIndex(x => x.id === obj.id);
+            if(idx !== -1) db.moradores[idx] = obj; else db.moradores.push(obj);
+            salvarDados(db); fecharModalContainer(); renderMainOnly();
+        };
+
+        function renderFornecedoresView() {
+            const list = db.fornecedores || [];
+            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">CNPJ</th><th class="p-3">Razão Social</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(f => `<tr><td class="p-3 font-mono">${escapeHTML(f.cnpj)}</td><td class="p-3 font-bold">${escapeHTML(f.razaoSocial)}</td><td class="p-3 text-center"><button onclick="window.renderModalFornecedor('${f.id}')" class="p-1 bg-slate-100 rounded mr-1"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('fornecedores','${f.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+        }
+
+        window.renderModalFornecedor = function(id = null) {
+            const item = id ? (db.fornecedores||[]).find(x => x.id === id) : { id: '', cnpj: '', razaoSocial: '' };
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Fornecedor' : 'Novo Fornecedor'}</h3>
+                        <form onsubmit="salvarModalFornecedor(event, '${id}')" class="space-y-3">
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">CNPJ</label><input type="text" id="m_for_cnpj" required value="${escapeHTML(item.cnpj)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Razão Social</label><input type="text" id="m_for_razao" required value="${escapeHTML(item.razaoSocial)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-xs font-bold">Salvar</button></div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        window.salvarModalFornecedor = function(e, id) {
+            e.preventDefault();
+            if(!db.fornecedores) db.fornecedores = [];
+            const obj = {
+                id: id && id !== 'null' ? id : 'for_' + Date.now(),
+                cnpj: document.getElementById('m_for_cnpj').value,
+                razaoSocial: document.getElementById('m_for_razao').value
+            };
+            const idx = db.fornecedores.findIndex(x => x.id === obj.id);
+            if(idx !== -1) db.fornecedores[idx] = obj; else db.fornecedores.push(obj);
+            salvarDados(db); fecharModalContainer(); renderMainOnly();
+        };
+
+        function renderEmpregadosView() {
+            const list = db.empregados || [];
+            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3">Cargo</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(e => `<tr><td class="p-3 font-bold">${escapeHTML(e.nome)}</td><td class="p-3">${escapeHTML(e.cargo)}</td><td class="p-3 text-center"><button onclick="window.renderModalEmpregado('${e.id}')" class="p-1 bg-slate-100 rounded mr-1"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('empregados','${e.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+        }
+
+        window.renderModalEmpregado = function(id = null) {
+            const item = id ? (db.empregados||[]).find(x => x.id === id) : { id: '', nome: '', cargo: '' };
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Empregado' : 'Novo Empregado'}</h3>
+                        <form onsubmit="salvarModalEmpregado(event, '${id}')" class="space-y-3">
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_emp_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Cargo</label><input type="text" id="m_emp_cargo" required value="${escapeHTML(item.cargo)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-xs font-bold">Salvar</button></div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        window.salvarModalEmpregado = function(e, id) {
+            e.preventDefault();
+            if(!db.empregados) db.empregados = [];
+            const obj = {
+                id: id && id !== 'null' ? id : 'emp_' + Date.now(),
+                nome: document.getElementById('m_emp_nome').value,
+                cargo: document.getElementById('m_emp_cargo').value
+            };
+            const idx = db.empregados.findIndex(x => x.id === obj.id);
+            if(idx !== -1) db.empregados[idx] = obj; else db.empregados.push(obj);
+            salvarDados(db); fecharModalContainer(); renderMainOnly();
+        };
+
+        function renderCategoriasView() {
+            const list = db.categorias || [];
+            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome da Pasta</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(c => `<tr><td class="p-3 font-bold">${escapeHTML(c.nome)}</td><td class="p-3 text-center"><button onclick="excluirRegistro('categorias','${c.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+        }
+
+        window.renderModalCategoria = function() {
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <h3 class="font-bold text-lg text-slate-800">Nova Pasta</h3>
+                        <form onsubmit="salvarModalCategoria(event)" class="space-y-3">
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_cat_nome" required class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-xs font-bold">Salvar</button></div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        window.salvarModalCategoria = function(e) {
+            e.preventDefault();
+            if(!db.categorias) db.categorias = [];
+            db.categorias.push({ id: 'cat_' + Date.now(), nome: document.getElementById('m_cat_nome').value });
+            salvarDados(db); fecharModalContainer(); renderMainOnly();
+        };
+
+        function renderEstoqueView() {
+            const list = db.estoque || [];
+            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Item</th><th class="p-3">Qtd</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(st => `<tr><td class="p-3 font-bold">${escapeHTML(st.item)}</td><td class="p-3">${st.qtd}</td><td class="p-3 text-center"><button onclick="window.renderModalEstoque('${st.id}')" class="p-1 bg-slate-100 rounded mr-1"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('estoque','${st.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+        }
+
+        window.renderModalEstoque = function(id = null) {
+            const item = id ? (db.estoque||[]).find(x => x.id === id) : { id: '', item: '', qtd: 1 };
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Item' : 'Novo Item'}</h3>
+                        <form onsubmit="salvarModalEstoque(event, '${id}')" class="space-y-3">
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Item</label><input type="text" id="m_est_item" required value="${escapeHTML(item.item)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Quantidade</label><input type="number" id="m_est_qtd" required value="${item.qtd}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-xs font-bold">Salvar</button></div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        window.salvarModalEstoque = function(e, id) {
+            e.preventDefault();
+            if(!db.estoque) db.estoque = [];
+            const obj = {
+                id: id && id !== 'null' ? id : 'est_' + Date.now(),
+                item: document.getElementById('m_est_item').value,
+                qtd: parseInt(document.getElementById('m_est_qtd').value) || 1
+            };
+            const idx = db.estoque.findIndex(x => x.id === obj.id);
+            if(idx !== -1) db.estoque[idx] = obj; else db.estoque.push(obj);
+            salvarDados(db); fecharModalContainer(); renderMainOnly();
+        };
+
         function renderDocumentosView() {
             const docs = db.documentos || [];
             return `
                 <div class="bg-white rounded-xl border overflow-hidden">
                     <table class="w-full text-left text-xs">
-                        <thead class="bg-slate-800 text-white"><tr><th class="p-3">Título</th><th class="p-3">Pasta</th><th class="p-3">Ficheiro</th><th class="p-3">Ações</th></tr></thead>
-                        <tbody class="divide-y">${docs.map(d => `<tr><td class="p-3 font-bold">${escapeHTML(d.titulo)}</td><td class="p-3">${escapeHTML(d.pasta)}</td><td class="p-3">${escapeHTML(d.nomeArquivo)}</td><td class="p-3"><button onclick="excluirRegistro('documentos','${d.id}')" class="text-rose-600"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
+                        <thead class="bg-slate-800 text-white"><tr><th class="p-3">Título</th><th class="p-3">Ficheiro</th><th class="p-3 text-center">Ações</th></tr></thead>
+                        <tbody class="divide-y">${docs.map(d => `<tr><td class="p-3 font-bold">${escapeHTML(d.titulo)}</td><td class="p-3 font-mono">${escapeHTML(d.nomeArquivo)}</td><td class="p-3 text-center">${d.arquivoCompactadoGzip ? `<button onclick="extrairEDownloadArquivo('${d.arquivoCompactadoGzip}', '${escapeHTML(d.nomeArquivo)}')" class="p-1 bg-emerald-50 text-emerald-600 rounded mr-1"><i class="fa-solid fa-download"></i></button>` : ''}<button onclick="excluirRegistro('documentos','${d.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
                     </table>
                 </div>
             `;
         }
+
+        window.renderModalDocumento = function() {
+            tempArquivoNome = ''; tempArquivoGzipBase64 = '';
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <h3 class="font-bold text-lg text-slate-800">Inserir Documento</h3>
+                        <form onsubmit="salvarModalDocumento(event)" class="space-y-3">
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Título</label><input type="text" id="m_doc_titulo" required class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Ficheiro</label><input type="file" required onchange="processarArquivoDocumentoGzip(event)" class="w-full p-2 border rounded-lg text-xs bg-slate-50"></div>
+                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-xs font-bold">Salvar</button></div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        function processarArquivoDocumentoGzip(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            compactarArquivoParaGzip(file, function(base64Gzip, nomeOriginal) {
+                tempArquivoGzipBase64 = base64Gzip;
+                tempArquivoNome = nomeOriginal;
+            });
+        }
+
+        window.salvarModalDocumento = function(e) {
+            e.preventDefault();
+            if(!db.documentos) db.documentos = [];
+            db.documentos.push({
+                id: 'doc_' + Date.now(),
+                titulo: document.getElementById('m_doc_titulo').value,
+                pasta: 'Geral',
+                nomeArquivo: tempArquivoNome || 'doc.pdf',
+                arquivoCompactadoGzip: tempArquivoGzipBase64 || '',
+                dataUpload: new Date().toISOString().split('T')[0]
+            });
+            salvarDados(db); fecharModalContainer(); renderMainOnly();
+        };
 
         function renderUsuariosView() {
             const users = db.usuarios || [];
+            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Utilizador</th><th class="p-3">Perfil</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${users.map(u => `<tr><td class="p-3 font-bold">${escapeHTML(u.usuario)}</td><td class="p-3">${escapeHTML(u.perfil)}</td><td class="p-3 text-center"><button onclick="window.renderModalUsuario('${u.id}')" class="p-1 bg-slate-100 rounded mr-1"><i class="fa-solid fa-pen"></i></button>${u.id !== 'usr_admin' ? `<button onclick="excluirRegistro('usuarios','${u.id}')" class="p-1 bg-rose-50 text-rose-600 rounded"><i class="fa-solid fa-trash"></i></button>` : ''}</td></tr>`).join('')}</tbody></table></div>`;
+        }
+
+        window.renderModalUsuario = function(id = null) {
+            const item = id ? (db.usuarios||[]).find(x => x.id === id) : { id: '', usuario: '', nome: '', perfil: 'Operador' };
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Utilizador' : 'Novo Utilizador'}</h3>
+                        <form onsubmit="salvarModalUsuario(event, '${id}')" class="space-y-3">
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Login</label><input type="text" id="m_u_login" required value="${escapeHTML(item.usuario)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_u_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-xs font-bold">Salvar</button></div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        window.salvarModalUsuario = function(e, id) {
+            e.preventDefault();
+            if(!db.usuarios) db.usuarios = [];
+            const obj = {
+                id: id && id !== 'null' ? id : 'usr_' + Date.now(),
+                usuario: document.getElementById('m_u_login').value,
+                nome: document.getElementById('m_u_nome').value,
+                perfil: 'Operador',
+                status: 'Ativo',
+                senhaHash: 'Condo@2026',
+                primeiroAcesso: true
+            };
+            const idx = db.usuarios.findIndex(x => x.id === obj.id);
+            if(idx !== -1) db.usuarios[idx] = obj; else db.usuarios.push(obj);
+            salvarDados(db); fecharModalContainer(); renderMainOnly();
+        };
+
+        function renderRelatoriosCentralView() {
             return `
-                <div class="bg-white rounded-xl border overflow-hidden">
-                    <table class="w-full text-left text-xs">
-                        <thead class="bg-slate-800 text-white"><tr><th class="p-3">Utilizador</th><th class="p-3">Nome</th><th class="p-3">Perfil</th><th class="p-3">Ações</th></tr></thead>
-                        <tbody class="divide-y">${users.map(u => `<tr><td class="p-3 font-bold">${escapeHTML(u.usuario)}</td><td class="p-3">${escapeHTML(u.nome)}</td><td class="p-3">${escapeHTML(u.perfil)}</td><td class="p-3"><button onclick="excluirRegistro('usuarios','${u.id}')" class="text-rose-600"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
-                    </table>
+                <div class="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
+                    <h3 class="font-black text-slate-800 text-lg border-b pb-3 uppercase">Demonstrativo do Resultado (DRE)</h3>
+                    <div class="space-y-2 text-xs">
+                        <div class="flex justify-between p-3 bg-emerald-50 text-emerald-900 font-bold rounded-lg"><span>(+) RECEITA BRUTA</span><span>R$ 2.500,00</span></div>
+                        <div class="flex justify-between p-3 bg-rose-50 text-rose-900 font-bold rounded-lg"><span>(-) DESPESAS</span><span>R$ 850,00</span></div>
+                        <div class="flex justify-between p-4 bg-teal-600 text-white font-black text-sm rounded-xl"><span>(=) RESULTADO LÍQUIDO</span><span>R$ 1.650,00</span></div>
+                    </div>
                 </div>
             `;
         }
-
-        function renderRelatoriosCentralView() { return `<div class="bg-white p-6 rounded-2xl border font-bold">Central de Relatórios DRE Ativa</div>`; }
-
-        window.renderModalConselheiro = () => alert('Funcionalidade de modal conselheiro.');
-        window.renderModalNovoTitulo = () => alert('Funcionalidade de modal título.');
-        window.renderModalFormaMonetaria = () => alert('Funcionalidade de forma monetária.');
-        window.renderModalContaBancaria = () => alert('Funcionalidade de conta bancária.');
-        window.renderModalMorador = () => alert('Funcionalidade de novo morador.');
-        window.renderModalFornecedor = () => alert('Funcionalidade de novo fornecedor.');
-        window.renderModalEmpregado = () => alert('Funcionalidade de novo empregado.');
-        window.renderModalCategoria = () => alert('Funcionalidade de nova pasta.');
-        window.renderModalEstoque = () => alert('Funcionalidade de estoque.');
-        window.renderModalDocumento = () => alert('Funcionalidade de documentos.');
-        window.renderModalUsuario = () => alert('Funcionalidade de novo utilizador.');
 
         function excluirRegistro(col, id) {
             if(!confirm('Deseja eliminar este registo?')) return;
