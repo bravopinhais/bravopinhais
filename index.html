@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guardiões do Bravo - Gestão Condominial Completa</title>
+    <title>Guardiões do Bravo - Gestão Condominial Completa em Nuvem</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- FontAwesome Icons CDN -->
@@ -52,7 +52,6 @@
 
         let tempArquivoNome = ''; 
         let tempArquivoGzipBase64 = ''; 
-        let activeCharts = {};
 
         function escapeHTML(str) {
             if (typeof str !== 'string') return str || '';
@@ -70,9 +69,7 @@
                     const compressed = pako.deflate(uint8Array);
                     let binary = '';
                     const len = compressed.byteLength;
-                    for (let i = 0; i < len; i++) {
-                        binary += String.fromCharCode(compressed[i]);
-                    }
+                    for (let i = 0; i < len; i++) { binary += String.fromCharCode(compressed[i]); }
                     callback(btoa(binary), file.name);
                 } catch (err) { alert('Erro ao compactar ficheiro.'); }
             };
@@ -119,9 +116,15 @@
             financeiro: [{ id: 'fin_1', tipo: 'Receber', historico: 'Taxa Condominial Ordinária - Ap 137', valor: 2500.00, vencimento: '2026-10-15', competencia: '10/2026', status: 'Aberto' }],
             formas_monetarias: [{ id: 'fm_1', nome: 'MOVIMENTO BANCARIO', contaId: 'cb_1', multaPct: 2.0, jurosDiaPct: 0.033, baixaAutomatica: true, status: 'Ativo' }],
             contas_bancarias: [{ id: 'cb_1', banco: 'CAIXA BARAO', agencia: '1234-5', conta: '98765-4', saldo: 45800.00 }],
-            moradores: [{ id: 'mor_1', bloco: '1', apartamento: '137', nome: 'Alan Reis', email: 'alan@email.com', telefone: '(41) 99999-9999', tipo: 'Proprietário', petNome: 'Angel', petRaca: 'Gato Rajado', petCor: 'Cinza', petIdade: '2 anos', veiculoModelo: 'Onix', veiculoPlaca: 'ABC-1234', veiculoCor: 'Prata', vagaGaragem: 'Vaga 42', observacoes: 'Proprietário residente' }],
-            fornecedores: [{ id: 'for_1', cnpj: '00.000.000/0001-00', razaoSocial: 'Fornecedor Exemplo Ltda', email: 'contato@exemplo.com', telefone: '(41) 3333-4444' }],
-            empregados: [{ id: 'emp_1', nome: 'João da Silva', cargo: 'Porteiro', funcao: 'Controle de Acesso', telefone: '(41) 98888-1111' }],
+            moradores: [
+                { 
+                    id: 'mor_1', bloco: '1', apartamento: '137', nome: 'Alan Reis', email: 'alan@email.com', telefone: '(41) 99999-9999', tipo: 'Proprietário', 
+                    petNome: 'Angel', petRaca: 'Gato Rajado', petCor: 'Cinza', petIdade: '2 anos', 
+                    veiculoModelo: 'Onix', veiculoPlaca: 'ABC-1234', veiculoCor: 'Prata', vagaGaragem: 'Vaga 42', observacoes: 'Proprietário residente' 
+                }
+            ],
+            fornecedores: [{ id: 'for_1', cnpj: '00000000000100', razaoSocial: 'Fornecedor Exemplo Ltda', email: 'contato@exemplo.com', telefone: '(41) 3333-4444', contato: 'Carlos' }],
+            empregados: [{ id: 'emp_1', nome: 'João da Silva', cargo: 'Porteiro', funcao: 'Controle de Acesso', telefone: '(41) 98888-1111', email: 'joao@portaria.com' }],
             categorias: [{ id: 'cat_1', nome: 'Atas de Assembleia' }, { id: 'cat_2', nome: 'Contratos' }],
             estoque: [{ id: 'est_1', item: 'Extintor ABC', categoria: 'Segurança', qtd: 4, localizacao: 'Hall Principal' }],
             documentos: [{ id: 'doc_1', titulo: 'Ata Assembleia Outubro', pasta: 'Atas de Assembleia', nomeArquivo: 'ata_out.pdf', dataUpload: '2026-10-01' }],
@@ -195,7 +198,6 @@
         } catch (e) { sessao.usuarioLogado = null; }
 
         let tabsState = { openTabs: ['dashboard'], activeTab: 'dashboard' };
-        let morFiltros = { busca: '', blocoApFiltro: 'Todos', ordenacao: 'bloco', direcao: 'asc' };
 
         const MODULE_NAMES = {
             dashboard: 'Dashboard',
@@ -218,7 +220,6 @@
             tabsState.activeTab = moduloId;
             fecharMenuMobile();
             renderApp();
-            if (moduloId === 'dashboard') setTimeout(inicializarGraficosDashboard, 50);
         }
 
         function fecharAba(e, moduloId) {
@@ -227,7 +228,6 @@
             tabsState.openTabs = tabsState.openTabs.filter(id => id !== moduloId);
             if (tabsState.activeTab === moduloId) tabsState.activeTab = tabsState.openTabs[tabsState.openTabs.length - 1];
             renderApp();
-            if (tabsState.activeTab === 'dashboard') setTimeout(inicializarGraficosDashboard, 50);
         }
 
         function toggleMenuMobile() {
@@ -265,6 +265,55 @@
 
         function exportarParaPDF() { window.print(); }
 
+        // FUNÇÃO DE IMPORTAÇÃO DE PLANILHA CSV PARA RECUPERAR MORADORES
+        function importarMoradoresCSV(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const text = e.target.result;
+                    const lines = text.split('\n');
+                    if (lines.length < 2) { alert('Ficheiro CSV inválido ou vazio.'); return; }
+                    const headers = lines[0].split(';');
+                    let novosMoradores = [];
+                    for (let i = 1; i < lines.length; i++) {
+                        if (!lines[i].trim()) continue;
+                        const cols = lines[i].split(';');
+                        if (cols.length >= 3) {
+                            novosMoradores.push({
+                                id: 'mor_imp_' + Date.now() + '_' + i,
+                                bloco: (cols[0] || '1').replace(/"/g, ''),
+                                apartamento: (cols[1] || '').replace(/"/g, ''),
+                                nome: (cols[2] || '').replace(/"/g, ''),
+                                email: (cols[3] || '').replace(/"/g, ''),
+                                telefone: (cols[4] || '').replace(/"/g, ''),
+                                tipo: (cols[5] || 'Proprietário').replace(/"/g, ''),
+                                petNome: (cols[6] || '').replace(/"/g, ''),
+                                petRaca: (cols[7] || '').replace(/"/g, ''),
+                                veiculoModelo: (cols[8] || '').replace(/"/g, ''),
+                                veiculoPlaca: (cols[9] || '').replace(/"/g, ''),
+                                vagaGaragem: (cols[10] || '').replace(/"/g, '')
+                            });
+                        }
+                    }
+                    if (novosMoradores.length > 0) {
+                        if (confirm(`Foram encontrados ${novosMoradores.length} registos. Deseja substituir/atualizar a base de moradores?`)) {
+                            db.moradores = novosMoradores;
+                            salvarDados(db);
+                            renderMainOnly();
+                            alert('Moradores importados e recuperados com sucesso!');
+                        }
+                    } else {
+                        alert('Nenhum dado válido encontrado no CSV.');
+                    }
+                } catch (err) {
+                    alert('Erro ao processar o ficheiro CSV.');
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
         function realizarLogin(e) {
             e.preventDefault();
             const userInput = document.getElementById('login_user').value.trim();
@@ -275,7 +324,6 @@
                 sessao.usuarioLogado = userFound;
                 try { sessionStorage.setItem('guardioes_sessao', JSON.stringify(userFound)); } catch (err) {}
                 renderApp();
-                setTimeout(inicializarGraficosDashboard, 50);
             } else { alert('Credenciais incorretas!'); }
         }
 
@@ -295,7 +343,6 @@
                 try { sessionStorage.setItem('guardioes_sessao', JSON.stringify(sessao.usuarioLogado)); } catch (err) {}
                 alert('Palavra-passe alterada com sucesso!');
                 renderApp();
-                setTimeout(inicializarGraficosDashboard, 50);
             }
         }
 
@@ -382,7 +429,6 @@
             const mainEl = document.querySelector('main');
             if (mainEl) {
                 mainEl.innerHTML = renderModuleContent(tabsState.activeTab);
-                if (tabsState.activeTab === 'dashboard') setTimeout(inicializarGraficosDashboard, 50);
             }
         }
 
@@ -452,7 +498,6 @@
                     </div>
                 </div>
             `;
-            if (tabsState.activeTab === 'dashboard') setTimeout(inicializarGraficosDashboard, 50);
         }
 
         function renderModuleContent(moduloId) {
@@ -466,7 +511,15 @@
             else if (moduloId === 'financeiro') btnNovoHtml = `<button onclick="window.renderModalNovoTitulo()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Título</button>`;
             else if (moduloId === 'formas_monetarias') btnNovoHtml = `<button onclick="window.renderModalFormaMonetaria()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Nova Forma</button>`;
             else if (moduloId === 'contas_bancarias') btnNovoHtml = `<button onclick="window.renderModalContaBancaria()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Nova Conta</button>`;
-            else if (moduloId === 'moradores') btnNovoHtml = `<button onclick="window.renderModalMorador()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Morador</button>`;
+            else if (moduloId === 'moradores') {
+                btnNovoHtml = `
+                    <label class="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold text-xs cursor-pointer inline-flex items-center gap-1.5 shadow">
+                        <i class="fa-solid fa-file-arrow-up"></i> Subir/Recuperar Planilha CSV
+                        <input type="file" accept=".csv" onchange="importarMoradoresCSV(event)" class="hidden">
+                    </label>
+                    <button onclick="window.renderModalMorador()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Morador</button>
+                `;
+            }
             else if (moduloId === 'fornecedores') btnNovoHtml = `<button onclick="window.renderModalFornecedor()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Fornecedor</button>`;
             else if (moduloId === 'empregados') btnNovoHtml = `<button onclick="window.renderModalEmpregado()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Empregado</button>`;
             else if (moduloId === 'categorias') btnNovoHtml = `<button onclick="window.renderModalCategoria()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Nova Pasta</button>`;
@@ -508,7 +561,7 @@
         function fecharModalContainer() { document.getElementById('modal-container').innerHTML = ''; }
 
         // =========================================================================
-        // MÓDULOS COMPLETOS COM BOTÕES DE INSERIR, EDITAR E EXCLUIR
+        // MÓDULOS COM TODAS AS MELHORIAS RESTAURADAS
         // =========================================================================
         function renderDashboardView() {
             return `
@@ -528,7 +581,6 @@
                 </div>
             `;
         }
-        function inicializarGraficosDashboard() {}
 
         function renderCondominioView() {
             const cond = db.condominio || {};
@@ -536,10 +588,12 @@
             return `
                 <div class="space-y-6">
                     <div class="bg-white p-6 rounded-2xl border shadow-sm space-y-4">
-                        <h3 class="font-bold text-lg text-slate-800">Informações do Condomínio</h3>
+                        <h3 class="font-bold text-lg text-slate-800">Informações Completas do Condomínio</h3>
                         <form class="grid grid-cols-1 md:grid-cols-3 gap-4" onsubmit="event.preventDefault(); salvarDadosCondominio();">
                             <div class="md:col-span-2"><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="c_nome" value="${escapeHTML(cond.nome)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
                             <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">CNPJ</label><input type="text" id="c_cnpj" value="${escapeHTML(cond.cnpj)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Telefone</label><input type="text" id="c_tel" value="${escapeHTML(cond.telefone)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div class="md:col-span-2"><label class="block text-xs font-bold uppercase text-slate-600 mb-1">E-mail</label><input type="text" id="c_email" value="${escapeHTML(cond.email)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
                             <div class="md:col-span-3"><button type="button" onclick="salvarDadosCondominio()" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-xs font-bold">Salvar Alterações</button></div>
                         </form>
                     </div>
@@ -557,8 +611,10 @@
         function salvarDadosCondominio() {
             db.condominio.nome = document.getElementById('c_nome').value;
             db.condominio.cnpj = document.getElementById('c_cnpj').value;
+            db.condominio.telefone = document.getElementById('c_tel').value;
+            db.condominio.email = document.getElementById('c_email').value;
             salvarDados(db);
-            alert('Dados do condomínio atualizados na nuvem!');
+            alert('Dados do condomínio atualizados na nuvem com sucesso!');
         }
 
         window.renderModalConselheiro = function(id = null) {
@@ -571,6 +627,7 @@
                             <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_c_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
                             <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Cargo</label><input type="text" id="m_c_cargo" required value="${escapeHTML(item.cargo)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
                             <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Bloco/Ap</label><input type="text" id="m_c_ap" value="${escapeHTML(item.BlocoAp)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Telefone</label><input type="text" id="m_c_tel" value="${escapeHTML(item.telefone)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
                             <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-xs font-bold">Salvar</button></div>
                         </form>
                     </div>
@@ -585,7 +642,8 @@
                 id: id && id !== 'null' ? id : 'cons_' + Date.now(),
                 nome: document.getElementById('m_c_nome').value,
                 cargo: document.getElementById('m_c_cargo').value,
-                BlocoAp: document.getElementById('m_c_ap').value
+                BlocoAp: document.getElementById('m_c_ap').value,
+                telefone: document.getElementById('m_c_tel').value
             };
             const idx = db.conselheiros.findIndex(x => x.id === obj.id);
             if(idx !== -1) db.conselheiros[idx] = obj; else db.conselheiros.push(obj);
@@ -696,14 +754,36 @@
             salvarDados(db); fecharModalContainer(); renderMainOnly();
         };
 
+        // MÓDULO DE MORADORES COM PET, VAGAS E RESTAURAÇÃO DE PLANILHA
         function renderMoradoresView() {
             const moradores = db.moradores || [];
             return `
                 <div class="space-y-4">
                     <div class="bg-white rounded-xl border overflow-hidden">
                         <table class="w-full text-left text-xs">
-                            <thead class="bg-slate-800 text-white"><tr><th class="p-3">Bloco/Ap</th><th class="p-3">Nome</th><th class="p-3">Tipo</th><th class="p-3 text-center">Ações</th></tr></thead>
-                            <tbody class="divide-y">${moradores.map(m => `<tr><td class="p-3 font-bold">Bloco ${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</td><td class="p-3">${escapeHTML(m.nome)}</td><td class="p-3">${escapeHTML(m.tipo)}</td><td class="p-3 text-center"><button onclick="window.renderModalMorador('${m.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('moradores','${m.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
+                            <thead class="bg-slate-800 text-white">
+                                <tr>
+                                    <th class="p-3">Bloco/Ap</th>
+                                    <th class="p-3">Nome</th>
+                                    <th class="p-3">Pet (Nome / Raça)</th>
+                                    <th class="p-3">Veículo / Vaga</th>
+                                    <th class="p-3 text-center">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y">
+                                ${moradores.map(m => `
+                                    <tr>
+                                        <td class="p-3 font-bold">Bloco ${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</td>
+                                        <td class="p-3">${escapeHTML(m.nome)}</td>
+                                        <td class="p-3 text-slate-600">${m.petNome ? `<i class="fa-solid fa-paw text-teal-600"></i> ${escapeHTML(m.petNome)} (${escapeHTML(m.petRaca || '-')})` : '<span class="text-slate-400">Sem pet</span>'}</td>
+                                        <td class="p-3 text-slate-600">${m.vagaGaragem ? `<i class="fa-solid fa-car text-teal-600"></i> ${escapeHTML(m.veiculoModelo || 'Carro')} (${escapeHTML(m.vagaGaragem)})` : '<span class="text-slate-400">Sem vaga</span>'}</td>
+                                        <td class="p-3 text-center">
+                                            <button onclick="window.renderModalMorador('${m.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                                            <button onclick="excluirRegistro('moradores','${m.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                                        </td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
                         </table>
                     </div>
                 </div>
@@ -711,19 +791,46 @@
         }
 
         window.renderModalMorador = function(id = null) {
-            const m = id ? (db.moradores||[]).find(x => x.id === id) : { id: '', bloco: '1', apartamento: '', nome: '', tipo: 'Proprietário' };
+            const m = id ? (db.moradores||[]).find(x => x.id === id) : { 
+                id: '', bloco: '1', apartamento: '', nome: '', email: '', telefone: '', tipo: 'Proprietário', 
+                petNome: '', petRaca: '', petCor: '', petIdade: '', veiculoModelo: '', veiculoPlaca: '', veiculoCor: '', vagaGaragem: '', observacoes: '' 
+            };
             abrirModalContainer(`
                 <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
-                    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-                        <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Morador' : 'Novo Morador'}</h3>
-                        <form onsubmit="salvarModalMorador(event, '${id}')" class="space-y-3">
-                            <div class="grid grid-cols-2 gap-2">
-                                <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Bloco</label><input type="text" id="m_m_bloco" required value="${escapeHTML(m.bloco)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
-                                <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Apartamento</label><input type="text" id="m_m_ap" required value="${escapeHTML(m.apartamento)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+                        <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Morador & Unidade' : 'Novo Morador & Unidade'}</h3>
+                        <form onsubmit="salvarModalMorador(event, '${id}')" class="space-y-4 text-xs">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="block font-bold uppercase text-slate-600 mb-1">Bloco</label><input type="text" id="m_m_bloco" required value="${escapeHTML(m.bloco)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                                <div><label class="block font-bold uppercase text-slate-600 mb-1">Apartamento</label><input type="text" id="m_m_ap" required value="${escapeHTML(m.apartamento)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
                             </div>
-                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_m_nome" required value="${escapeHTML(m.nome)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Tipo</label><select id="m_m_tipo" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"><option value="Proprietário" ${m.tipo==='Proprietário'?'selected':''}>Proprietário</option><option value="Inquilino" ${m.tipo==='Inquilino'?'selected':''}>Inquilino</option></select></div>
-                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-xs font-bold">Salvar</button></div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="block font-bold uppercase text-slate-600 mb-1">Nome Completo</label><input type="text" id="m_m_nome" required value="${escapeHTML(m.nome)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                                <div><label class="block font-bold uppercase text-slate-600 mb-1">Tipo de Vínculo</label><select id="m_m_tipo" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"><option value="Proprietário" ${m.tipo==='Proprietário'?'selected':''}>Proprietário</option><option value="Inquilino" ${m.tipo==='Inquilino'?'selected':''}>Inquilino</option></select></div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-3">
+                                <div><label class="block font-bold uppercase text-slate-600 mb-1">Telefone</label><input type="text" id="m_m_tel" value="${escapeHTML(m.telefone)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                                <div><label class="block font-bold uppercase text-slate-600 mb-1">E-mail</label><input type="email" id="m_m_email" value="${escapeHTML(m.email)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                            </div>
+                            <div class="border-t pt-3">
+                                <h4 class="font-bold text-teal-700 uppercase mb-2"><i class="fa-solid fa-paw"></i> Informações do Pet</h4>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div><label class="block font-bold uppercase text-slate-600 mb-1">Nome do Pet</label><input type="text" id="m_m_pet_nome" value="${escapeHTML(m.petNome)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                                    <div><label class="block font-bold uppercase text-slate-600 mb-1">Raça / Espécie</label><input type="text" id="m_m_pet_raca" value="${escapeHTML(m.petRaca)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                                </div>
+                            </div>
+                            <div class="border-t pt-3">
+                                <h4 class="font-bold text-teal-700 uppercase mb-2"><i class="fa-solid fa-car"></i> Veículo & Garagem</h4>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <div><label class="block font-bold uppercase text-slate-600 mb-1">Modelo</label><input type="text" id="m_m_veiculo" value="${escapeHTML(m.veiculoModelo)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                                    <div><label class="block font-bold uppercase text-slate-600 mb-1">Placa</label><input type="text" id="m_m_placa" value="${escapeHTML(m.veiculoPlaca)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                                    <div><label class="block font-bold uppercase text-slate-600 mb-1">Nº Vaga Garagem</label><input type="text" id="m_m_vaga" value="${escapeHTML(m.vagaGaragem)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                                </div>
+                            </div>
+                            <div class="flex justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-bold">Cancelar</button>
+                                <button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg font-bold">Salvar Morador</button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -738,33 +845,67 @@
                 bloco: document.getElementById('m_m_bloco').value,
                 apartamento: document.getElementById('m_m_ap').value,
                 nome: document.getElementById('m_m_nome').value,
-                tipo: document.getElementById('m_m_tipo').value
+                tipo: document.getElementById('m_m_tipo').value,
+                telefone: document.getElementById('m_m_tel').value,
+                email: document.getElementById('m_m_email').value,
+                petNome: document.getElementById('m_m_pet_nome').value,
+                petRaca: document.getElementById('m_m_pet_raca').value,
+                veiculoModelo: document.getElementById('m_m_veiculo').value,
+                veiculoPlaca: document.getElementById('m_m_placa').value,
+                vagaGaragem: document.getElementById('m_m_vaga').value
             };
             const idx = db.moradores.findIndex(x => x.id === obj.id);
             if(idx !== -1) db.moradores[idx] = obj; else db.moradores.push(obj);
             salvarDados(db); fecharModalContainer(); renderMainOnly();
         };
 
+        // MÓDULO DE FORNECEDORES COM BUSCA AUTOMÁTICA DE CNPJ
         function renderFornecedoresView() {
             const list = db.fornecedores || [];
-            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">CNPJ</th><th class="p-3">Razão Social</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(f => `<tr><td class="p-3 font-mono">${escapeHTML(f.cnpj)}</td><td class="p-3 font-bold">${escapeHTML(f.razaoSocial)}</td><td class="p-3 text-center"><button onclick="window.renderModalFornecedor('${f.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('fornecedores','${f.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">CNPJ</th><th class="p-3">Razão Social</th><th class="p-3">Contato / Telefone</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(f => `<tr><td class="p-3 font-mono">${escapeHTML(f.cnpj)}</td><td class="p-3 font-bold">${escapeHTML(f.razaoSocial)}</td><td class="p-3">${escapeHTML(f.contato || '-')} (${escapeHTML(f.telefone || '-')})</td><td class="p-3 text-center"><button onclick="window.renderModalFornecedor('${f.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('fornecedores','${f.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
         }
 
         window.renderModalFornecedor = function(id = null) {
-            const item = id ? (db.fornecedores||[]).find(x => x.id === id) : { id: '', cnpj: '', razaoSocial: '' };
+            const item = id ? (db.fornecedores||[]).find(x => x.id === id) : { id: '', cnpj: '', razaoSocial: '', telefone: '', email: '', contato: '' };
             abrirModalContainer(`
                 <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Fornecedor' : 'Novo Fornecedor'}</h3>
-                        <form onsubmit="salvarModalFornecedor(event, '${id}')" class="space-y-3">
-                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">CNPJ</label><input type="text" id="m_for_cnpj" required value="${escapeHTML(item.cnpj)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Razão Social</label><input type="text" id="m_for_razao" required value="${escapeHTML(item.razaoSocial)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
-                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-xs font-bold">Salvar</button></div>
+                        <form onsubmit="salvarModalFornecedor(event, '${id}')" class="space-y-3 text-xs">
+                            <div>
+                                <label class="block font-bold uppercase text-slate-600 mb-1">CNPJ</label>
+                                <div class="flex gap-2">
+                                    <input type="text" id="m_for_cnpj" required value="${escapeHTML(item.cnpj)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50">
+                                    <button type="button" onclick="buscarCNPJAutomatico()" class="px-3 bg-teal-600 text-white rounded-lg font-bold" title="Buscar CNPJ"><i class="fa-solid fa-magnifying-glass"></i></button>
+                                </div>
+                            </div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Razão Social</label><input type="text" id="m_for_razao" required value="${escapeHTML(item.razaoSocial)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Nome do Contato</label><input type="text" id="m_for_contato" value="${escapeHTML(item.contato)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Telefone</label><input type="text" id="m_for_tel" value="${escapeHTML(item.telefone)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">E-mail</label><input type="email" id="m_for_email" value="${escapeHTML(item.email)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg font-bold">Salvar</button></div>
                         </form>
                     </div>
                 </div>
             `);
         };
+
+        // FUNÇÃO DE BUSCA AUTOMÁTICA DE CNPJ NA API PÚBLICA
+        async function buscarCNPJAutomatico() {
+            let cnpjInput = document.getElementById('m_for_cnpj').value.replace(/\D/g, '');
+            if (cnpjInput.length !== 14) { alert('Insira um CNPJ válido com 14 dígitos.'); return; }
+            try {
+                const res = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpjInput}`);
+                if (!res.ok) throw new Error('CNPJ não encontrado');
+                const data = await res.json();
+                document.getElementById('m_for_razao').value = data.razao_social || data.nome_fantasia || '';
+                if(data.ddd_telefone_1) document.getElementById('m_for_tel').value = data.ddd_telefone_1;
+                if(data.email) document.getElementById('m_for_email').value = data.email;
+                alert('Dados do CNPJ preenchidos automaticamente com sucesso!');
+            } catch (err) {
+                alert('Não foi possível carregar os dados automaticamente para este CNPJ.');
+            }
+        }
 
         window.salvarModalFornecedor = function(e, id) {
             e.preventDefault();
@@ -772,7 +913,10 @@
             const obj = {
                 id: id && id !== 'null' ? id : 'for_' + Date.now(),
                 cnpj: document.getElementById('m_for_cnpj').value,
-                razaoSocial: document.getElementById('m_for_razao').value
+                razaoSocial: document.getElementById('m_for_razao').value,
+                contato: document.getElementById('m_for_contato').value,
+                telefone: document.getElementById('m_for_tel').value,
+                email: document.getElementById('m_for_email').value
             };
             const idx = db.fornecedores.findIndex(x => x.id === obj.id);
             if(idx !== -1) db.fornecedores[idx] = obj; else db.fornecedores.push(obj);
@@ -781,11 +925,11 @@
 
         function renderEmpregadosView() {
             const list = db.empregados || [];
-            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3">Cargo</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(e => `<tr><td class="p-3 font-bold">${escapeHTML(e.nome)}</td><td class="p-3">${escapeHTML(e.cargo)}</td><td class="p-3 text-center"><button onclick="window.renderModalEmpregado('${e.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('empregados','${e.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3">Cargo</th><th class="p-3">Telefone</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(e => `<tr><td class="p-3 font-bold">${escapeHTML(e.nome)}</td><td class="p-3">${escapeHTML(e.cargo)}</td><td class="p-3">${escapeHTML(e.telefone || '-')}</td><td class="p-3 text-center"><button onclick="window.renderModalEmpregado('${e.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('empregados','${e.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
         }
 
         window.renderModalEmpregado = function(id = null) {
-            const item = id ? (db.empregados||[]).find(x => x.id === id) : { id: '', nome: '', cargo: '' };
+            const item = id ? (db.empregados||[]).find(x => x.id === id) : { id: '', nome: '', cargo: '', telefone: '', email: '' };
             abrirModalContainer(`
                 <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
@@ -793,6 +937,8 @@
                         <form onsubmit="salvarModalEmpregado(event, '${id}')" class="space-y-3">
                             <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_emp_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
                             <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Cargo</label><input type="text" id="m_emp_cargo" required value="${escapeHTML(item.cargo)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Telefone de Contato</label><input type="text" id="m_emp_tel" value="${escapeHTML(item.telefone)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">E-mail</label><input type="email" id="m_emp_email" value="${escapeHTML(item.email)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
                             <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-xs font-bold">Salvar</button></div>
                         </form>
                     </div>
@@ -806,7 +952,9 @@
             const obj = {
                 id: id && id !== 'null' ? id : 'emp_' + Date.now(),
                 nome: document.getElementById('m_emp_nome').value,
-                cargo: document.getElementById('m_emp_cargo').value
+                cargo: document.getElementById('m_emp_cargo').value,
+                telefone: document.getElementById('m_emp_tel').value,
+                email: document.getElementById('m_emp_email').value
             };
             const idx = db.empregados.findIndex(x => x.id === obj.id);
             if(idx !== -1) db.empregados[idx] = obj; else db.empregados.push(obj);
