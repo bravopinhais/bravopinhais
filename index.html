@@ -253,10 +253,10 @@
             if (!dados || dados.length === 0) { alert('Não há dados disponíveis.'); return; }
             const sanitizeData = dados.map(item => { let obj = { ...item }; delete obj.arquivoCompactadoGzip; return obj; });
             const keys = Object.keys(sanitizeData[0]);
-            let csvContent = '\uFEFF' + keys.join(';') + '\n';
+            let csvContent = '\uFEFF' + keys.join(',') + '\n';
             sanitizeData.forEach(row => {
                 const values = keys.map(k => `"${String(row[k] ?? '').replace(/"/g, '""')}"`);
-                csvContent += values.join(';') + '\n';
+                csvContent += values.join(',') + '\n';
             });
             const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
@@ -266,6 +266,7 @@
 
         function exportarParaPDF() { window.print(); }
 
+        // LEITOR INTELIGENTE DE CSV (Compatível com relatórios exportados e arquivos externos)
         function importarMoradoresCSV(event) {
             const file = event.target.files[0];
             if (!file) return;
@@ -281,29 +282,56 @@
                         alert('O ficheiro selecionado parece ser binário ou compactado. Selecione um CSV válido.');
                         return;
                     }
-                    const lines = text.split('\n');
+                    const lines = text.split(/\r\n|\n/);
                     if (lines.length < 2) { alert('Ficheiro CSV inválido ou vazio.'); return; }
+
+                    // Detetar separador (, ou ;)
+                    const headerLine = lines[0];
+                    const separator = headerLine.includes(';') ? ';' : ',';
+                    const headers = headerLine.split(separator).map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
+
+                    let idxBloco = headers.indexOf('bloco');
+                    let idxAp = headers.indexOf('apartamento') !== -1 ? headers.indexOf('apartamento') : headers.indexOf('ap');
+                    let idxNome = headers.indexOf('nome') !== -1 ? headers.indexOf('nome') : headers.indexOf('nome completo');
+                    let idxEmail = headers.indexOf('email');
+                    let idxTel = headers.indexOf('telefone');
+                    let idxTipo = headers.indexOf('tipo');
+                    let idxObs = headers.indexOf('observacoes') !== -1 ? headers.indexOf('observacoes') : headers.indexOf('observações');
+
                     let novosMoradores = [];
                     for (let i = 1; i < lines.length; i++) {
                         if (!lines[i].trim()) continue;
-                        const cols = lines[i].split(';');
-                        if (cols.length >= 3) {
+                        
+                        // Parse correto considerando valores entre aspas
+                        let cols = [];
+                        let inQuotes = false;
+                        let currentCol = '';
+                        for (let char of lines[i]) {
+                            if (char === '"') {
+                                inQuotes = !inQuotes;
+                            } else if (char === separator && !inQuotes) {
+                                cols.push(currentCol.trim().replace(/^"|"$/g, ''));
+                                currentCol = '';
+                            } else {
+                                currentCol += char;
+                            }
+                        }
+                        cols.push(currentCol.trim().replace(/^"|"$/g, ''));
+
+                        if (cols.length >= 2) {
                             novosMoradores.push({
                                 id: 'mor_imp_' + Date.now() + '_' + i,
-                                bloco: (cols[0] || '1').replace(/"/g, ''),
-                                apartamento: (cols[1] || '').replace(/"/g, ''),
-                                nome: (cols[2] || '').replace(/"/g, ''),
-                                email: (cols[3] || '').replace(/"/g, ''),
-                                telefone: (cols[4] || '').replace(/"/g, ''),
-                                tipo: (cols[5] || 'Proprietário').replace(/"/g, ''),
-                                petNome: (cols[6] || '').replace(/"/g, ''),
-                                petRaca: (cols[7] || '').replace(/"/g, ''),
-                                veiculoModelo: (cols[8] || '').replace(/"/g, ''),
-                                veiculoPlaca: (cols[9] || '').replace(/"/g, ''),
-                                vagaGaragem: (cols[10] || '').replace(/"/g, '')
+                                bloco: idxBloco !== -1 && cols[idxBloco] ? cols[idxBloco] : (cols[0] || '1'),
+                                apartamento: idxAp !== -1 && cols[idxAp] ? cols[idxAp] : (cols[1] || ''),
+                                nome: idxNome !== -1 && cols[idxNome] ? cols[idxNome] : (cols[2] || 'Morador'),
+                                email: idxEmail !== -1 && cols[idxEmail] ? cols[idxEmail] : (cols[3] || ''),
+                                telefone: idxTel !== -1 && cols[idxTel] ? cols[idxTel] : (cols[4] || ''),
+                                tipo: idxTipo !== -1 && cols[idxTipo] ? cols[idxTipo] : 'Proprietário',
+                                observacoes: idxObs !== -1 && cols[idxObs] ? cols[idxObs] : (cols[7] || '')
                             });
                         }
                     }
+
                     if (novosMoradores.length > 0) {
                         if (confirm(`Foram encontrados ${novosMoradores.length} registos. Deseja substituir/atualizar a base de moradores?`)) {
                             db.moradores = novosMoradores;
@@ -839,7 +867,6 @@
         function toggleMenuFiltroColuna(menuId) {
             const menu = document.getElementById(menuId);
             if (!menu) return;
-            // Fechar outros menus abertos
             document.querySelectorAll('[id^="menu-filtro-"]').forEach(m => {
                 if (m.id !== menuId) m.classList.add('hidden');
             });
