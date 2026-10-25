@@ -93,6 +93,27 @@
             } catch (err) { alert('Erro ao extrair ficheiro.'); }
         }
 
+        function visualizarArquivo(base64Gzip, nomeOriginal) {
+            try {
+                const binaryString = atob(base64Gzip);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); }
+                const decompressed = pako.inflate(bytes);
+                
+                // Determinar MIME type básico
+                let mimeType = 'application/octet-stream';
+                const ext = nomeOriginal.split('.').pop().toLowerCase();
+                if (ext === 'pdf') mimeType = 'application/pdf';
+                else if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) mimeType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+                else if (ext === 'txt') mimeType = 'text/plain';
+
+                const blob = new Blob([decompressed], { type: mimeType });
+                const url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
+            } catch (err) { alert('Erro ao visualizar o ficheiro.'); }
+        }
+
         const DEFAULT_DATA = {
             condominio: {
                 nome: 'Condomínio Guardiões do Bravo',
@@ -959,7 +980,10 @@
                                         <td class="p-3 font-bold">${escapeHTML(d.titulo)}</td>
                                         <td class="p-3 font-mono">${escapeHTML(d.nomeArquivo)}</td>
                                         <td class="p-3 text-center flex items-center justify-center gap-1">
-                                            ${d.arquivoCompactadoGzip ? `<button onclick="extrairEDownloadArquivo('${d.arquivoCompactadoGzip}', '${escapeHTML(d.nomeArquivo)}')" class="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded" title="Baixar Documento Descompactado"><i class="fa-solid fa-download"></i></button>` : ''}
+                                            ${d.arquivoCompactadoGzip ? `
+                                                <button onclick="visualizarArquivo('${d.arquivoCompactadoGzip}', '${escapeHTML(d.nomeArquivo)}')" class="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded" title="Visualizar Documento"><i class="fa-solid fa-eye"></i></button>
+                                                <button onclick="extrairEDownloadArquivo('${d.arquivoCompactadoGzip}', '${escapeHTML(d.nomeArquivo)}')" class="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded" title="Baixar Documento Descompactado"><i class="fa-solid fa-download"></i></button>
+                                            ` : ''}
                                             <button onclick="window.renderModalDocumento('${d.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded" title="Editar Documento"><i class="fa-solid fa-pen"></i></button>
                                             <button onclick="excluirRegistro('documentos','${d.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded" title="Excluir Documento"><i class="fa-solid fa-trash"></i></button>
                                         </td>
