@@ -129,7 +129,6 @@
             logs: []
         };
 
-        // RECUPERAÇÃO SEGURA: Preserva rigorosamente tudo o que já foi guardado anteriormente
         let db = DEFAULT_DATA;
         const dadosLocaisSalvos = localStorage.getItem('guardioes_bravo_db');
         if (dadosLocaisSalvos) {
@@ -657,7 +656,7 @@
             salvarDados(db); fecharModalContainer(); renderMainOnly();
         };
 
-        // MÓDULO DE MORADORES COM FILTROS E CAMPOS PET, VAGA E ESTACIONAMENTO REINTEGRADOS
+        // MÓDULO DE MORADORES COM FILTROS E CAMPOS PET, VAGA E ESTACIONAMENTO GARANTIDOS
         function renderMoradoresView() {
             let moradores = db.moradores || [];
             
