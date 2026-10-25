@@ -616,7 +616,6 @@
             salvarDados(db); fecharModalContainer(); renderMainOnly();
         };
 
-        // CONTAS BANCÁRIAS: COM OPÇÃO DE INSERIR E EXCLUIR
         function renderContasBancariasView() {
             const list = db.contas_bancarias || [];
             return `
@@ -658,28 +657,60 @@
             salvarDados(db); fecharModalContainer(); renderMainOnly();
         };
 
+        // MÓDULO DE MORADORES COM FILTROS NAS COLUNAS RESTAURADOS
         function renderMoradoresView() {
             let moradores = db.moradores || [];
+            if (filtroAtivoMoradores.bloco) moradores = moradores.filter(m => String(m.bloco) === String(filtroAtivoMoradores.bloco));
+            if (filtroAtivoMoradores.nome) {
+                const t = filtroAtivoMoradores.nome.toLowerCase();
+                moradores = moradores.filter(m => (m.nome||'').toLowerCase().includes(t) || (m.apartamento||'').toLowerCase().includes(t));
+            }
+            const blocosDisponiveis = [...new Set((db.moradores||[]).map(m => m.bloco))];
             return `
                 <div class="space-y-4">
                     <div class="bg-white rounded-xl border overflow-visible">
                         <table class="w-full text-left text-xs relative">
                             <thead class="bg-slate-800 text-white">
                                 <tr>
-                                    <th class="p-3">BLOCO/AP</th>
-                                    <th class="p-3">NOME</th>
-                                    <th class="p-3">Pet</th>
-                                    <th class="p-3">Vaga</th>
+                                    <th class="p-3 relative">
+                                        <div class="flex items-center justify-between cursor-pointer select-none" onclick="toggleMenuFiltroColuna('menu-filtro-bloco')">
+                                            <span>BLOCO/AP <i class="fa-solid fa-filter text-[10px] ${filtroAtivoMoradores.bloco ? 'text-teal-400' : 'text-slate-400'}"></i></span>
+                                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                                        </div>
+                                        <div id="menu-filtro-bloco" class="hidden absolute left-0 top-full mt-1 bg-white text-slate-800 p-3 rounded-xl shadow-2xl border w-48 z-30">
+                                            <p class="font-bold text-[10px] uppercase text-slate-400 mb-2">Filtrar Bloco</p>
+                                            <div class="space-y-1 max-h-40 overflow-y-auto">
+                                                <button onclick="filtrarMoradoresBloco('')" class="w-full text-left px-2 py-1.5 rounded hover:bg-slate-100 font-bold ${!filtroAtivoMoradores.bloco ? 'bg-teal-50 text-teal-700' : ''}">[ Todos ]</button>
+                                                ${blocosDisponiveis.map(b => `<button onclick="filtrarMoradoresBloco('${b}')" class="w-full text-left px-2 py-1.5 rounded hover:bg-slate-100 font-bold ${filtroAtivoMoradores.bloco===b?'bg-teal-50 text-teal-700':''}">Bloco ${escapeHTML(b)}</button>`).join('')}
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th class="p-3 relative">
+                                        <div class="flex items-center justify-between cursor-pointer select-none" onclick="toggleMenuFiltroColuna('menu-filtro-nome')">
+                                            <span>NOME <i class="fa-solid fa-filter text-[10px] ${filtroAtivoMoradores.nome ? 'text-teal-400' : 'text-slate-400'}"></i></span>
+                                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                                        </div>
+                                        <div id="menu-filtro-nome" class="hidden absolute left-0 top-full mt-1 bg-white text-slate-800 p-3 rounded-xl shadow-2xl border w-60 z-30">
+                                            <p class="font-bold text-[10px] uppercase text-slate-400 mb-2">Pesquisar Nome</p>
+                                            <div class="space-y-2">
+                                                <input type="text" id="input-filtro-nome-val" value="${escapeHTML(filtroAtivoMoradores.nome)}" placeholder="Pesquisar..." class="w-full p-2 border rounded-lg text-xs bg-slate-50">
+                                                <div class="flex justify-end gap-1">
+                                                    <button onclick="filtroAtivoMoradores.nome=''; renderMainOnly();" class="px-2 py-1 bg-slate-200 rounded text-[10px] font-bold">Limpar</button>
+                                                    <button onclick="filtroAtivoMoradores.nome = document.getElementById('input-filtro-nome-val').value; renderMainOnly();" class="px-2 py-1 bg-teal-600 text-white rounded text-[10px] font-bold">Filtrar</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th class="p-3">Telefone</th>
                                     <th class="p-3 text-center">Ações</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y">
-                                ${moradores.length === 0 ? `<tr><td colspan="5" class="p-6 text-center text-slate-400">Nenhum morador registado.</td></tr>` : moradores.map(m => `
+                                ${moradores.length === 0 ? `<tr><td colspan="4" class="p-6 text-center text-slate-400">Nenhum morador registado.</td></tr>` : moradores.map(m => `
                                     <tr>
                                         <td class="p-3 font-bold">Bloco ${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</td>
                                         <td class="p-3">${escapeHTML(m.nome)}</td>
-                                        <td class="p-3 text-slate-600">${m.petNome ? `<i class="fa-solid fa-paw text-teal-600"></i> ${escapeHTML(m.petNome)}` : '-'}</td>
-                                        <td class="p-3 text-slate-600">${m.vagaGaragem ? `<i class="fa-solid fa-car text-teal-600"></i> ${escapeHTML(m.vagaGaragem)}` : '-'}</td>
+                                        <td class="p-3">${escapeHTML(m.telefone || '-')}</td>
                                         <td class="p-3 text-center">
                                             <button onclick="window.renderModalMorador('${m.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button>
                                             <button onclick="excluirRegistro('moradores','${m.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button>
@@ -693,8 +724,20 @@
             `;
         }
 
+        function toggleMenuFiltroColuna(menuId) {
+            const menu = document.getElementById(menuId);
+            if (!menu) return;
+            document.querySelectorAll('[id^="menu-filtro-"]').forEach(m => { if (m.id !== menuId) m.classList.add('hidden'); });
+            menu.classList.toggle('hidden');
+        }
+
+        function filtrarMoradoresBloco(bloco) {
+            filtroAtivoMoradores.bloco = bloco;
+            renderMainOnly();
+        }
+
         window.renderModalMorador = function(id = null) {
-            const m = id ? (db.moradores||[]).find(x => x.id === id) : { id: '', bloco: '1', apartamento: '', nome: '', telefone: '', petNome: '', vagaGaragem: '' };
+            const m = id ? (db.moradores||[]).find(x => x.id === id) : { id: '', bloco: '1', apartamento: '', nome: '', telefone: '' };
             abrirModalContainer(`
                 <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
@@ -822,7 +865,6 @@
             salvarDados(db); fecharModalContainer(); renderMainOnly();
         };
 
-        // ESTOQUE: COM OPÇÃO DE INSERIR E EXCLUIR
         function renderEstoqueView() {
             const list = db.estoque || [];
             return `
@@ -864,7 +906,6 @@
             salvarDados(db); fecharModalContainer(); renderMainOnly();
         };
 
-        // GESTÃO DE DOCUMENTOS: APENAS INSERIR E EXCLUIR
         function renderDocumentosView() {
             const docs = db.documentos || [];
             return `
@@ -915,7 +956,6 @@
             salvarDados(db); fecharModalContainer(); renderMainOnly();
         };
 
-        // GESTÃO DE USUÁRIOS COMPLETA (SENHA, E-MAIL, CARGO E REDEFINIÇÃO)
         function renderUsuariosView() {
             const users = db.usuarios || [];
             return `
