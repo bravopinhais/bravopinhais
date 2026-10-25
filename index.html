@@ -849,8 +849,8 @@
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Empregado' : 'Novo Empregado'}</h3>
                         <form onsubmit="salvarModalEmpregado(event, '${id}')" class="space-y-3">
-                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_emp_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
-                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Cargo</label><input type="text" id="m_emp_cargo" required value="${escapeHTML(item.cargo)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_emp_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Cargo</label><input type="text" id="m_emp_cargo" required value="${escapeHTML(item.cargo)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
                             <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg font-bold">Salvar</button></div>
                         </form>
                     </div>
@@ -946,14 +946,16 @@
                         <table class="w-full text-left text-xs">
                             <thead class="bg-slate-800 text-white">
                                 <tr>
+                                    <th class="p-3">Pasta</th>
                                     <th class="p-3">Título</th>
                                     <th class="p-3">Ficheiro (Gzip)</th>
                                     <th class="p-3 text-center">Ações</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y">
-                                ${docs.length === 0 ? `<tr><td colspan="3" class="p-6 text-center text-slate-400">Nenhum documento inserido. Clique em "Inserir Documento" acima.</td></tr>` : docs.map(d => `
+                                ${docs.length === 0 ? `<tr><td colspan="4" class="p-6 text-center text-slate-400">Nenhum documento inserido. Clique em "Inserir Documento" acima.</td></tr>` : docs.map(d => `
                                     <tr>
+                                        <td class="p-3"><span class="px-2.5 py-1 bg-teal-50 text-teal-700 rounded font-bold"><i class="fa-solid fa-folder"></i> ${escapeHTML(d.pasta || 'Geral')}</span></td>
                                         <td class="p-3 font-bold">${escapeHTML(d.titulo)}</td>
                                         <td class="p-3 font-mono">${escapeHTML(d.nomeArquivo)}</td>
                                         <td class="p-3 text-center flex items-center justify-center gap-1">
@@ -971,9 +973,12 @@
         }
 
         window.renderModalDocumento = function(id = null) {
-            const item = id ? (db.documentos||[]).find(x => x.id === id) : { id: '', titulo: '', nomeArquivo: '', arquivoCompactadoGzip: '' };
+            const item = id ? (db.documentos||[]).find(x => x.id === id) : { id: '', titulo: '', pasta: 'Geral', nomeArquivo: '', arquivoCompactadoGzip: '' };
             tempArquivoGzipBase64 = item.arquivoCompactadoGzip || '';
             tempArquivoNome = item.nomeArquivo || '';
+
+            const categoriasDisponiveis = (db.categorias || []).map(c => c.nome);
+            if (categoriasDisponiveis.length === 0) categoriasDisponiveis.push('Geral', 'Assembleias', 'Financeiro', 'Manutenção');
 
             abrirModalContainer(`
                 <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
@@ -983,6 +988,12 @@
                             <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
                         </div>
                         <form onsubmit="salvarModalDocumento(event, '${id}')" class="space-y-3 text-xs">
+                            <div>
+                                <label class="block font-bold uppercase text-slate-600 mb-1">Pasta / Categoria</label>
+                                <select id="m_doc_pasta" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50">
+                                    ${categoriasDisponiveis.map(cat => `<option value="${escapeHTML(cat)}" ${item.pasta === cat ? 'selected' : ''}>${escapeHTML(cat)}</option>`).join('')}
+                                </select>
+                            </div>
                             <div><label class="block font-bold uppercase text-slate-600 mb-1">Título do Documento</label><input type="text" id="m_doc_titulo" required value="${escapeHTML(item.titulo)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50" placeholder="Ex: Ata de Assembleia 2026"></div>
                             <div>
                                 <label class="block font-bold uppercase text-slate-600 mb-1">Ficheiro (Compactação Automática Gzip)</label>
@@ -1016,6 +1027,7 @@
 
             const obj = {
                 id: isEdit ? id : 'doc_' + Date.now(),
+                pasta: document.getElementById('m_doc_pasta').value,
                 titulo: document.getElementById('m_doc_titulo').value,
                 nomeArquivo: tempArquivoNome || (docExistente ? docExistente.nomeArquivo : 'doc.pdf'),
                 arquivoCompactadoGzip: tempArquivoGzipBase64 || (docExistente ? docExistente.arquivoCompactadoGzip : '')
