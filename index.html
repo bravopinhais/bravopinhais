@@ -412,10 +412,31 @@
             reader.readAsText(file, 'UTF-8');
         }
 
+        function toggleMostrarSenha() {
+            const inputPass = document.getElementById('login_pass');
+            const iconEye = document.getElementById('icon-eye');
+            if (inputPass.type === 'password') {
+                inputPass.type = 'text';
+                iconEye.classList.remove('fa-eye');
+                iconEye.classList.add('fa-eye-slash');
+            } else {
+                inputPass.type = 'password';
+                iconEye.classList.remove('fa-eye-slash');
+                iconEye.classList.add('fa-eye');
+            }
+        }
+
         function realizarLogin(e) {
             e.preventDefault();
             const userInput = document.getElementById('login_user').value.trim().toLowerCase();
             const senhaInput = document.getElementById('login_pass').value;
+            const lembrarChecked = document.getElementById('login_lembrar')?.checked;
+
+            if (lembrarChecked) {
+                localStorage.setItem('guardioes_lembrar_user', userInput);
+            } else {
+                localStorage.removeItem('guardioes_lembrar_user');
+            }
             
             const userFound = (db.usuarios || []).find(u => 
                 (u.usuario && u.usuario.toLowerCase() === userInput) || 
@@ -468,6 +489,9 @@
         }
 
         function renderTelaLogin() {
+            const savedUser = localStorage.getItem('guardioes_lembrar_user') || 'admin';
+            const isLembrarChecked = savedUser ? 'checked' : '';
+
             return `
                 <div class="min-h-screen flex items-center justify-center bg-slate-900 p-4 w-full">
                     <div class="bg-white w-full max-w-md p-6 sm:p-8 rounded-2xl shadow-2xl space-y-6">
@@ -477,8 +501,25 @@
                             <p class="text-xs text-teal-600 font-bold uppercase">Sincronização em Nuvem Ativa</p>
                         </div>
                         <form onsubmit="realizarLogin(event)" class="space-y-4">
-                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Utilizador ou E-mail</label><input type="text" id="login_user" required value="admin" class="w-full p-3 border rounded-lg text-sm font-bold bg-slate-50" placeholder="admin ou admin@guardioes.com"></div>
-                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Palavra-passe</label><input type="password" id="login_pass" required value="Admin@12345" class="w-full p-3 border rounded-lg text-sm font-bold bg-slate-50"></div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Utilizador ou E-mail</label>
+                                <input type="text" id="login_user" required value="${escapeHTML(savedUser)}" class="w-full p-3 border rounded-lg text-sm font-bold bg-slate-50" placeholder="admin ou admin@guardioes.com">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Palavra-passe</label>
+                                <div class="relative">
+                                    <input type="password" id="login_pass" required value="Admin@12345" class="w-full p-3 pr-10 border rounded-lg text-sm font-bold bg-slate-50">
+                                    <button type="button" onclick="toggleMostrarSenha()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-700">
+                                        <i id="icon-eye" class="fa-solid fa-eye text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <label class="flex items-center gap-2 cursor-pointer select-none">
+                                    <input type="checkbox" id="login_lembrar" ${isLembrarChecked} class="rounded border-slate-300 text-teal-600 focus:ring-teal-500 w-4 h-4">
+                                    <span class="font-bold text-slate-600">Lembrar credenciais</span>
+                                </label>
+                            </div>
                             <button type="submit" class="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg shadow-lg text-sm">Entrar no Sistema</button>
                         </form>
                     </div>
