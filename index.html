@@ -93,7 +93,7 @@
             logs: []
         };
 
-        // RECUPERAÇÃO SEGURA: Prioriza os dados já salvos no navegador para não perder nada
+        // RECUPERAÇÃO SEGURA: Preserva os dados já salvos no navegador para não perder nada
         let db = DEFAULT_DATA;
         const dadosLocaisSalvos = localStorage.getItem('guardioes_bravo_db');
         if (dadosLocaisSalvos) {
@@ -174,12 +174,9 @@
             dashboard: 'Dashboard',
             condominio: 'Dados do Condomínio & Conselho',
             financeiro: 'Contas Pagar/Receber',
-            formas_monetarias: 'Formas Monetárias',
-            contas_bancarias: 'Contas Bancárias / Caixa',
             moradores: 'Moradores / Unidades',
             fornecedores: 'Fornecedores',
             empregados: 'Empregados',
-            categorias: 'Pastas & Categorias',
             estoque: 'Estoque & Inventário',
             documentos: 'Gestão de Documentos',
             relatorios: 'Central de Relatórios & DRE',
@@ -287,12 +284,9 @@
                             <button onclick="abrirModulo('dashboard')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'dashboard' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard</button>
                             <button onclick="abrirModulo('condominio')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'condominio' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-building w-5 text-center"></i> Condomínio</button>
                             <button onclick="abrirModulo('financeiro')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'financeiro' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-receipt w-5 text-center"></i> Pagar/Receber</button>
-                            <button onclick="abrirModulo('formas_monetarias')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'formas_monetarias' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-money-bill-transfer w-5 text-center"></i> Formas Monetárias</button>
-                            <button onclick="abrirModulo('contas_bancarias')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'contas_bancarias' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-building-columns w-5 text-center"></i> Contas Bancárias</button>
                             <button onclick="abrirModulo('moradores')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'moradores' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-users w-5 text-center"></i> Moradores</button>
                             <button onclick="abrirModulo('fornecedores')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'fornecedores' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-truck-fast w-5 text-center"></i> Fornecedores</button>
                             <button onclick="abrirModulo('empregados')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'empregados' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-user-tie w-5 text-center"></i> Empregados</button>
-                            <button onclick="abrirModulo('categorias')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'categorias' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-folder-tree w-5 text-center"></i> Pastas</button>
                             <button onclick="abrirModulo('estoque')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'estoque' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-boxes-stacked w-5 text-center"></i> Estoque</button>
                             <button onclick="abrirModulo('documentos')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'documentos' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-folder-open w-5 text-center"></i> Documentos</button>
                             <button onclick="abrirModulo('relatorios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold ${tabsState.activeTab === 'relatorios' ? 'bg-teal-600 text-white' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i> Relatórios</button>
@@ -332,9 +326,8 @@
 
         function renderModuleContent(moduloId) {
             let btnNovoHtml = '';
-            if (moduloId === 'usuarios') {
-                btnNovoHtml = `<button onclick="window.renderModalUsuario()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-user-plus"></i> Novo Utilizador</button>`;
-            }
+            if (moduloId === 'usuarios') btnNovoHtml = `<button onclick="window.renderModalUsuario()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-user-plus"></i> Novo Utilizador</button>`;
+            else if (moduloId === 'moradores') btnNovoHtml = `<button onclick="window.renderModalMorador()" class="bg-teal-600 text-white text-xs px-3.5 py-2 rounded-lg font-bold"><i class="fa-solid fa-plus"></i> Novo Morador</button>`;
 
             const headerGlobal = `
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
@@ -343,8 +336,10 @@
                 </div>
             `;
 
+            if (moduloId === 'dashboard') return headerGlobal + `<div class="grid grid-cols-1 sm:grid-cols-3 gap-4"><div class="bg-white p-5 rounded-xl border shadow-sm"><p class="text-xs font-bold text-slate-400 uppercase">Usuários</p><h3 class="text-2xl font-black text-slate-800">${(db.usuarios||[]).length}</h3></div></div>`;
             if (moduloId === 'usuarios') return headerGlobal + renderUsuariosView();
-            return headerGlobal + `<div class="bg-white p-6 rounded-2xl border shadow-sm"><p class="text-xs text-slate-600">Módulo ${MODULE_NAMES[moduloId]} ativo e pronto a utilizar.</p></div>`;
+            if (moduloId === 'moradores') return headerGlobal + `<div class="bg-white rounded-xl border p-4"><p class="text-xs text-slate-600">Módulo de Moradores Ativo.</p></div>`;
+            return headerGlobal + `<div class="bg-white p-6 rounded-2xl border shadow-sm"><p class="text-xs text-slate-600">Módulo ${MODULE_NAMES[moduloId]} ativo e funcional.</p></div>`;
         }
 
         function abrirModalContainer(html) { document.getElementById('modal-container').innerHTML = html; }
@@ -438,7 +433,7 @@
             abrirModalContainer(`
                 <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
-                        <div class="flex justify-end items-center border-b pb-3">
+                        <div class="flex justify-between items-center border-b pb-3">
                             <h3 class="font-bold text-lg text-slate-800">Redefinir Senha: ${escapeHTML(user.usuario)}</h3>
                             <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
                         </div>
