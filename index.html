@@ -22,6 +22,8 @@
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
         .sidebar-full { height: 100vh; position: sticky; top: 0; }
+        .card-hover { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+        .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.08); }
         @media print {
             aside, header, .no-print, button, .actions-col { display: none !important; }
             body { background: white !important; color: black !important; }
@@ -33,8 +35,8 @@
 <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
 
     <!-- Indicador de Status da Nuvem -->
-    <div id="status-nuvem" class="bg-teal-600 text-white text-[10px] sm:text-xs font-bold py-1 px-2 sm:px-4 text-center no-print flex items-center justify-center gap-2">
-        <i class="fa-solid fa-cloud"></i> A ligar ao Supabase na Nuvem...
+    <div id="status-nuvem" class="bg-teal-600 text-white text-[10px] sm:text-xs font-bold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 shadow-inner">
+        <i class="fa-solid fa-cloud animate-pulse"></i> A ligar ao Supabase na Nuvem...
     </div>
 
     <div id="app" class="flex-1 flex flex-col min-h-screen w-full"></div>
@@ -190,7 +192,7 @@
                     if (!db.plano_contas) db.plano_contas = DEFAULT_DATA.plano_contas;
                     localStorage.setItem('guardioes_bravo_db', JSON.stringify(db));
                     if (elStatus) {
-                        elStatus.className = "bg-emerald-600 text-white text-[10px] sm:text-xs font-bold py-1 px-4 text-center no-print flex items-center justify-center gap-2";
+                        elStatus.className = "bg-emerald-600 text-white text-[10px] sm:text-xs font-bold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 shadow-inner";
                         elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> Sincronizado com o Supabase com Sucesso!`;
                     }
                 } else {
@@ -210,10 +212,10 @@
                                 renderMainOnly();
                                 
                                 if (elStatus) {
-                                    elStatus.className = "bg-teal-500 text-white text-[10px] sm:text-xs font-bold py-1 px-4 text-center no-print animate-pulse";
+                                    elStatus.className = "bg-teal-500 text-white text-[10px] sm:text-xs font-bold py-1.5 px-4 text-center no-print animate-pulse shadow-inner";
                                     elStatus.innerHTML = `<i class="fa-solid fa-rotate"></i> Dados atualizados em tempo real por outro utilizador!`;
                                     setTimeout(() => {
-                                        elStatus.className = "bg-emerald-600 text-white text-[10px] sm:text-xs font-bold py-1 px-4 text-center no-print flex items-center justify-center gap-2";
+                                        elStatus.className = "bg-emerald-600 text-white text-[10px] sm:text-xs font-bold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 shadow-inner";
                                         elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> Sincronizado com a Nuvem em Tempo Real`;
                                     }, 2000);
                                 }
@@ -224,7 +226,7 @@
 
             } catch (err) {
                 if (elStatus) {
-                    elStatus.className = "bg-amber-600 text-white text-[10px] sm:text-xs font-bold py-1 px-4 text-center no-print";
+                    elStatus.className = "bg-amber-600 text-white text-[10px] sm:text-xs font-bold py-1.5 px-4 text-center no-print shadow-inner";
                     elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> A utilizar armazenamento local.`;
                 }
             }
@@ -237,7 +239,7 @@
 
             const elStatus = document.getElementById('status-nuvem');
             if (elStatus) {
-                elStatus.className = "bg-teal-500 text-white text-[10px] sm:text-xs font-bold py-1 px-4 text-center no-print animate-pulse";
+                elStatus.className = "bg-teal-500 text-white text-[10px] sm:text-xs font-bold py-1.5 px-4 text-center no-print animate-pulse shadow-inner";
                 elStatus.innerHTML = `<i class="fa-solid fa-rotate fa-spin"></i> A guardar na nuvem...`;
             }
 
@@ -249,12 +251,12 @@
                 if (error) throw error;
 
                 if (elStatus) {
-                    elStatus.className = "bg-emerald-600 text-white text-[10px] sm:text-xs font-bold py-1 px-4 text-center no-print flex items-center justify-center gap-2";
+                    elStatus.className = "bg-emerald-600 text-white text-[10px] sm:text-xs font-bold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 shadow-inner";
                     elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado com a Nuvem em Tempo Real`;
                 }
             } catch (err) {
                 if (elStatus) {
-                    elStatus.className = "bg-amber-600 text-white text-[10px] sm:text-xs font-bold py-1 px-4 text-center no-print";
+                    elStatus.className = "bg-amber-600 text-white text-[10px] sm:text-xs font-bold py-1.5 px-4 text-center no-print shadow-inner";
                     elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Guardado localmente (Erro na nuvem)`;
                 }
             }
@@ -506,12 +508,12 @@
                         <form onsubmit="realizarLogin(event)" class="space-y-4">
                             <div>
                                 <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Utilizador ou E-mail</label>
-                                <input type="text" id="login_user" required value="${escapeHTML(savedUser)}" class="w-full p-3 border rounded-lg text-sm font-bold bg-slate-50" placeholder="admin ou admin@guardioes.com">
+                                <input type="text" id="login_user" required value="${escapeHTML(savedUser)}" class="w-full p-3 border rounded-xl text-sm font-bold bg-slate-50 focus:ring-2 focus:ring-teal-500 outline-none" placeholder="admin ou admin@guardioes.com">
                             </div>
                             <div>
                                 <label class="block text-xs font-bold uppercase text-slate-600 mb-1">Palavra-passe</label>
                                 <div class="relative">
-                                    <input type="password" id="login_pass" required value="Admin@12345" class="w-full p-3 pr-10 border rounded-lg text-sm font-bold bg-slate-50">
+                                    <input type="password" id="login_pass" required value="Admin@12345" class="w-full p-3 pr-10 border rounded-xl text-sm font-bold bg-slate-50 focus:ring-2 focus:ring-teal-500 outline-none">
                                     <button type="button" onclick="toggleMostrarSenha()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-700">
                                         <i id="icon-eye" class="fa-solid fa-eye text-sm"></i>
                                     </button>
@@ -523,7 +525,7 @@
                                     <span class="font-bold text-slate-600">Lembrar credenciais</span>
                                 </label>
                             </div>
-                            <button type="submit" class="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg shadow-lg text-sm">Entrar no Sistema</button>
+                            <button type="submit" class="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-lg text-sm transition-all">Entrar no Sistema</button>
                         </form>
                     </div>
                 </div>
@@ -540,9 +542,9 @@
                             <p class="text-xs text-slate-600 font-semibold">Olá, <b>${escapeHTML(usuarioPendentePrimeiroAcesso.nome)}</b>! Por segurança, por favor defina uma nova palavra-passe antes de continuar.</p>
                         </div>
                         <form onsubmit="concluirPrimeiroAcesso(event)" class="space-y-4 text-xs">
-                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Nova Palavra-passe</label><input type="password" id="prim_senha_nova" required class="w-full p-3 border rounded-lg font-bold bg-slate-50 text-sm" placeholder="Mínimo de 6 caracteres"></div>
-                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Confirmar Nova Palavra-passe</label><input type="password" id="prim_senha_conf" required class="w-full p-3 border rounded-lg font-bold bg-slate-50 text-sm" placeholder="Repita a palavra-passe"></div>
-                            <button type="submit" class="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-lg shadow-lg text-sm">Guardar Nova Senha e Entrar</button>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Nova Palavra-passe</label><input type="password" id="prim_senha_nova" required class="w-full p-3 border rounded-xl font-bold bg-slate-50 text-sm focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Mínimo de 6 caracteres"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Confirmar Nova Palavra-passe</label><input type="password" id="prim_senha_conf" required class="w-full p-3 border rounded-xl font-bold bg-slate-50 text-sm focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Repita a palavra-passe"></div>
+                            <button type="submit" class="w-full py-3 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl shadow-lg text-sm transition-all">Guardar Nova Senha e Entrar</button>
                         </form>
                     </div>
                 </div>
@@ -580,9 +582,9 @@
 
             container.innerHTML = `
                 <div class="flex-1 flex flex-col md:flex-row min-h-screen w-full">
-                    <div id="sidebar-backdrop" onclick="fecharMenuMobile()" class="fixed inset-0 bg-slate-900/60 z-40 hidden md:hidden"></div>
+                    <div id="sidebar-backdrop" onclick="fecharMenuMobile()" class="fixed inset-0 bg-slate-900/60 z-40 hidden md:hidden backdrop-blur-sm"></div>
 
-                    <aside id="sidebar-menu" class="fixed md:sticky top-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 flex flex-col sidebar-full border-r border-slate-800 transform -translate-x-full md:translate-x-0 transition-transform duration-200">
+                    <aside id="sidebar-menu" class="fixed md:sticky top-0 left-0 z-50 w-64 bg-slate-900 text-slate-300 flex flex-col sidebar-full border-r border-slate-800 transform -translate-x-full md:translate-x-0 transition-transform duration-300">
                         <div class="p-4 bg-slate-950 flex items-center justify-between border-b border-slate-800">
                             <div class="flex items-center gap-3">
                                 <div class="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white font-bold text-xl shadow-md"><i class="fa-solid fa-shield-halved"></i></div>
@@ -591,56 +593,52 @@
                             <button onclick="fecharMenuMobile()" class="md:hidden text-slate-400 hover:text-white p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
                         </div>
 
-                        <!-- Menu Lateral Organizado por Categorias para Melhor Entendimento -->
+                        <!-- Menu Dinâmico com Seções Organizadas -->
                         <nav class="flex-1 overflow-y-auto p-3 space-y-4">
-                            <!-- Principal -->
                             <div>
-                                <p class="px-3 pb-1 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Principal</p>
+                                <p class="px-3 pb-1.5 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Principal</p>
                                 <div class="space-y-1">
-                                    <button onclick="abrirModulo('dashboard')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold ${tabsState.activeTab === 'dashboard' ? 'bg-teal-600 text-white shadow-sm' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard</button>
-                                    <button onclick="abrirModulo('condominio')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold ${tabsState.activeTab === 'condominio' ? 'bg-teal-600 text-white shadow-sm' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-building w-5 text-center"></i> Condomínio</button>
+                                    <button onclick="abrirModulo('dashboard')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${tabsState.activeTab === 'dashboard' ? 'bg-teal-600 text-white shadow-md' : 'hover:bg-slate-800/80 hover:text-white text-slate-300'}"><i class="fa-solid fa-chart-pie w-5 text-center"></i> Dashboard</button>
+                                    <button onclick="abrirModulo('condominio')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${tabsState.activeTab === 'condominio' ? 'bg-teal-600 text-white shadow-md' : 'hover:bg-slate-800/80 hover:text-white text-slate-300'}"><i class="fa-solid fa-building w-5 text-center"></i> Condomínio</button>
                                 </div>
                             </div>
 
-                            <!-- Financeiro -->
                             <div>
-                                <p class="px-3 pb-1 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Financeiro</p>
+                                <p class="px-3 pb-1.5 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Financeiro</p>
                                 <div class="space-y-1">
-                                    <button onclick="abrirModulo('plano_contas')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold ${tabsState.activeTab === 'plano_contas' ? 'bg-teal-600 text-white shadow-sm' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-sitemap w-5 text-center"></i> Plano de Contas</button>
-                                    <button onclick="abrirModulo('financeiro')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold ${tabsState.activeTab === 'financeiro' ? 'bg-teal-600 text-white shadow-sm' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-receipt w-5 text-center"></i> Pagar / Receber</button>
-                                    <button onclick="abrirModulo('formas_monetarias')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold ${tabsState.activeTab === 'formas_monetarias' ? 'bg-teal-600 text-white shadow-sm' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-money-bill-transfer w-5 text-center"></i> Formas Monetárias</button>
-                                    <button onclick="abrirModulo('contas_bancarias')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold ${tabsState.activeTab === 'contas_bancarias' ? 'bg-teal-600 text-white shadow-sm' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-building-columns w-5 text-center"></i> Contas Bancárias</button>
-                                    <button onclick="abrirModulo('relatorios')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold ${tabsState.activeTab === 'relatorios' ? 'bg-teal-600 text-white shadow-sm' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i> DRE & Relatórios</button>
+                                    <button onclick="abrirModulo('plano_contas')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${tabsState.activeTab === 'plano_contas' ? 'bg-teal-600 text-white shadow-md' : 'hover:bg-slate-800/80 hover:text-white text-slate-300'}"><i class="fa-solid fa-sitemap w-5 text-center"></i> Plano de Contas</button>
+                                    <button onclick="abrirModulo('financeiro')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${tabsState.activeTab === 'financeiro' ? 'bg-teal-600 text-white shadow-md' : 'hover:bg-slate-800/80 hover:text-white text-slate-300'}"><i class="fa-solid fa-receipt w-5 text-center"></i> Pagar / Receber</button>
+                                    <button onclick="abrirModulo('formas_monetarias')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${tabsState.activeTab === 'formas_monetarias' ? 'bg-teal-600 text-white shadow-md' : 'hover:bg-slate-800/80 hover:text-white text-slate-300'}"><i class="fa-solid fa-money-bill-transfer w-5 text-center"></i> Formas Monetárias</button>
+                                    <button onclick="abrirModulo('contas_bancarias')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${tabsState.activeTab === 'contas_bancarias' ? 'bg-teal-600 text-white shadow-md' : 'hover:bg-slate-800/80 hover:text-white text-slate-300'}"><i class="fa-solid fa-building-columns w-5 text-center"></i> Contas Bancárias</button>
+                                    <button onclick="abrirModulo('relatorios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${tabsState.activeTab === 'relatorios' ? 'bg-teal-600 text-white shadow-md' : 'hover:bg-slate-800/80 hover:text-white text-slate-300'}"><i class="fa-solid fa-file-invoice-dollar w-5 text-center"></i> DRE & Relatórios</button>
                                 </div>
                             </div>
 
-                            <!-- Cadastros & Gestão -->
                             <div>
-                                <p class="px-3 pb-1 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Cadastros & Operação</p>
+                                <p class="px-3 pb-1.5 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Cadastros & Operação</p>
                                 <div class="space-y-1">
-                                    <button onclick="abrirModulo('moradores')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold ${tabsState.activeTab === 'moradores' ? 'bg-teal-600 text-white shadow-sm' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-users w-5 text-center"></i> Moradores</button>
-                                    <button onclick="abrirModulo('fornecedores')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold ${tabsState.activeTab === 'fornecedores' ? 'bg-teal-600 text-white shadow-sm' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-truck-fast w-5 text-center"></i> Fornecedores</button>
-                                    <button onclick="abrirModulo('empregados')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold ${tabsState.activeTab === 'empregados' ? 'bg-teal-600 text-white shadow-sm' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-user-tie w-5 text-center"></i> Empregados</button>
-                                    <button onclick="abrirModulo('estoque')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold ${tabsState.activeTab === 'estoque' ? 'bg-teal-600 text-white shadow-sm' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-boxes-stacked w-5 text-center"></i> Estoque & Fotos</button>
-                                    <button onclick="abrirModulo('categorias')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold ${tabsState.activeTab === 'categorias' ? 'bg-teal-600 text-white shadow-sm' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-folder-tree w-5 text-center"></i> Pastas</button>
-                                    <button onclick="abrirModulo('documentos')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold ${tabsState.activeTab === 'documentos' ? 'bg-teal-600 text-white shadow-sm' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-folder-open w-5 text-center"></i> Documentos</button>
+                                    <button onclick="abrirModulo('moradores')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${tabsState.activeTab === 'moradores' ? 'bg-teal-600 text-white shadow-md' : 'hover:bg-slate-800/80 hover:text-white text-slate-300'}"><i class="fa-solid fa-users w-5 text-center"></i> Moradores</button>
+                                    <button onclick="abrirModulo('fornecedores')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${tabsState.activeTab === 'fornecedores' ? 'bg-teal-600 text-white shadow-md' : 'hover:bg-slate-800/80 hover:text-white text-slate-300'}"><i class="fa-solid fa-truck-fast w-5 text-center"></i> Fornecedores</button>
+                                    <button onclick="abrirModulo('empregados')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${tabsState.activeTab === 'empregados' ? 'bg-teal-600 text-white shadow-md' : 'hover:bg-slate-800/80 hover:text-white text-slate-300'}"><i class="fa-solid fa-user-tie w-5 text-center"></i> Empregados</button>
+                                    <button onclick="abrirModulo('estoque')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${tabsState.activeTab === 'estoque' ? 'bg-teal-600 text-white shadow-md' : 'hover:bg-slate-800/80 hover:text-white text-slate-300'}"><i class="fa-solid fa-boxes-stacked w-5 text-center"></i> Estoque & Fotos</button>
+                                    <button onclick="abrirModulo('categorias')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${tabsState.activeTab === 'categorias' ? 'bg-teal-600 text-white shadow-md' : 'hover:bg-slate-800/80 hover:text-white text-slate-300'}"><i class="fa-solid fa-folder-tree w-5 text-center"></i> Pastas</button>
+                                    <button onclick="abrirModulo('documentos')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${tabsState.activeTab === 'documentos' ? 'bg-teal-600 text-white shadow-md' : 'hover:bg-slate-800/80 hover:text-white text-slate-300'}"><i class="fa-solid fa-folder-open w-5 text-center"></i> Documentos</button>
                                 </div>
                             </div>
 
-                            <!-- Administração -->
                             <div>
-                                <p class="px-3 pb-1 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Sistema</p>
+                                <p class="px-3 pb-1.5 text-[10px] font-extrabold text-slate-500 uppercase tracking-wider">Sistema</p>
                                 <div class="space-y-1">
-                                    <button onclick="abrirModulo('usuarios')" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold ${tabsState.activeTab === 'usuarios' ? 'bg-teal-600 text-white shadow-sm' : 'hover:bg-slate-800 text-slate-300'}"><i class="fa-solid fa-user-gear w-5 text-center"></i> Utilizadores</button>
-                                    <!-- Botão de Sair logo abaixo do módulo de Usuários conforme solicitado -->
-                                    <button onclick="encerrarSessao()" class="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold hover:bg-rose-900/30 text-rose-400 border border-rose-900/20"><i class="fa-solid fa-right-from-bracket w-5 text-center"></i> Sair do Sistema</button>
+                                    <button onclick="abrirModulo('usuarios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${tabsState.activeTab === 'usuarios' ? 'bg-teal-600 text-white shadow-md' : 'hover:bg-slate-800/80 hover:text-white text-slate-300'}"><i class="fa-solid fa-user-gear w-5 text-center"></i> Utilizadores</button>
+                                    <!-- Botão de Sair logo abaixo do módulo de Usuários -->
+                                    <button onclick="encerrarSessao()" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold hover:bg-rose-900/40 text-rose-400 border border-rose-900/20 transition-all"><i class="fa-solid fa-right-from-bracket w-5 text-center"></i> Sair do Sistema</button>
                                 </div>
                             </div>
                         </nav>
 
                         <div class="p-3 bg-slate-950 border-t border-slate-800 space-y-2 no-print">
-                            <button onclick="fazerBackupGeralJSON()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-teal-400 font-bold rounded-lg text-[11px] flex items-center justify-center gap-2"><i class="fa-solid fa-download"></i> Baixar Backup Geral</button>
-                            <label class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold rounded-lg text-[11px] flex items-center justify-center gap-2 cursor-pointer"><i class="fa-solid fa-upload"></i> Restaurar Backup <input type="file" accept=".json" onchange="restaurarBackupGeralJSON(event)" class="hidden"></label>
+                            <button onclick="fazerBackupGeralJSON()" class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-teal-400 font-bold rounded-xl text-[11px] flex items-center justify-center gap-2 transition-all"><i class="fa-solid fa-download"></i> Baixar Backup Geral</button>
+                            <label class="w-full py-2 bg-slate-800 hover:bg-slate-700 text-amber-400 font-bold rounded-xl text-[11px] flex items-center justify-center gap-2 cursor-pointer transition-all"><i class="fa-solid fa-upload"></i> Restaurar Backup <input type="file" accept=".json" onchange="restaurarBackupGeralJSON(event)" class="hidden"></label>
                         </div>
 
                         <div class="p-3 bg-slate-950 border-t border-slate-800 flex items-center justify-between">
@@ -648,22 +646,22 @@
                                 <span class="text-xs font-bold text-slate-200 block truncate">${escapeHTML(user.nome)}</span>
                                 <span class="text-[10px] text-teal-400 block truncate">${escapeHTML(user.cargo || user.perfil)}</span>
                             </div>
-                            <button onclick="encerrarSessao()" class="p-2 text-slate-400 hover:text-red-400" title="Sair"><i class="fa-solid fa-right-from-bracket"></i></button>
+                            <button onclick="encerrarSessao()" class="p-2 text-slate-400 hover:text-red-400 transition-colors" title="Sair"><i class="fa-solid fa-right-from-bracket"></i></button>
                         </div>
                     </aside>
 
                     <div class="flex-1 flex flex-col min-h-screen overflow-hidden w-full">
                         <header class="bg-slate-900 text-white p-3 flex md:hidden items-center justify-between border-b border-slate-800 no-print w-full">
                             <span class="font-bold text-sm">Guardiões do Bravo</span>
-                            <button onclick="toggleMenuMobile()" class="p-2 bg-slate-800 rounded-lg text-slate-200"><i class="fa-solid fa-bars"></i></button>
+                            <button onclick="toggleMenuMobile()" class="p-2 bg-slate-800 rounded-xl text-slate-200"><i class="fa-solid fa-bars"></i></button>
                         </header>
 
-                        <!-- Barra de Abas -->
-                        <div class="bg-slate-200 border-b flex items-center overflow-x-auto px-2 pt-2 gap-1 no-print w-full">
+                        <!-- Barra de Abas Dinâmica -->
+                        <div class="bg-slate-200 border-b flex items-center overflow-x-auto px-2 pt-2 gap-1.5 no-print w-full">
                             ${tabsState.openTabs.map(tabId => `
-                                <div onclick="abrirModulo('${tabId}')" class="flex items-center gap-2 px-3 py-2 rounded-t-xl text-xs font-semibold cursor-pointer whitespace-nowrap ${tabsState.activeTab === tabId ? 'tab-active shadow-sm' : 'bg-slate-300 text-slate-600'}">
+                                <div onclick="abrirModulo('${tabId}')" class="flex items-center gap-2 px-3.5 py-2.5 rounded-t-xl text-xs font-semibold cursor-pointer whitespace-nowrap transition-all ${tabsState.activeTab === tabId ? 'tab-active shadow-sm' : 'bg-slate-300/70 text-slate-600 hover:bg-slate-300 hover:text-slate-800'}">
                                     <span>${MODULE_NAMES[tabId] || tabId}</span>
-                                    ${tabsState.openTabs.length > 1 ? `<button onclick="fecharAba(event, '${tabId}')" class="hover:text-red-600"><i class="fa-solid fa-xmark"></i></button>` : ''}
+                                    ${tabsState.openTabs.length > 1 ? `<button onclick="fecharAba(event, '${tabId}')" class="hover:text-red-600 ml-1 p-0.5"><i class="fa-solid fa-xmark"></i></button>` : ''}
                                 </div>
                             `).join('')}
                         </div>
@@ -673,10 +671,10 @@
                                 <i class="fa-solid fa-face-smile text-teal-300 text-sm"></i>
                                 <span>${msgBoasVindas}</span>
                             </div>
-                            <span class="text-[10px] bg-teal-800 px-2.5 py-1 rounded-lg text-teal-200 font-mono hidden sm:inline-block">Sessão Ativa</span>
+                            <span class="text-[10px] bg-teal-800 px-3 py-1 rounded-xl text-teal-200 font-mono hidden sm:inline-block shadow-inner">Sessão Ativa</span>
                         </div>
 
-                        <main class="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-100 w-full">
+                        <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-slate-100 w-full">
                             ${renderModuleContent(tabsState.activeTab)}
                         </main>
                     </div>
@@ -696,35 +694,35 @@
         function renderModuleContent(moduloId) {
             let btnNovoHtml = '';
             let btnExportHtml = `
-                <button onclick="exportarParaPDF()" class="px-3.5 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-xl font-bold text-xs shadow-sm"><i class="fa-solid fa-file-pdf mr-1"></i> PDF</button>
-                <button onclick="exportarModuloExcel('${moduloId}')" class="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold text-xs shadow-sm"><i class="fa-solid fa-file-excel mr-1"></i> Excel</button>
+                <button onclick="exportarParaPDF()" class="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-xl font-bold text-xs shadow-sm transition-all flex items-center gap-1.5"><i class="fa-solid fa-file-pdf"></i> PDF</button>
+                <button onclick="exportarModuloExcel('${moduloId}')" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl font-bold text-xs shadow-sm transition-all flex items-center gap-1.5"><i class="fa-solid fa-file-excel"></i> Excel</button>
             `;
 
-            if (moduloId === 'condominio') btnNovoHtml = `<button onclick="window.renderModalConselheiro()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2 rounded-xl font-bold shadow-sm whitespace-nowrap"><i class="fa-solid fa-plus mr-1"></i> Novo Conselheiro</button>`;
-            else if (moduloId === 'plano_contas') btnNovoHtml = `<button onclick="window.renderModalPlanoConta()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2 rounded-xl font-bold shadow-sm whitespace-nowrap"><i class="fa-solid fa-plus mr-1"></i> Nova Conta Gerencial</button>`;
-            else if (moduloId === 'financeiro') btnNovoHtml = `<button onclick="window.renderModalNovoTitulo()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2 rounded-xl font-bold shadow-sm whitespace-nowrap"><i class="fa-solid fa-plus mr-1"></i> Novo Título</button>`;
-            else if (moduloId === 'formas_monetarias') btnNovoHtml = `<button onclick="window.renderModalFormaMonetaria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2 rounded-xl font-bold shadow-sm whitespace-nowrap"><i class="fa-solid fa-plus mr-1"></i> Nova Forma</button>`;
-            else if (moduloId === 'contas_bancarias') btnNovoHtml = `<button onclick="window.renderModalContaBancaria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2 rounded-xl font-bold shadow-sm whitespace-nowrap"><i class="fa-solid fa-plus mr-1"></i> Nova Conta</button>`;
+            if (moduloId === 'condominio') btnNovoHtml = `<button onclick="window.renderModalConselheiro()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2.5 rounded-xl font-bold shadow-sm transition-all whitespace-nowrap flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Conselheiro</button>`;
+            else if (moduloId === 'plano_contas') btnNovoHtml = `<button onclick="window.renderModalPlanoConta()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2.5 rounded-xl font-bold shadow-sm transition-all whitespace-nowrap flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Nova Conta Gerencial</button>`;
+            else if (moduloId === 'financeiro') btnNovoHtml = `<button onclick="window.renderModalNovoTitulo()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2.5 rounded-xl font-bold shadow-sm transition-all whitespace-nowrap flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Título</button>`;
+            else if (moduloId === 'formas_monetarias') btnNovoHtml = `<button onclick="window.renderModalFormaMonetaria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2.5 rounded-xl font-bold shadow-sm transition-all whitespace-nowrap flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Nova Forma</button>`;
+            else if (moduloId === 'contas_bancarias') btnNovoHtml = `<button onclick="window.renderModalContaBancaria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2.5 rounded-xl font-bold shadow-sm transition-all whitespace-nowrap flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Nova Conta</button>`;
             else if (moduloId === 'moradores') {
                 btnNovoHtml = `
-                    <label class="px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow-sm whitespace-nowrap">
+                    <label class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs cursor-pointer flex items-center gap-1.5 shadow-sm transition-all whitespace-nowrap">
                         <i class="fa-solid fa-file-arrow-up"></i> Importar Planilha <input type="file" accept=".csv, .txt" onchange="importarPlanilhaMoradores(event)" class="hidden">
                     </label>
-                    <button onclick="window.renderModalMorador()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2 rounded-xl font-bold shadow-sm whitespace-nowrap"><i class="fa-solid fa-plus mr-1"></i> Novo Morador</button>
+                    <button onclick="window.renderModalMorador()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2.5 rounded-xl font-bold shadow-sm transition-all whitespace-nowrap flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Morador</button>
                 `;
             }
-            else if (moduloId === 'fornecedores') btnNovoHtml = `<button onclick="window.renderModalFornecedor()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2 rounded-xl font-bold shadow-sm whitespace-nowrap"><i class="fa-solid fa-plus mr-1"></i> Novo Fornecedor</button>`;
-            else if (moduloId === 'empregados') btnNovoHtml = `<button onclick="window.renderModalEmpregado()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2 rounded-xl font-bold shadow-sm whitespace-nowrap"><i class="fa-solid fa-plus mr-1"></i> Novo Empregado</button>`;
-            else if (moduloId === 'categorias') btnNovoHtml = `<button onclick="window.renderModalCategoria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2 rounded-xl font-bold shadow-sm whitespace-nowrap"><i class="fa-solid fa-plus mr-1"></i> Nova Pasta</button>`;
-            else if (moduloId === 'estoque') btnNovoHtml = `<button onclick="window.renderModalEstoque()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2 rounded-xl font-bold shadow-sm whitespace-nowrap"><i class="fa-solid fa-plus mr-1"></i> Novo Item</button>`;
-            else if (moduloId === 'documentos') btnNovoHtml = `<button onclick="window.renderModalDocumento()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2 rounded-xl font-bold shadow-sm whitespace-nowrap"><i class="fa-solid fa-upload mr-1"></i> Inserir Documento</button>`;
-            else if (moduloId === 'usuarios') btnNovoHtml = `<button onclick="window.renderModalUsuario()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2 rounded-xl font-bold shadow-sm whitespace-nowrap"><i class="fa-solid fa-user-plus mr-1"></i> Novo Utilizador</button>`;
+            else if (moduloId === 'fornecedores') btnNovoHtml = `<button onclick="window.renderModalFornecedor()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2.5 rounded-xl font-bold shadow-sm transition-all whitespace-nowrap flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Fornecedor</button>`;
+            else if (moduloId === 'empregados') btnNovoHtml = `<button onclick="window.renderModalEmpregado()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2.5 rounded-xl font-bold shadow-sm transition-all whitespace-nowrap flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Empregado</button>`;
+            else if (moduloId === 'categorias') btnNovoHtml = `<button onclick="window.renderModalCategoria()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2.5 rounded-xl font-bold shadow-sm transition-all whitespace-nowrap flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Nova Pasta</button>`;
+            else if (moduloId === 'estoque') btnNovoHtml = `<button onclick="window.renderModalEstoque()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2.5 rounded-xl font-bold shadow-sm transition-all whitespace-nowrap flex items-center gap-1.5"><i class="fa-solid fa-plus"></i> Novo Item</button>`;
+            else if (moduloId === 'documentos') btnNovoHtml = `<button onclick="window.renderModalDocumento()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2.5 rounded-xl font-bold shadow-sm transition-all whitespace-nowrap flex items-center gap-1.5"><i class="fa-solid fa-upload"></i> Inserir Documento</button>`;
+            else if (moduloId === 'usuarios') btnNovoHtml = `<button onclick="window.renderModalUsuario()" class="bg-teal-600 hover:bg-teal-700 text-white text-xs px-4 py-2.5 rounded-xl font-bold shadow-sm transition-all whitespace-nowrap flex items-center gap-1.5"><i class="fa-solid fa-user-plus"></i> Novo Utilizador</button>`;
             else if (moduloId === 'relatorios' || moduloId === 'dashboard') btnExportHtml = '';
 
             const headerGlobal = `
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
-                    <div><h2 class="text-xl md:text-2xl font-black text-slate-800">${MODULE_NAMES[moduloId]}</h2></div>
-                    <div class="flex flex-wrap items-center gap-2 no-print">${btnExportHtml} ${btnNovoHtml}</div>
+                    <div><h2 class="text-xl md:text-2xl font-black text-slate-800 tracking-tight">${MODULE_NAMES[moduloId]}</h2></div>
+                    <div class="flex flex-wrap items-center gap-2.5 no-print">${btnExportHtml} ${btnNovoHtml}</div>
                 </div>
             `;
 
@@ -791,9 +789,9 @@
 
             return `
                 <div class="space-y-6 w-full">
-                    <!-- Cards Principais do Dashboard -->
+                    <!-- Cards Principais do Dashboard com Efeito Hover Dinâmico -->
                     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 w-full">
-                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm card-hover flex items-center justify-between">
                             <div>
                                 <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Saldo em Caixa</p>
                                 <h3 class="text-xl sm:text-2xl font-black ${saldoCaixa >= 0 ? 'text-emerald-600' : 'text-rose-600'}">R$ ${saldoCaixa.toFixed(2)}</h3>
@@ -802,7 +800,7 @@
                             <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-xl font-bold shadow-inner"><i class="fa-solid fa-wallet"></i></div>
                         </div>
 
-                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm card-hover flex items-center justify-between">
                             <div>
                                 <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Total Moradores</p>
                                 <h3 class="text-xl sm:text-2xl font-black text-slate-800">${totalMoradores}</h3>
@@ -811,7 +809,7 @@
                             <div class="w-12 h-12 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center text-xl font-bold shadow-inner"><i class="fa-solid fa-users"></i></div>
                         </div>
 
-                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm card-hover flex items-center justify-between">
                             <div>
                                 <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Fornecedores</p>
                                 <h3 class="text-xl sm:text-2xl font-black text-slate-800">${totalFornecedores}</h3>
@@ -820,7 +818,7 @@
                             <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl font-bold shadow-inner"><i class="fa-solid fa-truck-fast"></i></div>
                         </div>
 
-                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm card-hover flex items-center justify-between">
                             <div>
                                 <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Documentos</p>
                                 <h3 class="text-xl sm:text-2xl font-black text-slate-800">${totalDocumentos}</h3>
@@ -830,9 +828,9 @@
                         </div>
                     </div>
 
-                    <!-- Cards de Alerta de Estoque no Dashboard -->
+                    <!-- Cards de Alerta de Estoque Dinâmicos -->
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
-                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between border-l-4 border-l-teal-600">
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm card-hover flex items-center justify-between border-l-4 border-l-teal-600">
                             <div>
                                 <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Estoque Adequado</p>
                                 <h3 class="text-xl font-black text-teal-700">${totalAdequados} itens</h3>
@@ -840,7 +838,7 @@
                             <div class="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center font-bold"><i class="fa-solid fa-circle-check"></i></div>
                         </div>
 
-                        <div onclick="abrirModulo('estoque')" class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between border-l-4 border-l-rose-600 cursor-pointer hover:bg-rose-50/20 transition-colors">
+                        <div onclick="abrirModulo('estoque')" class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm card-hover flex items-center justify-between border-l-4 border-l-rose-600 cursor-pointer transition-all">
                             <div>
                                 <p class="text-[11px] font-extrabold text-rose-600 uppercase tracking-wider">Atenção: Estoque Insuficiente</p>
                                 <h3 class="text-xl font-black text-rose-600">${totalCriticos} itens críticos</h3>
@@ -848,7 +846,7 @@
                             <div class="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold"><i class="fa-solid fa-triangle-exclamation animate-bounce"></i></div>
                         </div>
 
-                        <div onclick="abrirModulo('estoque')" class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between border-l-4 border-l-amber-500 cursor-pointer hover:bg-amber-50/20 transition-colors">
+                        <div onclick="abrirModulo('estoque')" class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm card-hover flex items-center justify-between border-l-4 border-l-amber-500 cursor-pointer transition-all">
                             <div>
                                 <p class="text-[11px] font-extrabold text-amber-600 uppercase tracking-wider">Excedente / Antigo (Não Comprar)</p>
                                 <h3 class="text-xl font-black text-amber-600">${totalExcedentes} itens</h3>
@@ -858,17 +856,17 @@
                     </div>
 
                     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
-                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm lg:col-span-2 flex flex-col justify-between">
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm lg:col-span-2 flex flex-col justify-between card-hover">
                             <div class="flex items-center justify-between mb-4">
                                 <h3 class="font-black text-slate-800 text-sm sm:text-base"><i class="fa-solid fa-chart-line text-teal-600 mr-2"></i> Panorama Financeiro (Pagar x Receber)</h3>
-                                <span class="text-[10px] bg-slate-100 text-slate-600 px-2.5 py-1 rounded-lg font-bold">Atualizado em tempo real</span>
+                                <span class="text-[10px] bg-slate-100 text-slate-600 px-3 py-1 rounded-xl font-bold">Tempo Real</span>
                             </div>
                             <div class="relative h-64 sm:h-72 w-full flex items-center justify-center">
                                 <canvas id="chartReceitaDespesa"></canvas>
                             </div>
                         </div>
 
-                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between card-hover">
                             <div class="flex items-center justify-between mb-4">
                                 <h3 class="font-black text-slate-800 text-sm sm:text-base"><i class="fa-solid fa-boxes-stacked text-teal-600 mr-2"></i> Status do Estoque</h3>
                             </div>
@@ -876,12 +874,12 @@
                                 <canvas id="chartEstoqueDash"></canvas>
                             </div>
                             <div class="mt-4 pt-3 border-t text-center">
-                                <button onclick="abrirModulo('estoque')" class="text-teal-700 hover:underline text-xs font-bold">Gerenciar Estoque Completo</button>
+                                <button onclick="abrirModulo('estoque')" class="text-teal-700 hover:text-teal-800 text-xs font-bold transition-colors">Gerenciar Estoque Completo &rarr;</button>
                             </div>
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden w-full">
+                    <div class="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden w-full">
                         <div class="p-4 bg-slate-900 text-white font-bold text-xs sm:text-sm flex items-center justify-between">
                             <span><i class="fa-solid fa-clock-rotate-left mr-2 text-teal-400"></i> Últimas Movimentações Financeiras</span>
                             <button onclick="abrirModulo('financeiro')" class="text-teal-400 hover:underline text-xs">Ver Todas</button>
@@ -900,8 +898,8 @@
                                     ${financeiroList.length === 0 ? `<tr><td colspan="4" class="p-6 text-center text-slate-400">Nenhum lançamento financeiro registado.</td></tr>` : financeiroList.slice(-5).reverse().map(f => {
                                         const pcObj = (db.plano_contas || []).find(p => p.id === f.planoContaId);
                                         return `
-                                            <tr>
-                                                <td class="p-3"><span class="px-2 py-0.5 rounded font-bold ${f.tipo === 'Receber' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">${f.tipo}</span></td>
+                                            <tr class="hover:bg-slate-50 transition-colors">
+                                                <td class="p-3"><span class="px-2.5 py-1 rounded-xl font-bold ${f.tipo === 'Receber' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">${f.tipo}</span></td>
                                                 <td class="p-3 font-semibold text-teal-700">${pcObj ? escapeHTML(pcObj.codigo + ' - ' + pcObj.nome) : 'Geral'}</td>
                                                 <td class="p-3 font-bold text-slate-800">${escapeHTML(f.historico)}</td>
                                                 <td class="p-3 font-mono font-bold ${f.tipo === 'Receber' ? 'text-emerald-600' : 'text-rose-600'}">R$ ${parseFloat(f.valor||0).toFixed(2)}</td>
@@ -939,7 +937,7 @@
                             label: 'Valores em R$',
                             data: [totalReceber, totalPagar, totalReceber - totalPagar],
                             backgroundColor: ['#0d9488', '#f43f5e', '#3b82f6'],
-                            borderRadius: 8,
+                            borderRadius: 10,
                             barThickness: 35
                         }]
                     },
@@ -1006,31 +1004,31 @@
             const conselheiros = db.conselheiros || [];
             return `
                 <div class="space-y-6 w-full">
-                    <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <div class="bg-white p-4 sm:p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">Informações do Condomínio & Concessionárias</h3>
                         <form class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs" onsubmit="event.preventDefault(); salvarDadosCondominio();">
-                            <div class="md:col-span-2"><label class="block font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="c_nome" value="${escapeHTML(cond.nome)}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50"></div>
-                            <div><label class="block font-bold uppercase text-slate-600 mb-1">CNPJ</label><input type="text" id="c_cnpj" value="${escapeHTML(cond.cnpj)}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50"></div>
-                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Telefone</label><input type="text" id="c_tel" value="${escapeHTML(cond.telefone)}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50"></div>
-                            <div class="md:col-span-2"><label class="block font-bold uppercase text-slate-600 mb-1">E-mail</label><input type="text" id="c_email" value="${escapeHTML(cond.email)}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50"></div>
+                            <div class="md:col-span-2"><label class="block font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="c_nome" value="${escapeHTML(cond.nome)}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50 focus:ring-2 focus:ring-teal-500 outline-none"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">CNPJ</label><input type="text" id="c_cnpj" value="${escapeHTML(cond.cnpj)}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50 focus:ring-2 focus:ring-teal-500 outline-none"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Telefone</label><input type="text" id="c_tel" value="${escapeHTML(cond.telefone)}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50 focus:ring-2 focus:ring-teal-500 outline-none"></div>
+                            <div class="md:col-span-2"><label class="block font-bold uppercase text-slate-600 mb-1">E-mail</label><input type="text" id="c_email" value="${escapeHTML(cond.email)}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50 focus:ring-2 focus:ring-teal-500 outline-none"></div>
                             
                             <div class="md:col-span-3 border-t pt-3 mt-2"><h4 class="font-bold text-teal-700 uppercase mb-2">Unidades Consumidoras e Registros (Água, Luz e Gás)</h4></div>
-                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Copel - Bloco 1</label><input type="text" id="c_copel1" value="${escapeHTML(cond.copelBloco1||'')}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50" placeholder="Nº Instalação / UC"></div>
-                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Copel - Bloco 2</label><input type="text" id="c_copel2" value="${escapeHTML(cond.copelBloco2||'')}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50" placeholder="Nº Instalação / UC"></div>
-                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Copel - Bloco 3</label><input type="text" id="c_copel3" value="${escapeHTML(cond.copelBloco3||'')}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50" placeholder="Nº Instalação / UC"></div>
-                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Copel - Bloco 4</label><input type="text" id="c_copel4" value="${escapeHTML(cond.copelBloco4||'')}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50" placeholder="Nº Instalação / UC"></div>
-                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Copel - Áreas Comuns</label><input type="text" id="c_copel_comum" value="${escapeHTML(cond.copelAreasComuns||'')}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50" placeholder="Nº Instalação / UC"></div>
-                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Registro de Gás (Salão)</label><input type="text" id="c_gas" value="${escapeHTML(cond.gasSalao||'')}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50" placeholder="Nº Cliente / Medidor"></div>
-                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Registro Sanepar (Água)</label><input type="text" id="c_sanepar" value="${escapeHTML(cond.sanepar||'')}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50" placeholder="Nº Matrícula"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Copel - Bloco 1</label><input type="text" id="c_copel1" value="${escapeHTML(cond.copelBloco1||'')}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50 focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Nº Instalação / UC"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Copel - Bloco 2</label><input type="text" id="c_copel2" value="${escapeHTML(cond.copelBloco2||'')}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50 focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Nº Instalação / UC"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Copel - Bloco 3</label><input type="text" id="c_copel3" value="${escapeHTML(cond.copelBloco3||'')}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50 focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Nº Instalação / UC"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Copel - Bloco 4</label><input type="text" id="c_copel4" value="${escapeHTML(cond.copelBloco4||'')}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50 focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Nº Instalação / UC"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Copel - Áreas Comuns</label><input type="text" id="c_copel_comum" value="${escapeHTML(cond.copelAreasComuns||'')}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50 focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Nº Instalação / UC"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Registro de Gás (Salão)</label><input type="text" id="c_gas" value="${escapeHTML(cond.gasSalao||'')}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50 focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Nº Cliente / Medidor"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Registro Sanepar (Água)</label><input type="text" id="c_sanepar" value="${escapeHTML(cond.sanepar||'')}" class="w-full p-2.5 border rounded-xl font-bold bg-slate-50 focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Nº Matrícula"></div>
 
-                            <div class="md:col-span-3 pt-2"><button type="button" onclick="salvarDadosCondominio()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-sm">Salvar Alterações</button></div>
+                            <div class="md:col-span-3 pt-2"><button type="button" onclick="salvarDadosCondominio()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all">Salvar Alterações</button></div>
                         </form>
                     </div>
-                    <div class="bg-white rounded-2xl border border-slate-200 overflow-x-auto w-full shadow-sm">
+                    <div class="bg-white rounded-2xl border border-slate-200/80 overflow-x-auto w-full shadow-sm">
                         <div class="p-4 bg-slate-900 text-white font-bold text-sm">Corpo Diretivo</div>
                         <table class="w-full text-left text-xs min-w-[500px]">
                             <thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3">Cargo</th><th class="p-3">Bloco/Ap</th><th class="p-3 text-center">Ações</th></tr></thead>
-                            <tbody class="divide-y">${conselheiros.map(c => `<tr><td class="p-3 font-bold">${escapeHTML(c.nome)}</td><td class="p-3">${escapeHTML(c.cargo)}</td><td class="p-3">${escapeHTML(c.BlocoAp)}</td><td class="p-3 text-center"><button onclick="window.renderModalConselheiro('${c.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('conselheiros','${c.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
+                            <tbody class="divide-y">${conselheiros.map(c => `<tr class="hover:bg-slate-50 transition-colors"><td class="p-3 font-bold">${escapeHTML(c.nome)}</td><td class="p-3">${escapeHTML(c.cargo)}</td><td class="p-3">${escapeHTML(c.BlocoAp)}</td><td class="p-3 text-center"><button onclick="window.renderModalConselheiro('${c.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1 transition-colors" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('conselheiros','${c.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
                         </table>
                     </div>
                 </div>
@@ -1057,14 +1055,14 @@
         window.renderModalConselheiro = function(id = null) {
             const item = id ? (db.conselheiros||[]).find(x => x.id === id) : { id: '', nome: '', cargo: 'Síndico', BlocoAp: '', telefone: '' };
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full backdrop-blur-sm">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Conselheiro' : 'Novo Conselheiro'}</h3>
                         <form onsubmit="salvarModalConselheiro(event, '${id}')" class="space-y-3">
-                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_c_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-xl text-xs font-bold bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Cargo</label><input type="text" id="m_c_cargo" required value="${escapeHTML(item.cargo)}" class="w-full p-2.5 border rounded-xl text-xs font-bold bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Bloco/Ap</label><input type="text" id="m_c_ap" value="${escapeHTML(item.BlocoAp)}" class="w-full p-2.5 border rounded-xl text-xs font-bold bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Telefone</label><input type="text" id="m_c_tel" value="${escapeHTML(item.telefone)}" class="w-full p-2.5 border rounded-xl text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_c_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-xl text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Cargo</label><input type="text" id="m_c_cargo" required value="${escapeHTML(item.cargo)}" class="w-full p-2.5 border rounded-xl text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Bloco/Ap</label><input type="text" id="m_c_ap" value="${escapeHTML(item.BlocoAp)}" class="w-full p-2.5 border rounded-xl text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Telefone</label><input type="text" id="m_c_tel" value="${escapeHTML(item.telefone)}" class="w-full p-2.5 border rounded-xl text-xs font-bold bg-slate-50"></div>
                             <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold shadow-sm">Salvar</button></div>
                         </form>
                     </div>
@@ -1093,7 +1091,7 @@
         function renderPlanoContasView() {
             const list = db.plano_contas || [];
             return `
-                <div class="bg-white rounded-2xl border border-slate-200 overflow-x-auto w-full shadow-sm">
+                <div class="bg-white rounded-2xl border border-slate-200/80 overflow-x-auto w-full shadow-sm">
                     <table class="w-full text-left text-xs min-w-[500px]">
                         <thead class="bg-slate-800 text-white">
                             <tr>
@@ -1105,13 +1103,13 @@
                         </thead>
                         <tbody class="divide-y">
                             ${list.length === 0 ? `<tr><td colspan="4" class="p-6 text-center text-slate-400">Nenhuma conta cadastrada no plano de contas.</td></tr>` : list.map(pc => `
-                                <tr>
+                                <tr class="hover:bg-slate-50 transition-colors">
                                     <td class="p-3 font-mono font-bold text-slate-700">${escapeHTML(pc.codigo)}</td>
                                     <td class="p-3 font-bold text-slate-800">${escapeHTML(pc.nome)}</td>
                                     <td class="p-3"><span class="px-2 py-0.5 rounded font-bold ${pc.tipo === 'Receita' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">${escapeHTML(pc.tipo)}</span></td>
                                     <td class="p-3 text-center">
-                                        <button onclick="window.renderModalPlanoConta('${pc.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button>
-                                        <button onclick="excluirRegistro('plano_contas','${pc.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                                        <button onclick="window.renderModalPlanoConta('${pc.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1 transition-colors" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                                        <button onclick="excluirRegistro('plano_contas','${pc.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors" title="Excluir"><i class="fa-solid fa-trash"></i></button>
                                     </td>
                                 </tr>
                             `).join('')}
@@ -1124,7 +1122,7 @@
         window.renderModalPlanoConta = function(id = null) {
             const item = id ? (db.plano_contas||[]).find(x => x.id === id) : { id: '', codigo: '', nome: '', tipo: 'Despesa' };
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full backdrop-blur-sm">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Conta Gerencial' : 'Nova Conta no Plano de Contas'}</h3>
                         <form onsubmit="salvarModalPlanoConta(event, '${id}')" class="space-y-3 text-xs">
@@ -1164,7 +1162,7 @@
         function renderFinanceiroView() {
             const list = db.financeiro || [];
             return `
-                <div class="bg-white rounded-2xl border border-slate-200 overflow-x-auto w-full shadow-sm">
+                <div class="bg-white rounded-2xl border border-slate-200/80 overflow-x-auto w-full shadow-sm">
                     <table class="w-full text-left text-xs min-w-[650px]">
                         <thead class="bg-slate-800 text-white">
                             <tr>
@@ -1179,14 +1177,14 @@
                             ${list.length === 0 ? `<tr><td colspan="5" class="p-6 text-center text-slate-400">Nenhum título financeiro registado.</td></tr>` : list.map(f => {
                                 const pcObj = (db.plano_contas || []).find(p => p.id === f.planoContaId);
                                 return `
-                                    <tr>
+                                    <tr class="hover:bg-slate-50 transition-colors">
                                         <td class="p-3"><span class="px-2 py-0.5 rounded font-bold ${f.tipo === 'Receber' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">${escapeHTML(f.tipo)}</span></td>
                                         <td class="p-3 font-semibold text-teal-700">${pcObj ? escapeHTML(pcObj.codigo + ' - ' + pcObj.nome) : '<span class="text-slate-400">Não vinculada</span>'}</td>
                                         <td class="p-3 font-bold text-slate-800">${escapeHTML(f.historico)}</td>
                                         <td class="p-3 font-mono font-bold ${f.tipo === 'Receber' ? 'text-emerald-600' : 'text-rose-600'}">R$ ${parseFloat(f.valor||0).toFixed(2)}</td>
                                         <td class="p-3 text-center">
-                                            <button onclick="window.renderModalNovoTitulo('${f.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button>
-                                            <button onclick="excluirRegistro('financeiro','${f.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                                            <button onclick="window.renderModalNovoTitulo('${f.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1 transition-colors" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                                            <button onclick="excluirRegistro('financeiro','${f.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors" title="Excluir"><i class="fa-solid fa-trash"></i></button>
                                         </td>
                                     </tr>
                                 `;
@@ -1202,7 +1200,7 @@
             const planoContas = db.plano_contas || [];
 
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full backdrop-blur-sm">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Título' : 'Novo Título'}</h3>
                         <form onsubmit="salvarModalFinanceiro(event, '${id}')" class="space-y-3 text-xs">
@@ -1246,13 +1244,13 @@
 
         function renderFormasMonetariasView() {
             const list = db.formas_monetarias || [];
-            return `<div class="bg-white rounded-2xl border border-slate-200 overflow-x-auto w-full shadow-sm"><table class="w-full text-left text-xs min-w-[400px]"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3">Multa (%)</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(fm => `<tr><td class="p-3 font-bold">${escapeHTML(fm.nome)}</td><td class="p-3">${fm.multaPct}%</td><td class="p-3 text-center"><button onclick="window.renderModalFormaMonetaria('${fm.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('formas_monetarias','${fm.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+            return `<div class="bg-white rounded-2xl border border-slate-200/80 overflow-x-auto w-full shadow-sm"><table class="w-full text-left text-xs min-w-[400px]"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3">Multa (%)</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(fm => `<tr class="hover:bg-slate-50 transition-colors"><td class="p-3 font-bold">${escapeHTML(fm.nome)}</td><td class="p-3">${fm.multaPct}%</td><td class="p-3 text-center"><button onclick="window.renderModalFormaMonetaria('${fm.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1 transition-colors" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('formas_monetarias','${fm.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
         }
 
         window.renderModalFormaMonetaria = function(id = null) {
             const item = id ? (db.formas_monetarias||[]).find(x => x.id === id) : { id: '', nome: '', multaPct: 2.0 };
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full backdrop-blur-sm">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Forma' : 'Nova Forma'}</h3>
                         <form onsubmit="salvarModalFormaMonetaria(event, '${id}')" class="space-y-3">
@@ -1281,10 +1279,10 @@
         function renderContasBancariasView() {
             const list = db.contas_bancarias || [];
             return `
-                <div class="bg-white rounded-2xl border border-slate-200 overflow-x-auto w-full shadow-sm">
+                <div class="bg-white rounded-2xl border border-slate-200/80 overflow-x-auto w-full shadow-sm">
                     <table class="w-full text-left text-xs min-w-[400px]">
                         <thead class="bg-slate-800 text-white"><tr><th class="p-3">Banco</th><th class="p-3">Saldo</th><th class="p-3 text-center">Ações</th></tr></thead>
-                        <tbody class="divide-y">${list.map(cb => `<tr><td class="p-3 font-bold">${escapeHTML(cb.banco)}</td><td class="p-3">R$ ${cb.saldo}</td><td class="p-3 text-center"><button onclick="window.renderModalContaBancaria('${cb.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('contas_bancarias','${cb.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
+                        <tbody class="divide-y">${list.map(cb => `<tr class="hover:bg-slate-50 transition-colors"><td class="p-3 font-bold">${escapeHTML(cb.banco)}</td><td class="p-3 font-mono">R$ ${cb.saldo}</td><td class="p-3 text-center"><button onclick="window.renderModalContaBancaria('${cb.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1 transition-colors" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('contas_bancarias','${cb.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
                     </table>
                 </div>
             `;
@@ -1293,7 +1291,7 @@
         window.renderModalContaBancaria = function(id = null) {
             const item = id ? (db.contas_bancarias||[]).find(x => x.id === id) : { id: '', banco: '', saldo: 0 };
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full backdrop-blur-sm">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Conta' : 'Nova Conta Bancária'}</h3>
                         <form onsubmit="salvarModalContaBancaria(event, '${id}')" class="space-y-3 text-xs">
@@ -1339,13 +1337,13 @@
             return `
                 <div class="space-y-4 w-full">
                     ${(filtroAtivoMoradores.bloco || filtroAtivoMoradores.nome) ? `
-                        <div class="bg-teal-50 border border-teal-200 p-2.5 rounded-xl text-xs font-bold text-teal-800 flex items-center justify-between no-print">
+                        <div class="bg-teal-50 border border-teal-200 p-3 rounded-2xl text-xs font-bold text-teal-800 flex items-center justify-between no-print shadow-sm">
                             <span>Filtros ativos: ${filtroAtivoMoradores.bloco ? `Bloco: ${filtroAtivoMoradores.bloco}` : ''} ${filtroAtivoMoradores.nome ? `Pesquisa: "${filtroAtivoMoradores.nome}"` : ''}</span>
-                            <button onclick="filtroAtivoMoradores = {bloco: '', nome: ''}; renderMainOnly();" class="px-2.5 py-1 bg-teal-600 text-white rounded-xl text-[10px]">Limpar Filtros</button>
+                            <button onclick="filtroAtivoMoradores = {bloco: '', nome: ''}; renderMainOnly();" class="px-3 py-1 bg-teal-600 text-white rounded-xl text-[10px] shadow-sm">Limpar Filtros</button>
                         </div>
                     ` : ''}
 
-                    <div class="bg-white rounded-2xl border border-slate-200 overflow-x-auto w-full shadow-sm">
+                    <div class="bg-white rounded-2xl border border-slate-200/80 overflow-x-auto w-full shadow-sm">
                         <table class="w-full text-left text-xs relative min-w-[850px]">
                             <thead class="bg-slate-800 text-white">
                                 <tr>
@@ -1357,8 +1355,8 @@
                                         <div id="menu-filtro-bloco" class="hidden absolute left-0 top-full mt-1 bg-white text-slate-800 p-3 rounded-2xl shadow-2xl border border-slate-200 w-48 z-30">
                                             <p class="font-bold text-[10px] uppercase text-slate-400 mb-2">Filtrar Bloco</p>
                                             <div class="space-y-1 max-h-40 overflow-y-auto">
-                                                <button type="button" onclick="event.stopPropagation(); filtrarMoradoresBloco('')" class="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-slate-100 font-bold ${!filtroAtivoMoradores.bloco ? 'bg-teal-50 text-teal-700' : ''}">[ Todos ]</button>
-                                                ${blocosDisponiveis.map(b => `<button type="button" onclick="event.stopPropagation(); filtrarMoradoresBloco('${b}')" class="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-slate-100 font-bold ${filtroAtivoMoradores.bloco===b?'bg-teal-50 text-teal-700':''}">Bloco ${escapeHTML(b)}</button>`).join('')}
+                                                <button type="button" onclick="event.stopPropagation(); filtrarMoradoresBloco('')" class="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-slate-100 font-bold transition-colors ${!filtroAtivoMoradores.bloco ? 'bg-teal-50 text-teal-700' : ''}">[ Todos ]</button>
+                                                ${blocosDisponiveis.map(b => `<button type="button" onclick="event.stopPropagation(); filtrarMoradoresBloco('${b}')" class="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-slate-100 font-bold transition-colors ${filtroAtivoMoradores.bloco===b?'bg-teal-50 text-teal-700':''}">Bloco ${escapeHTML(b)}</button>`).join('')}
                                             </div>
                                         </div>
                                     </th>
@@ -1387,7 +1385,7 @@
                             </thead>
                             <tbody class="divide-y">
                                 ${moradores.length === 0 ? `<tr><td colspan="7" class="p-6 text-center text-slate-400">Nenhum morador encontrado com os filtros aplicados.</td></tr>` : moradores.map(m => `
-                                    <tr>
+                                    <tr class="hover:bg-slate-50 transition-colors">
                                         <td class="p-3">
                                             <div class="font-bold text-slate-800">Bloco ${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</div>
                                             <div class="text-[10px] text-teal-700 font-semibold">${escapeHTML(m.nome)}</div>
@@ -1398,11 +1396,11 @@
                                         </td>
                                         <td class="p-3 font-mono">${escapeHTML(m.cpf || '-')}</td>
                                         <td class="p-3 font-mono">${escapeHTML(m.telefone || '-')}</td>
-                                        <td class="p-3">${m.petNome ? `<span class="px-2.5 py-1 bg-teal-50 text-teal-700 rounded-xl font-bold"><i class="fa-solid fa-paw mr-1"></i> ${escapeHTML(m.petNome)}</span>` : '-'}</td>
-                                        <td class="p-3">${m.vagaGaragem ? `<span class="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-xl font-bold"><i class="fa-solid fa-car mr-1"></i> ${escapeHTML(m.vagaGaragem)}</span>` : '-'}</td>
+                                        <td class="p-3">${m.petNome ? `<span class="px-2.5 py-1 bg-teal-50 text-teal-700 rounded-xl font-bold inline-flex items-center gap-1"><i class="fa-solid fa-paw"></i> ${escapeHTML(m.petNome)}</span>` : '-'}</td>
+                                        <td class="p-3">${m.vagaGaragem ? `<span class="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-xl font-bold inline-flex items-center gap-1"><i class="fa-solid fa-car"></i> ${escapeHTML(m.vagaGaragem)}</span>` : '-'}</td>
                                         <td class="p-3 text-center">
-                                            <button onclick="window.renderModalMorador('${m.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button>
-                                            <button onclick="excluirRegistro('moradores','${m.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                                            <button onclick="window.renderModalMorador('${m.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1 transition-colors" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                                            <button onclick="excluirRegistro('moradores','${m.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors" title="Excluir"><i class="fa-solid fa-trash"></i></button>
                                         </td>
                                     </tr>
                                 `).join('')}
@@ -1438,7 +1436,7 @@
         window.renderModalMorador = function(id = null) {
             const m = id ? (db.moradores||[]).find(x => x.id === id) : { id: '', bloco: '1', apartamento: '', nome: '', email: '', telefone: '', cpf: '', petNome: '', vagaGaragem: '' };
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full backdrop-blur-sm">
                     <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
                         <div class="flex justify-between items-center border-b pb-3">
                             <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Morador' : 'Novo Morador'}</h3>
@@ -1490,13 +1488,13 @@
 
         function renderFornecedoresView() {
             const list = db.fornecedores || [];
-            return `<div class="bg-white rounded-2xl border border-slate-200 overflow-x-auto w-full shadow-sm"><table class="w-full text-left text-xs min-w-[450px]"><thead class="bg-slate-800 text-white"><tr><th class="p-3">CNPJ</th><th class="p-3">Razão Social</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(f => `<tr><td class="p-3 font-mono">${escapeHTML(f.cnpj)}</td><td class="p-3 font-bold">${escapeHTML(f.razaoSocial)}</td><td class="p-3 text-center"><button onclick="window.renderModalFornecedor('${f.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('fornecedores','${f.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+            return `<div class="bg-white rounded-2xl border border-slate-200/80 overflow-x-auto w-full shadow-sm"><table class="w-full text-left text-xs min-w-[450px]"><thead class="bg-slate-800 text-white"><tr><th class="p-3">CNPJ</th><th class="p-3">Razão Social</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(f => `<tr class="hover:bg-slate-50 transition-colors"><td class="p-3 font-mono">${escapeHTML(f.cnpj)}</td><td class="p-3 font-bold">${escapeHTML(f.razaoSocial)}</td><td class="p-3 text-center"><button onclick="window.renderModalFornecedor('${f.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1 transition-colors" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('fornecedores','${f.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
         }
 
         window.renderModalFornecedor = function(id = null) {
             const item = id ? (db.fornecedores||[]).find(x => x.id === id) : { id: '', cnpj: '', razaoSocial: '' };
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full backdrop-blur-sm">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Fornecedor' : 'Novo Fornecedor'}</h3>
                         <form onsubmit="salvarModalFornecedor(event, '${id}')" class="space-y-3 text-xs">
@@ -1525,7 +1523,7 @@
         function renderEmpregadosView() {
             const list = db.empregados || [];
             return `
-                <div class="bg-white rounded-2xl border border-slate-200 overflow-x-auto w-full shadow-sm">
+                <div class="bg-white rounded-2xl border border-slate-200/80 overflow-x-auto w-full shadow-sm">
                     <table class="w-full text-left text-xs min-w-[850px]">
                         <thead class="bg-slate-800 text-white">
                             <tr>
@@ -1539,7 +1537,7 @@
                         </thead>
                         <tbody class="divide-y">
                             ${list.length === 0 ? `<tr><td colspan="6" class="p-6 text-center text-slate-400">Nenhum empregado registado.</td></tr>` : list.map(e => `
-                                <tr>
+                                <tr class="hover:bg-slate-50 transition-colors">
                                     <td class="p-3">
                                         <div class="font-bold text-slate-800">${escapeHTML(e.nome)}</div>
                                         <div class="text-[10px] text-teal-700 font-semibold">${escapeHTML(e.cargo)}</div>
@@ -1552,8 +1550,8 @@
                                         <div class="font-mono text-[10px] text-rose-600">${escapeHTML(e.contatoEmergenciaTel || '')}</div>
                                     </td>
                                     <td class="p-3 text-center">
-                                        <button onclick="window.renderModalEmpregado('${e.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button>
-                                        <button onclick="excluirRegistro('empregados','${e.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                                        <button onclick="window.renderModalEmpregado('${e.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1 transition-colors" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                                        <button onclick="excluirRegistro('empregados','${e.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors" title="Excluir"><i class="fa-solid fa-trash"></i></button>
                                     </td>
                                 </tr>
                             `).join('')}
@@ -1566,7 +1564,7 @@
         window.renderModalEmpregado = function(id = null) {
             const item = id ? (db.empregados||[]).find(x => x.id === id) : { id: '', nome: '', cargo: '', empresa: '', endereco: '', telefone: '', contatoEmergenciaNome: '', contatoEmergenciaTel: '' };
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full backdrop-blur-sm">
                     <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
                         <div class="flex justify-between items-center border-b pb-3">
                             <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Empregado' : 'Novo Empregado'}</h3>
@@ -1616,12 +1614,12 @@
 
         function renderCategoriasView() {
             const list = db.categorias || [];
-            return `<div class="bg-white rounded-2xl border border-slate-200 overflow-x-auto w-full shadow-sm"><table class="w-full text-left text-xs min-w-[300px]"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(c => `<tr><td class="p-3 font-bold">${escapeHTML(c.nome)}</td><td class="p-3 text-center"><button onclick="excluirRegistro('categorias','${c.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+            return `<div class="bg-white rounded-2xl border border-slate-200/80 overflow-x-auto w-full shadow-sm"><table class="w-full text-left text-xs min-w-[300px]"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Nome</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${list.map(c => `<tr class="hover:bg-slate-50 transition-colors"><td class="p-3 font-bold">${escapeHTML(c.nome)}</td><td class="p-3 text-center"><button onclick="excluirRegistro('categorias','${c.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
         }
 
         window.renderModalCategoria = function() {
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full backdrop-blur-sm">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">Nova Pasta</h3>
                         <form onsubmit="salvarModalCategoria(event)" class="space-y-3">
@@ -1668,7 +1666,7 @@
                 <div class="space-y-6 w-full">
                     <!-- Cards de Alertas Rápidos no Topo do Estoque -->
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
-                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between border-l-4 border-l-teal-600">
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm card-hover flex items-center justify-between border-l-4 border-l-teal-600">
                             <div>
                                 <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Estoque Adequado</p>
                                 <h3 class="text-xl font-black text-teal-700">${totalAdequados} itens</h3>
@@ -1676,7 +1674,7 @@
                             <div class="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center font-bold"><i class="fa-solid fa-circle-check"></i></div>
                         </div>
 
-                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between border-l-4 border-l-rose-600">
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm card-hover flex items-center justify-between border-l-4 border-l-rose-600">
                             <div>
                                 <p class="text-[11px] font-extrabold text-rose-600 uppercase tracking-wider">Atenção: Estoque Insuficiente</p>
                                 <h3 class="text-xl font-black text-rose-600">${totalCriticos} itens críticos</h3>
@@ -1684,7 +1682,7 @@
                             <div class="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold"><i class="fa-solid fa-triangle-exclamation animate-bounce"></i></div>
                         </div>
 
-                        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center justify-between border-l-4 border-l-amber-500">
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm card-hover flex items-center justify-between border-l-4 border-l-amber-500">
                             <div>
                                 <p class="text-[11px] font-extrabold text-amber-600 uppercase tracking-wider">Excedente / Antigo (Não Comprar)</p>
                                 <h3 class="text-xl font-black text-amber-600">${totalExcedentes} itens</h3>
@@ -1694,14 +1692,14 @@
                     </div>
 
                     <!-- Dashboard Gráfico de Estoque -->
-                    <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm w-full max-w-xl mx-auto flex flex-col items-center justify-center">
+                    <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm card-hover w-full max-w-xl mx-auto flex flex-col items-center justify-center">
                         <h3 class="font-bold text-slate-800 text-sm mb-3"><i class="fa-solid fa-chart-pie text-teal-600 mr-2"></i> Status Geral do Estoque</h3>
                         <div class="relative h-48 w-full flex items-center justify-center">
                             <canvas id="chartEstoqueStatus"></canvas>
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-2xl border border-slate-200 overflow-x-auto w-full shadow-sm">
+                    <div class="bg-white rounded-2xl border border-slate-200/80 overflow-x-auto w-full shadow-sm">
                         <table class="w-full text-left text-xs min-w-[800px]">
                             <thead class="bg-slate-800 text-white">
                                 <tr>
@@ -1728,10 +1726,10 @@
                                     }
 
                                     return `
-                                        <tr class="${atual <= minimo ? 'bg-rose-50/40' : (maximo > 0 && atual > maximo ? 'bg-amber-50/30' : '')}">
+                                        <tr class="hover:bg-slate-50 transition-colors ${atual <= minimo ? 'bg-rose-50/40' : (maximo > 0 && atual > maximo ? 'bg-amber-50/30' : '')}">
                                             <td class="p-3 text-center">
                                                 ${st.fotoCompactadaGzip ? `
-                                                    <button onclick="visualizarArquivo('${st.fotoCompactadaGzip}', '${escapeHTML(st.fotoNome || 'produto.jpg')}')" class="w-10 h-10 rounded-xl overflow-hidden border border-slate-300 shadow-sm inline-block hover:opacity-80" title="Ver foto ampliada">
+                                                    <button onclick="visualizarArquivo('${st.fotoCompactadaGzip}', '${escapeHTML(st.fotoNome || 'produto.jpg')}')" class="w-10 h-10 rounded-xl overflow-hidden border border-slate-300 shadow-sm inline-block hover:opacity-80 transition-opacity" title="Ver foto ampliada">
                                                         <img src="data:image/*;base64,${btoa(String.fromCharCode(...pako.inflate(atob(st.fotoCompactadaGzip))))}" class="w-full h-full object-cover">
                                                     </button>
                                                 ` : `<div class="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-slate-400 text-xs"><i class="fa-solid fa-image"></i></div>`}
@@ -1742,8 +1740,8 @@
                                             <td class="p-3 font-mono text-[11px] text-slate-500">Mín: ${minimo} / Máx: ${maximo}</td>
                                             <td class="p-3">${badgeAlerta}</td>
                                             <td class="p-3 text-center">
-                                                <button onclick="window.renderModalEstoque('${st.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button>
-                                                <button onclick="excluirRegistro('estoque','${st.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                                                <button onclick="window.renderModalEstoque('${st.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1 transition-colors" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                                                <button onclick="excluirRegistro('estoque','${st.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors" title="Excluir"><i class="fa-solid fa-trash"></i></button>
                                             </td>
                                         </tr>
                                     `;
@@ -1806,7 +1804,7 @@
             tempEstoqueFotoNome = item.fotoNome || '';
 
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full backdrop-blur-sm">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
                         <div class="flex justify-between items-center border-b pb-3">
                             <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Item' : 'Novo Item no Estoque'}</h3>
@@ -1871,7 +1869,7 @@
             const docs = db.documentos || [];
             return `
                 <div class="space-y-3 w-full">
-                    <div class="bg-white rounded-2xl border border-slate-200 overflow-x-auto w-full shadow-sm">
+                    <div class="bg-white rounded-2xl border border-slate-200/80 overflow-x-auto w-full shadow-sm">
                         <table class="w-full text-left text-xs min-w-[550px]">
                             <thead class="bg-slate-800 text-white">
                                 <tr>
@@ -1883,17 +1881,17 @@
                             </thead>
                             <tbody class="divide-y">
                                 ${docs.length === 0 ? `<tr><td colspan="4" class="p-6 text-center text-slate-400">Nenhum documento inserido.</td></tr>` : docs.map(d => `
-                                    <tr>
-                                        <td class="p-3"><span class="px-2.5 py-1 bg-teal-50 text-teal-700 rounded-xl font-bold"><i class="fa-solid fa-folder mr-1"></i> ${escapeHTML(d.pasta || 'Geral')}</span></td>
+                                    <tr class="hover:bg-slate-50 transition-colors">
+                                        <td class="p-3"><span class="px-2.5 py-1 bg-teal-50 text-teal-700 rounded-xl font-bold inline-flex items-center gap-1"><i class="fa-solid fa-folder"></i> ${escapeHTML(d.pasta || 'Geral')}</span></td>
                                         <td class="p-3 font-bold">${escapeHTML(d.titulo)}</td>
                                         <td class="p-3 font-mono">${escapeHTML(d.nomeArquivo)}</td>
                                         <td class="p-3 text-center flex items-center justify-center gap-1">
                                             ${d.arquivoCompactadoGzip ? `
-                                                <button onclick="visualizarArquivo('${d.arquivoCompactadoGzip}', '${escapeHTML(d.nomeArquivo)}')" class="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg" title="Visualizar Documento"><i class="fa-solid fa-eye"></i></button>
-                                                <button onclick="extrairEDownloadArquivo('${d.arquivoCompactadoGzip}', '${escapeHTML(d.nomeArquivo)}')" class="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg" title="Baixar"><i class="fa-solid fa-download"></i></button>
+                                                <button onclick="visualizarArquivo('${d.arquivoCompactadoGzip}', '${escapeHTML(d.nomeArquivo)}')" class="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition-colors" title="Visualizar Documento"><i class="fa-solid fa-eye"></i></button>
+                                                <button onclick="extrairEDownloadArquivo('${d.arquivoCompactadoGzip}', '${escapeHTML(d.nomeArquivo)}')" class="p-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-lg transition-colors" title="Baixar"><i class="fa-solid fa-download"></i></button>
                                             ` : ''}
-                                            <button onclick="window.renderModalDocumento('${d.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg" title="Editar"><i class="fa-solid fa-pen"></i></button>
-                                            <button onclick="excluirRegistro('documentos','${d.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                                            <button onclick="window.renderModalDocumento('${d.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                                            <button onclick="excluirRegistro('documentos','${d.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors" title="Excluir"><i class="fa-solid fa-trash"></i></button>
                                         </td>
                                     </tr>
                                 `).join('')}
@@ -1913,7 +1911,7 @@
             if (categoriasDisponiveis.length === 0) categoriasDisponiveis.push('Geral', 'Assembleias', 'Financeiro', 'Manutenção');
 
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full backdrop-blur-sm">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <div class="flex justify-between items-center border-b pb-3">
                             <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Documento' : 'Inserir Novo Documento'}</h3>
@@ -1973,7 +1971,7 @@
         function renderUsuariosView() {
             const users = db.usuarios || [];
             return `
-                <div class="bg-white rounded-2xl border border-slate-200 overflow-x-auto shadow-sm w-full">
+                <div class="bg-white rounded-2xl border border-slate-200/80 overflow-x-auto shadow-sm w-full">
                     <table class="w-full text-left text-xs min-w-[700px]">
                         <thead class="bg-slate-800 text-white">
                             <tr>
@@ -1986,7 +1984,7 @@
                         </thead>
                         <tbody class="divide-y">
                             ${users.map(u => `
-                                <tr>
+                                <tr class="hover:bg-slate-50 transition-colors">
                                     <td class="p-3">
                                         <div class="font-bold text-slate-800">${escapeHTML(u.usuario)}</div>
                                         <div class="text-[10px] text-slate-500">${escapeHTML(u.nome || '')}</div>
@@ -1995,9 +1993,9 @@
                                     <td class="p-3 font-semibold text-slate-700">${escapeHTML(u.loja || 'Guardiões do Bravo')}</td>
                                     <td class="p-3 font-semibold text-teal-700">${escapeHTML(u.cargo || u.perfil || 'Operador')}</td>
                                     <td class="p-3 text-center">
-                                        <button onclick="window.renderModalRedefinirSenha('${u.id}')" class="px-2.5 py-1 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg font-bold mr-1" title="Redefinir Senha"><i class="fa-solid fa-key mr-1"></i> Senha</button>
-                                        <button onclick="window.renderModalUsuario('${u.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button>
-                                        ${u.id !== 'usr_admin' ? `<button onclick="excluirRegistro('usuarios','${u.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg" title="Excluir"><i class="fa-solid fa-trash"></i></button>` : ''}
+                                        <button onclick="window.renderModalRedefinirSenha('${u.id}')" class="px-2.5 py-1 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-lg font-bold mr-1 transition-colors" title="Redefinir Senha"><i class="fa-solid fa-key mr-1"></i> Senha</button>
+                                        <button onclick="window.renderModalUsuario('${u.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1 transition-colors" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                                        ${u.id !== 'usr_admin' ? `<button onclick="excluirRegistro('usuarios','${u.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition-colors" title="Excluir"><i class="fa-solid fa-trash"></i></button>` : ''}
                                     </td>
                                 </tr>
                             `).join('')}
@@ -2010,7 +2008,7 @@
         window.renderModalUsuario = function(id = null) {
             const item = id ? (db.usuarios||[]).find(x => x.id === id) : { id: '', usuario: '', nome: '', email: '', loja: 'Guardiões do Bravo', cargo: '', primeiroAcesso: true, senhaHash: 'Condo@2026' };
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full backdrop-blur-sm">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Utilizador' : 'Novo Utilizador'}</h3>
                         <form onsubmit="salvarModalUsuario(event, '${id}')" class="space-y-3 text-xs">
@@ -2058,7 +2056,7 @@
             const user = (db.usuarios || []).find(x => x.id === id);
             if (!user) return;
             abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full">
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 w-full backdrop-blur-sm">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <div class="flex justify-between items-center border-b pb-3">
                             <h3 class="font-bold text-lg text-slate-800">Redefinir Senha: ${escapeHTML(user.usuario)}</h3>
@@ -2119,17 +2117,17 @@
             const resultadoLiquidoDRE = totalReceitasDRE - totalDespesasDRE;
 
             return `
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6 w-full">
+                <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-6 w-full card-hover">
                     <div class="flex justify-between items-center border-b pb-3">
-                        <h3 class="font-black text-slate-800 text-lg uppercase"><i class="fa-solid fa-file-invoice-dollar mr-2 text-teal-600"></i> Demonstrativo do Resultado (DRE Dinâmico)</h3>
-                        <span class="text-xs bg-teal-50 text-teal-700 px-3 py-1 rounded-xl font-bold">Vinculado ao Plano de Contas</span>
+                        <h3 class="font-black text-slate-800 text-lg uppercase tracking-tight"><i class="fa-solid fa-file-invoice-dollar mr-2 text-teal-600"></i> Demonstrativo do Resultado (DRE Dinâmico)</h3>
+                        <span class="text-xs bg-teal-50 text-teal-700 px-3.5 py-1.5 rounded-xl font-bold shadow-inner">Vinculado ao Plano de Contas</span>
                     </div>
 
                     <div class="space-y-4 text-xs">
                         <div class="space-y-2">
                             <p class="font-bold text-slate-400 uppercase tracking-wider text-[11px]">Receitas</p>
                             ${Object.values(itensPorConta).filter(i => i.tipo === 'Receita').map(i => `
-                                <div class="flex justify-between p-3 bg-emerald-50/60 text-emerald-900 font-semibold rounded-xl border border-emerald-100">
+                                <div class="flex justify-between p-3.5 bg-emerald-50/70 text-emerald-900 font-semibold rounded-2xl border border-emerald-100/80 transition-all hover:shadow-sm">
                                     <span>(+) ${escapeHTML(i.codigo + ' - ' + i.nome)}</span>
                                     <span class="font-mono font-bold">R$ ${i.total.toFixed(2)}</span>
                                 </div>
@@ -2139,7 +2137,7 @@
                         <div class="space-y-2 pt-2">
                             <p class="font-bold text-slate-400 uppercase tracking-wider text-[11px]">Despesas</p>
                             ${Object.values(itensPorConta).filter(i => i.tipo === 'Despesa').map(i => `
-                                <div class="flex justify-between p-3 bg-rose-50/60 text-rose-900 font-semibold rounded-xl border border-rose-100">
+                                <div class="flex justify-between p-3.5 bg-rose-50/70 text-rose-900 font-semibold rounded-2xl border border-rose-100/80 transition-all hover:shadow-sm">
                                     <span>(-) ${escapeHTML(i.codigo + ' - ' + i.nome)}</span>
                                     <span class="font-mono font-bold">R$ ${i.total.toFixed(2)}</span>
                                 </div>
