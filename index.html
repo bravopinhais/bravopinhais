@@ -58,10 +58,9 @@
         let tempEstoqueFotoGzip = '';
 
         let filtroAtivoMoradores = { bloco: '', nome: '' };
-        let moradoresSelecionados = [];
+        let moradoresSelecionados = []; 
         let usuarioPendentePrimeiroAcesso = null; 
         let chartInstanceReceitaDespesa = null;
-        let chartInstanceOcupacao = null;
         let chartInstanceEstoque = null;
         let chartInstanceEstoqueDash = null;
 
@@ -164,7 +163,7 @@
             empregados: [],
             categorias: [],
             estoque: [],
-            acertos_estoque: [], // Histórico de acertos de estoque
+            acertos_estoque: [],
             documentos: [],
             logs: []
         };
@@ -814,6 +813,7 @@
                             <div>
                                 <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Saldo em Caixa</p>
                                 <h3 class="text-xl sm:text-2xl font-black ${saldoCaixa >= 0 ? 'text-emerald-600' : 'text-rose-600'}">R$ ${saldoCaixa.toFixed(2)}</h3>
+                                <span class="text-[10px] text-slate-500 font-semibold">Receitas vs Despesas</span>
                             </div>
                             <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-xl font-bold shadow-inner"><i class="fa-solid fa-wallet"></i></div>
                         </div>
@@ -822,6 +822,7 @@
                             <div>
                                 <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Total Moradores</p>
                                 <h3 class="text-xl sm:text-2xl font-black text-slate-800">${totalMoradores}</h3>
+                                <span class="text-[10px] text-teal-600 font-semibold">Unidades ativas</span>
                             </div>
                             <div class="w-12 h-12 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center text-xl font-bold shadow-inner"><i class="fa-solid fa-users"></i></div>
                         </div>
@@ -830,6 +831,7 @@
                             <div>
                                 <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Fornecedores</p>
                                 <h3 class="text-xl sm:text-2xl font-black text-slate-800">${totalFornecedores}</h3>
+                                <span class="text-[10px] text-blue-600 font-semibold">Parceiros registados</span>
                             </div>
                             <div class="w-12 h-12 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-xl font-bold shadow-inner"><i class="fa-solid fa-truck-fast"></i></div>
                         </div>
@@ -838,15 +840,140 @@
                             <div>
                                 <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Documentos</p>
                                 <h3 class="text-xl sm:text-2xl font-black text-slate-800">${totalDocumentos}</h3>
+                                <span class="text-[10px] text-amber-600 font-semibold">Arquivos na nuvem</span>
                             </div>
                             <div class="w-12 h-12 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-xl font-bold shadow-inner"><i class="fa-solid fa-folder-open"></i></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full">
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm card-hover flex items-center justify-between border-l-4 border-l-teal-600">
+                            <div>
+                                <p class="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Estoque Adequado</p>
+                                <h3 class="text-xl font-black text-teal-700">${totalAdequados} itens</h3>
+                            </div>
+                            <div class="w-10 h-10 bg-teal-50 text-teal-600 rounded-xl flex items-center justify-center font-bold"><i class="fa-solid fa-circle-check"></i></div>
+                        </div>
+
+                        <div onclick="abrirModulo('estoque')" class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm card-hover flex items-center justify-between border-l-4 border-l-rose-600 cursor-pointer transition-all">
+                            <div>
+                                <p class="text-[11px] font-extrabold text-rose-600 uppercase tracking-wider">Atenção: Estoque Insuficiente</p>
+                                <h3 class="text-xl font-black text-rose-600">${totalCriticos} itens críticos</h3>
+                            </div>
+                            <div class="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center font-bold"><i class="fa-solid fa-triangle-exclamation animate-bounce"></i></div>
+                        </div>
+
+                        <div onclick="abrirModulo('estoque')" class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm card-hover flex items-center justify-between border-l-4 border-l-amber-500 cursor-pointer transition-all">
+                            <div>
+                                <p class="text-[11px] font-extrabold text-amber-600 uppercase tracking-wider">Excedente / Antigo</p>
+                                <h3 class="text-xl font-black text-amber-600">${totalExcedentes} itens</h3>
+                            </div>
+                            <div class="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center font-bold"><i class="fa-solid fa-box-archive"></i></div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm lg:col-span-2 flex flex-col justify-between card-hover">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-black text-slate-800 text-sm sm:text-base"><i class="fa-solid fa-chart-line text-teal-600 mr-2"></i> Panorama Financeiro (Pagar x Receber)</h3>
+                                <span class="text-[10px] bg-slate-100 text-slate-600 px-3 py-1 rounded-xl font-bold">Tempo Real</span>
+                            </div>
+                            <div class="relative h-64 sm:h-72 w-full flex items-center justify-center">
+                                <canvas id="chartReceitaDespesa"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col justify-between card-hover">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="font-black text-slate-800 text-sm sm:text-base"><i class="fa-solid fa-boxes-stacked text-teal-600 mr-2"></i> Status do Estoque</h3>
+                            </div>
+                            <div class="relative h-60 w-full flex items-center justify-center">
+                                <canvas id="chartEstoqueDash"></canvas>
+                            </div>
+                            <div class="mt-4 pt-3 border-t text-center">
+                                <button onclick="abrirModulo('estoque')" class="text-teal-700 hover:text-teal-800 text-xs font-bold transition-colors">Gerenciar Estoque Completo &rarr;</button>
+                            </div>
                         </div>
                     </div>
                 </div>
             `;
         }
 
-        function initDashboardCharts() {}
+        function initDashboardCharts() {
+            if (tabsState.activeTab !== 'dashboard') return;
+
+            const finList = db.financeiro || [];
+            let totalReceber = 0;
+            let totalPagar = 0;
+            finList.forEach(f => {
+                const val = parseFloat(f.valor) || 0;
+                if (f.tipo === 'Receber') totalReceber += val;
+                else if (f.tipo === 'Pagar') totalPagar += val;
+            });
+
+            const ctx1 = document.getElementById('chartReceitaDespesa');
+            if (ctx1) {
+                if (chartInstanceReceitaDespesa) chartInstanceReceitaDespesa.destroy();
+                chartInstanceReceitaDespesa = new Chart(ctx1, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Total a Receber', 'Total a Pagar', 'Saldo Líquido'],
+                        datasets: [{
+                            label: 'Valores em R$',
+                            data: [totalReceber, totalPagar, totalReceber - totalPagar],
+                            backgroundColor: ['#0d9488', '#f43f5e', '#3b82f6'],
+                            borderRadius: 10,
+                            barThickness: 35
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: {
+                            y: { grid: { color: '#f1f5f9' }, ticks: { font: { weight: 'bold' } } },
+                            x: { grid: { display: false }, ticks: { font: { weight: 'bold' } } }
+                        }
+                    }
+                });
+            }
+
+            const ctxDash = document.getElementById('chartEstoqueDash');
+            if (ctxDash) {
+                const list = db.estoque || [];
+                let qtdAdequado = 0, qtdCritico = 0, qtdExcedente = 0;
+                list.forEach(st => {
+                    const atual = parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
+                    const minimo = parseInt(st.minimo || 0);
+                    const maximo = parseInt(st.maximo || 0);
+                    if (atual <= minimo) qtdCritico++;
+                    else if (maximo > 0 && atual > maximo) qtdExcedente++;
+                    else qtdAdequado++;
+                });
+                if (list.length === 0) qtdAdequado = 1;
+
+                if (chartInstanceEstoqueDash) chartInstanceEstoqueDash.destroy();
+                chartInstanceEstoqueDash = new Chart(ctxDash, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Adequado', 'Insuficiente', 'Excedente'],
+                        datasets: [{
+                            data: [qtdAdequado, qtdCritico, qtdExcedente],
+                            backgroundColor: ['#0d9488', '#f43f5e', '#f59e0b'],
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { weight: 'bold', size: 10 } } } },
+                        cutout: '65%'
+                    }
+                });
+            }
+        }
+
         function initDashboardEstoqueChart() {}
 
         function renderCondominioView() {
@@ -885,20 +1012,47 @@
             return `<div class="bg-white rounded-2xl border border-slate-200/80 overflow-x-auto w-full shadow-sm"><table class="w-full text-left text-xs min-w-[500px]"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Código</th><th class="p-3">Nome da Conta</th><th class="p-3">Tipo</th></tr></thead><tbody class="divide-y">${list.map(pc => `<tr class="hover:bg-slate-50"><td class="p-3 font-mono font-bold">${escapeHTML(pc.codigo)}</td><td class="p-3 font-bold">${escapeHTML(pc.nome)}</td><td class="p-3">${escapeHTML(pc.tipo)}</td></tr>`).join('')}</tbody></table></div>`;
         }
 
+        window.renderModalPlanoConta = function() {};
+        window.salvarModalPlanoConta = function() {};
+
         function renderFinanceiroView() {
-            return `<div class="bg-white p-6 rounded-2xl border">Módulo Financeiro Ativo.</div>`;
+            const list = db.financeiro || [];
+            return `
+                <div class="bg-white rounded-2xl border border-slate-200/80 overflow-x-auto w-full shadow-sm">
+                    <table class="w-full text-left text-xs min-w-[650px]">
+                        <thead class="bg-slate-800 text-white"><tr><th class="p-3">Tipo</th><th class="p-3">Histórico</th><th class="p-3">Valor</th></tr></thead>
+                        <tbody class="divide-y">${list.length === 0 ? `<tr><td colspan="3" class="p-6 text-center text-slate-400">Nenhum título financeiro registado.</td></tr>` : list.map(f => `<tr class="hover:bg-slate-50"><td class="p-3 font-bold">${escapeHTML(f.tipo)}</td><td class="p-3">${escapeHTML(f.historico)}</td><td class="p-3 font-mono">R$ ${parseFloat(f.valor||0).toFixed(2)}</td></tr>`).join('')}</tbody>
+                    </table>
+                </div>
+            `;
         }
+
+        window.renderModalNovoTitulo = function() {};
+        window.salvarModalFinanceiro = function() {};
 
         function renderFormasMonetariasView() {
             return `<div class="bg-white p-6 rounded-2xl border">Formas Monetárias Ativo.</div>`;
         }
+        window.renderModalFormaMonetaria = function() {};
 
         function renderContasBancariasView() {
             return `<div class="bg-white p-6 rounded-2xl border">Contas Bancárias Ativo.</div>`;
         }
+        window.renderModalContaBancaria = function() {};
 
         function toggleSelecionarTodosMoradores(source) {
             let moradoresFiltrados = db.moradores || [];
+            if (filtroAtivoMoradores.bloco) {
+                moradoresFiltrados = moradoresFiltrados.filter(m => String(m.bloco).trim() === String(filtroAtivoMoradores.bloco).trim());
+            }
+            if (filtroAtivoMoradores.nome) {
+                const termo = String(filtroAtivoMoradores.nome).toLowerCase().trim();
+                moradoresFiltrados = moradoresFiltrados.filter(m => 
+                    String(m.nome || '').toLowerCase().includes(termo) || 
+                    String(m.apartamento || '').toLowerCase().includes(termo)
+                );
+            }
+
             if (source.checked) {
                 moradoresSelecionados = moradoresFiltrados.map(m => m.id);
             } else {
@@ -925,10 +1079,31 @@
 
         function renderMoradoresView() {
             let moradores = db.moradores || [];
+            
+            if (filtroAtivoMoradores.bloco !== '' && filtroAtivoMoradores.bloco !== null && filtroAtivoMoradores.bloco !== undefined) {
+                moradores = moradores.filter(m => String(m.bloco).trim() === String(filtroAtivoMoradores.bloco).trim());
+            }
+            
+            if (filtroAtivoMoradores.nome !== '' && filtroAtivoMoradores.nome !== null && filtroAtivoMoradores.nome !== undefined) {
+                const termo = String(filtroAtivoMoradores.nome).toLowerCase().trim();
+                moradores = moradores.filter(m => 
+                    String(m.nome || '').toLowerCase().includes(termo) || 
+                    String(m.apartamento || '').toLowerCase().includes(termo)
+                );
+            }
+
+            const blocosDisponiveis = [...new Set((db.moradores||[]).map(m => String(m.bloco).trim()))].filter(Boolean);
             const todosSelecionados = moradores.length > 0 && moradores.every(m => moradoresSelecionados.includes(m.id));
 
             return `
                 <div class="space-y-4 w-full">
+                    ${(filtroAtivoMoradores.bloco || filtroAtivoMoradores.nome) ? `
+                        <div class="bg-teal-50 border border-teal-200 p-3 rounded-2xl text-xs font-bold text-teal-800 flex items-center justify-between no-print shadow-sm">
+                            <span>Filtros ativos: ${filtroAtivoMoradores.bloco ? `Bloco: ${filtroAtivoMoradores.bloco}` : ''} ${filtroAtivoMoradores.nome ? `Pesquisa: "${filtroAtivoMoradores.nome}"` : ''}</span>
+                            <button onclick="filtroAtivoMoradores = {bloco: '', nome: ''}; renderMainOnly();" class="px-3 py-1 bg-teal-600 text-white rounded-xl text-[10px] shadow-sm">Limpar Filtros</button>
+                        </div>
+                    ` : ''}
+
                     <div class="bg-white rounded-2xl border border-slate-200/80 overflow-x-auto w-full shadow-sm">
                         <table class="w-full text-left text-xs relative min-w-[900px]">
                             <thead class="bg-slate-800 text-white">
@@ -936,8 +1111,35 @@
                                     <th class="p-3 w-10 text-center">
                                         <input type="checkbox" ${todosSelecionados ? 'checked' : ''} onchange="toggleSelecionarTodosMoradores(this)" class="rounded border-slate-600 text-teal-600 w-4 h-4 cursor-pointer">
                                     </th>
-                                    <th class="p-3">Bloco/Ap</th>
-                                    <th class="p-3">Nome / E-mail</th>
+                                    <th class="p-3 relative">
+                                        <div class="flex items-center justify-between cursor-pointer select-none" onclick="event.stopPropagation(); toggleMenuFiltroColuna('menu-filtro-bloco')">
+                                            <span>BLOCO/AP <i class="fa-solid fa-filter text-[10px] ${filtroAtivoMoradores.bloco ? 'text-teal-400' : 'text-slate-400'}"></i></span>
+                                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                                        </div>
+                                        <div id="menu-filtro-bloco" class="hidden absolute left-0 top-full mt-1 bg-white text-slate-800 p-3 rounded-2xl shadow-2xl border border-slate-200 w-48 z-30">
+                                            <p class="font-bold text-[10px] uppercase text-slate-400 mb-2">Filtrar Bloco</p>
+                                            <div class="space-y-1 max-h-40 overflow-y-auto">
+                                                <button type="button" onclick="event.stopPropagation(); filtrarMoradoresBloco('')" class="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-slate-100 font-bold ${!filtroAtivoMoradores.bloco ? 'bg-teal-50 text-teal-700' : ''}">[ Todos ]</button>
+                                                ${blocosDisponiveis.map(b => `<button type="button" onclick="event.stopPropagation(); filtrarMoradoresBloco('${b}')" class="w-full text-left px-2.5 py-1.5 rounded-xl hover:bg-slate-100 font-bold ${filtroAtivoMoradores.bloco===b?'bg-teal-50 text-teal-700':''}">Bloco ${escapeHTML(b)}</button>`).join('')}
+                                            </div>
+                                        </div>
+                                    </th>
+                                    <th class="p-3 relative">
+                                        <div class="flex items-center justify-between cursor-pointer select-none" onclick="event.stopPropagation(); toggleMenuFiltroColuna('menu-filtro-nome')">
+                                            <span>NOME / E-MAIL <i class="fa-solid fa-filter text-[10px] ${filtroAtivoMoradores.nome ? 'text-teal-400' : 'text-slate-400'}"></i></span>
+                                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
+                                        </div>
+                                        <div id="menu-filtro-nome" class="hidden absolute left-0 top-full mt-1 bg-white text-slate-800 p-3 rounded-2xl shadow-2xl border border-slate-200 w-60 z-30" onclick="event.stopPropagation()">
+                                            <p class="font-bold text-[10px] uppercase text-slate-400 mb-2">Pesquisar Nome</p>
+                                            <div class="space-y-2">
+                                                <input type="text" id="input-filtro-nome-val" value="${escapeHTML(filtroAtivoMoradores.nome)}" placeholder="Nome ou Apartamento..." class="w-full p-2.5 border rounded-xl text-xs bg-slate-50">
+                                                <div class="flex justify-end gap-1">
+                                                    <button type="button" onclick="filtroAtivoMoradores.nome=''; document.getElementById('menu-filtro-nome').classList.add('hidden'); renderMainOnly();" class="px-2.5 py-1 bg-slate-200 rounded-xl text-[10px] font-bold">Limpar</button>
+                                                    <button type="button" onclick="filtroAtivoMoradores.nome = document.getElementById('input-filtro-nome-val').value; document.getElementById('menu-filtro-nome').classList.add('hidden'); renderMainOnly();" class="px-2.5 py-1 bg-teal-600 text-white rounded-xl text-[10px] font-bold shadow-sm">Filtrar</button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </th>
                                     <th class="p-3">CPF</th>
                                     <th class="p-3">Telefone</th>
                                     <th class="p-3 text-center">Ações</th>
@@ -952,10 +1154,11 @@
                                                 <input type="checkbox" ${selecionado ? 'checked' : ''} onchange="toggleSelecionarMorador('${m.id}')" class="rounded border-slate-300 text-teal-600 w-4 h-4 cursor-pointer">
                                             </td>
                                             <td class="p-3 font-bold">Bloco ${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</td>
-                                            <td class="p-3 font-bold">${escapeHTML(m.nome)}</td>
+                                            <td class="p-3 font-bold">${escapeHTML(m.nome)}<div class="text-[10px] text-slate-500">${escapeHTML(m.email||'')}</div></td>
                                             <td class="p-3 font-mono">${escapeHTML(m.cpf || '-')}</td>
                                             <td class="p-3 font-mono">${escapeHTML(m.telefone || '-')}</td>
                                             <td class="p-3 text-center">
+                                                <button onclick="window.renderModalMorador('${m.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded-lg mr-1"><i class="fa-solid fa-pen"></i></button>
                                                 <button onclick="excluirRegistro('moradores','${m.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg"><i class="fa-solid fa-trash"></i></button>
                                             </td>
                                         </tr>
@@ -968,20 +1171,60 @@
             `;
         }
 
+        function toggleMenuFiltroColuna(menuId) {
+            const menu = document.getElementById(menuId);
+            if (!menu) return;
+            const isOpen = !menu.classList.contains('hidden');
+            document.querySelectorAll('[id^="menu-filtro-"]').forEach(m => m.classList.add('hidden'));
+            if (!isOpen) menu.classList.remove('hidden');
+        }
+
+        function filtrarMoradoresBloco(bloco) {
+            filtroAtivoMoradores.bloco = bloco;
+            document.querySelectorAll('[id^="menu-filtro-"]').forEach(m => m.classList.add('hidden'));
+            renderMainOnly();
+        }
+
         window.renderModalMorador = function() {};
         window.salvarModalMorador = function() {};
 
         function renderFornecedoresView() {
-            return `<div class="bg-white p-6 rounded-2xl border">Fornecedores Ativo.</div>`;
+            const list = db.fornecedores || [];
+            return `<div class="bg-white rounded-2xl border border-slate-200/80 overflow-x-auto w-full shadow-sm"><table class="w-full text-left text-xs min-w-[450px]"><thead class="bg-slate-800 text-white"><tr><th class="p-3">CNPJ</th><th class="p-3">Razão Social</th></tr></thead><tbody class="divide-y">${list.map(f => `<tr class="hover:bg-slate-50"><td class="p-3 font-mono">${escapeHTML(f.cnpj)}</td><td class="p-3 font-bold">${escapeHTML(f.razaoSocial)}</td></tr>`).join('')}</tbody></table></div>`;
         }
+        window.renderModalFornecedor = function() {};
 
         function renderEmpregadosView() {
-            return `<div class="bg-white p-6 rounded-2xl border">Empregados Ativo.</div>`;
+            const list = db.empregados || [];
+            return `
+                <div class="bg-white rounded-2xl border border-slate-200/80 overflow-x-auto w-full shadow-sm">
+                    <table class="w-full text-left text-xs min-w-[850px]">
+                        <thead class="bg-slate-800 text-white">
+                            <tr>
+                                <th class="p-3">Nome / Função</th>
+                                <th class="p-3">Telefone</th>
+                                <th class="p-3">Contato de Emergência</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y">
+                            ${list.length === 0 ? `<tr><td colspan="3" class="p-6 text-center text-slate-400">Nenhum empregado registado.</td></tr>` : list.map(e => `
+                                <tr class="hover:bg-slate-50">
+                                    <td class="p-3 font-bold">${escapeHTML(e.nome)}<div class="text-[10px] text-teal-700">${escapeHTML(e.cargo)}</div></td>
+                                    <td class="p-3 font-mono">${escapeHTML(e.telefone || '-')}</td>
+                                    <td class="p-3 font-bold">${escapeHTML(e.contatoEmergenciaNome || '-')}<div class="font-mono text-[10px] text-rose-600">${escapeHTML(e.contatoEmergenciaTel || '')}</div></td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
         }
+        window.renderModalEmpregado = function() {};
 
         function renderCategoriasView() {
-            return `<div class="bg-white p-6 rounded-2xl border">Categorias Ativo.</div>`;
+            return `<div class="bg-white p-6 rounded-2xl border">Pastas Ativo.</div>`;
         }
+        window.renderModalCategoria = function() {};
 
         // =========================================================================
         // MÓDULO: ESTOQUE & INVENTÁRIO
@@ -1061,7 +1304,7 @@
         };
 
         // =========================================================================
-        // NOVO MÓDULO: ACERTO DE ESTOQUE (ENTRADA / SAÍDA COM MOTIVOS)
+        // MÓDULO: ACERTO DE ESTOQUE (ENTRADA / SAÍDA COM MOTIVOS)
         // =========================================================================
         function renderAcertoEstoqueView() {
             const list = db.acertos_estoque || [];
@@ -1178,15 +1421,38 @@
         };
 
         function renderDocumentosView() {
-            return `<div class="bg-white p-6 rounded-2xl border">Documentos Ativo.</div>`;
+            const docs = db.documentos || [];
+            return `
+                <div class="bg-white rounded-2xl border border-slate-200/80 overflow-x-auto w-full shadow-sm">
+                    <table class="w-full text-left text-xs min-w-[550px]">
+                        <thead class="bg-slate-800 text-white"><tr><th class="p-3">Título</th><th class="p-3">Ficheiro</th></tr></thead>
+                        <tbody class="divide-y">${docs.length === 0 ? `<tr><td colspan="2" class="p-6 text-center text-slate-400">Nenhum documento inserido.</td></tr>` : docs.map(d => `<tr class="hover:bg-slate-50"><td class="p-3 font-bold">${escapeHTML(d.titulo)}</td><td class="p-3 font-mono">${escapeHTML(d.nomeArquivo)}</td></tr>`).join('')}</tbody>
+                    </table>
+                </div>
+            `;
         }
+        window.renderModalDocumento = function() {};
 
         function renderUsuariosView() {
-            return `<div class="bg-white p-6 rounded-2xl border">Utilizadores Ativo.</div>`;
+            const users = db.usuarios || [];
+            return `
+                <div class="bg-white rounded-2xl border border-slate-200/80 overflow-x-auto shadow-sm w-full">
+                    <table class="w-full text-left text-xs min-w-[700px]">
+                        <thead class="bg-slate-800 text-white"><tr><th class="p-3">Utilizador / Nome</th><th class="p-3">Cargo</th></tr></thead>
+                        <tbody class="divide-y">${users.map(u => `<tr class="hover:bg-slate-50"><td class="p-3 font-bold">${escapeHTML(u.usuario)}</td><td class="p-3">${escapeHTML(u.cargo||u.perfil)}</td></tr>`).join('')}</tbody>
+                    </table>
+                </div>
+            `;
         }
+        window.renderModalUsuario = function() {};
 
         function renderRelatoriosCentralView() {
-            return `<div class="bg-white p-6 rounded-2xl border">Relatórios Ativo.</div>`;
+            return `
+                <div class="bg-white p-6 rounded-2xl border border-slate-200/80 shadow-sm space-y-6 w-full">
+                    <h3 class="font-black text-slate-800 text-lg uppercase"><i class="fa-solid fa-file-invoice-dollar mr-2 text-teal-600"></i> Demonstrativo do Resultado (DRE Dinâmico)</h3>
+                    <p class="text-xs text-slate-600">O DRE calcula automaticamente os valores com base nos lançamentos da aba de Contas Pagar/Receber e Plano de Contas.</p>
+                </div>
+            `;
         }
 
         function excluirRegistro(col, id) {
