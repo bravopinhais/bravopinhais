@@ -657,16 +657,14 @@
             salvarDados(db); fecharModalContainer(); renderMainOnly();
         };
 
-        // MÓDULO DE MORADORES COM FILTROS AVANÇADOS FUNCIONANDO DIRETAMENTE
+        // MÓDULO DE MORADORES COM FILTROS E CAMPOS PET, VAGA E ESTACIONAMENTO REINTEGRADOS
         function renderMoradoresView() {
             let moradores = db.moradores || [];
             
-            // Aplicar filtro de bloco ativo
             if (filtroAtivoMoradores.bloco !== '' && filtroAtivoMoradores.bloco !== null && filtroAtivoMoradores.bloco !== undefined) {
                 moradores = moradores.filter(m => String(m.bloco).trim() === String(filtroAtivoMoradores.bloco).trim());
             }
             
-            // Aplicar filtro de nome ou apartamento ativo
             if (filtroAtivoMoradores.nome !== '' && filtroAtivoMoradores.nome !== null && filtroAtivoMoradores.nome !== undefined) {
                 const termo = String(filtroAtivoMoradores.nome).toLowerCase().trim();
                 moradores = moradores.filter(m => 
@@ -679,7 +677,6 @@
 
             return `
                 <div class="space-y-4">
-                    <!-- Barra de status do filtro ativo -->
                     ${(filtroAtivoMoradores.bloco || filtroAtivoMoradores.nome) ? `
                         <div class="bg-teal-50 border border-teal-200 p-2.5 rounded-xl text-xs font-bold text-teal-800 flex items-center justify-between no-print">
                             <span>Filtros ativos: ${filtroAtivoMoradores.bloco ? `Bloco: ${filtroAtivoMoradores.bloco}` : ''} ${filtroAtivoMoradores.nome ? `Pesquisa: "${filtroAtivoMoradores.nome}"` : ''}</span>
@@ -721,15 +718,19 @@
                                         </div>
                                     </th>
                                     <th class="p-3">Telefone</th>
+                                    <th class="p-3">Pet</th>
+                                    <th class="p-3">Vaga / Estacionamento</th>
                                     <th class="p-3 text-center">Ações</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y">
-                                ${moradores.length === 0 ? `<tr><td colspan="4" class="p-6 text-center text-slate-400">Nenhum morador encontrado com os filtros aplicados.</td></tr>` : moradores.map(m => `
+                                ${moradores.length === 0 ? `<tr><td colspan="6" class="p-6 text-center text-slate-400">Nenhum morador encontrado com os filtros aplicados.</td></tr>` : moradores.map(m => `
                                     <tr>
                                         <td class="p-3 font-bold">Bloco ${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</td>
                                         <td class="p-3">${escapeHTML(m.nome)}</td>
                                         <td class="p-3">${escapeHTML(m.telefone || '-')}</td>
+                                        <td class="p-3">${m.petNome ? `<span class="px-2 py-0.5 bg-teal-50 text-teal-700 rounded font-bold"><i class="fa-solid fa-paw"></i> ${escapeHTML(m.petNome)}</span>` : '-'}</td>
+                                        <td class="p-3">${m.vagaGaragem ? `<span class="px-2 py-0.5 bg-slate-100 text-slate-700 rounded font-bold"><i class="fa-solid fa-car"></i> ${escapeHTML(m.vagaGaragem)}</span>` : '-'}</td>
                                         <td class="p-3 text-center">
                                             <button onclick="window.renderModalMorador('${m.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button>
                                             <button onclick="excluirRegistro('moradores','${m.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button>
@@ -755,7 +756,6 @@
             }
         }
 
-        // Fechar menus de filtro ao clicar fora
         window.addEventListener('click', () => {
             document.querySelectorAll('[id^="menu-filtro-"]').forEach(m => m.classList.add('hidden'));
         });
@@ -767,7 +767,7 @@
         }
 
         window.renderModalMorador = function(id = null) {
-            const m = id ? (db.moradores||[]).find(x => x.id === id) : { id: '', bloco: '1', apartamento: '', nome: '', telefone: '' };
+            const m = id ? (db.moradores||[]).find(x => x.id === id) : { id: '', bloco: '1', apartamento: '', nome: '', telefone: '', petNome: '', vagaGaragem: '' };
             abrirModalContainer(`
                 <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
@@ -779,6 +779,8 @@
                             </div>
                             <div><label class="block font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_m_nome" required value="${escapeHTML(m.nome)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
                             <div><label class="block font-bold uppercase text-slate-600 mb-1">Telefone</label><input type="text" id="m_m_tel" value="${escapeHTML(m.telefone)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Pet (Espécie / Nome)</label><input type="text" id="m_m_pet" value="${escapeHTML(m.petNome || '')}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50" placeholder="Ex: Cão - Thor"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Vaga / Estacionamento</label><input type="text" id="m_m_vaga" value="${escapeHTML(m.vagaGaragem || '')}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50" placeholder="Ex: Vaga 42"></div>
                             <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg font-bold">Salvar</button></div>
                         </form>
                     </div>
@@ -794,7 +796,9 @@
                 bloco: document.getElementById('m_m_bloco').value,
                 apartamento: document.getElementById('m_m_ap').value,
                 nome: document.getElementById('m_m_nome').value,
-                telefone: document.getElementById('m_m_tel').value
+                telefone: document.getElementById('m_m_tel').value,
+                petNome: document.getElementById('m_m_pet').value,
+                vagaGaragem: document.getElementById('m_m_vaga').value
             };
             const idx = db.moradores.findIndex(x => x.id === obj.id);
             if(idx !== -1) db.moradores[idx] = obj; else db.moradores.push(obj);
@@ -847,8 +851,8 @@
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Empregado' : 'Novo Empregado'}</h3>
                         <form onsubmit="salvarModalEmpregado(event, '${id}')" class="space-y-3">
-                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_emp_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Cargo</label><input type="text" id="m_emp_cargo" required value="${escapeHTML(item.cargo)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_emp_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Cargo</label><input type="text" id="m_emp_cargo" required value="${escapeHTML(item.cargo)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
                             <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg font-bold">Salvar</button></div>
                         </form>
                     </div>
