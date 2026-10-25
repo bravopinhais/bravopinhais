@@ -75,25 +75,28 @@
                 email: 'contato@guardioesdobravo.com.br'
             },
             conselheiros: [
-                { id: 'cons_1', nome: 'Alan Reis', cargo: 'Síndico', BlocoAp: 'Bloco 1 - Ap 137', telefone: '(41) 99999-9999', inicioMandato: '2026-01-01', fimMandato: '2027-12-31', status: 'Ativo' }
+                { id: 'cons_1', nome: 'Alan Reis', cargo: 'Síndico', BlocoAp: 'Bloco 1 - Ap 137', telefone: '(41) 99999-9999', inicioMandato: '2026-01-01', fimMandato: '2027-12-31', status: 'Ativo' },
+                { id: 'cons_2', nome: 'Carlos Eduardo', cargo: 'Subsíndico', BlocoAp: 'Bloco 1 - Ap 102', telefone: '(41) 98888-8888', inicioMandato: '2026-01-01', fimMandato: '2027-12-31', status: 'Ativo' }
             ],
             usuarios: [
                 { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', cargo: 'Administrador', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Admin@12345' },
                 { id: 'usr_sheila', usuario: 'sheila', nome: 'Sheila (Subsíndica/Operadora)', email: 'sheila@guardioes.com', cargo: 'Subsíndica', perfil: 'Síndico', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Sheila@123' }
             ],
-            financeiro: [],
-            formas_monetarias: [],
-            contas_bancarias: [],
-            moradores: [],
-            fornecedores: [],
-            empregados: [],
-            categorias: [],
-            estoque: [],
-            documentos: [],
+            financeiro: [{ id: 'fin_1', tipo: 'Receber', historico: 'Taxa Condominial Ordinária - Ap 137', valor: 2500.00, vencimento: '2026-10-15', competencia: '10/2026', status: 'Aberto' }],
+            moradores: [
+                { 
+                    id: 'mor_1', bloco: '1', apartamento: '137', nome: 'Alan Reis', email: 'alan@email.com', telefone: '(41) 99999-9999', tipo: 'Proprietário', 
+                    petNome: 'Angel', petRaca: 'Gato Rajado', veiculoModelo: 'Onix', veiculoPlaca: 'ABC-1234', vagaGaragem: 'Vaga 42', observacoes: 'Proprietário residente' 
+                }
+            ],
+            fornecedores: [{ id: 'for_1', cnpj: '00000000000100', razaoSocial: 'Fornecedor Exemplo Ltda', email: 'contato@exemplo.com', telefone: '(41) 3333-4444', contato: 'Carlos' }],
+            empregados: [{ id: 'emp_1', nome: 'João da Silva', cargo: 'Porteiro', funcao: 'Controle de Acesso', telefone: '(41) 98888-1111', email: 'joao@portaria.com' }],
+            estoque: [{ id: 'est_1', item: 'Extintor ABC', categoria: 'Segurança', qtd: 4, localizacao: 'Hall Principal' }],
+            documentos: [{ id: 'doc_1', titulo: 'Ata Assembleia Outubro', pasta: 'Atas de Assembleia', nomeArquivo: 'ata_out.pdf', dataUpload: '2026-10-01' }],
             logs: []
         };
 
-        // RECUPERAÇÃO SEGURA: Preserva os dados já salvos no navegador para não perder nada
+        // RECUPERAÇÃO SEGURA: Preserva os dados já salvos no navegador e mescla com os padrões se necessário
         let db = DEFAULT_DATA;
         const dadosLocaisSalvos = localStorage.getItem('guardioes_bravo_db');
         if (dadosLocaisSalvos) {
@@ -336,9 +339,17 @@
                 </div>
             `;
 
-            if (moduloId === 'dashboard') return headerGlobal + `<div class="grid grid-cols-1 sm:grid-cols-3 gap-4"><div class="bg-white p-5 rounded-xl border shadow-sm"><p class="text-xs font-bold text-slate-400 uppercase">Usuários</p><h3 class="text-2xl font-black text-slate-800">${(db.usuarios||[]).length}</h3></div></div>`;
+            if (moduloId === 'dashboard') {
+                return headerGlobal + `
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div class="bg-white p-5 rounded-xl border shadow-sm"><p class="text-xs font-bold text-slate-400 uppercase">Usuários</p><h3 class="text-2xl font-black text-slate-800">${(db.usuarios||[]).length}</h3></div>
+                        <div class="bg-white p-5 rounded-xl border shadow-sm"><p class="text-xs font-bold text-slate-400 uppercase">Moradores</p><h3 class="text-2xl font-black text-slate-800">${(db.moradores||[]).length}</h3></div>
+                        <div class="bg-white p-5 rounded-xl border shadow-sm"><p class="text-xs font-bold text-slate-400 uppercase">Fornecedores</p><h3 class="text-2xl font-black text-slate-800">${(db.fornecedores||[]).length}</h3></div>
+                    </div>
+                `;
+            }
             if (moduloId === 'usuarios') return headerGlobal + renderUsuariosView();
-            if (moduloId === 'moradores') return headerGlobal + `<div class="bg-white rounded-xl border p-4"><p class="text-xs text-slate-600">Módulo de Moradores Ativo.</p></div>`;
+            if (moduloId === 'moradores') return headerGlobal + renderMoradoresView();
             return headerGlobal + `<div class="bg-white p-6 rounded-2xl border shadow-sm"><p class="text-xs text-slate-600">Módulo ${MODULE_NAMES[moduloId]} ativo e funcional.</p></div>`;
         }
 
@@ -373,6 +384,37 @@
                                         <button onclick="window.renderModalRedefinirSenha('${u.id}')" class="px-2.5 py-1 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded font-bold mr-1" title="Redefinir Senha"><i class="fa-solid fa-key"></i> Redefinir Senha</button>
                                         <button onclick="window.renderModalUsuario('${u.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button>
                                         ${u.id !== 'usr_admin' ? `<button onclick="excluirRegistro('usuarios','${u.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button>` : ''}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function renderMoradoresView() {
+            const moradores = db.moradores || [];
+            return `
+                <div class="bg-white rounded-xl border overflow-hidden shadow-sm">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-800 text-white">
+                            <tr>
+                                <th class="p-3">Bloco / Ap</th>
+                                <th class="p-3">Nome</th>
+                                <th class="p-3">Telefone</th>
+                                <th class="p-3 text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y">
+                            ${moradores.length === 0 ? `<tr><td colspan="4" class="p-6 text-center text-slate-400">Nenhum morador cadastrado.</td></tr>` : moradores.map(m => `
+                                <tr>
+                                    <td class="p-3 font-bold">Bloco ${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</td>
+                                    <td class="p-3">${escapeHTML(m.nome)}</td>
+                                    <td class="p-3">${escapeHTML(m.telefone || '-')}</td>
+                                    <td class="p-3 text-center">
+                                        <button onclick="window.renderModalMorador('${m.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                                        <button onclick="excluirRegistro('moradores','${m.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button>
                                     </td>
                                 </tr>
                             `).join('')}
@@ -424,6 +466,45 @@
 
             const idx = db.usuarios.findIndex(x => x.id === obj.id);
             if(idx !== -1) db.usuarios[idx] = obj; else db.usuarios.push(obj);
+            salvarDados(db); fecharModalContainer(); renderMainOnly();
+        };
+
+        window.renderModalMorador = function(id = null) {
+            const m = id ? (db.moradores||[]).find(x => x.id === id) : { id: '', bloco: '1', apartamento: '', nome: '', telefone: '', email: '' };
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Morador' : 'Novo Morador'}</h3>
+                        <form onsubmit="salvarModalMorador(event, '${id}')" class="space-y-3 text-xs">
+                            <div class="grid grid-cols-2 gap-2">
+                                <div><label class="block font-bold uppercase text-slate-600 mb-1">Bloco</label><input type="text" id="m_m_bloco" required value="${escapeHTML(m.bloco)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                                <div><label class="block font-bold uppercase text-slate-600 mb-1">Apartamento</label><input type="text" id="m_m_ap" required value="${escapeHTML(m.apartamento)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                            </div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Nome Completo</label><input type="text" id="m_m_nome" required value="${escapeHTML(m.nome)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Telefone</label><input type="text" id="m_m_tel" value="${escapeHTML(m.telefone)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                            <div class="flex justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-bold">Cancelar</button>
+                                <button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg font-bold">Salvar</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        window.salvarModalMorador = function(e, id) {
+            e.preventDefault();
+            if(!db.moradores) db.moradores = [];
+            const isEdit = id && id !== 'null';
+            const obj = {
+                id: isEdit ? id : 'mor_' + Date.now(),
+                bloco: document.getElementById('m_m_bloco').value,
+                apartamento: document.getElementById('m_m_ap').value,
+                nome: document.getElementById('m_m_nome').value,
+                telefone: document.getElementById('m_m_tel').value
+            };
+            const idx = db.moradores.findIndex(x => x.id === obj.id);
+            if(idx !== -1) db.moradores[idx] = obj; else db.moradores.push(obj);
             salvarDados(db); fecharModalContainer(); renderMainOnly();
         };
 
