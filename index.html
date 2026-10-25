@@ -178,6 +178,32 @@
                 } else {
                     await salvarDadosNaNuvem(db);
                 }
+
+                // ATIVAÇÃO EM TEMPO REAL (REALTIME) - Sincronização automática entre computadores
+                supabaseClient
+                    .channel('mudancas-condominio')
+                    .on(
+                        'postgres_changes',
+                        { event: '*', schema: 'public', table: 'condominio_dados', filter: 'id=eq.principal' },
+                        (payload) => {
+                            if (payload.new && payload.new.payload) {
+                                db = payload.new.payload;
+                                localStorage.setItem('guardioes_bravo_db', JSON.stringify(db));
+                                renderMainOnly();
+                                
+                                if (elStatus) {
+                                    elStatus.className = "bg-teal-500 text-white text-[10px] sm:text-xs font-bold py-1 px-4 text-center no-print animate-pulse";
+                                    elStatus.innerHTML = `<i class="fa-solid fa-rotate"></i> Dados atualizados em tempo real por outro utilizador!`;
+                                    setTimeout(() => {
+                                        elStatus.className = "bg-emerald-600 text-white text-[10px] sm:text-xs font-bold py-1 px-4 text-center no-print flex items-center justify-center gap-2";
+                                        elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> Sincronizado com a Nuvem em Tempo Real`;
+                                    }, 2000);
+                                }
+                            }
+                        }
+                    )
+                    .subscribe();
+
             } catch (err) {
                 if (elStatus) {
                     elStatus.className = "bg-amber-600 text-white text-[10px] sm:text-xs font-bold py-1 px-4 text-center no-print";
@@ -941,8 +967,8 @@
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Empregado' : 'Novo Empregado'}</h3>
                         <form onsubmit="salvarModalEmpregado(event, '${id}')" class="space-y-3">
-                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_emp_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Cargo</label><input type="text" id="m_emp_cargo" required value="${escapeHTML(item.cargo)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_emp_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Cargo</label><input type="text" id="m_emp_cargo" required value="${escapeHTML(item.cargo)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
                             <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg font-bold">Salvar</button></div>
                         </form>
                     </div>
@@ -974,7 +1000,7 @@
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">Nova Pasta</h3>
                         <form onsubmit="salvarModalCategoria(event)" class="space-y-3">
-                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_cat_nome" required class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_cat_nome" required class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
                             <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg font-bold">Salvar</button></div>
                         </form>
                     </div>
