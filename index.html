@@ -65,6 +65,23 @@
             });
         }
 
+        // =========================================================================
+        // CONTROLO DE AUTORIZAÇÕES E PERFIS
+        // =========================================================================
+        function verificarPermissao(acaoRequerida = 'Admin') {
+            if (!sessao.usuarioLogado) {
+                alert('Sessão expirada. Faça login novamente.');
+                encerrarSessao();
+                return false;
+            }
+            const perfilUser = sessao.usuarioLogado.perfil || sessao.usuarioLogado.cargo || 'Operador';
+            if (acaoRequerida === 'Admin' && perfilUser !== 'Admin' && perfilUser !== 'Administrador') {
+                alert('Acesso negado! Esta operação requer privilégios de Administrador.');
+                return false;
+            }
+            return true;
+        }
+
         const DEFAULT_DATA = {
             condominio: {
                 nome: 'Condomínio Guardiões do Bravo',
@@ -288,6 +305,7 @@
         function exportarParaPDF() { window.print(); }
 
         function fazerBackupGeralJSON() {
+            if (!verificarPermissao('Admin')) return;
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
             const downloadAnchor = document.createElement('a');
             downloadAnchor.setAttribute("href", dataStr);
@@ -298,6 +316,7 @@
         }
 
         function restaurarBackupGeralJSON(event) {
+            if (!verificarPermissao('Admin')) return;
             const file = event.target.files[0];
             if (!file) return;
             const reader = new FileReader();
@@ -502,7 +521,8 @@
             }
 
             const user = sessao.usuarioLogado;
-            const msgBoasVindas = `Seja bem-vinda, ${escapeHTML(user.nome || user.usuario)} - ${escapeHTML(user.loja || 'Loja')} - ${escapeHTML(user.cargo || user.perfil || 'Cargo')}`;
+            const perfilAtivo = user.perfil || user.cargo || 'Operador';
+            const msgBoasVindas = `Seja bem-vinda, ${escapeHTML(user.nome || user.usuario)} - Perfil: ${escapeHTML(perfilAtivo)}`;
 
             container.innerHTML = `
                 <div class="flex-1 flex flex-col md:flex-row min-h-screen w-full">
@@ -583,7 +603,7 @@
 
                         <div class="bg-teal-700 text-white px-4 py-2.5 text-xs font-bold flex items-center justify-between shadow-sm no-print">
                             <span>${msgBoasVindas}</span>
-                            <span class="text-[10px] bg-teal-800 px-3 py-1 rounded-xl text-teal-200 font-mono hidden sm:inline-block">Sessão Ativa</span>
+                            <span class="text-[10px] bg-teal-800 px-3 py-1 rounded-xl text-teal-200 font-mono hidden sm:inline-block">Segurança Ativa</span>
                         </div>
 
                         <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-slate-100 w-full">
@@ -754,7 +774,7 @@
         }
 
         // =========================================================================
-        // CONDOMÍNIO & CONSELHEIROS (REVISADO COMPLETO)
+        // CONDOMÍNIO & CONSELHEIROS
         // =========================================================================
         function renderCondominioView() {
             const cond = db.condominio || {};
@@ -794,6 +814,7 @@
             `;
         }
         function salvarDadosCondominio() {
+            if (!verificarPermissao('Admin')) return;
             db.condominio.nome = document.getElementById('c_nome').value;
             db.condominio.cnpj = document.getElementById('c_cnpj').value;
             db.condominio.telefone = document.getElementById('c_tel').value;
@@ -801,6 +822,7 @@
             salvarDados(db); alert('Dados do condomínio atualizados com sucesso!');
         }
         function renderModalConselheiro() {
+            if (!verificarPermissao('Admin')) return;
             abrirModalContainer(`
                 <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
@@ -1033,7 +1055,7 @@
         }
 
         // =========================================================================
-        // FORNECEDORES (REVISADO COMPLETO COM DETALHES DE CONTATO)
+        // FORNECEDORES
         // =========================================================================
         function renderFornecedoresView() {
             const list = db.fornecedores || [];
@@ -1089,7 +1111,7 @@
         }
 
         // =========================================================================
-        // EMPREGADOS (REVISADO COMPLETO COM CONTATOS DE EMERGÊNCIA)
+        // EMPREGADOS
         // =========================================================================
         function renderEmpregadosView() {
             const list = db.empregados || [];
@@ -1147,7 +1169,7 @@
         }
 
         // =========================================================================
-        // PASTAS, ESTOQUE & PRODUTOS (REVISADO COMPLETO)
+        // PASTAS, ESTOQUE & PRODUTOS
         // =========================================================================
         function renderCategoriasView() {
             const list = db.categorias || [];
@@ -1249,7 +1271,7 @@
         }
 
         // =========================================================================
-        // DOCUMENTOS (REVISADO COMPLETO)
+        // DOCUMENTOS
         // =========================================================================
         function renderDocumentosView() {
             const docs = db.documentos || [];
@@ -1295,9 +1317,10 @@
         }
 
         // =========================================================================
-        // UTILIZADORES (REVISADO COMPLETO)
+        // UTILIZADORES (RESTRITO A ADMINS)
         // =========================================================================
         function renderUsuariosView() {
+            if (!verificarPermissao('Admin')) return `<div class="bg-white p-6 rounded-2xl border text-center text-rose-600 font-bold">Acesso Restrito. Apenas administradores podem gerenciar utilizadores.</div>`;
             const users = db.usuarios || [];
             return `
                 <div class="bg-white rounded-2xl border shadow-sm overflow-x-auto w-full">
@@ -1317,6 +1340,7 @@
             `;
         }
         function renderModalUsuario() {
+            if (!verificarPermissao('Admin')) return;
             abrirModalContainer(`
                 <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
@@ -1352,6 +1376,7 @@
         }
 
         function excluirRegistro(col, id) {
+            if (col === 'usuarios' && !verificarPermissao('Admin')) return;
             if (!confirm('Deseja eliminar este registo?')) return;
             if (db[col]) {
                 db[col] = db[col].filter(x => x.id !== id);
