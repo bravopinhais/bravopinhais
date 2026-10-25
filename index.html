@@ -111,8 +111,8 @@
                 { id: 'cons_2', nome: 'Carlos Eduardo', cargo: 'Subsíndico', BlocoAp: 'Bloco 1 - Ap 102', telefone: '(41) 98888-8888', inicioMandato: '2026-01-01', fimMandato: '2027-12-31', status: 'Ativo' }
             ],
             usuarios: [
-                { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Admin@12345' },
-                { id: 'usr_sheila', usuario: 'sheila', nome: 'Sheila (Subsíndica/Operadora)', email: 'sheila@guardioes.com', perfil: 'Síndico', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Sheila@123' }
+                { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', cargo: 'Administrador', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Admin@12345' },
+                { id: 'usr_sheila', usuario: 'sheila', nome: 'Sheila (Subsíndica/Operadora)', email: 'sheila@guardioes.com', cargo: 'Subsíndica', perfil: 'Síndico', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Sheila@123' }
             ],
             financeiro: [{ id: 'fin_1', tipo: 'Receber', historico: 'Taxa Condominial Ordinária - Ap 137', valor: 2500.00, vencimento: '2026-10-15', competencia: '10/2026', status: 'Aberto' }],
             formas_monetarias: [{ id: 'fm_1', nome: 'MOVIMENTO BANCARIO', contaId: 'cb_1', multaPct: 2.0, jurosDiaPct: 0.033, baixaAutomatica: true, status: 'Ativo' }],
@@ -278,7 +278,6 @@
             reader.onload = function(e) {
                 try {
                     let text = e.target.result;
-                    // Limpar BOM invisível se existir
                     if (text.charCodeAt(0) === 0xFEFF) {
                         text = text.slice(1);
                     }
@@ -289,7 +288,6 @@
                     const lines = text.split(/\r\n|\n/);
                     if (lines.length < 2) { alert('Ficheiro CSV inválido ou vazio.'); return; }
 
-                    // Detetar separador automático (, ou ;)
                     const headerLine = lines[0];
                     const separator = (headerLine.match(/;/g) || []).length > (headerLine.match(/,/g) || []).length ? ';' : ',';
                     const headers = headerLine.split(separator).map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
@@ -793,7 +791,6 @@
         function renderMoradoresView() {
             let moradores = db.moradores || [];
             
-            // Aplicar filtros ativos
             if (filtroAtivoMoradores.bloco) {
                 moradores = moradores.filter(m => String(m.bloco) === String(filtroAtivoMoradores.bloco));
             }
@@ -802,7 +799,6 @@
                 moradores = moradores.filter(m => (m.nome || '').toLowerCase().includes(termo) || (m.apartamento || '').toLowerCase().includes(termo));
             }
 
-            // Obter blocos únicos para o dropdown de filtro
             const blocosDisponiveis = [...new Set((db.moradores || []).map(m => m.bloco))];
 
             return `
@@ -816,7 +812,6 @@
                                             <span>BLOCO/AP <i class="fa-solid fa-filter text-[10px] ${filtroAtivoMoradores.bloco ? 'text-teal-400' : 'text-slate-400'}"></i></span>
                                             <i class="fa-solid fa-chevron-down text-[10px]"></i>
                                         </div>
-                                        <!-- Menu Dropdown Estilo Excel para Bloco -->
                                         <div id="menu-filtro-bloco" class="hidden absolute left-0 top-full mt-1 bg-white text-slate-800 p-3 rounded-xl shadow-2xl border w-48 z-30">
                                             <p class="font-bold text-[10px] uppercase text-slate-400 mb-2">Filtrar por Bloco</p>
                                             <div class="space-y-1 max-h-40 overflow-y-auto">
@@ -830,7 +825,6 @@
                                             <span>NOME COMPLETO <i class="fa-solid fa-filter text-[10px] ${filtroAtivoMoradores.nome ? 'text-teal-400' : 'text-slate-400'}"></i></span>
                                             <i class="fa-solid fa-chevron-down text-[10px]"></i>
                                         </div>
-                                        <!-- Menu Dropdown Estilo Excel para Nome/Pesquisa -->
                                         <div id="menu-filtro-nome" class="hidden absolute left-0 top-full mt-1 bg-white text-slate-800 p-3 rounded-xl shadow-2xl border w-60 z-30">
                                             <p class="font-bold text-[10px] uppercase text-slate-400 mb-2">Pesquisar por Nome/Ap</p>
                                             <div class="space-y-2">
@@ -1177,21 +1171,60 @@
             salvarDados(db); fecharModalContainer(); renderMainOnly();
         };
 
+        // MÓDULO DE GESTÃO DE USUÁRIOS (COM SENHA, E-MAIL, CARGO E REDEFINIÇÃO DE SENHA)
         function renderUsuariosView() {
             const users = db.usuarios || [];
-            return `<div class="bg-white rounded-xl border overflow-hidden"><table class="w-full text-left text-xs"><thead class="bg-slate-800 text-white"><tr><th class="p-3">Utilizador</th><th class="p-3">Perfil</th><th class="p-3 text-center">Ações</th></tr></thead><tbody class="divide-y">${users.map(u => `<tr><td class="p-3 font-bold">${escapeHTML(u.usuario)}</td><td class="p-3">${escapeHTML(u.perfil)}</td><td class="p-3 text-center"><button onclick="window.renderModalUsuario('${u.id}')" class="p-1 bg-slate-100 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button>${u.id !== 'usr_admin' ? `<button onclick="excluirRegistro('usuarios','${u.id}')" class="p-1 bg-rose-50 text-rose-600 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button>` : ''}</td></tr>`).join('')}</tbody></table></div>`;
+            return `
+                <div class="bg-white rounded-xl border overflow-hidden">
+                    <table class="w-full text-left text-xs">
+                        <thead class="bg-slate-800 text-white">
+                            <tr>
+                                <th class="p-3">Utilizador / Nome</th>
+                                <th class="p-3">E-mail</th>
+                                <th class="p-3">Cargo</th>
+                                <th class="p-3">Palavra-passe (Senha)</th>
+                                <th class="p-3 text-center">Ações / Redefinir</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y">
+                            ${users.map(u => `
+                                <tr>
+                                    <td class="p-3">
+                                        <div class="font-bold text-slate-800">${escapeHTML(u.usuario)}</div>
+                                        <div class="text-[10px] text-slate-500">${escapeHTML(u.nome || '')}</div>
+                                    </td>
+                                    <td class="p-3">${escapeHTML(u.email || '-')}</td>
+                                    <td class="p-3 font-semibold text-teal-700">${escapeHTML(u.cargo || u.perfil || 'Operador')}</td>
+                                    <td class="p-3 font-mono text-slate-600">••••••••</td>
+                                    <td class="p-3 text-center">
+                                        <button onclick="window.renderModalRedefinirSenha('${u.id}')" class="px-2.5 py-1 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded font-bold mr-1" title="Redefinir Senha"><i class="fa-solid fa-key"></i> Redefinir</button>
+                                        <button onclick="window.renderModalUsuario('${u.id}')" class="p-1.5 bg-slate-100 hover:bg-slate-200 rounded mr-1" title="Editar"><i class="fa-solid fa-pen"></i></button>
+                                        ${u.id !== 'usr_admin' ? `<button onclick="excluirRegistro('usuarios','${u.id}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded" title="Excluir"><i class="fa-solid fa-trash"></i></button>` : ''}
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
         }
 
         window.renderModalUsuario = function(id = null) {
-            const item = id ? (db.usuarios||[]).find(x => x.id === id) : { id: '', usuario: '', nome: '', perfil: 'Operador' };
+            const item = id ? (db.usuarios||[]).find(x => x.id === id) : { id: '', usuario: '', nome: '', email: '', cargo: '', senhaHash: 'Condo@2026' };
             abrirModalContainer(`
                 <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
                     <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
                         <h3 class="font-bold text-lg text-slate-800">${id ? 'Editar Utilizador' : 'Novo Utilizador'}</h3>
-                        <form onsubmit="salvarModalUsuario(event, '${id}')" class="space-y-3">
-                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Login</label><input type="text" id="m_u_login" required value="${escapeHTML(item.usuario)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
-                            <div><label class="block text-xs font-bold uppercase text-slate-600 mb-1">Nome</label><input type="text" id="m_u_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-lg text-xs font-bold bg-slate-50"></div>
-                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg text-xs font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg text-xs font-bold">Salvar</button></div>
+                        <form onsubmit="salvarModalUsuario(event, '${id}')" class="space-y-3 text-xs">
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Login / Utilizador</label><input type="text" id="m_u_login" required value="${escapeHTML(item.usuario)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Nome Completo</label><input type="text" id="m_u_nome" required value="${escapeHTML(item.nome)}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">E-mail</label><input type="email" id="m_u_email" value="${escapeHTML(item.email || '')}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Cargo / Perfil</label><input type="text" id="m_u_cargo" required value="${escapeHTML(item.cargo || item.perfil || 'Operador')}" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>
+                            ${!id ? `<div><label class="block font-bold uppercase text-slate-600 mb-1">Palavra-passe (Senha)</label><input type="password" id="m_u_senha" required value="Condo@2026" class="w-full p-2.5 border rounded-lg font-bold bg-slate-50"></div>` : ''}
+                            <div class="flex justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-bold">Cancelar</button>
+                                <button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg font-bold">Salvar</button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -1201,18 +1234,64 @@
         window.salvarModalUsuario = function(e, id) {
             e.preventDefault();
             if(!db.usuarios) db.usuarios = [];
+            const isEdit = id && id !== 'null';
+            const usuarioExistente = isEdit ? db.usuarios.find(x => x.id === id) : null;
+
             const obj = {
-                id: id && id !== 'null' ? id : 'usr_' + Date.now(),
+                id: isEdit ? id : 'usr_' + Date.now(),
                 usuario: document.getElementById('m_u_login').value,
                 nome: document.getElementById('m_u_nome').value,
-                perfil: 'Operador',
+                email: document.getElementById('m_u_email').value,
+                cargo: document.getElementById('m_u_cargo').value,
+                perfil: document.getElementById('m_u_cargo').value,
                 status: 'Ativo',
-                senhaHash: 'Condo@2026',
-                primeiroAcesso: true
+                senhaHash: usuarioExistente ? usuarioExistente.senhaHash : document.getElementById('m_u_senha').value,
+                primeiroAcesso: usuarioExistente ? usuarioExistente.primeiroAcesso : false
             };
+
             const idx = db.usuarios.findIndex(x => x.id === obj.id);
             if(idx !== -1) db.usuarios[idx] = obj; else db.usuarios.push(obj);
             salvarDados(db); fecharModalContainer(); renderMainOnly();
+        };
+
+        window.renderModalRedefinirSenha = function(id) {
+            const user = (db.usuarios || []).find(x => x.id === id);
+            if (!user) return;
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4">
+                    <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <div class="flex justify-between items-center border-b pb-3">
+                            <h3 class="font-bold text-lg text-slate-800">Redefinir Senha: ${escapeHTML(user.usuario)}</h3>
+                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
+                        </div>
+                        <form onsubmit="executarRedefinicaoSenha(event, '${id}')" class="space-y-3 text-xs">
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Nova Palavra-passe</label><input type="password" id="nova_senha_admin" required class="w-full p-2.5 border rounded-lg font-bold bg-slate-50" placeholder="Mínimo de 6 caracteres"></div>
+                            <div><label class="block font-bold uppercase text-slate-600 mb-1">Confirmar Nova Palavra-passe</label><input type="password" id="nova_senha_admin_conf" required class="w-full p-2.5 border rounded-lg font-bold bg-slate-50" placeholder="Repita a palavra-passe"></div>
+                            <div class="flex justify-end gap-2 pt-3 border-t">
+                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-lg font-bold">Cancelar</button>
+                                <button type="submit" class="px-4 py-2 bg-teal-600 text-white rounded-lg font-bold">Atualizar Senha</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        window.executarRedefinicaoSenha = function(e, id) {
+            e.preventDefault();
+            const s1 = document.getElementById('nova_senha_admin').value;
+            const s2 = document.getElementById('nova_senha_admin_conf').value;
+            if (s1.length < 6) { alert('A palavra-passe deve ter pelo menos 6 caracteres.'); return; }
+            if (s1 !== s2) { alert('As palavras-passe não coincidem.'); return; }
+
+            const idx = (db.usuarios || []).findIndex(x => x.id === id);
+            if (idx !== -1) {
+                db.usuarios[idx].senhaHash = s1;
+                salvarDados(db);
+                fecharModalContainer();
+                alert('Palavra-passe redefinida com sucesso!');
+                renderMainOnly();
+            }
         };
 
         function renderRelatoriosCentralView() {
