@@ -310,6 +310,7 @@
 
         const MODULE_NAMES = {
             dashboard: 'Dashboard Executive',
+            ia: 'IA Assistente Conversacional',
             condominio: 'Dados do Condomínio & Conselho',
             plano_contas: 'Plano de Contas',
             financeiro: 'Contas Pagar / Receber',
@@ -547,6 +548,183 @@
             renderApp();
         }
 
+        // =========================================================================
+        // MÓDULO DE INTELIGÊNCIA ARTIFICIAL E ASSISTENTE EXECUTIVO
+        // =========================================================================
+
+        let historicoChatIA = [
+            { autor: 'ia', mensagem: 'Olá! Sou o assistente inteligente do Guardiões do Bravo. Como posso ajudar? Você pode me pedir para cadastrar moradores, dar baixa em estoque, criar produtos ou tirar dúvidas.' }
+        ];
+
+        async function processarComandoIA(textoComando) {
+            if (!textoComando || !textoComando.trim()) return;
+
+            const cmd = textoComando.trim();
+            historicoChatIA.push({ autor: 'usuario', mensagem: cmd });
+            renderMainOnly();
+
+            const cmdLower = cmd.toLowerCase();
+            let respostaIA = "";
+
+            // 1. CADASTRAR MORADOR VIA IA
+            if (cmdLower.includes('cadastrar morador') || cmdLower.includes('adicionar morador')) {
+                const blocoMatch = cmd.match(/bloco\s*(\w+)/i);
+                const apMatch = cmd.match(/(?:ap|apartamento)\s*(\d+)/i);
+                const nomeMatch = cmd.match(/(?:morador|adicionar)\s+([A-Za-zÀ-ÖØ-öø-ÿ\s]+?)(?=\s+bloco|\s+ap|\s+email|\s+tel|$)/i);
+
+                const bloco = blocoMatch ? blocoMatch[1] : '1';
+                const ap = apMatch ? apMatch[1] : '';
+                const nome = nomeMatch ? nomeMatch[1].trim() : 'Novo Morador';
+
+                if (!db.moradores) db.moradores = [];
+                
+                const novoMorador = {
+                    id: 'mor_ia_' + Date.now(),
+                    bloco: bloco,
+                    apartamento: ap,
+                    nome: nome,
+                    email: '',
+                    telefone: '',
+                    cpf: '',
+                    petNome: '',
+                    vagaGaragem: ''
+                };
+
+                db.moradores.push(novoMorador);
+                salvarDados(db);
+                respostaIA = ` Morador **${nome}** (Bloco ${bloco}, Ap ${ap}) cadastrado com sucesso!`;
+            }
+
+            // 2. SAÍDA DE ESTOQUE VIA IA
+            else if (cmdLower.includes('dar baixa') || cmdLower.includes('saida') || cmdLower.includes('remover do estoque')) {
+                const qtdMatch = cmd.match(/\d+/);
+                const qtd = qtdMatch ? parseInt(qtdMatch[0]) : 1;
+                
+                const itemEncontrado = (db.estoque || []).find(item => 
+                    cmdLower.includes(item.nome.toLowerCase())
+                );
+
+                if (itemEncontrado) {
+                    const qtdAtual = parseFloat(itemEncontrado.quantidade || 0);
+                    if (qtdAtual >= qtd) {
+                        itemEncontrado.quantidade = qtdAtual - qtd;
+
+                        if (!db.acertos_estoque) db.acertos_estoque = [];
+                        db.acertos_estoque.push({
+                            id: 'act_ia_' + Date.now(),
+                            data: new Date().toISOString().split('T')[0],
+                            produtoId: itemEncontrado.id,
+                            produtoNome: itemEncontrado.nome,
+                            tipo: 'Saída',
+                            quantidade: qtd,
+                            motivo: 'Saída via IA Assistant',
+                            usuario: sessao.usuarioLogado ? sessao.usuarioLogado.nome : 'IA Assistant'
+                        });
+
+                        salvarDados(db);
+                        respostaIA = ` Baixa de **${qtd} un** do item **${itemEncontrado.nome}** efetuada com sucesso. Restam: ${itemEncontrado.quantidade}.`;
+                    } else {
+                        respostaIA = ` Estoque insuficiente para **${itemEncontrado.nome}**. Quantidade atual: ${qtdAtual}.`;
+                    }
+                } else {
+                    respostaIA = ` Não consegui identificar o produto no estoque para dar baixa. Certifique-se de usar o nome exato do item.`;
+                }
+            }
+
+            // 3. CADASTRAR PRODUTO NO ESTOQUE VIA IA
+            else if (cmdLower.includes('cadastrar produto') || cmdLower.includes('adicionar produto')) {
+                const qtdMatch = cmd.match(/quantidade\s*(\d+)/i) || cmd.match(/qtd\s*(\d+)/i);
+                const valorMatch = cmd.match(/valor\s*([\d\.,]+)/i) || cmd.match(/preco\s*([\d\.,]+)/i);
+                const nomeMatch = cmd.match(/(?:produto|adicionar)\s+([A-Za-zÀ-ÖØ-öø-ÿ0-9\s]+?)(?=\s+quantidade|\s+qtd|\s+valor|\s+preco|$)/i);
+
+                const qtd = qtdMatch ? parseInt(qtdMatch[1]) : 1;
+                const valor = valorMatch ? parseFloat(valorMatch[1].replace(',', '.')) : 0;
+                const nome = nomeMatch ? nomeMatch[1].trim() : 'Novo Produto';
+
+                if (!db.estoque) db.estoque = [];
+
+                const novoProduto = {
+                    id: 'est_ia_' + Date.now(),
+                    nome: nome,
+                    categoria: 'Geral',
+                    quantidade: qtd,
+                    qtdMinima: 2,
+                    valorUnitario: valor,
+                    localizacao: 'Almoxarifado'
+                };
+
+                db.estoque.push(novoProduto);
+                salvarDados(db);
+                respostaIA = ` Produto **${nome}** (Qtd: ${qtd}, R$ ${valor.toFixed(2)}) cadastrado no estoque com sucesso!`;
+            }
+
+            // 4. CONSULTA GERAL / CONVERSA
+            else if (cmdLower.includes('total moradores') || cmdLower.includes('quantos moradores')) {
+                const total = (db.moradores || []).length;
+                respostaIA = `Atualmente o condomínio possui **${total} moradores** cadastrados.`;
+            } 
+            else if (cmdLower.includes('resumo financeiro') || cmdLower.includes('saldo')) {
+                let totalReceitas = (db.financeiro || []).filter(f => f.tipo === 'Receita').reduce((a, b) => a + Number(b.valor || 0), 0);
+                let totalDespesas = (db.financeiro || []).filter(f => f.tipo === 'Despesa').reduce((a, b) => a + Number(b.valor || 0), 0);
+                let saldo = totalReceitas - totalDespesas;
+                respostaIA = ` Resumo Financeiro Atual:\n- **Receitas:** R$ ${totalReceitas.toFixed(2)}\n- **Despesas:** R$ ${totalDespesas.toFixed(2)}\n- **Saldo:** R$ ${saldo.toFixed(2)}`;
+            } 
+            else {
+                respostaIA = `Comando recebido: "${cmd}". Não identifiquei uma ação específica de cadastro ou saída. Se precisar, tente frases como:\n- *Cadastrar morador João Silva Bloco 1 Ap 102*\n- *Cadastrar produto Lâmpada quantidade 10 valor 12.50*\n- *Dar baixa em 2 Lâmpada*\n- *Resumo financeiro*`;
+            }
+
+            historicoChatIA.push({ autor: 'ia', mensagem: respostaIA });
+            renderMainOnly();
+        }
+
+        function renderModuloIA() {
+            const mensagensHTML = historicoChatIA.map(msg => {
+                const isUser = msg.autor === 'usuario';
+                return `
+                    <div class="flex ${isUser ? 'justify-end' : 'justify-start'} mb-3">
+                        <div class="max-w-[80%] p-3.5 rounded-2xl text-xs font-medium leading-relaxed ${
+                            isUser 
+                            ? 'bg-teal-600 text-white rounded-br-none shadow-md' 
+                            : 'bg-slate-200 text-slate-800 rounded-bl-none border border-slate-300'
+                        }">
+                            ${escapeHTML(msg.mensagem).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            return `
+                <div class="p-6 max-w-4xl mx-auto space-y-4">
+                    <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-10 h-10 bg-teal-600 text-white rounded-xl flex items-center justify-center font-bold text-lg shadow-md shadow-teal-600/20">
+                                <i class="fa-solid fa-robot"></i>
+                            </div>
+                            <div>
+                                <h2 class="text-base font-bold text-slate-900">IA Assistente Executiva</h2>
+                                <p class="text-[11px] font-semibold text-teal-600">Comandos de voz/texto, ações diretas e relatórios</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Caixa de Conversação -->
+                    <div class="bg-slate-50 p-4 rounded-3xl border border-slate-200 h-[420px] overflow-y-auto flex flex-col justify-between shadow-inner" id="box-chat-ia">
+                        <div class="space-y-1">
+                            ${mensagensHTML}
+                        </div>
+                    </div>
+
+                    <!-- Formulário de Envio de Comando -->
+                    <form onsubmit="event.preventDefault(); const input = document.getElementById('input_cmd_ia'); processarComandoIA(input.value); input.value = '';" class="flex gap-2">
+                        <input type="text" id="input_cmd_ia" placeholder="Digite uma ação (ex: Cadastrar morador Ana bloco 2 ap 301, Dar baixa 3 detergente...)" class="flex-1 p-3.5 border border-slate-300 rounded-2xl text-xs font-semibold bg-white focus:ring-2 focus:ring-teal-500 outline-none shadow-sm">
+                        <button type="submit" class="px-6 py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-2xl text-xs shadow-md shadow-teal-600/20 transition-all flex items-center gap-2">
+                            <i class="fa-solid fa-paper-plane"></i> Enviar
+                        </button>
+                    </form>
+                </div>
+            `;
+        }
+
         function renderTelaLogin() {
             const savedUser = localStorage.getItem('guardioes_lembrar_user') || 'admin';
             const isLembrarChecked = savedUser ? 'checked' : '';
@@ -591,2020 +769,94 @@
             `;
         }
 
-        function renderTelaPrimeiroAcesso() {
-            return `
-                <div class="min-h-screen flex items-center justify-center bg-slate-950 p-4 w-full">
-                    <div class="bg-white w-full max-w-md p-8 rounded-3xl shadow-2xl space-y-6">
-                        <div class="text-center space-y-2">
-                            <div class="w-16 h-16 bg-amber-500 rounded-2xl flex items-center justify-center text-white text-3xl font-black mx-auto shadow-lg shadow-amber-500/20"><i class="fa-solid fa-key"></i></div>
-                            <h2 class="text-xl font-black text-slate-900">Primeiro Acesso</h2>
-                            <p class="text-xs text-slate-500 font-medium">Olá, <b>${escapeHTML(usuarioPendentePrimeiroAcesso.nome)}</b>! Defina a sua palavra-passe definitiva para prosseguir.</p>
-                        </div>
-                        <form onsubmit="concluirPrimeiroAcesso(event)" class="space-y-4 text-xs">
-                            <div><label class="block font-bold uppercase text-slate-500 mb-1">Nova Palavra-passe</label><input type="password" id="prim_senha_nova" required class="w-full p-3 border rounded-2xl font-bold bg-slate-50 text-sm focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Mínimo de 6 caracteres"></div>
-                            <div><label class="block font-bold uppercase text-slate-500 mb-1">Confirmar Nova Palavra-passe</label><input type="password" id="prim_senha_conf" required class="w-full p-3 border rounded-2xl font-bold bg-slate-50 text-sm focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Repita a palavra-passe"></div>
-                            <button type="submit" class="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-2xl shadow-lg text-sm transition-all">Guardar Senha e Aceder</button>
-                        </form>
-                    </div>
-                </div>
-            `;
-        }
-
         function renderMainOnly() {
-            const mainEl = document.querySelector('main');
-            if (mainEl) {
-                mainEl.innerHTML = renderModuleContent(tabsState.activeTab);
-                if (tabsState.activeTab === 'dashboard') {
-                    initDashboardCharts();
-                    initDashboardEstoqueChart();
+            const containerMain = document.getElementById('conteudo-principal');
+            if (containerMain) {
+                if (tabsState.activeTab === 'ia') {
+                    containerMain.innerHTML = renderModuloIA();
+                    const box = document.getElementById('box-chat-ia');
+                    if (box) box.scrollTop = box.scrollHeight;
+                } else {
+                    containerMain.innerHTML = `<div class="p-6 text-center text-slate-500 font-semibold">Módulo '${MODULE_NAMES[tabsState.activeTab] || tabsState.activeTab}' selecionado.</div>`;
                 }
-                if (tabsState.activeTab === 'estoque') initEstoqueChart();
             }
         }
 
         function renderApp() {
-            const container = document.getElementById('app');
-            if (!container) return;
-
-            if (usuarioPendentePrimeiroAcesso) {
-                container.innerHTML = renderTelaPrimeiroAcesso();
+            const root = document.getElementById('app');
+            if (!sessao.usuarioLogado) {
+                root.innerHTML = renderTelaLogin();
                 return;
             }
 
-            if (!sessao.usuarioLogado) { 
-                container.innerHTML = renderTelaLogin(); 
-                return; 
-            }
-
-            const user = sessao.usuarioLogado;
-            const msgBoasVindas = `Seja bem-vinda, ${escapeHTML(user.nome || user.usuario)} - ${escapeHTML(user.loja || 'Loja')} - ${escapeHTML(user.cargo || user.perfil || 'Cargo')}`;
-
-            container.innerHTML = `
-                <div class="flex-1 flex flex-col md:flex-row min-h-screen w-full">
-                    <div id="sidebar-backdrop" onclick="fecharMenuMobile()" class="fixed inset-0 bg-slate-950/70 z-40 hidden md:hidden backdrop-blur-md"></div>
-
-                    <aside id="sidebar-menu" class="fixed md:sticky top-0 left-0 z-50 w-64 bg-slate-950 text-slate-300 flex flex-col sidebar-full border-r border-slate-800/80 transform -translate-x-full md:translate-x-0 transition-transform duration-300 shadow-xl">
-                        <div class="p-5 bg-slate-950 flex items-center justify-between border-b border-slate-800/80">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-teal-600 to-emerald-500 flex items-center justify-center text-white font-extrabold text-xl shadow-lg shadow-teal-500/20"><i class="fa-solid fa-shield-halved"></i></div>
-                                <div><h1 class="font-black text-white text-base leading-tight tracking-tight">Guardiões</h1><p class="text-[10px] text-teal-400 font-extrabold uppercase tracking-widest">Nuvem Cloud</p></div>
+            root.innerHTML = `
+                <div class="flex flex-1 min-h-screen">
+                    <aside id="sidebar-menu" class="w-64 bg-slate-900 text-slate-300 flex flex-col justify-between sidebar-full z-30 transition-transform duration-300 -translate-x-full md:translate-x-0 fixed md:sticky top-0 shadow-xl">
+                        <div>
+                            <div class="p-5 border-b border-slate-800 flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-9 h-9 bg-teal-600 text-white rounded-xl flex items-center justify-center font-bold text-lg shadow-md shadow-teal-600/30">
+                                        <i class="fa-solid fa-shield-halved"></i>
+                                    </div>
+                                    <div>
+                                        <h1 class="text-sm font-bold text-white leading-none">Guardiões</h1>
+                                        <span class="text-[10px] text-teal-400 font-semibold tracking-wider uppercase">do Bravo</span>
+                                    </div>
+                                </div>
+                                <button onclick="fecharMenuMobile()" class="md:hidden text-slate-400 hover:text-white">
+                                    <i class="fa-solid fa-xmark text-lg"></i>
+                                </button>
                             </div>
-                            <button onclick="fecharMenuMobile()" class="md:hidden text-slate-400 hover:text-white p-2"><i class="fa-solid fa-xmark text-lg"></i></button>
+                            <nav class="p-3 space-y-1 text-xs font-semibold">
+                                <button onclick="abrirModulo('dashboard')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 hover:text-white transition-colors ${tabsState.activeTab === 'dashboard' ? 'bg-teal-600/20 text-teal-400 font-bold' : ''}">
+                                    <i class="fa-solid fa-chart-line w-4 text-center"></i> Dashboard
+                                </button>
+                                <button onclick="abrirModulo('ia')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 hover:text-white transition-colors ${tabsState.activeTab === 'ia' ? 'bg-teal-600/20 text-teal-400 font-bold' : ''}">
+                                    <i class="fa-solid fa-robot w-4 text-center text-teal-400"></i> IA Copilot
+                                </button>
+                                <button onclick="abrirModulo('moradores')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 hover:text-white transition-colors ${tabsState.activeTab === 'moradores' ? 'bg-teal-600/20 text-teal-400 font-bold' : ''}">
+                                    <i class="fa-solid fa-users w-4 text-center"></i> Moradores
+                                </button>
+                                <button onclick="abrirModulo('estoque')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 hover:text-white transition-colors ${tabsState.activeTab === 'estoque' ? 'bg-teal-600/20 text-teal-400 font-bold' : ''}">
+                                    <i class="fa-solid fa-boxes-stacked w-4 text-center"></i> Estoque
+                                </button>
+                                <button onclick="abrirModulo('financeiro')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 hover:text-white transition-colors ${tabsState.activeTab === 'financeiro' ? 'bg-teal-600/20 text-teal-400 font-bold' : ''}">
+                                    <i class="fa-solid fa-wallet w-4 text-center"></i> Financeiro
+                                </button>
+                            </nav>
                         </div>
-
-                        <!-- Menu Dinâmico Reorganizado -->
-                        <nav class="flex-1 overflow-y-auto p-3.5 space-y-5">
-                            <div>
-                                <p class="px-3 pb-2 text-[10px] font-black text-slate-500 uppercase tracking-widest">Visão Geral</p>
-                                <div class="space-y-1">
-                                    <button onclick="abrirModulo('dashboard')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${tabsState.activeTab === 'dashboard' ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-md shadow-teal-600/20' : 'hover:bg-slate-900 hover:text-white text-slate-400'}"><i class="fa-solid fa-chart-pie w-5 text-center text-sm"></i> Dashboard Executive</button>
-                                    <button onclick="abrirModulo('condominio')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${tabsState.activeTab === 'condominio' ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-md shadow-teal-600/20' : 'hover:bg-slate-900 hover:text-white text-slate-400'}"><i class="fa-solid fa-building w-5 text-center text-sm"></i> Dados do Condomínio</button>
-                                </div>
+                        <div class="p-4 border-t border-slate-800 flex items-center justify-between">
+                            <div class="text-xs">
+                                <p class="font-bold text-white">${escapeHTML(sessao.usuarioLogado.nome)}</p>
+                                <p class="text-[10px] text-slate-400">${escapeHTML(sessao.usuarioLogado.perfil)}</p>
                             </div>
-
-                            <div>
-                                <p class="px-3 pb-2 text-[10px] font-black text-slate-500 uppercase tracking-widest">Gestão Financeira</p>
-                                <div class="space-y-1">
-                                    <button onclick="abrirModulo('plano_contas')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${tabsState.activeTab === 'plano_contas' ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-md shadow-teal-600/20' : 'hover:bg-slate-900 hover:text-white text-slate-400'}"><i class="fa-solid fa-sitemap w-5 text-center text-sm"></i> Plano de Contas</button>
-                                    <button onclick="abrirModulo('financeiro')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${tabsState.activeTab === 'financeiro' ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-md shadow-teal-600/20' : 'hover:bg-slate-900 hover:text-white text-slate-400'}"><i class="fa-solid fa-receipt w-5 text-center text-sm"></i> Pagar / Receber</button>
-                                    <button onclick="abrirModulo('formas_monetarias')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${tabsState.activeTab === 'formas_monetarias' ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-md shadow-teal-600/20' : 'hover:bg-slate-900 hover:text-white text-slate-400'}"><i class="fa-solid fa-money-bill-transfer w-5 text-center text-sm"></i> Formas Monetárias</button>
-                                    <button onclick="abrirModulo('contas_bancarias')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${tabsState.activeTab === 'contas_bancarias' ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-md shadow-teal-600/20' : 'hover:bg-slate-900 hover:text-white text-slate-400'}"><i class="fa-solid fa-building-columns w-5 text-center text-sm"></i> Contas Bancárias</button>
-                                    <button onclick="abrirModulo('relatorios')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${tabsState.activeTab === 'relatorios' ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-md shadow-teal-600/20' : 'hover:bg-slate-900 hover:text-white text-slate-400'}"><i class="fa-solid fa-file-invoice-dollar w-5 text-center text-sm"></i> DRE & Relatórios</button>
-                                </div>
-                            </div>
-
-                            <div>
-                                <p class="px-3 pb-2 text-[10px] font-black text-slate-500 uppercase tracking-widest">Cadastros & Operações</p>
-                                <div class="space-y-1">
-                                    <button onclick="abrirModulo('moradores')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${tabsState.activeTab === 'moradores' ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-md shadow-teal-600/20' : 'hover:bg-slate-900 hover:text-white text-slate-400'}"><i class="fa-solid fa-users w-5 text-center text-sm"></i> Moradores & Unidades</button>
-                                    <button onclick="abrirModulo('fornecedores')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${tabsState.activeTab === 'fornecedores' ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-md shadow-teal-600/20' : 'hover:bg-slate-900 hover:text-white text-slate-400'}"><i class="fa-solid fa-truck-fast w-5 text-center text-sm"></i> Fornecedores</button>
-                                    <button onclick="abrirModulo('empregados')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${tabsState.activeTab === 'empregados' ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-md shadow-teal-600/20' : 'hover:bg-slate-900 hover:text-white text-slate-400'}"><i class="fa-solid fa-user-tie w-5 text-center text-sm"></i> Empregados</button>
-                                    <button onclick="abrirModulo('estoque')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${tabsState.activeTab === 'estoque' ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-md shadow-teal-600/20' : 'hover:bg-slate-900 hover:text-white text-slate-400'}"><i class="fa-solid fa-boxes-stacked w-5 text-center text-sm"></i> Estoque & Fotos</button>
-                                    <button onclick="abrirModulo('acerto_estoque')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${tabsState.activeTab === 'acerto_estoque' ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-md shadow-teal-600/20' : 'hover:bg-slate-900 hover:text-white text-slate-400'}"><i class="fa-solid fa-arrows-split-up-and-left w-5 text-center text-sm"></i> Acerto de Estoque</button>
-                                    <button onclick="abrirModulo('categorias')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${tabsState.activeTab === 'categorias' ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-md shadow-teal-600/20' : 'hover:bg-slate-900 hover:text-white text-slate-400'}"><i class="fa-solid fa-folder-tree w-5 text-center text-sm"></i> Pastas</button>
-                                    <button onclick="abrirModulo('documentos')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${tabsState.activeTab === 'documentos' ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-md shadow-teal-600/20' : 'hover:bg-slate-900 hover:text-white text-slate-400'}"><i class="fa-solid fa-folder-open w-5 text-center text-sm"></i> Documentos Gzip</button>
-                                </div>
-                            </div>
-
-                            <div>
-                                <p class="px-3 pb-2 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sistema</p>
-                                <div class="space-y-1">
-                                    <button onclick="abrirModulo('usuarios')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${tabsState.activeTab === 'usuarios' ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-md shadow-teal-600/20' : 'hover:bg-slate-900 hover:text-white text-slate-400'}"><i class="fa-solid fa-user-gear w-5 text-center text-sm"></i> Utilizadores</button>
-                                    <button onclick="encerrarSessao()" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold hover:bg-rose-950/50 text-rose-400 border border-rose-900/30 transition-all"><i class="fa-solid fa-right-from-bracket w-5 text-center text-sm"></i> Terminar Sessão</button>
-                                </div>
-                            </div>
-                        </nav>
-
-                        <div class="p-3 bg-slate-950 border-t border-slate-900 space-y-2 no-print">
-                            <button onclick="fazerBackupGeralJSON()" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-teal-400 font-bold rounded-xl text-[11px] flex items-center justify-center gap-2 transition-all border border-slate-800"><i class="fa-solid fa-download"></i> Baixar Backup JSON</button>
-                            <label class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-amber-400 font-bold rounded-xl text-[11px] flex items-center justify-center gap-2 cursor-pointer transition-all border border-slate-800"><i class="fa-solid fa-upload"></i> Restaurar Backup <input type="file" accept=".json" onchange="restaurarBackupGeralJSON(event)" class="hidden"></label>
-                        </div>
-
-                        <div class="p-4 bg-slate-950 border-t border-slate-900 flex items-center justify-between">
-                            <div class="truncate pr-2">
-                                <span class="text-xs font-bold text-slate-100 block truncate">${escapeHTML(user.nome)}</span>
-                                <span class="text-[10px] text-teal-400 block truncate font-medium">${escapeHTML(user.cargo || user.perfil)}</span>
-                            </div>
-                            <button onclick="encerrarSessao()" class="p-2 text-slate-400 hover:text-rose-400 transition-colors" title="Sair"><i class="fa-solid fa-right-from-bracket"></i></button>
+                            <button onclick="encerrarSessao()" class="text-slate-400 hover:text-rose-400 p-2 rounded-lg">
+                                <i class="fa-solid fa-right-from-bracket"></i>
+                            </button>
                         </div>
                     </aside>
 
-                    <div class="flex-1 flex flex-col min-h-screen overflow-hidden w-full">
-                        <header class="bg-slate-950 text-white p-4 flex md:hidden items-center justify-between border-b border-slate-800 no-print w-full">
-                            <div class="flex items-center gap-2">
-                                <div class="w-8 h-8 rounded-xl bg-teal-600 flex items-center justify-center text-white font-bold"><i class="fa-solid fa-shield-halved text-sm"></i></div>
-                                <span class="font-extrabold text-sm tracking-tight">Guardiões do Bravo</span>
+                    <div id="sidebar-backdrop" onclick="fecharMenuMobile()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-20 hidden md:hidden"></div>
+
+                    <main class="flex-1 flex flex-col min-w-0 bg-slate-100">
+                        <header class="glass-header border-b border-slate-200 px-6 py-3 flex items-center justify-between sticky top-0 z-10 no-print">
+                            <div class="flex items-center gap-4">
+                                <button onclick="toggleMenuMobile()" class="md:hidden text-slate-600 hover:text-slate-900">
+                                    <i class="fa-solid fa-bars text-xl"></i>
+                                </button>
+                                <h2 class="text-sm font-bold text-slate-800">${MODULE_NAMES[tabsState.activeTab] || 'Módulo'}</h2>
                             </div>
-                            <button onclick="toggleMenuMobile()" class="p-2.5 bg-slate-900 rounded-xl text-slate-200 border border-slate-800"><i class="fa-solid fa-bars"></i></button>
                         </header>
-
-                        <!-- Barra de Abas Flutuante -->
-                        <div class="bg-slate-200/80 border-b border-slate-300 flex items-center overflow-x-auto px-3 pt-2.5 gap-2 no-print w-full backdrop-blur-sm">
-                            ${tabsState.openTabs.map(tabId => `
-                                <div onclick="abrirModulo('${tabId}')" class="flex items-center gap-2.5 px-4 py-2.5 rounded-t-2xl text-xs cursor-pointer whitespace-nowrap transition-all ${tabsState.activeTab === tabId ? 'tab-active' : 'bg-slate-300/60 text-slate-600 hover:bg-slate-300 hover:text-slate-900 font-semibold'}">
-                                    <span>${MODULE_NAMES[tabId] || tabId}</span>
-                                    ${tabsState.openTabs.length > 1 ? `<button onclick="fecharAba(event, '${tabId}')" class="hover:text-rose-600 ml-1 p-0.5 rounded-full hover:bg-slate-200 transition-all"><i class="fa-solid fa-xmark text-xs"></i></button>` : ''}
-                                </div>
-                            `).join('')}
-                        </div>
-
-                        <div class="bg-gradient-to-r from-teal-800 to-teal-900 text-white px-5 py-3 text-xs font-bold flex items-center justify-between shadow-sm no-print">
-                            <div class="flex items-center gap-2.5">
-                                <span class="w-2 h-2 rounded-full bg-teal-400 animate-ping"></span>
-                                <span class="font-semibold text-slate-100">${msgBoasVindas}</span>
-                            </div>
-                            <span class="text-[10px] bg-teal-950/60 border border-teal-700/50 px-3 py-1 rounded-full text-teal-200 font-mono hidden sm:inline-block">Sessão Segura</span>
-                        </div>
-
-                        <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-slate-100/90 w-full">
-                            ${renderModuleContent(tabsState.activeTab)}
-                        </main>
-                    </div>
+                        <div id="conteudo-principal" class="flex-1"></div>
+                    </main>
                 </div>
             `;
-            if (tabsState.activeTab === 'dashboard') {
-                setTimeout(() => {
-                    initDashboardCharts();
-                    initDashboardEstoqueChart();
-                }, 50);
-            }
-            if (tabsState.activeTab === 'estoque') {
-                setTimeout(initEstoqueChart, 50);
-            }
-        }
-
-        function renderModuleContent(moduloId) {
-            let btnNovoHtml = '';
-            let btnExportHtml = `
-                <button onclick="exportarParaPDF()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-2xl font-bold text-xs shadow-sm transition-all flex items-center gap-2"><i class="fa-solid fa-file-pdf text-rose-400"></i> Exportar PDF</button>
-                <button onclick="exportarModuloExcel('${moduloId}')" class="px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-2xl font-bold text-xs shadow-sm transition-all flex items-center gap-2"><i class="fa-solid fa-file-excel"></i> Exportar Excel</button>
-            `;
-
-            if (moduloId === 'condominio') btnNovoHtml = `<button onclick="window.renderModalConselheiro()" class="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white text-xs px-4 py-2.5 rounded-2xl font-bold shadow-md shadow-teal-600/20 transition-all flex items-center gap-2"><i class="fa-solid fa-plus"></i> Novo Conselheiro</button>`;
-            else if (moduloId === 'plano_contas') btnNovoHtml = `<button onclick="window.renderModalPlanoConta()" class="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white text-xs px-4 py-2.5 rounded-2xl font-bold shadow-md shadow-teal-600/20 transition-all flex items-center gap-2"><i class="fa-solid fa-plus"></i> Nova Conta Gerencial</button>`;
-            else if (moduloId === 'financeiro') btnNovoHtml = `<button onclick="window.renderModalNovoTitulo()" class="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white text-xs px-4 py-2.5 rounded-2xl font-bold shadow-md shadow-teal-600/20 transition-all flex items-center gap-2"><i class="fa-solid fa-plus"></i> Novo Título</button>`;
-            else if (moduloId === 'formas_monetarias') btnNovoHtml = `<button onclick="window.renderModalFormaMonetaria()" class="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white text-xs px-4 py-2.5 rounded-2xl font-bold shadow-md shadow-teal-600/20 transition-all flex items-center gap-2"><i class="fa-solid fa-plus"></i> Nova Forma</button>`;
-            else if (moduloId === 'contas_bancarias') btnNovoHtml = `<button onclick="window.renderModalContaBancaria()" class="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white text-xs px-4 py-2.5 rounded-2xl font-bold shadow-md shadow-teal-600/20 transition-all flex items-center gap-2"><i class="fa-solid fa-plus"></i> Nova Conta</button>`;
-            else if (moduloId === 'moradores') {
-                btnNovoHtml = `
-                    <label class="px-4 py-2.5 bg-emerald-700 hover:bg-emerald-800 text-white rounded-2xl font-bold text-xs cursor-pointer flex items-center gap-2 shadow-sm transition-all whitespace-nowrap">
-                        <i class="fa-solid fa-file-arrow-up"></i> Importar Planilha <input type="file" accept=".csv, .txt" onchange="importarPlanilhaMoradores(event)" class="hidden">
-                    </label>
-                    <button onclick="window.renderModalMorador()" class="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white text-xs px-4 py-2.5 rounded-2xl font-bold shadow-md shadow-teal-600/20 transition-all flex items-center gap-2"><i class="fa-solid fa-plus"></i> Novo Morador</button>
-                `;
-            }
-            else if (moduloId === 'fornecedores') btnNovoHtml = `<button onclick="window.renderModalFornecedor()" class="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white text-xs px-4 py-2.5 rounded-2xl font-bold shadow-md shadow-teal-600/20 transition-all flex items-center gap-2"><i class="fa-solid fa-plus"></i> Novo Fornecedor</button>`;
-            else if (moduloId === 'empregados') btnNovoHtml = `<button onclick="window.renderModalEmpregado()" class="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white text-xs px-4 py-2.5 rounded-2xl font-bold shadow-md shadow-teal-600/20 transition-all flex items-center gap-2"><i class="fa-solid fa-plus"></i> Novo Empregado</button>`;
-            else if (moduloId === 'categorias') btnNovoHtml = `<button onclick="window.renderModalCategoria()" class="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white text-xs px-4 py-2.5 rounded-2xl font-bold shadow-md shadow-teal-600/20 transition-all flex items-center gap-2"><i class="fa-solid fa-plus"></i> Nova Pasta</button>`;
-            else if (moduloId === 'estoque') btnNovoHtml = `<button onclick="window.renderModalEstoque()" class="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white text-xs px-4 py-2.5 rounded-2xl font-bold shadow-md shadow-teal-600/20 transition-all flex items-center gap-2"><i class="fa-solid fa-plus"></i> Novo Item</button>`;
-            else if (moduloId === 'acerto_estoque') btnNovoHtml = `<button onclick="window.renderModalAcertoEstoque()" class="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white text-xs px-4 py-2.5 rounded-2xl font-bold shadow-md shadow-teal-600/20 transition-all flex items-center gap-2"><i class="fa-solid fa-plus"></i> Novo Acerto</button>`;
-            else if (moduloId === 'documentos') btnNovoHtml = `<button onclick="window.renderModalDocumento()" class="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white text-xs px-4 py-2.5 rounded-2xl font-bold shadow-md shadow-teal-600/20 transition-all flex items-center gap-2"><i class="fa-solid fa-upload"></i> Inserir Documento</button>`;
-            else if (moduloId === 'usuarios') btnNovoHtml = `<button onclick="window.renderModalUsuario()" class="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white text-xs px-4 py-2.5 rounded-2xl font-bold shadow-md shadow-teal-600/20 transition-all flex items-center gap-2"><i class="fa-solid fa-user-plus"></i> Novo Utilizador</button>`;
-            else if (moduloId === 'relatorios' || moduloId === 'dashboard') btnExportHtml = '';
-
-            const headerGlobal = `
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
-                    <div>
-                        <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">${MODULE_NAMES[moduloId]}</h2>
-                        <p class="text-xs font-semibold text-slate-500 mt-0.5">Gestão em nuvem atualizada em tempo real</p>
-                    </div>
-                    <div class="flex flex-wrap items-center gap-2.5 no-print">
-                        ${moduloId === 'dashboard' ? `<button onclick="gerarRelatorioInteligenteIA()" class="px-5 py-3 bg-gradient-to-r from-teal-600 via-emerald-600 to-teal-700 hover:from-teal-700 hover:to-emerald-800 text-white rounded-2xl font-extrabold text-xs shadow-lg shadow-teal-600/25 transition-all flex items-center gap-2.5 animate-pulse"><i class="fa-solid fa-wand-magic-sparkles text-sm"></i> Relatório Executivo por IA</button>` : ''}
-                        ${btnExportHtml} ${btnNovoHtml}
-                    </div>
-                </div>
-            `;
-
-            switch (moduloId) {
-                case 'dashboard': return headerGlobal + renderDashboardView();
-                case 'condominio': return headerGlobal + renderCondominioView();
-                case 'plano_contas': return headerGlobal + renderPlanoContasView();
-                case 'financeiro': return headerGlobal + renderFinanceiroView();
-                case 'formas_monetarias': return headerGlobal + renderFormasMonetariasView();
-                case 'contas_bancarias': return headerGlobal + renderContasBancariasView();
-                case 'moradores': return headerGlobal + renderMoradoresView();
-                case 'fornecedores': return headerGlobal + renderFornecedoresView();
-                case 'empregados': return headerGlobal + renderEmpregadosView();
-                case 'categorias': return headerGlobal + renderCategoriasView();
-                case 'estoque': return headerGlobal + renderEstoqueView();
-                case 'acerto_estoque': return headerGlobal + renderAcertoEstoqueView();
-                case 'documentos': return headerGlobal + renderDocumentosView();
-                case 'usuarios': return headerGlobal + renderUsuariosView();
-                case 'relatorios': return headerGlobal + renderRelatoriosCentralView();
-                default: return headerGlobal + `<div class="bg-white p-6 rounded-3xl border">Módulo Ativo.</div>`;
-            }
-        }
-
-        function exportarModuloExcel(moduloId) {
-            exportarParaExcel(db[moduloId] || [], `relatorio_${moduloId}.csv`);
-        }
-
-        function abrirModalContainer(html) { document.getElementById('modal-container').innerHTML = html; }
-        function fecharModalContainer() { document.getElementById('modal-container').innerHTML = ''; }
-
-        // =========================================================================
-        // IA: GERADOR DE RELATÓRIO INTELIGENTE NO DASHBOARD
-        // =========================================================================
-        function gerarRelatorioInteligenteIA() {
-            const totalMoradores = (db.moradores || []).length;
-            const estoqueList = db.estoque || [];
-            const financeiroList = db.financeiro || [];
-
-            let totalReceber = 0;
-            let totalPagar = 0;
-            financeiroList.forEach(f => {
-                const val = parseFloat(f.valor) || 0;
-                if (f.tipo === 'Receber') totalReceber += val;
-                else if (f.tipo === 'Pagar') totalPagar += val;
-            });
-            const saldoCaixa = totalReceber - totalPagar;
-
-            let totalCriticos = 0;
-            let totalExcedentes = 0;
-            let totalAdequados = 0;
-            estoqueList.forEach(st => {
-                const atual = parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
-                const minimo = parseInt(st.minimo || 0);
-                const maximo = parseInt(st.maximo || 0);
-                if (atual <= minimo) totalCriticos++;
-                else if (maximo > 0 && atual > maximo) totalExcedentes++;
-                else totalAdequados++;
-            });
-
-            abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
-                    <div class="bg-white rounded-3xl max-w-2xl w-full p-8 shadow-2xl space-y-6 max-h-[90vh] overflow-y-auto border border-slate-100">
-                        <div class="flex justify-between items-center border-b pb-4">
-                            <div class="flex items-center gap-3">
-                                <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-teal-600 to-emerald-500 flex items-center justify-center text-white font-extrabold shadow-lg shadow-teal-500/20"><i class="fa-solid fa-wand-magic-sparkles text-xl"></i></div>
-                                <div>
-                                    <h3 class="font-black text-slate-900 text-lg">Relatório Executivo Inteligente (IA)</h3>
-                                    <p class="text-[11px] text-teal-600 font-bold uppercase tracking-wider">Análise automatizada dos dados do condomínio</p>
-                                </div>
-                            </div>
-                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-700 text-xl"><i class="fa-solid fa-xmark"></i></button>
-                        </div>
-                        <div class="space-y-4 text-xs text-slate-700 leading-relaxed bg-slate-50/80 p-5 rounded-2xl border border-slate-200/80">
-                            <div class="border-b pb-3">
-                                <h4 class="font-black text-slate-900 uppercase text-[11px] tracking-wider mb-1 flex items-center gap-2"><i class="fa-solid fa-chart-line text-teal-600"></i> 1. Panorama Financeiro & Caixa</h4>
-                                <p>O saldo consolidado aponta para <b>R$ ${saldoCaixa.toFixed(2)}</b> (Receitas: R$ ${totalReceber.toFixed(2)} x Despesas: R$ ${totalPagar.toFixed(2)}). ${saldoCaixa >= 0 ? 'O condomínio mantém estabilidade orçamentária para as despesas vigentes.' : 'Recomenda-se atenção ao fluxo de caixa para cobrir os títulos previstos.'}</p>
-                            </div>
-                            <div class="border-b pb-3">
-                                <h4 class="font-black text-slate-900 uppercase text-[11px] tracking-wider mb-1 flex items-center gap-2"><i class="fa-solid fa-boxes-stacked text-teal-600"></i> 2. Gestão de Inventário</h4>
-                                <p>Foram analisados ${estoqueList.length} itens. <b>${totalAdequados}</b> estão adequados, <b>${totalCriticos}</b> críticos (reposição urgente necessária) e <b>${totalExcedentes}</b> com estoque acima do limite recomendado.</p>
-                            </div>
-                            <div>
-                                <h4 class="font-black text-slate-900 uppercase text-[11px] tracking-wider mb-1 flex items-center gap-2"><i class="fa-solid fa-shield-halved text-teal-600"></i> 3. Recomendações</h4>
-                                <ul class="list-disc pl-4 space-y-1 font-semibold text-slate-800">
-                                    <li>Reabastecer os ${totalCriticos} itens críticos no módulo de estoque.</li>
-                                    <li>Manter os dados de ${totalMoradores} moradores sincronizados para envios e assembleias.</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="flex justify-end gap-2 pt-2 border-t">
-                            <button type="button" onclick="window.print()" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-2xl font-bold text-xs shadow-sm flex items-center gap-2"><i class="fa-solid fa-file-pdf"></i> Imprimir / PDF</button>
-                            <button type="button" onclick="fecharModalContainer()" class="px-5 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold text-xs shadow-sm">Concluir</button>
-                        </div>
-                    </div>
-                </div>
-            `);
-        }
-
-        function renderDashboardView() {
-            const totalMoradores = (db.moradores || []).length;
-            const totalFornecedores = (db.fornecedores || []).length;
-            const totalDocumentos = (db.documentos || []).length;
-
-            const estoqueList = db.estoque || [];
-            let totalCriticos = 0;
-            let totalExcedentes = 0;
-            let totalAdequados = 0;
-
-            estoqueList.forEach(st => {
-                const atual = parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
-                const minimo = parseInt(st.minimo || 0);
-                const maximo = parseInt(st.maximo || 0);
-
-                if (atual <= minimo) { totalCriticos++; }
-                else if (maximo > 0 && atual > maximo) { totalExcedentes++; }
-                else { totalAdequados++; }
-            });
-
-            const financeiroList = db.financeiro || [];
-            let totalReceber = 0;
-            let totalPagar = 0;
-            financeiroList.forEach(f => {
-                const val = parseFloat(f.valor) || 0;
-                if (f.tipo === 'Receber') totalReceber += val;
-                else if (f.tipo === 'Pagar') totalPagar += val;
-            });
-            const saldoCaixa = totalReceber - totalPagar;
-
-            return `
-                <div class="space-y-8 w-full">
-                    <!-- Cards Principais do Dashboard com Design Moderno -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5 w-full">
-                        <div class="bg-white p-6 rounded-3xl card-modern flex items-center justify-between shadow-sm">
-                            <div>
-                                <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Saldo em Caixa</p>
-                                <h3 class="text-2xl font-black ${saldoCaixa >= 0 ? 'text-emerald-600' : 'text-rose-600'} mt-1">R$ ${saldoCaixa.toFixed(2)}</h3>
-                                <span class="text-[10px] text-slate-400 font-semibold">Receitas vs Despesas</span>
-                            </div>
-                            <div class="w-14 h-14 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-inner"><i class="fa-solid fa-wallet"></i></div>
-                        </div>
-
-                        <div class="bg-white p-6 rounded-3xl card-modern flex items-center justify-between shadow-sm">
-                            <div>
-                                <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Total Moradores</p>
-                                <h3 class="text-2xl font-black text-slate-900 mt-1">${totalMoradores}</h3>
-                                <span class="text-[10px] text-teal-600 font-bold">Unidades registadas</span>
-                            </div>
-                            <div class="w-14 h-14 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-inner"><i class="fa-solid fa-users"></i></div>
-                        </div>
-
-                        <div class="bg-white p-6 rounded-3xl card-modern flex items-center justify-between shadow-sm">
-                            <div>
-                                <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Fornecedores</p>
-                                <h3 class="text-2xl font-black text-slate-900 mt-1">${totalFornecedores}</h3>
-                                <span class="text-[10px] text-blue-600 font-bold">Parceiros ativos</span>
-                            </div>
-                            <div class="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-inner"><i class="fa-solid fa-truck-fast"></i></div>
-                        </div>
-
-                        <div class="bg-white p-6 rounded-3xl card-modern flex items-center justify-between shadow-sm">
-                            <div>
-                                <p class="text-[11px] font-black text-slate-400 uppercase tracking-widest">Documentos</p>
-                                <h3 class="text-2xl font-black text-slate-900 mt-1">${totalDocumentos}</h3>
-                                <span class="text-[10px] text-amber-600 font-bold">Ficheiros na nuvem</span>
-                            </div>
-                            <div class="w-14 h-14 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center text-2xl font-bold shadow-inner"><i class="fa-solid fa-folder-open"></i></div>
-                        </div>
-                    </div>
-
-                    <!-- Cards de Alerta de Estoque Dinâmicos -->
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 w-full">
-                        <div onclick="abrirModulo('estoque', 'adequado')" class="bg-white p-5 rounded-3xl card-modern flex items-center justify-between border-l-4 border-l-teal-600 cursor-pointer transition-all shadow-sm">
-                            <div>
-                                <p class="text-[11px] font-black text-slate-400 uppercase tracking-wider">Estoque Adequado</p>
-                                <h3 class="text-xl font-black text-teal-700 mt-0.5">${totalAdequados} itens</h3>
-                            </div>
-                            <div class="w-11 h-11 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center font-bold"><i class="fa-solid fa-circle-check text-lg"></i></div>
-                        </div>
-
-                        <div onclick="abrirModulo('estoque', 'critico')" class="bg-white p-5 rounded-3xl card-modern flex items-center justify-between border-l-4 border-l-rose-600 cursor-pointer transition-all shadow-sm">
-                            <div>
-                                <p class="text-[11px] font-black text-rose-600 uppercase tracking-wider">Atenção: Estoque Insuficiente</p>
-                                <h3 class="text-xl font-black text-rose-600 mt-0.5">${totalCriticos} itens críticos</h3>
-                            </div>
-                            <div class="w-11 h-11 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center font-bold"><i class="fa-solid fa-triangle-exclamation animate-bounce text-lg"></i></div>
-                        </div>
-
-                        <div onclick="abrirModulo('estoque', 'excedente')" class="bg-white p-5 rounded-3xl card-modern flex items-center justify-between border-l-4 border-l-amber-500 cursor-pointer transition-all shadow-sm">
-                            <div>
-                                <p class="text-[11px] font-black text-amber-600 uppercase tracking-wider">Excedente / Antigo (Não Comprar)</p>
-                                <h3 class="text-xl font-black text-amber-600 mt-0.5">${totalExcedentes} itens</h3>
-                            </div>
-                            <div class="w-11 h-11 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center font-bold"><i class="fa-solid fa-box-archive text-lg"></i></div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 w-full">
-                        <div class="bg-white p-6 rounded-3xl card-modern lg:col-span-2 flex flex-col justify-between shadow-sm">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="font-black text-slate-900 text-base"><i class="fa-solid fa-chart-line text-teal-600 mr-2"></i> Panorama Financeiro</h3>
-                                <span class="text-[10px] bg-slate-100 text-slate-600 px-3 py-1 rounded-full font-bold">Tempo Real</span>
-                            </div>
-                            <div class="relative h-64 sm:h-72 w-full flex items-center justify-center">
-                                <canvas id="chartReceitaDespesa"></canvas>
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-6 rounded-3xl card-modern flex flex-col justify-between shadow-sm">
-                            <div class="flex items-center justify-between mb-4">
-                                <h3 class="font-black text-slate-900 text-base"><i class="fa-solid fa-boxes-stacked text-teal-600 mr-2"></i> Status do Estoque</h3>
-                            </div>
-                            <div class="relative h-60 w-full flex items-center justify-center">
-                                <canvas id="chartEstoqueDash"></canvas>
-                            </div>
-                            <div class="mt-4 pt-3 border-t border-slate-100 text-center">
-                                <button onclick="abrirModulo('estoque')" class="text-teal-700 hover:text-teal-800 text-xs font-bold transition-colors">Gerenciar Estoque Completo &rarr;</button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-3xl card-modern overflow-hidden w-full shadow-sm">
-                        <div class="p-5 bg-slate-950 text-white font-bold text-sm flex items-center justify-between">
-                            <span><i class="fa-solid fa-clock-rotate-left mr-2 text-teal-400"></i> Últimas Movimentações Financeiras</span>
-                            <button onclick="abrirModulo('financeiro')" class="text-teal-400 hover:underline text-xs">Ver Todas</button>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs min-w-[500px]">
-                                <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
-                                    <tr>
-                                        <th class="p-4">Tipo</th>
-                                        <th class="p-4">Conta Gerencial</th>
-                                        <th class="p-4">Histórico</th>
-                                        <th class="p-4">Valor</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100">
-                                    ${financeiroList.length === 0 ? `<tr><td colspan="4" class="p-6 text-center text-slate-400">Nenhum lançamento financeiro registado.</td></tr>` : financeiroList.slice(-5).reverse().map(f => {
-                                        const pcObj = (db.plano_contas || []).find(p => p.id === f.planoContaId);
-                                        return `
-                                            <tr class="hover:bg-slate-50/80 transition-colors">
-                                                <td class="p-4"><span class="px-3 py-1 rounded-full font-extrabold ${f.tipo === 'Receber' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">${f.tipo}</span></td>
-                                                <td class="p-4 font-bold text-teal-700">${pcObj ? escapeHTML(pcObj.codigo + ' - ' + pcObj.nome) : 'Geral'}</td>
-                                                <td class="p-4 font-bold text-slate-800">${escapeHTML(f.historico)}</td>
-                                                <td class="p-4 font-mono font-black ${f.tipo === 'Receber' ? 'text-emerald-600' : 'text-rose-600'}">R$ ${parseFloat(f.valor||0).toFixed(2)}</td>
-                                            </tr>
-                                        `;
-                                    }).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function initDashboardCharts() {
-            if (tabsState.activeTab !== 'dashboard') return;
-
-            const finList = db.financeiro || [];
-            let totalReceber = 0;
-            let totalPagar = 0;
-            finList.forEach(f => {
-                const val = parseFloat(f.valor) || 0;
-                if (f.tipo === 'Receber') totalReceber += val;
-                else if (f.tipo === 'Pagar') totalPagar += val;
-            });
-
-            const ctx1 = document.getElementById('chartReceitaDespesa');
-            if (ctx1) {
-                if (chartInstanceReceitaDespesa) chartInstanceReceitaDespesa.destroy();
-                chartInstanceReceitaDespesa = new Chart(ctx1, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Total a Receber', 'Total a Pagar', 'Saldo Líquido'],
-                        datasets: [{
-                            label: 'Valores em R$',
-                            data: [totalReceber, totalPagar, totalReceber - totalPagar],
-                            backgroundColor: ['#0d9488', '#f43f5e', '#3b82f6'],
-                            borderRadius: 12,
-                            barThickness: 32
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: { legend: { display: false } },
-                        scales: {
-                            y: { grid: { color: '#f1f5f9' }, ticks: { font: { weight: 'bold', family: 'Inter' } } },
-                            x: { grid: { display: false }, ticks: { font: { weight: 'bold', family: 'Inter' } } }
-                        }
-                    }
-                });
-            }
-        }
-
-        function initDashboardEstoqueChart() {
-            if (tabsState.activeTab !== 'dashboard') return;
-            const ctx = document.getElementById('chartEstoqueDash');
-            if (!ctx) return;
-
-            const list = db.estoque || [];
-            let qtdAdequado = 0;
-            let qtdCritico = 0;
-            let qtdExcedente = 0;
-
-            list.forEach(st => {
-                const atual = parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
-                const minimo = parseInt(st.minimo || 0);
-                const maximo = parseInt(st.maximo || 0);
-
-                if (atual <= minimo) qtdCritico++;
-                else if (maximo > 0 && atual > maximo) qtdExcedente++;
-                else qtdAdequado++;
-            });
-
-            if (list.length === 0) { qtdAdequado = 1; }
-
-            if (chartInstanceEstoqueDash) chartInstanceEstoqueDash.destroy();
-            chartInstanceEstoqueDash = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Adequado', 'Insuficiente (Crítico)', 'Excedente (Antigo)'],
-                    datasets: [{
-                        data: [qtdAdequado, qtdCritico, qtdExcedente],
-                        backgroundColor: ['#0d9488', '#f43f5e', '#f59e0b'],
-                        borderWidth: 3,
-                        borderColor: '#ffffff'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { weight: 'bold', size: 10, family: 'Inter' } } }
-                    },
-                    cutout: '70%'
-                }
-            });
-        }
-
-        function renderCondominioView() {
-            const cond = db.condominio || {};
-            const conselheiros = db.conselheiros || [];
-            return `
-                <div class="space-y-6 w-full">
-                    <div class="bg-white p-6 rounded-3xl card-modern shadow-sm space-y-4">
-                        <h3 class="font-black text-lg text-slate-900">Informações do Condomínio & Concessionárias</h3>
-                        <form class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs" onsubmit="event.preventDefault(); salvarDadosCondominio();">
-                            <div class="md:col-span-2"><label class="block font-extrabold uppercase text-slate-500 mb-1">Nome</label><input type="text" id="c_nome" value="${escapeHTML(cond.nome)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none"></div>
-                            <div><label class="block font-extrabold uppercase text-slate-500 mb-1">CNPJ</label><input type="text" id="c_cnpj" value="${escapeHTML(cond.cnpj)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none"></div>
-                            <div><label class="block font-extrabold uppercase text-slate-500 mb-1">Telefone</label><input type="text" id="c_tel" value="${escapeHTML(cond.telefone)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none"></div>
-                            <div class="md:col-span-2"><label class="block font-extrabold uppercase text-slate-500 mb-1">E-mail</label><input type="text" id="c_email" value="${escapeHTML(cond.email)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none"></div>
-                            
-                            <div class="md:col-span-3 border-t pt-4 mt-2"><h4 class="font-extrabold text-teal-700 uppercase mb-2">Unidades Consumidoras (Água, Luz e Gás)</h4></div>
-                            <div><label class="block font-extrabold uppercase text-slate-500 mb-1">Copel - Bloco 1</label><input type="text" id="c_copel1" value="${escapeHTML(cond.copelBloco1||'')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Nº Instalação"></div>
-                            <div><label class="block font-extrabold uppercase text-slate-500 mb-1">Copel - Bloco 2</label><input type="text" id="c_copel2" value="${escapeHTML(cond.copelBloco2||'')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Nº Instalação"></div>
-                            <div><label class="block font-extrabold uppercase text-slate-500 mb-1">Copel - Bloco 3</label><input type="text" id="c_copel3" value="${escapeHTML(cond.copelBloco3||'')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Nº Instalação"></div>
-                            <div><label class="block font-extrabold uppercase text-slate-500 mb-1">Copel - Bloco 4</label><input type="text" id="c_copel4" value="${escapeHTML(cond.copelBloco4||'')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Nº Instalação"></div>
-                            <div><label class="block font-extrabold uppercase text-slate-500 mb-1">Copel - Áreas Comuns</label><input type="text" id="c_copel_comum" value="${escapeHTML(cond.copelAreasComuns||'')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Nº Instalação"></div>
-                            <div><label class="block font-extrabold uppercase text-slate-500 mb-1">Registro de Gás (Salão)</label><input type="text" id="c_gas" value="${escapeHTML(cond.gasSalao||'')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Nº Medidor"></div>
-                            <div><label class="block font-extrabold uppercase text-slate-500 mb-1">Registro Sanepar (Água)</label><input type="text" id="c_sanepar" value="${escapeHTML(cond.sanepar||'')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none" placeholder="Nº Matrícula"></div>
-
-                            <div class="md:col-span-3 pt-2"><button type="button" onclick="salvarDadosCondominio()" class="px-5 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl text-xs font-bold shadow-md shadow-teal-600/20 transition-all">Salvar Alterações</button></div>
-                        </form>
-                    </div>
-                    <div class="bg-white rounded-3xl card-modern overflow-x-auto w-full shadow-sm">
-                        <div class="p-5 bg-slate-950 text-white font-bold text-sm">Corpo Diretivo</div>
-                        <table class="w-full text-left text-xs min-w-[500px]">
-                            <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100"><tr><th class="p-4">Nome</th><th class="p-4">Cargo</th><th class="p-4">Bloco/Ap</th><th class="p-4 text-center">Ações</th></tr></thead>
-                            <tbody class="divide-y divide-slate-100">${conselheiros.map(c => `<tr class="hover:bg-slate-50/80 transition-colors"><td class="p-4 font-bold text-slate-900">${escapeHTML(c.nome)}</td><td class="p-4 font-semibold text-teal-700">${escapeHTML(c.cargo)}</td><td class="p-4">${escapeHTML(c.BlocoAp)}</td><td class="p-4 text-center"><button onclick="window.renderModalConselheiro('${c.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl mr-1 transition-colors" title="Editar"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('conselheiros','${c.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors" title="Excluir"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }
-
-        function salvarDadosCondominio() {
-            db.condominio.nome = document.getElementById('c_nome').value;
-            db.condominio.cnpj = document.getElementById('c_cnpj').value;
-            db.condominio.telefone = document.getElementById('c_tel').value;
-            db.condominio.email = document.getElementById('c_email').value;
-            db.condominio.copelBloco1 = document.getElementById('c_copel1').value;
-            db.condominio.copelBloco2 = document.getElementById('c_copel2').value;
-            db.condominio.copelBloco3 = document.getElementById('c_copel3').value;
-            db.condominio.copelBloco4 = document.getElementById('c_copel4').value;
-            db.condominio.copelAreasComuns = document.getElementById('c_copel_comum').value;
-            db.condominio.gasSalao = document.getElementById('c_gas').value;
-            db.condominio.sanepar = document.getElementById('c_sanepar').value;
-
-            salvarDados(db);
-            alert('Dados do condomínio atualizados!');
-        }
-
-        window.renderModalConselheiro = function(id = null) {
-            const item = id ? (db.conselheiros||[]).find(x => x.id === id) : { id: '', nome: '', cargo: 'Síndico', BlocoAp: '', telefone: '' };
-            abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
-                    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
-                        <h3 class="font-black text-lg text-slate-900">${id ? 'Editar Conselheiro' : 'Novo Conselheiro'}</h3>
-                        <form onsubmit="salvarModalConselheiro(event, '${id}')" class="space-y-3">
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Nome</label><input type="text" id="m_c_nome" required value="${escapeHTML(item.nome)}" class="w-full p-3 border rounded-2xl text-xs font-bold bg-slate-50"></div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Cargo</label><input type="text" id="m_c_cargo" required value="${escapeHTML(item.cargo)}" class="w-full p-3 border rounded-2xl text-xs font-bold bg-slate-50"></div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Bloco/Ap</label><input type="text" id="m_c_ap" value="${escapeHTML(item.BlocoAp)}" class="w-full p-3 border rounded-2xl text-xs font-bold bg-slate-50"></div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Telefone</label><input type="text" id="m_c_tel" value="${escapeHTML(item.telefone)}" class="w-full p-3 border rounded-2xl text-xs font-bold bg-slate-50"></div>
-                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl text-xs font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl text-xs font-bold shadow-sm">Salvar</button></div>
-                        </form>
-                    </div>
-                </div>
-            `);
-        };
-
-        window.salvarModalConselheiro = function(e, id) {
-            e.preventDefault();
-            if(!db.conselheiros) db.conselheiros = [];
-            const obj = {
-                id: id && id !== 'null' ? id : 'cons_' + Date.now(),
-                nome: document.getElementById('m_c_nome').value,
-                cargo: document.getElementById('m_c_cargo').value,
-                BlocoAp: document.getElementById('m_c_ap').value,
-                telefone: document.getElementById('m_c_tel').value
-            };
-            const idx = db.conselheiros.findIndex(x => x.id === obj.id);
-            if(idx !== -1) db.conselheiros[idx] = obj; else db.conselheiros.push(obj);
-            salvarDados(db); fecharModalContainer(); renderMainOnly();
-        };
-
-        function renderPlanoContasView() {
-            const list = db.plano_contas || [];
-            return `
-                <div class="bg-white rounded-3xl card-modern overflow-x-auto w-full shadow-sm">
-                    <table class="w-full text-left text-xs min-w-[500px]">
-                        <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
-                            <tr>
-                                <th class="p-4">Código</th>
-                                <th class="p-4">Nome da Conta</th>
-                                <th class="p-4">Tipo</th>
-                                <th class="p-4 text-center">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            ${list.length === 0 ? `<tr><td colspan="4" class="p-6 text-center text-slate-400">Nenhuma conta cadastrada.</td></tr>` : list.map(pc => `
-                                <tr class="hover:bg-slate-50/80 transition-colors">
-                                    <td class="p-4 font-mono font-bold text-slate-700">${escapeHTML(pc.codigo)}</td>
-                                    <td class="p-4 font-bold text-slate-900">${escapeHTML(pc.nome)}</td>
-                                    <td class="p-4"><span class="px-3 py-1 rounded-full font-extrabold ${pc.tipo === 'Receita' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">${escapeHTML(pc.tipo)}</span></td>
-                                    <td class="p-4 text-center">
-                                        <button onclick="window.renderModalPlanoConta('${pc.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl mr-1 transition-colors"><i class="fa-solid fa-pen"></i></button>
-                                        <button onclick="excluirRegistro('plano_contas','${pc.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-        }
-
-        window.renderModalPlanoConta = function(id = null) {
-            const item = id ? (db.plano_contas||[]).find(x => x.id === id) : { id: '', codigo: '', nome: '', tipo: 'Despesa' };
-            abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
-                    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
-                        <h3 class="font-black text-lg text-slate-900">${id ? 'Editar Conta Gerencial' : 'Nova Conta no Plano de Contas'}</h3>
-                        <form onsubmit="salvarModalPlanoConta(event, '${id}')" class="space-y-3 text-xs">
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Código (Ex: 1.3)</label><input type="text" id="m_pc_cod" required value="${escapeHTML(item.codigo)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Nome da Conta</label><input type="text" id="m_pc_nome" required value="${escapeHTML(item.nome)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div>
-                                <label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Tipo</label>
-                                <select id="m_pc_tipo" class="w-full p-3 border rounded-2xl font-bold bg-slate-50">
-                                    <option value="Receita" ${item.tipo === 'Receita' ? 'selected' : ''}>Receita</option>
-                                    <option value="Despesa" ${item.tipo === 'Despesa' ? 'selected' : ''}>Despesa</option>
-                                </select>
-                            </div>
-                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Salvar</button></div>
-                        </form>
-                    </div>
-                </div>
-            `);
-        };
-
-        window.salvarModalPlanoConta = function(e, id) {
-            e.preventDefault();
-            if(!db.plano_contas) db.plano_contas = [];
-            const obj = {
-                id: id && id !== 'null' ? id : 'pc_' + Date.now(),
-                codigo: document.getElementById('m_pc_cod').value,
-                nome: document.getElementById('m_pc_nome').value,
-                tipo: document.getElementById('m_pc_tipo').value
-            };
-            const idx = db.plano_contas.findIndex(x => x.id === obj.id);
-            if(idx !== -1) db.plano_contas[idx] = obj; else db.plano_contas.push(obj);
-            salvarDados(db); fecharModalContainer(); renderMainOnly();
-        };
-
-        function renderFinanceiroView() {
-            const list = db.financeiro || [];
-            return `
-                <div class="bg-white rounded-3xl card-modern overflow-x-auto w-full shadow-sm">
-                    <table class="w-full text-left text-xs min-w-[650px]">
-                        <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
-                            <tr>
-                                <th class="p-4">Tipo</th>
-                                <th class="p-4">Conta do Plano de Contas</th>
-                                <th class="p-4">Histórico</th>
-                                <th class="p-4">Valor</th>
-                                <th class="p-4 text-center">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            ${list.length === 0 ? `<tr><td colspan="5" class="p-6 text-center text-slate-400">Nenhum título financeiro registado.</td></tr>` : list.map(f => {
-                                const pcObj = (db.plano_contas || []).find(p => p.id === f.planoContaId);
-                                return `
-                                    <tr class="hover:bg-slate-50/80 transition-colors">
-                                        <td class="p-4"><span class="px-3 py-1 rounded-full font-extrabold ${f.tipo === 'Receber' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">${escapeHTML(f.tipo)}</span></td>
-                                        <td class="p-4 font-bold text-teal-700">${pcObj ? escapeHTML(pcObj.codigo + ' - ' + pcObj.nome) : '<span class="text-slate-400">Não vinculada</span>'}</td>
-                                        <td class="p-4 font-bold text-slate-800">${escapeHTML(f.historico)}</td>
-                                        <td class="p-4 font-mono font-black ${f.tipo === 'Receber' ? 'text-emerald-600' : 'text-rose-600'}">R$ ${parseFloat(f.valor||0).toFixed(2)}</td>
-                                        <td class="p-4 text-center">
-                                            <button onclick="window.renderModalNovoTitulo('${f.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl mr-1 transition-colors"><i class="fa-solid fa-pen"></i></button>
-                                            <button onclick="excluirRegistro('financeiro','${f.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button>
-                                        </td>
-                                    </tr>
-                                `;
-                            }).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-        }
-
-        window.renderModalNovoTitulo = function(id = null) {
-            const item = id ? (db.financeiro||[]).find(x => x.id === id) : { id: '', tipo: 'Receber', planoContaId: '', historico: '', valor: '' };
-            const planoContas = db.plano_contas || [];
-
-            abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
-                    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
-                        <h3 class="font-black text-lg text-slate-900">${id ? 'Editar Título' : 'Novo Título'}</h3>
-                        <form onsubmit="salvarModalFinanceiro(event, '${id}')" class="space-y-3 text-xs">
-                            <div>
-                                <label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Tipo</label>
-                                <select id="m_f_tipo" class="w-full p-3 border rounded-2xl font-bold bg-slate-50">
-                                    <option value="Receber" ${item.tipo==='Receber'?'selected':''}>Receber</option>
-                                    <option value="Pagar" ${item.tipo==='Pagar'?'selected':''}>Pagar</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Vincular ao Plano de Contas</label>
-                                <select id="m_f_plano" class="w-full p-3 border rounded-2xl font-bold bg-slate-50">
-                                    <option value="">[ Selecione a Conta Gerencial ]</option>
-                                    ${planoContas.map(pc => `<option value="${pc.id}" ${item.planoContaId === pc.id ? 'selected' : ''}>${escapeHTML(pc.codigo + ' - ' + pc.nome + ' (' + pc.tipo + ')')}</option>`).join('')}
-                                </select>
-                            </div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Histórico</label><input type="text" id="m_f_hist" required value="${escapeHTML(item.historico)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50" placeholder="Ex: Taxa condominial mês atual"></div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Valor (R$)</label><input type="number" step="0.01" id="m_f_val" required value="${item.valor}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Salvar</button></div>
-                        </form>
-                    </div>
-                </div>
-            `);
-        };
-
-        window.salvarModalFinanceiro = function(e, id) {
-            e.preventDefault();
-            if(!db.financeiro) db.financeiro = [];
-            const obj = {
-                id: id && id !== 'null' ? id : 'fin_' + Date.now(),
-                tipo: document.getElementById('m_f_tipo').value,
-                planoContaId: document.getElementById('m_f_plano').value,
-                historico: document.getElementById('m_f_hist').value,
-                valor: parseFloat(document.getElementById('m_f_val').value) || 0
-            };
-            const idx = db.financeiro.findIndex(x => x.id === obj.id);
-            if(idx !== -1) db.financeiro[idx] = obj; else db.financeiro.push(obj);
-            salvarDados(db); fecharModalContainer(); renderMainOnly();
-        };
-
-        function renderFormasMonetariasView() {
-            const list = db.formas_monetarias || [];
-            return `<div class="bg-white rounded-3xl card-modern overflow-x-auto w-full shadow-sm"><table class="w-full text-left text-xs min-w-[400px]"><thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100"><tr><th class="p-4">Nome</th><th class="p-4">Multa (%)</th><th class="p-4 text-center">Ações</th></tr></thead><tbody class="divide-y divide-slate-100">${list.map(fm => `<tr class="hover:bg-slate-50/80 transition-colors"><td class="p-4 font-bold text-slate-900">${escapeHTML(fm.nome)}</td><td class="p-4 font-bold text-teal-700">${fm.multaPct}%</td><td class="p-4 text-center"><button onclick="window.renderModalFormaMonetaria('${fm.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl mr-1 transition-colors"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('formas_monetarias','${fm.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
-        }
-
-        window.renderModalFormaMonetaria = function(id = null) {
-            const item = id ? (db.formas_monetarias||[]).find(x => x.id === id) : { id: '', nome: '', multaPct: 2.0 };
-            abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
-                    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
-                        <h3 class="font-black text-lg text-slate-900">${id ? 'Editar Forma' : 'Nova Forma'}</h3>
-                        <form onsubmit="salvarModalFormaMonetaria(event, '${id}')" class="space-y-3">
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Nome</label><input type="text" id="m_fm_nome" required value="${escapeHTML(item.nome)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Multa (%)</label><input type="number" step="0.01" id="m_fm_multa" value="${item.multaPct}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Salvar</button></div>
-                        </form>
-                    </div>
-                </div>
-            `);
-        };
-
-        window.salvarModalFormaMonetaria = function(e, id) {
-            e.preventDefault();
-            if(!db.formas_monetarias) db.formas_monetarias = [];
-            const obj = {
-                id: id && id !== 'null' ? id : 'fm_' + Date.now(),
-                nome: document.getElementById('m_fm_nome').value,
-                multaPct: parseFloat(document.getElementById('m_fm_multa').value) || 0
-            };
-            const idx = db.formas_monetarias.findIndex(x => x.id === obj.id);
-            if(idx !== -1) db.formas_monetarias[idx] = obj; else db.formas_monetarias.push(obj);
-            salvarDados(db); fecharModalContainer(); renderMainOnly();
-        };
-
-        function renderContasBancariasView() {
-            const list = db.contas_bancarias || [];
-            return `
-                <div class="bg-white rounded-3xl card-modern overflow-x-auto w-full shadow-sm">
-                    <table class="w-full text-left text-xs min-w-[400px]">
-                        <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100"><tr><th class="p-4">Banco</th><th class="p-4">Saldo</th><th class="p-4 text-center">Ações</th></tr></thead>
-                        <tbody class="divide-y divide-slate-100">${list.map(cb => `<tr class="hover:bg-slate-50/80 transition-colors"><td class="p-4 font-bold text-slate-900">${escapeHTML(cb.banco)}</td><td class="p-4 font-mono font-bold text-emerald-600">R$ ${cb.saldo}</td><td class="p-4 text-center"><button onclick="window.renderModalContaBancaria('${cb.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl mr-1 transition-colors"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('contas_bancarias','${cb.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
-                    </table>
-                </div>
-            `;
-        }
-
-        window.renderModalContaBancaria = function(id = null) {
-            const item = id ? (db.contas_bancarias||[]).find(x => x.id === id) : { id: '', banco: '', saldo: 0 };
-            abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
-                    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
-                        <h3 class="font-black text-lg text-slate-900">${id ? 'Editar Conta' : 'Nova Conta Bancária'}</h3>
-                        <form onsubmit="salvarModalContaBancaria(event, '${id}')" class="space-y-3 text-xs">
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Banco</label><input type="text" id="m_cb_banco" required value="${escapeHTML(item.banco)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Saldo Inicial (R$)</label><input type="number" step="0.01" id="m_cb_saldo" required value="${item.saldo}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Salvar</button></div>
-                        </form>
-                    </div>
-                </div>
-            `);
-        };
-
-        window.salvarModalContaBancaria = function(e, id) {
-            e.preventDefault();
-            if(!db.contas_bancarias) db.contas_bancarias = [];
-            const obj = {
-                id: id && id !== 'null' ? id : 'cb_' + Date.now(),
-                banco: document.getElementById('m_cb_banco').value,
-                saldo: parseFloat(document.getElementById('m_cb_saldo').value) || 0
-            };
-            const idx = db.contas_bancarias.findIndex(x => x.id === obj.id);
-            if(idx !== -1) db.contas_bancarias[idx] = obj; else db.contas_bancarias.push(obj);
-            salvarDados(db); fecharModalContainer(); renderMainOnly();
-        };
-
-        function renderMoradoresView() {
-            let moradores = db.moradores || [];
-            
-            if (filtroAtivoMoradores.bloco !== '' && filtroAtivoMoradores.bloco !== null && filtroAtivoMoradores.bloco !== undefined) {
-                moradores = moradores.filter(m => String(m.bloco).trim() === String(filtroAtivoMoradores.bloco).trim());
-            }
-            
-            if (filtroAtivoMoradores.nome !== '' && filtroAtivoMoradores.nome !== null && filtroAtivoMoradores.nome !== undefined) {
-                const termo = String(filtroAtivoMoradores.nome).toLowerCase().trim();
-                moradores = moradores.filter(m => 
-                    String(m.nome || '').toLowerCase().includes(termo) || 
-                    String(m.apartamento || '').toLowerCase().includes(termo)
-                );
-            }
-
-            const blocosDisponiveis = [...new Set((db.moradores||[]).map(m => String(m.bloco).trim()))].filter(Boolean);
-
-            return `
-                <div class="space-y-4 w-full">
-                    ${(filtroAtivoMoradores.bloco || filtroAtivoMoradores.nome) ? `
-                        <div class="bg-teal-50 border border-teal-200/80 p-3.5 rounded-2xl text-xs font-bold text-teal-900 flex items-center justify-between no-print shadow-sm">
-                            <span>Filtros ativos: ${filtroAtivoMoradores.bloco ? `Bloco: ${filtroAtivoMoradores.bloco}` : ''} ${filtroAtivoMoradores.nome ? `Pesquisa: "${filtroAtivoMoradores.nome}"` : ''}</span>
-                            <button onclick="filtroAtivoMoradores = {bloco: '', nome: ''}; renderMainOnly();" class="px-3 py-1.5 bg-teal-600 text-white rounded-xl text-[10px] shadow-sm font-bold">Limpar Filtros</button>
-                        </div>
-                    ` : ''}
-
-                    <div class="bg-white rounded-3xl card-modern overflow-x-auto w-full shadow-sm">
-                        <table class="w-full text-left text-xs relative min-w-[850px]">
-                            <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
-                                <tr>
-                                    <th class="p-4 relative">
-                                        <div class="flex items-center justify-between cursor-pointer select-none" onclick="event.stopPropagation(); toggleMenuFiltroColuna('menu-filtro-bloco')">
-                                            <span>BLOCO/AP <i class="fa-solid fa-filter text-[10px] ${filtroAtivoMoradores.bloco ? 'text-teal-600' : 'text-slate-400'}"></i></span>
-                                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
-                                        </div>
-                                        <div id="menu-filtro-bloco" class="hidden absolute left-0 top-full mt-2 bg-white text-slate-900 p-4 rounded-3xl shadow-2xl border border-slate-100 w-52 z-30">
-                                            <p class="font-bold text-[10px] uppercase text-slate-400 mb-2">Filtrar Bloco</p>
-                                            <div class="space-y-1 max-h-40 overflow-y-auto">
-                                                <button type="button" onclick="event.stopPropagation(); filtrarMoradoresBloco('')" class="w-full text-left px-3 py-1.5 rounded-xl hover:bg-slate-100 font-bold transition-colors ${!filtroAtivoMoradores.bloco ? 'bg-teal-50 text-teal-700' : ''}">[ Todos ]</button>
-                                                ${blocosDisponiveis.map(b => `<button type="button" onclick="event.stopPropagation(); filtrarMoradoresBloco('${b}')" class="w-full text-left px-3 py-1.5 rounded-xl hover:bg-slate-100 font-bold transition-colors ${filtroAtivoMoradores.bloco===b?'bg-teal-50 text-teal-700':''}">Bloco ${escapeHTML(b)}</button>`).join('')}
-                                            </div>
-                                        </div>
-                                    </th>
-                                    <th class="p-4 relative">
-                                        <div class="flex items-center justify-between cursor-pointer select-none" onclick="event.stopPropagation(); toggleMenuFiltroColuna('menu-filtro-nome')">
-                                            <span>NOME / E-MAIL <i class="fa-solid fa-filter text-[10px] ${filtroAtivoMoradores.nome ? 'text-teal-600' : 'text-slate-400'}"></i></span>
-                                            <i class="fa-solid fa-chevron-down text-[10px]"></i>
-                                        </div>
-                                        <div id="menu-filtro-nome" class="hidden absolute left-0 top-full mt-2 bg-white text-slate-900 p-4 rounded-3xl shadow-2xl border border-slate-100 w-64 z-30" onclick="event.stopPropagation()">
-                                            <p class="font-bold text-[10px] uppercase text-slate-400 mb-2">Pesquisar Nome</p>
-                                            <div class="space-y-2">
-                                                <input type="text" id="input-filtro-nome-val" value="${escapeHTML(filtroAtivoMoradores.nome)}" placeholder="Nome ou Apartamento..." class="w-full p-2.5 border rounded-2xl text-xs bg-slate-50">
-                                                <div class="flex justify-end gap-1">
-                                                    <button type="button" onclick="filtroAtivoMoradores.nome=''; document.getElementById('menu-filtro-nome').classList.add('hidden'); renderMainOnly();" class="px-3 py-1 bg-slate-200 rounded-xl text-[10px] font-bold">Limpar</button>
-                                                    <button type="button" onclick="filtroAtivoMoradores.nome = document.getElementById('input-filtro-nome-val').value; document.getElementById('menu-filtro-nome').classList.add('hidden'); renderMainOnly();" class="px-3 py-1 bg-teal-600 text-white rounded-xl text-[10px] font-bold shadow-sm">Filtrar</button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </th>
-                                    <th class="p-4">CPF / RG</th>
-                                    <th class="p-4">Telefone</th>
-                                    <th class="p-4">Pet</th>
-                                    <th class="p-4">Vaga</th>
-                                    <th class="p-4 text-center">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                ${moradores.length === 0 ? `<tr><td colspan="7" class="p-6 text-center text-slate-400">Nenhum morador encontrado.</td></tr>` : moradores.map(m => `
-                                    <tr class="hover:bg-slate-50/80 transition-colors">
-                                        <td class="p-4">
-                                            <div class="font-bold text-slate-900">Bloco ${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</div>
-                                            <div class="text-[10px] text-teal-700 font-semibold">${escapeHTML(m.nome)}</div>
-                                        </td>
-                                        <td class="p-4">
-                                            <div class="font-bold text-slate-900">${escapeHTML(m.nome)}</div>
-                                            <div class="text-[10px] text-slate-400 font-medium">${escapeHTML(m.email || '-')}</div>
-                                        </td>
-                                        <td class="p-4 font-mono font-medium">${escapeHTML(m.cpf || '-')}</td>
-                                        <td class="p-4 font-mono font-medium">${escapeHTML(m.telefone || '-')}</td>
-                                        <td class="p-4">${m.petNome ? `<span class="px-3 py-1 bg-teal-50 text-teal-700 rounded-full font-bold inline-flex items-center gap-1.5"><i class="fa-solid fa-paw"></i> ${escapeHTML(m.petNome)}</span>` : '-'}</td>
-                                        <td class="p-4">${m.vagaGaragem ? `<span class="px-3 py-1 bg-slate-100 text-slate-700 rounded-full font-bold inline-flex items-center gap-1.5"><i class="fa-solid fa-car"></i> ${escapeHTML(m.vagaGaragem)}</span>` : '-'}</td>
-                                        <td class="p-4 text-center">
-                                            <button onclick="window.renderModalMorador('${m.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl mr-1 transition-colors"><i class="fa-solid fa-pen"></i></button>
-                                            <button onclick="excluirRegistro('moradores','${m.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }
-
-        function toggleMenuFiltroColuna(menuId) {
-            const menu = document.getElementById(menuId);
-            if (!menu) return;
-            const isOpen = !menu.classList.contains('hidden');
-            document.querySelectorAll('[id^="menu-filtro-"]').forEach(m => m.classList.add('hidden'));
-            if (isOpen) { menu.classList.add('hidden'); } else { menu.classList.remove('hidden'); }
-        }
-
-        window.addEventListener('click', () => {
-            document.querySelectorAll('[id^="menu-filtro-"]').forEach(m => m.classList.add('hidden'));
-        });
-
-        function filtrarMoradoresBloco(bloco) {
-            filtroAtivoMoradores.bloco = bloco;
-            document.querySelectorAll('[id^="menu-filtro-"]').forEach(m => m.classList.add('hidden'));
             renderMainOnly();
         }
 
-        window.renderModalMorador = function(id = null) {
-            const m = id ? (db.moradores||[]).find(x => x.id === id) : { id: '', bloco: '1', apartamento: '', nome: '', email: '', telefone: '', cpf: '', petNome: '', vagaGaragem: '' };
-            abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
-                    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-                        <div class="flex justify-between items-center border-b pb-3">
-                            <h3 class="font-black text-lg text-slate-900">${id ? 'Editar Morador' : 'Novo Morador'}</h3>
-                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
-                        </div>
-                        <form onsubmit="salvarModalMorador(event, '${id}')" class="space-y-3 text-xs">
-                            <div class="grid grid-cols-2 gap-2">
-                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Bloco</label><input type="text" id="m_m_bloco" required value="${escapeHTML(m.bloco)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Apartamento</label><input type="text" id="m_m_ap" required value="${escapeHTML(m.apartamento)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            </div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Nome Completo</label><input type="text" id="m_m_nome" required value="${escapeHTML(m.nome)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50" placeholder="Ex: Ana Maria"></div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">E-mail</label><input type="email" id="m_m_email" value="${escapeHTML(m.email || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Telefone / WhatsApp</label><input type="text" id="m_m_tel" value="${escapeHTML(m.telefone || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            </div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">CPF / RG</label><input type="text" id="m_m_cpf" value="${escapeHTML(m.cpf || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Vaga / Estacionamento</label><input type="text" id="m_m_vaga" value="${escapeHTML(m.vagaGaragem || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            </div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Pet (Espécie / Nome)</label><input type="text" id="m_m_pet" value="${escapeHTML(m.petNome || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div class="flex justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button>
-                                <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Salvar Morador</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            `);
+        window.onload = function() {
+            carregarDadosDaNuvem();
         };
-
-        window.salvarModalMorador = function(e, id) {
-            e.preventDefault();
-            if(!db.moradores) db.moradores = [];
-            const obj = {
-                id: id && id !== 'null' ? id : 'mor_' + Date.now(),
-                bloco: document.getElementById('m_m_bloco').value,
-                apartamento: document.getElementById('m_m_ap').value,
-                nome: document.getElementById('m_m_nome').value,
-                email: document.getElementById('m_m_email').value,
-                telefone: document.getElementById('m_m_tel').value,
-                cpf: document.getElementById('m_m_cpf').value,
-                petNome: document.getElementById('m_m_pet').value,
-                vagaGaragem: document.getElementById('m_m_vaga').value
-            };
-            const idx = db.moradores.findIndex(x => x.id === obj.id);
-            if(idx !== -1) db.moradores[idx] = obj; else db.moradores.push(obj);
-            salvarDados(db); fecharModalContainer(); renderMainOnly();
-        };
-
-        function renderFornecedoresView() {
-            const list = db.fornecedores || [];
-            return `<div class="bg-white rounded-3xl card-modern overflow-x-auto w-full shadow-sm"><table class="w-full text-left text-xs min-w-[450px]"><thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100"><tr><th class="p-4">CNPJ</th><th class="p-4">Razão Social</th><th class="p-4 text-center">Ações</th></tr></thead><tbody class="divide-y divide-slate-100">${list.map(f => `<tr class="hover:bg-slate-50/80 transition-colors"><td class="p-4 font-mono font-medium">${escapeHTML(f.cnpj)}</td><td class="p-4 font-bold text-slate-900">${escapeHTML(f.razaoSocial)}</td><td class="p-4 text-center"><button onclick="window.renderModalFornecedor('${f.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl mr-1 transition-colors"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('fornecedores','${f.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
-        }
-
-        window.renderModalFornecedor = function(id = null) {
-            const item = id ? (db.fornecedores||[]).find(x => x.id === id) : { id: '', cnpj: '', razaoSocial: '' };
-            abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
-                    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
-                        <h3 class="font-black text-lg text-slate-900">${id ? 'Editar Fornecedor' : 'Novo Fornecedor'}</h3>
-                        <form onsubmit="salvarModalFornecedor(event, '${id}')" class="space-y-3 text-xs">
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">CNPJ</label><input type="text" id="m_for_cnpj" required value="${escapeHTML(item.cnpj)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Razão Social</label><input type="text" id="m_for_razao" required value="${escapeHTML(item.razaoSocial)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Salvar</button></div>
-                        </form>
-                    </div>
-                </div>
-            `);
-        };
-
-        window.salvarModalFornecedor = function(e, id) {
-            e.preventDefault();
-            if(!db.fornecedores) db.fornecedores = [];
-            const obj = {
-                id: id && id !== 'null' ? id : 'for_' + Date.now(),
-                cnpj: document.getElementById('m_for_cnpj').value,
-                razaoSocial: document.getElementById('m_for_razao').value
-            };
-            const idx = db.fornecedores.findIndex(x => x.id === obj.id);
-            if(idx !== -1) db.fornecedores[idx] = obj; else db.fornecedores.push(obj);
-            salvarDados(db); fecharModalContainer(); renderMainOnly();
-        };
-
-        function renderEmpregadosView() {
-            const list = db.empregados || [];
-            return `
-                <div class="bg-white rounded-3xl card-modern overflow-x-auto w-full shadow-sm">
-                    <table class="w-full text-left text-xs min-w-[850px]">
-                        <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
-                            <tr>
-                                <th class="p-4">Nome / Função</th>
-                                <th class="p-4">Empresa</th>
-                                <th class="p-4">Endereço</th>
-                                <th class="p-4">Telefone</th>
-                                <th class="p-4">Contato Emergência</th>
-                                <th class="p-4 text-center">Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            ${list.length === 0 ? `<tr><td colspan="6" class="p-6 text-center text-slate-400">Nenhum empregado registado.</td></tr>` : list.map(e => `
-                                <tr class="hover:bg-slate-50/80 transition-colors">
-                                    <td class="p-4">
-                                        <div class="font-bold text-slate-900">${escapeHTML(e.nome)}</div>
-                                        <div class="text-[10px] text-teal-700 font-semibold">${escapeHTML(e.cargo)}</div>
-                                    </td>
-                                    <td class="p-4 font-semibold text-slate-700">${escapeHTML(e.empresa || '-')}</td>
-                                    <td class="p-4">${escapeHTML(e.endereco || '-')}</td>
-                                    <td class="p-4 font-mono font-medium">${escapeHTML(e.telefone || '-')}</td>
-                                    <td class="p-4">
-                                        <div class="font-bold text-slate-700">${escapeHTML(e.contatoEmergenciaNome || '-')}</div>
-                                        <div class="font-mono text-[10px] text-rose-600 font-bold">${escapeHTML(e.contatoEmergenciaTel || '')}</div>
-                                    </td>
-                                    <td class="p-4 text-center">
-                                        <button onclick="window.renderModalEmpregado('${e.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl mr-1 transition-colors"><i class="fa-solid fa-pen"></i></button>
-                                        <button onclick="excluirRegistro('empregados','${e.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button>
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-        }
-
-        window.renderModalEmpregado = function(id = null) {
-            const item = id ? (db.empregados||[]).find(x => x.id === id) : { id: '', nome: '', cargo: '', empresa: '', endereco: '', telefone: '', contatoEmergenciaNome: '', contatoEmergenciaTel: '' };
-            abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
-                    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-                        <div class="flex justify-between items-center border-b pb-3">
-                            <h3 class="font-black text-lg text-slate-900">${id ? 'Editar Empregado' : 'Novo Empregado'}</h3>
-                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
-                        </div>
-                        <form onsubmit="salvarModalEmpregado(event, '${id}')" class="space-y-3 text-xs">
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Nome Completo</label><input type="text" id="m_emp_nome" required value="${escapeHTML(item.nome)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Função / Cargo</label><input type="text" id="m_emp_cargo" required value="${escapeHTML(item.cargo)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Empresa</label><input type="text" id="m_emp_empresa" value="${escapeHTML(item.empresa || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            </div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Endereço</label><input type="text" id="m_emp_end" value="${escapeHTML(item.endereco || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Telefone</label><input type="text" id="m_emp_tel" value="${escapeHTML(item.telefone || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div class="border-t pt-3 mt-2"><h4 class="font-extrabold text-teal-700 uppercase mb-2"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Contato de Emergência</h4></div>
-                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Nome Familiar</label><input type="text" id="m_emp_fam_nome" value="${escapeHTML(item.contatoEmergenciaNome || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Telefone Emergência</label><input type="text" id="m_emp_fam_tel" value="${escapeHTML(item.contatoEmergenciaTel || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            </div>
-                            <div class="flex justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button>
-                                <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Salvar</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            `);
-        };
-
-        window.salvarModalEmpregado = function(e, id) {
-            e.preventDefault();
-            if(!db.empregados) db.empregados = [];
-            const isEdit = id && id !== 'null';
-            const obj = {
-                id: isEdit ? id : 'emp_' + Date.now(),
-                nome: document.getElementById('m_emp_nome').value,
-                cargo: document.getElementById('m_emp_cargo').value,
-                empresa: document.getElementById('m_emp_empresa').value,
-                endereco: document.getElementById('m_emp_end').value,
-                telefone: document.getElementById('m_emp_tel').value,
-                contatoEmergenciaNome: document.getElementById('m_emp_fam_nome').value,
-                contatoEmergenciaTel: document.getElementById('m_emp_fam_tel').value
-            };
-            const idx = db.empregados.findIndex(x => x.id === obj.id);
-            if(idx !== -1) db.empregados[idx] = obj; else db.empregados.push(obj);
-            salvarDados(db); fecharModalContainer(); renderMainOnly();
-        };
-
-        function renderCategoriasView() {
-            const list = db.categorias || [];
-            const motivosAcerto = db.motivos_acerto_estoque || [];
-
-            return `
-                <div class="space-y-6 w-full">
-                    <div class="bg-white rounded-3xl card-modern p-6 shadow-sm space-y-4">
-                        <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                            <h3 class="font-black text-slate-900 text-base">Motivos de Acerto de Estoque</h3>
-                            <button onclick="window.renderModalMotivoAcerto()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl text-xs font-bold shadow-sm transition-all"><i class="fa-solid fa-plus mr-1"></i> Novo Motivo</button>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs min-w-[300px]">
-                                <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100"><tr><th class="p-3">Nome do Motivo</th><th class="p-3 text-center">Ações</th></tr></thead>
-                                <tbody class="divide-y divide-slate-100">
-                                    ${motivosAcerto.length === 0 ? `<tr><td colspan="2" class="p-6 text-center text-slate-400">Nenhum motivo cadastrado.</td></tr>` : motivosAcerto.map(m => `
-                                        <tr class="hover:bg-slate-50/80 transition-colors">
-                                            <td class="p-3 font-bold text-slate-900">${escapeHTML(m.nome)}</td>
-                                            <td class="p-3 text-center"><button onclick="excluirRegistroMotivoAcerto('${m.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button></td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-3xl card-modern p-6 shadow-sm space-y-4">
-                        <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                            <h3 class="font-black text-slate-900 text-base">Pastas Gerais</h3>
-                            <button onclick="window.renderModalCategoria()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl text-xs font-bold shadow-sm transition-all"><i class="fa-solid fa-plus mr-1"></i> Nova Pasta</button>
-                        </div>
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left text-xs min-w-[300px]">
-                                <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100"><tr><th class="p-3">Nome</th><th class="p-3 text-center">Ações</th></tr></thead>
-                                <tbody class="divide-y divide-slate-100">${list.map(c => `<tr class="hover:bg-slate-50/80 transition-colors"><td class="p-3 font-bold text-slate-900">${escapeHTML(c.nome)}</td><td class="p-3 text-center"><button onclick="excluirRegistro('categorias','${c.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        window.renderModalCategoria = function() {
-            abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
-                    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
-                        <h3 class="font-black text-lg text-slate-900">Nova Pasta</h3>
-                        <form onsubmit="salvarModalCategoria(event)" class="space-y-3">
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Nome</label><input type="text" id="m_cat_nome" required class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Salvar</button></div>
-                        </form>
-                    </div>
-                </div>
-            `);
-        };
-
-        window.salvarModalCategoria = function(e) {
-            e.preventDefault();
-            if(!db.categorias) db.categorias = [];
-            db.categorias.push({ id: 'cat_' + Date.now(), nome: document.getElementById('m_cat_nome').value });
-            salvarDados(db); fecharModalContainer(); renderMainOnly();
-        };
-
-        window.renderModalMotivoAcerto = function() {
-            abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
-                    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
-                        <h3 class="font-black text-lg text-slate-900">Novo Motivo de Acerto</h3>
-                        <form onsubmit="salvarModalMotivoAcerto(event)" class="space-y-3 text-xs">
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Nome do Motivo (Ex: Perca, Quebra)</label><input type="text" id="m_mot_nome" required class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Salvar</button></div>
-                        </form>
-                    </div>
-                </div>
-            `);
-        };
-
-        window.salvarModalMotivoAcerto = function(e) {
-            e.preventDefault();
-            if(!db.motivos_acerto_estoque) db.motivos_acerto_estoque = [];
-            db.motivos_acerto_estoque.push({ id: 'mot_' + Date.now(), nome: document.getElementById('m_mot_nome').value });
-            salvarDados(db); fecharModalContainer(); renderMainOnly();
-        };
-
-        function excluirRegistroMotivoAcerto(id) {
-            if(!confirm('Deseja eliminar este motivo?')) return;
-            db.motivos_acerto_estoque = (db.motivos_acerto_estoque || []).filter(x => x.id !== id);
-            salvarDados(db); renderMainOnly();
-        }
-
-        function renderEstoqueView() {
-            let list = db.estoque || [];
-            
-            let totalCriticos = 0;
-            let totalExcedentes = 0;
-            let totalAdequados = 0;
-
-            list.forEach(st => {
-                const atual = parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
-                const minimo = parseInt(st.minimo || 0);
-                const maximo = parseInt(st.maximo || 0);
-
-                if (atual <= minimo) { totalCriticos++; }
-                else if (maximo > 0 && atual > maximo) { totalExcedentes++; }
-                else { totalAdequados++; }
-            });
-
-            let listFiltrada = list;
-            if (filtroAtivoEstoque === 'adequado') {
-                listFiltrada = list.filter(st => {
-                    const atual = parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
-                    const minimo = parseInt(st.minimo || 0);
-                    const maximo = parseInt(st.maximo || 0);
-                    return !(atual <= minimo || (maximo > 0 && atual > maximo));
-                });
-            } else if (filtroAtivoEstoque === 'critico') {
-                listFiltrada = list.filter(st => {
-                    const atual = parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
-                    const minimo = parseInt(st.minimo || 0);
-                    return atual <= minimo;
-                });
-            } else if (filtroAtivoEstoque === 'excedente') {
-                listFiltrada = list.filter(st => {
-                    const atual = parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
-                    const maximo = parseInt(st.maximo || 0);
-                    return maximo > 0 && atual > maximo;
-                });
-            }
-
-            return `
-                <div class="space-y-6 w-full">
-                    ${filtroAtivoEstoque !== 'todos' ? `
-                        <div class="bg-teal-50 border border-teal-200/80 p-3.5 rounded-2xl text-xs font-bold text-teal-900 flex items-center justify-between no-print shadow-sm">
-                            <span>Filtro de estoque: <b>${filtroAtivoEstoque.toUpperCase()}</b></span>
-                            <button onclick="filtroAtivoEstoque = 'todos'; renderMainOnly();" class="px-3 py-1.5 bg-teal-600 text-white rounded-xl text-[10px] font-bold shadow-sm">Ver Todos</button>
-                        </div>
-                    ` : ''}
-
-                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 w-full">
-                        <div onclick="filtroAtivoEstoque = 'adequado'; renderMainOnly();" class="bg-white p-5 rounded-3xl card-modern flex items-center justify-between border-l-4 border-l-teal-600 cursor-pointer transition-all shadow-sm">
-                            <div>
-                                <p class="text-[11px] font-black text-slate-400 uppercase tracking-wider">Estoque Adequado</p>
-                                <h3 class="text-xl font-black text-teal-700 mt-0.5">${totalAdequados} itens</h3>
-                            </div>
-                            <div class="w-11 h-11 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center font-bold"><i class="fa-solid fa-circle-check text-lg"></i></div>
-                        </div>
-
-                        <div onclick="filtroAtivoEstoque = 'critico'; renderMainOnly();" class="bg-white p-5 rounded-3xl card-modern flex items-center justify-between border-l-4 border-l-rose-600 cursor-pointer transition-all shadow-sm">
-                            <div>
-                                <p class="text-[11px] font-black text-rose-600 uppercase tracking-wider">Atenção: Insuficiente</p>
-                                <h3 class="text-xl font-black text-rose-600 mt-0.5">${totalCriticos} itens críticos</h3>
-                            </div>
-                            <div class="w-11 h-11 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center font-bold"><i class="fa-solid fa-triangle-exclamation animate-bounce text-lg"></i></div>
-                        </div>
-
-                        <div onclick="filtroAtivoEstoque = 'excedente'; renderMainOnly();" class="bg-white p-5 rounded-3xl card-modern flex items-center justify-between border-l-4 border-l-amber-500 cursor-pointer transition-all shadow-sm">
-                            <div>
-                                <p class="text-[11px] font-black text-amber-600 uppercase tracking-wider">Excedente / Antigo</p>
-                                <h3 class="text-xl font-black text-amber-600 mt-0.5">${totalExcedentes} itens</h3>
-                            </div>
-                            <div class="w-11 h-11 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center font-bold"><i class="fa-solid fa-box-archive text-lg"></i></div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-6 rounded-3xl card-modern w-full max-w-xl mx-auto flex flex-col items-center justify-center shadow-sm">
-                        <h3 class="font-black text-slate-900 text-sm mb-3"><i class="fa-solid fa-chart-pie text-teal-600 mr-2"></i> Status Geral do Estoque</h3>
-                        <div class="relative h-48 w-full flex items-center justify-center">
-                            <canvas id="chartEstoqueStatus"></canvas>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-3xl card-modern overflow-x-auto w-full shadow-sm">
-                        <table class="w-full text-left text-xs min-w-[800px]">
-                            <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
-                                <tr>
-                                    <th class="p-4 w-16 text-center">Foto</th>
-                                    <th class="p-4">Etiqueta / Código</th>
-                                    <th class="p-4">Item / Descrição</th>
-                                    <th class="p-4">Qtd Atual</th>
-                                    <th class="p-4">Mín / Máx</th>
-                                    <th class="p-4">Alerta Inteligente</th>
-                                    <th class="p-4 text-center">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                ${listFiltrada.length === 0 ? `<tr><td colspan="7" class="p-6 text-center text-slate-400">Nenhum item encontrado.</td></tr>` : listFiltrada.map(st => {
-                                    const atual = parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
-                                    const minimo = parseInt(st.minimo || 0);
-                                    const maximo = parseInt(st.maximo || 0);
-
-                                    let badgeAlerta = `<span class="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full font-extrabold inline-flex items-center gap-1.5"><i class="fa-solid fa-check"></i> Normal</span>`;
-                                    if (atual <= minimo) {
-                                        badgeAlerta = `<span class="px-3 py-1 bg-rose-50 text-rose-700 border border-rose-200/80 rounded-full font-extrabold inline-flex items-center gap-1.5 animate-pulse"><i class="fa-solid fa-triangle-exclamation"></i> Insuficiente</span>`;
-                                    } else if (maximo > 0 && atual > maximo) {
-                                        badgeAlerta = `<span class="px-3 py-1 bg-amber-50 text-amber-800 border border-amber-200/80 rounded-full font-extrabold inline-flex items-center gap-1.5"><i class="fa-solid fa-ban"></i> Excedente</span>`;
-                                    }
-
-                                    return `
-                                        <tr class="hover:bg-slate-50/80 transition-colors ${atual <= minimo ? 'bg-rose-50/30' : (maximo > 0 && atual > maximo ? 'bg-amber-50/20' : '')}">
-                                            <td class="p-4 text-center">
-                                                ${st.fotoCompactadaGzip ? `
-                                                    <button onclick="visualizarArquivo('${st.fotoCompactadaGzip}', '${escapeHTML(st.fotoNome || 'produto.jpg')}')" class="w-10 h-10 rounded-2xl overflow-hidden border border-slate-200 shadow-sm inline-block hover:opacity-80 transition-opacity" title="Ver foto">
-                                                        <img src="data:image/*;base64,${btoa(String.fromCharCode(...pako.inflate(atob(st.fotoCompactadaGzip))))}" class="w-full h-full object-cover">
-                                                    </button>
-                                                ` : `<div class="w-10 h-10 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 text-xs"><i class="fa-solid fa-image"></i></div>`}
-                                            </td>
-                                            <td class="p-4 font-mono font-bold text-teal-700">${escapeHTML(st.etiqueta || '-')}</td>
-                                            <td class="p-4 font-bold text-slate-900">${escapeHTML(st.item)}</td>
-                                            <td class="p-4 font-mono font-black ${atual <= minimo ? 'text-rose-600 text-sm' : 'text-slate-700'}">${atual}</td>
-                                            <td class="p-4 font-mono text-[11px] text-slate-400 font-medium">Mín: ${minimo} / Máx: ${maximo}</td>
-                                            <td class="p-4">${badgeAlerta}</td>
-                                            <td class="p-4 text-center">
-                                                <button onclick="window.renderModalEstoque('${st.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl mr-1 transition-colors"><i class="fa-solid fa-pen"></i></button>
-                                                <button onclick="excluirRegistro('estoque','${st.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button>
-                                            </td>
-                                        </tr>
-                                    `;
-                                }).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }
-
-        function initEstoqueChart() {
-            if (tabsState.activeTab !== 'estoque') return;
-            const ctx = document.getElementById('chartEstoqueStatus');
-            if (!ctx) return;
-
-            const list = db.estoque || [];
-            let qtdAdequado = 0;
-            let qtdCritico = 0;
-            let qtdExcedente = 0;
-
-            list.forEach(st => {
-                const atual = parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
-                const minimo = parseInt(st.minimo || 0);
-                const maximo = parseInt(st.maximo || 0);
-
-                if (atual <= minimo) qtdCritico++;
-                else if (maximo > 0 && atual > maximo) qtdExcedente++;
-                else qtdAdequado++;
-            });
-
-            if (list.length === 0) { qtdAdequado = 1; }
-
-            if (chartInstanceEstoque) chartInstanceEstoque.destroy();
-            chartInstanceEstoque = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Estoque Adequado', 'Insuficiente (Crítico)', 'Excedente / Antigo'],
-                    datasets: [{
-                        data: [qtdAdequado, qtdCritico, qtdExcedente],
-                        backgroundColor: ['#0d9488', '#f43f5e', '#f59e0b'],
-                        borderWidth: 3,
-                        borderColor: '#ffffff'
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { weight: 'bold', size: 10, family: 'Inter' } } }
-                    },
-                    cutout: '70%'
-                }
-            });
-        }
-
-        window.renderModalEstoque = function(id = null) {
-            const item = id ? (db.estoque||[]).find(x => x.id === id) : { id: '', item: '', quantidade: 1, minimo: 0, maximo: 10, etiqueta: '', fotoNome: '', fotoCompactadaGzip: '' };
-            tempEstoqueFotoGzip = item.fotoCompactadaGzip || '';
-            tempEstoqueFotoNome = item.fotoNome || '';
-
-            abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
-                    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-                        <div class="flex justify-between items-center border-b pb-3">
-                            <h3 class="font-black text-lg text-slate-900">${id ? 'Editar Item' : 'Novo Item'}</h3>
-                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
-                        </div>
-                        <form onsubmit="salvarModalEstoque(event, '${id}')" class="space-y-3 text-xs">
-                            <div>
-                                <label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Código / Código de Barras</label>
-                                <div class="flex gap-2">
-                                    <input type="text" id="m_est_etiq" value="${escapeHTML(item.etiqueta || '')}" class="flex-1 p-3 border rounded-2xl font-bold bg-slate-50" placeholder="Ex: 7891020304050">
-                                    <button type="button" onclick="iniciarScannerCamera()" class="px-4 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-barcode"></i> Escanear</button>
-                                </div>
-                            </div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Item / Descrição</label><input type="text" id="m_est_item" required value="${escapeHTML(item.item || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Qtd Atual</label><input type="number" id="m_est_qtd" required value="${item.quantidade !== undefined ? item.quantidade : (item.qtd || 1)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Mínimo</label><input type="number" id="m_est_min" value="${item.minimo !== undefined ? item.minimo : 0}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            </div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Máximo</label><input type="number" id="m_est_max" value="${item.maximo !== undefined ? item.maximo : 0}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div>
-                                <label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Foto (Compactação Gzip)</label>
-                                <input type="file" accept="image/*" onchange="processarFotoEstoqueGzip(event)" class="w-full p-2 border rounded-2xl bg-slate-50">
-                                <p class="text-[10px] text-slate-400 mt-1 font-medium">Foto atual: <span class="font-bold text-slate-700">${escapeHTML(item.fotoNome || 'Nenhuma')}</span></p>
-                            </div>
-                            <div class="flex justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button>
-                                <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Salvar</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            `);
-        };
-
-        let cameraStreamAtiva = null;
-        function iniciarScannerCamera() {
-            const divScanner = document.createElement('div');
-            divScanner.id = 'scanner-modal-overlay';
-            divScanner.className = 'fixed inset-0 bg-slate-950/80 z-[60] flex flex-col items-center justify-center p-4 backdrop-blur-md';
-            divScanner.innerHTML = `
-                <div class="bg-white rounded-3xl max-w-sm w-full p-6 shadow-2xl flex flex-col items-center space-y-4 text-center">
-                    <div class="flex justify-between w-full items-center">
-                        <h4 class="font-black text-slate-900 text-sm"><i class="fa-solid fa-camera text-teal-600 mr-2"></i> Apontar Câmera</h4>
-                        <button onclick="fecharScannerCamera()" class="text-slate-400 hover:text-slate-700 text-lg"><i class="fa-solid fa-xmark"></i></button>
-                    </div>
-                    <div class="relative w-full h-64 bg-black rounded-2xl overflow-hidden flex items-center justify-center">
-                        <video id="video-scanner" autoplay playsinline muted class="w-full h-full object-cover"></video>
-                        <div class="absolute inset-x-8 top-1/2 -translate-y-1/2 h-16 border-2 border-dashed border-teal-400 rounded-xl pointer-events-none animate-pulse"></div>
-                    </div>
-                    <div class="w-full flex gap-2">
-                        <input type="text" id="input-codigo-manual" placeholder="Código manual..." class="flex-1 p-2.5 border rounded-2xl text-xs font-bold bg-slate-50">
-                        <button type="button" onclick="confirmarCodigoDigitadoScanner()" class="px-4 py-2.5 bg-teal-600 text-white rounded-2xl text-xs font-bold">Usar</button>
-                    </div>
-                    <button type="button" onclick="fecharScannerCamera()" class="w-full py-2.5 bg-slate-200 text-slate-700 rounded-2xl text-xs font-bold">Fechar</button>
-                </div>
-            `;
-            document.body.appendChild(divScanner);
-
-            const videoElement = document.getElementById('video-scanner');
-            navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-                .then(stream => {
-                    cameraStreamAtiva = stream;
-                    videoElement.srcObject = stream;
-                    videoElement.play();
-
-                    if ('BarcodeDetector' in window) {
-                        const barcodeDetector = new BarcodeDetector({ formats: ['code_128', 'ean_13', 'ean_8', 'qr_code', 'upc_a'] });
-                        const scanInterval = setInterval(async () => {
-                            if (!cameraStreamAtiva) { clearInterval(scanInterval); return; }
-                            try {
-                                const barcodes = await barcodeDetector.detect(videoElement);
-                                if (barcodes.length > 0) {
-                                    const codigoLido = barcodes[0].rawValue;
-                                    document.getElementById('m_est_etiq').value = codigoLido;
-                                    clearInterval(scanInterval);
-                                    fecharScannerCamera();
-                                    alert(`Código lido: ${codigoLido}`);
-                                }
-                            } catch (err) {}
-                        }, 500);
-                    }
-                })
-                .catch(err => {
-                    alert('Câmera indisponível. Utilize a digitação manual.');
-                });
-        }
-
-        function confirmarCodigoDigitadoScanner() {
-            const val = document.getElementById('input-codigo-manual')?.value.trim();
-            if (val) {
-                document.getElementById('m_est_etiq').value = val;
-                fecharScannerCamera();
-            }
-        }
-
-        function fecharScannerCamera() {
-            if (cameraStreamAtiva) {
-                cameraStreamAtiva.getTracks().forEach(track => track.stop());
-                cameraStreamAtiva = null;
-            }
-            const modal = document.getElementById('scanner-modal-overlay');
-            if (modal) modal.remove();
-        }
-
-        function processarFotoEstoqueGzip(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            compactarArquivoParaGzip(file, function(base64Gzip, nomeOriginal) {
-                tempEstoqueFotoGzip = base64Gzip;
-                tempEstoqueFotoNome = nomeOriginal;
-            });
-        }
-
-        window.salvarModalEstoque = function(e, id) {
-            e.preventDefault();
-            if(!db.estoque) db.estoque = [];
-            const isEdit = id && id !== 'null';
-            const itemExistente = isEdit ? db.estoque.find(x => x.id === id) : null;
-
-            const obj = {
-                id: isEdit ? id : 'est_' + Date.now(),
-                item: document.getElementById('m_est_item').value,
-                quantidade: parseInt(document.getElementById('m_est_qtd').value) || 0,
-                minimo: parseInt(document.getElementById('m_est_min').value) || 0,
-                maximo: parseInt(document.getElementById('m_est_max').value) || 0,
-                etiqueta: document.getElementById('m_est_etiq').value,
-                fotoNome: tempEstoqueFotoNome || (itemExistente ? itemExistente.fotoNome : ''),
-                fotoCompactadaGzip: tempEstoqueFotoGzip || (itemExistente ? itemExistente.fotoCompactadaGzip : '')
-            };
-            const idx = db.estoque.findIndex(x => x.id === obj.id);
-            if(idx !== -1) db.estoque[idx] = obj; else db.estoque.push(obj);
-            salvarDados(db); fecharModalContainer(); renderMainOnly();
-        };
-
-        function renderAcertoEstoqueView() {
-            const listAcertos = db.acertos_estoque || [];
-            return `
-                <div class="space-y-6 w-full">
-                    <div class="bg-white rounded-3xl card-modern overflow-x-auto w-full shadow-sm">
-                        <div class="p-5 bg-slate-950 text-white font-bold text-sm flex items-center justify-between">
-                            <span><i class="fa-solid fa-arrows-split-up-and-left mr-2 text-teal-400"></i> Histórico de Acertos de Estoque</span>
-                        </div>
-                        <table class="w-full text-left text-xs min-w-[700px]">
-                            <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
-                                <tr>
-                                    <th class="p-4">Data / Hora</th>
-                                    <th class="p-4">Tipo</th>
-                                    <th class="p-4">Produto</th>
-                                    <th class="p-4">Quantidade</th>
-                                    <th class="p-4">Motivo</th>
-                                    <th class="p-4 text-center">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                ${listAcertos.length === 0 ? `<tr><td colspan="6" class="p-6 text-center text-slate-400">Nenhum acerto registado.</td></tr>` : listAcertos.map(ac => {
-                                    const produtoObj = (db.estoque || []).find(st => st.id === ac.produtoId);
-                                    return `
-                                        <tr class="hover:bg-slate-50/80 transition-colors">
-                                            <td class="p-4 font-mono text-slate-400 font-medium">${escapeHTML(ac.data || '-')}</td>
-                                            <td class="p-4"><span class="px-3 py-1 rounded-full font-extrabold ${ac.tipo === 'Entrada' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">${escapeHTML(ac.tipo)}</span></td>
-                                            <td class="p-4 font-bold text-slate-900">${produtoObj ? escapeHTML('[' + (produtoObj.etiqueta || 'Sem Código') + '] ' + produtoObj.item) : '<span class="text-rose-500">Produto eliminado</span>'}</td>
-                                            <td class="p-4 font-mono font-bold">${ac.quantidade}</td>
-                                            <td class="p-4 font-semibold text-teal-700">${escapeHTML(ac.motivo || '-')}</td>
-                                            <td class="p-4 text-center">
-                                                <button onclick="excluirAcertoEstoque('${ac.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button>
-                                            </td>
-                                        </tr>
-                                    `;
-                                }).reverse().join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }
-
-        window.renderModalAcertoEstoque = function() {
-            const produtos = db.estoque || [];
-            const motivos = db.motivos_acerto_estoque || [];
-
-            abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
-                    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
-                        <div class="flex justify-between items-center border-b pb-3">
-                            <h3 class="font-black text-lg text-slate-900">Novo Acerto de Estoque</h3>
-                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
-                        </div>
-                        <form onsubmit="salvarModalAcertoEstoque(event)" class="space-y-3 text-xs">
-                            <div>
-                                <label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Tipo de Movimento</label>
-                                <select id="m_ac_tipo" class="w-full p-3 border rounded-2xl font-bold bg-slate-50">
-                                    <option value="Saída">Saída de Produto</option>
-                                    <option value="Entrada">Entrada de Produto</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Localizar Produto</label>
-                                <input type="text" id="m_ac_busca" oninput="filtrarProdutosAcerto(this.value)" placeholder="Buscar por código ou nome..." class="w-full p-3 border rounded-2xl font-bold bg-slate-50 mb-2">
-                                <select id="m_ac_produto" required class="w-full p-3 border rounded-2xl font-bold bg-slate-50">
-                                    <option value="">[ Selecione o Produto ]</option>
-                                    ${produtos.map(st => `<option value="${st.id}">[${escapeHTML(st.etiqueta || 'S/C' )}] ${escapeHTML(st.item)} (Atual: ${st.quantidade || 0})</option>`).join('')}
-                                </select>
-                            </div>
-                            <div class="grid grid-cols-2 gap-2">
-                                <div>
-                                    <label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Quantidade</label>
-                                    <input type="number" id="m_ac_qtd" required min="1" value="1" class="w-full p-3 border rounded-2xl font-bold bg-slate-50">
-                                </div>
-                                <div>
-                                    <label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Motivo</label>
-                                    <select id="m_ac_motivo" required class="w-full p-3 border rounded-2xl font-bold bg-slate-50">
-                                        <option value="">[ Selecione ]</option>
-                                        ${motivos.map(mot => `<option value="${escapeHTML(mot.nome)}">${escapeHTML(mot.nome)}</option>`).join('')}
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="flex justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button>
-                                <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Registar Acerto</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            `);
-        };
-
-        function filtrarProdutosAcerto(termo) {
-            const select = document.getElementById('m_ac_produto');
-            if (!select) return;
-            const produtos = db.estoque || [];
-            const t = termo.toLowerCase().trim();
-
-            select.innerHTML = '<option value="">[ Selecione o Produto ]</option>';
-            produtos.forEach(st => {
-                const label = `[${st.etiqueta || 'S/C'}] ${st.item} (Atual: ${st.quantidade || 0})`.toLowerCase();
-                if (!t || label.includes(t)) {
-                    const opt = document.createElement('option');
-                    opt.value = st.id;
-                    opt.textContent = `[${st.etiqueta || 'S/C'}] ${st.item} (Atual: ${st.quantidade || 0})`;
-                    select.appendChild(opt);
-                }
-            });
-        }
-
-        window.salvarModalAcertoEstoque = function(e) {
-            e.preventDefault();
-            if (!db.acertos_estoque) db.acertos_estoque = [];
-
-            const tipo = document.getElementById('m_ac_tipo').value;
-            const produtoId = document.getElementById('m_ac_produto').value;
-            const quantidade = parseInt(document.getElementById('m_ac_qtd').value) || 0;
-            const motivo = document.getElementById('m_ac_motivo').value;
-
-            if (!produtoId) { alert('Selecione um produto.'); return; }
-
-            const prodIndex = (db.estoque || []).findIndex(st => st.id === produtoId);
-            if (prodIndex === -1) { alert('Produto não encontrado.'); return; }
-
-            let qtdAtual = parseInt(db.estoque[prodIndex].quantidade || 0);
-            if (tipo === 'Entrada') {
-                qtdAtual += quantidade;
-            } else {
-                if (quantidade > qtdAtual) {
-                    if (!confirm('A quantidade de saída é superior ao saldo em estoque. Deseja continuar?')) return;
-                }
-                qtdAtual -= quantidade;
-            }
-            db.estoque[prodIndex].quantidade = qtdAtual;
-
-            const novoAcerto = {
-                id: 'ac_' + Date.now(),
-                data: new Date().toLocaleString('pt-BR'),
-                tipo: tipo,
-                produtoId: produtoId,
-                quantidade: quantidade,
-                motivo: motivo
-            };
-
-            db.acertos_estoque.push(novoAcerto);
-            salvarDados(db);
-            fecharModalContainer();
-            renderMainOnly();
-            alert('Acerto de estoque registado!');
-        };
-
-        function excluirAcertoEstoque(id) {
-            if(!confirm('Deseja eliminar este registo de acerto?')) return;
-            db.acertos_estoque = (db.acertos_estoque || []).filter(x => x.id !== id);
-            salvarDados(db); renderMainOnly();
-        }
-
-        function renderDocumentosView() {
-            const docs = db.documentos || [];
-            return `
-                <div class="space-y-3 w-full">
-                    <div class="bg-white rounded-3xl card-modern overflow-x-auto w-full shadow-sm">
-                        <table class="w-full text-left text-xs min-w-[550px]">
-                            <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
-                                <tr>
-                                    <th class="p-4">Pasta</th>
-                                    <th class="p-4">Título</th>
-                                    <th class="p-4">Ficheiro (Gzip)</th>
-                                    <th class="p-4 text-center">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100">
-                                ${docs.length === 0 ? `<tr><td colspan="4" class="p-6 text-center text-slate-400">Nenhum documento inserido.</td></tr>` : docs.map(d => `
-                                    <tr class="hover:bg-slate-50/80 transition-colors">
-                                        <td class="p-4"><span class="px-3 py-1 bg-teal-50 text-teal-700 rounded-full font-bold inline-flex items-center gap-1.5"><i class="fa-solid fa-folder"></i> ${escapeHTML(d.pasta || 'Geral')}</span></td>
-                                        <td class="p-4 font-bold text-slate-900">${escapeHTML(d.titulo)}</td>
-                                        <td class="p-4 font-mono font-medium">${escapeHTML(d.nomeArquivo)}</td>
-                                        <td class="p-4 text-center flex items-center justify-center gap-1">
-                                            ${d.arquivoCompactadoGzip ? `
-                                                <button onclick="visualizarArquivo('${d.arquivoCompactadoGzip}', '${escapeHTML(d.nomeArquivo)}')" class="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl transition-colors" title="Visualizar"><i class="fa-solid fa-eye"></i></button>
-                                                <button onclick="extrairEDownloadArquivo('${d.arquivoCompactadoGzip}', '${escapeHTML(d.nomeArquivo)}')" class="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-colors" title="Baixar"><i class="fa-solid fa-download"></i></button>
-                                            ` : ''}
-                                            <button onclick="window.renderModalDocumento('${d.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors" title="Editar"><i class="fa-solid fa-pen"></i></button>
-                                            <button onclick="excluirRegistro('documentos','${d.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors" title="Excluir"><i class="fa-solid fa-trash"></i></button>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }
-
-        window.renderModalDocumento = function(id = null) {
-            const item = id ? (db.documentos||[]).find(x => x.id === id) : { id: '', titulo: '', pasta: 'Geral', nomeArquivo: '', arquivoCompactadoGzip: '' };
-            tempArquivoGzipBase64 = item.arquivoCompactadoGzip || '';
-            tempArquivoNome = item.nomeArquivo || '';
-
-            const categoriasDisponiveis = (db.categorias || []).map(c => c.nome);
-            if (categoriasDisponiveis.length === 0) categoriasDisponiveis.push('Geral', 'Assembleias', 'Financeiro', 'Manutenção');
-
-            abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
-                    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
-                        <div class="flex justify-between items-center border-b pb-3">
-                            <h3 class="font-black text-lg text-slate-900">${id ? 'Editar Documento' : 'Inserir Documento'}</h3>
-                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
-                        </div>
-                        <form onsubmit="salvarModalDocumento(event, '${id}')" class="space-y-3 text-xs">
-                            <div>
-                                <label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Pasta</label>
-                                <select id="m_doc_pasta" class="w-full p-3 border rounded-2xl font-bold bg-slate-50">
-                                    ${categoriasDisponiveis.map(cat => `<option value="${escapeHTML(cat)}" ${item.pasta === cat ? 'selected' : ''}>${escapeHTML(cat)}</option>`).join('')}
-                                </select>
-                            </div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Título</label><input type="text" id="m_doc_titulo" required value="${escapeHTML(item.titulo)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div>
-                                <label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Ficheiro (Compactação Gzip)</label>
-                                <input type="file" ${!id ? 'required' : ''} onchange="processarArquivoDocumentoGzip(event)" class="w-full p-2 border rounded-2xl bg-slate-50">
-                                <p class="text-[10px] text-slate-400 mt-1 font-medium">Atual: <span class="font-bold text-slate-700">${escapeHTML(item.nomeArquivo || 'Nenhum')}</span></p>
-                            </div>
-                            <div class="flex justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button>
-                                <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Salvar</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            `);
-        };
-
-        function processarArquivoDocumentoGzip(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            compactarArquivoParaGzip(file, function(base64Gzip, nomeOriginal) {
-                tempArquivoGzipBase64 = base64Gzip;
-                tempArquivoNome = nomeOriginal;
-            });
-        }
-
-        window.salvarModalDocumento = function(e, id) {
-            e.preventDefault();
-            if(!db.documentos) db.documentos = [];
-            const isEdit = id && id !== 'null';
-            const docExistente = isEdit ? db.documentos.find(x => x.id === id) : null;
-
-            const obj = {
-                id: isEdit ? id : 'doc_' + Date.now(),
-                pasta: document.getElementById('m_doc_pasta').value,
-                titulo: document.getElementById('m_doc_titulo').value,
-                nomeArquivo: tempArquivoNome || (docExistente ? docExistente.nomeArquivo : 'doc.pdf'),
-                arquivoCompactadoGzip: tempArquivoGzipBase64 || (docExistente ? docExistente.arquivoCompactadoGzip : '')
-            };
-
-            const idx = db.documentos.findIndex(x => x.id === obj.id);
-            if(idx !== -1) db.documentos[idx] = obj; else db.documentos.push(obj);
-            salvarDados(db); fecharModalContainer(); renderMainOnly();
-        };
-
-        function renderUsuariosView() {
-            const users = db.usuarios || [];
-            return `
-                <div class="bg-white rounded-3xl card-modern overflow-x-auto shadow-sm w-full">
-                    <table class="w-full text-left text-xs min-w-[700px]">
-                        <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
-                            <tr>
-                                <th class="p-4">Utilizador / Nome</th>
-                                <th class="p-4">E-mail</th>
-                                <th class="p-4">Loja / Unidade</th>
-                                <th class="p-4">Cargo</th>
-                                <th class="p-4 text-center">Ações / Senha</th>
-                            </tr>
-                        </thead>
-                        <tbody class="divide-y divide-slate-100">
-                            ${users.map(u => `
-                                <tr class="hover:bg-slate-50/80 transition-colors">
-                                    <td class="p-4">
-                                        <div class="font-bold text-slate-900">${escapeHTML(u.usuario)}</div>
-                                        <div class="text-[10px] text-slate-400 font-medium">${escapeHTML(u.nome || '')}</div>
-                                    </td>
-                                    <td class="p-4 font-medium text-slate-700">${escapeHTML(u.email || '-')}</td>
-                                    <td class="p-4 font-semibold text-slate-700">${escapeHTML(u.loja || 'Guardiões do Bravo')}</td>
-                                    <td class="p-4 font-semibold text-teal-700">${escapeHTML(u.cargo || u.perfil || 'Operador')}</td>
-                                    <td class="p-4 text-center">
-                                        <button onclick="window.renderModalRedefinirSenha('${u.id}')" class="px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded-xl font-bold mr-1 transition-colors"><i class="fa-solid fa-key mr-1"></i> Senha</button>
-                                        <button onclick="window.renderModalUsuario('${u.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl mr-1 transition-colors"><i class="fa-solid fa-pen"></i></button>
-                                        ${u.id !== 'usr_admin' ? `<button onclick="excluirRegistro('usuarios','${u.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button>` : ''}
-                                    </td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
-                    </table>
-                </div>
-            `;
-        }
-
-        window.renderModalUsuario = function(id = null) {
-            const item = id ? (db.usuarios||[]).find(x => x.id === id) : { id: '', usuario: '', nome: '', email: '', loja: 'Guardiões do Bravo', cargo: '', primeiroAcesso: true, senhaHash: 'Condo@2026' };
-            abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
-                    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
-                        <h3 class="font-black text-lg text-slate-900">${id ? 'Editar Utilizador' : 'Novo Utilizador'}</h3>
-                        <form onsubmit="salvarModalUsuario(event, '${id}')" class="space-y-3 text-xs">
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Login</label><input type="text" id="m_u_login" required value="${escapeHTML(item.usuario)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Nome Completo</label><input type="text" id="m_u_nome" required value="${escapeHTML(item.nome)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">E-mail</label><input type="email" id="m_u_email" value="${escapeHTML(item.email || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Loja / Unidade</label><input type="text" id="m_u_loja" required value="${escapeHTML(item.loja || 'Guardiões do Bravo')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Cargo</label><input type="text" id="m_u_cargo" required value="${escapeHTML(item.cargo || item.perfil || 'Operador')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            ${!id ? `<div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Palavra-passe Temporária</label><input type="password" id="m_u_senha" required value="Condo@2026" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>` : ''}
-                            <div class="flex justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button>
-                                <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Salvar</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            `);
-        };
-
-        window.salvarModalUsuario = function(e, id) {
-            e.preventDefault();
-            if(!db.usuarios) db.usuarios = [];
-            const isEdit = id && id !== 'null';
-            const usuarioExistente = isEdit ? db.usuarios.find(x => x.id === id) : null;
-
-            const obj = {
-                id: isEdit ? id : 'usr_' + Date.now(),
-                usuario: document.getElementById('m_u_login').value,
-                nome: document.getElementById('m_u_nome').value,
-                email: document.getElementById('m_u_email').value,
-                loja: document.getElementById('m_u_loja').value,
-                cargo: document.getElementById('m_u_cargo').value,
-                perfil: document.getElementById('m_u_cargo').value,
-                status: 'Ativo',
-                senhaHash: usuarioExistente ? usuarioExistente.senhaHash : document.getElementById('m_u_senha').value,
-                primeiroAcesso: usuarioExistente ? usuarioExistente.primeiroAcesso : true
-            };
-
-            const idx = db.usuarios.findIndex(x => x.id === obj.id);
-            if(idx !== -1) db.usuarios[idx] = obj; else db.usuarios.push(obj);
-            salvarDados(db); fecharModalContainer(); renderMainOnly();
-        };
-
-        window.renderModalRedefinirSenha = function(id) {
-            const user = (db.usuarios || []).find(x => x.id === id);
-            if (!user) return;
-            abrirModalContainer(`
-                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
-                    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
-                        <div class="flex justify-between items-center border-b pb-3">
-                            <h3 class="font-black text-lg text-slate-900">Redefinir Senha: ${escapeHTML(user.usuario)}</h3>
-                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-600"><i class="fa-solid fa-xmark text-xl"></i></button>
-                        </div>
-                        <form onsubmit="executarRedefinicaoSenha(event, '${id}')" class="space-y-3 text-xs">
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Nova Senha</label><input type="password" id="nova_senha_admin" required class="w-full p-3 border rounded-2xl font-bold bg-slate-50" placeholder="Mínimo 6 caracteres"></div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Confirmar Nova Senha</label><input type="password" id="nova_senha_admin_conf" required class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div class="flex justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button>
-                                <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Atualizar</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            `);
-        };
-
-        window.executarRedefinicaoSenha = function(e, id) {
-            e.preventDefault();
-            const s1 = document.getElementById('nova_senha_admin').value;
-            const s2 = document.getElementById('nova_senha_admin_conf').value;
-            if (s1.length < 6) { alert('A palavra-passe deve ter pelo menos 6 caracteres.'); return; }
-            if (s1 !== s2) { alert('As palavras-passe não coincidem.'); return; }
-
-            const idx = (db.usuarios || []).findIndex(x => x.id === id);
-            if (idx !== -1) {
-                db.usuarios[idx].senhaHash = s1;
-                salvarDados(db);
-                fecharModalContainer();
-                alert('Palavra-passe redefinida!');
-                renderMainOnly();
-            }
-        };
-
-        function renderRelatoriosCentralView() {
-            const financeiroList = db.financeiro || [];
-            const planoContas = db.plano_contas || [];
-
-            let totalReceitasDRE = 0;
-            let totalDespesasDRE = 0;
-
-            const itensPorConta = {};
-            planoContas.forEach(pc => {
-                itensPorConta[pc.id] = { codigo: pc.codigo, nome: pc.nome, tipo: pc.tipo, total: 0 };
-            });
-
-            financeiroList.forEach(f => {
-                const val = parseFloat(f.valor) || 0;
-                if (f.tipo === 'Receber') totalReceitasDRE += val;
-                else if (f.tipo === 'Pagar') totalDespesasDRE += val;
-
-                if (f.planoContaId && itensPorConta[f.planoContaId]) {
-                    itensPorConta[f.planoContaId].total += val;
-                }
-            });
-
-            const resultadoLiquidoDRE = totalReceitasDRE - totalDespesasDRE;
-
-            return `
-                <div class="bg-white p-8 rounded-3xl card-modern shadow-sm space-y-6 w-full">
-                    <div class="flex justify-between items-center border-b border-slate-100 pb-4">
-                        <h3 class="font-black text-slate-900 text-lg uppercase tracking-tight"><i class="fa-solid fa-file-invoice-dollar mr-2 text-teal-600"></i> Demonstrativo do Resultado (DRE)</h3>
-                        <span class="text-xs bg-teal-50 text-teal-700 px-4 py-1.5 rounded-full font-bold">Plano de Contas Ativo</span>
-                    </div>
-
-                    <div class="space-y-5 text-xs">
-                        <div class="space-y-2">
-                            <p class="font-black text-slate-400 uppercase tracking-widest text-[10px]">Receitas Operacionais</p>
-                            ${Object.values(itensPorConta).filter(i => i.tipo === 'Receita').map(i => `
-                                <div class="flex justify-between p-4 bg-emerald-50/60 text-emerald-950 font-bold rounded-2xl border border-emerald-100/60">
-                                    <span>(+) ${escapeHTML(i.codigo + ' - ' + i.nome)}</span>
-                                    <span class="font-mono font-black">R$ ${i.total.toFixed(2)}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-
-                        <div class="space-y-2 pt-2">
-                            <p class="font-black text-slate-400 uppercase tracking-widest text-[10px]">Despesas Operacionais</p>
-                            ${Object.values(itensPorConta).filter(i => i.tipo === 'Despesa').map(i => `
-                                <div class="flex justify-between p-4 bg-rose-50/60 text-rose-950 font-bold rounded-2xl border border-rose-100/60">
-                                    <span>(-) ${escapeHTML(i.codigo + ' - ' + i.nome)}</span>
-                                    <span class="font-mono font-black">R$ ${i.total.toFixed(2)}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-
-                        <div class="pt-4 border-t border-slate-100">
-                            <div class="flex justify-between p-5 bg-gradient-to-r from-teal-700 to-teal-800 text-white font-black text-sm rounded-2xl shadow-lg shadow-teal-700/20">
-                                <span>(=) RESULTADO LÍQUIDO DO EXERCÍCIO</span>
-                                <span class="font-mono text-base">R$ ${resultadoLiquidoDRE.toFixed(2)}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function excluirRegistro(col, id) {
-            if(!confirm('Deseja eliminar este registo?')) return;
-            if(db[col]) {
-                db[col] = db[col].filter(x => x.id !== id);
-                salvarDados(db);
-                renderMainOnly();
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            await carregarDadosDaNuvem();
-        });
     </script>
 </body>
 </html>
