@@ -211,6 +211,14 @@
 
         let sessao = { usuarioLogado: null };
 
+function salvarCacheLocal() {
+    try {
+        localStorage.setItem('guardioes_bravo_db', JSON.stringify(db));
+    } catch (e) {
+        console.warn('Cache local cheio; seguindo apenas com a nuvem.', e);
+    }
+}
+
         async function carregarDadosDaNuvem() {
             const elStatus = document.getElementById('status-nuvem');
             try {
@@ -220,12 +228,13 @@
                     .eq('id', 'principal')
                     .maybeSingle();
 
+                if (error) throw error;   // leitura falhou: não grava nada, cai no catch
                 if (data && data.payload) {
                     db = data.payload;
                     if (!db.plano_contas) db.plano_contas = DEFAULT_DATA.plano_contas;
                     if (!db.acertos_estoque) db.acertos_estoque = [];
                     if (!db.motivos_acerto_estoque) db.motivos_acerto_estoque = DEFAULT_DATA.motivos_acerto_estoque;
-                    localStorage.setItem('guardioes_bravo_db', JSON.stringify(db));
+                    salvarCacheLocal();
                     if (elStatus) {
                         elStatus.className = "bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm";
                         elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-down text-emerald-400"></i> Sincronizado com o Supabase com Sucesso!`;
@@ -245,7 +254,7 @@
                                 if (!db.plano_contas) db.plano_contas = DEFAULT_DATA.plano_contas;
                                 if (!db.acertos_estoque) db.acertos_estoque = [];
                                 if (!db.motivos_acerto_estoque) db.motivos_acerto_estoque = DEFAULT_DATA.motivos_acerto_estoque;
-                                localStorage.setItem('guardioes_bravo_db', JSON.stringify(db));
+                                salvarCacheLocal();
                                 renderMainOnly();
                                 
                                 if (elStatus) {
@@ -272,7 +281,7 @@
 
         async function salvarDadosNaNuvem(dataObj) {
             db = dataObj;
-            localStorage.setItem('guardioes_bravo_db', JSON.stringify(db));
+            salvarCacheLocal();
 
             const elStatus = document.getElementById('status-nuvem');
             if (elStatus) {
@@ -548,7 +557,7 @@
         }
 
         function renderTelaLogin() {
-            const savedUser = localStorage.getItem('guardioes_lembrar_user') || 'admin';
+            const savedUser = localStorage.getItem('guardioes_lembrar_user') || '';
             const isLembrarChecked = savedUser ? 'checked' : '';
 
             return `
@@ -572,7 +581,7 @@
                             <div>
                                 <label class="block text-[11px] font-bold uppercase text-slate-500 tracking-wider mb-1">Palavra-passe</label>
                                 <div class="relative">
-                                    <input type="password" id="login_pass" required value="Admin@12345" class="w-full p-3 pr-10 border border-slate-200 rounded-2xl text-sm font-semibold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all outline-none">
+                                    <input type="password" id="login_pass" required class="w-full p-3 pr-10 border border-slate-200 rounded-2xl text-sm font-semibold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all outline-none">
                                     <button type="button" onclick="toggleMostrarSenha()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
                                         <i id="icon-eye" class="fa-solid fa-eye text-sm"></i>
                                     </button>
@@ -1825,6 +1834,28 @@
             salvarDados(db); renderMainOnly();
         }
 
+const cacheFotos = new Map();
+function urlDaFoto(st) {
+    if (!st.fotoCompactadaGzip) return '';
+    const chave = st.id + ':' + st.fotoCompactadaGzip.length;
+    if (cacheFotos.has(chave)) return cacheFotos.get(chave);
+    try {
+        const bin = atob(st.fotoCompactadaGzip);
+        const bytes = new Uint8Array(bin.length);
+        for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+        const ext = (st.fotoNome || '').split('.').pop().toLowerCase();
+        const mime = ext === 'png' ? 'image/png' : ext === 'gif' ? 'image/gif' : ext === 'webp' ? 'image/webp' : 'image/jpeg';
+        const url = URL.createObjectURL(new Blob([pako.inflate(bytes)], { type: mime }));
+        cacheFotos.set(chave, url);
+        return url;
+    } catch (e) { return ''; }
+}
+
+function visualizarFotoEstoque(id) {
+    const st = (db.estoque || []).find(x => x.id === id);
+    if (st) visualizarArquivo(st.fotoCompactadaGzip, st.fotoNome || 'produto.jpg');
+}
+
         function renderEstoqueView() {
             let list = db.estoque || [];
             
@@ -1936,8 +1967,8 @@
                                         <tr class="hover:bg-slate-50/80 transition-colors ${atual <= minimo ? 'bg-rose-50/30' : (maximo > 0 && atual > maximo ? 'bg-amber-50/20' : '')}">
                                             <td class="p-4 text-center">
                                                 ${st.fotoCompactadaGzip ? `
-                                                    <button onclick="visualizarArquivo('${st.fotoCompactadaGzip}', '${escapeHTML(st.fotoNome || 'produto.jpg')}')" class="w-10 h-10 rounded-2xl overflow-hidden border border-slate-200 shadow-sm inline-block hover:opacity-80 transition-opacity" title="Ver foto">
-                                                        <img src="data:image/*;base64,${btoa(String.fromCharCode(...pako.inflate(atob(st.fotoCompactadaGzip))))}" class="w-full h-full object-cover">
+                                                    <button onclick="visualizarFotoEstoque('${st.id}')" class="w-10 h-10 rounded-2xl overflow-hidden border border-slate-200 shadow-sm inline-block hover:opacity-80 transition-opacity" title="Ver foto">
+                                                        <img src="${urlDaFoto(st)}" loading="lazy" class="w-full h-full object-cover">
                                                     </button>
                                                 ` : `<div class="w-10 h-10 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 text-xs"><i class="fa-solid fa-image"></i></div>`}
                                             </td>
@@ -2303,6 +2334,16 @@
             salvarDados(db); renderMainOnly();
         }
 
+function visualizarDocumento(id) {
+    const d = (db.documentos || []).find(x => x.id === id);
+    if (d) visualizarArquivo(d.arquivoCompactadoGzip, d.nomeArquivo);
+}
+
+function baixarDocumento(id) {
+    const d = (db.documentos || []).find(x => x.id === id);
+    if (d) extrairEDownloadArquivo(d.arquivoCompactadoGzip, d.nomeArquivo);
+}
+
         function renderDocumentosView() {
             const docs = db.documentos || [];
             return `
@@ -2325,8 +2366,8 @@
                                         <td class="p-4 font-mono font-medium">${escapeHTML(d.nomeArquivo)}</td>
                                         <td class="p-4 text-center flex items-center justify-center gap-1">
                                             ${d.arquivoCompactadoGzip ? `
-                                                <button onclick="visualizarArquivo('${d.arquivoCompactadoGzip}', '${escapeHTML(d.nomeArquivo)}')" class="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl transition-colors" title="Visualizar"><i class="fa-solid fa-eye"></i></button>
-                                                <button onclick="extrairEDownloadArquivo('${d.arquivoCompactadoGzip}', '${escapeHTML(d.nomeArquivo)}')" class="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-colors" title="Baixar"><i class="fa-solid fa-download"></i></button>
+                                                <button onclick="visualizarDocumento('${d.id}')" class="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl transition-colors" title="Visualizar"><i class="fa-solid fa-eye"></i></button>
+                                                <button onclick="baixarDocumento('${d.id}')" class="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-colors" title="Baixar"><i class="fa-solid fa-download"></i></button>
                                             ` : ''}
                                             <button onclick="window.renderModalDocumento('${d.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl transition-colors" title="Editar"><i class="fa-solid fa-pen"></i></button>
                                             <button onclick="excluirRegistro('documentos','${d.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors" title="Excluir"><i class="fa-solid fa-trash"></i></button>
