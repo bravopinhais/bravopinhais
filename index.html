@@ -101,15 +101,23 @@
                 saldoCaixa: 142850.40,
                 inadimplencia: "3.2%"
             },
-            aiPrompting: false,
+            moradoresList: [
+                { id: '1', bloco: 'Bloco A', apto: '101', nome: 'Carlos Eduardo', cpf: '123.456.789-00', status: 'Ativo' },
+                { id: '2', bloco: 'Bloco A', apto: '202', nome: 'Mariana Santos', cpf: '987.654.321-11', status: 'Ativo' },
+                { id: '3', bloco: 'Bloco B', apto: '104', nome: 'Roberto Almeida', cpf: '456.789.123-22', status: 'Pendente' }
+            ],
+            estoqueList: [
+                { id: '1', item: 'Lâmpada LED 12W', categoria: 'Elétrica', qtd: 45, min: 10, status: 'OK' },
+                { id: '2', item: 'Cloro Granulado 10kg', categoria: 'Piscina', qtd: 2, min: 5, status: 'Crítico' },
+                { id: '3', item: 'Detergente Industrial', categoria: 'Limpeza', qtd: 18, min: 8, status: 'OK' }
+            ],
             aiMessages: [
                 { sender: 'ai', text: 'Olá! Sou a inteligência artificial do Guardiões do Bravo. Como posso ajudar na gestão preditiva do condomínio hoje?' }
             ]
         };
 
-        // Initialize App
+        // Boot da Aplicação
         function initApp() {
-            // Verificar sessão simulada ou carregada
             const savedUser = sessionStorage.getItem('bravo_user');
             if (savedUser) {
                 APP_STATE.user = JSON.parse(savedUser);
@@ -283,21 +291,21 @@
                     return renderDashboardView();
                 case 'portaria':
                     return renderPortariaView();
+                case 'financeiro':
+                    return renderFinanceiroView();
+                case 'moradores':
+                    return renderMoradoresView();
+                case 'estoque':
+                    return renderEstoqueView();
                 case 'ai_hub':
                     return renderAIHubView();
                 default:
-                    return `
-                        <div class="glass-card p-12 rounded-3xl text-center space-y-3">
-                            <i class="fa-solid fa-microchip text-4xl text-cyber-400 animate-pulse"></i>
-                            <h3 class="text-lg font-bold text-white">Módulo em Processamento Quantum</h3>
-                            <p class="text-xs text-slate-400 max-w-md mx-auto">Esta funcionalidade está sincronizando seus dados com as APIs relacionais do Supabase Edge.</p>
-                        </div>
-                    `;
+                    return renderDashboardView();
             }
         }
 
         // =========================================================================
-        // VIEWS ESPECÍFICAS
+        // VIEWS DETALHADAS DOS MÓDULOS
         // =========================================================================
         function renderDashboardView() {
             return `
@@ -408,6 +416,126 @@
             `;
         }
 
+        function renderFinanceiroView() {
+            return `
+                <div class="space-y-6">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-bold text-white font-mono">Demonstrativo do Resultado do Exercício (DRE)</h2>
+                        <button class="px-3 py-1.5 bg-cyber-500/20 text-cyber-400 border border-cyber-500/40 rounded-xl text-xs font-mono font-bold">
+                            <i class="fa-solid fa-file-export mr-1"></i> Exportar Relatório
+                        </button>
+                    </div>
+
+                    <div class="glass-card rounded-2xl overflow-hidden border border-slate-800">
+                        <table class="w-full text-left font-mono text-xs">
+                            <thead class="bg-slate-900/80 text-cyber-400 border-b border-slate-800">
+                                <tr>
+                                    <th class="p-3">Categoria / Descrição</th>
+                                    <th class="p-3">Tipo</th>
+                                    <th class="p-3">Vencimento</th>
+                                    <th class="p-3 text-right">Valor (R$)</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/50 text-slate-300">
+                                <tr>
+                                    <td class="p-3">Taxa Condominial Ordinária</td>
+                                    <td class="p-3 text-emerald-400">Receita</td>
+                                    <td class="p-3">10/10/2026</td>
+                                    <td class="p-3 text-right font-bold text-emerald-400">+ 48.500,00</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3">Manutenção Elevadores Otis</td>
+                                    <td class="p-3 text-rose-400">Despesa</td>
+                                    <td class="p-3">15/10/2026</td>
+                                    <td class="p-3 text-right font-bold text-rose-400">- 3.200,00</td>
+                                </tr>
+                                <tr>
+                                    <td class="p-3">Fatura de Energia Elétrica (Copel)</td>
+                                    <td class="p-3 text-rose-400">Despesa</td>
+                                    <td class="p-3">20/10/2026</td>
+                                    <td class="p-3 text-right font-bold text-rose-400">- 8.450,00</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderMoradoresView() {
+            return `
+                <div class="space-y-6">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-bold text-white font-mono">Gestão de Moradores & Unidades</h2>
+                        <button class="px-3 py-1.5 bg-cyber-500 text-dark-950 rounded-xl text-xs font-mono font-bold">
+                            <i class="fa-solid fa-plus mr-1"></i> Novo Morador
+                        </button>
+                    </div>
+
+                    <div class="glass-card rounded-2xl overflow-hidden border border-slate-800">
+                        <table class="w-full text-left font-mono text-xs">
+                            <thead class="bg-slate-900/80 text-cyber-400 border-b border-slate-800">
+                                <tr>
+                                    <th class="p-3">Bloco / Apt</th>
+                                    <th class="p-3">Nome do Titular</th>
+                                    <th class="p-3">CPF</th>
+                                    <th class="p-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/50 text-slate-300">
+                                ${APP_STATE.moradoresList.map(m => `
+                                    <tr>
+                                        <td class="p-3 font-bold text-white">${m.bloco} - Apt ${m.apto}</td>
+                                        <td class="p-3">${m.nome}</td>
+                                        <td class="p-3">${m.cpf}</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] ${m.status === 'Ativo' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'}">${m.status}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
+        function renderEstoqueView() {
+            return `
+                <div class="space-y-6">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-lg font-bold text-white font-mono">Estoque Automático & Suprimentos</h2>
+                        <button class="px-3 py-1.5 bg-cyber-500 text-dark-950 rounded-xl text-xs font-mono font-bold">
+                            <i class="fa-solid fa-box-open mr-1"></i> Dar Entrada
+                        </button>
+                    </div>
+
+                    <div class="glass-card rounded-2xl overflow-hidden border border-slate-800">
+                        <table class="w-full text-left font-mono text-xs">
+                            <thead class="bg-slate-900/80 text-cyber-400 border-b border-slate-800">
+                                <tr>
+                                    <th class="p-3">Item</th>
+                                    <th class="p-3">Categoria</th>
+                                    <th class="p-3">Qtd Atual</th>
+                                    <th class="p-3">Mínimo</th>
+                                    <th class="p-3">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-800/50 text-slate-300">
+                                ${APP_STATE.estoqueList.map(e => `
+                                    <tr>
+                                        <td class="p-3 font-bold text-white">${e.item}</td>
+                                        <td class="p-3">${e.categoria}</td>
+                                        <td class="p-3 font-bold">${e.qtd}</td>
+                                        <td class="p-3 text-slate-500">${e.min}</td>
+                                        <td class="p-3"><span class="px-2 py-0.5 rounded-full text-[10px] ${e.status === 'OK' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30 animate-pulse'}">${e.status}</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `;
+        }
+
         function renderAIHubView() {
             return `
                 <div class="glass-card p-6 rounded-3xl space-y-4 flex flex-col h-[500px]">
@@ -461,7 +589,6 @@
             APP_STATE.aiMessages.push({ sender: 'user', text: query });
             input.value = '';
             
-            // Simular resposta da IA
             setTimeout(() => {
                 APP_STATE.aiMessages.push({
                     sender: 'ai',
@@ -530,7 +657,7 @@
             }, 100);
         }
 
-        // Boot
+        // Evento de Inicialização
         window.onload = initApp;
     </script>
 </body>
