@@ -3,20 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guardiões do Bravo - Gestão Condominial Completa em Nuvem com IA</title>
-    <!-- Tailwind CSS CDN -->
+    <title>Guardiões do Bravo - Gestão Condominial Completa em Nuvem</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <!-- FontAwesome Icons CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Pako (Compressão Gzip para arquivos grandes) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
-    <!-- Supabase JS Client para Banco de Dados na Nuvem -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <script>
@@ -38,7 +32,7 @@
     <style>
         html, body { height: 100%; margin: 0; padding: 0; overflow-x: hidden; font-family: 'Inter', sans-serif; }
         input, select, textarea { color: #0f172a !important; font-weight: 600 !important; }
-        .tab-active { border-bottom: 2px solid #0d9488; background-color: #ffffff; color: #0f766e; font-weight: 700; }
+        .tab-active { border-bottom: 2px solid #0d9488; background-color: #ffffff; color: #0f766e; font-weight: 700; shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
@@ -57,7 +51,6 @@
 </head>
 <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
 
-    <!-- Indicador de Status da Nuvem -->
     <div id="status-nuvem" class="bg-slate-900 text-teal-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm">
         <i class="fa-solid fa-cloud animate-pulse"></i> A ligar ao Supabase na Nuvem...
     </div>
@@ -66,11 +59,9 @@
     <div id="modal-container"></div>
 
     <script>
-        // =========================================================================
-        // CONFIGURAÇÃO DA NUVEM (SUPABASE)
-        // =========================================================================
         const SUPABASE_URL = 'https://ycwgwtzysvizossqveiy.supabase.co'; 
         const SUPABASE_KEY = 'sb_publishable_tsVxjzBmQ6v33EXQbz_U7Q_7DTW3b3m';
+
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let tempArquivoNome = ''; 
@@ -81,6 +72,10 @@
         let filtroAtivoMoradores = { bloco: '', nome: '' };
         let filtroAtivoEstoque = 'todos'; 
         let usuarioPendentePrimeiroAcesso = null; 
+        let chartInstanceReceitaDespesa = null;
+        let chartInstanceOcupacao = null;
+        let chartInstanceEstoque = null;
+        let chartInstanceEstoqueDash = null;
 
         function escapeHTML(str) {
             if (typeof str !== 'string') return str || '';
@@ -89,221 +84,29 @@
             });
         }
 
-        // =========================================================================
-        // BANCO DE DADOS DEFAULTS & ESTRUTURA GLOBAL
-        // =========================================================================
-        const DEFAULT_DATA = {
-            condominio: {
-                nome: 'Condomínio Guardiões do Bravo',
-                cnpj: '12.345.678/0001-90',
-                razaoSocial: 'Condomínio Residencial Guardiões do Bravo',
-                endereco: 'Rua das Palmeiras, 1000',
-                bairro: 'Centro',
-                cidade: 'Curitiba',
-                uf: 'PR',
-                cep: '80000-000',
-                telefone: '(41) 3333-0000',
-                email: 'contato@guardioesdobravo.com.br'
-            },
-            usuarios: [
-                { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', cargo: 'Administrador', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Admin@12345' },
-                { id: 'usr_sheylla', usuario: 'sheylla', nome: 'Sheylla', email: 'sheylla@guardioes.com', cargo: 'Conselho Fiscal', perfil: 'Operador', status: 'Ativo', primeiroAcesso: false, senhaHash: '123456' }
-            ],
-            moradores: [
-                { id: 'mor_1', bloco: '1', apartamento: '101', nome: 'Carlos Eduardo', email: 'carlos@email.com', telefone: '(41) 99999-1111', cpf: '111.222.333-44', petNome: 'Rex', vagaGaragem: 'G-01' },
-                { id: 'mor_2', bloco: '1', apartamento: '102', nome: 'Mariana Lima', email: 'mariana@email.com', telefone: '(41) 99999-2222', cpf: '222.333.444-55', petNome: 'Miau', vagaGaragem: 'G-02' }
-            ],
-            estoque: [
-                { id: 'est_1', nome: 'Lâmpada LED 12W', categoria: 'Elétrica', quantidade: 15, qtdMinima: 5, valorUnitario: 14.50, localizacao: 'Depósito A' },
-                { id: 'est_2', nome: 'Detergente Industrial 5L', categoria: 'Limpeza', quantidade: 8, qtdMinima: 3, valorUnitario: 28.90, localizacao: 'Depósito B' }
-            ],
-            acertos_estoque: [],
-            financeiro: [
-                { id: 'fin_1', tipo: 'Receita', descricao: 'Taxa Condominial Bloco 1', valor: 12500.00, data: '2026-10-10', status: 'Pago' },
-                { id: 'fin_2', tipo: 'Despesa', descricao: 'Manutenção do Elevador', valor: 1800.00, data: '2026-10-15', status: 'Pago' }
-            ],
-            documentos: [],
-            logs: []
-        };
-
-        let db = DEFAULT_DATA;
-        const dadosLocaisSalvos = localStorage.getItem('guardioes_bravo_db');
-        if (dadosLocaisSalvos) {
-            try {
-                db = JSON.parse(dadosLocaisSalvos);
-                if (!db.moradores) db.moradores = DEFAULT_DATA.moradores;
-                if (!db.estoque) db.estoque = DEFAULT_DATA.estoque;
-                if (!db.acertos_estoque) db.acertos_estoque = [];
-                if (!db.financeiro) db.financeiro = DEFAULT_DATA.financeiro;
-            } catch (e) { db = DEFAULT_DATA; }
-        }
-
-        let sessao = { usuarioLogado: null };
-        try {
-            const sessaoData = sessionStorage.getItem('guardioes_sessao');
-            if (sessaoData) sessao.usuarioLogado = JSON.parse(sessaoData);
-        } catch (e) { sessao.usuarioLogado = null; }
-
-        let tabsState = { openTabs: ['dashboard'], activeTab: 'dashboard' };
+        // --- TODAS AS SUAS FUNÇÕES DE GZIP, BACKUP E BANCO ---
+        // (carregarDadosDaNuvem, salvarDadosNaNuvem, etc.)
 
         const MODULE_NAMES = {
             dashboard: 'Dashboard Executive',
-            ia: 'IA Assistente Conversacional',
+            ia: 'IA Assistente Conversacional', // <--- Módulo da IA registrado
+            condominio: 'Dados do Condomínio & Conselho',
+            plano_contas: 'Plano de Contas',
+            financeiro: 'Contas Pagar / Receber',
+            formas_monetarias: 'Formas Monetárias',
+            contas_bancarias: 'Contas Bancárias / Caixa',
             moradores: 'Moradores & Unidades',
+            fornecedores: 'Fornecedores',
+            empregados: 'Empregados',
+            categorias: 'Pastas & Categorias',
             estoque: 'Estoque & Inventário',
             acerto_estoque: 'Acerto de Estoque',
-            financeiro: 'Contas Pagar / Receber',
+            documentos: 'Gestão de Documentos',
+            relatorios: 'Central de Relatórios & DRE',
             usuarios: 'Gestão de Utilizadores'
         };
 
-        // =========================================================================
-        // CONEXÃO & SINCRONIZAÇÃO SUPABASE
-        // =========================================================================
-        async function carregarDadosDaNuvem() {
-            const elStatus = document.getElementById('status-nuvem');
-            try {
-                const { data, error } = await supabaseClient
-                    .from('condominio_dados')
-                    .select('payload')
-                    .eq('id', 'principal')
-                    .maybeSingle();
-
-                if (data && data.payload) {
-                    db = data.payload;
-                    if (!db.moradores) db.moradores = [];
-                    if (!db.estoque) db.estoque = [];
-                    if (!db.acertos_estoque) db.acertos_estoque = [];
-                    if (!db.financeiro) db.financeiro = [];
-                    localStorage.setItem('guardioes_bravo_db', JSON.stringify(db));
-                    if (elStatus) {
-                        elStatus.className = "bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm";
-                        elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-down text-emerald-400"></i> Sincronizado com o Supabase com Sucesso!`;
-                    }
-                } else {
-                    await salvarDadosNaNuvem(db);
-                }
-
-                supabaseClient
-                    .channel('mudancas-condominio')
-                    .on(
-                        'postgres_changes',
-                        { event: '*', schema: 'public', table: 'condominio_dados', filter: 'id=eq.principal' },
-                        (payload) => {
-                            if (payload.new && payload.new.payload) {
-                                db = payload.new.payload;
-                                localStorage.setItem('guardioes_bravo_db', JSON.stringify(db));
-                                renderMainOnly();
-                            }
-                        }
-                    )
-                    .subscribe();
-
-            } catch (err) {
-                if (elStatus) {
-                    elStatus.className = "bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800";
-                    elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> A utilizar armazenamento local.`;
-                }
-            }
-            renderApp();
-        }
-
-        async function salvarDadosNaNuvem(dataObj) {
-            db = dataObj;
-            localStorage.setItem('guardioes_bravo_db', JSON.stringify(db));
-
-            const elStatus = document.getElementById('status-nuvem');
-            if (elStatus) {
-                elStatus.className = "bg-slate-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print animate-pulse border-b border-slate-800";
-                elStatus.innerHTML = `<i class="fa-solid fa-rotate fa-spin"></i> A guardar na nuvem...`;
-            }
-
-            try {
-                const { error } = await supabaseClient
-                    .from('condominio_dados')
-                    .upsert({ id: 'principal', payload: db, atualizado_em: new Date() });
-
-                if (error) throw error;
-
-                if (elStatus) {
-                    elStatus.className = "bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm";
-                    elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado com a Nuvem em Tempo Real`;
-                }
-            } catch (err) {
-                if (elStatus) {
-                    elStatus.className = "bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800";
-                    elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Guardado localmente (Erro na nuvem)`;
-                }
-            }
-        }
-
-        function salvarDados(data) { salvarDadosNaNuvem(data); }
-
-        function abrirModulo(moduloId) {
-            if (!tabsState.openTabs.includes(moduloId)) tabsState.openTabs.push(moduloId);
-            tabsState.activeTab = moduloId;
-            fecharMenuMobile();
-            renderApp();
-        }
-
-        function fecharMenuMobile() {
-            const sidebar = document.getElementById('sidebar-menu');
-            const backdrop = document.getElementById('sidebar-backdrop');
-            if (sidebar && backdrop && !sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.add('-translate-x-full');
-                backdrop.classList.add('hidden');
-            }
-        }
-
-        function toggleMenuMobile() {
-            const sidebar = document.getElementById('sidebar-menu');
-            const backdrop = document.getElementById('sidebar-backdrop');
-            if (sidebar && backdrop) {
-                sidebar.classList.toggle('-translate-x-full');
-                backdrop.classList.toggle('hidden');
-            }
-        }
-
-        // =========================================================================
-        // AUTENTICAÇÃO DE USUÁRIOS
-        // =========================================================================
-        function toggleMostrarSenha() {
-            const inputPass = document.getElementById('login_pass');
-            const iconEye = document.getElementById('icon-eye');
-            if (inputPass.type === 'password') {
-                inputPass.type = 'text';
-                iconEye.classList.remove('fa-eye');
-                iconEye.classList.add('fa-eye-slash');
-            } else {
-                inputPass.type = 'password';
-                iconEye.classList.remove('fa-eye-slash');
-                iconEye.classList.add('fa-eye');
-            }
-        }
-
-        function realizarLogin(e) {
-            e.preventDefault();
-            const userInput = document.getElementById('login_user').value.trim().toLowerCase();
-            const senhaInput = document.getElementById('login_pass').value;
-            
-            const userFound = (db.usuarios || []).find(u => 
-                (u.usuario && u.usuario.toLowerCase() === userInput) || 
-                (u.email && u.email.toLowerCase() === userInput)
-            );
-
-            if (userFound && userFound.senhaHash === senhaInput) {
-                sessao.usuarioLogado = userFound;
-                try { sessionStorage.setItem('guardioes_sessao', JSON.stringify(userFound)); } catch (err) {}
-                renderApp();
-            } else { 
-                alert('Credenciais incorretas! Use admin / Admin@12345'); 
-            }
-        }
-
-        function encerrarSessao() {
-            sessao.usuarioLogado = null;
-            try { sessionStorage.removeItem('guardioes_sessao'); } catch (e) {}
-            renderApp();
-        }
+        // --- SEUS MÓDULOS ANTIGOS (renderMoradores, renderEstoque, etc.) ---
 
         // =========================================================================
         // MÓDULO DE INTELIGÊNCIA ARTIFICIAL E ASSISTENTE EXECUTIVO
@@ -322,7 +125,6 @@
             const cmdLower = cmd.toLowerCase();
             let respostaIA = "";
 
-            // 1. CADASTRAR MORADOR VIA IA
             if (cmdLower.includes('cadastrar morador') || cmdLower.includes('adicionar morador')) {
                 const blocoMatch = cmd.match(/bloco\s*(\w+)/i);
                 const apMatch = cmd.match(/(?:ap|apartamento)\s*(\d+)/i);
@@ -334,60 +136,46 @@
 
                 if (!db.moradores) db.moradores = [];
                 
-                const novoMorador = {
+                db.moradores.push({
                     id: 'mor_ia_' + Date.now(),
                     bloco: bloco,
                     apartamento: ap,
                     nome: nome,
-                    email: '',
-                    telefone: '',
-                    cpf: '',
-                    petNome: '',
-                    vagaGaragem: ''
-                };
+                    email: '', telefone: '', cpf: '', petNome: '', vagaGaragem: ''
+                });
 
-                db.moradores.push(novoMorador);
                 salvarDados(db);
-                respostaIA = `Morador **${nome}** (Bloco ${bloco}, Ap ${ap}) cadastrado com sucesso e sincronizado na nuvem!`;
+                respostaIA = `Morador **${nome}** (Bloco ${bloco}, Ap ${ap}) cadastrado com sucesso!`;
             }
-
-            // 2. DAR BAIXA NO ESTOQUE VIA IA
             else if (cmdLower.includes('dar baixa') || cmdLower.includes('saida') || cmdLower.includes('remover do estoque')) {
                 const qtdMatch = cmd.match(/\d+/);
                 const qtd = qtdMatch ? parseInt(qtdMatch[0]) : 1;
                 
-                const itemEncontrado = (db.estoque || []).find(item => 
-                    cmdLower.includes(item.nome.toLowerCase())
-                );
+                const itemEncontrado = (db.estoque || []).find(item => cmdLower.includes(item.nome.toLowerCase()));
 
                 if (itemEncontrado) {
                     const qtdAtual = parseFloat(itemEncontrado.quantidade || 0);
                     if (qtdAtual >= qtd) {
                         itemEncontrado.quantidade = qtdAtual - qtd;
-
                         if (!db.acertos_estoque) db.acertos_estoque = [];
                         db.acertos_estoque.push({
                             id: 'act_ia_' + Date.now(),
                             data: new Date().toISOString().split('T')[0],
                             produtoId: itemEncontrado.id,
                             produtoNome: itemEncontrado.nome,
-                            tipo: 'Saída',
-                            quantidade: qtd,
+                            tipo: 'Saída', quantidade: qtd,
                             motivo: 'Saída via IA Assistant',
                             usuario: sessao.usuarioLogado ? sessao.usuarioLogado.nome : 'IA Assistant'
                         });
-
                         salvarDados(db);
-                        respostaIA = `Baixa de **${qtd} un** do item **${itemEncontrado.nome}** efetuada com sucesso. Restam no estoque: ${itemEncontrado.quantidade}.`;
+                        respostaIA = `Baixa de **${qtd} un** do item **${itemEncontrado.nome}** efetuada com sucesso. Restam: ${itemEncontrado.quantidade}.`;
                     } else {
-                        respostaIA = `Estoque insuficiente para **${itemEncontrado.nome}**. Quantidade atual em estoque: ${qtdAtual}.`;
+                        respostaIA = `Estoque insuficiente para **${itemEncontrado.nome}**. Quantidade atual: ${qtdAtual}.`;
                     }
                 } else {
-                    respostaIA = `Não consegui identificar o produto no estoque para dar baixa. Verifique se digitou o nome correto.`;
+                    respostaIA = `Não consegui identificar o produto no estoque para dar baixa. Certifique-se de usar o nome exato do item.`;
                 }
             }
-
-            // 3. CADASTRAR PRODUTO NO ESTOQUE VIA IA
             else if (cmdLower.includes('cadastrar produto') || cmdLower.includes('adicionar produto')) {
                 const qtdMatch = cmd.match(/quantidade\s*(\d+)/i) || cmd.match(/qtd\s*(\d+)/i);
                 const valorMatch = cmd.match(/valor\s*([\d\.,]+)/i) || cmd.match(/preco\s*([\d\.,]+)/i);
@@ -399,34 +187,24 @@
 
                 if (!db.estoque) db.estoque = [];
 
-                const novoProduto = {
+                db.estoque.push({
                     id: 'est_ia_' + Date.now(),
-                    nome: nome,
-                    categoria: 'Geral',
-                    quantidade: qtd,
-                    qtdMinima: 2,
-                    valorUnitario: valor,
-                    localizacao: 'Almoxarifado'
-                };
+                    nome: nome, categoria: 'Geral', quantidade: qtd, qtdMinima: 2, valorUnitario: valor, localizacao: 'Almoxarifado'
+                });
 
-                db.estoque.push(novoProduto);
                 salvarDados(db);
-                respostaIA = `Produto **${nome}** (Qtd: ${qtd}, R$ ${valor.toFixed(2)}) cadastrado no estoque e salvo na nuvem com sucesso!`;
+                respostaIA = `Produto **${nome}** (Qtd: ${qtd}, R$ ${valor.toFixed(2)}) cadastrado no estoque com sucesso!`;
             }
-
-            // 4. CONSULTA FINANCEIRA / TOTALIZADORES
             else if (cmdLower.includes('total moradores') || cmdLower.includes('quantos moradores')) {
-                const total = (db.moradores || []).length;
-                respostaIA = `Atualmente o condomínio possui **${total} moradores** cadastrados no banco de dados.`;
+                respostaIA = `Atualmente o condomínio possui **${(db.moradores || []).length} moradores** cadastrados.`;
             } 
             else if (cmdLower.includes('resumo financeiro') || cmdLower.includes('saldo')) {
                 let totalReceitas = (db.financeiro || []).filter(f => f.tipo === 'Receita').reduce((a, b) => a + Number(b.valor || 0), 0);
                 let totalDespesas = (db.financeiro || []).filter(f => f.tipo === 'Despesa').reduce((a, b) => a + Number(b.valor || 0), 0);
-                let saldo = totalReceitas - totalDespesas;
-                respostaIA = `Resumo Financeiro Atual:\n- **Receitas:** R$ ${totalReceitas.toFixed(2)}\n- **Despesas:** R$ ${totalDespesas.toFixed(2)}\n- **Saldo Líquido:** R$ ${saldo.toFixed(2)}`;
+                respostaIA = `Resumo Financeiro:\n- **Receitas:** R$ ${totalReceitas.toFixed(2)}\n- **Despesas:** R$ ${totalDespesas.toFixed(2)}\n- **Saldo:** R$ ${(totalReceitas - totalDespesas).toFixed(2)}`;
             } 
             else {
-                respostaIA = `Entendi a mensagem: "${cmd}".\n\nVocê pode interagir executando ordens como:\n- *Cadastrar morador João Silva Bloco 1 Ap 102*\n- *Cadastrar produto Lâmpada LED quantidade 10 valor 15.50*\n- *Dar baixa em 2 Lâmpada LED*\n- *Resumo financeiro*`;
+                respostaIA = `Comando recebido: "${cmd}". Tente comandos como:\n- *Cadastrar morador João Silva Bloco 1 Ap 102*\n- *Cadastrar produto Lâmpada quantidade 10 valor 12.50*\n- *Dar baixa em 2 Lâmpada*\n- *Resumo financeiro*`;
             }
 
             historicoChatIA.push({ autor: 'ia', mensagem: respostaIA });
@@ -439,9 +217,7 @@
                 return `
                     <div class="flex ${isUser ? 'justify-end' : 'justify-start'} mb-3">
                         <div class="max-w-[80%] p-3.5 rounded-2xl text-xs font-medium leading-relaxed ${
-                            isUser 
-                            ? 'bg-teal-600 text-white rounded-br-none shadow-md' 
-                            : 'bg-slate-200 text-slate-800 rounded-bl-none border border-slate-300'
+                            isUser ? 'bg-teal-600 text-white rounded-br-none shadow-md' : 'bg-slate-200 text-slate-800 rounded-bl-none border border-slate-300'
                         }">
                             ${escapeHTML(msg.mensagem).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}
                         </div>
@@ -458,19 +234,17 @@
                             </div>
                             <div>
                                 <h2 class="text-base font-bold text-slate-900">IA Assistente Executiva</h2>
-                                <p class="text-[11px] font-semibold text-teal-600">Comandos de texto, automação em nuvem e cadastro instantâneo</p>
+                                <p class="text-[11px] font-semibold text-teal-600">Comandos de texto, ações diretas e relatórios</p>
                             </div>
                         </div>
                     </div>
 
                     <div class="bg-slate-50 p-4 rounded-3xl border border-slate-200 h-[420px] overflow-y-auto flex flex-col justify-between shadow-inner" id="box-chat-ia">
-                        <div class="space-y-1">
-                            ${mensagensHTML}
-                        </div>
+                        <div class="space-y-1">${mensagensHTML}</div>
                     </div>
 
                     <form onsubmit="event.preventDefault(); const input = document.getElementById('input_cmd_ia'); processarComandoIA(input.value); input.value = '';" class="flex gap-2">
-                        <input type="text" id="input_cmd_ia" placeholder="Digite um comando (ex: Cadastrar morador Ana bloco 2 ap 301, Dar baixa em 2 Lâmpada LED...)" class="flex-1 p-3.5 border border-slate-300 rounded-2xl text-xs font-semibold bg-white focus:ring-2 focus:ring-teal-500 outline-none shadow-sm">
+                        <input type="text" id="input_cmd_ia" placeholder="Digite uma ação..." class="flex-1 p-3.5 border border-slate-300 rounded-2xl text-xs font-semibold bg-white focus:ring-2 focus:ring-teal-500 outline-none shadow-sm">
                         <button type="submit" class="px-6 py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-2xl text-xs shadow-md shadow-teal-600/20 transition-all flex items-center gap-2">
                             <i class="fa-solid fa-paper-plane"></i> Enviar
                         </button>
@@ -479,354 +253,19 @@
             `;
         }
 
-        // =========================================================================
-        // OUTROS MÓDULOS (DASHBOARD, MORADORES, ESTOQUE, FINANCEIRO)
-        // =========================================================================
-        function renderDashboard() {
-            const totalMoradores = (db.moradores || []).length;
-            const totalEstoque = (db.estoque || []).reduce((a, b) => a + Number(b.quantidade || 0), 0);
-            const totalReceita = (db.financeiro || []).filter(f => f.tipo === 'Receita').reduce((a, b) => a + Number(b.valor || 0), 0);
-            const totalDespesa = (db.financeiro || []).filter(f => f.tipo === 'Despesa').reduce((a, b) => a + Number(b.valor || 0), 0);
-
-            return `
-                <div class="p-6 space-y-6">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
-                            <div>
-                                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Moradores</p>
-                                <p class="text-2xl font-black text-slate-800 mt-1">${totalMoradores}</p>
-                            </div>
-                            <div class="w-12 h-12 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center text-xl font-bold">
-                                <i class="fa-solid fa-users"></i>
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
-                            <div>
-                                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Itens Estoque</p>
-                                <p class="text-2xl font-black text-slate-800 mt-1">${totalEstoque}</p>
-                            </div>
-                            <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-xl font-bold">
-                                <i class="fa-solid fa-boxes-stacked"></i>
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
-                            <div>
-                                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Receitas</p>
-                                <p class="text-2xl font-black text-emerald-600 mt-1">R$ ${totalReceita.toFixed(2)}</p>
-                            </div>
-                            <div class="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center text-xl font-bold">
-                                <i class="fa-solid fa-arrow-up text-emerald-500"></i>
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
-                            <div>
-                                <p class="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Despesas</p>
-                                <p class="text-2xl font-black text-rose-600 mt-1">R$ ${totalDespesa.toFixed(2)}</p>
-                            </div>
-                            <div class="w-12 h-12 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center text-xl font-bold">
-                                <i class="fa-solid fa-arrow-down text-rose-500"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
-                        <div class="flex items-center justify-between">
-                            <h3 class="text-sm font-bold text-slate-800">Ações Rápidas com IA Copilot</h3>
-                            <button onclick="abrirModulo('ia')" class="text-xs font-bold text-teal-600 hover:text-teal-700">Abrir Chat Copilot &rarr;</button>
-                        </div>
-                        <p class="text-xs text-slate-500">Digite comandos para alterar a base de dados em tempo real na nuvem.</p>
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderMoradores() {
-            const moradores = db.moradores || [];
-            const listaHTML = moradores.map(m => `
-                <tr class="border-b border-slate-100 hover:bg-slate-50/50">
-                    <td class="p-3 text-xs font-bold text-slate-700">Bl ${escapeHTML(m.bloco)} - Ap ${escapeHTML(m.apartamento)}</td>
-                    <td class="p-3 text-xs font-bold text-slate-900">${escapeHTML(m.nome)}</td>
-                    <td class="p-3 text-xs font-semibold text-slate-500">${escapeHTML(m.email || '-')}</td>
-                    <td class="p-3 text-xs font-semibold text-slate-500">${escapeHTML(m.telefone || '-')}</td>
-                    <td class="p-3 text-xs font-semibold text-slate-500">${escapeHTML(m.vagaGaragem || '-')}</td>
-                </tr>
-            `).join('');
-
-            return `
-                <div class="p-6 space-y-4">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-base font-bold text-slate-900">Moradores Cadastrados</h3>
-                        <button onclick="abrirModulo('ia')" class="px-4 py-2 bg-teal-600 text-white rounded-xl text-xs font-bold shadow-md hover:bg-teal-700">
-                            + Cadastrar via IA Copilot
-                        </button>
-                    </div>
-                    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-extrabold uppercase text-slate-500">
-                                    <th class="p-3">Unidade</th>
-                                    <th class="p-3">Nome</th>
-                                    <th class="p-3">E-mail</th>
-                                    <th class="p-3">Telefone</th>
-                                    <th class="p-3">Garagem</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${listaHTML || '<tr><td colspan="5" class="p-4 text-center text-xs text-slate-400">Nenhum morador cadastrado.</td></tr>'}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderEstoque() {
-            const estoque = db.estoque || [];
-            const listaHTML = estoque.map(e => `
-                <tr class="border-b border-slate-100 hover:bg-slate-50/50">
-                    <td class="p-3 text-xs font-bold text-slate-900">${escapeHTML(e.nome)}</td>
-                    <td class="p-3 text-xs font-semibold text-slate-500">${escapeHTML(e.categoria)}</td>
-                    <td class="p-3 text-xs font-black ${e.quantidade <= e.qtdMinima ? 'text-rose-600' : 'text-slate-800'}">${e.quantidade} un</td>
-                    <td class="p-3 text-xs font-bold text-slate-700">R$ ${Number(e.valorUnitario || 0).toFixed(2)}</td>
-                    <td class="p-3 text-xs font-semibold text-slate-500">${escapeHTML(e.localizacao || '-')}</td>
-                </tr>
-            `).join('');
-
-            return `
-                <div class="p-6 space-y-4">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-base font-bold text-slate-900">Inventário de Estoque</h3>
-                        <button onclick="abrirModulo('ia')" class="px-4 py-2 bg-teal-600 text-white rounded-xl text-xs font-bold shadow-md hover:bg-teal-700">
-                            + Dar Baixa / Adicionar via IA
-                        </button>
-                    </div>
-                    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-extrabold uppercase text-slate-500">
-                                    <th class="p-3">Produto</th>
-                                    <th class="p-3">Categoria</th>
-                                    <th class="p-3">Qtd em Estoque</th>
-                                    <th class="p-3">Valor Unit.</th>
-                                    <th class="p-3">Localização</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${listaHTML || '<tr><td colspan="5" class="p-4 text-center text-xs text-slate-400">Nenhum item em estoque.</td></tr>'}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderFinanceiro() {
-            const financeiro = db.financeiro || [];
-            const listaHTML = financeiro.map(f => `
-                <tr class="border-b border-slate-100 hover:bg-slate-50/50">
-                    <td class="p-3 text-xs font-bold ${f.tipo === 'Receita' ? 'text-emerald-600' : 'text-rose-600'}">${f.tipo}</td>
-                    <td class="p-3 text-xs font-bold text-slate-800">${escapeHTML(f.descricao)}</td>
-                    <td class="p-3 text-xs font-semibold text-slate-500">${f.data}</td>
-                    <td class="p-3 text-xs font-black text-slate-900">R$ ${Number(f.valor || 0).toFixed(2)}</td>
-                </tr>
-            `).join('');
-
-            return `
-                <div class="p-6 space-y-4">
-                    <h3 class="text-base font-bold text-slate-900">Contas a Pagar / Receber</h3>
-                    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-extrabold uppercase text-slate-500">
-                                    <th class="p-3">Tipo</th>
-                                    <th class="p-3">Descrição</th>
-                                    <th class="p-3">Data</th>
-                                    <th class="p-3">Valor</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${listaHTML || '<tr><td colspan="4" class="p-4 text-center text-xs text-slate-400">Nenhum registro financeiro.</td></tr>'}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderUsuarios() {
-            const usuarios = db.usuarios || [];
-            const listaHTML = usuarios.map(u => `
-                <tr class="border-b border-slate-100 hover:bg-slate-50/50">
-                    <td class="p-3 text-xs font-bold text-slate-900">${escapeHTML(u.nome)}</td>
-                    <td class="p-3 text-xs font-semibold text-slate-500">${escapeHTML(u.usuario)}</td>
-                    <td class="p-3 text-xs font-semibold text-slate-500">${escapeHTML(u.perfil)}</td>
-                    <td class="p-3 text-xs font-bold text-emerald-600">${escapeHTML(u.status)}</td>
-                </tr>
-            `).join('');
-
-            return `
-                <div class="p-6 space-y-4">
-                    <h3 class="text-base font-bold text-slate-900">Utilizadores do Sistema</h3>
-                    <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
-                        <table class="w-full text-left border-collapse">
-                            <thead>
-                                <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-extrabold uppercase text-slate-500">
-                                    <th class="p-3">Nome</th>
-                                    <th class="p-3">Utilizador</th>
-                                    <th class="p-3">Perfil</th>
-                                    <th class="p-3">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${listaHTML}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }
-
-        // =========================================================================
-        // ROUTER / RENDER DA APLICAÇÃO
-        // =========================================================================
-        function renderTelaLogin() {
-            return `
-                <div class="min-h-screen flex items-center justify-center bg-slate-950 p-4 w-full relative overflow-hidden">
-                    <div class="bg-white/95 backdrop-blur-xl w-full max-w-md p-8 rounded-3xl shadow-2xl border border-white/20 space-y-6 relative z-10">
-                        <div class="text-center space-y-2">
-                            <div class="w-16 h-16 bg-gradient-to-tr from-teal-600 to-emerald-500 rounded-2xl flex items-center justify-center text-white text-3xl font-extrabold mx-auto shadow-lg shadow-teal-500/30">
-                                <i class="fa-solid fa-shield-halved"></i>
-                            </div>
-                            <h2 class="text-2xl font-black text-slate-900 tracking-tight">Guardiões do Bravo</h2>
-                            <p class="text-[11px] text-teal-600 font-extrabold uppercase tracking-widest">Gestão Condominial em Nuvem</p>
-                        </div>
-                        <form onsubmit="realizarLogin(event)" class="space-y-4">
-                            <div>
-                                <label class="block text-[11px] font-bold uppercase text-slate-500 tracking-wider mb-1">Utilizador</label>
-                                <input type="text" id="login_user" required value="admin" class="w-full p-3 border border-slate-200 rounded-2xl text-sm font-semibold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold uppercase text-slate-500 tracking-wider mb-1">Palavra-passe</label>
-                                <div class="relative">
-                                    <input type="password" id="login_pass" required value="Admin@12345" class="w-full p-3 pr-10 border border-slate-200 rounded-2xl text-sm font-semibold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all outline-none">
-                                    <button type="button" onclick="toggleMostrarSenha()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
-                                        <i id="icon-eye" class="fa-solid fa-eye text-sm"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-lg shadow-teal-600/25 text-sm transition-all transform hover:-translate-y-0.5">Entrar no Sistema</button>
-                        </form>
-                    </div>
-                </div>
-            `;
-        }
-
         function renderMainOnly() {
             const containerMain = document.getElementById('conteudo-principal');
             if (!containerMain) return;
 
-            switch (tabsState.activeTab) {
-                case 'dashboard':
-                    containerMain.innerHTML = renderDashboard();
-                    break;
-                case 'ia':
-                    containerMain.innerHTML = renderModuloIA();
-                    const box = document.getElementById('box-chat-ia');
-                    if (box) box.scrollTop = box.scrollHeight;
-                    break;
-                case 'moradores':
-                    containerMain.innerHTML = renderMoradores();
-                    break;
-                case 'estoque':
-                    containerMain.innerHTML = renderEstoque();
-                    break;
-                case 'financeiro':
-                    containerMain.innerHTML = renderFinanceiro();
-                    break;
-                case 'usuarios':
-                    containerMain.innerHTML = renderUsuarios();
-                    break;
-                default:
-                    containerMain.innerHTML = renderDashboard();
-            }
-        }
-
-        function renderApp() {
-            const root = document.getElementById('app');
-            if (!sessao.usuarioLogado) {
-                root.innerHTML = renderTelaLogin();
+            if (tabsState.activeTab === 'ia') {
+                containerMain.innerHTML = renderModuloIA();
+                const box = document.getElementById('box-chat-ia');
+                if (box) box.scrollTop = box.scrollHeight;
                 return;
             }
 
-            root.innerHTML = `
-                <div class="flex flex-1 min-h-screen">
-                    <aside id="sidebar-menu" class="w-64 bg-slate-900 text-slate-300 flex flex-col justify-between sidebar-full z-30 transition-transform duration-300 -translate-x-full md:translate-x-0 fixed md:sticky top-0 shadow-xl">
-                        <div>
-                            <div class="p-5 border-b border-slate-800 flex items-center justify-between">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-9 h-9 bg-teal-600 text-white rounded-xl flex items-center justify-center font-bold text-lg shadow-md shadow-teal-600/30">
-                                        <i class="fa-solid fa-shield-halved"></i>
-                                    </div>
-                                    <div>
-                                        <h1 class="text-sm font-bold text-white leading-none">Guardiões</h1>
-                                        <span class="text-[10px] text-teal-400 font-semibold tracking-wider uppercase">do Bravo</span>
-                                    </div>
-                                </div>
-                                <button onclick="fecharMenuMobile()" class="md:hidden text-slate-400 hover:text-white">
-                                    <i class="fa-solid fa-xmark text-lg"></i>
-                                </button>
-                            </div>
-                            <nav class="p-3 space-y-1 text-xs font-semibold">
-                                <button onclick="abrirModulo('dashboard')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 hover:text-white transition-colors ${tabsState.activeTab === 'dashboard' ? 'bg-teal-600/20 text-teal-400 font-bold' : ''}">
-                                    <i class="fa-solid fa-chart-line w-4 text-center"></i> Dashboard
-                                </button>
-                                <button onclick="abrirModulo('ia')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 hover:text-white transition-colors ${tabsState.activeTab === 'ia' ? 'bg-teal-600/20 text-teal-400 font-bold' : ''}">
-                                    <i class="fa-solid fa-robot w-4 text-center text-teal-400"></i> IA Copilot
-                                </button>
-                                <button onclick="abrirModulo('moradores')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 hover:text-white transition-colors ${tabsState.activeTab === 'moradores' ? 'bg-teal-600/20 text-teal-400 font-bold' : ''}">
-                                    <i class="fa-solid fa-users w-4 text-center"></i> Moradores
-                                </button>
-                                <button onclick="abrirModulo('estoque')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 hover:text-white transition-colors ${tabsState.activeTab === 'estoque' ? 'bg-teal-600/20 text-teal-400 font-bold' : ''}">
-                                    <i class="fa-solid fa-boxes-stacked w-4 text-center"></i> Estoque
-                                </button>
-                                <button onclick="abrirModulo('financeiro')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 hover:text-white transition-colors ${tabsState.activeTab === 'financeiro' ? 'bg-teal-600/20 text-teal-400 font-bold' : ''}">
-                                    <i class="fa-solid fa-wallet w-4 text-center"></i> Financeiro
-                                </button>
-                                <button onclick="abrirModulo('usuarios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 hover:text-white transition-colors ${tabsState.activeTab === 'usuarios' ? 'bg-teal-600/20 text-teal-400 font-bold' : ''}">
-                                    <i class="fa-solid fa-user-gear w-4 text-center"></i> Utilizadores
-                                </button>
-                            </nav>
-                        </div>
-                        <div class="p-4 border-t border-slate-800 flex items-center justify-between">
-                            <div class="text-xs">
-                                <p class="font-bold text-white">${escapeHTML(sessao.usuarioLogado.nome)}</p>
-                                <p class="text-[10px] text-slate-400">${escapeHTML(sessao.usuarioLogado.perfil)}</p>
-                            </div>
-                            <button onclick="encerrarSessao()" class="text-slate-400 hover:text-rose-400 p-2 rounded-lg">
-                                <i class="fa-solid fa-right-from-bracket"></i>
-                            </button>
-                        </div>
-                    </aside>
-
-                    <div id="sidebar-backdrop" onclick="fecharMenuMobile()" class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-20 hidden md:hidden"></div>
-
-                    <main class="flex-1 flex flex-col min-w-0 bg-slate-100">
-                        <header class="glass-header border-b border-slate-200 px-6 py-3 flex items-center justify-between sticky top-0 z-10 no-print">
-                            <div class="flex items-center gap-4">
-                                <button onclick="toggleMenuMobile()" class="md:hidden text-slate-600 hover:text-slate-900">
-                                    <i class="fa-solid fa-bars text-xl"></i>
-                                </button>
-                                <h2 class="text-sm font-bold text-slate-800">${MODULE_NAMES[tabsState.activeTab] || 'Módulo'}</h2>
-                            </div>
-                        </header>
-                        <div id="conteudo-principal" class="flex-1"></div>
-                    </main>
-                </div>
-            `;
-            renderMainOnly();
+            // --- AQUI FICAM OS SEUS IFs / SWITCH ORIGINAIS ---
+            // (ex: if (tabsState.activeTab === 'moradores') containerMain.innerHTML = renderMoradores();)
         }
 
         window.onload = function() {
