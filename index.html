@@ -429,6 +429,169 @@
 
         function exportarParaPDF() { window.print(); }
 
+
+        // =====================================================================
+        // BACKUP CRIPTOGRAFADO SEPARADO — AES-256-GCM + PBKDF2-SHA-256
+        // Mantém as rotinas originais de backup/restauração JSON intactas.
+        // =====================================================================
+        function bytesParaBase64Backup(bytes) {
+            let binario = '';
+            for (let i = 0; i < bytes.length; i += 0x8000) {
+                binario += String.fromCharCode(...bytes.subarray(i, i + 0x8000));
+            }
+            return btoa(binario);
+        }
+
+        function base64ParaBytesBackup(valor) {
+            const binario = atob(valor);
+            const bytes = new Uint8Array(binario.length);
+            for (let i = 0; i < binario.length; i++) bytes[i] = binario.charCodeAt(i);
+            return bytes;
+        }
+
+        async function derivarChaveBackup(senha, salt) {
+            const material = await crypto.subtle.importKey(
+                'raw', new TextEncoder().encode(senha), 'PBKDF2', false, ['deriveKey']
+            );
+            return crypto.subtle.deriveKey(
+                { name: 'PBKDF2', salt, iterations: 310000, hash: 'SHA-256' },
+                material, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+            );
+        }
+
+        async function fazerBackupCriptografado() {
+            if (!window.crypto || !crypto.subtle) {
+                alert('A criptografia exige navegador atualizado e HTTPS (ou localhost).');
+                return;
+            }
+            const senha = prompt('Crie uma senha exclusiva para este backup (mínimo 12 caracteres). Guarde-a: sem ela não será possível restaurar o arquivo.');
+            if (senha === null) return;
+            if (senha.length < 12) {
+                alert('Use uma senha com pelo menos 12 caracteres.');
+                return;
+            }
+            const confirmacao = prompt('Digite novamente a senha para confirmar:');
+            if (confirmacao === null) return;
+            if (senha !== confirmacao) {
+                alert('As senhas não coincidem. O backup não foi criado.');
+                return;
+            }
+
+            try {
+                const salt = crypto.getRandomValues(new Uint8Array(16));
+                const iv = crypto.getRandomValues(new Uint8Array(12));
+                const chave = await derivarChaveBackup(senha, salt);
+                const pacote = {
+                    produto: 'Guardiões do Bravo',
+                    tipo: 'backup-dados',
+                    versao: 1,
+                    exportadoEm: new Date().toISOString(),
+                    dados: db
+                };
+                const cifrado = await crypto.subtle.encrypt(
+                    { name: 'AES-GCM', iv }, chave,
+                    new TextEncoder().encode(JSON.stringify(pacote))
+                );
+                const envelope = {
+                    produto: 'Guardiões do Bravo',
+                    tipo: 'backup-criptografado',
+                    versao: 1,
+                    algoritmo: 'AES-256-GCM',
+                    derivacao: 'PBKDF2-SHA-256',
+                    iteracoes: 310000,
+                    salt: bytesParaBase64Backup(salt),
+                    iv: bytesParaBase64Backup(iv),
+                    conteudo: bytesParaBase64Backup(new Uint8Array(cifrado))
+                };
+                const blob = new Blob([JSON.stringify(envelope)], { type: 'application/octet-stream' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `backup_guardioes_bravo_criptografado_${new Date().toISOString().slice(0, 10)}.gbv`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 1500);
+                alert('Backup criptografado criado. Guarde o arquivo e a senha em locais seguros.');
+            } catch (erro) {
+                console.error('Falha ao criptografar backup:', erro);
+                alert('Não foi possível criar o backup criptografado.');
+            }
+        }
+
+        async function restaurarBackupCriptografado(event) {
+            const input = event && event.target;
+            const file = input && input.files && input.files[0];
+            if (!file) return;
+
+            try {
+                if (!window.crypto || !crypto.subtle) {
+                    throw new Error('Este navegador não oferece suporte à criptografia segura. Abra o site por HTTPS.');
+                }
+                if (file.size > 100 * 1024 * 1024) {
+                    throw new Error('Arquivo muito grande. O limite para restauração pelo navegador é 100 MB.');
+                }
+
+                const envelope = JSON.parse(await file.text());
+                if (!envelope || envelope.tipo !== 'backup-criptografado' ||
+                    envelope.produto !== 'Guardiões do Bravo' ||
+                    envelope.algoritmo !== 'AES-256-GCM' ||
+                    envelope.derivacao !== 'PBKDF2-SHA-256' ||
+                    envelope.versao !== 1 || envelope.iteracoes !== 310000) {
+                    throw new Error('Formato de backup criptografado não reconhecido.');
+                }
+
+                const senha = prompt('Digite a senha usada para criptografar este backup:');
+                if (senha === null) return;
+
+                const salt = base64ParaBytesBackup(envelope.salt);
+                const iv = base64ParaBytesBackup(envelope.iv);
+                if (salt.length !== 16 || iv.length !== 12) {
+                    throw new Error('Arquivo de backup inválido.');
+                }
+
+                const chave = await derivarChaveBackup(senha, salt);
+                const claro = await crypto.subtle.decrypt(
+                    { name: 'AES-GCM', iv }, chave, base64ParaBytesBackup(envelope.conteudo)
+                );
+                const pacote = JSON.parse(new TextDecoder().decode(claro));
+                const dados = pacote && pacote.tipo === 'backup-dados' ? pacote.dados : null;
+
+                if (!dados || typeof dados !== 'object' || Array.isArray(dados) ||
+                    !dados.condominio || !Array.isArray(dados.usuarios) ||
+                    !Array.isArray(dados.moradores) || !Array.isArray(dados.financeiro)) {
+                    throw new Error('O conteúdo descriptografado não é um backup válido do Guardiões do Bravo.');
+                }
+                if (!confirm('A restauração substituirá os dados atuais. Deseja continuar?')) return;
+
+                // Snapshot de recuperação antes da substituição.
+                try {
+                    localStorage.setItem('guardioes_bravo_backup_pre_restauracao', JSON.stringify({
+                        data: new Date().toISOString(), dados: db
+                    }));
+                } catch (erroSnapshot) {
+                    if (!confirm('Não foi possível criar uma cópia local de recuperação. Deseja continuar mesmo assim?')) return;
+                }
+
+                const dadosRestaurados = dados;
+                if (!dadosRestaurados.plano_contas) dadosRestaurados.plano_contas = DEFAULT_DATA.plano_contas;
+                if (!dadosRestaurados.acertos_estoque) dadosRestaurados.acertos_estoque = [];
+                if (!dadosRestaurados.motivos_acerto_estoque) {
+                    dadosRestaurados.motivos_acerto_estoque = DEFAULT_DATA.motivos_acerto_estoque;
+                }
+
+                db = dadosRestaurados;
+                salvarDados(db);
+                alert('Backup criptografado restaurado. Confira o estado da nuvem e os dados exibidos.');
+                renderApp();
+            } catch (erro) {
+                console.error('Falha ao restaurar backup criptografado:', erro);
+                alert('Não foi possível restaurar o backup criptografado. Verifique a senha e a integridade do arquivo. Os dados atuais não foram substituídos.');
+            } finally {
+                if (input) input.value = '';
+            }
+        }
+
         function fazerBackupGeralJSON() {
             const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
             const downloadAnchor = document.createElement('a');
@@ -776,12 +939,19 @@
                             </div>
 
                             <div class="flex items-center gap-2">
+                                <button onclick="fazerBackupCriptografado()" class="px-3 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-2" title="Exportar backup protegido por senha">
+                                    <i class="fa-solid fa-shield-halved"></i> Backup Criptografado
+                                </button>
                                 <button onclick="fazerBackupGeralJSON()" class="px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-2">
                                     <i class="fa-solid fa-download text-teal-600"></i> Backup JSON
                                 </button>
                                 <label class="px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold shadow-sm cursor-pointer transition-all flex items-center gap-2">
                                     <i class="fa-solid fa-upload text-teal-600"></i> Restaurar
                                     <input type="file" accept=".json" onchange="restaurarBackupGeralJSON(event)" class="hidden">
+                                </label>
+                                <label class="px-3 py-2 bg-teal-50 border border-teal-200 hover:bg-teal-100 text-teal-800 rounded-xl text-xs font-bold shadow-sm cursor-pointer transition-all flex items-center gap-2" title="Restaurar backup criptografado .gbv">
+                                    <i class="fa-solid fa-lock"></i> Restaurar Criptografado
+                                    <input type="file" accept=".gbv,application/octet-stream" onchange="restaurarBackupCriptografado(event)" class="hidden" title="Restaurar backup criptografado">
                                 </label>
                             </div>
                         </header>
