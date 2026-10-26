@@ -445,7 +445,7 @@
                     alert('Erro ao processar o arquivo CSV.');
                 }
             };
-            reader.readAsText(file);
+            reader.readAsText(file, 'UTF-8');
         }
 
         function toggleMostrarSenha() {
@@ -754,7 +754,10 @@
             const headerGlobal = `
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                     <div><h2 class="text-xl md:text-2xl font-black text-slate-800 tracking-tight">${MODULE_NAMES[moduloId]}</h2></div>
-                    <div class="flex flex-wrap items-center gap-2.5 no-print">${btnExportHtml} ${btnNovoHtml}</div>
+                    <div class="flex flex-wrap items-center gap-2.5 no-print">
+                        ${moduloId === 'dashboard' ? `<button onclick="gerarRelatorioInteligenteIA()" class="px-4 py-2.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white rounded-xl font-bold text-xs shadow-md transition-all flex items-center gap-2 animate-pulse"><i class="fa-solid fa-wand-magic-sparkles text-sm"></i> Gerar Relatório Inteligente por IA</button>` : ''}
+                        ${btnExportHtml} ${btnNovoHtml}
+                    </div>
                 </div>
             `;
 
@@ -784,6 +787,77 @@
 
         function abrirModalContainer(html) { document.getElementById('modal-container').innerHTML = html; }
         function fecharModalContainer() { document.getElementById('modal-container').innerHTML = ''; }
+
+        // =========================================================================
+        // IA: GERADOR DE RELATÓRIO INTELIGENTE NO DASHBOARD
+        // =========================================================================
+        function gerarRelatorioInteligenteIA() {
+            const totalMoradores = (db.moradores || []).length;
+            const totalFornecedores = (db.fornecedores || []).length;
+            const totalEmpregados = (db.empregados || []).length;
+            const estoqueList = db.estoque || [];
+            const financeiroList = db.financeiro || [];
+
+            let totalReceber = 0;
+            let totalPagar = 0;
+            financeiroList.forEach(f => {
+                const val = parseFloat(f.valor) || 0;
+                if (f.tipo === 'Receber') totalReceber += val;
+                else if (f.tipo === 'Pagar') totalPagar += val;
+            });
+            const saldoCaixa = totalReceber - totalPagar;
+
+            let totalCriticos = 0;
+            let totalExcedentes = 0;
+            let totalAdequados = 0;
+            estoqueList.forEach(st => {
+                const atual = parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
+                const minimo = parseInt(st.minimo || 0);
+                const maximo = parseInt(st.maximo || 0);
+                if (atual <= minimo) totalCriticos++;
+                else if (maximo > 0 && atual > maximo) totalExcedentes++;
+                else totalAdequados++;
+            });
+
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-sm">
+                    <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+                        <div class="flex justify-between items-center border-b pb-3">
+                            <div class="flex items-center gap-2">
+                                <div class="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white font-bold"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                                <div>
+                                    <h3 class="font-black text-slate-800 text-base">Relatório Executivo Inteligente (IA)</h3>
+                                    <p class="text-[10px] text-teal-600 font-bold uppercase">Análise automatizada baseada em dados em tempo real</p>
+                                </div>
+                            </div>
+                            <button onclick="fecharModalContainer()" class="text-slate-400 hover:text-slate-700 text-lg"><i class="fa-solid fa-xmark"></i></button>
+                        </div>
+                        <div class="space-y-4 text-xs text-slate-700 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200">
+                            <div class="border-b pb-3">
+                                <h4 class="font-bold text-slate-900 uppercase text-[11px] mb-1 flex items-center gap-1.5"><i class="fa-solid fa-chart-line text-teal-600"></i> 1. Panorama Financeiro & Caixa</h4>
+                                <p>O saldo consolidado atual aponta para <b>R$ ${saldoCaixa.toFixed(2)}</b> (Receitas: R$ ${totalReceber.toFixed(2)} x Despesas/Pagar: R$ ${totalPagar.toFixed(2)}). ${saldoCaixa >= 0 ? 'O condomínio apresenta equilíbrio financeiro favorável para manutenções ordinárias.' : 'Recomenda-se atenção imediata ao fluxo de caixa devido a obrigações pendentes superiores às entradas.'}</p>
+                            </div>
+                            <div class="border-b pb-3">
+                                <h4 class="font-bold text-slate-900 uppercase text-[11px] mb-1 flex items-center gap-1.5"><i class="fa-solid fa-boxes-stacked text-teal-600"></i> 2. Gestão de Estoque & Inventário</h4>
+                                <p>Foram analisados ${estoqueList.length} itens cadastrados no inventário. Destes, <b>${totalAdequados}</b> estão em níveis adequados, <b>${totalCriticos}</b> encontram-se em nível crítico/insuficiente (exigindo reposição urgente) e <b>${totalExcedentes}</b> estão com saldo excedente/antigo (evitando novas aquisições desnecessárias).</p>
+                            </div>
+                            <div>
+                                <h4 class="font-bold text-slate-900 uppercase text-[11px] mb-1 flex items-center gap-1.5"><i class="fa-solid fa-shield-halved text-teal-600"></i> 3. Recomendações do Consultor IA</h4>
+                                <ul class="list-disc pl-4 space-y-1 font-semibold text-slate-800">
+                                    <li>Priorizar o reabastecimento dos ${totalCriticos} itens críticos identificados no módulo de estoque para evitar interrupções operacionais.</li>
+                                    <li>Manter o acompanhamento contínuo dos ${totalMoradores} moradores cadastrados e das contas gerenciais no DRE para Assembleias transparentes.</li>
+                                    <li>Utilizar o novo módulo de **Acerto de Estoque** para registar perdas ou quebras com justificativas precisas.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="flex justify-end gap-2 pt-2 border-t">
+                            <button type="button" onclick="window.print()" class="px-4 py-2 bg-slate-700 hover:bg-slate-800 text-white rounded-xl font-bold text-xs shadow-sm flex items-center gap-1.5"><i class="fa-solid fa-file-pdf"></i> Imprimir / Salvar PDF</button>
+                            <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold text-xs shadow-sm">Concluir</button>
+                        </div>
+                    </div>
+                </div>
+            `);
+        }
 
         function renderDashboardView() {
             const totalMoradores = (db.moradores || []).length;
@@ -1969,7 +2043,6 @@
         // Função para ativar a câmera do celular e escanear código de barras
         let cameraStreamAtiva = null;
         function iniciarScannerCamera() {
-            // Criar modal secundário para a câmera
             const divScanner = document.createElement('div');
             divScanner.id = 'scanner-modal-overlay';
             divScanner.className = 'fixed inset-0 bg-slate-950/80 z-[60] flex flex-col items-center justify-center p-4 backdrop-blur-md';
@@ -2000,7 +2073,6 @@
                     videoElement.srcObject = stream;
                     videoElement.play();
 
-                    // Tentar detecção contínua se o navegador suportar BarcodeDetector nativo
                     if ('BarcodeDetector' in window) {
                         const barcodeDetector = new BarcodeDetector({ formats: ['code_128', 'ean_13', 'ean_8', 'qr_code', 'upc_a'] });
                         const scanInterval = setInterval(async () => {
