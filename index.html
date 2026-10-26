@@ -1,1650 +1,596 @@
 <!DOCTYPE html>
 <html lang="pt-BR" class="h-full bg-slate-950">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guardiões do Bravo - Gestão Condominial Completa em Nuvem</title>
-    <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <!-- FontAwesome Icons CDN -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Chart.js CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- Pako (Compressão Gzip para arquivos grandes) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
-    <!-- Supabase JS Client para Banco de Dados na Nuvem -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
-                    colors: {
-                        brand: {
-                            50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4',
-                            400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e',
-                            800: '#115e59', 900: '#134e4a', 950: '#042f2e'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        html, body { height: 100%; margin: 0; padding: 0; overflow-x: hidden; font-family: 'Inter', sans-serif; }
-        input, select, textarea { color: #0f172a !important; font-weight: 600 !important; }
-        .tab-active { border-bottom: 2px solid #0d9488; background-color: #ffffff; color: #0f766e; font-weight: 700; shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        .sidebar-full { height: 100vh; position: sticky; top: 0; }
-        .card-modern { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid rgba(226, 232, 240, 0.8); }
-        .card-modern:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04); }
-        .glass-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); }
-        @media print {
-            aside, header, .no-print, button, .actions-col { display: none !important; }
-            body { background: white !important; color: black !important; }
-            main { padding: 0 !important; }
-            .print-break { page-break-before: always; }
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guardiões do Bravo - Gestão Condominial Completa em Nuvem</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Pako (Compressão Gzip para arquivos grandes) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <!-- Supabase JS Client para Banco de Dados na Nuvem -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4',
+                            400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e',
+                            800: '#115e59', 900: '#134e4a', 950: '#042f2e'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        html, body { height: 100%; margin: 0; padding: 0; overflow-x: hidden; font-family: 'Inter', sans-serif; }
+        input, select, textarea { color: #0f172a !important; font-weight: 600 !important; }
+        .tab-active { border-bottom: 2px solid #0d9488; background-color: #ffffff; color: #0f766e; font-weight: 700; shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .sidebar-full { height: 100vh; position: sticky; top: 0; }
+        .card-modern { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid rgba(226, 232, 240, 0.8); }
+        .card-modern:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04); }
+        .glass-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); }
+        @media print {
+            aside, header, .no-print, button, .actions-col { display: none !important; }
+            body { background: white !important; color: black !important; }
+            main { padding: 0 !important; }
+            .print-break { page-break-before: always; }
+        }
+    </style>
 </head>
 <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
 
-    <!-- Indicador de Status da Nuvem -->
-    <div id="status-nuvem" class="bg-slate-900 text-teal-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm">
-        <i class="fa-solid fa-cloud animate-pulse"></i> A ligar ao Supabase na Nuvem...
-    </div>
-
-    <div id="app" class="flex-1 flex flex-col min-h-screen w-full"></div>
-    <div id="modal-container"></div>
-
-    <script>
-        // =========================================================================
-        // CONFIGURAÇÃO DA SUA NUVEM (SUPABASE)
-        // =========================================================================
-        const SUPABASE_URL = 'https://ycwgwtzysvizossqveiy.supabase.co'; 
-        const SUPABASE_KEY = 'sb_publishable_tsVxjzBmQ6v33EXQbz_U7Q_7DTW3b3m';
-        // =========================================================================
-
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        let tempArquivoNome = ''; 
-        let tempArquivoGzipBase64 = ''; 
-        let tempEstoqueFotoNome = '';
-        let tempEstoqueFotoGzip = '';
-
-        let filtroAtivoMoradores = { bloco: '', nome: '' };
-        let filtroAtivoEstoque = 'todos'; 
-        let usuarioPendentePrimeiroAcesso = null; 
-        let chartInstanceReceitaDespesa = null;
-        let chartInstanceOcupacao = null;
-        let chartInstanceEstoque = null;
-        let chartInstanceEstoqueDash = null;
-
-        function escapeHTML(str) {
-            if (typeof str !== 'string') return str || '';
-            return str.replace(/[&<>"']/g, function(m) {
-                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
-            });
-        }
-
-        function compactarArquivoParaGzip(file, callback) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const arrayBuffer = e.target.result;
-                    const uint8Array = new Uint8Array(arrayBuffer);
-                    const compressed = pako.deflate(uint8Array);
-                    let binary = '';
-                    const len = compressed.byteLength;
-                    for (let i = 0; i < len; i++) { binary += String.fromCharCode(compressed[i]); }
-                    callback(btoa(binary), file.name);
-                } catch (err) { alert('Erro ao compactar ficheiro.'); }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        function extrairEDownloadArquivo(base64Gzip, nomeOriginal) {
-            try {
-                const binaryString = atob(base64Gzip);
-                const len = binaryString.length;
-                const bytes = new Uint8Array(len);
-                for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); }
-                const decompressed = pako.inflate(bytes);
-                const blob = new Blob([decompressed]);
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement('a');
-                a.href = url; a.download = nomeOriginal;
-                document.body.appendChild(a); a.click();
-                document.body.removeChild(a); URL.revokeObjectURL(url);
-            } catch (err) { alert('Erro ao extrair ficheiro.'); }
-        }
-
-        function visualizarArquivo(base64Gzip, nomeOriginal) {
-            try {
-                const binaryString = atob(base64Gzip);
-                const len = binaryString.length;
-                const bytes = new Uint8Array(len);
-                for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); }
-                const decompressed = pako.inflate(bytes);
-                
-                let mimeType = 'application/octet-stream';
-                const ext = nomeOriginal.split('.').pop().toLowerCase();
-                if (ext === 'pdf') mimeType = 'application/pdf';
-                else if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) mimeType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
-                else if (ext === 'txt') mimeType = 'text/plain';
-
-                const blob = new Blob([decompressed], { type: mimeType });
-                const url = URL.createObjectURL(blob);
-                window.open(url, '_blank');
-            } catch (err) { alert('Erro ao visualizar o ficheiro.'); }
-        }
-
-        const DEFAULT_DATA = {
-            condominio: {
-                nome: 'Condomínio Guardiões do Bravo',
-                cnpj: '12.345.678/0001-90',
-                razaoSocial: 'Condomínio Residencial Guardiões do Bravo',
-                endereco: 'Rua das Palmeiras, 1000',
-                bairro: 'Centro',
-                cidade: 'Curitiba',
-                uf: 'PR',
-                cep: '80000-000',
-                telefone: '(41) 3333-0000',
-                email: 'contato@guardioesdobravo.com.br',
-                copelBloco1: '',
-                copelBloco2: '',
-                copelBloco3: '',
-                copelBloco4: '',
-                copelAreasComuns: '',
-                gasSalao: '',
-                sanepar: ''
-            },
-            conselheiros: [],
-            usuarios: [
-                { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', cargo: 'Administrador', loja: 'Guardiões do Bravo', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Admin@12345' },
-                { id: 'usr_sheylla', usuario: 'sheylla', nome: 'Sheylla', email: 'sheylla@guardioes.com', cargo: 'Conselho Fiscal', loja: 'Guardiões do Bravo', perfil: 'Operador', status: 'Ativo', primeiroAcesso: true, senhaHash: '123456' }
-            ],
-            plano_contas: [
-                { id: 'pc_1', codigo: '1.1', nome: 'Taxa Ordinária de Condomínio', tipo: 'Receita' },
-                { id: 'pc_2', codigo: '1.2', nome: 'Fundo de Reserva', tipo: 'Receita' },
-                { id: 'pc_3', codigo: '2.1', nome: 'Despesas com Água e Saneamento', tipo: 'Despesa' },
-                { id: 'pc_4', codigo: '2.2', nome: 'Despesas com Energia Elétrica (Copel)', tipo: 'Despesa' },
-                { id: 'pc_5', codigo: '2.3', nome: 'Manutenção e Conservação Predial', tipo: 'Despesa' }
-            ],
-            financeiro: [],
-            formas_monetarias: [],
-            contas_bancarias: [],
-            moradores: [],
-            fornecedores: [],
-            empregados: [],
-            categorias: [],
-            estoque: [],
-            acertos_estoque: [],
-            motivos_acerto_estoque: [
-                { id: 'mot_1', nome: 'Perca / Avaria' },
-                { id: 'mot_2', nome: 'Quebra' },
-                { id: 'mot_3', nome: 'Ajuste de Inventário' },
-                { id: 'mot_4', nome: 'Doação / Uso Interno' }
-            ],
-            documentos: [],
-            logs: []
-        };
-
-        let db = DEFAULT_DATA;
-        const dadosLocaisSalvos = localStorage.getItem('guardioes_bravo_db');
-        if (dadosLocaisSalvos) {
-            try {
-                db = JSON.parse(dadosLocaisSalvos);
-                if (!db.plano_contas) db.plano_contas = DEFAULT_DATA.plano_contas;
-                if (!db.acertos_estoque) db.acertos_estoque = [];
-                if (!db.motivos_acerto_estoque) db.motivos_acerto_estoque = DEFAULT_DATA.motivos_acerto_estoque;
-            } catch (e) { db = DEFAULT_DATA; }
-        }
-
-        let sessao = { usuarioLogado: null };
-
-        function salvarCacheLocal() {
-            try {
-                localStorage.setItem('guardioes_bravo_db', JSON.stringify(db));
-            } catch (e) {
-                console.warn('Cache local cheio; seguindo apenas com a nuvem.', e);
-            }
-        }
-
-        // =========================================================================
-        // MECANISMO AUTOMÁTICO DE SALVAMENTO DE FORMULÁRIOS (NADA SE PERDE)
-        // =========================================================================
-        const FORM_DRAFT_KEY = 'guardioes_bravo_form_draft';
-
-        function salvarFormularioEmTempoReal(e) {
-            const target = e.target;
-            if (!target || !target.id) return;
-
-            try {
-                const rascunhoAtual = JSON.parse(localStorage.getItem(FORM_DRAFT_KEY) || '{}');
-                rascunhoAtual[target.id] = target.value;
-                localStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(rascunhoAtual));
-            } catch (err) {
-                console.warn('Erro ao salvar rascunho de formulário:', err);
-            }
-        }
-
-        function restaurarFormulariosEmTempoReal() {
-            try {
-                const rascunho = JSON.parse(localStorage.getItem(FORM_DRAFT_KEY) || '{}');
-                Object.keys(rascunho).forEach(id => {
-                    const campo = document.getElementById(id);
-                    if (campo) {
-                        campo.value = rascunho[id];
-                    }
-                });
-            } catch (err) {
-                console.warn('Erro ao restaurar rascunho de formulário:', err);
-            }
-        }
-
-        function limparRascunhosFormulario() {
-            try {
-                localStorage.removeItem(FORM_DRAFT_KEY);
-            } catch (err) {}
-        }
-
-        document.addEventListener('input', salvarFormularioEmTempoReal);
-        document.addEventListener('change', salvarFormularioEmTempoReal);
-
-        async function carregarDadosDaNuvem() {
-            const elStatus = document.getElementById('status-nuvem');
-            try {
-                const { data, error } = await supabaseClient
-                    .from('condominio_dados')
-                    .select('payload')
-                    .eq('id', 'principal')
-                    .maybeSingle();
-
-                if (error) throw error;   // leitura falhou: não grava nada, cai no catch
-                if (data && data.payload) {
-                    db = data.payload;
-                    if (!db.plano_contas) db.plano_contas = DEFAULT_DATA.plano_contas;
-                    if (!db.acertos_estoque) db.acertos_estoque = [];
-                    if (!db.motivos_acerto_estoque) db.motivos_acerto_estoque = DEFAULT_DATA.motivos_acerto_estoque;
-                    salvarCacheLocal();
-                    if (elStatus) {
-                        elStatus.className = "bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm";
-                        elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-down text-emerald-400"></i> Sincronizado com o Supabase com Sucesso!`;
-                    }
-                } else {
-                    await salvarDadosNaNuvem(db);
-                }
-
-                supabaseClient
-                    .channel('mudancas-condominio')
-                    .on(
-                        'postgres_changes',
-                        { event: '*', schema: 'public', table: 'condominio_dados', filter: 'id=eq.principal' },
-                        (payload) => {
-                            if (payload.new && payload.new.payload) {
-                                db = payload.new.payload;
-                                if (!db.plano_contas) db.plano_contas = DEFAULT_DATA.plano_contas;
-                                if (!db.acertos_estoque) db.acertos_estoque = [];
-                                if (!db.motivos_acerto_estoque) db.motivos_acerto_estoque = DEFAULT_DATA.motivos_acerto_estoque;
-                                salvarCacheLocal();
-                                renderMainOnly();
-                                
-                                if (elStatus) {
-                                    elStatus.className = "bg-teal-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print animate-pulse border-b border-teal-800";
-                                    elStatus.innerHTML = `<i class="fa-solid fa-rotate"></i> Dados atualizados em tempo real por outro utilizador!`;
-                                    setTimeout(() => {
-                                        elStatus.className = "bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm";
-                                        elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> Sincronizado com a Nuvem em Tempo Real`;
-                                    }, 2000);
-                                }
-                            }
-                        }
-                    )
-                    .subscribe();
-
-            } catch (err) {
-                if (elStatus) {
-                    elStatus.className = "bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800";
-                    elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> A utilizar armazenamento local.`;
-                }
-            }
-            renderApp();
-        }
-
-        async function salvarDadosNaNuvem(dataObj) {
-            db = dataObj;
-            salvarCacheLocal();
-
-            const elStatus = document.getElementById('status-nuvem');
-            if (elStatus) {
-                elStatus.className = "bg-slate-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print animate-pulse border-b border-slate-800";
-                elStatus.innerHTML = `<i class="fa-solid fa-rotate fa-spin"></i> A guardar na nuvem...`;
-            }
-
-            try {
-                const { error } = await supabaseClient
-                    .from('condominio_dados')
-                    .upsert({ id: 'principal', payload: db, atualizado_em: new Date() });
-
-                if (error) throw error;
-
-                if (elStatus) {
-                    elStatus.className = "bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm";
-                    elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado com a Nuvem em Tempo Real`;
-                }
-            } catch (err) {
-                if (elStatus) {
-                    elStatus.className = "bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800";
-                    elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Guardado localmente (Erro na nuvem)`;
-                }
-            }
-        }
-
-        function salvarDados(data) { salvarDadosNaNuvem(data); }
-
-        try {
-            const sessaoData = sessionStorage.getItem('guardioes_sessao');
-            if (sessaoData) sessao.usuarioLogado = JSON.parse(sessaoData);
-        } catch (e) { sessao.usuarioLogado = null; }
-
-        let tabsState = { openTabs: ['dashboard'], activeTab: 'dashboard' };
-
-        const MODULE_NAMES = {
-            dashboard: 'Dashboard Executive',
-            condominio: 'Dados do Condomínio & Conselho',
-            plano_contas: 'Plano de Contas',
-            financeiro: 'Contas Pagar / Receber',
-            formas_monetarias: 'Formas Monetárias',
-            contas_bancarias: 'Contas Bancárias / Caixa',
-            moradores: 'Moradores & Unidades',
-            fornecedores: 'Fornecedores',
-            empregados: 'Empregados',
-            categorias: 'Pastas & Categorias',
-            estoque: 'Estoque & Inventário',
-            acerto_estoque: 'Acerto de Estoque',
-            documentos: 'Gestão de Documentos',
-            relatorios: 'Central de Relatórios & DRE',
-            usuarios: 'Gestão de Utilizadores'
-        };
-
-        function abrirModulo(moduloId, filtroEstoqueParam = 'todos') {
-            if (moduloId === 'estoque' && filtroEstoqueParam) {
-                filtroAtivoEstoque = filtroEstoqueParam;
-            }
-            if (!tabsState.openTabs.includes(moduloId)) tabsState.openTabs.push(moduloId);
-            tabsState.activeTab = moduloId;
-            fecharMenuMobile();
-            renderApp();
-        }
-
-        function fecharAba(e, moduloId) {
-            e.stopPropagation();
-            if (tabsState.openTabs.length === 1) return;
-            tabsState.openTabs = tabsState.openTabs.filter(id => id !== moduloId);
-            if (tabsState.activeTab === moduloId) tabsState.activeTab = tabsState.openTabs[tabsState.openTabs.length - 1];
-            renderApp();
-        }
-
-        function toggleMenuMobile() {
-            const sidebar = document.getElementById('sidebar-menu');
-            const backdrop = document.getElementById('sidebar-backdrop');
-            if (sidebar && backdrop) {
-                sidebar.classList.toggle('-translate-x-full');
-                backdrop.classList.toggle('hidden');
-            }
-        }
-
-        function fecharMenuMobile() {
-            const sidebar = document.getElementById('sidebar-menu');
-            const backdrop = document.getElementById('sidebar-backdrop');
-            if (sidebar && backdrop && !sidebar.classList.contains('-translate-x-full')) {
-                sidebar.classList.add('-translate-x-full');
-                backdrop.classList.add('hidden');
-            }
-        }
-
-        function exportarParaExcel(dados, nomeArquivo = 'relatorio.csv') {
-            if (!dados || dados.length === 0) { alert('Não há dados disponíveis.'); return; }
-            const sanitizeData = dados.map(item => { let obj = { ...item }; delete obj.arquivoCompactadoGzip; delete obj.fotoCompactadaGzip; return obj; });
-            const keys = Object.keys(sanitizeData[0]);
-            let csvContent = '\uFEFF' + keys.join(',') + '\n';
-            sanitizeData.forEach(row => {
-                const values = keys.map(k => `"${String(row[k] ?? '').replace(/"/g, '""')}"`);
-                csvContent += values.join(',') + '\n';
-            });
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a'); a.href = url; a.download = nomeArquivo;
-            document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        }
-
-        function exportarParaPDF() { window.print(); }
-
-        function fazerBackupGeralJSON() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
-            const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `backup_guardioes_bravo_${new Date().toISOString().slice(0,10)}.json`);
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
-        }
-
-        function restaurarBackupGeralJSON(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const parsed = JSON.parse(e.target.result);
-                    if (parsed && parsed.condominio) {
-                        db = parsed;
-                        if (!db.plano_contas) db.plano_contas = DEFAULT_DATA.plano_contas;
-                        if (!db.acertos_estoque) db.acertos_estoque = [];
-                        if (!db.motivos_acerto_estoque) db.motivos_acerto_estoque = DEFAULT_DATA.motivos_acerto_estoque;
-                        salvarDados(db);
-                        alert('Backup restaurado com sucesso!');
-                        renderApp();
-                    } else {
-                        alert('O ficheiro selecionado não parece ser um backup válido.');
-                    }
-                } catch (err) {
-                    alert('Erro ao ler o ficheiro de backup.');
-                }
-            };
-            reader.readAsText(file);
-        }
-
-        function importarPlanilhaMoradores(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const texto = e.target.result;
-                    const linhas = texto.split(/\r\n|\n/);
-                    if (linhas.length < 2) { alert('A planilha parece estar vazia.'); return; }
-
-                    const cabecalho = linhas[0].split(/,|;/).map(c => c.replace(/^["']|["']$/g, '').trim().toLowerCase());
-                    
-                    const idxBloco = cabecalho.findIndex(h => h.includes('bloco') || h.includes('bl'));
-                    const idxAp = cabecalho.findIndex(h => h.includes('ap') || h.includes('unidade') || h.includes('casa'));
-                    const idxNome = cabecalho.findIndex(h => h.includes('nome') || h.includes('morador') || h.includes('proprietario'));
-                    const idxEmail = cabecalho.findIndex(h => h.includes('email') || h.includes('e-mail'));
-                    const idxTel = cabecalho.findIndex(h => h.includes('tel') || h.includes('cel') || h.includes('whatsapp') || h.includes('fone'));
-                    const idxCpf = cabecalho.findIndex(h => h.includes('cpf') || h.includes('documento') || h.includes('rg'));
-                    const idxPet = cabecalho.findIndex(h => h.includes('pet') || h.includes('animal'));
-                    const idxVaga = cabecalho.findIndex(h => h.includes('vaga') || h.includes('estacionamento') || h.includes('garagem'));
-
-                    let importados = 0;
-                    if (!db.moradores) db.moradores = [];
-
-                    for (let i = 1; i < linhas.length; i++) {
-                        const linha = linhas[i].trim();
-                        if (!linha) continue;
-                        const cols = linha.split(/,|;/).map(c => c.replace(/^["']|["']$/g, '').trim());
-                        
-                        db.moradores.push({
-                            id: 'mor_imp_' + Date.now() + '_' + i,
-                            bloco: idxBloco !== -1 ? (cols[idxBloco] || '1') : (cols[0] || '1'),
-                            apartamento: idxAp !== -1 ? (cols[idxAp] || '') : (cols[1] || ''),
-                            nome: idxNome !== -1 ? (cols[idxNome] || 'Sem Nome') : (cols[2] || 'Sem Nome'),
-                            email: idxEmail !== -1 ? (cols[idxEmail] || '') : '',
-                            telefone: idxTel !== -1 ? (cols[idxTel] || '') : '',
-                            cpf: idxCpf !== -1 ? (cols[idxCpf] || '') : '',
-                            petNome: idxPet !== -1 ? (cols[idxPet] || '') : '',
-                            vagaGaragem: idxVaga !== -1 ? (cols[idxVaga] || '') : ''
-                        });
-                        importados++;
-                    }
-
-                    if (importados > 0) {
-                        salvarDados(db);
-                        alert(`${importados} moradores importados com sucesso para a nuvem!`);
-                        renderMainOnly();
-                    } else {
-                        alert('Nenhum morador válido encontrado na planilha.');
-                    }
-                } catch (err) {
-                    alert('Erro ao processar o arquivo CSV.');
-                }
-            };
-            reader.readAsText(file, 'UTF-8');
-        }
-
-        function toggleMostrarSenha() {
-            const inputPass = document.getElementById('login_pass');
-            const iconEye = document.getElementById('icon-eye');
-            if (inputPass.type === 'password') {
-                inputPass.type = 'text';
-                iconEye.classList.remove('fa-eye');
-                iconEye.classList.add('fa-eye-slash');
-            } else {
-                inputPass.type = 'password';
-                iconEye.classList.remove('fa-eye-slash');
-                iconEye.classList.add('fa-eye');
-            }
-        }
-
-        function realizarLogin(e) {
-            e.preventDefault();
-            const userInput = document.getElementById('login_user').value.trim().toLowerCase();
-            const senhaInput = document.getElementById('login_pass').value;
-            const lembrarChecked = document.getElementById('login_lembrar')?.checked;
-
-            if (lembrarChecked) {
-                localStorage.setItem('guardioes_lembrar_user', userInput);
-            } else {
-                localStorage.removeItem('guardioes_lembrar_user');
-            }
-            
-            const userFound = (db.usuarios || []).find(u => 
-                (u.usuario && u.usuario.toLowerCase() === userInput) || 
-                (u.email && u.email.toLowerCase() === userInput)
-            );
-
-            if (userFound && userFound.senhaHash === senhaInput) {
-                if (userFound.status === 'Inativo') { alert('Utilizador inativo.'); return; }
-                
-                if (userFound.primeiroAcesso) {
-                    usuarioPendentePrimeiroAcesso = userFound;
-                    renderApp();
-                    return;
-                }
-
-                sessao.usuarioLogado = userFound;
-                try { sessionStorage.setItem('guardioes_sessao', JSON.stringify(userFound)); } catch (err) {}
-                renderApp();
-            } else { alert('Credenciais incorretas! Verifique o utilizador/e-mail e a palavra-passe.'); }
-        }
-
-        function concluirPrimeiroAcesso(e) {
-            e.preventDefault();
-            const s1 = document.getElementById('prim_senha_nova').value;
-            const s2 = document.getElementById('prim_senha_conf').value;
-
-            if (s1.length < 6) { alert('A palavra-passe deve ter pelo menos 6 caracteres.'); return; }
-            if (s1 !== s2) { alert('As palavras-passe não coincidem.'); return; }
-
-            const userIndex = (db.usuarios || []).findIndex(u => u.id === usuarioPendentePrimeiroAcesso.id);
-            if (userIndex !== -1) {
-                db.usuarios[userIndex].senhaHash = s1;
-                db.usuarios[userIndex].primeiroAcesso = false;
-                salvarDados(db);
-
-                sessao.usuarioLogado = db.usuarios[userIndex];
-                try { sessionStorage.setItem('guardioes_sessao', JSON.stringify(sessao.usuarioLogado)); } catch (err) {}
-                
-                usuarioPendentePrimeiroAcesso = null;
-                alert('Palavra-passe alterada com sucesso! Bem-vindo(a) ao sistema.');
-                renderApp();
-            }
-        }
-
-        function encerrarSessao() {
-            sessao.usuarioLogado = null;
-            usuarioPendentePrimeiroAcesso = null;
-            try { sessionStorage.removeItem('guardioes_sessao'); } catch (e) {}
-            renderApp();
-        }
-
-        function renderTelaLogin() {
-            const savedUser = localStorage.getItem('guardioes_lembrar_user') || '';
-            const isLembrarChecked = savedUser ? 'checked' : '';
-
-            return `
-                <div class="min-h-screen flex items-center justify-center bg-slate-950 p-4 w-full relative overflow-hidden">
-                    <div class="absolute -top-32 -left-32 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
-                    <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
-
-                    <div class="bg-white/95 backdrop-blur-xl w-full max-w-md p-8 rounded-3xl shadow-2xl border border-white/20 space-y-6 relative z-10">
-                        <div class="text-center space-y-2">
-                            <div class="w-16 h-16 bg-gradient-to-tr from-teal-600 to-emerald-500 rounded-2xl flex items-center justify-center text-white text-3xl font-extrabold mx-auto shadow-lg shadow-teal-500/30">
-                                <i class="fa-solid fa-shield-halved"></i>
-                            </div>
-                            <h2 class="text-2xl font-black text-slate-900 tracking-tight">Guardiões do Bravo</h2>
-                            <p class="text-[11px] text-teal-600 font-extrabold uppercase tracking-widest">Gestão Condominial em Nuvem</p>
-                        </div>
-                        <form onsubmit="realizarLogin(event)" class="space-y-4">
-                            <div>
-                                <label class="block text-[11px] font-bold uppercase text-slate-500 tracking-wider mb-1">Utilizador ou E-mail</label>
-                                <input type="text" id="login_user" required value="${escapeHTML(savedUser)}" class="w-full p-3 border border-slate-200 rounded-2xl text-sm font-semibold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all outline-none" placeholder="admin ou admin@guardioes.com">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold uppercase text-slate-500 tracking-wider mb-1">Palavra-passe</label>
-                                <div class="relative">
-                                    <input type="password" id="login_pass" required class="w-full p-3 pr-10 border border-slate-200 rounded-2xl text-sm font-semibold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all outline-none">
-                                    <button type="button" onclick="toggleMostrarSenha()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
-                                        <i id="icon-eye" class="fa-solid fa-eye text-sm"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="flex items-center justify-between text-xs pt-1">
-                                <label class="flex items-center gap-2 cursor-pointer select-none">
-                                    <input type="checkbox" id="login_lembrar" ${isLembrarChecked} class="rounded border-slate-300 text-teal-600 focus:ring-teal-500 w-4 h-4">
-                                    <span class="font-semibold text-slate-600">Lembrar credenciais</span>
-                                </label>
-                            </div>
-                            <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-lg shadow-teal-600/25 text-sm transition-all">
-                                <i class="fa-solid fa-right-to-bracket mr-2"></i> Entrar na Plataforma
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderTelaPrimeiroAcesso() {
-            return `
-                <div class="min-h-screen flex items-center justify-center bg-slate-950 p-4 w-full relative">
-                    <div class="bg-white/95 backdrop-blur-xl w-full max-w-md p-8 rounded-3xl shadow-2xl border border-white/20 space-y-6 relative z-10">
-                        <div class="text-center space-y-2">
-                            <div class="w-14 h-14 bg-amber-500 text-white rounded-2xl flex items-center justify-center text-2xl mx-auto shadow-lg shadow-amber-500/30">
-                                <i class="fa-solid fa-key"></i>
-                            </div>
-                            <h2 class="text-2xl font-black text-slate-900 tracking-tight">Primeiro Acesso Detectado</h2>
-                            <p class="text-xs text-slate-500 font-semibold">Olá, <strong>${escapeHTML(usuarioPendentePrimeiroAcesso.nome)}</strong>! Por razões de segurança, defina a sua nova palavra-passe antes de prosseguir.</p>
-                        </div>
-                        <form onsubmit="concluirPrimeiroAcesso(event)" class="space-y-4">
-                            <div>
-                                <label class="block text-[11px] font-bold uppercase text-slate-500 tracking-wider mb-1">Nova Palavra-passe</label>
-                                <input type="password" id="prim_senha_nova" required minlength="6" class="w-full p-3 border border-slate-200 rounded-2xl text-sm font-semibold bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 transition-all outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold uppercase text-slate-500 tracking-wider mb-1">Confirmar Nova Palavra-passe</label>
-                                <input type="password" id="prim_senha_conf" required minlength="6" class="w-full p-3 border border-slate-200 rounded-2xl text-sm font-semibold bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 transition-all outline-none">
-                            </div>
-                            <button type="submit" class="w-full py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-2xl shadow-lg shadow-teal-600/25 text-sm transition-all">
-                                Guardar e Aceder ao Sistema
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderApp() {
-            const container = document.getElementById('app');
-            if (!container) return;
-
-            if (usuarioPendentePrimeiroAcesso) {
-                container.innerHTML = renderTelaPrimeiroAcesso();
-                return;
-            }
-
-            if (!sessao.usuarioLogado) {
-                container.innerHTML = renderTelaLogin();
-                return;
-            }
-
-            container.innerHTML = `
-                <div class="flex-1 flex w-full relative">
-                    <!-- Backdrop Mobile -->
-                    <div id="sidebar-backdrop" onclick="fecharMenuMobile()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-30 hidden lg:hidden"></div>
-
-                    <!-- Sidebar Menu -->
-                    <aside id="sidebar-menu" class="w-64 bg-slate-900 text-slate-300 flex flex-col fixed lg:sticky top-0 h-screen z-40 transition-transform duration-300 -translate-x-full lg:translate-x-0 border-r border-slate-800 shadow-xl">
-                        <div class="p-5 flex items-center gap-3 border-b border-slate-800">
-                            <div class="w-10 h-10 bg-gradient-to-tr from-teal-500 to-emerald-400 rounded-xl flex items-center justify-center text-white text-xl font-black shadow-md shadow-teal-500/20">
-                                <i class="fa-solid fa-shield-halved"></i>
-                            </div>
-                            <div>
-                                <h1 class="font-black text-white text-base leading-tight tracking-tight">Guardiões</h1>
-                                <span class="text-[10px] font-bold uppercase tracking-widest text-teal-400">Bravo Admin</span>
-                            </div>
-                        </div>
-
-                        <nav class="flex-1 overflow-y-auto p-3 space-y-1 text-xs font-semibold">
-                            <button onclick="abrirModulo('dashboard')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition-colors ${tabsState.activeTab==='dashboard'?'bg-teal-600 text-white font-bold':''}">
-                                <i class="fa-solid fa-chart-line text-sm w-5 text-center"></i> Dashboard Executive
-                            </button>
-                            <button onclick="abrirModulo('condominio')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition-colors ${tabsState.activeTab==='condominio'?'bg-teal-600 text-white font-bold':''}">
-                                <i class="fa-solid fa-building text-sm w-5 text-center"></i> Condomínio & Conselho
-                            </button>
-                            <button onclick="abrirModulo('moradores')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition-colors ${tabsState.activeTab==='moradores'?'bg-teal-600 text-white font-bold':''}">
-                                <i class="fa-solid fa-users text-sm w-5 text-center"></i> Moradores & Unidades
-                            </button>
-                            <button onclick="abrirModulo('financeiro')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition-colors ${tabsState.activeTab==='financeiro'?'bg-teal-600 text-white font-bold':''}">
-                                <i class="fa-solid fa-file-invoice-dollar text-sm w-5 text-center"></i> Contas Pagar / Receber
-                            </button>
-                            <button onclick="abrirModulo('plano_contas')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition-colors ${tabsState.activeTab==='plano_contas'?'bg-teal-600 text-white font-bold':''}">
-                                <i class="fa-solid fa-sitemap text-sm w-5 text-center"></i> Plano de Contas
-                            </button>
-                            <button onclick="abrirModulo('contas_bancarias')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition-colors ${tabsState.activeTab==='contas_bancarias'?'bg-teal-600 text-white font-bold':''}">
-                                <i class="fa-solid fa-building-columns text-sm w-5 text-center"></i> Contas Bancárias / Caixa
-                            </button>
-                            <button onclick="abrirModulo('formas_monetarias')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition-colors ${tabsState.activeTab==='formas_monetarias'?'bg-teal-600 text-white font-bold':''}">
-                                <i class="fa-solid fa-wallet text-sm w-5 text-center"></i> Formas Monetárias
-                            </button>
-                            <button onclick="abrirModulo('estoque')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition-colors ${tabsState.activeTab==='estoque'?'bg-teal-600 text-white font-bold':''}">
-                                <i class="fa-solid fa-boxes-stacked text-sm w-5 text-center"></i> Estoque & Inventário
-                            </button>
-                            <button onclick="abrirModulo('acerto_estoque')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition-colors ${tabsState.activeTab==='acerto_estoque'?'bg-teal-600 text-white font-bold':''}">
-                                <i class="fa-solid fa-clipboard-check text-sm w-5 text-center"></i> Acerto de Estoque
-                            </button>
-                            <button onclick="abrirModulo('fornecedores')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition-colors ${tabsState.activeTab==='fornecedores'?'bg-teal-600 text-white font-bold':''}">
-                                <i class="fa-solid fa-truck-ramps-facing text-sm w-5 text-center"></i> Fornecedores
-                            </button>
-                            <button onclick="abrirModulo('empregados')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition-colors ${tabsState.activeTab==='empregados'?'bg-teal-600 text-white font-bold':''}">
-                                <i class="fa-solid fa-id-card text-sm w-5 text-center"></i> Empregados
-                            </button>
-                            <button onclick="abrirModulo('documentos')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition-colors ${tabsState.activeTab==='documentos'?'bg-teal-600 text-white font-bold':''}">
-                                <i class="fa-solid fa-folder-open text-sm w-5 text-center"></i> Gestão de Documentos
-                            </button>
-                            <button onclick="abrirModulo('relatorios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition-colors ${tabsState.activeTab==='relatorios'?'bg-teal-600 text-white font-bold':''}">
-                                <i class="fa-solid fa-file-contract text-sm w-5 text-center"></i> Relatórios & DRE
-                            </button>
-                            <button onclick="abrirModulo('usuarios')" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-800 transition-colors ${tabsState.activeTab==='usuarios'?'bg-teal-600 text-white font-bold':''}">
-                                <i class="fa-solid fa-user-gear text-sm w-5 text-center"></i> Gestão de Utilizadores
-                            </button>
-                        </nav>
-
-                        <div class="p-4 border-t border-slate-800 space-y-3">
-                            <div class="flex items-center gap-3">
-                                <div class="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-teal-400 font-bold border border-slate-700">
-                                    ${(sessao.usuarioLogado.nome || 'U').charAt(0).toUpperCase()}
-                                </div>
-                                <div class="flex-1 overflow-hidden">
-                                    <p class="text-xs font-bold text-white truncate">${escapeHTML(sessao.usuarioLogado.nome)}</p>
-                                    <p class="text-[10px] text-slate-400 truncate">${escapeHTML(sessao.usuarioLogado.perfil)}</p>
-                                </div>
-                            </div>
-                            <button onclick="encerrarSessao()" class="w-full py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-semibold rounded-xl text-xs transition-colors flex items-center justify-center gap-2">
-                                <i class="fa-solid fa-arrow-right-from-bracket"></i> Encerrar Sessão
-                            </button>
-                        </div>
-                    </aside>
-
-                    <!-- Main Content Area -->
-                    <main class="flex-1 flex flex-col min-w-0 bg-slate-50 min-h-screen">
-                        <!-- Top Header Bar -->
-                        <header class="h-16 glass-header border-b border-slate-200/80 sticky top-0 z-20 px-4 lg:px-8 flex items-center justify-between no-print">
-                            <div class="flex items-center gap-3">
-                                <button onclick="toggleMenuMobile()" class="lg:hidden w-10 h-10 flex items-center justify-center text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-100">
-                                    <i class="fa-solid fa-bars text-lg"></i>
-                                </button>
-                                <h2 class="font-extrabold text-slate-900 text-lg tracking-tight hidden sm:block">${MODULE_NAMES[tabsState.activeTab] || 'Módulo'}</h2>
-                            </div>
-
-                            <div class="flex items-center gap-2">
-                                <button onclick="fazerBackupGeralJSON()" class="px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold shadow-sm transition-all flex items-center gap-2">
-                                    <i class="fa-solid fa-download text-teal-600"></i> Backup JSON
-                                </button>
-                                <label class="px-3 py-2 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-xl text-xs font-bold shadow-sm cursor-pointer transition-all flex items-center gap-2">
-                                    <i class="fa-solid fa-upload text-teal-600"></i> Restaurar
-                                    <input type="file" accept=".json" onchange="restaurarBackupGeralJSON(event)" class="hidden">
-                                </label>
-                            </div>
-                        </header>
-
-                        <!-- Tab Bar Container -->
-                        <div class="bg-white border-b border-slate-200 px-4 pt-2 flex items-center gap-1 overflow-x-auto no-print">
-                            ${tabsState.openTabs.map(tabId => `
-                                <div onclick="abrirModulo('${tabId}')" class="px-4 py-2 text-xs font-semibold rounded-t-xl cursor-pointer flex items-center gap-2 border-t border-x transition-all select-none ${tabsState.activeTab === tabId ? 'tab-active border-slate-200' : 'bg-slate-50 text-slate-500 border-transparent hover:bg-slate-100'}">
-                                    <span>${MODULE_NAMES[tabId] || tabId}</span>
-                                    ${tabsState.openTabs.length > 1 ? `
-                                        <button onclick="fecharAba(event, '${tabId}')" class="w-4 h-4 rounded-full flex items-center justify-center hover:bg-slate-200 text-slate-400 hover:text-slate-700">
-                                            <i class="fa-solid fa-xmark text-[10px]"></i>
-                                        </button>
-                                    ` : ''}
-                                </div>
-                            `).join('')}
-                        </div>
-
-                        <!-- Main Module Content Canvas -->
-                        <div id="main-canvas" class="flex-1 p-4 lg:p-8 overflow-y-auto">
-                            <!-- Conteúdo Dinâmico Renderizado -->
-                        </div>
-                    </main>
-                </div>
-            `;
-
-            renderMainOnly();
-        }
-
-        function renderMainOnly() {
-            const canvas = document.getElementById('main-canvas');
-            if (!canvas) return;
-
-            // Destruição segura de gráficos existentes para re-renderização limpa
-            [chartInstanceReceitaDespesa, chartInstanceOcupacao, chartInstanceEstoque, chartInstanceEstoqueDash].forEach(c => {
-                if (c) try { c.destroy(); } catch (e) {}
-            });
-
-            switch (tabsState.activeTab) {
-                case 'dashboard':
-                    canvas.innerHTML = renderDashboardModule();
-                    initDashboardCharts();
-                    break;
-                case 'condominio':
-                    canvas.innerHTML = renderCondominioModule();
-                    break;
-                case 'moradores':
-                    canvas.innerHTML = renderMoradoresModule();
-                    break;
-                case 'financeiro':
-                    canvas.innerHTML = renderFinanceiroModule();
-                    break;
-                case 'plano_contas':
-                    canvas.innerHTML = renderPlanoContasModule();
-                    break;
-                case 'contas_bancarias':
-                    canvas.innerHTML = renderContasBancariasModule();
-                    break;
-                case 'formas_monetarias':
-                    canvas.innerHTML = renderFormasMonetariasModule();
-                    break;
-                case 'estoque':
-                    canvas.innerHTML = renderEstoqueModule();
-                    initEstoqueChart();
-                    break;
-                case 'acerto_estoque':
-                    canvas.innerHTML = renderAcertoEstoqueModule();
-                    break;
-                case 'fornecedores':
-                    canvas.innerHTML = renderFornecedoresModule();
-                    break;
-                case 'empregados':
-                    canvas.innerHTML = renderEmpregadosModule();
-                    break;
-                case 'documentos':
-                    canvas.innerHTML = renderDocumentosModule();
-                    break;
-                case 'relatorios':
-                    canvas.innerHTML = renderRelatoriosModule();
-                    break;
-                case 'usuarios':
-                    canvas.innerHTML = renderUsuariosModule();
-                    break;
-                default:
-                    canvas.innerHTML = `<div class="p-8 text-center text-slate-500 font-bold">Módulo em desenvolvimento...</div>`;
-            }
-
-            // Restaura automaticamente rascunhos salvos de formulários em edição
-            setTimeout(restaurarFormulariosEmTempoReal, 50);
-        }
-
-        // =========================================================================
-        // MÓDULOS DE INTERFACE E RENDERS DE CONTEÚDO
-        // =========================================================================
-
-        function renderDashboardModule() {
-            const totalMoradores = (db.moradores || []).length;
-            const totalFornecedores = (db.fornecedores || []).length;
-            const totalItensEstoque = (db.estoque || []).reduce((acc, item) => acc + Number(item.quantidade || 0), 0);
-            
-            const receitas = (db.financeiro || []).filter(f => f.tipo === 'Receita').reduce((a, b) => a + Number(b.valor || 0), 0);
-            const despesas = (db.financeiro || []).filter(f => f.tipo === 'Despesa').reduce((a, b) => a + Number(b.valor || 0), 0);
-            const saldo = receitas - despesas;
-
-            return `
-                <div class="space-y-6">
-                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm card-modern">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-extrabold uppercase text-slate-400 tracking-wider">Saldo Financeiro</span>
-                                <div class="w-9 h-9 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center font-bold">
-                                    <i class="fa-solid fa-wallet"></i>
-                                </div>
-                            </div>
-                            <h3 class="text-2xl font-black text-slate-900 mt-2">R$ ${saldo.toLocaleString('pt-BR', {minimumFractionDigits: 2})}</h3>
-                            <p class="text-[11px] font-semibold text-slate-500 mt-1">Receita Líquida Total</p>
-                        </div>
-
-                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm card-modern">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-extrabold uppercase text-slate-400 tracking-wider">Total Moradores</span>
-                                <div class="w-9 h-9 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold">
-                                    <i class="fa-solid fa-users"></i>
-                                </div>
-                            </div>
-                            <h3 class="text-2xl font-black text-slate-900 mt-2">${totalMoradores}</h3>
-                            <p class="text-[11px] font-semibold text-slate-500 mt-1">Unidades Cadastradas</p>
-                        </div>
-
-                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm card-modern">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-extrabold uppercase text-slate-400 tracking-wider">Itens em Estoque</span>
-                                <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-                                    <i class="fa-solid fa-boxes-stacked"></i>
-                                </div>
-                            </div>
-                            <h3 class="text-2xl font-black text-slate-900 mt-2">${totalItensEstoque}</h3>
-                            <p class="text-[11px] font-semibold text-slate-500 mt-1">Unidades Físicas</p>
-                        </div>
-
-                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm card-modern">
-                            <div class="flex items-center justify-between">
-                                <span class="text-xs font-extrabold uppercase text-slate-400 tracking-wider">Fornecedores</span>
-                                <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
-                                    <i class="fa-solid fa-truck-field"></i>
-                                </div>
-                            </div>
-                            <h3 class="text-2xl font-black text-slate-900 mt-2">${totalFornecedores}</h3>
-                            <p class="text-[11px] font-semibold text-slate-500 mt-1">Parceiros Registrados</p>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                            <h4 class="text-sm font-extrabold text-slate-900 mb-4 flex items-center gap-2">
-                                <i class="fa-solid fa-chart-bar text-teal-600"></i> Receitas vs Despesas
-                            </h4>
-                            <div class="relative h-64">
-                                <canvas id="chartReceitaDespesa"></canvas>
-                            </div>
-                        </div>
-
-                        <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                            <h4 class="text-sm font-extrabold text-slate-900 mb-4 flex items-center gap-2">
-                                <i class="fa-solid fa-chart-pie text-teal-600"></i> Distribuição por Blocos
-                            </h4>
-                            <div class="relative h-64">
-                                <canvas id="chartOcupacao"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function initDashboardCharts() {
-            const ctx1 = document.getElementById('chartReceitaDespesa');
-            if (ctx1) {
-                const rec = (db.financeiro || []).filter(f => f.tipo === 'Receita').reduce((a, b) => a + Number(b.valor || 0), 0);
-                const desp = (db.financeiro || []).filter(f => f.tipo === 'Despesa').reduce((a, b) => a + Number(b.valor || 0), 0);
-
-                chartInstanceReceitaDespesa = new Chart(ctx1, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Receitas Total', 'Despesas Total'],
-                        datasets: [{
-                            label: 'Valor (R$)',
-                            data: [rec, desp],
-                            backgroundColor: ['#10b981', '#ef4444'],
-                            borderRadius: 8
-                        }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false }
-                });
-            }
-
-            const ctx2 = document.getElementById('chartOcupacao');
-            if (ctx2) {
-                const blocos = {};
-                (db.moradores || []).forEach(m => {
-                    const b = m.bloco || 'Indefinido';
-                    blocos[b] = (blocos[b] || 0) + 1;
-                });
-
-                chartInstanceOcupacao = new Chart(ctx2, {
-                    type: 'doughnut',
-                    data: {
-                        labels: Object.keys(blocos).length > 0 ? Object.keys(blocos) : ['Sem dados'],
-                        datasets: [{
-                            data: Object.values(blocos).length > 0 ? Object.values(blocos) : [1],
-                            backgroundColor: ['#0d9488', '#3b82f6', '#f59e0b', '#8b5cf6', '#ec4899']
-                        }]
-                    },
-                    options: { responsive: true, maintainAspectRatio: false }
-                });
-            }
-        }
-
-        function renderCondominioModule() {
-            const c = db.condominio || {};
-            return `
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
-                    <div class="border-b border-slate-200 pb-4 flex justify-between items-center">
-                        <h3 class="text-lg font-black text-slate-900">Cadastro do Condomínio</h3>
-                        <button onclick="salvarCondominio(event)" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-teal-600/20">
-                            <i class="fa-solid fa-floppy-disk mr-1.5"></i> Salvar Alterações
-                        </button>
-                    </div>
-
-                    <form id="formCondominio" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">Nome Fantasia</label>
-                            <input type="text" id="cond_nome" value="${escapeHTML(c.nome || '')}" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">Razão Social</label>
-                            <input type="text" id="cond_razao" value="${escapeHTML(c.razaoSocial || '')}" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">CNPJ</label>
-                            <input type="text" id="cond_cnpj" value="${escapeHTML(c.cnpj || '')}" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">Endereço</label>
-                            <input type="text" id="cond_endereco" value="${escapeHTML(c.endereco || '')}" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">Bairro</label>
-                            <input type="text" id="cond_bairro" value="${escapeHTML(c.bairro || '')}" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">Cidade / UF</label>
-                            <div class="flex gap-2">
-                                <input type="text" id="cond_cidade" value="${escapeHTML(c.cidade || '')}" class="flex-1 p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none">
-                                <input type="text" id="cond_uf" value="${escapeHTML(c.uf || '')}" class="w-16 p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none uppercase">
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">E-mail de Contato</label>
-                            <input type="email" id="cond_email" value="${escapeHTML(c.email || '')}" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none">
-                        </div>
-                        <div>
-                            <label class="block text-xs font-bold text-slate-600 mb-1">Telefone / Ramal</label>
-                            <input type="text" id="cond_telefone" value="${escapeHTML(c.telefone || '')}" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white focus:ring-2 focus:ring-teal-500 outline-none">
-                        </div>
-                    </form>
-                </div>
-            `;
-        }
-
-        function salvarCondominio(e) {
-            e.preventDefault();
-            db.condominio = {
-                nome: document.getElementById('cond_nome').value,
-                razaoSocial: document.getElementById('cond_razao').value,
-                cnpj: document.getElementById('cond_cnpj').value,
-                endereco: document.getElementById('cond_endereco').value,
-                bairro: document.getElementById('cond_bairro').value,
-                cidade: document.getElementById('cond_cidade').value,
-                uf: document.getElementById('cond_uf').value,
-                email: document.getElementById('cond_email').value,
-                telefone: document.getElementById('cond_telefone').value
-            };
-            salvarDados(db);
-            limparRascunhosFormulario();
-            alert('Dados do condomínio guardados com sucesso!');
-        }
-
-        function renderMoradoresModule() {
-            const lista = db.moradores || [];
-            return `
-                <div class="space-y-4">
-                    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 rounded-2xl border border-slate-200">
-                        <div class="flex items-center gap-2 w-full sm:w-auto">
-                            <input type="text" placeholder="Buscar morador..." value="${escapeHTML(filtroAtivoMoradores.nome)}" oninput="filtroAtivoMoradores.nome = this.value; renderMainOnly();" class="p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 outline-none focus:ring-2 focus:ring-teal-500 w-full sm:w-64">
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <label class="px-3 py-2 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 text-xs font-bold rounded-xl cursor-pointer transition-all flex items-center gap-2">
-                                <i class="fa-solid fa-file-csv"></i> Importar CSV
-                                <input type="file" accept=".csv,.txt" onchange="importarPlanilhaMoradores(event)" class="hidden">
-                            </label>
-                            <button onclick="exportarParaExcel(db.moradores, 'moradores.csv')" class="px-3 py-2 bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-bold rounded-xl transition-all flex items-center gap-2">
-                                <i class="fa-solid fa-file-excel text-emerald-600"></i> Exportar
-                            </button>
-                            <button onclick="abrirModalNovoMorador()" class="px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-teal-600/20 flex items-center gap-2">
-                                <i class="fa-solid fa-plus"></i> Novo Morador
-                            </button>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                        <table class="w-full text-left border-collapse text-xs">
-                            <thead class="bg-slate-50 border-b border-slate-200 font-extrabold text-slate-500 uppercase">
-                                <tr>
-                                    <th class="p-3.5">Bloco</th>
-                                    <th class="p-3.5">Apto</th>
-                                    <th class="p-3.5">Nome do Morador</th>
-                                    <th class="p-3.5">Telefone</th>
-                                    <th class="p-3.5">E-mail</th>
-                                    <th class="p-3.5 text-right">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100 font-semibold">
-                                ${lista.filter(m => !filtroAtivoMoradores.nome || m.nome.toLowerCase().includes(filtroAtivoMoradores.nome.toLowerCase())).map(m => `
-                                    <tr class="hover:bg-slate-50/80 transition-colors">
-                                        <td class="p-3.5 font-bold text-slate-900">${escapeHTML(m.bloco)}</td>
-                                        <td class="p-3.5">${escapeHTML(m.apartamento)}</td>
-                                        <td class="p-3.5 text-teal-700 font-bold">${escapeHTML(m.nome)}</td>
-                                        <td class="p-3.5">${escapeHTML(m.telefone || '-')}</td>
-                                        <td class="p-3.5">${escapeHTML(m.email || '-')}</td>
-                                        <td class="p-3.5 text-right space-x-2">
-                                            <button onclick="removerMorador('${m.id}')" class="text-rose-500 hover:text-rose-700"><i class="fa-solid fa-trash"></i></button>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                                ${lista.length === 0 ? `<tr><td colspan="6" class="p-6 text-center text-slate-400 font-bold">Nenhum morador cadastrado.</td></tr>` : ''}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }
-
-        function abrirModalNovoMorador() {
-            const modal = document.getElementById('modal-container');
-            modal.innerHTML = `
-                <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div class="bg-white w-full max-w-md rounded-2xl p-6 space-y-4 shadow-2xl border border-slate-100">
-                        <h3 class="text-base font-black text-slate-900 border-b border-slate-100 pb-3">Cadastrar Novo Morador</h3>
-                        <form onsubmit="salvarNovoMorador(event)" class="space-y-3">
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-[11px] font-bold text-slate-500 mb-1">Bloco</label>
-                                    <input type="text" id="mor_bloco" required class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white outline-none">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-slate-500 mb-1">Apartamento</label>
-                                    <input type="text" id="mor_ap" required class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white outline-none">
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 mb-1">Nome Completo</label>
-                                <input type="text" id="mor_nome" required class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 mb-1">Telefone / WhatsApp</label>
-                                <input type="text" id="mor_tel" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 mb-1">E-mail</label>
-                                <input type="email" id="mor_email" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white outline-none">
-                            </div>
-                            <div class="flex justify-end gap-2 pt-2">
-                                <button type="button" onclick="fecharModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl">Cancelar</button>
-                                <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl">Guardar Morador</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            `;
-            setTimeout(restaurarFormulariosEmTempoReal, 50);
-        }
-
-        function salvarNovoMorador(e) {
-            e.preventDefault();
-            if (!db.moradores) db.moradores = [];
-            db.moradores.push({
-                id: 'mor_' + Date.now(),
-                bloco: document.getElementById('mor_bloco').value,
-                apartamento: document.getElementById('mor_ap').value,
-                nome: document.getElementById('mor_nome').value,
-                telefone: document.getElementById('mor_tel').value,
-                email: document.getElementById('mor_email').value
-            });
-            salvarDados(db);
-            limparRascunhosFormulario();
-            fecharModal();
-            renderMainOnly();
-        }
-
-        function removerMorador(id) {
-            if (confirm('Tem certeza de que deseja remover este morador?')) {
-                db.moradores = db.moradores.filter(m => m.id !== id);
-                salvarDados(db);
-                renderMainOnly();
-            }
-        }
-
-        function renderFinanceiroModule() {
-            const lista = db.financeiro || [];
-            return `
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200">
-                        <h3 class="text-sm font-black text-slate-900">Lançamentos Financeiros</h3>
-                        <button onclick="abrirModalNovoLancamento()" class="px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-600/20 flex items-center gap-2">
-                            <i class="fa-solid fa-plus"></i> Novo Lançamento
-                        </button>
-                    </div>
-
-                    <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                        <table class="w-full text-left border-collapse text-xs">
-                            <thead class="bg-slate-50 border-b border-slate-200 font-extrabold text-slate-500 uppercase">
-                                <tr>
-                                    <th class="p-3.5">Data</th>
-                                    <th class="p-3.5">Descrição</th>
-                                    <th class="p-3.5">Tipo</th>
-                                    <th class="p-3.5">Valor</th>
-                                    <th class="p-3.5 text-right">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100 font-semibold">
-                                ${lista.map(f => `
-                                    <tr class="hover:bg-slate-50/80 transition-colors">
-                                        <td class="p-3.5">${escapeHTML(f.data || '-')}</td>
-                                        <td class="p-3.5 font-bold text-slate-900">${escapeHTML(f.descricao)}</td>
-                                        <td class="p-3.5">
-                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${f.tipo==='Receita'?'bg-emerald-100 text-emerald-800':'bg-rose-100 text-rose-800'}">
-                                                ${f.tipo}
-                                            </span>
-                                        </td>
-                                        <td class="p-3.5 font-extrabold ${f.tipo==='Receita'?'text-emerald-600':'text-rose-600'}">
-                                            R$ ${Number(f.valor||0).toLocaleString('pt-BR', {minimumFractionDigits: 2})}
-                                        </td>
-                                        <td class="p-3.5 text-right">
-                                            <button onclick="removerLancamento('${f.id}')" class="text-rose-500 hover:text-rose-700"><i class="fa-solid fa-trash"></i></button>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                                ${lista.length === 0 ? `<tr><td colspan="5" class="p-6 text-center text-slate-400 font-bold">Nenhum lançamento financeiro cadastrado.</td></tr>` : ''}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }
-
-        function abrirModalNovoLancamento() {
-            const modal = document.getElementById('modal-container');
-            modal.innerHTML = `
-                <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div class="bg-white w-full max-w-md rounded-2xl p-6 space-y-4 shadow-2xl border border-slate-100">
-                        <h3 class="text-base font-black text-slate-900 border-b border-slate-100 pb-3">Novo Lançamento Financeiro</h3>
-                        <form onsubmit="salvarNovoLancamento(event)" class="space-y-3">
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 mb-1">Descrição</label>
-                                <input type="text" id="fin_desc" required class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white outline-none">
-                            </div>
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-[11px] font-bold text-slate-500 mb-1">Tipo</label>
-                                    <select id="fin_tipo" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white outline-none">
-                                        <option value="Receita">Receita</option>
-                                        <option value="Despesa">Despesa</option>
-                                    </select>
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-slate-500 mb-1">Valor (R$)</label>
-                                    <input type="number" step="0.01" id="fin_valor" required class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white outline-none">
-                                </div>
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 mb-1">Data</label>
-                                <input type="date" id="fin_data" required class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white outline-none">
-                            </div>
-                            <div class="flex justify-end gap-2 pt-2">
-                                <button type="button" onclick="fecharModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl">Cancelar</button>
-                                <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl">Salvar Lançamento</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            `;
-            setTimeout(restaurarFormulariosEmTempoReal, 50);
-        }
-
-        function salvarNovoLancamento(e) {
-            e.preventDefault();
-            if (!db.financeiro) db.financeiro = [];
-            db.financeiro.push({
-                id: 'fin_' + Date.now(),
-                descricao: document.getElementById('fin_desc').value,
-                tipo: document.getElementById('fin_tipo').value,
-                valor: parseFloat(document.getElementById('fin_valor').value || 0),
-                data: document.getElementById('fin_data').value
-            });
-            salvarDados(db);
-            limparRascunhosFormulario();
-            fecharModal();
-            renderMainOnly();
-        }
-
-        function removerLancamento(id) {
-            if (confirm('Deseja excluir este lançamento?')) {
-                db.financeiro = db.financeiro.filter(f => f.id !== id);
-                salvarDados(db);
-                renderMainOnly();
-            }
-        }
-
-        function renderPlanoContasModule() {
-            const lista = db.plano_contas || [];
-            return `
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                    <h3 class="text-base font-black text-slate-900 border-b border-slate-100 pb-3">Plano de Contas Estruturado</h3>
-                    <div class="space-y-2">
-                        ${lista.map(pc => `
-                            <div class="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-100 text-xs">
-                                <div class="flex items-center gap-3">
-                                    <span class="font-extrabold text-teal-700 bg-teal-100/60 px-2 py-0.5 rounded-md">${escapeHTML(pc.codigo)}</span>
-                                    <span class="font-bold text-slate-800">${escapeHTML(pc.nome)}</span>
-                                </div>
-                                <span class="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-full ${pc.tipo==='Receita'?'bg-emerald-100 text-emerald-800':'bg-rose-100 text-rose-800'}">${pc.tipo}</span>
-                            </div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        }
-
-        function renderContasBancariasModule() {
-            return `
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                    <h3 class="text-base font-black text-slate-900">Contas Bancárias e Caixa Geral</h3>
-                    <p class="text-xs text-slate-500 font-semibold">Gerenciamento de contas correntes e tesouraria condominial.</p>
-                </div>
-            `;
-        }
-
-        function renderFormasMonetariasModule() {
-            return `
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                    <h3 class="text-base font-black text-slate-900">Formas Monetárias & Meios de Pagamento</h3>
-                    <p class="text-xs text-slate-500 font-semibold">Configuração de Pix, Boletos, Transferências e Espécie.</p>
-                </div>
-            `;
-        }
-
-        function renderEstoqueModule() {
-            const lista = db.estoque || [];
-            return `
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200">
-                        <h3 class="text-sm font-black text-slate-900">Itens em Estoque</h3>
-                        <button onclick="abrirModalNovoItemEstoque()" class="px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-600/20 flex items-center gap-2">
-                            <i class="fa-solid fa-plus"></i> Novo Item
-                        </button>
-                    </div>
-
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                            <table class="w-full text-left border-collapse text-xs">
-                                <thead class="bg-slate-50 border-b border-slate-200 font-extrabold text-slate-500 uppercase">
-                                    <tr>
-                                        <th class="p-3.5">Item</th>
-                                        <th class="p-3.5">Categoria</th>
-                                        <th class="p-3.5">Qtd</th>
-                                        <th class="p-3.5 text-right">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody class="divide-y divide-slate-100 font-semibold">
-                                    ${lista.map(item => `
-                                        <tr class="hover:bg-slate-50/80 transition-colors">
-                                            <td class="p-3.5 font-bold text-slate-900">${escapeHTML(item.nome)}</td>
-                                            <td class="p-3.5">${escapeHTML(item.categoria || 'Geral')}</td>
-                                            <td class="p-3.5 font-extrabold text-teal-600">${item.quantidade}</td>
-                                            <td class="p-3.5 text-right">
-                                                <button onclick="removerItemEstoque('${item.id}')" class="text-rose-500 hover:text-rose-700"><i class="fa-solid fa-trash"></i></button>
-                                            </td>
-                                        </tr>
-                                    `).join('')}
-                                    ${lista.length === 0 ? `<tr><td colspan="4" class="p-6 text-center text-slate-400 font-bold">Nenhum item em estoque.</td></tr>` : ''}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
-                            <h4 class="text-xs font-extrabold uppercase text-slate-400 tracking-wider mb-3">Capacidade de Inventário</h4>
-                            <div class="relative h-48">
-                                <canvas id="chartEstoqueCanvas"></canvas>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function initEstoqueChart() {
-            const ctx = document.getElementById('chartEstoqueCanvas');
-            if (!ctx) return;
-            const labels = (db.estoque || []).map(i => i.nome);
-            const data = (db.estoque || []).map(i => i.quantidade);
-
-            chartInstanceEstoque = new Chart(ctx, {
-                type: 'pie',
-                data: {
-                    labels: labels.length > 0 ? labels : ['Vazio'],
-                    datasets: [{
-                        data: data.length > 0 ? data : [1],
-                        backgroundColor: ['#0d9488', '#14b8a6', '#2dd4bf', '#5eead4', '#99f6e4']
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        }
-
-        function abrirModalNovoItemEstoque() {
-            const modal = document.getElementById('modal-container');
-            modal.innerHTML = `
-                <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div class="bg-white w-full max-w-md rounded-2xl p-6 space-y-4 shadow-2xl border border-slate-100">
-                        <h3 class="text-base font-black text-slate-900 border-b border-slate-100 pb-3">Adicionar Item ao Estoque</h3>
-                        <form onsubmit="salvarNovoItemEstoque(event)" class="space-y-3">
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 mb-1">Nome do Item</label>
-                                <input type="text" id="est_nome" required class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white outline-none">
-                            </div>
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label class="block text-[11px] font-bold text-slate-500 mb-1">Categoria</label>
-                                    <input type="text" id="est_cat" placeholder="Limpeza, Eletrica..." class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white outline-none">
-                                </div>
-                                <div>
-                                    <label class="block text-[11px] font-bold text-slate-500 mb-1">Quantidade</label>
-                                    <input type="number" id="est_qtd" required min="0" value="1" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white outline-none">
-                                </div>
-                            </div>
-                            <div class="flex justify-end gap-2 pt-2">
-                                <button type="button" onclick="fecharModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl">Cancelar</button>
-                                <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl">Salvar Item</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            `;
-            setTimeout(restaurarFormulariosEmTempoReal, 50);
-        }
-
-        function salvarNovoItemEstoque(e) {
-            e.preventDefault();
-            if (!db.estoque) db.estoque = [];
-            db.estoque.push({
-                id: 'est_' + Date.now(),
-                nome: document.getElementById('est_nome').value,
-                categoria: document.getElementById('est_cat').value,
-                quantidade: parseInt(document.getElementById('est_qtd').value || 0)
-            });
-            salvarDados(db);
-            limparRascunhosFormulario();
-            fecharModal();
-            renderMainOnly();
-        }
-
-        function removerItemEstoque(id) {
-            if (confirm('Remover este item do estoque?')) {
-                db.estoque = db.estoque.filter(i => i.id !== id);
-                salvarDados(db);
-                renderMainOnly();
-            }
-        }
-
-        function renderAcertoEstoqueModule() {
-            return `
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                    <h3 class="text-base font-black text-slate-900">Acerto & Reajuste de Inventário</h3>
-                    <p class="text-xs text-slate-500 font-semibold">Registro de baixas por avaria, uso interno ou perdas físicas.</p>
-                </div>
-            `;
-        }
-
-        function renderFornecedoresModule() {
-            const lista = db.fornecedores || [];
-            return `
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200">
-                        <h3 class="text-sm font-black text-slate-900">Lista de Fornecedores</h3>
-                        <button onclick="abrirModalNovoFornecedor()" class="px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl shadow-md shadow-teal-600/20 flex items-center gap-2">
-                            <i class="fa-solid fa-plus"></i> Novo Fornecedor
-                        </button>
-                    </div>
-
-                    <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                        <table class="w-full text-left border-collapse text-xs">
-                            <thead class="bg-slate-50 border-b border-slate-200 font-extrabold text-slate-500 uppercase">
-                                <tr>
-                                    <th class="p-3.5">Razão / Nome</th>
-                                    <th class="p-3.5">CNPJ / CPF</th>
-                                    <th class="p-3.5">Contato</th>
-                                    <th class="p-3.5 text-right">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100 font-semibold">
-                                ${lista.map(f => `
-                                    <tr class="hover:bg-slate-50/80 transition-colors">
-                                        <td class="p-3.5 font-bold text-slate-900">${escapeHTML(f.nome)}</td>
-                                        <td class="p-3.5">${escapeHTML(f.doc || '-')}</td>
-                                        <td class="p-3.5">${escapeHTML(f.telefone || '-')}</td>
-                                        <td class="p-3.5 text-right">
-                                            <button onclick="removerFornecedor('${f.id}')" class="text-rose-500 hover:text-rose-700"><i class="fa-solid fa-trash"></i></button>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                                ${lista.length === 0 ? `<tr><td colspan="4" class="p-6 text-center text-slate-400 font-bold">Nenhum fornecedor registrado.</td></tr>` : ''}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }
-
-        function abrirModalNovoFornecedor() {
-            const modal = document.getElementById('modal-container');
-            modal.innerHTML = `
-                <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-                    <div class="bg-white w-full max-w-md rounded-2xl p-6 space-y-4 shadow-2xl border border-slate-100">
-                        <h3 class="text-base font-black text-slate-900 border-b border-slate-100 pb-3">Novo Fornecedor</h3>
-                        <form onsubmit="salvarNovoFornecedor(event)" class="space-y-3">
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 mb-1">Nome / Razão Social</label>
-                                <input type="text" id="for_nome" required class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 mb-1">CNPJ / CPF</label>
-                                <input type="text" id="for_doc" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white outline-none">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold text-slate-500 mb-1">Telefone / E-mail</label>
-                                <input type="text" id="for_tel" class="w-full p-2.5 border border-slate-200 rounded-xl text-xs bg-slate-50 focus:bg-white outline-none">
-                            </div>
-                            <div class="flex justify-end gap-2 pt-2">
-                                <button type="button" onclick="fecharModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-bold rounded-xl">Cancelar</button>
-                                <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold rounded-xl">Salvar Fornecedor</button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            `;
-            setTimeout(restaurarFormulariosEmTempoReal, 50);
-        }
-
-        function salvarNovoFornecedor(e) {
-            e.preventDefault();
-            if (!db.fornecedores) db.fornecedores = [];
-            db.fornecedores.push({
-                id: 'for_' + Date.now(),
-                nome: document.getElementById('for_nome').value,
-                doc: document.getElementById('for_doc').value,
-                telefone: document.getElementById('for_tel').value
-            });
-            salvarDados(db);
-            limparRascunhosFormulario();
-            fecharModal();
-            renderMainOnly();
-        }
-
-        function removerFornecedor(id) {
-            if (confirm('Excluir este fornecedor?')) {
-                db.fornecedores = db.fornecedores.filter(f => f.id !== id);
-                salvarDados(db);
-                renderMainOnly();
-            }
-        }
-
-        function renderEmpregadosModule() {
-            return `
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                    <h3 class="text-base font-black text-slate-900">Quadro de Empregados & Funcionários</h3>
-                    <p class="text-xs text-slate-500 font-semibold">Registro de zeladores, portaria e equipe operacional.</p>
-                </div>
-            `;
-        }
-
-        function renderDocumentosModule() {
-            return `
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                    <h3 class="text-base font-black text-slate-900">Gestão de Documentos em Nuvem</h3>
-                    <p class="text-xs text-slate-500 font-semibold">Atas de assembleia, regulamento interno e contratos compactados.</p>
-                </div>
-            `;
-        }
-
-        function renderRelatoriosModule() {
-            return `
-                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                    <div class="flex justify-between items-center border-b border-slate-100 pb-3">
-                        <h3 class="text-base font-black text-slate-900">Central de Relatórios Executivos & DRE</h3>
-                        <button onclick="exportarParaPDF()" class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold rounded-xl transition-all">
-                            <i class="fa-solid fa-print mr-1"></i> Imprimir / Gerar PDF
-                        </button>
-                    </div>
-                    <p class="text-xs text-slate-500 font-semibold">Demonstrativo do Resultado do Exercício e Balancete Consolidado.</p>
-                </div>
-            `;
-        }
-
-        function renderUsuariosModule() {
-            const lista = db.usuarios || [];
-            return `
-                <div class="space-y-4">
-                    <div class="flex justify-between items-center bg-white p-4 rounded-2xl border border-slate-200">
-                        <h3 class="text-sm font-black text-slate-900">Utilizadores do Sistema</h3>
-                    </div>
-
-                    <div class="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
-                        <table class="w-full text-left border-collapse text-xs">
-                            <thead class="bg-slate-50 border-b border-slate-200 font-extrabold text-slate-500 uppercase">
-                                <tr>
-                                    <th class="p-3.5">Utilizador</th>
-                                    <th class="p-3.5">Nome</th>
-                                    <th class="p-3.5">E-mail</th>
-                                    <th class="p-3.5">Perfil</th>
-                                    <th class="p-3.5">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-100 font-semibold">
-                                ${lista.map(u => `
-                                    <tr class="hover:bg-slate-50/80 transition-colors">
-                                        <td class="p-3.5 font-bold text-slate-900">${escapeHTML(u.usuario)}</td>
-                                        <td class="p-3.5">${escapeHTML(u.nome)}</td>
-                                        <td class="p-3.5">${escapeHTML(u.email)}</td>
-                                        <td class="p-3.5 font-bold text-teal-700">${escapeHTML(u.perfil)}</td>
-                                        <td class="p-3.5">
-                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${u.status==='Ativo'?'bg-emerald-100 text-emerald-800':'bg-rose-100 text-rose-800'}">
-                                                ${u.status}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            `;
-        }
-
-        function fecharModal() {
-            const modal = document.getElementById('modal-container');
-            if (modal) modal.innerHTML = '';
-        }
-
-        // Evento de Inicialização
-        document.addEventListener('DOMContentLoaded', () => {
-            carregarDadosDaNuvem();
-        });
-    </script>
-</body>
-</html>
+    <!-- Indicador de Status da Nuvem -->
+    <div id="status-nuvem" class="bg-slate-900 text-teal-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm">
+        <i class="fa-solid fa-cloud animate-pulse"></i> A ligar ao Supabase na Nuvem...
+    </div>
+
+    <div id="app" class="flex-1 flex flex-col min-h-screen w-full"></div>
+    <div id="modal-container"></div>
+
+    <script>
+        // =========================================================================
+        // CONFIGURAÇÃO DA SUA NUVEM (SUPABASE)
+        // =========================================================================
+        const SUPABASE_URL = 'https://ycwgwtzysvizossqveiy.supabase.co'; 
+        const SUPABASE_KEY = 'sb_publishable_tsVxjzBmQ6v33EXQbz_U7Q_7DTW3b3m';
+        // =========================================================================
+
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        let tempArquivoNome = ''; 
+        let tempArquivoGzipBase64 = ''; 
+        let tempEstoqueFotoNome = '';
+        let tempEstoqueFotoGzip = '';
+
+        let filtroAtivoMoradores = { bloco: '', nome: '' };
+        let filtroAtivoEstoque = 'todos'; 
+        let usuarioPendentePrimeiroAcesso = null; 
+        let chartInstanceReceitaDespesa = null;
+        let chartInstanceOcupacao = null;
+        let chartInstanceEstoque = null;
+        let chartInstanceEstoqueDash = null;
+
+        function escapeHTML(str) {
+            if (typeof str !== 'string') return str || '';
+            return str.replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
+        }
+
+        function compactarArquivoParaGzip(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const arrayBuffer = e.target.result;
+                    const uint8Array = new Uint8Array(arrayBuffer);
+                    const compressed = pako.deflate(uint8Array);
+                    let binary = '';
+                    const len = compressed.byteLength;
+                    for (let i = 0; i < len; i++) { binary += String.fromCharCode(compressed[i]); }
+                    callback(btoa(binary), file.name);
+                } catch (err) { alert('Erro ao compactar ficheiro.'); }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function extrairEDownloadArquivo(base64Gzip, nomeOriginal) {
+            try {
+                const binaryString = atob(base64Gzip);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); }
+                const decompressed = pako.inflate(bytes);
+                const blob = new Blob([decompressed]);
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = nomeOriginal;
+                document.body.appendChild(a); a.click();
+                document.body.removeChild(a); URL.revokeObjectURL(url);
+            } catch (err) { alert('Erro ao extrair ficheiro.'); }
+        }
+
+        function visualizarArquivo(base64Gzip, nomeOriginal) {
+            try {
+                const binaryString = atob(base64Gzip);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); }
+                const decompressed = pako.inflate(bytes);
+                
+                let mimeType = 'application/octet-stream';
+                const ext = nomeOriginal.split('.').pop().toLowerCase();
+                if (ext === 'pdf') mimeType = 'application/pdf';
+                else if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) mimeType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+                else if (ext === 'txt') mimeType = 'text/plain';
+
+                const blob = new Blob([decompressed], { type: mimeType });
+                const url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
+            } catch (err) { alert('Erro ao visualizar o ficheiro.'); }
+        }
+
+        const DEFAULT_DATA = {
+            condominio: {
+                nome: 'Condomínio Guardiões do Bravo',
+                cnpj: '12.345.678/0001-90',
+                razaoSocial: 'Condomínio Residencial Guardiões do Bravo',
+                endereco: 'Rua das Palmeiras, 1000',
+                bairro: 'Centro',
+                cidade: 'Curitiba',
+                uf: 'PR',
+                cep: '80000-000',
+                telefone: '(41) 3333-0000',
+                email: 'contato@guardioesdobravo.com.br',
+                copelBloco1: '',
+                copelBloco2: '',
+                copelBloco3: '',
+                copelBloco4: '',
+                copelAreasComuns: '',
+                gasSalao: '',
+                sanepar: ''
+            },
+            conselheiros: [],
+            usuarios: [
+                { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', cargo: 'Administrador', loja: 'Guardiões do Bravo', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Admin@12345' },
+                { id: 'usr_sheylla', usuario: 'sheylla', nome: 'Sheylla', email: 'sheylla@guardioes.com', cargo: 'Conselho Fiscal', loja: 'Guardiões do Bravo', perfil: 'Operador', status: 'Ativo', primeiroAcesso: true, senhaHash: '123456' }
+            ],
+            plano_contas: [
+                { id: 'pc_1', codigo: '1.1', nome: 'Taxa Ordinária de Condomínio', tipo: 'Receita' },
+                { id: 'pc_2', codigo: '1.2', nome: 'Fundo de Reserva', tipo: 'Receita' },
+                { id: 'pc_3', codigo: '2.1', nome: 'Despesas com Água e Saneamento', tipo: 'Despesa' },
+                { id: 'pc_4', codigo: '2.2', nome: 'Despesas com Energia Elétrica (Copel)', tipo: 'Despesa' },
+                { id: 'pc_5', codigo: '2.3', nome: 'Manutenção e Conservação Predial', tipo: 'Despesa' }
+            ],
+            financeiro: [],
+            formas_monetarias: [],
+            contas_bancarias: [],
+            moradores: [],
+            fornecedores: [],
+            empregados: [],
+            categorias: [],
+            estoque: [],
+            acertos_estoque: [],
+            motivos_acerto_estoque: [
+                { id: 'mot_1', nome: 'Perca / Avaria' },
+                { id: 'mot_2', nome: 'Quebra' },
+                { id: 'mot_3', nome: 'Ajuste de Inventário' },
+                { id: 'mot_4', nome: 'Doação / Uso Interno' }
+            ],
+            documentos: [],
+            logs: []
+        };
+
+        let db = DEFAULT_DATA;
+        const dadosLocaisSalvos = localStorage.getItem('guardioes_bravo_db');
+        if (dadosLocaisSalvos) {
+            try {
+                db = JSON.parse(dadosLocaisSalvos);
+                if (!db.plano_contas) db.plano_contas = DEFAULT_DATA.plano_contas;
+                if (!db.acertos_estoque) db.acertos_estoque = [];
+                if (!db.motivos_acerto_estoque) db.motivos_acerto_estoque = DEFAULT_DATA.motivos_acerto_estoque;
+            } catch (e) { db = DEFAULT_DATA; }
+        }
+
+        let sessao = { usuarioLogado: null };
+
+function salvarCacheLocal() {
+    try {
+        localStorage.setItem('guardioes_bravo_db', JSON.stringify(db));
+    } catch (e) {
+        console.warn('Cache local cheio; seguindo apenas com a nuvem.', e);
+    }
+}
+
+        async function carregarDadosDaNuvem() {
+            const elStatus = document.getElementById('status-nuvem');
+            try {
+                const { data, error } = await supabaseClient
+                    .from('condominio_dados')
+                    .select('payload')
+                    .eq('id', 'principal')
+                    .maybeSingle();
+
+                if (error) throw error;   // leitura falhou: não grava nada, cai no catch
+                if (data && data.payload) {
+                    db = data.payload;
+                    if (!db.plano_contas) db.plano_contas = DEFAULT_DATA.plano_contas;
+                    if (!db.acertos_estoque) db.acertos_estoque = [];
+                    if (!db.motivos_acerto_estoque) db.motivos_acerto_estoque = DEFAULT_DATA.motivos_acerto_estoque;
+                    salvarCacheLocal();
+                    if (elStatus) {
+                        elStatus.className = "bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm";
+                        elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-down text-emerald-400"></i> Sincronizado com o Supabase com Sucesso!`;
+                    }
+                } else {
+                    await salvarDadosNaNuvem(db);
+                }
+
+                supabaseClient
+                    .channel('mudancas-condominio')
+                    .on(
+                        'postgres_changes',
+                        { event: '*', schema: 'public', table: 'condominio_dados', filter: 'id=eq.principal' },
+                        (payload) => {
+                            if (payload.new && payload.new.payload) {
+                                db = payload.new.payload;
+                                if (!db.plano_contas) db.plano_contas = DEFAULT_DATA.plano_contas;
+                                if (!db.acertos_estoque) db.acertos_estoque = [];
+                                if (!db.motivos_acerto_estoque) db.motivos_acerto_estoque = DEFAULT_DATA.motivos_acerto_estoque;
+                                salvarCacheLocal();
+                                renderMainOnly();
+                                
+                                if (elStatus) {
+                                    elStatus.className = "bg-teal-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print animate-pulse border-b border-teal-800";
+                                    elStatus.innerHTML = `<i class="fa-solid fa-rotate"></i> Dados atualizados em tempo real por outro utilizador!`;
+                                    setTimeout(() => {
+                                        elStatus.className = "bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm";
+                                        elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> Sincronizado com a Nuvem em Tempo Real`;
+                                    }, 2000);
+                                }
+                            }
+                        }
+                    )
+                    .subscribe();
+
+            } catch (err) {
+                if (elStatus) {
+                    elStatus.className = "bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800";
+                    elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> A utilizar armazenamento local.`;
+                }
+            }
+            renderApp();
+        }
+
+        async function salvarDadosNaNuvem(dataObj) {
+            db = dataObj;
+            salvarCacheLocal();
+
+            const elStatus = document.getElementById('status-nuvem');
+            if (elStatus) {
+                elStatus.className = "bg-slate-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print animate-pulse border-b border-slate-800";
+                elStatus.innerHTML = `<i class="fa-solid fa-rotate fa-spin"></i> A guardar na nuvem...`;
+            }
+
+            try {
+                const { error } = await supabaseClient
+                    .from('condominio_dados')
+                    .upsert({ id: 'principal', payload: db, atualizado_em: new Date() });
+
+                if (error) throw error;
+
+                if (elStatus) {
+                    elStatus.className = "bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm";
+                    elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado com a Nuvem em Tempo Real`;
+                }
+            } catch (err) {
+                if (elStatus) {
+                    elStatus.className = "bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800";
+                    elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Guardado localmente (Erro na nuvem)`;
+                }
+            }
+        }
+
+        function salvarDados(data) { salvarDadosNaNuvem(data); }
+
+        try {
+            const sessaoData = sessionStorage.getItem('guardioes_sessao');
+            if (sessaoData) sessao.usuarioLogado = JSON.parse(sessaoData);
+        } catch (e) { sessao.usuarioLogado = null; }
+
+        let tabsState = { openTabs: ['dashboard'], activeTab: 'dashboard' };
+
+        const MODULE_NAMES = {
+            dashboard: 'Dashboard Executive',
+            condominio: 'Dados do Condomínio & Conselho',
+            plano_contas: 'Plano de Contas',
+            financeiro: 'Contas Pagar / Receber',
+            formas_monetarias: 'Formas Monetárias',
+            contas_bancarias: 'Contas Bancárias / Caixa',
+            moradores: 'Moradores & Unidades',
+            fornecedores: 'Fornecedores',
+            empregados: 'Empregados',
+            categorias: 'Pastas & Categorias',
+            estoque: 'Estoque & Inventário',
+            acerto_estoque: 'Acerto de Estoque',
+            documentos: 'Gestão de Documentos',
+            relatorios: 'Central de Relatórios & DRE',
+            usuarios: 'Gestão de Utilizadores'
+        };
+
+        function abrirModulo(moduloId, filtroEstoqueParam = 'todos') {
+            if (moduloId === 'estoque' && filtroEstoqueParam) {
+                filtroAtivoEstoque = filtroEstoqueParam;
+            }
+            if (!tabsState.openTabs.includes(moduloId)) tabsState.openTabs.push(moduloId);
+            tabsState.activeTab = moduloId;
+            fecharMenuMobile();
+            renderApp();
+        }
+
+        function fecharAba(e, moduloId) {
+            e.stopPropagation();
+            if (tabsState.openTabs.length === 1) return;
+            tabsState.openTabs = tabsState.openTabs.filter(id => id !== moduloId);
+            if (tabsState.activeTab === moduloId) tabsState.activeTab = tabsState.openTabs[tabsState.openTabs.length - 1];
+            renderApp();
+        }
+
+        function toggleMenuMobile() {
+            const sidebar = document.getElementById('sidebar-menu');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (sidebar && backdrop) {
+                sidebar.classList.toggle('-translate-x-full');
+                backdrop.classList.toggle('hidden');
+            }
+        }
+
+        function fecharMenuMobile() {
+            const sidebar = document.getElementById('sidebar-menu');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (sidebar && backdrop && !sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        }
+
+        function exportarParaExcel(dados, nomeArquivo = 'relatorio.csv') {
+            if (!dados || dados.length === 0) { alert('Não há dados disponíveis.'); return; }
+            const sanitizeData = dados.map(item => { let obj = { ...item }; delete obj.arquivoCompactadoGzip; delete obj.fotoCompactadaGzip; return obj; });
+            const keys = Object.keys(sanitizeData[0]);
+            let csvContent = '\uFEFF' + keys.join(',') + '\n';
+            sanitizeData.forEach(row => {
+                const values = keys.map(k => `"${String(row[k] ?? '').replace(/"/g, '""')}"`);
+                csvContent += values.join(',') + '\n';
+            });
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = nomeArquivo;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+
+        function exportarParaPDF() { window.print(); }
+
+        function fazerBackupGeralJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `backup_guardioes_bravo_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function restaurarBackupGeralJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed && parsed.condominio) {
+                        db = parsed;
+                        if (!db.plano_contas) db.plano_contas = DEFAULT_DATA.plano_contas;
+                        if (!db.acertos_estoque) db.acertos_estoque = [];
+                        if (!db.motivos_acerto_estoque) db.motivos_acerto_estoque = DEFAULT_DATA.motivos_acerto_estoque;
+                        salvarDados(db);
+                        alert('Backup restaurado com sucesso!');
+                        renderApp();
+                    } else {
+                        alert('O ficheiro selecionado não parece ser um backup válido.');
+                    }
+                } catch (err) {
+                    alert('Erro ao ler o ficheiro de backup.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function importarPlanilhaMoradores(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const texto = e.target.result;
+                    const linhas = texto.split(/\r\n|\n/);
+                    if (linhas.length < 2) { alert('A planilha parece estar vazia.'); return; }
+
+                    const cabecalho = linhas[0].split(/,|;/).map(c => c.replace(/^["']|["']$/g, '').trim().toLowerCase());
+                    
+                    const idxBloco = cabecalho.findIndex(h => h.includes('bloco') || h.includes('bl'));
+                    const idxAp = cabecalho.findIndex(h => h.includes('ap') || h.includes('unidade') || h.includes('casa'));
+                    const idxNome = cabecalho.findIndex(h => h.includes('nome') || h.includes('morador') || h.includes('proprietario'));
+                    const idxEmail = cabecalho.findIndex(h => h.includes('email') || h.includes('e-mail'));
+                    const idxTel = cabecalho.findIndex(h => h.includes('tel') || h.includes('cel') || h.includes('whatsapp') || h.includes('fone'));
+                    const idxCpf = cabecalho.findIndex(h => h.includes('cpf') || h.includes('documento') || h.includes('rg'));
+                    const idxPet = cabecalho.findIndex(h => h.includes('pet') || h.includes('animal'));
+                    const idxVaga = cabecalho.findIndex(h => h.includes('vaga') || h.includes('estacionamento') || h.includes('garagem'));
+
+                    let importados = 0;
+                    if (!db.moradores) db.moradores = [];
+
+                    for (let i = 1; i < linhas.length; i++) {
+                        const linha = linhas[i].trim();
+                        if (!linha) continue;
+                        const cols = linha.split(/,|;/).map(c => c.replace(/^["']|["']$/g, '').trim());
+                        
+                        db.moradores.push({
+                            id: 'mor_imp_' + Date.now() + '_' + i,
+                            bloco: idxBloco !== -1 ? (cols[idxBloco] || '1') : (cols[0] || '1'),
+                            apartamento: idxAp !== -1 ? (cols[idxAp] || '') : (cols[1] || ''),
+                            nome: idxNome !== -1 ? (cols[idxNome] || 'Sem Nome') : (cols[2] || 'Sem Nome'),
+                            email: idxEmail !== -1 ? (cols[idxEmail] || '') : '',
+                            telefone: idxTel !== -1 ? (cols[idxTel] || '') : '',
+                            cpf: idxCpf !== -1 ? (cols[idxCpf] || '') : '',
+                            petNome: idxPet !== -1 ? (cols[idxPet] || '') : '',
+                            vagaGaragem: idxVaga !== -1 ? (cols[idxVaga] || '') : ''
+                        });
+                        importados++;
+                    }
+
+                    if (importados > 0) {
+                        salvarDados(db);
+                        alert(`${importados} moradores importados com sucesso para a nuvem!`);
+                        renderMainOnly();
+                    } else {
+                        alert('Nenhum morador válido encontrado na planilha.');
+                    }
+                } catch (err) {
+                    alert('Erro ao processar o arquivo CSV.');
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function toggleMostrarSenha() {
+            const inputPass = document.getElementById('login_pass');
+            const iconEye = document.getElementById('icon-eye');
+            if (inputPass.type === 'password') {
+                inputPass.type = 'text';
+                iconEye.classList.remove('fa-eye');
+                iconEye.classList.add('fa-eye-slash');
+            } else {
+                inputPass.type = 'password';
+                iconEye.classList.remove('fa-eye-slash');
+                iconEye.classList.add('fa-eye');
+            }
+        }
+
+        function realizarLogin(e) {
+            e.preventDefault();
+            const userInput = document.getElementById('login_user').value.trim().toLowerCase();
+            const senhaInput = document.getElementById('login_pass').value;
+            const lembrarChecked = document.getElementById('login_lembrar')?.checked;
+
+            if (lembrarChecked) {
+                localStorage.setItem('guardioes_lembrar_user', userInput);
+            } else {
+                localStorage.removeItem('guardioes_lembrar_user');
+            }
+            
+            const userFound = (db.usuarios || []).find(u => 
+                (u.usuario && u.usuario.toLowerCase() === userInput) || 
+                (u.email && u.email.toLowerCase() === userInput)
+            );
+
+            if (userFound && userFound.senhaHash === senhaInput) {
+                if (userFound.status === 'Inativo') { alert('Utilizador inativo.'); return; }
+                
+                if (userFound.primeiroAcesso) {
+                    usuarioPendentePrimeiroAcesso = userFound;
+                    renderApp();
+                    return;
+                }
+
+                sessao.usuarioLogado = userFound;
+                try { sessionStorage.setItem('guardioes_sessao', JSON.stringify(userFound)); } catch (err) {}
+                renderApp();
+            } else { alert('Credenciais incorretas! Verifique o utilizador/e-mail e a palavra-passe.'); }
+        }
+
+        function concluirPrimeiroAcesso(e) {
+            e.preventDefault();
+            const s1 = document.getElementById('prim_senha_nova').value;
+            const s2 = document.getElementById('prim_senha_conf').value;
+
+            if (s1.length < 6) { alert('A palavra-passe deve ter pelo menos 6 caracteres.'); return; }
+            if (s1 !== s2) { alert('As palavras-passe não coincidem.'); return; }
+
+            const userIndex = (db.usuarios || []).findIndex(u => u.id === usuarioPendentePrimeiroAcesso.id);
+            if (userIndex !== -1) {
+                db.usuarios[userIndex].senhaHash = s1;
+                db.usuarios[userIndex].primeiroAcesso = false;
+                salvarDados(db);
+
+                sessao.usuarioLogado = db.usuarios[userIndex];
+                try { sessionStorage.setItem('guardioes_sessao', JSON.stringify(sessao.usuarioLogado)); } catch (err) {}
+                
+                usuarioPendentePrimeiroAcesso = null;
+                alert('Palavra-passe alterada com sucesso! Bem-vindo(a) ao sistema.');
+                renderApp();
+            }
+        }
+
+        function encerrarSessao() {
+            sessao.usuarioLogado = null;
+            usuarioPendentePrimeiroAcesso = null;
+            try { sessionStorage.removeItem('guardioes_sessao'); } catch (e) {}
+            renderApp();
+        }
+
+        function renderTelaLogin() {
+            const savedUser = localStorage.getItem('guardioes_lembrar_user') || '';
+            const isLembrarChecked = savedUser ? 'checked' : '';
+
+            return `
+                <div class="min-h-screen flex items-center justify-center bg-slate-950 p-4 w-full relative overflow-hidden">
+                    <div class="absolute -top-32 -left-32 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                    <div class="bg-white/95 backdrop-blur-xl w-full max-w-md p-8 rounded-3xl shadow-2xl border border-white/20 space-y-6 relative z-10">
+                        <div class="text-center space-y-2">
+                            <div class="w-16 h-16 bg-gradient-to-tr from-teal-600 to-emerald-500 rounded-2xl flex items-center justify-center text-white text-3xl font-extrabold mx-auto shadow-lg shadow-teal-500/30">
+                                <i class="fa-solid fa-shield-halved"></i>
+                            </div>
+                            <h2 class="text-2xl font-black text-slate-900 tracking-tight">Guardiões do Bravo</h2>
+                            <p class="text-[11px] text-teal-600 font-extrabold uppercase tracking-widest">Gestão Condominial em Nuvem</p>
+                        </div>
+                        <form onsubmit="realizarLogin(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-[11px] font-bold uppercase text-slate-500 tracking-wider mb-1">Utilizador ou E-mail</label>
+                                <input type="text" id="login_user" required value="${escapeHTML(savedUser)}" class="w-full p-3 border border-slate-200 rounded-2xl text-sm font-semibold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all outline-none" placeholder="admin ou admin@guardioes.com">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold uppercase text-slate-500 tracking-wider mb-1">Palavra-passe</label>
+                                <div class="relative">
+                                    <input type="password" id="login_pass" required class="w-full p-3 pr-10 border border-slate-200 rounded-2xl text-sm font-semibold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all outline-none">
+                                    <button type="button" onclick="toggleMostrarSenha()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
+                                        <i id="icon-eye" class="fa-solid fa-eye text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between text-xs pt-1">
+                                <label class="flex items-center gap-2 cursor-pointer select-none">
+                                    <input type="checkbox" id="login_lembrar" ${isLembrarChecked} class="rounded border-slate-300 text-teal-600 focus:ring-teal-500 w-4 h-4">
+                                    <span class="font-semibold text-slate-600">Lembrar credenciais</span>
+                                </label>
+                            </div>
+                            <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-lg shadow-teal-600/25 text-sm transitio
