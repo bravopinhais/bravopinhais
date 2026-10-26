@@ -108,13 +108,9 @@
     </div>
 
     <script>
-        // =========================================================================
-        // CONFIGURAÇÃO DA SUA NUVEM (SUPABASE)
-        // =========================================================================
+        // Configuração Supabase
         const SUPABASE_URL = 'https://ycwgwtzysvizossqveiy.supabase.co'; 
         const SUPABASE_KEY = 'sb_publishable_tsVxjzBmQ6v33EXQbz_U7Q_7DTW3b3m';
-        // =========================================================================
-
         const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
         let tempArquivoNome = ''; 
@@ -134,7 +130,6 @@
                 return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
             });
         }
-
         const DEFAULT_DATA = {
             condominio: { nome: 'Condomínio Guardiões do Bravo', cnpj: '12.345.678/0001-90' },
             conselheiros: [],
@@ -194,7 +189,21 @@
 
         let tabsState = { openTabs: ['dashboard'], activeTab: 'dashboard' };
         const MODULE_NAMES = {
-            dashboard: 'Dashboard Executive', condominio: 'Dados do Condomínio & Conselho', plano_contas: 'Plano de Contas', financeiro: 'Contas Pagar / Receber', formas_monetarias: 'Formas Monetárias', contas_bancarias: 'Contas Bancárias / Caixa', moradores: 'Moradores & Unidades', fornecedores: 'Fornecedores', empregados: 'Empregados', categorias: 'Pastas & Categorias', estoque: 'Estoque & Inventário', acerto_estoque: 'Acerto de Estoque', documentos: 'Gestão de Documentos', relatorios: 'Central de Relatórios & DRE', usuarios: 'Gestão de Utilizadores'
+            dashboard: 'Dashboard Executive',
+            condominio: 'Dados do Condomínio & Conselho',
+            plano_contas: 'Plano de Contas',
+            financeiro: 'Contas Pagar / Receber',
+            formas_monetarias: 'Formas Monetárias',
+            contas_bancarias: 'Contas Bancárias / Caixa',
+            moradores: 'Moradores & Unidades',
+            fornecedores: 'Fornecedores',
+            empregados: 'Empregados',
+            categorias: 'Pastas & Categorias',
+            estoque: 'Estoque & Inventário',
+            acerto_estoque: 'Acerto de Estoque',
+            documentos: 'Gestão de Documentos',
+            relatorios: 'Central de Relatórios & DRE',
+            usuarios: 'Gestão de Utilizadores'
         };
 
         function abrirModulo(moduloId) {
@@ -219,7 +228,6 @@
             const userFound = (db.usuarios || []).find(u => (u.usuario && u.usuario.toLowerCase() === userInput) || (u.email && u.email.toLowerCase() === userInput));
 
             if (userFound && userFound.senhaHash === senhaInput) {
-                // Animação do cãozinho de login
                 const overlayCao = document.getElementById('overlay-cao-login');
                 if (overlayCao) overlayCao.classList.remove('hidden');
 
@@ -257,14 +265,14 @@
             let resposta = "Entendido! Posso ajudar com relatórios, resumo financeiro ou consulta de moradores.";
             const pLower = pergunta.toLowerCase();
 
-            if (pLower.includes('saldo') || pLower.includes('financeiro')) {
+            if (pLower.includes('saldo') || pLower.includes('financeiro') || pLower.includes('relatório') || pLower.includes('relatorio')) {
                 let rec = 0, pag = 0;
                 (db.financeiro || []).forEach(f => { if(f.tipo==='Receber') rec+=f.valor; else pag+=f.valor; });
-                resposta = `O saldo atual estimado é de R$ ${(rec - pag).toFixed(2)} (Receitas: R$ ${rec.toFixed(2)} / Despesas: R$ ${pag.toFixed(2)}).`;
-            } else if (pLower.includes('morador') || pLower.includes('moradores')) {
-                resposta = `Existem atualmente ${(db.moradores || []).length} moradores registados no sistema.`;
-            } else if (pLower.includes('estoque')) {
-                resposta = `O inventário possui ${(db.estoque || []).length} itens cadastrados.`;
+                resposta = `O saldo financeiro atual registrado é de R$ ${(rec - pag).toFixed(2)} (Receitas: R$ ${rec.toFixed(2)} | Despesas: R$ ${pag.toFixed(2)}).`;
+            } else if (pLower.includes('morador') || pLower.includes('moradores') || pLower.includes('unidade')) {
+                resposta = `Atualmente existem ${(db.moradores || []).length} moradores/unidades cadastrados no sistema Guardiões do Bravo.`;
+            } else if (pLower.includes('estoque') || pLower.includes('inventario') || pLower.includes('produto')) {
+                resposta = `O inventário do condomínio possui ${(db.estoque || []).length} itens/produtos cadastrados.`;
             }
 
             setTimeout(() => {
@@ -301,6 +309,17 @@
 
             if (widgetGato) widgetGato.classList.remove('hidden');
 
+            const modulosNavegacao = [
+                { id: 'dashboard', nome: 'Dashboard', icone: 'fa-chart-pie' },
+                { id: 'condominio', nome: 'Condomínio', icone: 'fa-building' },
+                { id: 'moradores', nome: 'Moradores', icone: 'fa-users' },
+                { id: 'financeiro', nome: 'Financeiro', icone: 'fa-money-bill-wave' },
+                { id: 'estoque', nome: 'Estoque', icone: 'fa-boxes-stacked' },
+                { id: 'documentos', nome: 'Documentos', icone: 'fa-file-lines' },
+                { id: 'relatorios', nome: 'Relatórios', icone: 'fa-chart-line' },
+                { id: 'usuarios', nome: 'Utilizadores', icone: 'fa-user-gear' }
+            ];
+
             container.innerHTML = `
                 <div class="flex-1 flex flex-col md:flex-row min-h-screen w-full">
                     <aside class="w-64 bg-slate-950 text-slate-300 flex flex-col sidebar-full border-r border-slate-800">
@@ -310,21 +329,66 @@
                                 <div><h1 class="font-black text-white text-base">Guardiões</h1><p class="text-[10px] text-teal-400 font-extrabold uppercase">Cloud</p></div>
                             </div>
                         </div>
-                        <nav class="flex-1 overflow-y-auto p-3.5 space-y-2">
-                            <button onclick="abrirModulo('dashboard')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold ${tabsState.activeTab === 'dashboard' ? 'bg-teal-600 text-white' : 'hover:bg-slate-900 text-slate-400'}"><i class="fa-solid fa-chart-pie w-5"></i> Dashboard</button>
-                            <button onclick="abrirModulo('moradores')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold ${tabsState.activeTab === 'moradores' ? 'bg-teal-600 text-white' : 'hover:bg-slate-900 text-slate-400'}"><i class="fa-solid fa-users w-5"></i> Moradores</button>
-                            <button onclick="abrirModulo('estoque')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold ${tabsState.activeTab === 'estoque' ? 'bg-teal-600 text-white' : 'hover:bg-slate-900 text-slate-400'}"><i class="fa-solid fa-boxes-stacked w-5"></i> Estoque</button>
+                        <nav class="flex-1 overflow-y-auto p-3.5 space-y-1.5">
+                            ${modulosNavegacao.map(m => `
+                                <button onclick="abrirModulo('${m.id}')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold ${tabsState.activeTab === m.id ? 'bg-teal-600 text-white shadow-md' : 'hover:bg-slate-900 text-slate-400'}">
+                                    <i class="fa-solid ${m.icone} w-5"></i> ${m.nome}
+                                </button>
+                            `).join('')}
                         </nav>
                         <div class="p-4 bg-slate-950 border-t border-slate-900 flex items-center justify-between">
-                            <span class="text-xs font-bold text-slate-100">Administrador</span>
-                            <button onclick="encerrarSessao()" class="text-slate-400 hover:text-rose-400"><i class="fa-solid fa-right-from-bracket"></i></button>
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-full bg-teal-700 text-white flex items-center justify-center font-bold text-xs">
+                                    ${escapeHTML((sessao.usuarioLogado.nome || 'A').charAt(0))}
+                                </div>
+                                <span class="text-xs font-bold text-slate-100 truncate max-w-[110px]">${escapeHTML(sessao.usuarioLogado.nome || 'Utilizador')}</span>
+                            </div>
+                            <button onclick="encerrarSessao()" class="text-slate-400 hover:text-rose-400 p-1" title="Sair"><i class="fa-solid fa-right-from-bracket"></i></button>
                         </div>
                     </aside>
                     <div class="flex-1 flex flex-col min-h-screen overflow-hidden w-full">
+                        <!-- Barra de Abas -->
+                        <div class="bg-slate-200 border-b border-slate-300 flex items-center px-4 pt-2 gap-1 overflow-x-auto no-print">
+                            ${tabsState.openTabs.map(tabId => `
+                                <div onclick="abrirModulo('${tabId}')" class="px-4 py-2 rounded-t-xl text-xs font-bold flex items-center gap-2 cursor-pointer transition-all ${tabsState.activeTab === tabId ? 'tab-active shadow-sm' : 'bg-slate-300/70 text-slate-600 hover:bg-slate-300'}">
+                                    <span>${MODULE_NAMES[tabId] || tabId}</span>
+                                    ${tabsState.openTabs.length > 1 ? `<button onclick="fecharAba(event, '${tabId}')" class="hover:text-rose-600 text-slate-400 rounded-full p-0.5"><i class="fa-solid fa-xmark text-[10px]"></i></button>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+
+                        <!-- Conteúdo da Aba Ativa -->
                         <main class="flex-1 overflow-y-auto p-6 bg-slate-100">
-                            <div class="bg-white p-8 rounded-3xl shadow-sm space-y-4">
-                                <h2 class="text-2xl font-black text-slate-900">${MODULE_NAMES[tabsState.activeTab]}</h2>
-                                <p class="text-xs text-slate-500">Módulo ativo. Utilize o gatinho no canto inferior direito para tirar dúvidas e pesquisar relatórios rapidamente!</p>
+                            <div class="bg-white p-8 rounded-3xl shadow-sm space-y-6 border border-slate-200/80">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <h2 class="text-2xl font-black text-slate-900">${MODULE_NAMES[tabsState.activeTab]}</h2>
+                                        <p class="text-xs text-slate-500 mt-1">Gestão centralizada do ${db.condominio?.nome || 'Condomínio Guardiões do Bravo'}.</p>
+                                    </div>
+                                    <span class="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-teal-50 text-teal-700 border border-teal-200">Em Nuvem</span>
+                                </div>
+
+                                <!-- Conteúdo Dinâmico por Módulo -->
+                                ${tabsState.activeTab === 'dashboard' ? `
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2 card-modern">
+                                            <span class="text-xs font-bold text-slate-500 uppercase">Moradores Cadastrados</span>
+                                            <h3 class="text-3xl font-black text-slate-900">${(db.moradores || []).length}</h3>
+                                        </div>
+                                        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2 card-modern">
+                                            <span class="text-xs font-bold text-slate-500 uppercase">Itens em Estoque</span>
+                                            <h3 class="text-3xl font-black text-slate-900">${(db.estoque || []).length}</h3>
+                                        </div>
+                                        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2 card-modern">
+                                            <span class="text-xs font-bold text-slate-500 uppercase">Documentos na Nuvem</span>
+                                            <h3 class="text-3xl font-black text-slate-900">${(db.documentos || []).length}</h3>
+                                        </div>
+                                    </div>
+                                ` : `
+                                    <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200/70 text-slate-600 text-sm">
+                                        Módulo <b>${MODULE_NAMES[tabsState.activeTab]}</b> pronto e operacional na nuvem. Utilize o assistente gatinho no canto inferior direito para gerar relatórios e obter resumos rápidos!
+                                    </div>
+                                `}
                             </div>
                         </main>
                     </div>
