@@ -57,23 +57,9 @@
 </head>
 <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
 
-    <!-- Indicador de Status da Nuvem e Atualização -->
+    <!-- Indicador de Status da Nuvem -->
     <div id="status-nuvem" class="bg-slate-900 text-teal-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm">
         <i class="fa-solid fa-cloud animate-pulse"></i> A ligar ao Supabase na Nuvem...
-    </div>
-
-    <!-- Alerta Flutuante de Nova Versão Disponível -->
-    <div id="alerta-atualizacao" class="hidden fixed bottom-5 right-5 z-50 bg-slate-900 text-white p-4 rounded-2xl shadow-2xl border border-teal-500/30 flex items-center gap-4 max-w-sm animate-bounce">
-        <div class="w-10 h-10 bg-teal-500/20 text-teal-400 rounded-xl flex items-center justify-center font-black text-lg">
-            <i class="fa-solid fa-rotate"></i>
-        </div>
-        <div class="flex-1">
-            <h4 class="text-xs font-bold text-white">Nova versão disponível!</h4>
-            <p class="text-[11px] text-slate-400">Seus dados já foram salvos automaticamente.</p>
-        </div>
-        <button onclick="aplicarNovaVersao()" class="px-3 py-1.5 bg-teal-600 hover:bg-teal-500 text-white text-xs font-bold rounded-xl transition-all shadow-md">
-            Atualizar
-        </button>
     </div>
 
     <div id="app" class="flex-1 flex flex-col min-h-screen w-full"></div>
@@ -81,9 +67,8 @@
 
     <script>
         // =========================================================================
-        // VERSÃO DO SISTEMA (Altere este número sempre que subir um novo HTML/JS)
+        // CONFIGURAÇÃO DA SUA NUVEM (SUPABASE)
         // =========================================================================
-        const VERSAO_SISTEMA_ATUAL = "1.0.1";
         const SUPABASE_URL = 'https://ycwgwtzysvizossqveiy.supabase.co'; 
         const SUPABASE_KEY = 'sb_publishable_tsVxjzBmQ6v33EXQbz_U7Q_7DTW3b3m';
         // =========================================================================
@@ -108,66 +93,6 @@
             return str.replace(/[&<>"']/g, function(m) {
                 return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
             });
-        }
-
-        // =========================================================================
-        // PROTEÇÃO CONTRA PERDA DE DADOS EM FORMULÁRIOS (RASCUNHO AUTOMÁTICO)
-        // =========================================================================
-        const FORM_DRAFT_KEY = 'guardioes_bravo_form_draft';
-
-        function salvarFormularioEmTempoReal(e) {
-            const target = e.target;
-            if (!target || !target.id) return;
-
-            try {
-                const rascunhoAtual = JSON.parse(localStorage.getItem(FORM_DRAFT_KEY) || '{}');
-                rascunhoAtual[target.id] = target.value;
-                localStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(rascunhoAtual));
-            } catch (err) {
-                console.warn('Erro ao guardar rascunho:', err);
-            }
-        }
-
-        function restaurarFormulariosEmTempoReal() {
-            try {
-                const rascunho = JSON.parse(localStorage.getItem(FORM_DRAFT_KEY) || '{}');
-                Object.keys(rascunho).forEach(id => {
-                    const campo = document.getElementById(id);
-                    if (campo) {
-                        campo.value = rascunho[id];
-                    }
-                });
-            } catch (err) {
-                console.warn('Erro ao restaurar rascunho:', err);
-            }
-        }
-
-        function limparRascunhosFormulario() {
-            try {
-                localStorage.removeItem(FORM_DRAFT_KEY);
-            } catch (err) {}
-        }
-
-        // Registra os ouvintes em tempo real para qualquer campo alterado no sistema
-        document.addEventListener('input', salvarFormularioEmTempoReal);
-        document.addEventListener('change', salvarFormularioEmTempoReal);
-
-        // =========================================================================
-        // CHECAGEM DE ATUALIZAÇÃO SEM PERDER DADOS
-        // =========================================================================
-        function verificarVersaoSistema() {
-            const versaoGuardada = localStorage.getItem('guardioes_versao');
-            if (!versaoGuardada) {
-                localStorage.setItem('guardioes_versao', VERSAO_SISTEMA_ATUAL);
-            } else if (versaoGuardada !== VERSAO_SISTEMA_ATUAL) {
-                const elAlerta = document.getElementById('alerta-atualizacao');
-                if (elAlerta) elAlerta.classList.remove('hidden');
-            }
-        }
-
-        function aplicarNovaVersao() {
-            localStorage.setItem('guardioes_versao', VERSAO_SISTEMA_ATUAL);
-            window.location.reload(true);
         }
 
         function compactarArquivoParaGzip(file, callback) {
@@ -294,6 +219,47 @@
             }
         }
 
+        // =========================================================================
+        // MECANISMO AUTOMÁTICO DE SALVAMENTO DE FORMULÁRIOS (NADA SE PERDE)
+        // =========================================================================
+        const FORM_DRAFT_KEY = 'guardioes_bravo_form_draft';
+
+        function salvarFormularioEmTempoReal(e) {
+            const target = e.target;
+            if (!target || !target.id) return;
+
+            try {
+                const rascunhoAtual = JSON.parse(localStorage.getItem(FORM_DRAFT_KEY) || '{}');
+                rascunhoAtual[target.id] = target.value;
+                localStorage.setItem(FORM_DRAFT_KEY, JSON.stringify(rascunhoAtual));
+            } catch (err) {
+                console.warn('Erro ao salvar rascunho de formulário:', err);
+            }
+        }
+
+        function restaurarFormulariosEmTempoReal() {
+            try {
+                const rascunho = JSON.parse(localStorage.getItem(FORM_DRAFT_KEY) || '{}');
+                Object.keys(rascunho).forEach(id => {
+                    const campo = document.getElementById(id);
+                    if (campo) {
+                        campo.value = rascunho[id];
+                    }
+                });
+            } catch (err) {
+                console.warn('Erro ao restaurar rascunho de formulário:', err);
+            }
+        }
+
+        function limparRascunhosFormulario() {
+            try {
+                localStorage.removeItem(FORM_DRAFT_KEY);
+            } catch (err) {}
+        }
+
+        document.addEventListener('input', salvarFormularioEmTempoReal);
+        document.addEventListener('change', salvarFormularioEmTempoReal);
+
         async function carregarDadosDaNuvem() {
             const elStatus = document.getElementById('status-nuvem');
             try {
@@ -303,7 +269,7 @@
                     .eq('id', 'principal')
                     .maybeSingle();
 
-                if (error) throw error;
+                if (error) throw error;   // leitura falhou: não grava nada, cai no catch
                 if (data && data.payload) {
                     db = data.payload;
                     if (!db.plano_contas) db.plano_contas = DEFAULT_DATA.plano_contas;
@@ -849,6 +815,7 @@
             const canvas = document.getElementById('main-canvas');
             if (!canvas) return;
 
+            // Destruição segura de gráficos existentes para re-renderização limpa
             [chartInstanceReceitaDespesa, chartInstanceOcupacao, chartInstanceEstoque, chartInstanceEstoqueDash].forEach(c => {
                 if (c) try { c.destroy(); } catch (e) {}
             });
@@ -902,7 +869,7 @@
                     canvas.innerHTML = `<div class="p-8 text-center text-slate-500 font-bold">Módulo em desenvolvimento...</div>`;
             }
 
-            // Restaura automaticamente os dados parciais que estavam sendo digitados
+            // Restaura automaticamente rascunhos salvos de formulários em edição
             setTimeout(restaurarFormulariosEmTempoReal, 50);
         }
 
@@ -1674,9 +1641,8 @@
             if (modal) modal.innerHTML = '';
         }
 
-        // Inicialização com Verificação de Versão
+        // Evento de Inicialização
         document.addEventListener('DOMContentLoaded', () => {
-            verificarVersaoSistema();
             carregarDadosDaNuvem();
         });
     </script>
