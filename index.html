@@ -1,276 +1,590 @@
 <!DOCTYPE html>
 <html lang="pt-BR" class="h-full bg-slate-950">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guardiões do Bravo - Gestão Condominial Completa em Nuvem</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: { sans: ['Inter', 'sans-serif'] },
-                    colors: {
-                        brand: {
-                            50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4',
-                            400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e',
-                            800: '#115e59', 900: '#134e4a', 950: '#042f2e'
-                        }
-                    }
-                }
-            }
-        }
-    </script>
-    <style>
-        html, body { height: 100%; margin: 0; padding: 0; overflow-x: hidden; font-family: 'Inter', sans-serif; }
-        input, select, textarea { color: #0f172a !important; font-weight: 600 !important; }
-        .tab-active { border-bottom: 2px solid #0d9488; background-color: #ffffff; color: #0f766e; font-weight: 700; shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-        ::-webkit-scrollbar { width: 6px; height: 6px; }
-        ::-webkit-scrollbar-track { background: #f1f5f9; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        .sidebar-full { height: 100vh; position: sticky; top: 0; }
-        .card-modern { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid rgba(226, 232, 240, 0.8); }
-        .card-modern:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04); }
-        .glass-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); }
-        @media print {
-            aside, header, .no-print, button, .actions-col { display: none !important; }
-            body { background: white !important; color: black !important; }
-            main { padding: 0 !important; }
-            .print-break { page-break-before: always; }
-        }
-    </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guardiões do Bravo - Gestão Condominial Completa em Nuvem</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons CDN -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Pako (Compressão Gzip para arquivos grandes) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
+    <!-- Supabase JS Client para Banco de Dados na Nuvem -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        brand: {
+                            50: '#f0fdfa', 100: '#ccfbf1', 200: '#99f6e4', 300: '#5eead4',
+                            400: '#2dd4bf', 500: '#14b8a6', 600: '#0d9488', 700: '#0f766e',
+                            800: '#115e59', 900: '#134e4a', 950: '#042f2e'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        html, body { height: 100%; margin: 0; padding: 0; overflow-x: hidden; font-family: 'Inter', sans-serif; }
+        input, select, textarea { color: #0f172a !important; font-weight: 600 !important; }
+        .tab-active { border-bottom: 2px solid #0d9488; background-color: #ffffff; color: #0f766e; font-weight: 700; shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .sidebar-full { height: 100vh; position: sticky; top: 0; }
+        .card-modern { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); border: 1px solid rgba(226, 232, 240, 0.8); }
+        .card-modern:hover { transform: translateY(-3px); box-shadow: 0 20px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04); }
+        .glass-header { background: rgba(255, 255, 255, 0.85); backdrop-filter: blur(12px); }
+        @media print {
+            aside, header, .no-print, button, .actions-col { display: none !important; }
+            body { background: white !important; color: black !important; }
+            main { padding: 0 !important; }
+            .print-break { page-break-before: always; }
+        }
+    </style>
 </head>
 <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
 
-    <div id="status-nuvem" class="bg-slate-900 text-teal-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm">
-        <i class="fa-solid fa-cloud animate-pulse"></i> A ligar ao Supabase na Nuvem...
-    </div>
+    <!-- Indicador de Status da Nuvem -->
+    <div id="status-nuvem" class="bg-slate-900 text-teal-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm">
+        <i class="fa-solid fa-cloud animate-pulse"></i> A ligar ao Supabase na Nuvem...
+    </div>
 
-    <div id="app" class="flex-1 flex flex-col min-h-screen w-full"></div>
-    <div id="modal-container"></div>
+    <div id="app" class="flex-1 flex flex-col min-h-screen w-full"></div>
+    <div id="modal-container"></div>
 
-    <script>
-        const SUPABASE_URL = 'https://ycwgwtzysvizossqveiy.supabase.co'; 
-        const SUPABASE_KEY = 'sb_publishable_tsVxjzBmQ6v33EXQbz_U7Q_7DTW3b3m';
+    <script>
+        // =========================================================================
+        // CONFIGURAÇÃO DA SUA NUVEM (SUPABASE)
+        // =========================================================================
+        const SUPABASE_URL = 'https://ycwgwtzysvizossqveiy.supabase.co'; 
+        const SUPABASE_KEY = 'sb_publishable_tsVxjzBmQ6v33EXQbz_U7Q_7DTW3b3m';
+        // =========================================================================
 
-        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        let tempArquivoNome = ''; 
-        let tempArquivoGzipBase64 = ''; 
-        let tempEstoqueFotoNome = '';
-        let tempEstoqueFotoGzip = '';
+        let tempArquivoNome = ''; 
+        let tempArquivoGzipBase64 = ''; 
+        let tempEstoqueFotoNome = '';
+        let tempEstoqueFotoGzip = '';
 
-        let filtroAtivoMoradores = { bloco: '', nome: '' };
-        let filtroAtivoEstoque = 'todos'; 
-        let usuarioPendentePrimeiroAcesso = null; 
-        let chartInstanceReceitaDespesa = null;
-        let chartInstanceOcupacao = null;
-        let chartInstanceEstoque = null;
-        let chartInstanceEstoqueDash = null;
+        let filtroAtivoMoradores = { bloco: '', nome: '' };
+        let filtroAtivoEstoque = 'todos'; 
+        let usuarioPendentePrimeiroAcesso = null; 
+        let chartInstanceReceitaDespesa = null;
+        let chartInstanceOcupacao = null;
+        let chartInstanceEstoque = null;
+        let chartInstanceEstoqueDash = null;
 
-        function escapeHTML(str) {
-            if (typeof str !== 'string') return str || '';
-            return str.replace(/[&<>"']/g, function(m) {
-                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
-            });
-        }
+        function escapeHTML(str) {
+            if (typeof str !== 'string') return str || '';
+            return str.replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
+        }
 
-        // --- TODAS AS SUAS FUNÇÕES DE GZIP, BACKUP E BANCO ---
-        // (carregarDadosDaNuvem, salvarDadosNaNuvem, etc.)
+        function compactarArquivoParaGzip(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const arrayBuffer = e.target.result;
+                    const uint8Array = new Uint8Array(arrayBuffer);
+                    const compressed = pako.deflate(uint8Array);
+                    let binary = '';
+                    const len = compressed.byteLength;
+                    for (let i = 0; i < len; i++) { binary += String.fromCharCode(compressed[i]); }
+                    callback(btoa(binary), file.name);
+                } catch (err) { alert('Erro ao compactar ficheiro.'); }
+            };
+            reader.readAsArrayBuffer(file);
+        }
 
-        const MODULE_NAMES = {
-            dashboard: 'Dashboard Executive',
-            ia: 'IA Assistente Conversacional', // <--- Módulo da IA registrado
-            condominio: 'Dados do Condomínio & Conselho',
-            plano_contas: 'Plano de Contas',
-            financeiro: 'Contas Pagar / Receber',
-            formas_monetarias: 'Formas Monetárias',
-            contas_bancarias: 'Contas Bancárias / Caixa',
-            moradores: 'Moradores & Unidades',
-            fornecedores: 'Fornecedores',
-            empregados: 'Empregados',
-            categorias: 'Pastas & Categorias',
-            estoque: 'Estoque & Inventário',
-            acerto_estoque: 'Acerto de Estoque',
-            documentos: 'Gestão de Documentos',
-            relatorios: 'Central de Relatórios & DRE',
-            usuarios: 'Gestão de Utilizadores'
-        };
+        function extrairEDownloadArquivo(base64Gzip, nomeOriginal) {
+            try {
+                const binaryString = atob(base64Gzip);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); }
+                const decompressed = pako.inflate(bytes);
+                const blob = new Blob([decompressed]);
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = nomeOriginal;
+                document.body.appendChild(a); a.click();
+                document.body.removeChild(a); URL.revokeObjectURL(url);
+            } catch (err) { alert('Erro ao extrair ficheiro.'); }
+        }
 
-        // --- SEUS MÓDULOS ANTIGOS (renderMoradores, renderEstoque, etc.) ---
+        function visualizarArquivo(base64Gzip, nomeOriginal) {
+            try {
+                const binaryString = atob(base64Gzip);
+                const len = binaryString.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) { bytes[i] = binaryString.charCodeAt(i); }
+                const decompressed = pako.inflate(bytes);
+                
+                let mimeType = 'application/octet-stream';
+                const ext = nomeOriginal.split('.').pop().toLowerCase();
+                if (ext === 'pdf') mimeType = 'application/pdf';
+                else if (['png', 'jpg', 'jpeg', 'gif', 'webp'].includes(ext)) mimeType = `image/${ext === 'jpg' ? 'jpeg' : ext}`;
+                else if (ext === 'txt') mimeType = 'text/plain';
 
-        // =========================================================================
-        // MÓDULO DE INTELIGÊNCIA ARTIFICIAL E ASSISTENTE EXECUTIVO
-        // =========================================================================
-        let historicoChatIA = [
-            { autor: 'ia', mensagem: 'Olá! Sou o assistente inteligente do Guardiões do Bravo. Como posso ajudar? Você pode me pedir para cadastrar moradores, dar baixa em estoque, criar produtos ou tirar dúvidas.' }
-        ];
+                const blob = new Blob([decompressed], { type: mimeType });
+                const url = URL.createObjectURL(blob);
+                window.open(url, '_blank');
+            } catch (err) { alert('Erro ao visualizar o ficheiro.'); }
+        }
 
-        async function processarComandoIA(textoComando) {
-            if (!textoComando || !textoComando.trim()) return;
+        const DEFAULT_DATA = {
+            condominio: {
+                nome: 'Condomínio Guardiões do Bravo',
+                cnpj: '12.345.678/0001-90',
+                razaoSocial: 'Condomínio Residencial Guardiões do Bravo',
+                endereco: 'Rua das Palmeiras, 1000',
+                bairro: 'Centro',
+                cidade: 'Curitiba',
+                uf: 'PR',
+                cep: '80000-000',
+                telefone: '(41) 3333-0000',
+                email: 'contato@guardioesdobravo.com.br',
+                copelBloco1: '',
+                copelBloco2: '',
+                copelBloco3: '',
+                copelBloco4: '',
+                copelAreasComuns: '',
+                gasSalao: '',
+                sanepar: ''
+            },
+            conselheiros: [],
+            usuarios: [
+                { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', cargo: 'Administrador', loja: 'Guardiões do Bravo', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Admin@12345' },
+                { id: 'usr_sheylla', usuario: 'sheylla', nome: 'Sheylla', email: 'sheylla@guardioes.com', cargo: 'Conselho Fiscal', loja: 'Guardiões do Bravo', perfil: 'Operador', status: 'Ativo', primeiroAcesso: true, senhaHash: '123456' }
+            ],
+            plano_contas: [
+                { id: 'pc_1', codigo: '1.1', nome: 'Taxa Ordinária de Condomínio', tipo: 'Receita' },
+                { id: 'pc_2', codigo: '1.2', nome: 'Fundo de Reserva', tipo: 'Receita' },
+                { id: 'pc_3', codigo: '2.1', nome: 'Despesas com Água e Saneamento', tipo: 'Despesa' },
+                { id: 'pc_4', codigo: '2.2', nome: 'Despesas com Energia Elétrica (Copel)', tipo: 'Despesa' },
+                { id: 'pc_5', codigo: '2.3', nome: 'Manutenção e Conservação Predial', tipo: 'Despesa' }
+            ],
+            financeiro: [],
+            formas_monetarias: [],
+            contas_bancarias: [],
+            moradores: [],
+            fornecedores: [],
+            empregados: [],
+            categorias: [],
+            estoque: [],
+            acertos_estoque: [],
+            motivos_acerto_estoque: [
+                { id: 'mot_1', nome: 'Perca / Avaria' },
+                { id: 'mot_2', nome: 'Quebra' },
+                { id: 'mot_3', nome: 'Ajuste de Inventário' },
+                { id: 'mot_4', nome: 'Doação / Uso Interno' }
+            ],
+            documentos: [],
+            logs: []
+        };
 
-            const cmd = textoComando.trim();
-            historicoChatIA.push({ autor: 'usuario', mensagem: cmd });
-            renderMainOnly();
+        let db = DEFAULT_DATA;
+        const dadosLocaisSalvos = localStorage.getItem('guardioes_bravo_db');
+        if (dadosLocaisSalvos) {
+            try {
+                db = JSON.parse(dadosLocaisSalvos);
+                if (!db.plano_contas) db.plano_contas = DEFAULT_DATA.plano_contas;
+                if (!db.acertos_estoque) db.acertos_estoque = [];
+                if (!db.motivos_acerto_estoque) db.motivos_acerto_estoque = DEFAULT_DATA.motivos_acerto_estoque;
+            } catch (e) { db = DEFAULT_DATA; }
+        }
 
-            const cmdLower = cmd.toLowerCase();
-            let respostaIA = "";
+        let sessao = { usuarioLogado: null };
 
-            if (cmdLower.includes('cadastrar morador') || cmdLower.includes('adicionar morador')) {
-                const blocoMatch = cmd.match(/bloco\s*(\w+)/i);
-                const apMatch = cmd.match(/(?:ap|apartamento)\s*(\d+)/i);
-                const nomeMatch = cmd.match(/(?:morador|adicionar)\s+([A-Za-zÀ-ÖØ-öø-ÿ\s]+?)(?=\s+bloco|\s+ap|\s+email|\s+tel|$)/i);
+        async function carregarDadosDaNuvem() {
+            const elStatus = document.getElementById('status-nuvem');
+            try {
+                const { data, error } = await supabaseClient
+                    .from('condominio_dados')
+                    .select('payload')
+                    .eq('id', 'principal')
+                    .maybeSingle();
 
-                const bloco = blocoMatch ? blocoMatch[1] : '1';
-                const ap = apMatch ? apMatch[1] : '';
-                const nome = nomeMatch ? nomeMatch[1].trim() : 'Novo Morador';
+                if (data && data.payload) {
+                    db = data.payload;
+                    if (!db.plano_contas) db.plano_contas = DEFAULT_DATA.plano_contas;
+                    if (!db.acertos_estoque) db.acertos_estoque = [];
+                    if (!db.motivos_acerto_estoque) db.motivos_acerto_estoque = DEFAULT_DATA.motivos_acerto_estoque;
+                    localStorage.setItem('guardioes_bravo_db', JSON.stringify(db));
+                    if (elStatus) {
+                        elStatus.className = "bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm";
+                        elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-down text-emerald-400"></i> Sincronizado com o Supabase com Sucesso!`;
+                    }
+                } else {
+                    await salvarDadosNaNuvem(db);
+                }
 
-                if (!db.moradores) db.moradores = [];
-                
-                db.moradores.push({
-                    id: 'mor_ia_' + Date.now(),
-                    bloco: bloco,
-                    apartamento: ap,
-                    nome: nome,
-                    email: '', telefone: '', cpf: '', petNome: '', vagaGaragem: ''
-                });
+                supabaseClient
+                    .channel('mudancas-condominio')
+                    .on(
+                        'postgres_changes',
+                        { event: '*', schema: 'public', table: 'condominio_dados', filter: 'id=eq.principal' },
+                        (payload) => {
+                            if (payload.new && payload.new.payload) {
+                                db = payload.new.payload;
+                                if (!db.plano_contas) db.plano_contas = DEFAULT_DATA.plano_contas;
+                                if (!db.acertos_estoque) db.acertos_estoque = [];
+                                if (!db.motivos_acerto_estoque) db.motivos_acerto_estoque = DEFAULT_DATA.motivos_acerto_estoque;
+                                localStorage.setItem('guardioes_bravo_db', JSON.stringify(db));
+                                renderMainOnly();
+                                
+                                if (elStatus) {
+                                    elStatus.className = "bg-teal-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print animate-pulse border-b border-teal-800";
+                                    elStatus.innerHTML = `<i class="fa-solid fa-rotate"></i> Dados atualizados em tempo real por outro utilizador!`;
+                                    setTimeout(() => {
+                                        elStatus.className = "bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm";
+                                        elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> Sincronizado com a Nuvem em Tempo Real`;
+                                    }, 2000);
+                                }
+                            }
+                        }
+                    )
+                    .subscribe();
 
-                salvarDados(db);
-                respostaIA = `Morador **${nome}** (Bloco ${bloco}, Ap ${ap}) cadastrado com sucesso!`;
-            }
-            else if (cmdLower.includes('dar baixa') || cmdLower.includes('saida') || cmdLower.includes('remover do estoque')) {
-                const qtdMatch = cmd.match(/\d+/);
-                const qtd = qtdMatch ? parseInt(qtdMatch[0]) : 1;
-                
-                const itemEncontrado = (db.estoque || []).find(item => cmdLower.includes(item.nome.toLowerCase()));
+            } catch (err) {
+                if (elStatus) {
+                    elStatus.className = "bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800";
+                    elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> A utilizar armazenamento local.`;
+                }
+            }
+            renderApp();
+        }
 
-                if (itemEncontrado) {
-                    const qtdAtual = parseFloat(itemEncontrado.quantidade || 0);
-                    if (qtdAtual >= qtd) {
-                        itemEncontrado.quantidade = qtdAtual - qtd;
-                        if (!db.acertos_estoque) db.acertos_estoque = [];
-                        db.acertos_estoque.push({
-                            id: 'act_ia_' + Date.now(),
-                            data: new Date().toISOString().split('T')[0],
-                            produtoId: itemEncontrado.id,
-                            produtoNome: itemEncontrado.nome,
-                            tipo: 'Saída', quantidade: qtd,
-                            motivo: 'Saída via IA Assistant',
-                            usuario: sessao.usuarioLogado ? sessao.usuarioLogado.nome : 'IA Assistant'
-                        });
-                        salvarDados(db);
-                        respostaIA = `Baixa de **${qtd} un** do item **${itemEncontrado.nome}** efetuada com sucesso. Restam: ${itemEncontrado.quantidade}.`;
-                    } else {
-                        respostaIA = `Estoque insuficiente para **${itemEncontrado.nome}**. Quantidade atual: ${qtdAtual}.`;
-                    }
-                } else {
-                    respostaIA = `Não consegui identificar o produto no estoque para dar baixa. Certifique-se de usar o nome exato do item.`;
-                }
-            }
-            else if (cmdLower.includes('cadastrar produto') || cmdLower.includes('adicionar produto')) {
-                const qtdMatch = cmd.match(/quantidade\s*(\d+)/i) || cmd.match(/qtd\s*(\d+)/i);
-                const valorMatch = cmd.match(/valor\s*([\d\.,]+)/i) || cmd.match(/preco\s*([\d\.,]+)/i);
-                const nomeMatch = cmd.match(/(?:produto|adicionar)\s+([A-Za-zÀ-ÖØ-öø-ÿ0-9\s]+?)(?=\s+quantidade|\s+qtd|\s+valor|\s+preco|$)/i);
+        async function salvarDadosNaNuvem(dataObj) {
+            db = dataObj;
+            localStorage.setItem('guardioes_bravo_db', JSON.stringify(db));
 
-                const qtd = qtdMatch ? parseInt(qtdMatch[1]) : 1;
-                const valor = valorMatch ? parseFloat(valorMatch[1].replace(',', '.')) : 0;
-                const nome = nomeMatch ? nomeMatch[1].trim() : 'Novo Produto';
+            const elStatus = document.getElementById('status-nuvem');
+            if (elStatus) {
+                elStatus.className = "bg-slate-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print animate-pulse border-b border-slate-800";
+                elStatus.innerHTML = `<i class="fa-solid fa-rotate fa-spin"></i> A guardar na nuvem...`;
+            }
 
-                if (!db.estoque) db.estoque = [];
+            try {
+                const { error } = await supabaseClient
+                    .from('condominio_dados')
+                    .upsert({ id: 'principal', payload: db, atualizado_em: new Date() });
 
-                db.estoque.push({
-                    id: 'est_ia_' + Date.now(),
-                    nome: nome, categoria: 'Geral', quantidade: qtd, qtdMinima: 2, valorUnitario: valor, localizacao: 'Almoxarifado'
-                });
+                if (error) throw error;
 
-                salvarDados(db);
-                respostaIA = `Produto **${nome}** (Qtd: ${qtd}, R$ ${valor.toFixed(2)}) cadastrado no estoque com sucesso!`;
-            }
-            else if (cmdLower.includes('total moradores') || cmdLower.includes('quantos moradores')) {
-                respostaIA = `Atualmente o condomínio possui **${(db.moradores || []).length} moradores** cadastrados.`;
-            } 
-            else if (cmdLower.includes('resumo financeiro') || cmdLower.includes('saldo')) {
-                let totalReceitas = (db.financeiro || []).filter(f => f.tipo === 'Receita').reduce((a, b) => a + Number(b.valor || 0), 0);
-                let totalDespesas = (db.financeiro || []).filter(f => f.tipo === 'Despesa').reduce((a, b) => a + Number(b.valor || 0), 0);
-                respostaIA = `Resumo Financeiro:\n- **Receitas:** R$ ${totalReceitas.toFixed(2)}\n- **Despesas:** R$ ${totalDespesas.toFixed(2)}\n- **Saldo:** R$ ${(totalReceitas - totalDespesas).toFixed(2)}`;
-            } 
-            else {
-                respostaIA = `Comando recebido: "${cmd}". Tente comandos como:\n- *Cadastrar morador João Silva Bloco 1 Ap 102*\n- *Cadastrar produto Lâmpada quantidade 10 valor 12.50*\n- *Dar baixa em 2 Lâmpada*\n- *Resumo financeiro*`;
-            }
+                if (elStatus) {
+                    elStatus.className = "bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm";
+                    elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado com a Nuvem em Tempo Real`;
+                }
+            } catch (err) {
+                if (elStatus) {
+                    elStatus.className = "bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800";
+                    elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Guardado localmente (Erro na nuvem)`;
+                }
+            }
+        }
 
-            historicoChatIA.push({ autor: 'ia', mensagem: respostaIA });
-            renderMainOnly();
-        }
+        function salvarDados(data) { salvarDadosNaNuvem(data); }
 
-        function renderModuloIA() {
-            const mensagensHTML = historicoChatIA.map(msg => {
-                const isUser = msg.autor === 'usuario';
-                return `
-                    <div class="flex ${isUser ? 'justify-end' : 'justify-start'} mb-3">
-                        <div class="max-w-[80%] p-3.5 rounded-2xl text-xs font-medium leading-relaxed ${
-                            isUser ? 'bg-teal-600 text-white rounded-br-none shadow-md' : 'bg-slate-200 text-slate-800 rounded-bl-none border border-slate-300'
-                        }">
-                            ${escapeHTML(msg.mensagem).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>')}
-                        </div>
-                    </div>
-                `;
-            }).join('');
+        try {
+            const sessaoData = sessionStorage.getItem('guardioes_sessao');
+            if (sessaoData) sessao.usuarioLogado = JSON.parse(sessaoData);
+        } catch (e) { sessao.usuarioLogado = null; }
 
-            return `
-                <div class="p-6 max-w-4xl mx-auto space-y-4">
-                    <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm flex items-center justify-between">
-                        <div class="flex items-center gap-3">
-                            <div class="w-10 h-10 bg-teal-600 text-white rounded-xl flex items-center justify-center font-bold text-lg shadow-md shadow-teal-600/20">
-                                <i class="fa-solid fa-robot"></i>
-                            </div>
-                            <div>
-                                <h2 class="text-base font-bold text-slate-900">IA Assistente Executiva</h2>
-                                <p class="text-[11px] font-semibold text-teal-600">Comandos de texto, ações diretas e relatórios</p>
-                            </div>
-                        </div>
-                    </div>
+        let tabsState = { openTabs: ['dashboard'], activeTab: 'dashboard' };
 
-                    <div class="bg-slate-50 p-4 rounded-3xl border border-slate-200 h-[420px] overflow-y-auto flex flex-col justify-between shadow-inner" id="box-chat-ia">
-                        <div class="space-y-1">${mensagensHTML}</div>
-                    </div>
+        const MODULE_NAMES = {
+            dashboard: 'Dashboard Executive',
+            condominio: 'Dados do Condomínio & Conselho',
+            plano_contas: 'Plano de Contas',
+            financeiro: 'Contas Pagar / Receber',
+            formas_monetarias: 'Formas Monetárias',
+            contas_bancarias: 'Contas Bancárias / Caixa',
+            moradores: 'Moradores & Unidades',
+            fornecedores: 'Fornecedores',
+            empregados: 'Empregados',
+            categorias: 'Pastas & Categorias',
+            estoque: 'Estoque & Inventário',
+            acerto_estoque: 'Acerto de Estoque',
+            documentos: 'Gestão de Documentos',
+            relatorios: 'Central de Relatórios & DRE',
+            usuarios: 'Gestão de Utilizadores'
+        };
 
-                    <form onsubmit="event.preventDefault(); const input = document.getElementById('input_cmd_ia'); processarComandoIA(input.value); input.value = '';" class="flex gap-2">
-                        <input type="text" id="input_cmd_ia" placeholder="Digite uma ação..." class="flex-1 p-3.5 border border-slate-300 rounded-2xl text-xs font-semibold bg-white focus:ring-2 focus:ring-teal-500 outline-none shadow-sm">
-                        <button type="submit" class="px-6 py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-2xl text-xs shadow-md shadow-teal-600/20 transition-all flex items-center gap-2">
-                            <i class="fa-solid fa-paper-plane"></i> Enviar
-                        </button>
-                    </form>
-                </div>
-            `;
-        }
+        function abrirModulo(moduloId, filtroEstoqueParam = 'todos') {
+            if (moduloId === 'estoque' && filtroEstoqueParam) {
+                filtroAtivoEstoque = filtroEstoqueParam;
+            }
+            if (!tabsState.openTabs.includes(moduloId)) tabsState.openTabs.push(moduloId);
+            tabsState.activeTab = moduloId;
+            fecharMenuMobile();
+            renderApp();
+        }
 
-        function renderMainOnly() {
-            const containerMain = document.getElementById('conteudo-principal');
-            if (!containerMain) return;
+        function fecharAba(e, moduloId) {
+            e.stopPropagation();
+            if (tabsState.openTabs.length === 1) return;
+            tabsState.openTabs = tabsState.openTabs.filter(id => id !== moduloId);
+            if (tabsState.activeTab === moduloId) tabsState.activeTab = tabsState.openTabs[tabsState.openTabs.length - 1];
+            renderApp();
+        }
 
-            if (tabsState.activeTab === 'ia') {
-                containerMain.innerHTML = renderModuloIA();
-                const box = document.getElementById('box-chat-ia');
-                if (box) box.scrollTop = box.scrollHeight;
-                return;
-            }
+        function toggleMenuMobile() {
+            const sidebar = document.getElementById('sidebar-menu');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (sidebar && backdrop) {
+                sidebar.classList.toggle('-translate-x-full');
+                backdrop.classList.toggle('hidden');
+            }
+        }
 
-            // --- AQUI FICAM OS SEUS IFs / SWITCH ORIGINAIS ---
-            // (ex: if (tabsState.activeTab === 'moradores') containerMain.innerHTML = renderMoradores();)
-        }
+        function fecharMenuMobile() {
+            const sidebar = document.getElementById('sidebar-menu');
+            const backdrop = document.getElementById('sidebar-backdrop');
+            if (sidebar && backdrop && !sidebar.classList.contains('-translate-x-full')) {
+                sidebar.classList.add('-translate-x-full');
+                backdrop.classList.add('hidden');
+            }
+        }
 
-        window.onload = function() {
-            carregarDadosDaNuvem();
-        };
-    </script>
-</body>
-</html>
+        function exportarParaExcel(dados, nomeArquivo = 'relatorio.csv') {
+            if (!dados || dados.length === 0) { alert('Não há dados disponíveis.'); return; }
+            const sanitizeData = dados.map(item => { let obj = { ...item }; delete obj.arquivoCompactadoGzip; delete obj.fotoCompactadaGzip; return obj; });
+            const keys = Object.keys(sanitizeData[0]);
+            let csvContent = '\uFEFF' + keys.join(',') + '\n';
+            sanitizeData.forEach(row => {
+                const values = keys.map(k => `"${String(row[k] ?? '').replace(/"/g, '""')}"`);
+                csvContent += values.join(',') + '\n';
+            });
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = nomeArquivo;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        }
+
+        function exportarParaPDF() { window.print(); }
+
+        function fazerBackupGeralJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `backup_guardioes_bravo_${new Date().toISOString().slice(0,10)}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+        }
+
+        function restaurarBackupGeralJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    if (parsed && parsed.condominio) {
+                        db = parsed;
+                        if (!db.plano_contas) db.plano_contas = DEFAULT_DATA.plano_contas;
+                        if (!db.acertos_estoque) db.acertos_estoque = [];
+                        if (!db.motivos_acerto_estoque) db.motivos_acerto_estoque = DEFAULT_DATA.motivos_acerto_estoque;
+                        salvarDados(db);
+                        alert('Backup restaurado com sucesso!');
+                        renderApp();
+                    } else {
+                        alert('O ficheiro selecionado não parece ser um backup válido.');
+                    }
+                } catch (err) {
+                    alert('Erro ao ler o ficheiro de backup.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function importarPlanilhaMoradores(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const texto = e.target.result;
+                    const linhas = texto.split(/\r\n|\n/);
+                    if (linhas.length < 2) { alert('A planilha parece estar vazia.'); return; }
+
+                    const cabecalho = linhas[0].split(/,|;/).map(c => c.replace(/^["']|["']$/g, '').trim().toLowerCase());
+                    
+                    const idxBloco = cabecalho.findIndex(h => h.includes('bloco') || h.includes('bl'));
+                    const idxAp = cabecalho.findIndex(h => h.includes('ap') || h.includes('unidade') || h.includes('casa'));
+                    const idxNome = cabecalho.findIndex(h => h.includes('nome') || h.includes('morador') || h.includes('proprietario'));
+                    const idxEmail = cabecalho.findIndex(h => h.includes('email') || h.includes('e-mail'));
+                    const idxTel = cabecalho.findIndex(h => h.includes('tel') || h.includes('cel') || h.includes('whatsapp') || h.includes('fone'));
+                    const idxCpf = cabecalho.findIndex(h => h.includes('cpf') || h.includes('documento') || h.includes('rg'));
+                    const idxPet = cabecalho.findIndex(h => h.includes('pet') || h.includes('animal'));
+                    const idxVaga = cabecalho.findIndex(h => h.includes('vaga') || h.includes('estacionamento') || h.includes('garagem'));
+
+                    let importados = 0;
+                    if (!db.moradores) db.moradores = [];
+
+                    for (let i = 1; i < linhas.length; i++) {
+                        const linha = linhas[i].trim();
+                        if (!linha) continue;
+                        const cols = linha.split(/,|;/).map(c => c.replace(/^["']|["']$/g, '').trim());
+                        
+                        db.moradores.push({
+                            id: 'mor_imp_' + Date.now() + '_' + i,
+                            bloco: idxBloco !== -1 ? (cols[idxBloco] || '1') : (cols[0] || '1'),
+                            apartamento: idxAp !== -1 ? (cols[idxAp] || '') : (cols[1] || ''),
+                            nome: idxNome !== -1 ? (cols[idxNome] || 'Sem Nome') : (cols[2] || 'Sem Nome'),
+                            email: idxEmail !== -1 ? (cols[idxEmail] || '') : '',
+                            telefone: idxTel !== -1 ? (cols[idxTel] || '') : '',
+                            cpf: idxCpf !== -1 ? (cols[idxCpf] || '') : '',
+                            petNome: idxPet !== -1 ? (cols[idxPet] || '') : '',
+                            vagaGaragem: idxVaga !== -1 ? (cols[idxVaga] || '') : ''
+                        });
+                        importados++;
+                    }
+
+                    if (importados > 0) {
+                        salvarDados(db);
+                        alert(`${importados} moradores importados com sucesso para a nuvem!`);
+                        renderMainOnly();
+                    } else {
+                        alert('Nenhum morador válido encontrado na planilha.');
+                    }
+                } catch (err) {
+                    alert('Erro ao processar o arquivo CSV.');
+                }
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+
+        function toggleMostrarSenha() {
+            const inputPass = document.getElementById('login_pass');
+            const iconEye = document.getElementById('icon-eye');
+            if (inputPass.type === 'password') {
+                inputPass.type = 'text';
+                iconEye.classList.remove('fa-eye');
+                iconEye.classList.add('fa-eye-slash');
+            } else {
+                inputPass.type = 'password';
+                iconEye.classList.remove('fa-eye-slash');
+                iconEye.classList.add('fa-eye');
+            }
+        }
+
+        function realizarLogin(e) {
+            e.preventDefault();
+            const userInput = document.getElementById('login_user').value.trim().toLowerCase();
+            const senhaInput = document.getElementById('login_pass').value;
+            const lembrarChecked = document.getElementById('login_lembrar')?.checked;
+
+            if (lembrarChecked) {
+                localStorage.setItem('guardioes_lembrar_user', userInput);
+            } else {
+                localStorage.removeItem('guardioes_lembrar_user');
+            }
+            
+            const userFound = (db.usuarios || []).find(u => 
+                (u.usuario && u.usuario.toLowerCase() === userInput) || 
+                (u.email && u.email.toLowerCase() === userInput)
+            );
+
+            if (userFound && userFound.senhaHash === senhaInput) {
+                if (userFound.status === 'Inativo') { alert('Utilizador inativo.'); return; }
+                
+                if (userFound.primeiroAcesso) {
+                    usuarioPendentePrimeiroAcesso = userFound;
+                    renderApp();
+                    return;
+                }
+
+                sessao.usuarioLogado = userFound;
+                try { sessionStorage.setItem('guardioes_sessao', JSON.stringify(userFound)); } catch (err) {}
+                renderApp();
+            } else { alert('Credenciais incorretas! Verifique o utilizador/e-mail e a palavra-passe.'); }
+        }
+
+        function concluirPrimeiroAcesso(e) {
+            e.preventDefault();
+            const s1 = document.getElementById('prim_senha_nova').value;
+            const s2 = document.getElementById('prim_senha_conf').value;
+
+            if (s1.length < 6) { alert('A palavra-passe deve ter pelo menos 6 caracteres.'); return; }
+            if (s1 !== s2) { alert('As palavras-passe não coincidem.'); return; }
+
+            const userIndex = (db.usuarios || []).findIndex(u => u.id === usuarioPendentePrimeiroAcesso.id);
+            if (userIndex !== -1) {
+                db.usuarios[userIndex].senhaHash = s1;
+                db.usuarios[userIndex].primeiroAcesso = false;
+                salvarDados(db);
+
+                sessao.usuarioLogado = db.usuarios[userIndex];
+                try { sessionStorage.setItem('guardioes_sessao', JSON.stringify(sessao.usuarioLogado)); } catch (err) {}
+                
+                usuarioPendentePrimeiroAcesso = null;
+                alert('Palavra-passe alterada com sucesso! Bem-vindo(a) ao sistema.');
+                renderApp();
+            }
+        }
+
+        function encerrarSessao() {
+            sessao.usuarioLogado = null;
+            usuarioPendentePrimeiroAcesso = null;
+            try { sessionStorage.removeItem('guardioes_sessao'); } catch (e) {}
+            renderApp();
+        }
+
+        function renderTelaLogin() {
+            const savedUser = localStorage.getItem('guardioes_lembrar_user') || 'admin';
+            const isLembrarChecked = savedUser ? 'checked' : '';
+
+            return `
+                <div class="min-h-screen flex items-center justify-center bg-slate-950 p-4 w-full relative overflow-hidden">
+                    <div class="absolute -top-32 -left-32 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
+                    <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
+
+                    <div class="bg-white/95 backdrop-blur-xl w-full max-w-md p-8 rounded-3xl shadow-2xl border border-white/20 space-y-6 relative z-10">
+                        <div class="text-center space-y-2">
+                            <div class="w-16 h-16 bg-gradient-to-tr from-teal-600 to-emerald-500 rounded-2xl flex items-center justify-center text-white text-3xl font-extrabold mx-auto shadow-lg shadow-teal-500/30">
+                                <i class="fa-solid fa-shield-halved"></i>
+                            </div>
+                            <h2 class="text-2xl font-black text-slate-900 tracking-tight">Guardiões do Bravo</h2>
+                            <p class="text-[11px] text-teal-600 font-extrabold uppercase tracking-widest">Gestão Condominial em Nuvem</p>
+                        </div>
+                        <form onsubmit="realizarLogin(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-[11px] font-bold uppercase text-slate-500 tracking-wider mb-1">Utilizador ou E-mail</label>
+                                <input type="text" id="login_user" required value="${escapeHTML(savedUser)}" class="w-full p-3 border border-slate-200 rounded-2xl text-sm font-semibold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all outline-none" placeholder="admin ou admin@guardioes.com">
+                            </div>
+                            <div>
+                                <label class="block text-[11px] font-bold uppercase text-slate-500 tracking-wider mb-1">Palavra-passe</label>
+                                <div class="relative">
+                                    <input type="password" id="login_pass" required value="Admin@12345" class="w-full p-3 pr-10 border border-slate-200 rounded-2xl text-sm font-semibold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all outline-none">
+                                    <button type="button" onclick="toggleMostrarSenha()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
+                                        <i id="icon-eye" class="fa-solid fa-eye text-sm"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="flex items-center justify-between text-xs pt-1">
+                                <label class="flex items-center gap-2 cursor-pointer select-none">
+                                    <input type="checkbox" id="login_lembrar" ${isLembrarChecked} class="rounded border-slate-300 text-teal-600 focus:ring-teal-500 w-4 h-4">
+                                    <span class="font-semibold text-slate-600">Lembrar credenciais</span>
+                                </label>
+                            </div>
+                            <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-lg shadow-teal-600/25 text-sm transition-all transform hover:-translate-y-0.5">Entrar no Sistema</button>
+                        </form>
+                    </div>
+                </div>
