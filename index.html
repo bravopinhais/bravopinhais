@@ -1,95 +1,80 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Guardiões do Bravo - Gestão Condominial</title>
-    <!-- Tailwind CSS & FontAwesome -->
+    <title>Sistema de Gestão Integrado</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome para Ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Supabase Client -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Pako para Gzip (Compressão) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .card-modern { border: 1px solid rgba(226, 232, 240, 0.8); }
         @media print {
             .no-print { display: none !important; }
         }
     </style>
 </head>
-<body class="bg-slate-900 text-slate-100 flex flex-col min-h-screen">
+<body class="bg-slate-100 text-slate-800 min-h-screen flex flex-col">
 
-    <!-- Status da Nuvem -->
-    <div id="status-nuvem" class="bg-slate-900 text-slate-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm">
-        <i class="fa-solid fa-cloud animate-pulse"></i> A conectar com o Supabase...
+    <!-- Container Principal da Aplicação -->
+    <div id="app" class="flex-1 flex flex-col">
+        <header class="bg-white border-b border-slate-200 px-6 py-4 flex justify-between items-center no-print">
+            <h1 class="font-black text-xl text-slate-900"><i class="fa-solid fa-cube text-teal-600 mr-2"></i>Gestão Integrada</h1>
+            <div id="user-info" class="text-xs font-bold text-slate-600"></div>
+        </header>
+
+        <main class="flex-1 p-6 max-w-7xl mx-auto w-full space-y-6">
+            <!-- Navegação / Abas Rápidas -->
+            <div class="flex flex-wrap gap-2 no-print">
+                <button onclick="mudarAba('estoque')" class="px-4 py-2 bg-white rounded-2xl font-bold text-xs shadow-sm border hover:bg-slate-50"><i class="fa-solid fa-boxes-stacked mr-1 text-teal-600"></i> Estoque</button>
+                <button onclick="mudarAba('acertos')" class="px-4 py-2 bg-white rounded-2xl font-bold text-xs shadow-sm border hover:bg-slate-50"><i class="fa-solid fa-right-left mr-1 text-teal-600"></i> Acertos</button>
+                <button onclick="mudarAba('documentos')" class="px-4 py-2 bg-white rounded-2xl font-bold text-xs shadow-sm border hover:bg-slate-50"><i class="fa-solid fa-cloud mr-1 text-teal-600"></i> Documentos</button>
+                <button onclick="mudarAba('usuarios')" class="px-4 py-2 bg-white rounded-2xl font-bold text-xs shadow-sm border hover:bg-slate-50"><i class="fa-solid fa-users mr-1 text-teal-600"></i> Utilizadores</button>
+                <button onclick="mudarAba('relatorios')" class="px-4 py-2 bg-white rounded-2xl font-bold text-xs shadow-sm border hover:bg-slate-50"><i class="fa-solid fa-chart-pie mr-1 text-teal-600"></i> Relatórios / DRE</button>
+            </div>
+
+            <!-- Botões de Ação Global -->
+            <div id="acoes-topo" class="flex gap-2 no-print">
+                <!-- Preenchido dinamicamente conforme a aba -->
+            </div>
+
+            <!-- Área de Conteúdo Dinâmico -->
+            <div id="conteudo-principal" class="w-full">
+                <!-- Renderizado via JS -->
+            </div>
+        </main>
     </div>
 
-    <!-- Aplicação Principal -->
-    <div id="app" class="flex-1 flex flex-col w-full min-h-screen"></div>
+    <!-- Modal Container -->
+    <div id="modal-container"></div>
 
-    <!-- Overlay de Carregamento de Login -->
-    <div id="overlay-cao-login" class="hidden fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center">
-        <div class="bg-white p-6 rounded-3xl shadow-2xl flex flex-col items-center gap-3 text-slate-900">
-            <div class="w-12 h-12 bg-teal-600 rounded-2xl flex items-center justify-center text-white text-xl animate-bounce">
-                <i class="fa-solid fa-shield-halved"></i>
-            </div>
-            <p class="font-bold text-sm">A iniciar sessão no sistema...</p>
-        </div>
-    </div>
-
-    <!-- Widget do Assistente Gatinho -->
-    <div id="widget-gato-assistente" class="hidden fixed bottom-6 right-6 z-40 no-print">
-        <button onclick="toggleChatGato()" class="w-14 h-14 bg-gradient-to-tr from-teal-600 to-emerald-500 hover:scale-105 transition-transform rounded-2xl shadow-xl flex items-center justify-center text-white text-2xl">
-            <i class="fa-solid fa-cat"></i>
-        </button>
-        <div id="janela-chat-gato" class="hidden absolute bottom-20 right-0 w-80 sm:w-96 bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden flex flex-col">
-            <div class="bg-slate-900 text-white p-4 flex items-center justify-between">
-                <div class="flex items-center gap-2">
-                    <div class="w-8 h-8 rounded-xl bg-teal-600 flex items-center justify-center text-white"><i class="fa-solid fa-cat text-sm"></i></div>
-                    <div><h4 class="font-bold text-xs">Assistente Gatinho 🐾</h4><p class="text-[10px] text-teal-400">Guardiões do Bravo</p></div>
-                </div>
-                <button onclick="toggleChatGato()" class="text-slate-400 hover:text-white p-1"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <div id="historico-chat-gato" class="p-4 space-y-3 h-64 overflow-y-auto bg-slate-50 text-xs">
-                <div class="bg-teal-50 text-teal-950 p-3 rounded-2xl border border-teal-100">
-                    <b>Gatinho 🐾:</b> Olá! Como posso te ajudar hoje com os dados do condomínio?
-                </div>
-            </div>
-            <div class="p-3 bg-white border-t border-slate-100 flex gap-2">
-                <input type="text" id="input-pergunta-gato" placeholder="Digite sua pergunta..." onkeypress="if(event.key==='Enter') enviarMensagemGato()" class="flex-1 p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-teal-600">
-                <button onclick="enviarMensagemGato()" class="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl text-xs font-bold transition-all"><i class="fa-solid fa-paper-plane"></i></button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Scripts da Aplicação -->
     <script>
-        // Configuração Supabase (Substitua pelas suas chaves se necessário)
-        const SUPABASE_URL = 'SUA_SUPABASE_URL';
-        const SUPABASE_KEY = 'SUA_SUPABASE_ANON_KEY';
-        const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
-
-        const DEFAULT_DATA = {
-            condominio: { nome: 'Condomínio Guardiões do Bravo', cnpj: '12.345.678/0001-90' },
-            conselheiros: [],
+        // Base de Dados Global Simulada
+        let db = {
+            estoque: [],
+            acertos_estoque: [],
+            documentos: [],
             usuarios: [
-                { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', cargo: 'Administrador', loja: 'Guardiões do Bravo', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Admin@12345' },
-                { id: 'usr_sheylla', usuario: 'sheylla', nome: 'Sheylla', email: 'sheylla@guardioes.com', cargo: 'Conselho Fiscal', loja: 'Guardiões do Bravo', perfil: 'Operador', status: 'Ativo', primeiroAcesso: true, senhaHash: '123456' }
+                { id: 'usr_1', usuario: 'admin', nome: 'Administrador', email: 'admin@sistema.local', perfil: 'Admin', status: 'Ativo', senhaHash: '123456', primeiroAcesso: false }
             ],
-            plano_contas: [
-                { id: 'pc_1', codigo: '1.1', nome: 'Taxa Ordinária de Condomínio', tipo: 'Receita' },
-                { id: 'pc_2', codigo: '1.2', nome: 'Fundo de Reserva', tipo: 'Receita' }
-            ],
-            financeiro: [], contas_bancarias: [], moradores: [], fornecedores: [], empregados: [], categorias: [], estoque: [], acertos_estoque: [], documentos: [], logs: []
+            financeiro: [],
+            categorias: [{ nome: 'Contratos' }, { nome: 'Fiscal' }],
+            motivos_acerto_estoque: [{ nome: 'Inventário Periódico' }, { nome: 'Avaria' }, { nome: 'Quebra' }]
         };
 
-        let db = DEFAULT_DATA;
-        const dadosLocaisSalvos = localStorage.getItem('guardioes_bravo_db');
-        if (dadosLocaisSalvos) {
-            try { db = JSON.parse(dadosLocaisSalvos); } catch (e) { db = DEFAULT_DATA; }
-        }
+        let abaAtual = 'estoque';
+        let cameraStreamAtiva = null;
+        let scanInterval = null;
+        let tempEstoqueFotoGzip = '';
+        let tempEstoqueFotoNome = '';
+        let tempArquivoGzipBase64 = '';
+        let tempArquivoNome = '';
 
-        let sessao = { usuarioLogado: null };
-
-        // Função de segurança utilitária
         function escapeHTML(str) {
             if (!str) return '';
             return str.toString().replace(/[&<>'"]/g, 
@@ -97,306 +82,526 @@
             );
         }
 
-        // Novas Funções de Melhoria (Filtro e PDF)
-        function gerarRelatorioPDF() {
+        function carregarDadosDaNuvem() {
+            const salvo = localStorage.getItem('sistema_db_integrado');
+            if (salvo) {
+                try { db = JSON.parse(salvo); } catch(e) { console.error(e); }
+            }
+            renderMainOnly();
+        }
+
+        function salvarDados(dados) {
+            localStorage.setItem('sistema_db_integrado', JSON.stringify(dados));
+        }
+
+        function mudarAba(aba) {
+            abaAtual = aba;
+            renderMainOnly();
+        }
+
+        function abrirModalContainer(htmlContent) {
+            document.getElementById('modal-container').innerHTML = htmlContent;
+        }
+
+        function fecharModalContainer() {
+            document.getElementById('modal-container').innerHTML = '';
+        }
+
+        function compactarArquivoParaGzip(file, callback) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const binaryString = e.target.result;
+                const uint8Array = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    uint8Array[i] = binaryString.charCodeAt(i);
+                }
+                const compressed = pako.gzip(uint8Array);
+                let binaryCompressed = '';
+                for (let i = 0; i < compressed.length; i++) {
+                    binaryCompressed += String.fromCharCode(compressed[i]);
+                }
+                const base64Gzip = btoa(binaryCompressed);
+                callback(base64Gzip, file.name);
+            };
+            reader.readAsBinaryString(file);
+        }
+
+        function visualizarArquivo(base64Gzip, nomeOriginal) {
+            try {
+                const binStr = atob(base64Gzip);
+                const len = binStr.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) { bytes[i] = binStr.charCodeAt(i); }
+                const decompressed = pako.ungzip(bytes);
+                const blob = new Blob([decompressed]);
+                const blobUrl = URL.createObjectURL(blob);
+                window.open(blobUrl, '_blank');
+            } catch(e) {
+                alert('Erro ao descompactar e visualizar o ficheiro.');
+            }
+        }
+
+        function extrairEDownloadArquivo(base64Gzip, nomeOriginal) {
+            try {
+                const binStr = atob(base64Gzip);
+                const len = binStr.length;
+                const bytes = new Uint8Array(len);
+                for (let i = 0; i < len; i++) { bytes[i] = binStr.charCodeAt(i); }
+                const decompressed = pako.ungzip(bytes);
+                const blob = new Blob([decompressed]);
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = nomeOriginal || 'arquivo_descarregado';
+                link.click();
+            } catch(e) {
+                alert('Erro ao efetuar o download do ficheiro.');
+            }
+        }
+
+        function exportarParaPDF() {
             window.print();
         }
 
-        function filtrarLancamentosFinanceiros(e) {
-            const termo = e.target.value.toLowerCase();
-            const linhas = document.querySelectorAll('#tabela-financeiro-linhas tr');
-            linhas.forEach(linha => {
-                const texto = linha.innerText.toLowerCase();
-                linha.style.display = texto.includes(termo) ? '' : 'none';
+        function renderMainOnly() {
+            const acoesTopo = document.getElementById('acoes-topo');
+            const conteudo = document.getElementById('conteudo-principal');
+
+            if (abaAtual === 'estoque') {
+                acoesTopo.innerHTML = `<button onclick="window.renderModalEstoque()" class="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl text-xs font-bold shadow-sm"><i class="fa-solid fa-plus mr-1"></i> Novo Item no Estoque</button>`;
+                conteudo.innerHTML = renderEstoqueView();
+            } else if (abaAtual === 'acertos') {
+                acoesTopo.innerHTML = `<button onclick="window.renderModalAcertoEstoque()" class="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl text-xs font-bold shadow-sm"><i class="fa-solid fa-plus mr-1"></i> Registar Acerto de Estoque</button>`;
+                conteudo.innerHTML = renderAcertoEstoqueView();
+            } else if (abaAtual === 'documentos') {
+                acoesTopo.innerHTML = `<button onclick="window.renderModalDocumento()" class="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl text-xs font-bold shadow-sm"><i class="fa-solid fa-cloud-arrow-up mr-1"></i> Inserir Documento</button>`;
+                conteudo.innerHTML = renderDocumentosView();
+            } else if (abaAtual === 'usuarios') {
+                acoesTopo.innerHTML = `<button onclick="window.renderModalUsuario()" class="px-4 py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl text-xs font-bold shadow-sm"><i class="fa-solid fa-user-plus mr-1"></i> Novo Utilizador</button>`;
+                conteudo.innerHTML = renderUsuariosView();
+            } else if (abaAtual === 'relatorios') {
+                acoesTopo.innerHTML = '';
+                conteudo.innerHTML = renderRelatoriosCentralView();
+            }
+        }
+
+        function renderEstoqueView() {
+            const list = db.estoque || [];
+            return `
+                <div class="bg-white rounded-3xl card-modern overflow-x-auto w-full shadow-sm">
+                    <table class="w-full text-left text-xs min-w-[700px]">
+                        <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
+                            <tr>
+                                <th class="p-4">Etiqueta / Código</th>
+                                <th class="p-4">Item</th>
+                                <th class="p-4">Quantidade</th>
+                                <th class="p-4">Mín / Máx</th>
+                                <th class="p-4 text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            ${list.length === 0 ? `<tr><td colspan="5" class="p-6 text-center text-slate-400">Nenhum item registado no estoque.</td></tr>` : list.map(st => `
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="p-4 font-mono font-bold text-teal-700">${escapeHTML(st.etiqueta)}</td>
+                                    <td class="p-4 font-bold text-slate-900">${escapeHTML(st.item)}</td>
+                                    <td class="p-4 font-mono font-black">${st.quantidade !== undefined ? st.quantidade : (st.qtd || 0)}</td>
+                                    <td class="p-4 font-mono text-slate-500">${st.minimo || 0} / ${st.maximo || 0}</td>
+                                    <td class="p-4 text-center">
+                                        <button onclick="window.renderModalEstoque('${st.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl mr-1 transition-colors"><i class="fa-solid fa-pen"></i></button>
+                                        <button onclick="excluirRegistro('estoque','${st.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        window.renderModalEstoque = function(id = null) {
+            const st = id ? (db.estoque||[]).find(x => x.id === id) : { id: '', etiqueta: '', item: '', quantidade: 0, minimo: 0, maximo: 0 };
+            tempEstoqueFotoGzip = st.fotoCompactadaGzip || '';
+            tempEstoqueFotoNome = st.fotoNome || '';
+
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
+                    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <h3 class="font-black text-lg text-slate-900">${id ? 'Editar Item de Estoque' : 'Novo Item de Estoque'}</h3>
+                        <form onsubmit="salvarModalEstoque(event, '${id}')" class="space-y-3 text-xs">
+                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Etiqueta / Código</label><input type="text" id="m_est_etiq" required value="${escapeHTML(st.etiqueta)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
+                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Nome do Item</label><input type="text" id="m_est_item" required value="${escapeHTML(st.item)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
+                            <div class="grid grid-cols-3 gap-2">
+                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Qtd Atual</label><input type="number" id="m_est_qtd" required value="${st.quantidade !== undefined ? st.quantidade : (st.qtd || 0)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
+                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Mín</label><input type="number" id="m_est_min" required value="${st.minimo || 0}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
+                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Máx</label><input type="number" id="m_est_max" required value="${st.maximo || 0}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
+                            </div>
+                            <div>
+                                <label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Foto do Item (Opcional)</label>
+                                <input type="file" accept="image/*" onchange="processarFotoEstoqueGzip(event)" class="w-full p-2 border rounded-2xl bg-slate-50">
+                            </div>
+                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Salvar</button></div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        function processarFotoEstoqueGzip(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            compactarArquivoParaGzip(file, (base64Gzip, nome) => {
+                tempEstoqueFotoGzip = base64Gzip;
+                tempEstoqueFotoNome = nome;
+                alert('Foto compactada e pronta para guardar!');
             });
         }
 
-        async function carregarDadosDaNuvem() {
-            const elStatus = document.getElementById('status-nuvem');
-            try {
-                if (!supabaseClient) throw new Error('Supabase não inicializado');
-                const { data, error } = await supabaseClient.from('condominio_dados').select('payload').eq('id', 'principal').maybeSingle();
-                if (error) throw error;
-                if (data && data.payload) {
-                    db = data.payload;
-                    if (elStatus) {
-                        elStatus.className = "bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm";
-                        elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-down text-emerald-400"></i> Sincronizado com o Supabase com Sucesso!`;
-                    }
-                }
-            } catch (err) {
-                if (elStatus) {
-                    elStatus.className = "bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800";
-                    elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> A utilizar armazenamento local.`;
-                }
+        window.salvarModalEstoque = function(e, id) {
+            e.preventDefault();
+            if(!db.estoque) db.estoque = [];
+            const obj = {
+                id: id && id !== 'null' ? id : 'est_' + Date.now(),
+                etiqueta: document.getElementById('m_est_etiq').value,
+                item: document.getElementById('m_est_item').value,
+                quantidade: parseInt(document.getElementById('m_est_qtd').value) || 0,
+                minimo: parseInt(document.getElementById('m_est_min').value) || 0,
+                maximo: parseInt(document.getElementById('m_est_max').value) || 0,
+                fotoNome: tempEstoqueFotoNome,
+                fotoCompactadaGzip: tempEstoqueFotoGzip
+            };
+            const idx = db.estoque.findIndex(x => x.id === obj.id);
+            if(idx !== -1) {
+                if(!obj.fotoCompactadaGzip) obj.fotoCompactadaGzip = db.estoque[idx].fotoCompactadaGzip || '';
+                if(!obj.fotoNome) obj.fotoNome = db.estoque[idx].fotoNome || '';
+                db.estoque[idx] = obj;
+            } else {
+                db.estoque.push(obj);
             }
-            renderApp();
-        }
-
-        async function salvarDadosNaNuvem(dataObj) {
-            db = dataObj;
-            localStorage.setItem('guardioes_bravo_db', JSON.stringify(db));
-            try {
-                if (supabaseClient) {
-                    await supabaseClient.from('condominio_dados').upsert({ id: 'principal', payload: db, atualizado_em: new Date() });
-                }
-            } catch (err) {}
-        }
-        function salvarDados(data) { salvarDadosNaNuvem(data); }
-
-        try {
-            const sessaoData = sessionStorage.getItem('guardioes_sessao');
-            if (sessaoData) sessao.usuarioLogado = JSON.parse(sessaoData);
-        } catch (e) { sessao.usuarioLogado = null; }
-
-        let tabsState = { openTabs: ['dashboard'], activeTab: 'dashboard' };
-        const MODULE_NAMES = {
-            dashboard: 'Dashboard Executive',
-            condominio: 'Dados do Condomínio & Conselho',
-            plano_contas: 'Plano de Contas',
-            financeiro: 'Contas Pagar / Receber',
-            formas_monetarias: 'Formas Monetárias',
-            contas_bancarias: 'Contas Bancárias / Caixa',
-            moradores: 'Moradores & Unidades',
-            fornecedores: 'Fornecedores',
-            empregados: 'Empregados',
-            categorias: 'Pastas & Categorias',
-            estoque: 'Estoque & Inventário',
-            acerto_estoque: 'Acerto de Estoque',
-            documentos: 'Gestão de Documentos',
-            relatorios: 'Central de Relatórios & DRE',
-            usuarios: 'Gestão de Utilizadores'
+            salvarDados(db); fecharModalContainer(); renderMainOnly();
         };
 
-        function abrirModulo(moduloId) {
-            if (!tabsState.openTabs.includes(moduloId)) tabsState.openTabs.push(moduloId);
-            tabsState.activeTab = moduloId;
-            renderApp();
+        function renderAcertoEstoqueView() {
+            const list = db.acertos_estoque || [];
+            return `
+                <div class="bg-white rounded-3xl card-modern overflow-x-auto w-full shadow-sm">
+                    <table class="w-full text-left text-xs min-w-[650px]">
+                        <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
+                            <tr>
+                                <th class="p-4">Item</th>
+                                <th class="p-4">Tipo</th>
+                                <th class="p-4">Quantidade</th>
+                                <th class="p-4">Motivo</th>
+                                <th class="p-4">Data / Histórico</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            ${list.length === 0 ? `<tr><td colspan="5" class="p-6 text-center text-slate-400">Nenhum acerto de estoque registado.</td></tr>` : list.map(ac => {
+                                const estObj = (db.estoque || []).find(x => x.id === ac.estoqueId);
+                                return `
+                                    <tr class="hover:bg-slate-50/80 transition-colors">
+                                        <td class="p-4 font-bold text-slate-900">${estObj ? escapeHTML(estObj.item) : 'Item Removido'}</td>
+                                        <td class="p-4"><span class="px-3 py-1 rounded-full font-extrabold ${ac.tipo === 'Entrada' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">${escapeHTML(ac.tipo)}</span></td>
+                                        <td class="p-4 font-mono font-black">${ac.quantidade}</td>
+                                        <td class="p-4 font-bold text-teal-700">${escapeHTML(ac.motivo)}</td>
+                                        <td class="p-4 text-slate-500 font-medium">${escapeHTML(ac.data || '-')}</td>
+                                    </tr>
+                                `;
+                            }).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
         }
 
-        function fecharAba(e, moduloId) {
-            e.stopPropagation();
-            if (tabsState.openTabs.length === 1) return;
-            tabsState.openTabs = tabsState.openTabs.filter(id => id !== moduloId);
-            if (tabsState.activeTab === moduloId) tabsState.activeTab = tabsState.openTabs[tabsState.openTabs.length - 1];
-            renderApp();
-        }
-
-        function realizarLogin(e) {
-            e.preventDefault();
-            const userInput = document.getElementById('login_user').value.trim().toLowerCase();
-            const senhaInput = document.getElementById('login_pass').value;
-
-            const userFound = (db.usuarios || []).find(u => (u.usuario && u.usuario.toLowerCase() === userInput) || (u.email && u.email.toLowerCase() === userInput));
-
-            if (userFound && userFound.senhaHash === senhaInput) {
-                const overlayCao = document.getElementById('overlay-cao-login');
-                if (overlayCao) overlayCao.classList.remove('hidden');
-
-                setTimeout(() => {
-                    if (overlayCao) overlayCao.classList.add('hidden');
-                    sessao.usuarioLogado = userFound;
-                    try { sessionStorage.setItem('guardioes_sessao', JSON.stringify(userFound)); } catch (err) {}
-                    renderApp();
-                }, 1500);
-            } else {
-                alert('Credenciais incorretas!');
-            }
-        }
-
-        function encerrarSessao() {
-            sessao.usuarioLogado = null;
-            try { sessionStorage.removeItem('guardioes_sessao'); } catch (e) {}
-            renderApp();
-        }
-
-        function toggleChatGato() {
-            const janela = document.getElementById('janela-chat-gato');
-            if (janela) janela.classList.toggle('hidden');
-        }
-
-        function enviarMensagemGato() {
-            const input = document.getElementById('input-pergunta-gato');
-            const historico = document.getElementById('historico-chat-gato');
-            if (!input || !input.value.trim()) return;
-
-            const pergunta = input.value.trim();
-            historico.innerHTML += `<div class="bg-white p-3 rounded-2xl text-slate-800 shadow-sm border border-slate-100"><b>Você:</b> ${escapeHTML(pergunta)}</div>`;
-            input.value = '';
-
-            let resposta = "Entendido! Posso ajudar com relatórios, resumo financeiro ou consulta de moradores.";
-            const pLower = pergunta.toLowerCase();
-
-            if (pLower.includes('saldo') || pLower.includes('financeiro') || pLower.includes('relatório') || pLower.includes('relatorio')) {
-                let rec = 0, pag = 0;
-                (db.financeiro || []).forEach(f => { if(f.tipo==='Receber') rec+=f.valor; else pag+=f.valor; });
-                resposta = `O saldo financeiro atual registrado é de R$ ${(rec - pag).toFixed(2)} (Receitas: R$ ${rec.toFixed(2)} | Despesas: R$ ${pag.toFixed(2)}).`;
-            } else if (pLower.includes('morador') || pLower.includes('moradores') || pLower.includes('unidade')) {
-                resposta = `Atualmente existem ${(db.moradores || []).length} moradores/unidades cadastrados no sistema Guardiões do Bravo.`;
-            } else if (pLower.includes('estoque') || pLower.includes('inventario') || pLower.includes('produto')) {
-                resposta = `O inventário do condomínio possui ${(db.estoque || []).length} itens/produtos cadastrados.`;
-            }
-
-            setTimeout(() => {
-                historico.innerHTML += `<div class="bg-teal-50 text-teal-950 p-3 rounded-2xl border border-teal-100"><b>Gatinho 🐾:</b> ${resposta}</div>`;
-                historico.scrollTop = historico.scrollHeight;
-            }, 500);
-        }
-
-        function renderApp() {
-            const container = document.getElementById('app');
-            const widgetGato = document.getElementById('widget-gato-assistente');
-            if (!container) return;
-
-            if (!sessao.usuarioLogado) { 
-                if (widgetGato) widgetGato.classList.add('hidden');
-                container.innerHTML = `
-                    <div class="min-h-screen flex items-center justify-center bg-slate-950 p-4 w-full">
-                        <div class="bg-white/95 backdrop-blur-xl w-full max-w-md p-8 rounded-3xl shadow-2xl border border-white/20 space-y-6">
-                            <div class="text-center space-y-2">
-                                <div class="w-16 h-16 bg-gradient-to-tr from-teal-600 to-emerald-500 rounded-2xl flex items-center justify-center text-white text-3xl font-extrabold mx-auto shadow-lg"><i class="fa-solid fa-shield-halved"></i></div>
-                                <h2 class="text-2xl font-black text-slate-900">Guardiões do Bravo</h2>
-                                <p class="text-[11px] text-teal-600 font-extrabold uppercase tracking-widest">Gestão Condominial em Nuvem</p>
+        window.renderModalAcertoEstoque = function() {
+            const estoqueList = db.estoque || [];
+            const motivos = db.motivos_acerto_estoque || [];
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
+                    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <h3 class="font-black text-lg text-slate-900">Novo Acerto de Estoque</h3>
+                        <form onsubmit="salvarModalAcertoEstoque(event)" class="space-y-3 text-xs">
+                            <div>
+                                <label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Item do Estoque</label>
+                                <select id="m_ac_item" required class="w-full p-3 border rounded-2xl font-bold bg-slate-50">
+                                    <option value="">[ Selecione o Item ]</option>
+                                    ${estoqueList.map(st => `<option value="${st.id}">${escapeHTML(st.item + ' (Atual: ' + (st.quantidade !== undefined ? st.quantidade : st.qtd || 0) + ')')}</option>`).join('')}
+                                </select>
                             </div>
-                            <form onsubmit="realizarLogin(event)" class="space-y-4">
-                                <div><label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Utilizador</label><input type="text" id="login_user" required value="admin" class="w-full p-3 border rounded-2xl text-sm font-semibold bg-slate-50 outline-none text-slate-800"></div>
-                                <div><label class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Palavra-passe</label><input type="password" id="login_pass" required value="Admin@12345" class="w-full p-3 border rounded-2xl text-sm font-semibold bg-slate-50 outline-none text-slate-800"></div>
-                                <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 text-white font-bold rounded-2xl shadow-lg text-sm transition-all">Entrar no Sistema</button>
-                            </form>
-                        </div>
+                            <div>
+                                <label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Tipo de Movimento</label>
+                                <select id="m_ac_tipo" class="w-full p-3 border rounded-2xl font-bold bg-slate-50">
+                                    <option value="Saída">Saída (Baixa)</option>
+                                    <option value="Entrada">Entrada (Reposição)</option>
+                                </select>
+                            </div>
+                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Quantidade</label><input type="number" id="m_ac_qtd" required min="1" value="1" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
+                            <div>
+                                <label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Motivo</label>
+                                <select id="m_ac_motivo" class="w-full p-3 border rounded-2xl font-bold bg-slate-50">
+                                    ${motivos.map(m => `<option value="${escapeHTML(m.nome)}">${escapeHTML(m.nome)}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Registar Acerto</button></div>
+                        </form>
                     </div>
-                `;
-                return; 
+                </div>
+            `);
+        };
+
+        window.salvarModalAcertoEstoque = function(e) {
+            e.preventDefault();
+            const estoqueId = document.getElementById('m_ac_item').value;
+            const tipo = document.getElementById('m_ac_tipo').value;
+            const qtd = parseInt(document.getElementById('m_ac_qtd').value) || 0;
+            const motivo = document.getElementById('m_ac_motivo').value;
+
+            const estIdx = (db.estoque || []).findIndex(x => x.id === estoqueId);
+            if (estIdx !== -1) {
+                let atual = parseInt(db.estoque[estIdx].quantidade !== undefined ? db.estoque[estIdx].quantidade : (db.estoque[estIdx].qtd || 0));
+                if (tipo === 'Entrada') atual += qtd;
+                else atual = Math.max(0, atual - qtd);
+                db.estoque[estIdx].quantidade = atual;
             }
 
-            if (widgetGato) widgetGato.classList.remove('hidden');
+            if (!db.acertos_estoque) db.acertos_estoque = [];
+            db.acertos_estoque.push({
+                id: 'ac_' + Date.now(),
+                estoqueId: estoqueId,
+                tipo: tipo,
+                quantidade: qtd,
+                motivo: motivo,
+                data: new Date().toLocaleDateString('pt-BR')
+            });
 
-            const modulosNavegacao = [
-                { id: 'dashboard', nome: 'Dashboard', icone: 'fa-chart-pie' },
-                { id: 'condominio', nome: 'Condomínio', icone: 'fa-building' },
-                { id: 'moradores', nome: 'Moradores', icone: 'fa-users' },
-                { id: 'financeiro', nome: 'Financeiro', icone: 'fa-money-bill-wave' },
-                { id: 'estoque', nome: 'Estoque', icone: 'fa-boxes-stacked' },
-                { id: 'documentos', nome: 'Documentos', icone: 'fa-file-lines' },
-                { id: 'relatorios', nome: 'Relatórios', icone: 'fa-chart-line' },
-                { id: 'usuarios', nome: 'Utilizadores', icone: 'fa-user-gear' }
-            ];
+            salvarDados(db); fecharModalContainer(); renderMainOnly();
+        };
 
-            container.innerHTML = `
-                <div class="flex-1 flex flex-col md:flex-row min-h-screen w-full">
-                    <aside class="w-64 bg-slate-950 text-slate-300 flex flex-col sidebar-full border-r border-slate-800 no-print">
-                        <div class="p-5 bg-slate-950 flex items-center justify-between border-b border-slate-800">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-2xl bg-teal-600 flex items-center justify-center text-white font-extrabold text-xl"><i class="fa-solid fa-shield-halved"></i></div>
-                                <div><h1 class="font-black text-white text-base">Guardiões</h1><p class="text-[10px] text-teal-400 font-extrabold uppercase">Cloud</p></div>
-                            </div>
-                        </div>
-                        <nav class="flex-1 overflow-y-auto p-3.5 space-y-1.5">
-                            ${modulosNavegacao.map(m => `
-                                <button onclick="abrirModulo('${m.id}')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold ${tabsState.activeTab === m.id ? 'bg-teal-600 text-white shadow-md' : 'hover:bg-slate-900 text-slate-400'}">
-                                    <i class="fa-solid ${m.icone} w-5"></i> ${m.nome}
-                                </button>
+        function renderDocumentosView() {
+            const list = db.documentos || [];
+            return `
+                <div class="bg-white rounded-3xl card-modern overflow-x-auto w-full shadow-sm">
+                    <table class="w-full text-left text-xs min-w-[500px]">
+                        <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
+                            <tr>
+                                <th class="p-4">Nome do Documento</th>
+                                <th class="p-4">Pasta</th>
+                                <th class="p-4 text-center">Ficheiro Gzip</th>
+                                <th class="p-4 text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            ${list.length === 0 ? `<tr><td colspan="4" class="p-6 text-center text-slate-400">Nenhum documento guardado na nuvem.</td></tr>` : list.map(d => `
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="p-4 font-bold text-slate-900">${escapeHTML(d.nome)}</td>
+                                    <td class="p-4 font-semibold text-teal-700">${escapeHTML(d.categoria || 'Geral')}</td>
+                                    <td class="p-4 text-center font-mono text-[11px] text-slate-400">${escapeHTML(d.nomeOriginal || 'arquivo')}</td>
+                                    <td class="p-4 text-center">
+                                        <button onclick="visualizarArquivo('${d.arquivoCompactadoGzip}','${d.nomeOriginal}')" class="p-2 bg-teal-50 text-teal-700 hover:bg-teal-100 rounded-xl mr-1 transition-colors" title="Visualizar"><i class="fa-solid fa-eye"></i></button>
+                                        <button onclick="extrairEDownloadArquivo('${d.arquivoCompactadoGzip}','${d.nomeOriginal}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl mr-1 transition-colors" title="Descarregar"><i class="fa-solid fa-download"></i></button>
+                                        <button onclick="excluirRegistro('documentos','${d.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                                    </td>
+                                </tr>
                             `).join('')}
-                        </nav>
-                        <div class="p-4 bg-slate-950 border-t border-slate-900 flex items-center justify-between">
-                            <div class="flex items-center gap-2">
-                                <div class="w-7 h-7 rounded-full bg-teal-700 text-white flex items-center justify-center font-bold text-xs">
-                                    ${escapeHTML((sessao.usuarioLogado.nome || 'A').charAt(0))}
-                                </div>
-                                <span class="text-xs font-bold text-slate-100 truncate max-w-[110px]">${escapeHTML(sessao.usuarioLogado.nome || 'Utilizador')}</span>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        window.renderModalDocumento = function() {
+            const categorias = db.categorias || [];
+            tempArquivoGzipBase64 = '';
+            tempArquivoNome = '';
+
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
+                    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <h3 class="font-black text-lg text-slate-900">Inserir Documento na Nuvem</h3>
+                        <form onsubmit="salvarModalDocumento(event)" class="space-y-3 text-xs">
+                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Nome do Documento</label><input type="text" id="m_doc_nome" required class="w-full p-3 border rounded-2xl font-bold bg-slate-50" placeholder="Ex: Ata Assembleia 2026"></div>
+                            <div>
+                                <label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Pasta</label>
+                                <select id="m_doc_cat" class="w-full p-3 border rounded-2xl font-bold bg-slate-50">
+                                    <option value="Geral">Geral</option>
+                                    ${categorias.map(c => `<option value="${escapeHTML(c.nome)}">${escapeHTML(c.nome)}</option>`).join('')}
+                                </select>
                             </div>
-                            <button onclick="encerrarSessao()" class="text-slate-400 hover:text-rose-400 p-1" title="Sair"><i class="fa-solid fa-right-from-bracket"></i></button>
-                        </div>
-                    </aside>
-                    <div class="flex-1 flex flex-col min-h-screen overflow-hidden w-full">
-                        <!-- Barra de Abas -->
-                        <div class="bg-slate-200 border-b border-slate-300 flex items-center px-4 pt-2 gap-1 overflow-x-auto no-print">
-                            ${tabsState.openTabs.map(tabId => `
-                                <div onclick="abrirModulo('${tabId}')" class="px-4 py-2 rounded-t-xl text-xs font-bold flex items-center gap-2 cursor-pointer transition-all ${tabsState.activeTab === tabId ? 'bg-white text-slate-800 shadow-sm' : 'bg-slate-300/70 text-slate-600 hover:bg-slate-300'}">
-                                    <span>${MODULE_NAMES[tabId] || tabId}</span>
-                                    ${tabsState.openTabs.length > 1 ? `<button onclick="fecharAba(event, '${tabId}')" class="hover:text-rose-600 text-slate-400 rounded-full p-0.5"><i class="fa-solid fa-xmark text-[10px]"></i></button>` : ''}
-                                </div>
+                            <div>
+                                <label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Ficheiro (PDF, Imagem, etc.)</label>
+                                <input type="file" required onchange="processarArquivoDocGzip(event)" class="w-full p-2 border rounded-2xl bg-slate-50">
+                            </div>
+                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Guardar na Nuvem</button></div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        function processarArquivoDocGzip(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            compactarArquivoParaGzip(file, (base64Gzip, nome) => {
+                tempArquivoGzipBase64 = base64Gzip;
+                tempArquivoNome = nome;
+                alert('Ficheiro compactado Gzip com sucesso!');
+            });
+        }
+
+        window.salvarModalDocumento = function(e) {
+            e.preventDefault();
+            if (!tempArquivoGzipBase64) { alert('Selecione um ficheiro válido.'); return; }
+            if(!db.documentos) db.documentos = [];
+            db.documentos.push({
+                id: 'doc_' + Date.now(),
+                nome: document.getElementById('m_doc_nome').value,
+                categoria: document.getElementById('m_doc_cat').value,
+                nomeOriginal: tempArquivoNome,
+                arquivoCompactadoGzip: tempArquivoGzipBase64
+            });
+            salvarDados(db); fecharModalContainer(); renderMainOnly();
+        };
+
+        function renderUsuariosView() {
+            const list = db.usuarios || [];
+            return `
+                <div class="bg-white rounded-3xl card-modern overflow-x-auto w-full shadow-sm">
+                    <table class="w-full text-left text-xs min-w-[700px]">
+                        <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
+                            <tr>
+                                <th class="p-4">Utilizador</th>
+                                <th class="p-4">Nome</th>
+                                <th class="p-4">Perfil</th>
+                                <th class="p-4">Status</th>
+                                <th class="p-4 text-center">Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            ${list.map(u => `
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="p-4 font-mono font-bold text-teal-700">${escapeHTML(u.usuario)}</td>
+                                    <td class="p-4 font-bold text-slate-900">${escapeHTML(u.nome)}</td>
+                                    <td class="p-4"><span class="px-3 py-1 bg-slate-100 text-slate-700 rounded-full font-bold">${escapeHTML(u.perfil || u.cargo || 'Operador')}</span></td>
+                                    <td class="p-4"><span class="px-3 py-1 rounded-full font-extrabold ${u.status === 'Ativo' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">${escapeHTML(u.status || 'Ativo')}</span></td>
+                                    <td class="p-4 text-center">
+                                        <button onclick="window.renderModalUsuario('${u.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl mr-1 transition-colors"><i class="fa-solid fa-pen"></i></button>
+                                        <button onclick="excluirRegistro('usuarios','${u.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button>
+                                    </td>
+                                </tr>
                             `).join('')}
-                        </div>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
 
-                        <!-- Conteúdo da Aba Ativa -->
-                        <main class="flex-1 overflow-y-auto p-6 bg-slate-100 text-slate-800">
-                            <div class="bg-white p-8 rounded-3xl shadow-sm space-y-6 border border-slate-200/80">
-                                <div class="flex items-center justify-between">
-                                    <div>
-                                        <h2 class="text-2xl font-black text-slate-900">${MODULE_NAMES[tabsState.activeTab]}</h2>
-                                        <p class="text-xs text-slate-500 mt-1">Gestão centralizada do ${db.condominio?.nome || 'Condomínio Guardiões do Bravo'}.</p>
-                                    </div>
-                                    <span class="px-3 py-1 rounded-full text-[10px] font-extrabold uppercase bg-teal-50 text-teal-700 border border-teal-200 no-print">Em Nuvem</span>
+        window.renderModalUsuario = function(id = null) {
+            const u = id ? (db.usuarios||[]).find(x => x.id === id) : { id: '', usuario: '', nome: '', email: '', perfil: 'Operador', status: 'Ativo', senhaHash: '123456', primeiroAcesso: true };
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
+                    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <h3 class="font-black text-lg text-slate-900">${id ? 'Editar Utilizador' : 'Novo Utilizador'}</h3>
+                        <form onsubmit="salvarModalUsuario(event, '${id}')" class="space-y-3 text-xs">
+                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Nome de Utilizador</label><input type="text" id="m_usr_user" required value="${escapeHTML(u.usuario)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
+                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Nome Completo</label><input type="text" id="m_usr_nome" required value="${escapeHTML(u.nome)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
+                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">E-mail</label><input type="email" id="m_usr_email" required value="${escapeHTML(u.email)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Perfil</label>
+                                    <select id="m_usr_perfil" class="w-full p-3 border rounded-2xl font-bold bg-slate-50">
+                                        <option value="Admin" ${u.perfil==='Admin'?'selected':''}>Admin</option>
+                                        <option value="Operador" ${u.perfil==='Operador'?'selected':''}>Operador</option>
+                                    </select>
                                 </div>
-
-                                <!-- Conteúdo Dinâmico por Módulo -->
-                                ${tabsState.activeTab === 'dashboard' ? `
-                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                                        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
-                                            <span class="text-xs font-bold text-slate-500 uppercase">Moradores Cadastrados</span>
-                                            <h3 class="text-3xl font-black text-slate-900">${(db.moradores || []).length}</h3>
-                                        </div>
-                                        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
-                                            <span class="text-xs font-bold text-slate-500 uppercase">Itens em Estoque</span>
-                                            <h3 class="text-3xl font-black text-slate-900">${(db.estoque || []).length}</h3>
-                                        </div>
-                                        <div class="bg-slate-50 p-5 rounded-2xl border border-slate-200 space-y-2">
-                                            <span class="text-xs font-bold text-slate-500 uppercase">Documentos na Nuvem</span>
-                                            <h3 class="text-3xl font-black text-slate-900">${(db.documentos || []).length}</h3>
-                                        </div>
-                                    </div>
-                                ` : tabsState.activeTab === 'financeiro' ? `
-                                    <div class="space-y-6">
-                                        <div class="flex flex-col md:flex-row items-center justify-between gap-4 no-print">
-                                            <div class="w-full md:w-1/3">
-                                                <input type="text" placeholder="Pesquisar nos lançamentos..." onkeyup="filtrarLancamentosFinanceiros(event)" class="w-full p-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-semibold outline-none focus:border-teal-600">
-                                            </div>
-                                            <div class="flex items-center gap-2 w-full md:w-auto justify-end">
-                                                <button onclick="gerarRelatorioPDF()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold flex items-center gap-2 shadow-sm transition-all"><i class="fa-solid fa-file-pdf"></i> Exportar Relatório</button>
-                                            </div>
-                                        </div>
-                                        <div class="overflow-x-auto border border-slate-200 rounded-2xl bg-white shadow-sm">
-                                            <table class="w-full text-left border-collapse">
-                                                <thead>
-                                                    <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 text-[11px] font-extrabold uppercase">
-                                                        <th class="p-4">Descrição</th>
-                                                        <th class="p-4">Tipo</th>
-                                                        <th class="p-4">Valor</th>
-                                                        <th class="p-4 text-right no-print">Ações</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody id="tabela-financeiro-linhas" class="text-xs divide-y divide-slate-100 font-medium text-slate-700">
-                                                    ${(db.financeiro || []).length === 0 ? `
-                                                        <tr><td colspan="4" class="p-6 text-center text-slate-400">Nenhum lançamento financeiro registrado até o momento.</td></tr>
-                                                    ` : (db.financeiro || []).map(f => `
-                                                        <tr>
-                                                            <td class="p-4">${escapeHTML(f.descricao || 'Lançamento')}</td>
-                                                            <td class="p-4"><span class="px-2.5 py-1 rounded-full text-[10px] font-bold ${f.tipo === 'Receber' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">${escapeHTML(f.tipo)}</span></td>
-                                                            <td class="p-4 font-bold">R$ ${Number(f.valor || 0).toFixed(2)}</td>
-                                                            <td class="p-4 text-right no-print">
-                                                                <button onclick="removerLancamentoFinanceiro('${f.id}')" class="text-slate-400 hover:text-rose-600 p-1"><i class="fa-solid fa-trash"></i></button>
-                                                            </td>
-                                                        </tr>
-                                                    `).join('')}
-                                                </tbody>
-                                            </table>
-                                        </div>
-                                    </div>
-                                ` : `
-                                    <div class="p-6 bg-slate-50 rounded-2xl border border-slate-200/70 text-slate-600 text-sm">
-                                        Módulo <b>${MODULE_NAMES[tabsState.activeTab]}</b> pronto e operacional na nuvem. Utilize o assistente gatinho no canto inferior direito para gerar relatórios e obter resumos rápidos!
-                                    </div>
-                                `}
+                                <div>
+                                    <label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Status</label>
+                                    <select id="m_usr_status" class="w-full p-3 border rounded-2xl font-bold bg-slate-50">
+                                        <option value="Ativo" ${u.status==='Ativo'?'selected':''}>Ativo</option>
+                                        <option value="Inativo" ${u.status==='Inativo'?'selected':''}>Inativo</option>
+                                    </select>
+                                </div>
                             </div>
-                        </main>
+                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Salvar</button></div>
+                        </form>
+                    </div>
+                </div>
+            `);
+        };
+
+        window.salvarModalUsuario = function(e, id) {
+            e.preventDefault();
+            if(!db.usuarios) db.usuarios = [];
+            const isEdit = id && id !== 'null';
+            const existente = isEdit ? db.usuarios.find(x => x.id === id) : null;
+
+            const obj = {
+                id: isEdit ? id : 'usr_' + Date.now(),
+                usuario: document.getElementById('m_usr_user').value,
+                nome: document.getElementById('m_usr_nome').value,
+                email: document.getElementById('m_usr_email').value,
+                perfil: document.getElementById('m_usr_perfil').value,
+                status: document.getElementById('m_usr_status').value,
+                senhaHash: existente ? existente.senhaHash : '123456',
+                primeiroAcesso: existente ? existente.primeiroAcesso : true
+            };
+            const idx = db.usuarios.findIndex(x => x.id === obj.id);
+            if(idx !== -1) db.usuarios[idx] = obj; else db.usuarios.push(obj);
+            salvarDados(db); fecharModalContainer(); renderMainOnly();
+        };
+
+        function renderRelatoriosCentralView() {
+            const financeiroList = db.financeiro || [];
+            let totalReceber = 0;
+            let totalPagar = 0;
+            financeiroList.forEach(f => {
+                const val = parseFloat(f.valor) || 0;
+                if (f.tipo === 'Receber') totalReceber += val;
+                else if (f.tipo === 'Pagar') totalPagar += val;
+            });
+            const resultadoLiquido = totalReceber - totalPagar;
+
+            return `
+                <div class="space-y-6 w-full max-w-4xl mx-auto">
+                    <div class="bg-white rounded-3xl card-modern p-8 shadow-sm space-y-6">
+                        <div class="flex justify-between items-center border-b pb-4">
+                            <div>
+                                <h3 class="font-black text-slate-900 text-xl">DRE Gerencial Consolidada</h3>
+                                <p class="text-xs text-slate-500 font-medium">Demonstração do Resultado do Exercício</p>
+                            </div>
+                            <div class="flex gap-2 no-print">
+                                <button onclick="exportarParaPDF()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-2xl text-xs font-bold shadow-sm"><i class="fa-solid fa-file-pdf mr-1"></i> Imprimir PDF</button>
+                            </div>
+                        </div>
+                        <div class="space-y-4 text-xs font-bold text-slate-800">
+                            <div class="flex justify-between items-center p-4 bg-emerald-50 rounded-2xl text-emerald-900">
+                                <span>(+) Total de Receitas Registadas</span>
+                                <span class="font-mono text-sm">R$ ${totalReceber.toFixed(2)}</span>
+                            </div>
+                            <div class="flex justify-between items-center p-4 bg-rose-50 rounded-2xl text-rose-900">
+                                <span>(-) Total de Despesas Registadas</span>
+                                <span class="font-mono text-sm">R$ ${totalPagar.toFixed(2)}</span>
+                            </div>
+                            <div class="flex justify-between items-center p-5 bg-slate-900 text-white rounded-2xl text-sm font-black">
+                                <span>(=) Resultado Líquido do Período</span>
+                                <span class="font-mono ${resultadoLiquido >= 0 ? 'text-emerald-400' : 'text-rose-400'}">R$ ${resultadoLiquido.toFixed(2)}</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             `;
         }
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            await carregarDadosDaNuvem();
+        function excluirRegistro(tabela, id) {
+            if (!confirm('Deseja realmente eliminar este registo?')) return;
+            if (db[tabela]) {
+                db[tabela] = db[tabela].filter(x => x.id !== id);
+                salvarDados(db);
+                renderMainOnly();
+            }
+        }
+
+        // Inicialização ao carregar a página
+        window.addEventListener('DOMContentLoaded', () => {
+            carregarDadosDaNuvem();
         });
     </script>
 </body>
