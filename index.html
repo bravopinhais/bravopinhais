@@ -3044,7 +3044,9 @@ function visualizarFotoEstoque(id) {
                                                 ` : `<div class="w-10 h-10 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 text-xs"><i class="fa-solid fa-image"></i></div>`}
                                             </td>
                                             <td class="p-4 font-mono font-bold text-teal-700">${escapeHTML(st.etiqueta || '-')}</td>
-                                            <td class="p-4 font-bold text-slate-900">${escapeHTML(st.item)}</td>
+                                            <td class="p-4 font-bold text-slate-900">${escapeHTML(st.item)}
+                                                ${(st.marca || st.linha || st.fabricante || st.fornecedor || st.origem) ? `<div class="mt-1 space-y-0.5 text-[10px] font-medium text-slate-500">${st.marca ? `<div>Marca: ${escapeHTML(st.marca)}</div>` : ''}${st.linha ? `<div>Linha: ${escapeHTML(st.linha)}</div>` : ''}${st.fabricante ? `<div>Fabricante: ${escapeHTML(st.fabricante)}</div>` : ''}${st.fornecedor ? `<div>Fornecedor: ${escapeHTML(st.fornecedor)}</div>` : ''}${st.origem ? `<div>Origem: ${escapeHTML(st.origem)}</div>` : ''}</div>` : ''}
+                                            </td>
                                             <td class="p-4 font-mono font-black ${atual <= minimo ? 'text-rose-600 text-sm' : 'text-slate-700'}">${atual}</td>
                                             <td class="p-4 font-mono text-[11px] text-slate-400 font-medium">Mín: ${minimo} / Máx: ${maximo}</td>
                                             <td class="p-4">${badgeAlerta}</td>
@@ -3108,7 +3110,8 @@ function visualizarFotoEstoque(id) {
         }
 
         window.renderModalEstoque = function(id = null) {
-            const item = id ? (db.estoque||[]).find(x => x.id === id) : { id: '', item: '', quantidade: 1, minimo: 0, maximo: 10, etiqueta: '', fotoNome: '', fotoCompactadaGzip: '' };
+            const hojeCadastro = new Date().toLocaleDateString('en-CA');
+            const item = id ? (db.estoque||[]).find(x => x.id === id) : { id: '', item: '', quantidade: 1, minimo: 0, maximo: 10, etiqueta: '', marca: '', linha: '', fabricante: '', origem: '', fornecedor: '', dataCadastro: hojeCadastro, fotoNome: '', fotoCompactadaGzip: '' };
             tempEstoqueFotoGzip = item.fotoCompactadaGzip || '';
             tempEstoqueFotoNome = item.fotoNome || '';
 
@@ -3128,6 +3131,18 @@ function visualizarFotoEstoque(id) {
                                 </div>
                             </div>
                             <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Item / Descrição</label><input type="text" id="m_est_item" required value="${escapeHTML(item.item || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Marca</label><input type="text" id="m_est_marca" value="${escapeHTML(item.marca || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50" placeholder="Ex.: marca do produto"></div>
+                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Linha</label><input type="text" id="m_est_linha" value="${escapeHTML(item.linha || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50" placeholder="Ex.: linha/modelo"></div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Fabricante</label><input type="text" id="m_est_fabricante" value="${escapeHTML(item.fabricante || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50" placeholder="Nome do fabricante"></div>
+                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Fornecedor / Origem</label><input type="text" id="m_est_fornecedor" value="${escapeHTML(item.fornecedor || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50" placeholder="Fornecedor ou origem"></div>
+                            </div>
+                            <div class="grid grid-cols-2 gap-2">
+                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Tipo de origem</label><select id="m_est_origem" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"><option value="" ${!item.origem ? 'selected' : ''}>Selecione...</option><option value="Compra" ${item.origem === 'Compra' ? 'selected' : ''}>Compra</option><option value="Doação" ${item.origem === 'Doação' ? 'selected' : ''}>Doação</option><option value="Transferência" ${item.origem === 'Transferência' ? 'selected' : ''}>Transferência</option><option value="Outro" ${item.origem === 'Outro' ? 'selected' : ''}>Outro</option></select></div>
+                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Data de cadastro</label><input type="date" id="m_est_data_cadastro" value="${escapeHTML(item.dataCadastro || hojeCadastro)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
+                            </div>
                             <div class="grid grid-cols-2 gap-2">
                                 <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Qtd Atual</label><input type="number" id="m_est_qtd" required value="${item.quantidade !== undefined ? item.quantidade : (item.qtd || 1)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
                                 <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Mínimo</label><input type="number" id="m_est_min" value="${item.minimo !== undefined ? item.minimo : 0}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
@@ -3240,6 +3255,12 @@ function visualizarFotoEstoque(id) {
                 minimo: parseInt(document.getElementById('m_est_min').value) || 0,
                 maximo: parseInt(document.getElementById('m_est_max').value) || 0,
                 etiqueta: document.getElementById('m_est_etiq').value,
+                marca: document.getElementById('m_est_marca').value.trim(),
+                linha: document.getElementById('m_est_linha').value.trim(),
+                fabricante: document.getElementById('m_est_fabricante').value.trim(),
+                fornecedor: document.getElementById('m_est_fornecedor').value.trim(),
+                origem: document.getElementById('m_est_origem').value,
+                dataCadastro: (itemExistente && itemExistente.dataCadastro) ? itemExistente.dataCadastro : (document.getElementById('m_est_data_cadastro').value || new Date().toLocaleDateString('en-CA')),
                 fotoNome: tempEstoqueFotoNome || (itemExistente ? itemExistente.fotoNome : ''),
                 fotoCompactadaGzip: tempEstoqueFotoGzip || (itemExistente ? itemExistente.fotoCompactadaGzip : '')
             };
