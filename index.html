@@ -158,11 +158,12 @@ button:active:not(:disabled) { transform: scale(.97); }
 
         /* ===== Assistente (gato) ===== */
         #assistente-ia { position: fixed; right: 16px; bottom: 16px; z-index: 80; font-family: 'Inter', sans-serif; }
-        #ai-gato { display: block; width: 76px; height: 76px; padding: 0; border: 0; background: transparent; cursor: pointer; animation: ai-flutua 3.2s ease-in-out infinite; filter: drop-shadow(0 8px 10px rgba(2,6,23,.35)); }
+        #ai-flutua { position: relative; display: block; animation: ai-flutua 3.2s ease-in-out infinite; }
+        #ai-gato { display: block; width: 76px; height: 76px; padding: 0; border: 0; background: transparent; cursor: pointer; filter: drop-shadow(0 8px 10px rgba(2,6,23,.35)); transition: transform .2s; }
         #ai-gato svg { width: 100%; height: 100%; animation: none; }
         #ai-gato:hover { transform: scale(1.08) rotate(-4deg); }
         @keyframes ai-flutua { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
-        #ai-balao { position: absolute; right: 8px; bottom: 84px; background: #fff; color: #0f172a; font-size: 13px; font-weight: 700; padding: 10px 14px; border-radius: 16px; box-shadow: 0 10px 28px rgba(15,23,42,.22); white-space: nowrap; cursor: pointer; opacity: 0; transform-origin: 85% 100%; animation: ai-balao-in .45s cubic-bezier(.2,.9,.3,1.3) var(--atraso, 900ms) both; transition: opacity .4s; }
+        #ai-balao { position: absolute; right: 4px; bottom: calc(100% - 2px); background: #fff; color: #0f172a; font-size: 13px; font-weight: 700; padding: 10px 14px; border-radius: 16px; box-shadow: 0 10px 28px rgba(15,23,42,.22); white-space: nowrap; cursor: pointer; opacity: 0; transform-origin: 85% 100%; animation: ai-balao-in .45s cubic-bezier(.2,.9,.3,1.3) var(--atraso, 900ms) both; transition: opacity .4s; }
         #ai-balao::after { content: ''; position: absolute; right: 26px; bottom: -6px; width: 14px; height: 14px; background: #fff; transform: rotate(45deg); border-radius: 3px; }
         #ai-balao.sumindo { opacity: 0 !important; animation: none; pointer-events: none; }
         @keyframes ai-balao-in { from { opacity: 0; transform: scale(.6) translateY(8px); } to { opacity: 1; transform: none; } }
@@ -185,7 +186,7 @@ button:active:not(:disabled) { transform: scale(.97); }
         #ai-form { display: flex; gap: 8px; padding: 10px 12px 12px; background: #fff; }
         #ai-input { flex: 1; padding: 10px 12px; font-size: 13px; border: 1px solid #dbe3ed; border-radius: 12px; }
         #ai-form button { width: 40px; border: 0; border-radius: 12px; background: #0d9488; color: #fff; cursor: pointer; }
-        @media (max-width: 640px) { #assistente-ia { right: 10px; bottom: 10px; } #ai-gato { width: 64px; height: 64px; } #ai-painel { bottom: 76px; } #ai-balao { bottom: 72px; } }
+        @media (max-width: 640px) { #assistente-ia { right: 10px; bottom: 10px; } #ai-gato { width: 64px; height: 64px; } #ai-painel { bottom: 76px; } }
     </style>
 </head>
 <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
@@ -727,15 +728,15 @@ function salvarCacheLocal() {
                             <h2 class="text-2xl font-black text-slate-900 tracking-tight">Guardiões do Bravo</h2>
                             <p class="text-[11px] text-teal-600 font-extrabold uppercase tracking-widest">Gestão Condominial em Nuvem</p>
                         </div>
-                        <form onsubmit="realizarLogin(event)" class="space-y-4">
+                        <form onsubmit="realizarLogin(event)" autocomplete="on" class="space-y-4">
                             <div>
                                 <label class="block text-[11px] font-bold uppercase text-slate-500 tracking-wider mb-1">Utilizador ou E-mail</label>
-                                <input type="text" id="login_user" autocomplete="username" required value="${escapeHTML(savedUser)}" class="w-full p-3 border border-slate-200 rounded-2xl text-sm font-semibold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all outline-none" placeholder="admin ou admin@guardioes.com">
+                                <input type="text" id="login_user" name="username" autocomplete="username" required value="${escapeHTML(savedUser)}" class="w-full p-3 border border-slate-200 rounded-2xl text-sm font-semibold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all outline-none" placeholder="admin ou admin@guardioes.com">
                             </div>
                             <div>
                                 <label class="block text-[11px] font-bold uppercase text-slate-500 tracking-wider mb-1">Palavra-passe</label>
                                 <div class="relative">
-                                    <input type="password" id="login_pass" autocomplete="current-password" required class="w-full p-3 pr-10 border border-slate-200 rounded-2xl text-sm font-semibold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all outline-none">
+                                    <input type="password" id="login_pass" name="password" autocomplete="current-password" required class="w-full p-3 pr-10 border border-slate-200 rounded-2xl text-sm font-semibold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all outline-none">
                                     <button type="button" onclick="toggleMostrarSenha()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
                                         <i id="icon-eye" class="fa-solid fa-eye text-sm"></i>
                                     </button>
@@ -1772,21 +1773,211 @@ function salvarCacheLocal() {
             salvarDados(db); fecharModalContainer(); renderMainOnly();
         };
 
+        // ===================== FORNECEDORES =====================
+        const FOR_CATEGORIAS = ['Manutenção','Limpeza','Segurança / Portaria','Elevadores','Jardinagem / Paisagismo','Dedetização / Controle de pragas','Administração / Contabilidade','Material de consumo','Energia / Água / Gás','Obras e reformas','Tecnologia / Internet','Outros'];
+
+        function forSoDigitos(v) { return String(v || '').replace(/\D/g, ''); }
+        function forMascaraCNPJ(v) {
+            return forSoDigitos(v).slice(0, 14)
+                .replace(/^(\d{2})(\d)/, '$1.$2').replace(/^(\d{2})\.(\d{3})(\d)/, '$1.$2.$3')
+                .replace(/\.(\d{3})(\d)/, '.$1/$2').replace(/(\d{4})(\d)/, '$1-$2');
+        }
+        function forMascaraCEP(v) { return forSoDigitos(v).slice(0, 8).replace(/^(\d{5})(\d)/, '$1-$2'); }
+        function forMascaraTel(v) {
+            const d = forSoDigitos(v).slice(0, 11);
+            if (d.length <= 2) return d;
+            if (d.length <= 6) return d.replace(/^(\d{2})(\d+)/, '($1) $2');
+            if (d.length <= 10) return d.replace(/^(\d{2})(\d{4})(\d+)/, '($1) $2-$3');
+            return d.replace(/^(\d{2})(\d{5})(\d+)/, '($1) $2-$3');
+        }
+        function forCnpjValido(cnpj) {
+            const n = forSoDigitos(cnpj);
+            if (n.length !== 14 || /^(\d)\1+$/.test(n)) return false;
+            const dv = (base) => {
+                let soma = 0, peso = base.length - 7;
+                for (let i = 0; i < base.length; i++) { soma += Number(base[i]) * peso--; if (peso < 2) peso = 9; }
+                const r = soma % 11; return r < 2 ? 0 : 11 - r;
+            };
+            return dv(n.slice(0, 12)) === Number(n[12]) && dv(n.slice(0, 13)) === Number(n[13]);
+        }
+        function forStatus(msg, tipo) {
+            const el = document.getElementById('m_for_status'); if (!el) return;
+            const cores = { ok: 'text-emerald-600', erro: 'text-rose-600', info: 'text-slate-500' };
+            el.className = 'text-[11px] font-bold mt-1 min-h-[16px] ' + (cores[tipo] || cores.info);
+            el.innerHTML = msg || '';
+        }
+        function forSet(id, valor, mascara) {
+            const el = document.getElementById(id);
+            if (!el || valor === undefined || valor === null || String(valor).trim() === '') return;
+            el.value = mascara ? mascara(valor) : String(valor).trim();
+        }
+        async function forFetchJSON(url) {
+            const ctrl = new AbortController(); const t = setTimeout(() => ctrl.abort(), 9000);
+            try { const r = await fetch(url, { signal: ctrl.signal }); return { ok: r.ok, status: r.status, json: r.ok ? await r.json() : null }; }
+            finally { clearTimeout(t); }
+        }
+
+        // Consulta CNPJ: BrasilAPI (principal) -> CNPJ.ws (reserva)
+        async function forConsultarCNPJ(num) {
+            let naoEncontrado = false;
+            try {
+                const r = await forFetchJSON('https://brasilapi.com.br/api/cnpj/v1/' + num);
+                if (r.ok) {
+                    const j = r.json;
+                    return {
+                        razao: j.razao_social, fantasia: j.nome_fantasia, situacao: j.descricao_situacao_cadastral,
+                        cnae: j.cnae_fiscal_descricao, cep: j.cep,
+                        logradouro: ((j.descricao_tipo_de_logradouro || '') + ' ' + (j.logradouro || '')).trim(),
+                        numero: j.numero, complemento: j.complemento, bairro: j.bairro, cidade: j.municipio, uf: j.uf,
+                        telefone: j.ddd_telefone_1, email: (j.email || '').toLowerCase()
+                    };
+                }
+                if (r.status === 404) naoEncontrado = true;
+            } catch (e) { /* tenta a reserva */ }
+            if (!naoEncontrado) {
+                try {
+                    const r = await forFetchJSON('https://publica.cnpj.ws/cnpj/' + num);
+                    if (r.ok) {
+                        const j = r.json, e = j.estabelecimento || {};
+                        return {
+                            razao: j.razao_social, fantasia: e.nome_fantasia, situacao: e.situacao_cadastral,
+                            cnae: e.atividade_principal && e.atividade_principal.descricao, cep: e.cep,
+                            logradouro: ((e.tipo_logradouro || '') + ' ' + (e.logradouro || '')).trim(),
+                            numero: e.numero, complemento: e.complemento, bairro: e.bairro,
+                            cidade: e.cidade && e.cidade.nome, uf: e.estado && e.estado.sigla,
+                            telefone: (e.ddd1 || '') + (e.telefone1 || ''), email: (e.email || '').toLowerCase()
+                        };
+                    }
+                    if (r.status === 404) naoEncontrado = true;
+                } catch (e) { /* sem rede / bloqueado */ }
+            }
+            if (naoEncontrado) throw new Error('CNPJ não encontrado na Receita Federal.');
+            throw new Error('Não foi possível consultar agora (limite de consultas ou sem internet). Preencha manualmente ou tente de novo em instantes.');
+        }
+
+        window.forBuscarCNPJ = async function(auto) {
+            const campo = document.getElementById('m_for_cnpj'); if (!campo) return;
+            const num = forSoDigitos(campo.value);
+            if (num.length !== 14) { if (!auto) forStatus('Digite os 14 números do CNPJ.', 'erro'); return; }
+            if (!forCnpjValido(num)) { forStatus('CNPJ inválido (dígitos verificadores não conferem).', 'erro'); return; }
+            const btn = document.getElementById('m_for_btnbuscar');
+            if (btn) { btn.disabled = true; btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Buscando'; }
+            forStatus('Consultando Receita Federal...', 'info');
+            try {
+                const d = await forConsultarCNPJ(num);
+                if (!document.getElementById('m_for_cnpj')) return; // modal fechado durante a consulta
+                forSet('m_for_razao', d.razao); forSet('m_for_fantasia', d.fantasia);
+                forSet('m_for_situacao', d.situacao); forSet('m_for_cnae', d.cnae);
+                forSet('m_for_cep', d.cep, forMascaraCEP); forSet('m_for_logradouro', d.logradouro);
+                forSet('m_for_numero', d.numero); forSet('m_for_complemento', d.complemento);
+                forSet('m_for_bairro', d.bairro); forSet('m_for_cidade', d.cidade);
+                forSet('m_for_uf', d.uf ? String(d.uf).toUpperCase() : ''); forSet('m_for_telefone', d.telefone, forMascaraTel);
+                forSet('m_for_email', d.email);
+                forStatus('<i class="fa-solid fa-circle-check"></i> Dados preenchidos pela Receita Federal. Confira e complete os demais campos.', 'ok');
+            } catch (err) {
+                forStatus('<i class="fa-solid fa-triangle-exclamation"></i> ' + escapeHTML(err.message), 'erro');
+            } finally {
+                const b2 = document.getElementById('m_for_btnbuscar');
+                if (b2) { b2.disabled = false; b2.innerHTML = '<i class="fa-solid fa-magnifying-glass"></i> Buscar dados'; }
+            }
+        };
+
+        window.forBuscarCEP = async function() {
+            const cep = forSoDigitos((document.getElementById('m_for_cep') || {}).value);
+            if (cep.length !== 8) return;
+            forStatus('Buscando endereço pelo CEP...', 'info');
+            try {
+                let end = null;
+                try {
+                    const r = await forFetchJSON('https://brasilapi.com.br/api/cep/v1/' + cep);
+                    if (r.ok) end = { logradouro: r.json.street, bairro: r.json.neighborhood, cidade: r.json.city, uf: r.json.state };
+                } catch (e) {}
+                if (!end) {
+                    const r = await forFetchJSON('https://viacep.com.br/ws/' + cep + '/json/');
+                    if (r.ok && !r.json.erro) end = { logradouro: r.json.logradouro, bairro: r.json.bairro, cidade: r.json.localidade, uf: r.json.uf };
+                }
+                if (!end) { forStatus('CEP não encontrado.', 'erro'); return; }
+                forSet('m_for_logradouro', end.logradouro); forSet('m_for_bairro', end.bairro);
+                forSet('m_for_cidade', end.cidade); forSet('m_for_uf', end.uf ? String(end.uf).toUpperCase() : '');
+                forStatus('Endereço preenchido pelo CEP.', 'ok');
+            } catch (e) { forStatus('Não foi possível consultar o CEP agora.', 'erro'); }
+        };
+
+        window.forAoDigitarCNPJ = function(el) {
+            el.value = forMascaraCNPJ(el.value);
+            if (forSoDigitos(el.value).length === 14 && forCnpjValido(el.value) && el.dataset.novo === '1') window.forBuscarCNPJ(true);
+        };
+
         function renderFornecedoresView() {
             const list = db.fornecedores || [];
-            return `<div class="bg-white rounded-3xl card-modern overflow-x-auto w-full shadow-sm"><table class="w-full text-left text-xs min-w-[450px]"><thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100"><tr><th class="p-4">CNPJ</th><th class="p-4">Razão Social</th><th class="p-4 text-center">Ações</th></tr></thead><tbody class="divide-y divide-slate-100">${list.map(f => `<tr class="hover:bg-slate-50/80 transition-colors"><td class="p-4 font-mono font-medium">${escapeHTML(f.cnpj)}</td><td class="p-4 font-bold text-slate-900">${escapeHTML(f.razaoSocial)}</td><td class="p-4 text-center"><button onclick="window.renderModalFornecedor('${f.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl mr-1 transition-colors"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('fornecedores','${f.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody></table></div>`;
+            const badge = (s) => (s || 'Ativo') === 'Inativo'
+                ? '<span class="px-2 py-1 rounded-full bg-slate-100 text-slate-500 font-bold text-[10px] uppercase">Inativo</span>'
+                : '<span class="px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 font-bold text-[10px] uppercase">Ativo</span>';
+            const linhas = list.map(f => `<tr class="hover:bg-slate-50/80 transition-colors">
+                <td class="p-4 font-mono font-medium whitespace-nowrap">${escapeHTML(f.cnpj)}</td>
+                <td class="p-4"><div class="font-bold text-slate-900">${escapeHTML(f.razaoSocial)}</div>${f.nomeFantasia ? `<div class="text-[11px] text-slate-500">${escapeHTML(f.nomeFantasia)}</div>` : ''}</td>
+                <td class="p-4">${escapeHTML(f.categoria) || '<span class="text-slate-300">—</span>'}</td>
+                <td class="p-4"><div class="font-semibold">${escapeHTML(f.contato) || ''}</div><div class="text-[11px] text-slate-500">${escapeHTML(f.telefone) || ''}</div><div class="text-[11px] text-slate-500">${escapeHTML(f.email) || ''}</div></td>
+                <td class="p-4 whitespace-nowrap">${escapeHTML(f.cidade)}${f.uf ? ' / ' + escapeHTML(f.uf) : ''}</td>
+                <td class="p-4 text-center">${badge(f.status)}</td>
+                <td class="p-4 text-center whitespace-nowrap"><button onclick="window.renderModalFornecedor('${f.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl mr-1 transition-colors"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('fornecedores','${f.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button></td>
+            </tr>`).join('');
+            return `<div class="bg-white rounded-3xl card-modern overflow-x-auto w-full shadow-sm"><table class="w-full text-left text-xs min-w-[900px]"><thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100"><tr><th class="p-4">CNPJ</th><th class="p-4">Fornecedor</th><th class="p-4">Categoria</th><th class="p-4">Contato</th><th class="p-4">Cidade</th><th class="p-4 text-center">Status</th><th class="p-4 text-center">Ações</th></tr></thead><tbody class="divide-y divide-slate-100">${linhas}</tbody></table></div>`;
         }
 
         window.renderModalFornecedor = function(id = null) {
-            const item = id ? (db.fornecedores||[]).find(x => x.id === id) : { id: '', cnpj: '', razaoSocial: '' };
+            const item = id ? ((db.fornecedores || []).find(x => x.id === id) || {}) : {};
+            const novo = !id;
+            const v = (k) => escapeHTML(item[k] || '');
+            const cls = 'w-full p-3 border rounded-2xl font-bold bg-slate-50';
+            const lbl = (t) => `<label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">${t}</label>`;
+            const campo = (k, titulo, extra = '', tipo = 'text') => `<div>${lbl(titulo)}<input type="${tipo}" id="m_for_${k}" value="${v(k)}" ${extra} class="${cls}"></div>`;
+            const opcoesCat = ['<option value="">Selecione...</option>'].concat(FOR_CATEGORIAS.map(c => `<option ${item.categoria === c ? 'selected' : ''}>${c}</option>`)).join('');
+            const ufs = ['AC','AL','AP','AM','BA','CE','DF','ES','GO','MA','MT','MS','MG','PA','PB','PR','PE','PI','RJ','RN','RS','RO','RR','SC','SP','SE','TO'];
+            const opcoesUF = ['<option value=""></option>'].concat(ufs.map(u => `<option ${item.uf === u ? 'selected' : ''}>${u}</option>`)).join('');
+            const secao = (t) => `<div class="col-span-full pt-2"><p class="text-[10px] font-black uppercase tracking-widest text-teal-700 border-b border-slate-100 pb-1">${t}</p></div>`;
             abrirModalContainer(`
                 <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
-                    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                    <div class="bg-white rounded-3xl max-w-3xl w-full max-h-[92vh] overflow-y-auto p-6 shadow-2xl space-y-4">
                         <h3 class="font-black text-lg text-slate-900">${id ? 'Editar Fornecedor' : 'Novo Fornecedor'}</h3>
-                        <form onsubmit="salvarModalFornecedor(event, '${id}')" class="space-y-3 text-xs">
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">CNPJ</label><input type="text" id="m_for_cnpj" required value="${escapeHTML(item.cnpj)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Razão Social</label><input type="text" id="m_for_razao" required value="${escapeHTML(item.razaoSocial)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
-                            <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Salvar</button></div>
+                        <form onsubmit="salvarModalFornecedor(event, '${id}')" class="text-xs">
+                            <div class="grid grid-cols-1 sm:grid-cols-6 gap-3">
+                                ${secao('Identificação')}
+                                <div class="sm:col-span-6">${lbl('CNPJ')}
+                                    <div class="flex gap-2">
+                                        <input type="text" id="m_for_cnpj" required inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00" data-novo="${novo ? '1' : '0'}" value="${escapeHTML(forMascaraCNPJ(item.cnpj || ''))}" oninput="forAoDigitarCNPJ(this)" class="${cls} flex-1">
+                                        <button type="button" id="m_for_btnbuscar" onclick="forBuscarCNPJ()" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm whitespace-nowrap"><i class="fa-solid fa-magnifying-glass"></i> Buscar dados</button>
+                                    </div>
+                                    <p id="m_for_status" class="text-[11px] font-bold mt-1 min-h-[16px] text-slate-500">${novo ? 'Digite o CNPJ: os dados da empresa são preenchidos automaticamente.' : ''}</p>
+                                </div>
+                                <div class="sm:col-span-3">${lbl('Razão Social')}<input type="text" id="m_for_razao" required value="${v('razaoSocial')}" class="${cls}"></div>
+                                <div class="sm:col-span-3">${lbl('Nome Fantasia')}<input type="text" id="m_for_fantasia" value="${v('nomeFantasia')}" class="${cls}"></div>
+                                <div class="sm:col-span-2">${lbl('Inscrição Estadual')}<input type="text" id="m_for_ie" value="${v('inscricaoEstadual')}" class="${cls}"></div>
+                                <div class="sm:col-span-2">${lbl('Situação cadastral')}<input type="text" id="m_for_situacao" value="${v('situacao')}" class="${cls}"></div>
+                                <div class="sm:col-span-2">${lbl('Status no condomínio')}<select id="m_for_status_reg" class="${cls}"><option ${(item.status || 'Ativo') === 'Ativo' ? 'selected' : ''}>Ativo</option><option ${item.status === 'Inativo' ? 'selected' : ''}>Inativo</option></select></div>
+                                <div class="sm:col-span-3">${lbl('Categoria do serviço')}<select id="m_for_categoria" class="${cls}">${opcoesCat}</select></div>
+                                <div class="sm:col-span-3">${lbl('Atividade principal (CNAE)')}<input type="text" id="m_for_cnae" value="${v('atividade')}" class="${cls}"></div>
+
+                                ${secao('Contato')}
+                                <div class="sm:col-span-2">${lbl('Pessoa de contato')}<input type="text" id="m_for_contato" value="${v('contato')}" class="${cls}"></div>
+                                <div class="sm:col-span-2">${lbl('Telefone / WhatsApp')}<input type="text" id="m_for_telefone" inputmode="tel" value="${v('telefone')}" oninput="this.value=forMascaraTel(this.value)" class="${cls}"></div>
+                                <div class="sm:col-span-2">${lbl('E-mail')}<input type="email" id="m_for_email" value="${v('email')}" class="${cls}"></div>
+                                <div class="sm:col-span-6">${lbl('Site')}<input type="text" id="m_for_site" value="${v('site')}" class="${cls}"></div>
+
+                                ${secao('Endereço')}
+                                <div class="sm:col-span-2">${lbl('CEP')}<input type="text" id="m_for_cep" inputmode="numeric" maxlength="9" value="${escapeHTML(forMascaraCEP(item.cep || ''))}" oninput="this.value=forMascaraCEP(this.value); if(forSoDigitos(this.value).length===8) forBuscarCEP()" class="${cls}"></div>
+                                <div class="sm:col-span-3">${lbl('Logradouro')}<input type="text" id="m_for_logradouro" value="${v('logradouro')}" class="${cls}"></div>
+                                <div class="sm:col-span-1">${lbl('Número')}<input type="text" id="m_for_numero" value="${v('numero')}" class="${cls}"></div>
+                                <div class="sm:col-span-2">${lbl('Complemento')}<input type="text" id="m_for_complemento" value="${v('complemento')}" class="${cls}"></div>
+                                <div class="sm:col-span-2">${lbl('Bairro')}<input type="text" id="m_for_bairro" value="${v('bairro')}" class="${cls}"></div>
+                                <div class="sm:col-span-1">${lbl('Cidade')}<input type="text" id="m_for_cidade" value="${v('cidade')}" class="${cls}"></div>
+                                <div class="sm:col-span-1">${lbl('UF')}<select id="m_for_uf" class="${cls}">${opcoesUF}</select></div>
+
+                                ${secao('Pagamento e observações')}
+                                <div class="sm:col-span-6">${lbl('Chave PIX / dados bancários')}<input type="text" id="m_for_pix" value="${v('chavePix')}" class="${cls}"></div>
+                                <div class="sm:col-span-6">${lbl('Observações')}<textarea id="m_for_obs" rows="2" class="${cls}">${v('observacoes')}</textarea></div>
+                            </div>
+                            <div class="flex justify-end gap-2 pt-4 mt-4 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Salvar</button></div>
                         </form>
                     </div>
                 </div>
@@ -1795,14 +1986,27 @@ function salvarCacheLocal() {
 
         window.salvarModalFornecedor = function(e, id) {
             e.preventDefault();
-            if(!db.fornecedores) db.fornecedores = [];
-            const obj = {
-                id: id && id !== 'null' ? id : 'for_' + Date.now(),
-                cnpj: document.getElementById('m_for_cnpj').value,
-                razaoSocial: document.getElementById('m_for_razao').value
-            };
+            if (!db.fornecedores) db.fornecedores = [];
+            const g = (k) => (document.getElementById('m_for_' + k).value || '').trim();
+            const realId = id && id !== 'null' ? id : 'for_' + Date.now();
+            const cnpjNum = forSoDigitos(g('cnpj'));
+            if (db.fornecedores.some(x => x.id !== realId && forSoDigitos(x.cnpj) === cnpjNum)) {
+                alert('Já existe um fornecedor cadastrado com este CNPJ.'); return;
+            }
+            if (!forCnpjValido(cnpjNum) && !confirm('Este CNPJ parece inválido. Deseja salvar mesmo assim?')) return;
+            const anterior = db.fornecedores.find(x => x.id === realId) || {};
+            const obj = Object.assign({}, anterior, {
+                id: realId,
+                cnpj: forMascaraCNPJ(cnpjNum), razaoSocial: g('razao'), nomeFantasia: g('fantasia'),
+                inscricaoEstadual: g('ie'), situacao: g('situacao'), status: g('status_reg') || 'Ativo',
+                categoria: g('categoria'), atividade: g('cnae'),
+                contato: g('contato'), telefone: g('telefone'), email: g('email'), site: g('site'),
+                cep: g('cep'), logradouro: g('logradouro'), numero: g('numero'), complemento: g('complemento'),
+                bairro: g('bairro'), cidade: g('cidade'), uf: g('uf'),
+                chavePix: g('pix'), observacoes: g('obs')
+            });
             const idx = db.fornecedores.findIndex(x => x.id === obj.id);
-            if(idx !== -1) db.fornecedores[idx] = obj; else db.fornecedores.push(obj);
+            if (idx !== -1) db.fornecedores[idx] = obj; else db.fornecedores.push(obj);
             salvarDados(db); fecharModalContainer(); renderMainOnly();
         };
 
@@ -1916,7 +2120,7 @@ function salvarCacheLocal() {
                                     ${motivosAcerto.length === 0 ? `<tr><td colspan="2" class="p-6 text-center text-slate-400">Nenhum motivo cadastrado.</td></tr>` : motivosAcerto.map(m => `
                                         <tr class="hover:bg-slate-50/80 transition-colors">
                                             <td class="p-3 font-bold text-slate-900">${escapeHTML(m.nome)}</td>
-                                            <td class="p-3 text-center"><button onclick="excluirRegistroMotivoAcerto('${m.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button></td>
+                                            <td class="p-3 text-center"><button onclick="window.renderModalMotivoAcerto('${m.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl mr-1 transition-colors"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistroMotivoAcerto('${m.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button></td>
                                         </tr>
                                     `).join('')}
                                 </tbody>
@@ -1932,7 +2136,7 @@ function salvarCacheLocal() {
                         <div class="overflow-x-auto">
                             <table class="w-full text-left text-xs min-w-[300px]">
                                 <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100"><tr><th class="p-3">Nome</th><th class="p-3 text-center">Ações</th></tr></thead>
-                                <tbody class="divide-y divide-slate-100">${list.map(c => `<tr class="hover:bg-slate-50/80 transition-colors"><td class="p-3 font-bold text-slate-900">${escapeHTML(c.nome)}</td><td class="p-3 text-center"><button onclick="excluirRegistro('categorias','${c.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
+                                <tbody class="divide-y divide-slate-100">${list.map(c => `<tr class="hover:bg-slate-50/80 transition-colors"><td class="p-3 font-bold text-slate-900">${escapeHTML(c.nome)}</td><td class="p-3 text-center"><button onclick="window.renderModalCategoria('${c.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl mr-1 transition-colors"><i class="fa-solid fa-pen"></i></button><button onclick="excluirRegistro('categorias','${c.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button></td></tr>`).join('')}</tbody>
                             </table>
                         </div>
                     </div>
@@ -1940,13 +2144,14 @@ function salvarCacheLocal() {
             `;
         }
 
-        window.renderModalCategoria = function() {
+        window.renderModalCategoria = function(id = null) {
+            const item = id ? ((db.categorias || []).find(x => x.id === id) || {}) : {};
             abrirModalContainer(`
                 <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
                     <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
-                        <h3 class="font-black text-lg text-slate-900">Nova Pasta</h3>
-                        <form onsubmit="salvarModalCategoria(event)" class="space-y-3">
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Nome</label><input type="text" id="m_cat_nome" required class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
+                        <h3 class="font-black text-lg text-slate-900">${id ? 'Editar Pasta' : 'Nova Pasta'}</h3>
+                        <form onsubmit="salvarModalCategoria(event, '${id}')" class="space-y-3">
+                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Nome</label><input type="text" id="m_cat_nome" required value="${escapeHTML(item.nome || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
                             <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Salvar</button></div>
                         </form>
                     </div>
@@ -1954,20 +2159,30 @@ function salvarCacheLocal() {
             `);
         };
 
-        window.salvarModalCategoria = function(e) {
+        window.salvarModalCategoria = function(e, id) {
             e.preventDefault();
             if(!db.categorias) db.categorias = [];
-            db.categorias.push({ id: 'cat_' + Date.now(), nome: document.getElementById('m_cat_nome').value });
+            const nome = document.getElementById('m_cat_nome').value.trim();
+            const existente = id && id !== 'null' ? db.categorias.find(x => x.id === id) : null;
+            if (existente) {
+                const antigo = existente.nome;
+                existente.nome = nome;
+                // documentos guardam a pasta pelo nome: acompanha a renomeação
+                if (antigo !== nome) (db.documentos || []).forEach(d => { if (d.pasta === antigo) d.pasta = nome; });
+            } else {
+                db.categorias.push({ id: 'cat_' + Date.now(), nome });
+            }
             salvarDados(db); fecharModalContainer(); renderMainOnly();
         };
 
-        window.renderModalMotivoAcerto = function() {
+        window.renderModalMotivoAcerto = function(id = null) {
+            const item = id ? ((db.motivos_acerto_estoque || []).find(x => x.id === id) || {}) : {};
             abrirModalContainer(`
                 <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
                     <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
-                        <h3 class="font-black text-lg text-slate-900">Novo Motivo de Acerto</h3>
-                        <form onsubmit="salvarModalMotivoAcerto(event)" class="space-y-3 text-xs">
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Nome do Motivo (Ex: Perca, Quebra)</label><input type="text" id="m_mot_nome" required class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
+                        <h3 class="font-black text-lg text-slate-900">${id ? 'Editar Motivo de Acerto' : 'Novo Motivo de Acerto'}</h3>
+                        <form onsubmit="salvarModalMotivoAcerto(event, '${id}')" class="space-y-3 text-xs">
+                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Nome do Motivo (Ex: Perca, Quebra)</label><input type="text" id="m_mot_nome" required value="${escapeHTML(item.nome || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
                             <div class="flex justify-end gap-2 pt-3 border-t"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Salvar</button></div>
                         </form>
                     </div>
@@ -1975,10 +2190,13 @@ function salvarCacheLocal() {
             `);
         };
 
-        window.salvarModalMotivoAcerto = function(e) {
+        window.salvarModalMotivoAcerto = function(e, id) {
             e.preventDefault();
             if(!db.motivos_acerto_estoque) db.motivos_acerto_estoque = [];
-            db.motivos_acerto_estoque.push({ id: 'mot_' + Date.now(), nome: document.getElementById('m_mot_nome').value });
+            const nome = document.getElementById('m_mot_nome').value.trim();
+            const existente = id && id !== 'null' ? db.motivos_acerto_estoque.find(x => x.id === id) : null;
+            if (existente) existente.nome = nome;
+            else db.motivos_acerto_estoque.push({ id: 'mot_' + Date.now(), nome });
             salvarDados(db); fecharModalContainer(); renderMainOnly();
         };
 
@@ -3269,7 +3487,7 @@ function aiAlternar(abrir) {
     const p = document.getElementById('ai-painel'); if (!p) return;
     const abrirAgora = abrir === undefined ? !p.classList.contains('aberto') : abrir;
     p.classList.toggle('aberto', abrirAgora);
-    const b = document.getElementById('ai-balao'); if (b && abrirAgora) b.classList.add('sumindo');
+    const b = document.getElementById('ai-balao'); if (b) b.classList.toggle('sumindo', !!abrirAgora);
     if (abrirAgora) setTimeout(() => { const i = document.getElementById('ai-input'); if (i) i.focus(); }, 120);
 }
 
@@ -3279,14 +3497,16 @@ function aiCriarWidget() {
     const w = document.createElement('div');
     w.id = 'assistente-ia'; w.className = 'no-print';
     w.innerHTML = `
-        <div id="ai-balao" style="--atraso:${atraso}ms">Como posso ajudar?</div>
         <section id="ai-painel" aria-label="Assistente">
             <div class="ai-topo">${gatoSVG(40, '')}<div><strong>Assistente Guardiões</strong><span>Pergunte ou peça um relatório</span></div><button type="button" id="ai-fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button></div>
             <div id="ai-msgs"></div>
             <div id="ai-chips"><button type="button">Resumo financeiro</button><button type="button">Estoque crítico</button><button type="button">Moradores por bloco</button><button type="button">Gerar relatório</button></div>
             <form id="ai-form"><input id="ai-input" type="text" placeholder="Digite sua pergunta..." autocomplete="off"><button type="submit" aria-label="Enviar"><i class="fa-solid fa-paper-plane"></i></button></form>
         </section>
-        <button type="button" id="ai-gato" aria-label="Abrir assistente">${gatoSVG(76, '')}</button>`;
+        <div id="ai-flutua">
+            <div id="ai-balao" style="--atraso:${atraso}ms">Como posso ajudar?</div>
+            <button type="button" id="ai-gato" aria-label="Abrir assistente">${gatoSVG(76, '')}</button>
+        </div>`;
     document.body.appendChild(w);
 
     document.getElementById('ai-gato').onclick = () => aiAlternar();
@@ -3299,7 +3519,6 @@ function aiCriarWidget() {
         if (b && AI_ACOES[b.dataset.acao]) { if (!b.dataset.acao.startsWith('ia_')) aiAlternar(false); AI_ACOES[b.dataset.acao](); }
     };
     aiAdicionar('bot', 'Miau! 🐱 Sou o assistente do condomínio. Posso responder sobre financeiro, estoque e moradores, e gerar relatórios. <strong>Como posso ajudar?</strong>');
-    setTimeout(() => { const b = document.getElementById('ai-balao'); if (b) b.classList.add('sumindo'); }, atraso + 9000);
 }
 
 function aiAtualizarWidget() {
@@ -3867,7 +4086,60 @@ renderApp = function () {
     }
 };
     </script>
-    <script type="text/plain" id="guia-seguranca-supabase">
+    <script>
+// ===== Lembrar credenciais =====
+// Usuário: guardado em localStorage (já existia). Senha: NUNCA é guardada pelo sistema;
+// fica no gerenciador de senhas do próprio navegador (API de Credenciais).
+(function () {
+    function _lembrarUsuario(valor, ligado) {
+        try { if (ligado && valor) localStorage.setItem('guardioes_lembrar_user', valor); else if (!ligado) localStorage.removeItem('guardioes_lembrar_user'); } catch (e) {}
+    }
+
+    async function salvarCredencialNavegador(usuario, senha) {
+        try {
+            if (!window.PasswordCredential || !navigator.credentials || !navigator.credentials.store) return;
+            const cred = new PasswordCredential({ id: usuario, password: senha, name: usuario });
+            await navigator.credentials.store(cred);
+        } catch (e) { console.warn('Credencial não salva:', e); }
+    }
+
+    async function preencherCredencialSalva() {
+        try {
+            if (!window.PasswordCredential || !navigator.credentials || !navigator.credentials.get) return;
+            const chk = document.getElementById('login_lembrar');
+            if (!chk || !chk.checked) return;
+            const cred = await navigator.credentials.get({ password: true, mediation: 'silent' });
+            const u = document.getElementById('login_user'), pw = document.getElementById('login_pass');
+            if (!cred || !cred.password || !u || !pw || pw.value) return;
+            if (u.value && u.value.trim().toLowerCase() !== String(cred.id).toLowerCase()) return;
+            u.value = cred.id; pw.value = cred.password;
+        } catch (e) { /* sem credencial disponível */ }
+    }
+
+    // Login: lembra o usuário e, se o login der certo, entrega a senha ao gerenciador do navegador
+    const _loginBase = realizarLogin;
+    realizarLogin = async function (e) {
+        const uEl = document.getElementById('login_user'), pEl = document.getElementById('login_pass'), cEl = document.getElementById('login_lembrar');
+        const usuario = uEl ? uEl.value.trim() : '', senha = pEl ? pEl.value : '', lembrar = !!(cEl && cEl.checked);
+        _lembrarUsuario(usuario.toLowerCase(), lembrar);
+        await _loginBase(e);
+        if (lembrar && usuario && senha && sessao.usuarioLogado) salvarCredencialNavegador(usuario, senha);
+    };
+
+    // Ao desmarcar a caixa, esquece o usuário na hora
+    document.addEventListener('change', function (ev) {
+        if (ev.target && ev.target.id === 'login_lembrar' && !ev.target.checked) _lembrarUsuario('', false);
+    });
+
+    // Sempre que a tela de login for desenhada, tenta preencher a senha salva
+    const _renderAppBase = renderApp;
+    renderApp = function () {
+        _renderAppBase.apply(this, arguments);
+        try { if (!sessao.usuarioLogado) preencherCredencialSalva(); } catch (e) {}
+    };
+})();
+</script>
+<script type="text/plain" id="guia-seguranca-supabase">
 GUIA: ATIVAR O LOGIN SEGURO (Supabase Auth + RLS)
 =====================================================================
 Siga NESTA ORDEM. O sistema só fica protegido de verdade no passo 7.
