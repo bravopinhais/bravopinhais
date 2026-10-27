@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Guardiões do Bravo - Gestão Condominial Inteligente</title>
     
-    <!-- Tailwind CSS CDN -->
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -40,20 +40,19 @@
     <!-- Font Awesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Chart.js CDN -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <!-- Supabase JS Client -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     
     <style>
-        /* Estilização da Scrollbar */
         ::-webkit-scrollbar {
             width: 8px;
             height: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: #1e293b;
+            background: #0f172a;
         }
         ::-webkit-scrollbar-thumb {
             background: #334155;
@@ -63,9 +62,14 @@
             background: #475569;
         }
         .glass-panel {
-            background: rgba(30, 41, 59, 0.7);
+            background: rgba(30, 41, 59, 0.75);
             backdrop-filter: blur(12px);
             border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .sidebar-item-active {
+            background: linear-gradient(90deg, rgba(14, 165, 233, 0.2) 0%, rgba(14, 165, 233, 0.05) 100%);
+            border-left: 3px solid #0ea5e9;
+            color: #38bdf8;
         }
     </style>
 </head>
@@ -73,24 +77,24 @@
 
     <!-- CONFIGURAÇÕES DE INTEGRAÇÃO DO SISTEMA -->
     <script>
-        // CONFIGURAÇÕES SUPABASE & IA
-        const SUPABASE_URL = "https://seu-projeto.supabase.co"; // Substitua pelo URL do seu projeto Supabase
-        const SUPABASE_ANON_KEY = "sua-chave-anon-publica";     // Substitua pela sua Anon Key do Supabase
-        
-        // Ativação da IA remota via Edge Function do Supabase
+        const SUPABASE_URL = "https://seu-projeto.supabase.co"; // Substitua pelo URL do seu projeto
+        const SUPABASE_ANON_KEY = "sua-chave-anon-publica";     // Substitua pela sua Anon Key
         const IA_REMOTA_ATIVA = true;
         const EDGE_FUNCTION_NAME = "assistente-ia";
 
-        // Inicialização do Cliente Supabase
         const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
     </script>
 
-    <!-- BANNER DE CABEÇALHO / NAVBAR -->
-    <header class="bg-slate-800/80 border-b border-slate-700/60 sticky top-0 z-40 backdrop-blur-md">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <!-- CABEÇALHO SUPERIOR -->
+    <header class="bg-slate-800/90 border-b border-slate-700/60 sticky top-0 z-40 backdrop-blur-md">
+        <div class="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
-                <!-- LOGO -->
+                
+                <!-- BRAND / MENU TOGGLE -->
                 <div class="flex items-center space-x-3">
+                    <button onclick="toggleSidebar()" class="text-slate-400 hover:text-white lg:hidden">
+                        <i class="fa-solid fa-bars text-xl"></i>
+                    </button>
                     <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-600 to-indigo-600 flex items-center justify-center shadow-lg shadow-sky-500/20">
                         <i class="fa-solid fa-shield-halved text-white text-xl"></i>
                     </div>
@@ -98,18 +102,18 @@
                         <h1 class="font-bold text-lg leading-tight bg-gradient-to-r from-white via-slate-200 to-sky-400 bg-clip-text text-transparent">
                             Guardiões do Bravo
                         </h1>
-                        <p class="text-xs text-sky-400 font-medium">Gestão Condominial v2.0</p>
+                        <p class="text-[11px] text-sky-400 font-medium">Sistema Completo de Gestão Condominial v2.0</p>
                     </div>
                 </div>
 
-                <!-- MENU RÁPIDO & STATUS DA IA -->
+                <!-- CONTROLES DO CABEÇALHO -->
                 <div class="flex items-center space-x-4">
                     <div class="hidden md:flex items-center space-x-2 px-3 py-1.5 rounded-full bg-slate-900/60 border border-slate-700/50 text-xs">
                         <span class="relative flex h-2.5 w-2.5">
                             <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                             <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                         </span>
-                        <span class="text-slate-300 font-medium">IA Gemini On-line</span>
+                        <span class="text-slate-300 font-medium">IA Remota Conectada</span>
                     </div>
 
                     <button onclick="abrirModalComunicado()" class="bg-sky-600 hover:bg-sky-500 text-white text-xs font-semibold px-4 py-2 rounded-lg transition-all shadow-md hover:shadow-sky-500/20 flex items-center gap-2">
@@ -121,211 +125,394 @@
         </div>
     </header>
 
-    <!-- CONTEÚDO PRINCIPAL (DASHBOARD) -->
-    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full space-y-8">
-        
-        <!-- CARDS DE METRICAS PRINCIPAIS -->
-        <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
-            <!-- Saldo Atual -->
-            <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-sky-500/40 transition-all">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Saldo em Conta</p>
-                        <h3 class="text-2xl font-bold text-white mt-1">R$ 142.850,00</h3>
-                    </div>
-                    <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl">
-                        <i class="fa-solid fa-wallet text-xl"></i>
-                    </div>
-                </div>
-                <div class="mt-4 flex items-center text-xs text-emerald-400 font-medium gap-1">
-                    <i class="fa-solid fa-arrow-trend-up"></i>
-                    <span>+4.2% em relação ao mês anterior</span>
-                </div>
-            </div>
+    <div class="flex flex-grow w-full">
 
-            <!-- Inadimplência -->
-            <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-rose-500/40 transition-all">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Taxa de Inadimplência</p>
-                        <h3 class="text-2xl font-bold text-white mt-1">3.1%</h3>
-                    </div>
-                    <div class="p-3 bg-rose-500/10 text-rose-400 rounded-xl">
-                        <i class="fa-solid fa-triangle-exclamation text-xl"></i>
-                    </div>
-                </div>
-                <div class="mt-4 flex items-center text-xs text-emerald-400 font-medium gap-1">
-                    <i class="fa-solid fa-arrow-trend-down"></i>
-                    <span>-0.8% este mês (Redução)</span>
-                </div>
-            </div>
-
-            <!-- Chamados Abertos -->
-            <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-amber-500/40 transition-all">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Ocorrências / Manutenções</p>
-                        <h3 class="text-2xl font-bold text-white mt-1">5 Abertas</h3>
-                    </div>
-                    <div class="p-3 bg-amber-500/10 text-amber-400 rounded-xl">
-                        <i class="fa-solid fa-wrench text-xl"></i>
-                    </div>
-                </div>
-                <div class="mt-4 flex items-center text-xs text-slate-400 font-medium gap-1">
-                    <i class="fa-solid fa-clock"></i>
-                    <span>Tempo médio de resposta: 2h</span>
-                </div>
-            </div>
-
-            <!-- Estoque Crítico -->
-            <div class="glass-panel p-5 rounded-2xl relative overflow-hidden group hover:border-indigo-500/40 transition-all">
-                <div class="flex justify-between items-start">
-                    <div>
-                        <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Alertas de Estoque</p>
-                        <h3 class="text-2xl font-bold text-white mt-1">2 Itens Baixos</h3>
-                    </div>
-                    <div class="p-3 bg-indigo-500/10 text-indigo-400 rounded-xl">
-                        <i class="fa-solid fa-boxes-stacked text-xl"></i>
-                    </div>
-                </div>
-                <div class="mt-4 flex items-center text-xs text-amber-400 font-medium gap-1">
-                    <i class="fa-solid fa-box-open"></i>
-                    <span>Lâmpadas LED e Cloro Necessitam Compra</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- SEÇÃO DE GRÁFICOS E TABELAS -->
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            
-            <!-- GRAFICO FINANCEIRO -->
-            <div class="lg:col-span-2 glass-panel p-6 rounded-2xl space-y-4">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <h3 class="font-bold text-slate-100 text-base">Balanço Financeiro Anual</h3>
-                        <p class="text-xs text-slate-400">Comparativo entre Receitas e Despesas (2026)</p>
-                    </div>
-                    <select id="filtroAno" class="bg-slate-800 border border-slate-700 text-xs text-slate-300 rounded-lg px-3 py-1.5 focus:outline-none focus:border-sky-500">
-                        <option value="2026">2026</option>
-                        <option value="2025">2025</option>
-                    </select>
-                </div>
-                <div class="h-64 relative">
-                    <canvas id="financeChart"></canvas>
-                </div>
-            </div>
-
-            <!-- PAINEL DA IA / ANALISE RÁPIDA -->
-            <div class="glass-panel p-6 rounded-2xl flex flex-col justify-between border border-sky-500/20 relative overflow-hidden">
-                <div class="absolute -right-8 -top-8 w-32 h-32 bg-sky-500/10 rounded-full blur-2xl pointer-events-none"></div>
+        <!-- MENU LATERAL (SIDEBAR COM TODOS OS MÓDULOS) -->
+        <aside id="sidebar" class="w-64 bg-slate-800/50 border-r border-slate-700/60 shrink-0 hidden lg:block transition-all">
+            <div class="p-4 space-y-6">
                 
                 <div>
-                    <div class="flex items-center gap-3 mb-4">
-                        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-sky-500/30">
-                            <i class="fa-solid fa-robot text-white text-lg"></i>
-                        </div>
-                        <div>
-                            <h3 class="font-bold text-white text-base">Análise do Síndico IA</h3>
-                            <p class="text-xs text-sky-400">Diagnóstico em Tempo Real</p>
-                        </div>
-                    </div>
-
-                    <div id="aiQuickAnalysis" class="text-sm text-slate-300 space-y-3 leading-relaxed bg-slate-900/50 p-4 rounded-xl border border-slate-800">
-                        <p>💡 <strong class="text-white">Resumo Executivo:</strong> A saúde financeira do condomínio está estável. O fundo de reserva encontra-se com saldo adequado para cobrir a manutenção preventiva do elevador prevista para o próximo mês.</p>
-                        <p>⚠️ <strong class="text-amber-400">Atenção:</strong> Recomenda-se realizar cotação de cloro para piscina devido ao estoque atual baixo.</p>
-                    </div>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-3 mb-2">Visão Geral</p>
+                    <nav class="space-y-1">
+                        <button onclick="navegarModulo('dashboard')" id="nav-dashboard" class="sidebar-item-active w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-300 hover:text-white transition-all">
+                            <i class="fa-solid fa-chart-pie w-4 text-center"></i>
+                            <span>Dashboard</span>
+                        </button>
+                    </nav>
                 </div>
 
-                <div class="mt-6 pt-4 border-t border-slate-800">
-                    <button onclick="solicitarAnaliseIACompleta()" id="btnAnaliseIA" class="w-full bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-medium text-xs py-3 px-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
-                        <i class="fa-solid fa-wand-magic-sparkles"></i>
-                        <span>Solicitar Análise Aprofundada</span>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- TABELA DE GESTÃO DE ESTOQUE -->
-        <section class="glass-panel p-6 rounded-2xl space-y-4">
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h3 class="font-bold text-slate-100 text-base">Controle de Estoque do Condomínio</h3>
-                    <p class="text-xs text-slate-400">Materiais de limpeza, manutenção e suprimentos gerais</p>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-3 mb-2">Administração</p>
+                    <nav class="space-y-1">
+                        <button onclick="navegarModulo('condominio')" id="nav-condominio" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition-all">
+                            <i class="fa-solid fa-building w-4 text-center"></i>
+                            <span>Condomínio</span>
+                        </button>
+                        <button onclick="navegarModulo('moradores')" id="nav-moradores" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition-all">
+                            <i class="fa-solid fa-users w-4 text-center"></i>
+                            <span>Moradores & Unidades</span>
+                        </button>
+                        <button onclick="navegarModulo('fornecedores')" id="nav-fornecedores" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition-all">
+                            <i class="fa-solid fa-truck-field w-4 text-center"></i>
+                            <span>Fornecedores (CNPJ)</span>
+                        </button>
+                        <button onclick="navegarModulo('empregados')" id="nav-empregados" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition-all">
+                            <i class="fa-solid fa-user-tie w-4 text-center"></i>
+                            <span>Empregados & Turnos</span>
+                        </button>
+                    </nav>
                 </div>
-                <button onclick="abrirModalEstoque()" class="bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold px-4 py-2 rounded-lg transition-all flex items-center gap-2">
-                    <i class="fa-solid fa-box"></i>
-                    <span>Adicionar Item</span>
-                </button>
+
+                <div>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-3 mb-2">Financeiro</p>
+                    <nav class="space-y-1">
+                        <button onclick="navegarModulo('plano-contas')" id="nav-plano-contas" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition-all">
+                            <i class="fa-solid fa-sitemap w-4 text-center"></i>
+                            <span>Plano de Contas</span>
+                        </button>
+                        <button onclick="navegarModulo('financeiro')" id="nav-financeiro" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition-all">
+                            <i class="fa-solid fa-money-bill-transfer w-4 text-center"></i>
+                            <span>Contas a Pagar/Receber</span>
+                        </button>
+                        <button onclick="navegarModulo('formas-monetarias')" id="nav-formas-monetarias" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition-all">
+                            <i class="fa-solid fa-coins w-4 text-center"></i>
+                            <span>Formas Monetárias</span>
+                        </button>
+                        <button onclick="navegarModulo('contas-bancarias')" id="nav-contas-bancarias" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition-all">
+                            <i class="fa-solid fa-building-columns w-4 text-center"></i>
+                            <span>Contas Bancárias</span>
+                        </button>
+                        <button onclick="navegarModulo('dre')" id="nav-dre" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition-all">
+                            <i class="fa-solid fa-file-invoice-dollar w-4 text-center"></i>
+                            <span>DRE & Relatórios</span>
+                        </button>
+                    </nav>
+                </div>
+
+                <div>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-3 mb-2">Suprimentos & Almoxarifado</p>
+                    <nav class="space-y-1">
+                        <button onclick="navegarModulo('estoque')" id="nav-estoque" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition-all">
+                            <i class="fa-solid fa-boxes-stacked w-4 text-center"></i>
+                            <span>Estoque & Materiais</span>
+                        </button>
+                        <button onclick="navegarModulo('acerto-estoque')" id="nav-acerto-estoque" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition-all">
+                            <i class="fa-solid fa-clipboard-check w-4 text-center"></i>
+                            <span>Acerto de Estoque</span>
+                        </button>
+                    </nav>
+                </div>
+
+                <div>
+                    <p class="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-3 mb-2">Arquivos & Segurança</p>
+                    <nav class="space-y-1">
+                        <button onclick="navegarModulo('pastas')" id="nav-pastas" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition-all">
+                            <i class="fa-solid fa-folder-tree w-4 text-center"></i>
+                            <span>Pastas / Categoria</span>
+                        </button>
+                        <button onclick="navegarModulo('documentos')" id="nav-documentos" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition-all">
+                            <i class="fa-solid fa-file-zipper w-4 text-center"></i>
+                            <span>Documentos Gzip</span>
+                        </button>
+                        <button onclick="navegarModulo('utilizadores')" id="nav-utilizadores" class="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white transition-all">
+                            <i class="fa-solid fa-user-shield w-4 text-center"></i>
+                            <span>Utilizadores & Permissões</span>
+                        </button>
+                    </nav>
+                </div>
+
+            </div>
+        </aside>
+
+        <!-- ÁREA PRINCIPAL DINÂMICA DE CONTEÚDO -->
+        <main class="flex-grow p-6 sm:p-8 space-y-8 overflow-x-hidden">
+
+            <!-- 1. MÓDULO: DASHBOARD PRINCIPAL -->
+            <div id="modulo-dashboard" class="space-y-8">
+                <!-- CARDS MÉTTRICAS -->
+                <section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-5">
+                    <div class="glass-panel p-5 rounded-2xl">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Saldo em Conta</p>
+                                <h3 class="text-2xl font-bold text-white mt-1">R$ 142.850,00</h3>
+                            </div>
+                            <div class="p-3 bg-emerald-500/10 text-emerald-400 rounded-xl"><i class="fa-solid fa-wallet text-xl"></i></div>
+                        </div>
+                        <div class="mt-4 flex items-center text-xs text-emerald-400 font-medium gap-1">
+                            <i class="fa-solid fa-arrow-trend-up"></i>
+                            <span>+4.2% este mês</span>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-2xl">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Inadimplência</p>
+                                <h3 class="text-2xl font-bold text-white mt-1">3.1%</h3>
+                            </div>
+                            <div class="p-3 bg-rose-500/10 text-rose-400 rounded-xl"><i class="fa-solid fa-triangle-exclamation text-xl"></i></div>
+                        </div>
+                        <div class="mt-4 flex items-center text-xs text-emerald-400 font-medium gap-1">
+                            <i class="fa-solid fa-arrow-trend-down"></i>
+                            <span>-0.8% redução</span>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-2xl">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Manutenções</p>
+                                <h3 class="text-2xl font-bold text-white mt-1">5 Abertas</h3>
+                            </div>
+                            <div class="p-3 bg-amber-500/10 text-amber-400 rounded-xl"><i class="fa-solid fa-wrench text-xl"></i></div>
+                        </div>
+                        <div class="mt-4 flex items-center text-xs text-slate-400 font-medium gap-1">
+                            <i class="fa-solid fa-clock"></i>
+                            <span>Tempo médio de atendimento: 2h</span>
+                        </div>
+                    </div>
+
+                    <div class="glass-panel p-5 rounded-2xl">
+                        <div class="flex justify-between items-start">
+                            <div>
+                                <p class="text-xs font-medium text-slate-400 uppercase tracking-wider">Estoque Crítico</p>
+                                <h3 class="text-2xl font-bold text-white mt-1">2 Itens</h3>
+                            </div>
+                            <div class="p-3 bg-indigo-500/10 text-indigo-400 rounded-xl"><i class="fa-solid fa-boxes-stacked text-xl"></i></div>
+                        </div>
+                        <div class="mt-4 flex items-center text-xs text-amber-400 font-medium gap-1">
+                            <i class="fa-solid fa-box-open"></i>
+                            <span>Lâmpadas LED e Cloro em alerta</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- GRÁFICO E ANÁLISE IA -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div class="lg:col-span-2 glass-panel p-6 rounded-2xl space-y-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <h3 class="font-bold text-slate-100 text-base">Balanço Financeiro Anual</h3>
+                                <p class="text-xs text-slate-400">Comparativo entre Receitas e Despesas</p>
+                            </div>
+                        </div>
+                        <div class="h-64 relative">
+                            <canvas id="financeChart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- PAINEL DA IA -->
+                    <div class="glass-panel p-6 rounded-2xl flex flex-col justify-between border border-sky-500/20 relative overflow-hidden">
+                        <div>
+                            <div class="flex items-center gap-3 mb-4">
+                                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-sky-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-sky-500/30">
+                                    <i class="fa-solid fa-robot text-white text-lg"></i>
+                                </div>
+                                <div>
+                                    <h3 class="font-bold text-white text-base">Análise do Síndico IA</h3>
+                                    <p class="text-xs text-sky-400">Diagnóstico em Tempo Real</p>
+                                </div>
+                            </div>
+                            <div id="aiQuickAnalysis" class="text-xs text-slate-300 space-y-3 leading-relaxed bg-slate-900/50 p-4 rounded-xl border border-slate-800">
+                                <p>💡 <strong class="text-white">Resumo Executivo:</strong> A saúde financeira do condomínio está estável. O fundo de reserva encontra-se com saldo adequado para cobrir a manutenção preventiva do elevador prevista para o próximo mês.</p>
+                                <p>⚠️ <strong class="text-amber-400">Atenção:</strong> Recomenda-se realizar cotação de cloro para piscina devido ao estoque atual baixo.</p>
+                            </div>
+                        </div>
+                        <div class="mt-6 pt-4 border-t border-slate-800">
+                            <button onclick="solicitarAnaliseIACompleta()" id="btnAnaliseIA" class="w-full bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white font-medium text-xs py-3 px-4 rounded-xl transition-all shadow-md flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                                <span>Solicitar Análise Aprofundada</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div class="overflow-x-auto">
-                <table class="w-full text-left text-xs text-slate-300">
-                    <thead class="text-xs text-slate-400 uppercase bg-slate-800/60 border-b border-slate-700">
-                        <tr>
-                            <th scope="col" class="px-4 py-3 rounded-l-lg">Item / Descrição</th>
-                            <th scope="col" class="px-4 py-3">Categoria</th>
-                            <th scope="col" class="px-4 py-3">Quantidade</th>
-                            <th scope="col" class="px-4 py-3">Status</th>
-                            <th scope="col" class="px-4 py-3 text-right rounded-r-lg">Ação</th>
-                        </tr>
-                    </thead>
-                    <tbody id="tabelaEstoque" class="divide-y divide-slate-800">
-                        <tr class="hover:bg-slate-800/40 transition-colors">
-                            <td class="px-4 py-3 font-medium text-white flex items-center gap-2">
-                                <i class="fa-solid fa-lightbulb text-amber-400"></i>
-                                Lâmpadas LED 12W (Garagem)
-                            </td>
-                            <td class="px-4 py-3 text-slate-400">Elétrica</td>
-                            <td class="px-4 py-3 font-semibold">3 un.</td>
-                            <td class="px-4 py-3">
-                                <span class="bg-amber-500/10 text-amber-400 border border-amber-500/20 text-[10px] px-2.5 py-1 rounded-full font-medium">Estoque Baixo</span>
-                            </td>
-                            <td class="px-4 py-3 text-right">
-                                <button onclick="ajustarEstoque(1, 'incrementar')" class="text-sky-400 hover:text-sky-300 px-1"><i class="fa-solid fa-plus"></i></button>
-                                <button onclick="ajustarEstoque(1, 'decrementar')" class="text-slate-400 hover:text-slate-200 px-1"><i class="fa-solid fa-minus"></i></button>
-                            </td>
-                        </tr>
-                        <tr class="hover:bg-slate-800/40 transition-colors">
-                            <td class="px-4 py-3 font-medium text-white flex items-center gap-2">
-                                <i class="fa-solid fa-droplet text-cyan-400"></i>
-                                Cloro Granulado Piscina 10kg
-                            </td>
-                            <td class="px-4 py-3 text-slate-400">Limpeza / Lazer</td>
-                            <td class="px-4 py-3 font-semibold">1 balde</td>
-                            <td class="px-4 py-3">
-                                <span class="bg-rose-500/10 text-rose-400 border border-rose-500/20 text-[10px] px-2.5 py-1 rounded-full font-medium">Crítico</span>
-                            </td>
-                            <td class="px-4 py-3 text-right">
-                                <button onclick="ajustarEstoque(2, 'incrementar')" class="text-sky-400 hover:text-sky-300 px-1"><i class="fa-solid fa-plus"></i></button>
-                                <button onclick="ajustarEstoque(2, 'decrementar')" class="text-slate-400 hover:text-slate-200 px-1"><i class="fa-solid fa-minus"></i></button>
-                            </td>
-                        </tr>
-                        <tr class="hover:bg-slate-800/40 transition-colors">
-                            <td class="px-4 py-3 font-medium text-white flex items-center gap-2">
-                                <i class="fa-solid fa-key text-emerald-400"></i>
-                                Tags de Acesso RFID (Blocos)
-                            </td>
-                            <td class="px-4 py-3 text-slate-400">Segurança</td>
-                            <td class="px-4 py-3 font-semibold">45 un.</td>
-                            <td class="px-4 py-3">
-                                <span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] px-2.5 py-1 rounded-full font-medium">Normal</span>
-                            </td>
-                            <td class="px-4 py-3 text-right">
-                                <button onclick="ajustarEstoque(3, 'incrementar')" class="text-sky-400 hover:text-sky-300 px-1"><i class="fa-solid fa-plus"></i></button>
-                                <button onclick="ajustarEstoque(3, 'decrementar')" class="text-slate-400 hover:text-slate-200 px-1"><i class="fa-solid fa-minus"></i></button>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <!-- 2. MÓDULO: CONDOMÍNIO -->
+            <div id="modulo-condominio" class="hidden glass-panel p-6 rounded-2xl space-y-6">
+                <div class="flex justify-between items-center border-b border-slate-800 pb-4">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">Cadastro do Condomínio</h2>
+                        <p class="text-xs text-slate-400">Dados institucionais, bloco e regimento interno</p>
+                    </div>
+                    <button class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-4 py-2 rounded-lg font-semibold"><i class="fa-solid fa-floppy-disk mr-2"></i>Salvar Alterações</button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <div>
+                        <label class="block text-slate-300 mb-1">Nome do Condomínio</label>
+                        <input type="text" value="Residencial Guardiões do Bravo" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 mb-1">CNPJ</label>
+                        <input type="text" value="12.345.678/0001-90" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 mb-1">Endereço Completo</label>
+                        <input type="text" value="Av. Principal, 1000 - Centro" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+                    </div>
+                    <div>
+                        <label class="block text-slate-300 mb-1">Quantidade de Blocos / Unidades</label>
+                        <input type="text" value="4 Blocos - 120 Apartamentos" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white">
+                    </div>
+                </div>
             </div>
-        </section>
-    </main>
+
+            <!-- 3. MÓDULO: MORADORES & UNIDADES -->
+            <div id="modulo-moradores" class="hidden glass-panel p-6 rounded-2xl space-y-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">Gestão de Moradores</h2>
+                        <p class="text-xs text-slate-400">Proprietários, inquilinos e veículos cadastrados</p>
+                    </div>
+                    <button onclick="alert('Formulário de novo morador')" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-4 py-2 rounded-lg font-semibold"><i class="fa-solid fa-user-plus mr-2"></i>Novo Morador</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-800 text-slate-400 uppercase">
+                            <tr>
+                                <th class="p-3">Unidade</th>
+                                <th class="p-3">Nome</th>
+                                <th class="p-3">Tipo</th>
+                                <th class="p-3">Contato</th>
+                                <th class="p-3">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800">
+                            <tr>
+                                <td class="p-3 font-bold text-white">Apto 101 - Bloco A</td>
+                                <td class="p-3">Carlos Eduardo Silva</td>
+                                <td class="p-3">Proprietário</td>
+                                <td class="p-3">(11) 98765-4321</td>
+                                <td class="p-3"><span class="bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-full text-[10px]">Ativo</span></td>
+                            </tr>
+                            <tr>
+                                <td class="p-3 font-bold text-white">Apto 204 - Bloco B</td>
+                                <td class="p-3">Mariana Costa</td>
+                                <td class="p-3">Inquilina</td>
+                                <td class="p-3">(11) 97654-3210</td>
+                                <td class="p-3"><span class="bg-emerald-500/10 text-emerald-400 px-2 py-1 rounded-full text-[10px]">Ativo</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 4. MÓDULO: FORNECEDORES -->
+            <div id="modulo-fornecedores" class="hidden glass-panel p-6 rounded-2xl space-y-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">Fornecedores & Prestadores</h2>
+                        <p class="text-xs text-slate-400">Consulta de CNPJ na Receita e parceiros homologados</p>
+                    </div>
+                    <button onclick="alert('Consulta CNPJ ativa')" class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-4 py-2 rounded-lg font-semibold"><i class="fa-solid fa-magnifying-glass mr-2"></i>Buscar CNPJ</button>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs text-slate-300">
+                        <thead class="bg-slate-800 text-slate-400 uppercase">
+                            <tr>
+                                <th class="p-3">Empresa</th>
+                                <th class="p-3">CNPJ</th>
+                                <th class="p-3">Serviço</th>
+                                <th class="p-3">Telefone</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-800">
+                            <tr>
+                                <td class="p-3 font-bold text-white">Elevadores Atlas Otis</td>
+                                <td class="p-3">60.548.242/0001-32</td>
+                                <td class="p-3">Manutenção de Elevadores</td>
+                                <td class="p-3">0800 707 0800</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 5. MÓDULO: EMPREGADOS -->
+            <div id="modulo-empregados" class="hidden glass-panel p-6 rounded-2xl space-y-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">Quadro de Empregados</h2>
+                        <p class="text-xs text-slate-400">Portaria, zeladoria e limpeza</p>
+                    </div>
+                    <button class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-4 py-2 rounded-lg font-semibold"><i class="fa-solid fa-plus mr-2"></i>Cadastrar Funcionario</button>
+                </div>
+                <p class="text-xs text-slate-400">Total de 8 colaboradores ativos no condomínio.</p>
+            </div>
+
+            <!-- 6. MÓDULO: PLANO DE CONTAS -->
+            <div id="modulo-plano-contas" class="hidden glass-panel p-6 rounded-2xl space-y-6">
+                <h2 class="text-lg font-bold text-white">Plano de Contas Financeiro</h2>
+                <p class="text-xs text-slate-400">Estrutura de Categorias de Receitas e Despesas para o DRE.</p>
+            </div>
+
+            <!-- 7. MÓDULO: FINANCEIRO (PAGAR/RECEBER) -->
+            <div id="modulo-financeiro" class="hidden glass-panel p-6 rounded-2xl space-y-6">
+                <h2 class="text-lg font-bold text-white">Contas a Pagar e Receber</h2>
+                <p class="text-xs text-slate-400">Lançamentos bancários, boletos e relatórios de fluxo de caixa.</p>
+            </div>
+
+            <!-- 8. MÓDULO: FORMAS MONETÁRIAS -->
+            <div id="modulo-formas-monetarias" class="hidden glass-panel p-6 rounded-2xl space-y-6">
+                <h2 class="text-lg font-bold text-white">Formas Monetárias</h2>
+                <p class="text-xs text-slate-400">PIX, Boleto Bancário, Transferência e Cartão.</p>
+            </div>
+
+            <!-- 9. MÓDULO: CONTAS BANCÁRIAS -->
+            <div id="modulo-contas-bancarias" class="hidden glass-panel p-6 rounded-2xl space-y-6">
+                <h2 class="text-lg font-bold text-white">Contas Bancárias & Conciliação</h2>
+                <p class="text-xs text-slate-400">Saldos de Conta Corrente e Fundo de Reserva.</p>
+            </div>
+
+            <!-- 10. MÓDULO: DRE & RELATÓRIOS -->
+            <div id="modulo-dre" class="hidden glass-panel p-6 rounded-2xl space-y-6">
+                <h2 class="text-lg font-bold text-white">Demonstração do Resultado do Exercício (DRE)</h2>
+                <p class="text-xs text-slate-400">Balanço consolidado anual para prestação de contas na Assembleia.</p>
+            </div>
+
+            <!-- 11. MÓDULO: ESTOQUE -->
+            <div id="modulo-estoque" class="hidden glass-panel p-6 rounded-2xl space-y-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h2 class="text-lg font-bold text-white">Estoque & Materiais</h2>
+                        <p class="text-xs text-slate-400">Insumos de manutenção, lâmpadas e limpeza</p>
+                    </div>
+                    <button class="bg-sky-600 hover:bg-sky-500 text-white text-xs px-4 py-2 rounded-lg font-semibold"><i class="fa-solid fa-box-archive mr-2"></i>Adicionar Item</button>
+                </div>
+            </div>
+
+            <!-- 12. MÓDULO: ACERTO DE ESTOQUE -->
+            <div id="modulo-acerto-estoque" class="hidden glass-panel p-6 rounded-2xl space-y-6">
+                <h2 class="text-lg font-bold text-white">Acerto de Estoque & Inventário</h2>
+                <p class="text-xs text-slate-400">Ajuste manual de contagem física do almoxarifado.</p>
+            </div>
+
+            <!-- 13. MÓDULO: PASTAS -->
+            <div id="modulo-pastas" class="hidden glass-panel p-6 rounded-2xl space-y-6">
+                <h2 class="text-lg font-bold text-white">Pastas de Organização</h2>
+                <p class="text-xs text-slate-400">Categorias para armazenamento de atas e contratos.</p>
+            </div>
+
+            <!-- 14. MÓDULO: DOCUMENTOS GZIP -->
+            <div id="modulo-documentos" class="hidden glass-panel p-6 rounded-2xl space-y-6">
+                <h2 class="text-lg font-bold text-white">Documentos Compilados (Gzip)</h2>
+                <p class="text-xs text-slate-400">Repositório de arquivos comprimidos do condomínio.</p>
+            </div>
+
+            <!-- 15. MÓDULO: UTILIZADORES -->
+            <div id="modulo-utilizadores" class="hidden glass-panel p-6 rounded-2xl space-y-6">
+                <h2 class="text-lg font-bold text-white">Utilizadores & Níveis de Acesso</h2>
+                <p class="text-xs text-slate-400">Síndico, Conselheiros, Porteiro e Moradores.</p>
+            </div>
+
+        </main>
+    </div>
 
     <!-- WIDGET FLUTUANTE DA IA / CHATBOT (GATO 3D / SÍNDICO IA) -->
     <div class="fixed bottom-6 right-6 z-50">
         <!-- BALÃO DE CHAT EXPANSÍVEL -->
         <div id="aiChatWindow" class="hidden glass-panel w-80 sm:w-96 h-[480px] rounded-2xl shadow-2xl flex flex-col border border-sky-500/30 mb-4 transition-all duration-300 overflow-hidden">
-            <!-- CABEÇALHO DO CHAT -->
             <div class="bg-slate-800/90 p-4 border-b border-slate-700/80 flex items-center justify-between">
                 <div class="flex items-center space-x-3">
                     <div class="w-8 h-8 rounded-lg bg-sky-500 flex items-center justify-center text-slate-900 font-bold text-lg shadow">
@@ -343,7 +530,6 @@
                 </button>
             </div>
 
-            <!-- MENSAGENS DO CHAT -->
             <div id="aiChatMessages" class="flex-grow p-4 overflow-y-auto space-y-3 text-xs">
                 <div class="flex gap-2.5">
                     <div class="w-6 h-6 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0 text-xs">🐱</div>
@@ -353,7 +539,6 @@
                 </div>
             </div>
 
-            <!-- INPUT DO CHAT -->
             <form onsubmit="enviarMensagemIA(event)" class="p-3 bg-slate-800/80 border-t border-slate-700/60 flex items-center gap-2">
                 <input type="text" id="aiInputMessage" placeholder="Pergunte sobre finanças, estoque ou atas..." class="flex-grow bg-slate-900 border border-slate-700 text-xs text-white rounded-xl px-3 py-2.5 focus:outline-none focus:border-sky-500 placeholder-slate-500">
                 <button type="submit" class="bg-sky-600 hover:bg-sky-500 text-white p-2.5 rounded-xl transition-all shrink-0">
@@ -362,7 +547,6 @@
             </form>
         </div>
 
-        <!-- BOTAO FLUTUANTE DE ABRIR CHAT -->
         <button onclick="toggleChatIA()" class="group relative bg-gradient-to-tr from-sky-600 to-indigo-600 hover:from-sky-500 hover:to-indigo-500 text-white p-4 rounded-2xl shadow-xl shadow-sky-500/20 flex items-center justify-center transition-all duration-300 hover:scale-105 active:scale-95">
             <span class="text-2xl animate-float">🐱</span>
             <span class="absolute -top-1 -right-1 flex h-3 w-3">
@@ -403,59 +587,87 @@
         <p>&copy; 2026 Guardiões do Bravo - Todos os direitos reservados. Sistema Inteligente de Gestão Condominial.</p>
     </footer>
 
-    <!-- LOGICA EM JAVASCRIPT DO SISTEMA -->
+    <!-- LÓGICA DE NAVEGAÇÃO E INTEGRACAO DA IA -->
     <script>
-        // --- 1. GRÁFICO FINANCIAL (CHART.JS) ---
-        document.addEventListener('DOMContentLoaded', () => {
-            const ctx = document.getElementById('financeChart').getContext('2d');
-            new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
-                    datasets: [
-                        {
-                            label: 'Receitas (R$)',
-                            data: [42000, 45000, 43000, 48000, 46000, 49000, 47000, 51000, 50000, 52000, 0, 0],
-                            borderColor: '#0ea5e9',
-                            backgroundColor: 'rgba(14, 165, 233, 0.1)',
-                            fill: true,
-                            tension: 0.3
-                        },
-                        {
-                            label: 'Despesas (R$)',
-                            data: [31000, 34000, 30000, 36000, 32000, 35000, 33000, 37000, 34000, 36000, 0, 0],
-                            borderColor: '#f43f5e',
-                            backgroundColor: 'transparent',
-                            borderDash: [5, 5],
-                            tension: 0.3
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { labels: { color: '#94a3b8', font: { size: 11 } } }
-                    },
-                    scales: {
-                        x: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
-                        y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } }
-                    }
+        const modulos = [
+            'dashboard', 'condominio', 'moradores', 'fornecedores', 'empregados',
+            'plano-contas', 'financeiro', 'formas-monetarias', 'contas-bancarias',
+            'dre', 'estoque', 'acerto-estoque', 'pastas', 'documentos', 'utilizadores'
+        ];
+
+        function navegarModulo(nomeModulo) {
+            modulos.forEach(m => {
+                const elModulo = document.getElementById('modulo-' + m);
+                const elNav = document.getElementById('nav-' + m);
+                
+                if (elModulo) elModulo.classList.add('hidden');
+                if (elNav) {
+                    elNav.classList.remove('sidebar-item-active');
+                    elNav.classList.add('text-slate-400');
                 }
             });
-        });
 
-        // --- 2. CONTROLE DA JANELA DE CHAT DA IA ---
-        function toggleChatIA() {
-            const windowEl = document.getElementById('aiChatWindow');
-            windowEl.classList.toggle('hidden');
+            const moduloAtivo = document.getElementById('modulo-' + nomeModulo);
+            const navAtivo = document.getElementById('nav-' + nomeModulo);
+
+            if (moduloAtivo) moduloAtivo.classList.remove('hidden');
+            if (navAtivo) {
+                navAtivo.classList.add('sidebar-item-active');
+                navAtivo.classList.remove('text-slate-400');
+            }
         }
 
-        // --- 3. COMUNICAÇÃO COM A EDGE FUNCTION DO SUPABASE (GEMINI) ---
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('hidden');
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const ctx = document.getElementById('financeChart')?.getContext('2d');
+            if (ctx) {
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'],
+                        datasets: [
+                            {
+                                label: 'Receitas (R$)',
+                                data: [42000, 45000, 43000, 48000, 46000, 49000, 47000, 51000, 50000, 52000, 0, 0],
+                                borderColor: '#0ea5e9',
+                                backgroundColor: 'rgba(14, 165, 233, 0.1)',
+                                fill: true,
+                                tension: 0.3
+                            },
+                            {
+                                label: 'Despesas (R$)',
+                                data: [31000, 34000, 30000, 36000, 32000, 35000, 33000, 37000, 34000, 36000, 0, 0],
+                                borderColor: '#f43f5e',
+                                backgroundColor: 'transparent',
+                                borderDash: [5, 5],
+                                tension: 0.3
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { labels: { color: '#94a3b8', font: { size: 11 } } } },
+                        scales: {
+                            x: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } },
+                            y: { ticks: { color: '#64748b' }, grid: { color: '#1e293b' } }
+                        }
+                    }
+                });
+            }
+        });
+
+        function toggleChatIA() {
+            document.getElementById('aiChatWindow').classList.toggle('hidden');
+        }
+
         async function chamarIA(prompt) {
             if (!IA_REMOTA_ATIVA || !supabaseClient) {
-                // Fallback local caso a integração remota não esteja configurada
-                return "Modo Simulação: A resposta da IA para '" + prompt + "' seria processada via Edge Function e Gemini API.";
+                return "Modo Simulação: Resposta processada para '" + prompt + "'";
             }
 
             try {
@@ -463,29 +675,20 @@
                     body: { prompt: prompt }
                 });
 
-                if (error) {
-                    console.error('Erro na chamada da Edge Function:', error);
-                    return 'Desculpe, ocorreu um erro ao consultar o assistente de IA.';
-                }
-
+                if (error) return 'Erro ao consultar assistente.';
                 return data?.resposta || data?.text || 'Sem resposta do assistente.';
             } catch (err) {
-                console.error('Erro de execução:', err);
                 return 'Erro de conexão com o serviço de IA.';
             }
         }
 
-        // --- 4. ENVIO DE MENSAGENS NO CHAT ---
         async function enviarMensagemIA(event) {
             event.preventDefault();
             const input = document.getElementById('aiInputMessage');
             const mensagem = input.value.trim();
-
             if (!mensagem) return;
 
             const chatMessages = document.getElementById('aiChatMessages');
-
-            // Adiciona mensagem do usuário
             chatMessages.innerHTML += `
                 <div class="flex gap-2.5 justify-end">
                     <div class="bg-sky-600 text-white p-3 rounded-2xl rounded-tr-none text-xs max-w-[80%]">
@@ -496,43 +699,37 @@
             input.value = '';
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
-            // Indicator de carregamento
             const tempId = 'loading-' + Date.now();
             chatMessages.innerHTML += `
                 <div id="${tempId}" class="flex gap-2.5">
                     <div class="w-6 h-6 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0 text-xs">🐱</div>
-                    <div class="bg-slate-800 p-3 rounded-2xl rounded-tl-none border border-slate-700/60 text-slate-400 flex items-center gap-2">
+                    <div class="bg-slate-800 p-3 rounded-2xl text-slate-400 flex items-center gap-2">
                         <i class="fa-solid fa-circle-notch animate-spin"></i> Pensando...
                     </div>
                 </div>
             `;
             chatMessages.scrollTop = chatMessages.scrollHeight;
 
-            // Busca resposta da IA
             const resposta = await chamarIA(mensagem);
-
-            // Remove o indicador e adiciona a resposta real
             document.getElementById(tempId)?.remove();
+
             chatMessages.innerHTML += `
                 <div class="flex gap-2.5">
                     <div class="w-6 h-6 rounded-full bg-sky-500/20 text-sky-400 flex items-center justify-center shrink-0 text-xs">🐱</div>
-                    <div class="bg-slate-800 p-3 rounded-2xl rounded-tl-none border border-slate-700/60 text-slate-200">
-                        ${resposta}
-                    </div>
+                    <div class="bg-slate-800 p-3 rounded-2xl text-slate-200">${resposta}</div>
                 </div>
             `;
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
-        // --- 5. ANÁLISE COMPLETA VIA BOTAO PAINEL ---
         async function solicitarAnaliseIACompleta() {
             const btn = document.getElementById('btnAnaliseIA');
             const targetDiv = document.getElementById('aiQuickAnalysis');
             
             btn.disabled = true;
-            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Analisando Dados...`;
+            btn.innerHTML = `<i class="fa-solid fa-spinner animate-spin"></i> Analisando...`;
 
-            const promptAnalise = "Faça uma análise executiva rápida sobre a gestão deste condomínio considerando um saldo de R$ 142.850, inadimplência em 3.1% e itens de estoque baixo.";
+            const promptAnalise = "Análise executiva completa sobre o condomínio.";
             const resultado = await chamarIA(promptAnalise);
 
             targetDiv.innerHTML = `<p class="text-sky-300">✨ <strong>Diagnóstico Gerado:</strong></p><p class="mt-1">${resultado}</p>`;
@@ -541,28 +738,13 @@
             btn.innerHTML = `<i class="fa-solid fa-wand-magic-sparkles"></i> <span>Solicitar Análise Aprofundada</span>`;
         }
 
-        // --- 6. MODAL & ACOES AUXILIARES ---
-        function abrirModalComunicado() {
-            document.getElementById('modalComunicado').classList.remove('hidden');
-        }
-
-        function fecharModalComunicado() {
-            document.getElementById('modalComunicado').classList.add('hidden');
-        }
-
+        function abrirModalComunicado() { document.getElementById('modalComunicado').classList.remove('hidden'); }
+        function fecharModalComunicado() { document.getElementById('modalComunicado').classList.add('hidden'); }
         function salvarComunicado() {
             const titulo = document.getElementById('comunicadoTitulo').value;
-            if (!titulo) return alert('Por favor, informe o título do comunicado.');
-            alert('Comunicado "' + titulo + '" publicado com sucesso para todos os moradores!');
+            if (!titulo) return alert('Informe o título do comunicado.');
+            alert('Comunicado publicado!');
             fecharModalComunicado();
-        }
-
-        function abrirModalEstoque() {
-            alert('Abertura de formulário para cadastro de novo item no estoque.');
-        }
-
-        function ajustarEstoque(id, acao) {
-            console.log(`Ajustando estoque do item ${id}: ${acao}`);
         }
     </script>
 </body>
