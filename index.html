@@ -1,9 +1,19 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="h-full bg-slate-950">
+<html lang="pt-BR" class="h-full bg-slate-950" data-animacoes="ativadas">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="description" content="Guardiões do Bravo — sistema de gestão condominial.">
+    <meta name="theme-color" content="#020617">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Guardiões do Bravo">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <link rel="icon" href="./icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="./icon-192.png">
     <title>Guardiões do Bravo - Gestão Condominial Completa em Nuvem</title>
+    <!-- Versão de melhorias: 2026.10.27 | módulos existentes preservados -->
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Google Fonts: Inter -->
@@ -82,10 +92,29 @@
             table { font-size: 12px; }
             #status-nuvem { padding-inline: 8px; text-align: center; }
         }
+        /* O sistema inicia com animações ligadas. O utilizador pode desligá-las em Configurações. */
         @media (prefers-reduced-motion: reduce) {
-            *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; scroll-behavior: auto !important; transition-duration: .01ms !important; }
-            .card-modern:hover, #sidebar-menu nav button:hover { transform: none; }
+            html:not([data-animacoes="ativadas"]) *,
+            html:not([data-animacoes="ativadas"]) *::before,
+            html:not([data-animacoes="ativadas"]) *::after {
+                animation-duration: .01ms !important;
+                animation-iteration-count: 1 !important;
+                scroll-behavior: auto !important;
+                transition-duration: .01ms !important;
+            }
+            html:not([data-animacoes="ativadas"]) .card-modern:hover,
+            html:not([data-animacoes="ativadas"]) #sidebar-menu nav button:hover { transform: none; }
         }
+        html[data-animacoes="desativadas"] *,
+        html[data-animacoes="desativadas"] *::before,
+        html[data-animacoes="desativadas"] *::after {
+            animation-duration: .01ms !important;
+            animation-iteration-count: 1 !important;
+            scroll-behavior: auto !important;
+            transition-duration: .01ms !important;
+        }
+        html[data-animacoes="desativadas"] .card-modern:hover,
+        html[data-animacoes="desativadas"] #sidebar-menu nav button:hover { transform: none !important; }
 
 
         /* ===== ANIMAÇÕES v2 ===== */
@@ -187,6 +216,26 @@ button:active:not(:disabled) { transform: scale(.97); }
         #ai-input { flex: 1; padding: 10px 12px; font-size: 13px; border: 1px solid #dbe3ed; border-radius: 12px; }
         #ai-form button { width: 40px; border: 0; border-radius: 12px; background: #0d9488; color: #fff; cursor: pointer; }
         @media (max-width: 640px) { #assistente-ia { right: 10px; bottom: 10px; } #ai-gato { width: 64px; height: 64px; } #ai-painel { bottom: 76px; } }
+    
+        /* ===== Ajustes mobile/PWA e acessibilidade ===== */
+        body { padding-bottom: env(safe-area-inset-bottom); }
+        #app { min-width: 0; }
+        main, aside, nav, header { min-width: 0; }
+        button, [role="button"], input[type="checkbox"], label { touch-action: manipulation; }
+        #sidebar-menu { padding-bottom: env(safe-area-inset-bottom); }
+        #status-nuvem { padding-top: max(6px, env(safe-area-inset-top)); }
+        @media (max-width: 768px) {
+            #sidebar-menu { width: min(86vw, 320px); }
+            main { padding-left: 12px !important; padding-right: 12px !important; }
+            #app button { min-height: 42px; }
+            #app input[type="checkbox"] { min-width: 18px; min-height: 18px; }
+            .tab-active, [onclick^="abrirModulo("] { -webkit-tap-highlight-color: rgba(20,184,166,.15); }
+        }
+        @media (display-mode: standalone) {
+            body { user-select: none; -webkit-user-select: none; }
+            input, textarea, select, [contenteditable="true"] { user-select: text; -webkit-user-select: text; }
+        }
+
     </style>
 </head>
 <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
@@ -343,6 +392,12 @@ button:active:not(:disabled) { transform: scale(.97); }
             } catch (e) { db = DEFAULT_DATA; }
         }
 
+        // Garante a estrutura de preferências ao abrir versões antigas do banco sem alterar registros existentes.
+        if (db && typeof db === 'object') {
+            if (!db.configuracoes || typeof db.configuracoes !== 'object') db.configuracoes = {};
+            if (!db.configuracoes.modulos || typeof db.configuracoes.modulos !== 'object') db.configuracoes.modulos = {};
+        }
+
         let sessao = { usuarioLogado: null };
 
         // Proteção complementar de sessão no navegador (não substitui autenticação no servidor).
@@ -363,100 +418,260 @@ button:active:not(:disabled) { transform: scale(.97); }
             if (document.visibilityState === 'visible') reiniciarTemporizadorInatividade();
         });
 
+const CHAVE_SYNC_PENDENTE = 'guardioes_bravo_sync_pendente';
+const CHAVE_ULTIMA_SYNC_NUVEM = 'guardioes_bravo_ultima_sync_nuvem';
+
 function salvarCacheLocal() {
     try {
         localStorage.setItem('guardioes_bravo_db', JSON.stringify(db));
+        return true;
     } catch (e) {
-        console.warn('Cache local cheio; seguindo apenas com a nuvem.', e);
+        console.warn('Cache local indisponível ou cheio; seguindo apenas com a nuvem.', e);
+        return false;
     }
+}
+
+function obterSyncPendente() {
+    try { return JSON.parse(localStorage.getItem(CHAVE_SYNC_PENDENTE) || 'null'); }
+    catch (e) { return null; }
+}
+
+function marcarSyncPendente(motivo = 'gravação local aguardando confirmação da nuvem') {
+    try {
+        localStorage.setItem(CHAVE_SYNC_PENDENTE, JSON.stringify({
+            desde: new Date().toISOString(),
+            motivo,
+            ultimaVersaoNuvem: localStorage.getItem(CHAVE_ULTIMA_SYNC_NUVEM) || null
+        }));
+        return true;
+    } catch (e) { return false; }
+}
+
+function limparSyncPendente() {
+    try { localStorage.removeItem(CHAVE_SYNC_PENDENTE); } catch (e) {}
+}
+
+function atualizarVersaoConhecidaNuvem(valor) {
+    if (!valor) return;
+    try {
+        const atual = localStorage.getItem(CHAVE_ULTIMA_SYNC_NUVEM);
+        // Não regrida o marcador se uma recuperação local acabou de gravar uma versão mais nova.
+        if (atual && versoesEquivalentes(atual, valor) === false && Date.parse(atual) > Date.parse(valor)) return;
+        localStorage.setItem(CHAVE_ULTIMA_SYNC_NUVEM, String(valor));
+    } catch (e) {}
+}
+
+function versoesEquivalentes(a, b) {
+    if (!a || !b) return false;
+    const ta = Date.parse(a), tb = Date.parse(b);
+    return Number.isFinite(ta) && Number.isFinite(tb) ? ta === tb : String(a) === String(b);
 }
 
         async function carregarDadosDaNuvem() {
             const elStatus = document.getElementById('status-nuvem');
+            const dadosLocaisAntesDaNuvem = db;
             try {
                 const { data, error } = await supabaseClient
                     .from('condominio_dados')
-                    .select('payload')
+                    .select('payload, atualizado_em')
                     .eq('id', 'principal')
                     .maybeSingle();
 
-                if (error) throw error;   // leitura falhou: não grava nada, cai no catch
-                if (data && data.payload) {
-                    db = data.payload;
-                    if (!db.plano_contas) db.plano_contas = DEFAULT_DATA.plano_contas;
-                    if (!db.acertos_estoque) db.acertos_estoque = [];
-                    if (!db.motivos_acerto_estoque) db.motivos_acerto_estoque = DEFAULT_DATA.motivos_acerto_estoque;
-                    salvarCacheLocal();
-                    if (elStatus) {
-                        elStatus.className = "bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm";
-                        elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-down text-emerald-400"></i> Sincronizado com o Supabase com Sucesso!`;
-                    }
-                } else {
-                    await salvarDadosNaNuvem(db);
-                }
+                if (error) throw error;
 
-                supabaseClient
-                    .channel('mudancas-condominio')
-                    .on(
-                        'postgres_changes',
-                        { event: '*', schema: 'public', table: 'condominio_dados', filter: 'id=eq.principal' },
-                        (payload) => {
-                            if (payload.new && payload.new.payload) {
-                                db = payload.new.payload;
+                if (data && data.payload) {
+                    const pendencia = obterSyncPendente();
+                    if (pendencia && dadosLocaisAntesDaNuvem && dadosLocaisAntesDaNuvem.condominio) {
+                        const baseline = pendencia.ultimaVersaoNuvem || localStorage.getItem(CHAVE_ULTIMA_SYNC_NUVEM);
+                        const conflitoProvavel = baseline && data.atualizado_em && !versoesEquivalentes(baseline, data.atualizado_em);
+                        const aviso = conflitoProvavel
+                            ? `Existe uma cópia local não sincronizada E a nuvem parece ter sido alterada por outro acesso.
+
+OK: enviar a cópia local para a nuvem (pode substituir alterações mais recentes).
+Cancelar: manter a cópia local pendente e decidir depois.`
+                            : `Há alterações guardadas localmente que ainda não foram confirmadas na nuvem.
+
+OK: tentar recuperar e enviar essas alterações.
+Cancelar: manter a cópia local pendente sem sobrescrever a nuvem agora.`;
+                        const recuperarLocal = confirm(aviso);
+                        if (recuperarLocal) {
+                            db = dadosLocaisAntesDaNuvem;
+                            await salvarDadosNaNuvem(db, { recuperacaoConfirmada: true });
+                        } else {
+                            const usarNuvem = confirm(`Deseja DESCARTAR a cópia local pendente e carregar os dados da nuvem?
+
+Esta ação pode perder alterações ainda não sincronizadas.`);
+                            if (usarNuvem) {
+                                limparSyncPendente();
+                                db = data.payload;
+                                if (!db.configuracoes || typeof db.configuracoes !== 'object') db.configuracoes = {};
+                                if (!db.configuracoes.modulos || typeof db.configuracoes.modulos !== 'object') db.configuracoes.modulos = {};
                                 if (!db.plano_contas) db.plano_contas = DEFAULT_DATA.plano_contas;
                                 if (!db.acertos_estoque) db.acertos_estoque = [];
                                 if (!db.motivos_acerto_estoque) db.motivos_acerto_estoque = DEFAULT_DATA.motivos_acerto_estoque;
                                 salvarCacheLocal();
-                                renderMainOnly();
-                                
-                                if (elStatus) {
-                                    elStatus.className = "bg-teal-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print animate-pulse border-b border-teal-800";
-                                    elStatus.innerHTML = `<i class="fa-solid fa-rotate"></i> Dados atualizados em tempo real por outro utilizador!`;
-                                    setTimeout(() => {
-                                        elStatus.className = "bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm";
-                                        elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-down"></i> Sincronizado com a Nuvem em Tempo Real`;
-                                    }, 2000);
-                                }
+                            } else {
+                                db = dadosLocaisAntesDaNuvem;
                             }
                         }
-                    )
+                    } else {
+                        db = data.payload;
+                        if (!db.configuracoes || typeof db.configuracoes !== 'object') db.configuracoes = {};
+                        if (!db.configuracoes.modulos || typeof db.configuracoes.modulos !== 'object') db.configuracoes.modulos = {};
+                        if (!db.plano_contas) db.plano_contas = DEFAULT_DATA.plano_contas;
+                        if (!db.acertos_estoque) db.acertos_estoque = [];
+                        if (!db.motivos_acerto_estoque) db.motivos_acerto_estoque = DEFAULT_DATA.motivos_acerto_estoque;
+                        salvarCacheLocal();
+                    }
+                    atualizarVersaoConhecidaNuvem(data.atualizado_em);
+                    if (elStatus) {
+                        const pendente = obterSyncPendente();
+                        elStatus.className = pendente
+                            ? 'bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800'
+                            : 'bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm';
+                        elStatus.innerHTML = pendente
+                            ? '<i class="fa-solid fa-triangle-exclamation"></i> Há alterações locais aguardando sincronização. Não feche esta sessão antes de resolver.'
+                            : '<i class="fa-solid fa-cloud-arrow-down text-emerald-400"></i> Sincronizado com o Supabase com Sucesso!';
+                    }
+                } else {
+                    const pendencia = obterSyncPendente();
+                    const msg = pendencia
+                        ? `A nuvem não retornou um registro, mas há alterações locais pendentes.
+
+OK: tentar criar/atualizar a nuvem com a cópia local.
+Cancelar: manter localmente sem gravar na nuvem.`
+                        : `A nuvem não retornou nenhum registro acessível. Isso pode significar uma base nova OU uma configuração de permissões incompleta.
+
+OK: criar o registro na nuvem a partir desta cópia local.
+Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
+                    if (confirm(msg)) {
+                        if (!marcarSyncPendente('criação ou recuperação do registro da nuvem')) {
+                            console.warn('Não foi possível registrar a pendência local.');
+                        }
+                        await salvarDadosNaNuvem(db, { recuperacaoConfirmada: true });
+                    } else {
+                        marcarSyncPendente('base local mantida; registro da nuvem não confirmado');
+                        if (elStatus) {
+                            elStatus.className = 'bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800';
+                            elStatus.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Base local mantida; sincronização não confirmada.';
+                        }
+                    }
+                }
+
+                supabaseClient
+                    .channel('mudancas-condominio')
+                    .on('postgres_changes', {
+                        event: '*', schema: 'public', table: 'condominio_dados', filter: 'id=eq.principal'
+                    }, (payload) => {
+                        if (payload.new && payload.new.payload) {
+                            // Nunca substitua alterações locais pendentes por um evento remoto silenciosamente.
+                            if (obterSyncPendente()) {
+                                if (elStatus) {
+                                    elStatus.className = 'bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800';
+                                    elStatus.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> A nuvem mudou enquanto há dados locais pendentes. Faça backup e resolva a sincronização.';
+                                }
+                                return;
+                            }
+                            db = payload.new.payload;
+                            if (!db.configuracoes || typeof db.configuracoes !== 'object') db.configuracoes = {};
+                            if (!db.configuracoes.modulos || typeof db.configuracoes.modulos !== 'object') db.configuracoes.modulos = {};
+                            if (!db.plano_contas) db.plano_contas = DEFAULT_DATA.plano_contas;
+                            if (!db.acertos_estoque) db.acertos_estoque = [];
+                            if (!db.motivos_acerto_estoque) db.motivos_acerto_estoque = DEFAULT_DATA.motivos_acerto_estoque;
+                            salvarCacheLocal();
+                            atualizarVersaoConhecidaNuvem(payload.new.atualizado_em);
+                            renderApp();
+                            if (elStatus) {
+                                elStatus.className = 'bg-teal-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print animate-pulse border-b border-teal-800';
+                                elStatus.innerHTML = '<i class="fa-solid fa-rotate"></i> Dados atualizados em tempo real por outro utilizador!';
+                                setTimeout(() => {
+                                    if (obterSyncPendente()) return;
+                                    elStatus.className = 'bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm';
+                                    elStatus.innerHTML = '<i class="fa-solid fa-cloud-arrow-down"></i> Sincronizado com a Nuvem em Tempo Real';
+                                }, 2000);
+                            }
+                        }
+                    })
                     .subscribe();
 
             } catch (err) {
+                console.warn('Falha ao carregar dados da nuvem; mantendo cópia local quando disponível.', err);
                 if (elStatus) {
-                    elStatus.className = "bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800";
-                    elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> A utilizar armazenamento local.`;
+                    const pendente = obterSyncPendente();
+                    elStatus.className = 'bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800';
+                    elStatus.innerHTML = pendente
+                        ? '<i class="fa-solid fa-triangle-exclamation"></i> Sem conexão com a nuvem; alterações locais mantidas para recuperação.'
+                        : '<i class="fa-solid fa-triangle-exclamation"></i> A utilizar armazenamento local; confirme a sincronização antes de trocar de dispositivo.';
                 }
             }
             renderApp();
         }
 
-        async function salvarDadosNaNuvem(dataObj) {
+        async function salvarDadosNaNuvem(dataObj, opcoes = {}) {
             db = dataObj;
-            salvarCacheLocal();
-
+            const pendenciaAnterior = obterSyncPendente();
+            const cacheLocalSalvo = salvarCacheLocal();
             const elStatus = document.getElementById('status-nuvem');
-            if (elStatus) {
-                elStatus.className = "bg-slate-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print animate-pulse border-b border-slate-800";
-                elStatus.innerHTML = `<i class="fa-solid fa-rotate fa-spin"></i> A guardar na nuvem...`;
+
+            // Se já havia uma pendência, confirme que a versão remota não mudou antes de fazer upsert.
+            // A opção recuperacaoConfirmada só é usada depois de uma confirmação explícita do administrador/usuário.
+            if (pendenciaAnterior && !opcoes.recuperacaoConfirmada) {
+                try {
+                    const { data: remotoAtual, error: erroVersao } = await supabaseClient
+                        .from('condominio_dados').select('payload, atualizado_em').eq('id', 'principal').maybeSingle();
+                    if (erroVersao) throw erroVersao;
+                    const baseline = pendenciaAnterior.ultimaVersaoNuvem || localStorage.getItem(CHAVE_ULTIMA_SYNC_NUVEM);
+                    const mesmaVersao = !!(remotoAtual && remotoAtual.payload && baseline && remotoAtual.atualizado_em && versoesEquivalentes(baseline, remotoAtual.atualizado_em));
+                    if (!mesmaVersao) {
+                        const podeSobrescrever = confirm(`Existe uma alteração local pendente e não foi possível comprovar que a nuvem está na mesma versão.\n\nOK: enviar os dados locais e substituir a versão remota, se existir.\nCancelar: manter os dados locais e não enviar agora.\n\nFaça um backup antes de enviar.`);
+                        if (!podeSobrescrever) {
+                            if (cacheLocalSalvo && !obterSyncPendente()) marcarSyncPendente('alterações locais pendentes; envio cancelado pelo usuário');
+                            if (elStatus) {
+                                elStatus.className = 'bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800';
+                                elStatus.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Alterações locais mantidas; envio para a nuvem cancelado.';
+                            }
+                            return false;
+                        }
+                    }
+                } catch (erro) {
+                    console.warn('Não foi possível confirmar a versão remota antes de salvar.', erro);
+                    if (elStatus) {
+                        elStatus.className = 'bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800';
+                        elStatus.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Pendência mantida localmente; não foi possível verificar a versão da nuvem.';
+                    }
+                    return false;
+                }
             }
 
+            if (cacheLocalSalvo) marcarSyncPendente('gravação local aguardando confirmação da nuvem');
+            if (elStatus) {
+                elStatus.className = 'bg-slate-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print animate-pulse border-b border-slate-800';
+                elStatus.innerHTML = '<i class="fa-solid fa-rotate fa-spin"></i> A guardar na nuvem...';
+            }
+
+            const atualizadoEm = new Date().toISOString();
             try {
                 const { error } = await supabaseClient
                     .from('condominio_dados')
-                    .upsert({ id: 'principal', payload: db, atualizado_em: new Date() });
+                    .upsert({ id: 'principal', payload: db, atualizado_em: atualizadoEm });
 
                 if (error) throw error;
-
+                limparSyncPendente();
+                atualizarVersaoConhecidaNuvem(atualizadoEm);
                 if (elStatus) {
-                    elStatus.className = "bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm";
-                    elStatus.innerHTML = `<i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado com a Nuvem em Tempo Real`;
+                    elStatus.className = 'bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm';
+                    elStatus.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado com a Nuvem em Tempo Real';
                 }
+                return true;
             } catch (err) {
+                console.warn('Não foi possível sincronizar dados na nuvem.', err);
                 if (elStatus) {
-                    elStatus.className = "bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800";
-                    elStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> Guardado localmente (Erro na nuvem)`;
+                    elStatus.className = 'bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800';
+                    elStatus.innerHTML = cacheLocalSalvo
+                        ? '<i class="fa-solid fa-triangle-exclamation"></i> Alterações mantidas neste dispositivo; sincronização pendente.'
+                        : '<i class="fa-solid fa-triangle-exclamation"></i> Falha na nuvem e no armazenamento local. Baixe um backup e não feche a página.';
                 }
+                return false;
             }
         }
 
@@ -484,10 +699,64 @@ function salvarCacheLocal() {
             acerto_estoque: 'Acerto de Estoque',
             documentos: 'Gestão de Documentos',
             relatorios: 'Central de Relatórios & DRE',
-            usuarios: 'Gestão de Utilizadores'
+            usuarios: 'Gestão de Utilizadores',
+            configuracoes: 'Configurações do Sistema'
         };
 
+        // Módulos gerenciáveis pelo administrador. As preferências ficam no próprio registro
+        // do sistema (local e Supabase), sem excluir ou alterar os dados dos módulos.
+        const MODULOS_CONFIGURAVEIS = [
+            { id: 'dashboard', nome: 'Dashboard Executivo', descricao: 'Indicadores e visão geral do condomínio', grupo: 'Visão Geral', icone: 'fa-chart-pie' },
+            { id: 'condominio', nome: 'Dados do Condomínio', descricao: 'Cadastro do condomínio e conselho', grupo: 'Visão Geral', icone: 'fa-building' },
+            { id: 'plano_contas', nome: 'Plano de Contas', descricao: 'Categorias financeiras e contas gerenciais', grupo: 'Financeiro', icone: 'fa-sitemap' },
+            { id: 'financeiro', nome: 'Contas a Pagar / Receber', descricao: 'Títulos, pagamentos e recebimentos', grupo: 'Financeiro', icone: 'fa-receipt' },
+            { id: 'formas_monetarias', nome: 'Formas Monetárias', descricao: 'Formas de pagamento e recebimento', grupo: 'Financeiro', icone: 'fa-money-bill-transfer' },
+            { id: 'contas_bancarias', nome: 'Contas Bancárias / Caixa', descricao: 'Contas bancárias e saldos', grupo: 'Financeiro', icone: 'fa-building-columns' },
+            { id: 'relatorios', nome: 'DRE e Relatórios', descricao: 'Relatórios gerenciais e demonstrativos', grupo: 'Financeiro', icone: 'fa-file-invoice-dollar' },
+            { id: 'moradores', nome: 'Moradores e Unidades', descricao: 'Cadastro de moradores, blocos e apartamentos', grupo: 'Cadastros e Operações', icone: 'fa-users' },
+            { id: 'fornecedores', nome: 'Fornecedores', descricao: 'Cadastro e consulta de fornecedores', grupo: 'Cadastros e Operações', icone: 'fa-truck-fast' },
+            { id: 'empregados', nome: 'Empregados', descricao: 'Cadastro de funcionários e colaboradores', grupo: 'Cadastros e Operações', icone: 'fa-user-tie' },
+            { id: 'estoque', nome: 'Estoque e Inventário', descricao: 'Itens, quantidades, fotos e inventário', grupo: 'Cadastros e Operações', icone: 'fa-boxes-stacked' },
+            { id: 'acerto_estoque', nome: 'Acerto de Estoque', descricao: 'Ajustes e histórico de estoque', grupo: 'Cadastros e Operações', icone: 'fa-arrows-split-up-and-left' },
+            { id: 'categorias', nome: 'Pastas e Categorias', descricao: 'Organização de categorias e pastas', grupo: 'Cadastros e Operações', icone: 'fa-folder-tree' },
+            { id: 'documentos', nome: 'Gestão de Documentos', descricao: 'Armazenamento e consulta de documentos', grupo: 'Cadastros e Operações', icone: 'fa-folder-open' },
+            { id: 'usuarios', nome: 'Gestão de Usuários', descricao: 'Cadastro e gerenciamento de acessos', grupo: 'Administração', icone: 'fa-user-gear' }
+        ];
+
+        function garantirConfiguracoesSistema() {
+            if (!db.configuracoes || typeof db.configuracoes !== 'object') db.configuracoes = {};
+            if (!db.configuracoes.modulos || typeof db.configuracoes.modulos !== 'object') db.configuracoes.modulos = {};
+            MODULOS_CONFIGURAVEIS.forEach(modulo => {
+                if (typeof db.configuracoes.modulos[modulo.id] !== 'boolean') db.configuracoes.modulos[modulo.id] = true;
+            });
+            return db.configuracoes;
+        }
+
+        function moduloEstaAtivo(moduloId) {
+            if (moduloId === 'configuracoes') return true;
+            garantirConfiguracoesSistema();
+            return MODULOS_CONFIGURAVEIS.some(m => m.id === moduloId)
+                ? db.configuracoes.modulos[moduloId] !== false
+                : true;
+        }
+
+        function usuarioPodeConfigurarModulos() {
+            const u = sessao && sessao.usuarioLogado;
+            if (!u) return false;
+            const perfil = String(u.perfil || '').trim().toLowerCase();
+            const cargo = String(u.cargo || '').trim().toLowerCase();
+            return perfil === 'admin' || perfil === 'administrador' || cargo.includes('administrador');
+        }
+
         function abrirModulo(moduloId, filtroEstoqueParam = 'todos') {
+            if ((moduloId === 'configuracoes' || moduloId === 'usuarios') && !usuarioPodeConfigurarModulos()) {
+                alert('Somente um administrador pode acessar este módulo.');
+                return;
+            }
+            if (moduloId !== 'configuracoes' && !moduloEstaAtivo(moduloId)) {
+                alert('Este módulo está desativado nas Configurações do Sistema.');
+                return;
+            }
             if (moduloId === 'estoque' && filtroEstoqueParam) {
                 filtroAtivoEstoque = filtroEstoqueParam;
             }
@@ -503,6 +772,206 @@ function salvarCacheLocal() {
             tabsState.openTabs = tabsState.openTabs.filter(id => id !== moduloId);
             if (tabsState.activeTab === moduloId) tabsState.activeTab = tabsState.openTabs[tabsState.openTabs.length - 1];
             renderApp();
+        }
+
+        function alternarModuloSistema(moduloId, ativar) {
+            if (!usuarioPodeConfigurarModulos()) {
+                alert('Somente um administrador pode alterar estas configurações.');
+                renderApp();
+                return;
+            }
+            garantirConfiguracoesSistema();
+            if (!MODULOS_CONFIGURAVEIS.some(m => m.id === moduloId)) return;
+
+            db.configuracoes.modulos[moduloId] = !!ativar;
+            if (!ativar) {
+                tabsState.openTabs = tabsState.openTabs.filter(id => id !== moduloId);
+                if (tabsState.activeTab === moduloId) {
+                    tabsState.activeTab = 'configuracoes';
+                    if (!tabsState.openTabs.includes('configuracoes')) tabsState.openTabs.push('configuracoes');
+                }
+            }
+            if (!tabsState.openTabs.length) tabsState.openTabs = ['configuracoes'];
+            salvarDados(db);
+            renderApp();
+        }
+
+        function definirTodosModulos(ativar) {
+            if (!usuarioPodeConfigurarModulos()) {
+                alert('Somente um administrador pode alterar estas configurações.');
+                return;
+            }
+            const acao = ativar ? 'ativar todos os módulos' : 'desativar todos os módulos operacionais';
+            if (!confirm(`Deseja realmente ${acao}? ${ativar ? 'Todos ficarão disponíveis no menu.' : 'Apenas as configurações permanecerão acessíveis; os dados não serão apagados.'}`)) return;
+            garantirConfiguracoesSistema();
+            MODULOS_CONFIGURAVEIS.forEach(modulo => { db.configuracoes.modulos[modulo.id] = !!ativar; });
+            if (!ativar) {
+                tabsState.openTabs = ['configuracoes'];
+                tabsState.activeTab = 'configuracoes';
+            }
+            salvarDados(db);
+            renderApp();
+        }
+
+        function renderPainelSegurancaSistema() {
+            const authSupabaseAtiva = typeof AUTH_SUPABASE !== 'undefined' && AUTH_SUPABASE === true;
+            const pendente = !!obterSyncPendente();
+            return `
+                <div class="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
+                    <div class="flex items-start gap-3">
+                        <div class="w-11 h-11 rounded-xl ${authSupabaseAtiva ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'} flex items-center justify-center text-lg shrink-0"><i class="fa-solid ${authSupabaseAtiva ? 'fa-shield-halved' : 'fa-triangle-exclamation'}"></i></div>
+                        <div class="flex-1">
+                            <h3 class="font-black text-slate-900">Proteção, sincronização e atualizações</h3>
+                            <p class="text-sm text-slate-600 mt-1">${authSupabaseAtiva ? 'O login está configurado para usar o Supabase Auth. Confirme também as políticas RLS da tabela condominio_dados.' : 'O login atual ainda funciona no modo local do navegador. O bloqueio visual não protege os dados da tabela Supabase contra acesso direto; para segurança real, ative Supabase Auth e políticas RLS após configurar os usuários.'}</p>
+                            <p class="text-xs ${pendente ? 'text-amber-700' : 'text-slate-500'} font-bold mt-2"><i class="fa-solid ${pendente ? 'fa-cloud-arrow-up' : 'fa-circle-check'} mr-1"></i>${pendente ? 'Há alterações aguardando sincronização. Faça backup antes de escolher qual versão manter.' : 'Não há pendência local de sincronização registrada neste navegador.'}</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" onclick="baixarGuiaSeguranca()" class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold"><i class="fa-solid fa-file-shield mr-1.5"></i> Baixar guia de segurança</button>
+                        <button type="button" onclick="fazerBackupGeralJSON()" class="px-4 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold"><i class="fa-solid fa-download mr-1.5"></i> Criar backup JSON</button>
+                        <button type="button" onclick="abrirModalBackupCriptografado()" class="px-4 py-2.5 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold"><i class="fa-solid fa-lock mr-1.5"></i> Criar backup criptografado</button>
+                        <label class="px-4 py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-800 text-xs font-bold cursor-pointer"><i class="fa-solid fa-unlock-keyhole mr-1.5"></i> Restaurar backup criptografado<input type="file" accept=".json,.gbenc" onchange="iniciarRestauroBackupCriptografado(event)" class="hidden"></label>
+                    </div>
+                    <p class="text-[11px] leading-5 text-slate-500">O backup JSON comum contém dados do condomínio e pode incluir hashes de senha; guarde-o em local privado. O backup criptografado protege o arquivo exportado com AES-256-GCM e senha definida por você. Se a senha for perdida, não será possível recuperar o arquivo. Isso protege o arquivo de backup, não criptografa por si só os dados armazenados na tabela do Supabase. O HTML não altera políticas do Supabase automaticamente. Nunca publique uma chave secreta de servidor no navegador. Antes de atualizar o arquivo publicado, faça backup e mantenha a versão anterior.</p>
+                </div>`;
+        }
+
+        function animacoesSistemaAtivas() {
+            try { return localStorage.getItem('guardioes_animacoes') !== 'desativadas'; }
+            catch (e) { return true; }
+        }
+
+        function aplicarPreferenciaAnimacoes() {
+            const ativa = animacoesSistemaAtivas();
+            document.documentElement.dataset.animacoes = ativa ? 'ativadas' : 'desativadas';
+            return ativa;
+        }
+
+        function alternarAnimacoesSistema() {
+            const novoEstado = !animacoesSistemaAtivas();
+            try { localStorage.setItem('guardioes_animacoes', novoEstado ? 'ativadas' : 'desativadas'); } catch (e) {}
+            document.documentElement.dataset.animacoes = novoEstado ? 'ativadas' : 'desativadas';
+            renderApp();
+        }
+
+        function renderPainelAnimacoes() {
+            const ativa = animacoesSistemaAtivas();
+            return `
+                <div class="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm flex flex-col sm:flex-row sm:items-center gap-4 justify-between">
+                    <div class="flex items-start gap-3">
+                        <div class="w-11 h-11 rounded-xl ${ativa ? 'bg-teal-50 text-teal-700' : 'bg-slate-100 text-slate-500'} flex items-center justify-center text-lg shrink-0"><i class="fa-solid fa-wand-magic-sparkles"></i></div>
+                        <div>
+                            <h3 class="font-black text-slate-900">Animações e efeitos visuais</h3>
+                            <p class="text-sm text-slate-600 mt-1">Controla as animações de entrada, gráficos, transições e o assistente. Esta preferência fica salva apenas neste dispositivo.</p>
+                            <p class="text-xs font-bold ${ativa ? 'text-teal-700' : 'text-slate-500'} mt-2">${ativa ? 'Animações ativadas neste computador/dispositivo.' : 'Animações reduzidas neste computador/dispositivo.'}</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="alternarAnimacoesSistema()" class="shrink-0 px-4 py-2.5 rounded-xl ${ativa ? 'bg-slate-100 hover:bg-slate-200 text-slate-800' : 'bg-teal-700 hover:bg-teal-800 text-white'} text-xs font-bold"><i class="fa-solid ${ativa ? 'fa-toggle-on' : 'fa-toggle-off'} mr-1.5"></i>${ativa ? 'Desativar animações' : 'Ativar animações'}</button>
+                </div>`;
+        }
+
+        function renderPainelConfiguracaoIA() {
+            const authSeguroAtivo = typeof AUTH_SUPABASE !== 'undefined' && AUTH_SUPABASE === true;
+            return `
+                <div class="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm space-y-3">
+                    <div class="flex items-start gap-3">
+                        <div class="w-11 h-11 rounded-xl ${authSeguroAtivo ? 'bg-teal-50 text-teal-700' : 'bg-amber-50 text-amber-700'} flex items-center justify-center text-lg shrink-0"><i class="fa-solid fa-robot"></i></div>
+                        <div class="flex-1">
+                            <h3 class="font-black text-slate-900">Assistente de IA</h3>
+                            <p class="text-sm ${authSeguroAtivo ? 'text-teal-700' : 'text-amber-800'} font-bold mt-1">${authSeguroAtivo ? 'Login Supabase Auth ativado; ainda é necessário confirmar a função remota e a chave de API no servidor.' : 'Modo atual: respostas locais. IA generativa remota não está ativa porque o login seguro do Supabase está desligado.'}</p>
+                            <p class="text-sm text-slate-600 mt-2">A IA completa depende da Edge Function <code>assistente-ia</code> publicada e do segredo da API guardado no Supabase. Não colocamos a chave de IA dentro do HTML. Para manter os dados seguros, não liberamos a função remota com o login local.</p>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" onclick="baixarFuncaoIA()" class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold"><i class="fa-solid fa-download mr-1.5"></i> Baixar função da IA</button>
+                        <button type="button" onclick="baixarGuiaSeguranca()" class="px-4 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold"><i class="fa-solid fa-shield-halved mr-1.5"></i> Baixar guia de ativação segura</button>
+                    </div>
+                </div>`;
+        }
+
+        aplicarPreferenciaAnimacoes();
+
+        function renderConfiguracoesModulosView() {
+            garantirConfiguracoesSistema();
+            const grupos = [...new Set(MODULOS_CONFIGURAVEIS.map(m => m.grupo))];
+            const totalAtivos = MODULOS_CONFIGURAVEIS.filter(m => moduloEstaAtivo(m.id)).length;
+            return `
+                <section class="space-y-6">
+                    <div class="bg-white rounded-3xl border border-slate-200 p-5 sm:p-7 shadow-sm">
+                        <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+                            <div class="flex gap-4 items-start">
+                                <div class="w-12 h-12 rounded-2xl bg-teal-50 text-teal-700 flex items-center justify-center text-xl shrink-0"><i class="fa-solid fa-sliders"></i></div>
+                                <div>
+                                    <h3 class="text-lg font-black text-slate-900">Ativar ou desativar funcionalidades</h3>
+                                    <p class="text-sm text-slate-500 mt-1 max-w-2xl">Escolha quais módulos devem aparecer e ficar disponíveis no sistema. As alterações são salvas nas configurações do sistema e sincronizadas com a nuvem quando disponível.</p>
+                                    <p class="text-xs font-bold text-teal-700 mt-3"><i class="fa-solid fa-circle-check mr-1"></i> ${totalAtivos} de ${MODULOS_CONFIGURAVEIS.length} módulos ativados</p>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap gap-2 shrink-0">
+                                <button type="button" onclick="definirTodosModulos(true)" class="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold"><i class="fa-solid fa-check-double mr-1.5"></i> Ativar todos</button>
+                                <button type="button" onclick="definirTodosModulos(false)" class="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-700 border border-slate-200 text-xs font-bold"><i class="fa-solid fa-toggle-off mr-1.5"></i> Desativar módulos</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-blue-50 border border-blue-100 rounded-2xl px-4 py-3 text-sm text-blue-900 flex items-start gap-3">
+                        <i class="fa-solid fa-circle-info mt-0.5"></i>
+                        <p><b>Importante:</b> desativar um módulo oculta seu acesso no menu e impede que seja aberto pelos atalhos do sistema. Os registros já cadastrados continuam guardados; nada é excluído. O módulo Configurações permanece disponível para o administrador reativar os recursos.</p>
+                    </div>
+
+                    ${renderPainelAnimacoes()}
+
+                    ${renderPainelConfiguracaoIA()}
+
+                    ${renderPainelSegurancaSistema()}
+
+                    ${grupos.map(grupo => `
+                        <div class="space-y-3">
+                            <h3 class="text-xs uppercase tracking-widest font-black text-slate-500 px-1">${escapeHTML(grupo)}</h3>
+                            <div class="grid grid-cols-1 xl:grid-cols-2 gap-3">
+                                ${MODULOS_CONFIGURAVEIS.filter(m => m.grupo === grupo).map(modulo => {
+                                    const ativo = moduloEstaAtivo(modulo.id);
+                                    return `
+                                        <label class="flex items-center gap-4 p-4 bg-white border ${ativo ? 'border-teal-200' : 'border-slate-200'} rounded-2xl shadow-sm hover:shadow-md cursor-pointer transition-all">
+                                            <span class="w-11 h-11 rounded-xl ${ativo ? 'bg-teal-50 text-teal-700' : 'bg-slate-100 text-slate-400'} flex items-center justify-center text-lg shrink-0"><i class="fa-solid ${modulo.icone}"></i></span>
+                                            <span class="min-w-0 flex-1">
+                                                <span class="block text-sm font-extrabold text-slate-800">${escapeHTML(modulo.nome)}</span>
+                                                <span class="block text-xs leading-5 text-slate-500 mt-0.5">${escapeHTML(modulo.descricao)}</span>
+                                                <span class="inline-flex mt-2 text-[10px] uppercase tracking-wider font-black ${ativo ? 'text-emerald-700' : 'text-slate-400'}">${ativo ? 'Ativado' : 'Desativado'}</span>
+                                            </span>
+                                            <span class="relative shrink-0 inline-flex items-center">
+                                                <input type="checkbox" class="sr-only peer" ${ativo ? 'checked' : ''} onchange="alternarModuloSistema('${modulo.id}', this.checked)" aria-label="${ativo ? 'Desativar' : 'Ativar'} ${escapeHTML(modulo.nome)}">
+                                                <span class="w-12 h-7 rounded-full ${ativo ? 'bg-teal-600' : 'bg-slate-300'} peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-teal-100 transition-colors relative after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border after:border-slate-200 after:rounded-full after:h-5 after:w-5 after:transition-transform ${ativo ? 'after:translate-x-5' : ''}"></span>
+                                            </span>
+                                        </label>`;
+                                }).join('')}
+                            </div>
+                        </div>
+                    `).join('')}
+
+                    <div class="flex items-center gap-3 text-xs text-slate-500 px-1"><i class="fa-solid fa-cloud-arrow-up text-teal-600"></i><span>As preferências são preservadas junto aos dados atuais. Recomenda-se manter um backup atualizado antes de grandes alterações.</span></div>
+                </section>
+            `;
+        }
+
+        function aplicarVisibilidadeModulos() {
+            garantirConfiguracoesSistema();
+            const nav = document.querySelector('#sidebar-menu nav');
+            if (!nav) return;
+            nav.querySelectorAll('button[onclick^="abrirModulo("]').forEach(botao => {
+                const onclick = botao.getAttribute('onclick') || '';
+                const match = onclick.match(/abrirModulo\('([^']+)'/);
+                if (!match) return;
+                const id = match[1];
+                const permitido = id === 'configuracoes' || id === 'usuarios'
+                    ? usuarioPodeConfigurarModulos() && (id === 'configuracoes' || moduloEstaAtivo(id))
+                    : moduloEstaAtivo(id);
+                botao.classList.toggle('hidden', !permitido);
+            });
+            nav.querySelectorAll(':scope > div').forEach(grupo => {
+                const botoesModulo = [...grupo.querySelectorAll('button[onclick^="abrirModulo("]')];
+                if (botoesModulo.length) grupo.classList.toggle('hidden', !botoesModulo.some(b => !b.classList.contains('hidden')));
+            });
         }
 
         function toggleMenuMobile() {
@@ -540,37 +1009,245 @@ function salvarCacheLocal() {
 
         function exportarParaPDF() { window.print(); }
 
+        function prepararBackupRestaurado(parsed) {
+            if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) || !parsed.condominio || typeof parsed.condominio !== 'object') {
+                throw new Error('Estrutura de backup inválida.');
+            }
+            const restaurado = { ...DEFAULT_DATA, ...parsed };
+            restaurado.condominio = { ...DEFAULT_DATA.condominio, ...parsed.condominio };
+            Object.keys(DEFAULT_DATA).forEach(chave => {
+                if (Array.isArray(DEFAULT_DATA[chave])) {
+                    if (parsed[chave] === undefined) restaurado[chave] = Array.isArray(db[chave]) ? db[chave] : DEFAULT_DATA[chave];
+                    else if (!Array.isArray(parsed[chave])) throw new Error(`Campo inválido no backup: ${chave}`);
+                }
+            });
+            if (!restaurado.configuracoes || typeof restaurado.configuracoes !== 'object') restaurado.configuracoes = {};
+            if (!restaurado.configuracoes.modulos || typeof restaurado.configuracoes.modulos !== 'object') restaurado.configuracoes.modulos = {};
+            if (!restaurado.plano_contas) restaurado.plano_contas = DEFAULT_DATA.plano_contas;
+            if (!restaurado.acertos_estoque) restaurado.acertos_estoque = [];
+            if (!restaurado.motivos_acerto_estoque) restaurado.motivos_acerto_estoque = DEFAULT_DATA.motivos_acerto_estoque;
+            return restaurado;
+        }
+
+        function aplicarBackupRestaurado(restaurado, origem = 'backup') {
+            db = restaurado;
+            marcarSyncPendente(`restauração de ${origem} aguardando confirmação da nuvem`);
+            salvarCacheLocal();
+            salvarDados(db);
+            alert(`Backup carregado (${origem}). Confira o indicador da nuvem para confirmar a sincronização e mantenha o arquivo original guardado.`);
+            renderApp();
+        }
+
+        const ITERACOES_BACKUP_CRIPTO = 310000;
+        let arquivoBackupCriptografadoPendente = null;
+
+        function bytesParaBase64Backup(bytes) {
+            let binario = '';
+            for (let i = 0; i < bytes.length; i++) binario += String.fromCharCode(bytes[i]);
+            return btoa(binario);
+        }
+
+        function base64ParaBytesBackup(texto) {
+            const binario = atob(texto);
+            const bytes = new Uint8Array(binario.length);
+            for (let i = 0; i < binario.length; i++) bytes[i] = binario.charCodeAt(i);
+            return bytes;
+        }
+
+        async function derivarChaveBackupCriptografado(senha, salt, iteracoes) {
+            const material = await crypto.subtle.importKey('raw', new TextEncoder().encode(senha), 'PBKDF2', false, ['deriveKey']);
+            return crypto.subtle.deriveKey(
+                { name: 'PBKDF2', salt, iterations: iteracoes, hash: 'SHA-256' },
+                material,
+                { name: 'AES-GCM', length: 256 },
+                false,
+                ['encrypt', 'decrypt']
+            );
+        }
+
+        function abrirModalBackupCriptografado() {
+            if (!usuarioPodeConfigurarModulos()) { alert('Somente um administrador pode exportar o backup completo.'); return; }
+            if (!window.crypto || !crypto.subtle) { alert('A criptografia exige acesso por HTTPS ou localhost. Abra o sistema pela publicação segura.'); return; }
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 backdrop-blur-md">
+                    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <div class="flex items-center gap-3"><div class="w-11 h-11 rounded-xl bg-teal-50 text-teal-700 flex items-center justify-center"><i class="fa-solid fa-lock"></i></div><div><h3 class="font-black text-lg text-slate-900">Backup criptografado</h3><p class="text-xs text-slate-500">AES-256-GCM + PBKDF2-SHA-256</p></div></div>
+                        <p class="text-sm text-slate-600">Defina uma senha forte. Ela não será guardada pelo sistema. Sem essa senha, não será possível restaurar o arquivo.</p>
+                        <form onsubmit="confirmarBackupCriptografado(event)" class="space-y-3">
+                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Senha do backup (mínimo 12 caracteres)</label><input id="backup_cripto_senha" type="password" autocomplete="new-password" minlength="12" required class="w-full p-3 border rounded-xl" /></div>
+                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Confirmar senha do backup</label><input id="backup_cripto_confirmacao" type="password" autocomplete="new-password" minlength="12" required class="w-full p-3 border rounded-xl" /></div>
+                            <div class="flex justify-end gap-2 pt-2"><button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-xl font-bold">Gerar backup</button></div>
+                        </form>
+                    </div>
+                </div>`);
+        }
+
+        window.confirmarBackupCriptografado = async function(event) {
+            event.preventDefault();
+            if (!usuarioPodeConfigurarModulos()) { alert('Somente um administrador pode exportar o backup completo.'); return; }
+            const senha = document.getElementById('backup_cripto_senha')?.value || '';
+            const confirmacao = document.getElementById('backup_cripto_confirmacao')?.value || '';
+            if (senha.length < 12) { alert('Use pelo menos 12 caracteres para a senha do backup.'); return; }
+            if (senha !== confirmacao) { alert('As senhas do backup não coincidem.'); return; }
+            try {
+                const salt = crypto.getRandomValues(new Uint8Array(16));
+                const iv = crypto.getRandomValues(new Uint8Array(12));
+                const chave = await derivarChaveBackupCriptografado(senha, salt, ITERACOES_BACKUP_CRIPTO);
+                const claro = new TextEncoder().encode(JSON.stringify(db));
+                const cifrado = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, chave, claro);
+                const pacote = {
+                    formato: 'guardioes-do-bravo-backup-criptografado',
+                    versao: 1,
+                    algoritmo: 'AES-256-GCM',
+                    derivacao: 'PBKDF2-SHA-256',
+                    iteracoes: ITERACOES_BACKUP_CRIPTO,
+                    salt: bytesParaBase64Backup(salt),
+                    iv: bytesParaBase64Backup(iv),
+                    dados: bytesParaBase64Backup(new Uint8Array(cifrado))
+                };
+                const blob = new Blob([JSON.stringify(pacote, null, 2)], { type: 'application/json;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `backup_guardioes_bravo_criptografado_${new Date().toISOString().slice(0,10)}.gbenc.json`;
+                document.body.appendChild(a); a.click(); a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 1500);
+                fecharModalContainer();
+                alert('Backup criptografado gerado. Guarde o arquivo e a senha em locais seguros; o sistema não consegue recuperar uma senha perdida.');
+            } catch (err) {
+                console.error('Não foi possível criptografar o backup.', err);
+                alert('Falha ao criar o backup criptografado. Nenhum arquivo foi gerado. Verifique se o navegador está em HTTPS.');
+            }
+        };
+
+        function iniciarRestauroBackupCriptografado(event) {
+            if (!usuarioPodeConfigurarModulos()) { alert('Somente um administrador pode restaurar o backup completo.'); if (event?.target) event.target.value = ''; return; }
+            const file = event?.target?.files?.[0];
+            if (!file) return;
+            event.target.value = '';
+            if (file.size > 50 * 1024 * 1024) { alert('O arquivo excede o limite de 50 MB.'); return; }
+            if (!window.crypto || !crypto.subtle) { alert('A descriptografia exige acesso por HTTPS ou localhost.'); return; }
+            arquivoBackupCriptografadoPendente = file;
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 backdrop-blur-md">
+                    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <div class="flex items-center gap-3"><div class="w-11 h-11 rounded-xl bg-amber-50 text-amber-700 flex items-center justify-center"><i class="fa-solid fa-key"></i></div><div><h3 class="font-black text-lg text-slate-900">Restaurar backup criptografado</h3><p class="text-xs text-slate-500">Informe a senha usada ao criar o arquivo</p></div></div>
+                        <form onsubmit="confirmarRestauroBackupCriptografado(event)" class="space-y-3">
+                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Senha do backup</label><input id="restauro_cripto_senha" type="password" autocomplete="current-password" required class="w-full p-3 border rounded-xl" /></div>
+                            <div class="flex justify-end gap-2 pt-2"><button type="button" onclick="fecharModalContainer(); arquivoBackupCriptografadoPendente=null" class="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl font-bold">Cancelar</button><button type="submit" class="px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white rounded-xl font-bold">Descriptografar</button></div>
+                        </form>
+                    </div>
+                </div>`);
+        }
+
+        window.confirmarRestauroBackupCriptografado = async function(event) {
+            event.preventDefault();
+            if (!usuarioPodeConfigurarModulos()) { alert('Somente um administrador pode restaurar o backup completo.'); return; }
+            const file = arquivoBackupCriptografadoPendente;
+            const senha = document.getElementById('restauro_cripto_senha')?.value || '';
+            if (!file) { alert('Selecione novamente o arquivo criptografado.'); fecharModalContainer(); return; }
+            const reader = new FileReader();
+            reader.onerror = () => alert('Não foi possível ler o arquivo selecionado.');
+            reader.onload = async function(ev) {
+                try {
+                    const pacote = JSON.parse(ev.target.result);
+                    if (!pacote || pacote.formato !== 'guardioes-do-bravo-backup-criptografado' || pacote.versao !== 1 || pacote.algoritmo !== 'AES-256-GCM' || pacote.derivacao !== 'PBKDF2-SHA-256') throw new Error('Formato de backup criptografado inválido.');
+                    const iteracoes = Number(pacote.iteracoes);
+                    if (!Number.isInteger(iteracoes) || iteracoes < 100000 || iteracoes > 600000) throw new Error('Parâmetro de derivação inválido.');
+                    const salt = base64ParaBytesBackup(pacote.salt);
+                    const iv = base64ParaBytesBackup(pacote.iv);
+                    const cifrado = base64ParaBytesBackup(pacote.dados);
+                    const chave = await derivarChaveBackupCriptografado(senha, salt, iteracoes);
+                    const claro = await crypto.subtle.decrypt({ name: 'AES-GCM', iv }, chave, cifrado);
+                    const parsed = JSON.parse(new TextDecoder().decode(claro));
+                    const restaurado = prepararBackupRestaurado(parsed);
+                    if (!confirm('A restauração vai substituir os dados atualmente carregados. Faça um backup atual antes de continuar. Deseja restaurar o backup criptografado?')) return;
+                    arquivoBackupCriptografadoPendente = null;
+                    fecharModalContainer();
+                    aplicarBackupRestaurado(restaurado, 'criptografado');
+                } catch (err) {
+                    console.warn('Falha ao descriptografar ou validar o backup.', err);
+                    alert('Não foi possível abrir o backup. Verifique a senha e a integridade do arquivo. Nenhum dado foi restaurado.');
+                }
+            };
+            reader.readAsText(file);
+        };
+
         function fazerBackupGeralJSON() {
-            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(db, null, 2));
-            const downloadAnchor = document.createElement('a');
-            downloadAnchor.setAttribute("href", dataStr);
-            downloadAnchor.setAttribute("download", `backup_guardioes_bravo_${new Date().toISOString().slice(0,10)}.json`);
-            document.body.appendChild(downloadAnchor);
-            downloadAnchor.click();
-            downloadAnchor.remove();
+            if (!usuarioPodeConfigurarModulos()) {
+                alert('Somente um administrador pode exportar o backup completo do condomínio.');
+                return;
+            }
+            try {
+                const json = JSON.stringify(db, null, 2);
+                const blob = new Blob([json], { type: 'application/json;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `backup_guardioes_bravo_${new Date().toISOString().slice(0,10)}.json`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 1500);
+            } catch (err) {
+                console.error('Falha ao gerar backup.', err);
+                alert('Não foi possível gerar o backup. Verifique o espaço disponível no dispositivo.');
+            }
         }
 
         function restaurarBackupGeralJSON(event) {
-            const file = event.target.files[0];
+            if (!usuarioPodeConfigurarModulos()) {
+                alert('Somente um administrador pode restaurar um backup completo.');
+                if (event && event.target) event.target.value = '';
+                return;
+            }
+            const file = event && event.target && event.target.files ? event.target.files[0] : null;
             if (!file) return;
+            if (file.size > 50 * 1024 * 1024) {
+                alert('O arquivo excede o limite de 50 MB para restauração pelo navegador.');
+                event.target.value = '';
+                return;
+            }
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const parsed = JSON.parse(e.target.result);
-                    if (parsed && parsed.condominio) {
-                        db = parsed;
-                        if (!db.plano_contas) db.plano_contas = DEFAULT_DATA.plano_contas;
-                        if (!db.acertos_estoque) db.acertos_estoque = [];
-                        if (!db.motivos_acerto_estoque) db.motivos_acerto_estoque = DEFAULT_DATA.motivos_acerto_estoque;
-                        salvarDados(db);
-                        alert('Backup restaurado com sucesso!');
-                        renderApp();
-                    } else {
+                    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed) || !parsed.condominio || typeof parsed.condominio !== 'object') {
                         alert('O ficheiro selecionado não parece ser um backup válido.');
+                        return;
                     }
+                    if (!confirm(`A restauração substituirá os dados atualmente carregados por aqueles do arquivo.
+
+Antes de continuar, baixe um backup atual. Os dados existentes não serão mesclados automaticamente. Deseja continuar?`)) return;
+                    const restaurado = { ...DEFAULT_DATA, ...parsed };
+                    restaurado.condominio = { ...DEFAULT_DATA.condominio, ...parsed.condominio };
+                    Object.keys(DEFAULT_DATA).forEach(chave => {
+                        if (Array.isArray(DEFAULT_DATA[chave])) {
+                            if (parsed[chave] === undefined) restaurado[chave] = Array.isArray(db[chave]) ? db[chave] : DEFAULT_DATA[chave];
+                            else if (!Array.isArray(parsed[chave])) throw new Error(`Campo inválido no backup: ${chave}`);
+                        }
+                    });
+                    if (!restaurado.configuracoes || typeof restaurado.configuracoes !== 'object') restaurado.configuracoes = {};
+                    if (!restaurado.configuracoes.modulos || typeof restaurado.configuracoes.modulos !== 'object') restaurado.configuracoes.modulos = {};
+                    if (!restaurado.plano_contas) restaurado.plano_contas = DEFAULT_DATA.plano_contas;
+                    if (!restaurado.acertos_estoque) restaurado.acertos_estoque = [];
+                    if (!restaurado.motivos_acerto_estoque) restaurado.motivos_acerto_estoque = DEFAULT_DATA.motivos_acerto_estoque;
+                    db = restaurado;
+                    marcarSyncPendente('restauração de backup aguardando confirmação da nuvem');
+                    salvarCacheLocal();
+                    salvarDados(db);
+                    alert('Backup carregado. Confirme no indicador da nuvem se a sincronização foi concluída; mantenha o arquivo original guardado.');
+                    renderApp();
                 } catch (err) {
-                    alert('Erro ao ler o ficheiro de backup.');
+                    console.error('Erro ao restaurar backup.', err);
+                    alert('Erro ao ler o backup ou estrutura de dados inválida. Nenhum dado foi restaurado.');
+                } finally {
+                    if (event && event.target) event.target.value = '';
                 }
+            };
+            reader.onerror = function() {
+                alert('Não foi possível ler o arquivo selecionado.');
+                if (event && event.target) event.target.value = '';
             };
             reader.readAsText(file);
         }
@@ -714,6 +1391,19 @@ function salvarCacheLocal() {
         function renderTelaLogin() {
             const savedUser = localStorage.getItem('guardioes_lembrar_user') || '';
             const isLembrarChecked = savedUser ? 'checked' : '';
+            const authGoogleAtiva = typeof AUTH_SUPABASE !== 'undefined' && AUTH_SUPABASE === true;
+            const botaoGoogle = authGoogleAtiva ? `
+                <div class="relative flex items-center py-1" aria-hidden="true">
+                    <div class="flex-grow border-t border-slate-200"></div>
+                    <span class="mx-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">ou entre com</span>
+                    <div class="flex-grow border-t border-slate-200"></div>
+                </div>
+                <button id="btn-google-login" type="button" onclick="entrarComGoogle()" class="w-full inline-flex items-center justify-center gap-3 py-3 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-2xl shadow-sm text-sm" aria-label="Entrar com Google">
+                    <svg width="19" height="19" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.76 7.18l7.73 6C44.42 37.99 46.98 31.8 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59a14.4 14.4 0 0 1 0-9.18l-7.98-6.19a24 24 0 0 0 0 21.56l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.8l-7.73-6c-2.15 1.45-4.9 2.3-8.18 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                    Continuar com Google
+                </button>
+                <p class="text-[10px] leading-4 text-slate-500 text-center">Use a conta Google vinculada ao e-mail cadastrado no sistema.</p>
+            ` : '';
 
             return `
                 <div class="min-h-screen flex items-center justify-center bg-slate-950 p-4 w-full relative overflow-hidden">
@@ -749,6 +1439,10 @@ function salvarCacheLocal() {
                                 </label>
                             </div>
                             <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-lg shadow-teal-600/25 text-sm transition-all transform hover:-translate-y-0.5">Entrar no Sistema</button>
+                            ${botaoGoogle}
+                            <div class="flex justify-center pt-1">
+                                <button type="button" onclick="abrirRecuperacaoSenha()" class="text-sm font-bold text-teal-700 hover:text-teal-900 underline underline-offset-4">Esqueci minha senha</button>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -801,6 +1495,18 @@ function salvarCacheLocal() {
             }
 
             const user = sessao.usuarioLogado;
+            const primeiroModuloDisponivel = (MODULOS_CONFIGURAVEIS.find(m => moduloEstaAtivo(m.id)) || { id: 'dashboard' }).id;
+            if ((tabsState.activeTab === 'configuracoes' || tabsState.activeTab === 'usuarios') && !usuarioPodeConfigurarModulos()) {
+                tabsState.activeTab = primeiroModuloDisponivel;
+            } else if (tabsState.activeTab !== 'configuracoes' && !moduloEstaAtivo(tabsState.activeTab)) {
+                tabsState.activeTab = usuarioPodeConfigurarModulos() ? 'configuracoes' : primeiroModuloDisponivel;
+            }
+            tabsState.openTabs = tabsState.openTabs.filter(id => {
+                if (id === 'configuracoes' || id === 'usuarios') return usuarioPodeConfigurarModulos() && (id === 'configuracoes' || moduloEstaAtivo(id));
+                return moduloEstaAtivo(id);
+            });
+            if (!tabsState.openTabs.includes(tabsState.activeTab)) tabsState.openTabs.push(tabsState.activeTab);
+            if (!tabsState.openTabs.length) tabsState.openTabs = [tabsState.activeTab];
             const msgBoasVindas = `Seja bem-vinda, ${escapeHTML(user.nome || user.usuario)} - ${escapeHTML(user.loja || 'Loja')} - ${escapeHTML(user.cargo || user.perfil || 'Cargo')}`;
 
             container.innerHTML = `
@@ -853,16 +1559,17 @@ function salvarCacheLocal() {
                             <div>
                                 <p class="px-3 pb-2 text-[10px] font-black text-slate-500 uppercase tracking-widest">Sistema</p>
                                 <div class="space-y-1">
-                                    <button onclick="abrirModulo('usuarios')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${tabsState.activeTab === 'usuarios' ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-md shadow-teal-600/20' : 'hover:bg-slate-900 hover:text-white text-slate-400'}"><i class="fa-solid fa-user-gear w-5 text-center text-sm"></i> Utilizadores</button>
+                                    ${usuarioPodeConfigurarModulos() ? `<button onclick="abrirModulo('configuracoes')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${tabsState.activeTab === 'configuracoes' ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-md shadow-teal-600/20' : 'hover:bg-slate-900 hover:text-white text-slate-400'}"><i class="fa-solid fa-sliders w-5 text-center text-sm"></i> Configurações</button>` : ''}
+                                    ${usuarioPodeConfigurarModulos() ? `<button onclick="abrirModulo('usuarios')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${tabsState.activeTab === 'usuarios' ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-md shadow-teal-600/20' : 'hover:bg-slate-900 hover:text-white text-slate-400'}"><i class="fa-solid fa-user-gear w-5 text-center text-sm"></i> Utilizadores</button>` : ''}
                                     <button onclick="encerrarSessao()" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold hover:bg-rose-950/50 text-rose-400 border border-rose-900/30 transition-all"><i class="fa-solid fa-right-from-bracket w-5 text-center text-sm"></i> Terminar Sessão</button>
                                 </div>
                             </div>
                         </nav>
 
-                        <div class="p-3 bg-slate-950 border-t border-slate-900 space-y-2 no-print">
+                        ${usuarioPodeConfigurarModulos() ? `<div class="p-3 bg-slate-950 border-t border-slate-900 space-y-2 no-print">
                             <button onclick="fazerBackupGeralJSON()" class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-teal-400 font-bold rounded-xl text-[11px] flex items-center justify-center gap-2 transition-all border border-slate-800"><i class="fa-solid fa-download"></i> Baixar Backup JSON</button>
-                            <label class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-amber-400 font-bold rounded-xl text-[11px] flex items-center justify-center gap-2 cursor-pointer transition-all border border-slate-800"><i class="fa-solid fa-upload"></i> Restaurar Backup <input type="file" accept=".json" onchange="restaurarBackupGeralJSON(event)" class="hidden"></label>
-                        </div>
+                            <label class="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-amber-400 font-bold rounded-xl text-[11px] flex items-center justify-center gap-2 cursor-pointer transition-all border border-slate-800"><i class="fa-solid fa-upload"></i> Restaurar Backup <input type="file" accept=".json,application/json" onchange="restaurarBackupGeralJSON(event)" class="hidden"></label>
+                        </div>` : ''}
 
                         <div class="p-4 bg-slate-950 border-t border-slate-900 flex items-center justify-between">
                             <div class="truncate pr-2">
@@ -884,7 +1591,7 @@ function salvarCacheLocal() {
 
                         <!-- Barra de Abas Flutuante -->
                         <div class="bg-slate-200/80 border-b border-slate-300 flex items-center overflow-x-auto px-3 pt-2.5 gap-2 no-print w-full backdrop-blur-sm">
-                            ${tabsState.openTabs.map(tabId => `
+                            ${tabsState.openTabs.filter(tabId => tabId === 'configuracoes' ? usuarioPodeConfigurarModulos() : moduloEstaAtivo(tabId)).map(tabId => `
                                 <div onclick="abrirModulo('${tabId}')" class="flex items-center gap-2.5 px-4 py-2.5 rounded-t-2xl text-xs cursor-pointer whitespace-nowrap transition-all ${tabsState.activeTab === tabId ? 'tab-active' : 'bg-slate-300/60 text-slate-600 hover:bg-slate-300 hover:text-slate-900 font-semibold'}">
                                     <span>${MODULE_NAMES[tabId] || tabId}</span>
                                     ${tabsState.openTabs.length > 1 ? `<button onclick="fecharAba(event, '${tabId}')" class="hover:text-rose-600 ml-1 p-0.5 rounded-full hover:bg-slate-200 transition-all"><i class="fa-solid fa-xmark text-xs"></i></button>` : ''}
@@ -906,6 +1613,7 @@ function salvarCacheLocal() {
                     </div>
                 </div>
             `;
+            aplicarVisibilidadeModulos();
             if (tabsState.activeTab === 'dashboard') {
                 setTimeout(() => {
                     initDashboardCharts();
@@ -918,6 +1626,12 @@ function salvarCacheLocal() {
         }
 
         function renderModuleContent(moduloId) {
+            if ((moduloId === 'configuracoes' || moduloId === 'usuarios') && !usuarioPodeConfigurarModulos()) {
+                return `<div class="bg-white border border-rose-200 rounded-3xl p-6 text-rose-800"><h2 class="font-black text-lg">Acesso restrito</h2><p class="text-sm mt-2">Somente um administrador pode acessar este módulo.</p></div>`;
+            }
+            if (moduloId !== 'configuracoes' && !moduloEstaAtivo(moduloId)) {
+                return `<div class="bg-white border border-amber-200 rounded-3xl p-6 text-slate-800"><div class="w-12 h-12 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-xl mb-4"><i class="fa-solid fa-toggle-off"></i></div><h2 class="font-black text-lg">Módulo desativado</h2><p class="text-sm text-slate-600 mt-2">Este recurso está desativado nas Configurações do Sistema. Solicite a um administrador que o reative. Os dados existentes permanecem guardados.</p></div>`;
+            }
             let btnNovoHtml = '';
             let btnExportHtml = `
                 <button onclick="exportarParaPDF()" class="px-4 py-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-2xl font-bold text-xs shadow-sm transition-all flex items-center gap-2"><i class="fa-solid fa-file-pdf text-rose-400"></i> Exportar PDF</button>
@@ -944,7 +1658,7 @@ function salvarCacheLocal() {
             else if (moduloId === 'acerto_estoque') btnNovoHtml = `<button onclick="window.renderModalAcertoEstoque()" class="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white text-xs px-4 py-2.5 rounded-2xl font-bold shadow-md shadow-teal-600/20 transition-all flex items-center gap-2"><i class="fa-solid fa-plus"></i> Novo Acerto</button>`;
             else if (moduloId === 'documentos') btnNovoHtml = `<button onclick="window.renderModalDocumento()" class="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white text-xs px-4 py-2.5 rounded-2xl font-bold shadow-md shadow-teal-600/20 transition-all flex items-center gap-2"><i class="fa-solid fa-upload"></i> Inserir Documento</button>`;
             else if (moduloId === 'usuarios') btnNovoHtml = `<button onclick="window.renderModalUsuario()" class="bg-gradient-to-r from-teal-600 to-teal-700 hover:from-teal-700 hover:to-teal-800 text-white text-xs px-4 py-2.5 rounded-2xl font-bold shadow-md shadow-teal-600/20 transition-all flex items-center gap-2"><i class="fa-solid fa-user-plus"></i> Novo Utilizador</button>`;
-            else if (moduloId === 'relatorios' || moduloId === 'dashboard') btnExportHtml = '';
+            else if (moduloId === 'relatorios' || moduloId === 'dashboard' || moduloId === 'configuracoes') btnExportHtml = '';
 
             const headerGlobal = `
                 <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -975,6 +1689,7 @@ function salvarCacheLocal() {
                 case 'documentos': return headerGlobal + renderDocumentosView();
                 case 'usuarios': return headerGlobal + renderUsuariosView();
                 case 'relatorios': return headerGlobal + renderRelatoriosCentralView();
+                case 'configuracoes': return headerGlobal + renderConfiguracoesModulosView();
                 default: return headerGlobal + `<div class="bg-white p-6 rounded-3xl border">Módulo Ativo.</div>`;
             }
         }
@@ -3028,7 +3743,7 @@ function baixarDocumento(id) {
 // =====================================================================
 // ANIMAÇÕES v2
 // =====================================================================
-const reduzMovimento = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const reduzMovimento = () => !animacoesSistemaAtivas();
 
 // ---------- 1) Gráficos do Dashboard (Chart.js) ----------
 // Barras sobem uma a uma; a rosca gira e cresce do centro.
@@ -3450,6 +4165,13 @@ const AI_ACOES = {
     ia_relatorio: () => { aiAlternar(true); aiEnviar('Faça uma análise executiva detalhada do condomínio com base nos dados: situação financeira, estoque, pontos de atenção e recomendações práticas.', { forcarIA: true }); }
 };
 
+function aiModoAtual() {
+    const authSeguroAtivo = typeof AUTH_SUPABASE !== 'undefined' && AUTH_SUPABASE === true;
+    return authSeguroAtivo
+        ? 'IA remota habilitada — confirme a função no servidor'
+        : 'Assistente local ativo · IA remota pendente de configuração segura';
+}
+
 function aiFormatar(txt) {
     return escapeHTML(String(txt)).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/^- /gm, '• ').replace(/\n/g, '<br>');
 }
@@ -3468,15 +4190,28 @@ async function aiEnviar(texto, opcoes = {}) {
     let resp = null;
     if (!opcoes.forcarIA) { try { resp = aiResponderLocal(texto); } catch (e) { console.warn(e); } }
     if (!resp && IA_REMOTA_ATIVA) {
-        try {
-            const { data, error } = await supabaseClient.functions.invoke('assistente-ia', { body: { pergunta: texto, historico: aiHistorico.slice(-8), contexto: aiContexto() } });
-            if (error) throw error;
-            resp = { texto: data.resposta };
-        } catch (e) {
-            const status = e && e.context && e.context.status;
-            resp = { texto: status === 401 ? 'A IA exige o login seguro (por e-mail). Entre novamente ou peça ao administrador para ativá-lo.'
-                : status === 429 ? 'Muitas perguntas seguidas. Aguarde alguns minutos e tente de novo.'
-                : 'Não consegui falar com a IA agora. Tente de novo em instantes.' };
+        const authSeguroAtivo = typeof AUTH_SUPABASE !== 'undefined' && AUTH_SUPABASE === true;
+        if (!authSeguroAtivo) {
+            // Não enviamos pedidos que certamente serão recusados: o login atual é local,
+            // enquanto a Edge Function exige um JWT válido emitido pelo Supabase Auth.
+            resp = { texto: 'O assistente local está ativo, mas esta pergunta precisa da IA generativa remota. Ela ainda não está conectada com segurança porque este sistema está usando o login local. Para ativar a IA completa, o administrador precisa configurar os usuários no Supabase Auth, revisar as políticas RLS, publicar a função “assistente-ia” e cadastrar a chave da API no servidor. Não ative o login seguro diretamente em produção sem backup e teste prévio.' };
+        } else {
+            try {
+                const { data, error } = await supabaseClient.functions.invoke('assistente-ia', { body: { pergunta: texto, historico: aiHistorico.slice(-8), contexto: aiContexto() } });
+                if (error) throw error;
+                if (!data || typeof data.resposta !== 'string' || !data.resposta.trim()) throw new Error('A função não devolveu uma resposta válida.');
+                resp = { texto: data.resposta };
+            } catch (e) {
+                console.warn('Falha na IA remota:', e);
+                const status = e && e.context && e.context.status;
+                resp = { texto: status === 401
+                    ? 'A IA remota recusou a autenticação. Confirme se você entrou por uma conta do Supabase Auth e verifique os logs da função.'
+                    : status === 404
+                        ? 'A função “assistente-ia” não foi encontrada no projeto. Publique a Edge Function no Supabase e tente novamente.'
+                        : status === 429
+                            ? 'Muitas perguntas seguidas. Aguarde alguns minutos e tente de novo.'
+                            : 'A IA remota não respondeu. Verifique nos logs da Edge Function se a chave da API está cadastrada e se o modelo configurado está disponível.' };
+            }
         }
     }
     if (!resp) resp = { texto: 'Ainda não sei responder isso com os dados do sistema. Pergunte sobre **financeiro, estoque, moradores, fornecedores, empregados ou documentos**, ou peça o **relatório executivo**.' };
@@ -3500,7 +4235,7 @@ function aiCriarWidget() {
     w.id = 'assistente-ia'; w.className = 'no-print';
     w.innerHTML = `
         <section id="ai-painel" aria-label="Assistente">
-            <div class="ai-topo">${gatoSVG(40, '')}<div><strong>Assistente Guardiões</strong><span>Pergunte ou peça um relatório</span></div><button type="button" id="ai-fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button></div>
+            <div class="ai-topo">${gatoSVG(40, '')}<div class="min-w-0"><strong>Assistente Guardiões</strong><span id="ai-status-modo">${escapeHTML(aiModoAtual())}</span></div><button type="button" id="ai-fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button></div>
             <div id="ai-msgs"></div>
             <div id="ai-chips"><button type="button">Resumo financeiro</button><button type="button">Estoque crítico</button><button type="button">Moradores por bloco</button><button type="button">Gerar relatório</button></div>
             <form id="ai-form"><input id="ai-input" type="text" placeholder="Digite sua pergunta..." autocomplete="off"><button type="submit" aria-label="Enviar"><i class="fa-solid fa-paper-plane"></i></button></form>
@@ -3566,7 +4301,7 @@ renderApp = function () {
 // =====================================================================
 import { createClient } from 'jsr:@supabase/supabase-js@2';
 
-const MODELO = 'claude-sonnet-5-5'; // troque se quiser outro modelo
+const MODELO = 'claude-sonnet-5'; // modelo ativo; confirme a disponibilidade na conta Anthropic
 const LIMITE_PERGUNTAS = 20;        // por pessoa
 const JANELA_MS = 10 * 60 * 1000;   // 10 minutos
 
@@ -3851,11 +4586,37 @@ renderApp = function () {
 // true  = login pelo Supabase Auth; os dados só carregam depois de entrar.
 // Leia o guia embutido no fim deste arquivo (baixarGuiaSeguranca()) ANTES de ativar.
 // =====================================================================
-const AUTH_SUPABASE = false;
-const EMAIL_ADMIN_INICIAL = ''; // e-mail do administrador, ex.: 'sindico@meucondominio.com.br'
+const AUTH_SUPABASE = true; // Login seguro com Supabase Auth habilitado para o fluxo Google/e-mail.
+const EMAIL_ADMIN_INICIAL = ''; // Opcional: e-mail Google autorizado a assumir o perfil usr_admin, se necessário.
+const URL_RETORNO_GOOGLE = 'https://guardioesdobravos.vercel.app/';
 
 let canalRealtimeAuth = null;
 let saindoManual = false;
+let perfilSupabaseAutorizado = false;
+
+// Inicia o OAuth Google. O Supabase trata o retorno e restaura a sessão após redirecionar.
+window.entrarComGoogle = async function () {
+    if (!AUTH_SUPABASE) {
+        alert('O login Google só funciona quando a autenticação segura do Supabase está habilitada.');
+        return;
+    }
+    const botao = document.getElementById('btn-google-login');
+    if (botao) { botao.disabled = true; botao.classList.add('opacity-60', 'cursor-wait'); botao.textContent = 'Conectando ao Google…'; }
+    try {
+        const { error } = await supabaseClient.auth.signInWithOAuth({
+            provider: 'google',
+            options: {
+                redirectTo: URL_RETORNO_GOOGLE,
+                queryParams: { prompt: 'select_account' }
+            }
+        });
+        if (error) throw error;
+    } catch (err) {
+        console.error('Falha ao iniciar login Google:', err);
+        alert('Não foi possível iniciar o login Google. Confira se o provedor está habilitado no Supabase e se a URL de retorno https://guardioesdobravos.vercel.app/ está permitida em Authentication → URL Configuration.');
+        if (botao) { botao.disabled = false; botao.classList.remove('opacity-60', 'cursor-wait'); botao.innerHTML = '<span class="font-black text-lg">G</span> Continuar com Google'; }
+    }
+};
 const _clonar = o => JSON.parse(JSON.stringify(o));
 const _statusNuvem = (classe, html) => { const el = document.getElementById('status-nuvem'); if (el) { el.className = classe; el.innerHTML = html; } };
 const CL_OK = 'bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm';
@@ -3868,8 +4629,9 @@ function _completarPadroes() {
 }
 
 if (AUTH_SUPABASE) {
-    // Nada de dados em cache no navegador e nenhuma sessão herdada
-    try { localStorage.removeItem('guardioes_bravo_db'); sessionStorage.removeItem('guardioes_sessao'); } catch (e) {}
+    // Não reutiliza a sessão do login local. Preserva temporariamente o cache legado,
+    // caso a migração precise ser revertida; o cache não é carregado neste modo seguro.
+    try { sessionStorage.removeItem('guardioes_sessao'); } catch (e) {}
     db = _clonar(DEFAULT_DATA);
     sessao.usuarioLogado = null;
     if (typeof jaEstavaLogado !== 'undefined') jaEstavaLogado = false;
@@ -3879,7 +4641,12 @@ if (AUTH_SUPABASE) {
 function limparDadosLocais() {
     try { if (canalRealtimeAuth) supabaseClient.removeChannel(canalRealtimeAuth); } catch (e) {}
     canalRealtimeAuth = null;
-    try { localStorage.removeItem('guardioes_bravo_db'); } catch (e) {}
+    // O cache antigo só é removido após um perfil autorizado ter carregado a nuvem.
+    // Se a migração falhar antes disso, a cópia local permanece disponível para rollback.
+    if (perfilSupabaseAutorizado) {
+        try { localStorage.removeItem('guardioes_bravo_db'); } catch (e) {}
+    }
+    perfilSupabaseAutorizado = false;
     db = _clonar(DEFAULT_DATA);
 }
 
@@ -3907,10 +4674,10 @@ async function carregarDadosAutenticado() {
     if (data && data.payload) {
         db = data.payload; _completarPadroes();
     } else {
-        // Nunca sobrescreve em silêncio: pode ser falta de permissão de leitura
-        if (!confirm('Nenhum dado foi encontrado na nuvem. Criar uma base nova e vazia?\n\nSe você já usava o sistema, clique em Cancelar e verifique as permissões (RLS).')) return false;
-        db = _clonar(DEFAULT_DATA); _completarPadroes();
-        await salvarDadosNaNuvem(db);
+        // Proteção crítica: nunca criar/substituir a base existente durante a migração de login.
+        _statusNuvem(CL_ERRO, '<i class="fa-solid fa-triangle-exclamation"></i> A nuvem não retornou a base esperada; nenhum dado foi alterado.');
+        alert('O Supabase não retornou os dados do condomínio. Por segurança, o sistema não criará uma base vazia. Verifique a tabela condominio_dados, as permissões RLS e a existência da linha principal.');
+        return false;
     }
     iniciarRealtimeAuth();
     _statusNuvem(CL_OK, '<i class="fa-solid fa-cloud-arrow-down"></i> Sincronizado com a Nuvem em Tempo Real');
@@ -3931,6 +4698,7 @@ function iniciarRealtimeAuth() {
 
 // ---------- entrar ----------
 async function entrarComUsuarioAutenticado(authUser, restaurada = false) {
+    perfilSupabaseAutorizado = false;
     const negar = async msg => {
         saindoManual = true; try { await supabaseClient.auth.signOut(); } catch (e) {} saindoManual = false;
         limparDadosLocais(); alert(msg); renderApp();
@@ -3950,6 +4718,9 @@ async function entrarComUsuarioAutenticado(authUser, restaurada = false) {
     if (!perfil) { await negar('O seu e-mail não está cadastrado no sistema. Peça ao administrador para criar o seu perfil.'); return; }
     if (perfil.status === 'Inativo') { await negar('Utilizador inativo.'); return; }
 
+    // Marca o perfil como autorizado somente após validar o e-mail contra o cadastro do sistema.
+    perfilSupabaseAutorizado = true;
+    try { localStorage.removeItem('guardioes_bravo_db'); } catch (e) {}
     if ((db.usuarios || []).some(u => u.senhaHash !== undefined)) mudou = true; // remove senhas antigas
     if (perfil.primeiroAcesso) { perfil.primeiroAcesso = false; mudou = true; }
     if (mudou) salvarDados(db);
@@ -4141,36 +4912,284 @@ renderApp = function () {
     };
 })();
 </script>
+    <script>
+// Sincronização assistida ao recuperar conexão: se a nuvem mudou, nunca sobrescreve silenciosamente.
+(function configurarRecuperacaoConexao() {
+    let verificacaoEmAndamento = false;
+    window.addEventListener('online', async () => {
+        if (verificacaoEmAndamento || !obterSyncPendente() || !sessao.usuarioLogado || (typeof AUTH_SUPABASE !== 'undefined' && AUTH_SUPABASE)) return;
+        verificacaoEmAndamento = true;
+        try {
+            const { data, error } = await supabaseClient.from('condominio_dados')
+                .select('payload, atualizado_em').eq('id', 'principal').maybeSingle();
+            if (error) throw error;
+            const pendencia = obterSyncPendente();
+            if (!pendencia) return;
+            if (!data || !data.payload) {
+                if (confirm('A conexão voltou, mas a nuvem não retornou uma base acessível. Deseja tentar enviar os dados locais?')) {
+                    await salvarDadosNaNuvem(db, { recuperacaoConfirmada: true });
+                }
+                return;
+            }
+            const baseline = pendencia.ultimaVersaoNuvem || localStorage.getItem(CHAVE_ULTIMA_SYNC_NUVEM);
+            const remotoMudou = !baseline || !data.atualizado_em || !versoesEquivalentes(baseline, data.atualizado_em);
+            if (!remotoMudou) {
+                await salvarDadosNaNuvem(db, { recuperacaoConfirmada: true });
+                return;
+            }
+            const escolha = confirm(`A conexão voltou, mas os dados na nuvem podem ter mudado desde a última sincronização.
+
+OK: enviar a versão local para a nuvem (pode substituir alterações remotas).
+Cancelar: manter a pendência sem sobrescrever a nuvem.
+
+Faça um backup antes de confirmar.`);
+            if (escolha) await salvarDadosNaNuvem(db, { recuperacaoConfirmada: true });
+            else {
+                const el = document.getElementById('status-nuvem');
+                if (el) {
+                    el.className = 'bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800';
+                    el.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Sincronização pendente; os dados locais foram mantidos.';
+                }
+            }
+        } catch (e) {
+            console.warn('A conexão voltou, mas não foi possível verificar a sincronização.', e);
+        } finally {
+            verificacaoEmAndamento = false;
+        }
+    });
+})();
+
+// Registra o service worker somente em origem HTTPS/localhost e quando o arquivo complementar está publicado.
+if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost')) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js').catch(err => {
+            console.info('Modo PWA indisponível nesta publicação; o sistema continua funcionando no navegador.', err);
+        });
+    });
+}
+    </script>
+
+<!-- Recuperação de senha por e-mail (Supabase Auth) -->
+<script>
+(function configurarRecuperacaoSenhaEmail() {
+    let recuperacaoEmailAtiva = false;
+    function emFluxoDeRecuperacao() {
+        const params = new URLSearchParams(window.location.search);
+        return recuperacaoEmailAtiva || params.get('passwordRecovery') === '1' || /(?:^|&)type=recovery(?:&|$)/.test((window.location.hash || '').replace(/^#/, ''));
+    }
+
+    window.cancelarRecuperacaoSenha = function () {
+        recuperacaoEmailAtiva = false;
+        history.replaceState({}, document.title, window.location.pathname);
+        renderApp();
+    };
+
+    function telaRecuperacaoSenha() {
+        if (!AUTH_SUPABASE) {
+            return `
+                <div class="min-h-screen flex items-center justify-center bg-slate-950 p-4">
+                    <div class="bg-white w-full max-w-md p-8 rounded-3xl shadow-2xl space-y-5">
+                        <div class="w-14 h-14 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-2xl mx-auto"><i class="fa-solid fa-envelope-circle-check"></i></div>
+                        <div class="text-center space-y-2">
+                            <h2 class="text-xl font-black text-slate-900">Recuperação por e-mail ainda não ativada</h2>
+                            <p class="text-sm leading-6 text-slate-600">Este sistema ainda utiliza o login local. Um link do Supabase não alteraria a senha usada pelo login atual. Para evitar que você fique sem acesso, a recuperação por e-mail só será liberada depois de concluir e testar a migração para Supabase Auth.</p>
+                        </div>
+                        <button type="button" onclick="history.replaceState({}, document.title, location.pathname); renderApp();" class="w-full py-3 rounded-2xl bg-teal-700 hover:bg-teal-800 text-white font-bold">Voltar ao login</button>
+                        <button type="button" onclick="baixarGuiaSeguranca()" class="w-full py-2 text-sm font-bold text-teal-700 hover:text-teal-900">Baixar guia para ativar o login seguro</button>
+                    </div>
+                </div>`;
+        }
+        return `
+            <div class="min-h-screen flex items-center justify-center bg-slate-950 p-4 w-full relative overflow-hidden">
+                <div class="bg-white/95 backdrop-blur-xl w-full max-w-md p-8 rounded-3xl shadow-2xl border border-white/20 space-y-6 relative z-10">
+                    <div class="text-center space-y-2">
+                        <div class="w-16 h-16 bg-gradient-to-tr from-teal-600 to-emerald-500 rounded-2xl flex items-center justify-center text-white text-3xl font-extrabold mx-auto"><i class="fa-solid fa-key"></i></div>
+                        <h2 class="text-2xl font-black text-slate-900">Criar nova senha</h2>
+                        <p class="text-sm text-slate-600">Escolha uma senha nova para a sua conta.</p>
+                    </div>
+                    <form onsubmit="finalizarRecuperacaoSenha(event)" class="space-y-4" autocomplete="on">
+                        <div><label for="rec_senha_nova" class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Nova senha</label><input id="rec_senha_nova" type="password" autocomplete="new-password" required minlength="12" class="w-full p-3 border rounded-2xl bg-slate-50 text-sm" placeholder="Mínimo 12 caracteres, maiúscula, minúscula e número"></div>
+                        <div><label for="rec_senha_conf" class="block text-[11px] font-bold uppercase text-slate-500 mb-1">Confirmar nova senha</label><input id="rec_senha_conf" type="password" autocomplete="new-password" required minlength="12" class="w-full p-3 border rounded-2xl bg-slate-50 text-sm" placeholder="Digite a senha novamente"></div>
+                        <p id="rec_senha_status" role="status" aria-live="polite" class="hidden rounded-xl p-3 text-sm"></p>
+                        <button id="rec_senha_btn" type="submit" class="w-full py-3.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-lg text-sm">Salvar nova senha</button>
+                    </form>
+                    <button type="button" onclick="cancelarRecuperacaoSenha()" class="w-full py-2 text-sm font-bold text-teal-700 hover:text-teal-900">Voltar ao login</button>
+                    <p class="text-xs text-slate-500 text-center">Use pelo menos 12 caracteres, com letras maiúsculas, minúsculas e números.</p>
+                </div>
+            </div>`;
+    }
+
+    window.abrirRecuperacaoSenha = function () {
+        if (!AUTH_SUPABASE) {
+            abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 backdrop-blur-md">
+                    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                        <div class="flex items-center gap-3"><div class="w-12 h-12 rounded-2xl bg-amber-100 text-amber-700 flex items-center justify-center text-xl"><i class="fa-solid fa-envelope-circle-check"></i></div><h3 class="font-black text-lg text-slate-900">Recuperar senha por e-mail</h3></div>
+                        <p class="text-sm leading-6 text-slate-600">A autenticação atual do Guardiões do Bravo é local. Para que o link de e-mail altere a senha de forma segura, é necessário migrar os usuários para o Supabase Auth e testar o novo login. Essa migração ainda não está ativada neste arquivo, para não bloquear o acesso existente.</p>
+                        <p class="text-sm text-slate-600">Enquanto isso, peça ao administrador do sistema para redefinir sua senha pelo módulo de utilizadores.</p>
+                        <div class="flex flex-col gap-2"><button type="button" onclick="baixarGuiaSeguranca()" class="w-full py-3 rounded-2xl bg-teal-700 hover:bg-teal-800 text-white font-bold">Baixar guia de ativação</button><button type="button" onclick="fecharModalContainer()" class="w-full py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold">Fechar</button></div>
+                    </div>
+                </div>`);
+            return;
+        }
+
+        if (!['https:', 'http:'].includes(window.location.protocol)) {
+            alert('A recuperação por e-mail precisa que o sistema esteja publicado em HTTPS (ou localhost para testes).');
+            return;
+        }
+        const atual = document.getElementById('login_user')?.value.trim() || '';
+        const emailInicial = atual.includes('@') ? atual : '';
+        abrirModalContainer(`
+            <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 backdrop-blur-md">
+                <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+                    <div class="flex items-center gap-3"><div class="w-12 h-12 rounded-2xl bg-teal-100 text-teal-700 flex items-center justify-center text-xl"><i class="fa-solid fa-envelope"></i></div><h3 class="font-black text-lg text-slate-900">Esqueci minha senha</h3></div>
+                    <p class="text-sm leading-6 text-slate-600">Informe o e-mail cadastrado. Se houver uma conta associada, você receberá um link para criar uma nova senha.</p>
+                    <form onsubmit="solicitarRecuperacaoSenhaEmail(event)" class="space-y-3">
+                        <label for="rec_email" class="block text-[11px] font-bold uppercase text-slate-500">E-mail cadastrado</label>
+                        <input id="rec_email" type="email" autocomplete="email" required maxlength="254" value="${escapeHTML(emailInicial)}" class="w-full p-3 border rounded-2xl bg-slate-50 text-sm" placeholder="voce@exemplo.com">
+                        <p id="rec_email_status" role="status" aria-live="polite" class="hidden rounded-xl p-3 text-sm"></p>
+                        <div class="flex gap-2 pt-2"><button type="button" onclick="fecharModalContainer()" class="flex-1 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold">Cancelar</button><button id="rec_email_btn" type="submit" class="flex-1 py-3 rounded-2xl bg-teal-700 hover:bg-teal-800 text-white font-bold">Enviar link</button></div>
+                    </form>
+                </div>
+            </div>`);
+        setTimeout(() => document.getElementById('rec_email')?.focus(), 50);
+    };
+
+    window.solicitarRecuperacaoSenhaEmail = async function (e) {
+        e.preventDefault();
+        if (!AUTH_SUPABASE) { window.abrirRecuperacaoSenha(); return; }
+        const email = (document.getElementById('rec_email')?.value || '').trim().toLowerCase();
+        const btn = document.getElementById('rec_email_btn');
+        if (!email || !email.includes('@')) { alert('Informe um e-mail válido.'); return; }
+        if (btn) { btn.disabled = true; btn.textContent = 'Enviando…'; }
+        try {
+            const destino = new URL(window.location.href);
+            destino.search = '';
+            destino.hash = '';
+            destino.searchParams.set('passwordRecovery', '1');
+            const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo: destino.href });
+            if (error) {
+                console.error('Falha ao solicitar recuperação de senha:', error.message);
+                alert('Não foi possível enviar o pedido agora. Confira a conexão, a configuração de e-mail e a URL de redirecionamento permitida no Supabase.');
+                return;
+            }
+            fecharModalContainer();
+            alert('Se esse e-mail estiver cadastrado, enviaremos uma mensagem com o link para criar uma nova senha. Verifique também a caixa de spam.');
+        } catch (err) {
+            console.error('Erro de conexão na recuperação de senha:', err);
+            alert('Não foi possível solicitar a recuperação neste momento. Tente novamente mais tarde.');
+        } finally {
+            if (btn && document.body.contains(btn)) { btn.disabled = false; btn.textContent = 'Enviar link'; }
+        }
+    };
+
+    window.finalizarRecuperacaoSenha = async function (e) {
+        e.preventDefault();
+        if (!AUTH_SUPABASE) { renderApp(); return; }
+        const s1 = document.getElementById('rec_senha_nova')?.value || '';
+        const s2 = document.getElementById('rec_senha_conf')?.value || '';
+        const status = document.getElementById('rec_senha_status');
+        const btn = document.getElementById('rec_senha_btn');
+        const mostrarStatus = (msg, ok = false) => {
+            if (!status) return;
+            status.textContent = msg;
+            status.className = `rounded-xl p-3 text-sm ${ok ? 'bg-emerald-50 text-emerald-800' : 'bg-rose-50 text-rose-800'}`;
+        };
+        if (!senhaForte(s1)) { mostrarStatus(MSG_SENHA); return; }
+        if (s1 !== s2) { mostrarStatus('As senhas não coincidem.'); return; }
+        if (btn) { btn.disabled = true; btn.textContent = 'Salvando…'; }
+        try {
+            const { data: sessaoAuth, error: erroSessao } = await supabaseClient.auth.getSession();
+            if (erroSessao || !sessaoAuth?.session) {
+                mostrarStatus('Este link expirou ou já foi utilizado. Solicite uma nova recuperação pelo login.');
+                return;
+            }
+            const { error } = await supabaseClient.auth.updateUser({ password: s1 });
+            if (error) {
+                console.error('Falha ao atualizar senha após recuperação:', error.message);
+                mostrarStatus('Não foi possível salvar a nova senha. Solicite outro link e tente novamente.');
+                return;
+            }
+            try { await supabaseClient.auth.signOut(); } catch (err) { console.warn('Senha alterada; não foi possível encerrar a sessão de recuperação automaticamente.', err); }
+            recuperacaoEmailAtiva = false;
+            history.replaceState({}, document.title, window.location.pathname);
+            alert('Senha alterada com sucesso. Entre novamente com seu e-mail e a nova senha.');
+            renderApp();
+        } catch (err) {
+            console.error('Erro durante a recuperação de senha:', err);
+            mostrarStatus('Ocorreu um erro de conexão. Tente novamente.');
+        } finally {
+            if (btn && document.body.contains(btn)) { btn.disabled = false; btn.textContent = 'Salvar nova senha'; }
+        }
+    };
+
+    const _renderAppAntesRecuperacaoSenha = renderApp;
+    renderApp = function () {
+        if (emFluxoDeRecuperacao()) {
+            const container = document.getElementById('app');
+            if (container) container.innerHTML = telaRecuperacaoSenha();
+            return;
+        }
+        _renderAppAntesRecuperacaoSenha.apply(this, arguments);
+    };
+
+    // Supabase pode identificar a recuperação pelo evento mesmo que a URL seja normalizada.
+    if (AUTH_SUPABASE && supabaseClient?.auth) {
+        supabaseClient.auth.onAuthStateChange(event => {
+            if (event === 'PASSWORD_RECOVERY') {
+                recuperacaoEmailAtiva = true;
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', () => renderApp(), { once: true });
+                } else {
+                    renderApp();
+                }
+            }
+        });
+    }
+})();
+</script>
+
 <script type="text/plain" id="guia-seguranca-supabase">
 GUIA: ATIVAR O LOGIN SEGURO (Supabase Auth + RLS)
 =====================================================================
 Siga NESTA ORDEM. O sistema só fica protegido de verdade no passo 7.
-Com o interruptor desligado (AUTH_SUPABASE = false) nada muda.
+Este arquivo habilita AUTH_SUPABASE=true e exibe o botão Google.
+A URL de retorno do site está definida como https://guardioesdobravos.vercel.app/.
+Antes de produção, faça backup e confirme os pontos abaixo.
 
- 1. Clique em "Baixar Backup JSON" no menu do sistema e guarde o arquivo.
- 2. Supabase > Authentication > Sign In / Providers > Email:
-      - deixe o provedor Email LIGADO
-      - DESLIGUE "Allow new users to sign up" (OBRIGATÓRIO: senão qualquer
-        pessoa se cadastra, vira "autenticada" e lê tudo)
- 3. Supabase > Authentication > Users > Add user > "Create new user":
-      e-mail + senha forte, marcando "Auto Confirm User". Crie um para cada pessoa.
- 4. No index.html, procure "const AUTH_SUPABASE" e troque para true.
-    Em "const EMAIL_ADMIN_INICIAL" coloque o e-mail do administrador (o mesmo do passo 3).
- 5. Publique o novo index.html e entre com esse e-mail. Confira que os dados aparecem.
-    (O sistema remove as senhas antigas de dentro dos dados ao salvar.)
- 6. Para cada pessoa, cadastre o perfil em "Utilizadores" com o MESMO e-mail do passo 3.
- 7. SÓ DEPOIS de tudo funcionando, rode o SQL abaixo no Supabase > SQL Editor.
+ 1. Supabase > Authentication > URL Configuration: Site URL = https://guardioesdobravos.vercel.app/;
+    Redirect URLs deve incluir https://guardioesdobravos.vercel.app/.
+ 2. Google Cloud: Authorized JavaScript origin = https://guardioesdobravos.vercel.app;
+    Authorized redirect URI = https://ycwgwtzysvizossqveiy.supabase.co/auth/v1/callback.
+ 3. Supabase > Authentication > Sign In / Providers > Google: provider habilitado, Client ID e Secret corretos.
+ 4. Para um sistema restrito, desative cadastros públicos e crie previamente as contas permitidas em
+    Authentication > Users. O e-mail Google precisa corresponder ao e-mail do perfil em Utilizadores.
+ 5. Publique e teste com uma conta autorizada primeiro. O sistema bloqueia e-mails sem perfil ativo.
+ 6. Confirme e teste as políticas RLS antes de liberar o sistema. Políticas genéricas para todos os
+    utilizadores autenticados não constituem uma lista de acesso individual.
+ 7. Se houver falha ao carregar a base da nuvem, o sistema não cria nem substitui uma base vazia.
  8. Teste: abra uma janela anônima, abra o console (F12) e rode
       await supabaseClient.from('condominio_dados').select()
     O resultado deve vir VAZIO (sem dados). Se vier com dados, o passo 7 não funcionou.
 
-Esqueci a senha: o administrador redefine em Supabase > Authentication > Users.
-Cada pessoa troca a própria senha no botão da chave, no rodapé do menu.
+RECUPERAÇÃO DE SENHA POR E-MAIL
+- A opção "Esqueci minha senha" funciona para contas de e-mail/senha no Supabase Auth; usuários que entram exclusivamente com Google usam a segurança da conta Google.
+- Em Supabase > Authentication > URL Configuration, adicione a URL HTTPS publicada do sistema à lista Redirect URLs. O sistema acrescenta o parâmetro passwordRecovery=1 ao retorno.
+- Em Authentication > Sign In / Providers > Email, mantenha Email ativado. Configure SMTP próprio para envio confiável em produção; o serviço de e-mail padrão do Supabase tem limites e disponibilidade de teste.
+- A recuperação por e-mail altera a senha do Supabase Auth, não a senha local antiga. Por isso não ative AUTH_SUPABASE antes de cadastrar/validar todos os utilizadores e testar o acesso em homologação.
+- O botão "Continuar com Google" usa signInWithOAuth e retorna para a URL de produção cadastrada.
+Cada pessoa pode trocar a própria senha depois de entrar pelo botão da chave no menu.
 
------ SQL DO PASSO 7 -----
--- 1) Veja se há políticas antigas abertas e apague as que liberam o acesso público (anon):
---    select policyname, roles, cmd from pg_policies where tablename = 'condominio_dados';
---    drop policy "nome_da_politica_antiga" on public.condominio_dados;
+----- SQL DE EXEMPLO — REVISAR ANTES DE EXECUTAR -----
+ATENÇÃO: as políticas abaixo permitem acesso a QUALQUER usuário autenticado.
+Só são aceitáveis se o cadastro público estiver desativado e todas as contas em
+Supabase > Authentication > Users forem provisionadas e controladas pelo administrador.
+Se houver contas não autorizadas, NÃO execute este SQL genérico: implemente uma lista
+explícita de usuários autorizados no servidor/RLS antes de liberar dados do condomínio.
+
+-- Primeiro, inspecione as políticas atuais; remova políticas públicas antigas com cuidado:
+-- select policyname, roles, cmd from pg_policies where tablename = 'condominio_dados';
+-- drop policy "nome_da_politica_antiga" on public.condominio_dados;
 
 alter table public.condominio_dados enable row level security;
 
@@ -4202,9 +5221,16 @@ responde a quem está logado; sem isso a IA recusa as perguntas.
  E. Guarde a chave como segredo (nunca no HTML):
       supabase secrets set ANTHROPIC_API_KEY=sua_chave_aqui
  F. Publique:   supabase functions deploy assistente-ia
- G. No index.html troque  const IA_REMOTA_ATIVA = false;  por  true;  e publique o HTML.
- H. Teste no gato: "Como está a saúde financeira do condomínio?" e clique em
-    "Aprofundar com a IA" depois de pedir o relatório.
+ G. Antes de ativar a IA em produção, faça backup e configure o Supabase Auth
+    para os usuários, revise as políticas RLS e valide tudo em um ambiente de teste.
+    Este arquivo usa AUTH_SUPABASE=true; valide as contas e as políticas RLS em homologação.
+    Com o login local, a IA remota é bloqueada porque a função exige um JWT de usuário.
+ H. A opção IA_REMOTA_ATIVA já fica ligada neste arquivo, mas só chama o servidor
+    quando AUTH_SUPABASE=true. Não basta alterar essa opção isoladamente.
+ I. O código da função usa o modelo claude-sonnet-5; confirme os modelos ativos e
+    limites da sua conta Anthropic antes de publicar.
+ J. Teste no assistente: "Como está a saúde financeira do condomínio?" e clique em
+    "Aprofundar com a IA" depois de pedir o relatório. Consulte Functions > Logs se falhar.
 
 O que a IA recebe: totais financeiros, os últimos lançamentos, itens de estoque,
 quantidade de moradores por bloco, nomes de fornecedores, nome e cargo de empregados.
