@@ -87,6 +87,105 @@
             .card-modern:hover, #sidebar-menu nav button:hover { transform: none; }
         }
 
+
+        /* ===== ANIMAÇÕES v2 ===== */
+/* ---------- Entrada dos módulos (troca de aba e login) ---------- */
+@keyframes entrar-subindo {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: none; }
+}
+.entrada-seq {
+    animation: entrar-subindo .42s cubic-bezier(.2, .7, .2, 1) both;
+    animation-delay: calc(var(--base, 0ms) + var(--i, 0) * 60ms);
+}
+
+/* ---------- Modais ---------- */
+@keyframes modal-fundo-in  { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modal-fundo-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes modal-caixa-in  { from { opacity: 0; transform: translateY(14px) scale(.97); } to { opacity: 1; transform: none; } }
+@keyframes modal-caixa-out { from { opacity: 1; transform: none; } to { opacity: 0; transform: translateY(8px) scale(.98); } }
+#modal-container > div       { animation: modal-fundo-in .18s ease-out both; }
+#modal-container > div > div { animation: modal-caixa-in .24s cubic-bezier(.2, .8, .2, 1) both; }
+#modal-container.fechando > div       { animation: modal-fundo-out .16s ease-in both; }
+#modal-container.fechando > div > div { animation: modal-caixa-out .16s ease-in both; }
+
+button:active:not(:disabled) { transform: scale(.97); }
+#sidebar-backdrop:not(.hidden) { animation: modal-fundo-in .25s ease-out both; }
+
+/* ---------- Login: cartão + cão e gato espiando ---------- */
+#app > .min-h-screen > .max-w-md { animation: modal-caixa-in .5s cubic-bezier(.2, .8, .2, 1) both; }
+.pet-espia { position: absolute; top: -55px; pointer-events: none; }
+.pet-espia svg { display: block; animation: espiar 3.2s ease-in-out infinite; transform-origin: 50% 100%; }
+.pet-espia.dir { right: 28px; }
+.pet-espia.esq { left: 28px; }
+.pet-espia.esq svg { animation-delay: -1.4s; }
+@keyframes espiar {
+    0%, 100% { transform: translateY(0) rotate(0); }
+    50%      { transform: translateY(-4px) rotate(-3deg); }
+}
+
+/* ---------- Transição de login: cão e gato correndo ---------- */
+#transicao-login {
+    position: fixed; inset: 0; z-index: 200;
+    background: radial-gradient(circle at 50% 38%, #0f3d3a, #020617 70%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px;
+    transition: opacity .45s ease; cursor: pointer;
+}
+#transicao-login.saindo { opacity: 0; pointer-events: none; }
+.tl-texto { color: #fff; font-weight: 800; font-size: 18px; letter-spacing: -.01em; animation: entrar-subindo .5s both; }
+.tl-pista { position: relative; width: 100%; height: 84px; overflow: hidden; }
+.tl-corredor { position: absolute; bottom: 6px; left: 0; animation: corre 1.45s cubic-bezier(.4, .1, .5, .95) both; }
+.tl-corredor svg { display: block; animation: pula .3s ease-in-out infinite; transform-origin: 50% 100%; }
+@keyframes corre { from { transform: translateX(-90px); } to { transform: translateX(calc(100vw + 30px)); } }
+@keyframes pula  {
+    0%, 100% { transform: translateY(0) rotate(-5deg); }
+    50%      { transform: translateY(-14px) rotate(5deg); }
+}
+.tl-pegada { position: absolute; bottom: 2px; font-size: 14px; opacity: 0; animation: pegada 1.1s ease-out both; }
+@keyframes pegada { 0% { opacity: 0; } 20% { opacity: .7; } 100% { opacity: 0; } }
+
+/* ---------- Gato 3D do botão de IA ---------- */
+.gato-ia { display: block; transform-origin: 50% 90%; animation: gato-balanca 2.6s ease-in-out infinite; filter: drop-shadow(0 2px 2px rgba(0,0,0,.25)); }
+@keyframes gato-balanca { 0%, 100% { transform: rotate(-5deg); } 50% { transform: rotate(5deg); } }
+.pet-olho { transform-box: fill-box; transform-origin: center; animation: pet-pisca 4.5s infinite; }
+@keyframes pet-pisca { 0%, 92%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.1); } }
+
+        /* ===== Linhas de tabela: destaque ao salvar e saída ao excluir ===== */
+        @keyframes flash-linha { 0% { background-color: rgba(45,212,191,.38); } 100% { background-color: transparent; } }
+        @keyframes linha-sai   { 0% { opacity: 1; } 100% { opacity: 0; transform: translateX(26px); } }
+        tr.linha-nova > td   { animation: flash-linha 1.8s ease-out both; }
+        tr.linha-saindo > td { background-color: rgba(244,63,94,.14); animation: linha-sai .26s ease-in both; }
+
+        /* ===== Assistente (gato) ===== */
+        #assistente-ia { position: fixed; right: 16px; bottom: 16px; z-index: 80; font-family: 'Inter', sans-serif; }
+        #ai-gato { display: block; width: 76px; height: 76px; padding: 0; border: 0; background: transparent; cursor: pointer; animation: ai-flutua 3.2s ease-in-out infinite; filter: drop-shadow(0 8px 10px rgba(2,6,23,.35)); }
+        #ai-gato svg { width: 100%; height: 100%; animation: none; }
+        #ai-gato:hover { transform: scale(1.08) rotate(-4deg); }
+        @keyframes ai-flutua { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+        #ai-balao { position: absolute; right: 8px; bottom: 84px; background: #fff; color: #0f172a; font-size: 13px; font-weight: 700; padding: 10px 14px; border-radius: 16px; box-shadow: 0 10px 28px rgba(15,23,42,.22); white-space: nowrap; cursor: pointer; opacity: 0; transform-origin: 85% 100%; animation: ai-balao-in .45s cubic-bezier(.2,.9,.3,1.3) var(--atraso, 900ms) both; transition: opacity .4s; }
+        #ai-balao::after { content: ''; position: absolute; right: 26px; bottom: -6px; width: 14px; height: 14px; background: #fff; transform: rotate(45deg); border-radius: 3px; }
+        #ai-balao.sumindo { opacity: 0 !important; animation: none; pointer-events: none; }
+        @keyframes ai-balao-in { from { opacity: 0; transform: scale(.6) translateY(8px); } to { opacity: 1; transform: none; } }
+        #ai-painel { display: none; position: absolute; right: 0; bottom: 88px; width: min(390px, calc(100vw - 32px)); height: min(560px, 72dvh); background: #fff; border-radius: 22px; box-shadow: 0 24px 60px rgba(2,6,23,.35); border: 1px solid #e2e8f0; overflow: hidden; flex-direction: column; }
+        #ai-painel.aberto { display: flex; animation: modal-caixa-in .26s cubic-bezier(.2,.8,.2,1) both; }
+        .ai-topo { display: flex; align-items: center; gap: 10px; padding: 12px 14px; background: linear-gradient(90deg,#0f766e,#115e59); color: #fff; }
+        .ai-topo strong { font-size: 14px; font-weight: 800; display: block; }
+        .ai-topo span { font-size: 11px; opacity: .8; }
+        .ai-topo button { margin-left: auto; color: #fff; background: rgba(255,255,255,.14); border: 0; border-radius: 10px; width: 32px; height: 32px; cursor: pointer; }
+        #ai-msgs { flex: 1; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 10px; background: #f8fafc; }
+        .ai-msg { max-width: 88%; padding: 9px 12px; border-radius: 16px; font-size: 13px; line-height: 1.5; animation: entrar-subindo .25s both; word-wrap: break-word; }
+        .ai-msg.bot { background: #fff; color: #1e293b; border: 1px solid #e2e8f0; border-bottom-left-radius: 4px; align-self: flex-start; }
+        .ai-msg.eu { background: #0d9488; color: #fff; border-bottom-right-radius: 4px; align-self: flex-end; }
+        .ai-acao { display: inline-block; margin-top: 8px; padding: 7px 12px; background: #0f766e; color: #fff; border: 0; border-radius: 10px; font-size: 12px; font-weight: 700; cursor: pointer; }
+        .ai-digitando span { display: inline-block; width: 6px; height: 6px; margin: 0 2px; border-radius: 50%; background: #94a3b8; animation: ai-ponto 1s infinite; }
+        .ai-digitando span:nth-child(2) { animation-delay: .15s; } .ai-digitando span:nth-child(3) { animation-delay: .3s; }
+        @keyframes ai-ponto { 0%,60%,100% { transform: translateY(0); opacity: .5; } 30% { transform: translateY(-4px); opacity: 1; } }
+        #ai-chips { display: flex; gap: 6px; padding: 8px 12px 0; overflow-x: auto; background: #fff; }
+        #ai-chips button { flex: none; padding: 6px 11px; font-size: 11.5px; font-weight: 700; color: #0f766e; background: #f0fdfa; border: 1px solid #99f6e4; border-radius: 999px; cursor: pointer; min-height: 0; }
+        #ai-form { display: flex; gap: 8px; padding: 10px 12px 12px; background: #fff; }
+        #ai-input { flex: 1; padding: 10px 12px; font-size: 13px; border: 1px solid #dbe3ed; border-radius: 12px; }
+        #ai-form button { width: 40px; border: 0; border-radius: 12px; background: #0d9488; color: #fff; cursor: pointer; }
+        @media (max-width: 640px) { #assistente-ia { right: 10px; bottom: 10px; } #ai-gato { width: 64px; height: 64px; } #ai-painel { bottom: 76px; } #ai-balao { bottom: 72px; } }
     </style>
 </head>
 <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
@@ -2705,6 +2804,597 @@ function baixarDocumento(id) {
         document.addEventListener('DOMContentLoaded', async () => {
             await carregarDadosDaNuvem();
         });
+    </script>
+    <!-- Animações (script separado: se algo falhar aqui, o sistema continua funcionando) -->
+    <script>
+// =====================================================================
+// ANIMAÇÕES v2
+// =====================================================================
+const reduzMovimento = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// ---------- 1) Gráficos do Dashboard (Chart.js) ----------
+// Barras sobem uma a uma; a rosca gira e cresce do centro.
+try {
+    Chart.defaults.animation = {
+        duration: 1100,
+        easing: 'easeOutQuart',
+        delay: (ctx) => (ctx.type === 'data' && ctx.mode === 'default') ? ctx.dataIndex * 140 : 0
+    };
+    Chart.overrides = Chart.overrides || {};
+    Chart.overrides.doughnut = Chart.overrides.doughnut || {};
+    Chart.overrides.doughnut.animation = Object.assign({}, Chart.overrides.doughnut.animation, { animateScale: true, animateRotate: true });
+} catch (e) {
+    console.warn('Animação dos gráficos não aplicada:', e);
+}
+
+// ---------- 2) Ilustrações: gato 3D e cão (SVG com gradientes e brilhos) ----------
+document.body.insertAdjacentHTML('beforeend', `
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <radialGradient id="gatoCorpo" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffd29a"/><stop offset=".55" stop-color="#f39a3a"/><stop offset="1" stop-color="#b9560f"/></radialGradient>
+  <radialGradient id="gatoOrelha" cx=".5" cy=".4" r=".7"><stop offset="0" stop-color="#ffc9d3"/><stop offset="1" stop-color="#e0788f"/></radialGradient>
+  <radialGradient id="gatoOlho" cx=".4" cy=".35" r=".75"><stop offset="0" stop-color="#eaff9f"/><stop offset=".6" stop-color="#6cc04a"/><stop offset="1" stop-color="#2e7d32"/></radialGradient>
+  <radialGradient id="caoCorpo" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#e3b27a"/><stop offset=".55" stop-color="#a8672f"/><stop offset="1" stop-color="#6b3d17"/></radialGradient>
+  <linearGradient id="caoOrelha" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#85501f"/><stop offset="1" stop-color="#42240d"/></linearGradient>
+  <radialGradient id="caoFocinho" cx=".4" cy=".3" r=".8"><stop offset="0" stop-color="#fff3e2"/><stop offset="1" stop-color="#e2bf92"/></radialGradient>
+</defs></svg>`);
+
+function gatoSVG(tam = 32, classe = 'gato-ia') {
+    return `<svg class="${classe}" viewBox="0 0 64 64" width="${tam}" height="${tam}" aria-hidden="true">
+      <ellipse cx="32" cy="59" rx="18" ry="3.5" fill="rgba(0,0,0,.28)"/>
+      <path d="M10 30 L12 6 L29 18 Z" fill="url(#gatoCorpo)"/><path d="M14 23 L15 11 L25 18 Z" fill="url(#gatoOrelha)"/>
+      <path d="M54 30 L52 6 L35 18 Z" fill="url(#gatoCorpo)"/><path d="M50 23 L49 11 L39 18 Z" fill="url(#gatoOrelha)"/>
+      <ellipse cx="32" cy="36" rx="24" ry="21" fill="url(#gatoCorpo)"/>
+      <ellipse cx="24" cy="25" rx="10" ry="5" fill="#fff" opacity=".28" transform="rotate(-20 24 25)"/>
+      <path d="M32 17 L32 23 M26 18.5 L27.5 23.5 M38 18.5 L36.5 23.5" stroke="#b4560f" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+      <g class="pet-olho"><ellipse cx="22" cy="34" rx="4.4" ry="5.2" fill="url(#gatoOlho)"/><ellipse cx="22" cy="34.2" rx="1.6" ry="3.7" fill="#1a1208"/><circle cx="20.7" cy="32" r="1.3" fill="#fff"/></g>
+      <g class="pet-olho"><ellipse cx="42" cy="34" rx="4.4" ry="5.2" fill="url(#gatoOlho)"/><ellipse cx="42" cy="34.2" rx="1.6" ry="3.7" fill="#1a1208"/><circle cx="40.7" cy="32" r="1.3" fill="#fff"/></g>
+      <ellipse cx="32" cy="46" rx="9.5" ry="6" fill="#ffe8cc" opacity=".92"/>
+      <path d="M29 41 Q32 39.8 35 41 Q33.5 44.6 32 45.2 Q30.5 44.6 29 41Z" fill="#ff8fa3"/>
+      <ellipse cx="31" cy="41.2" rx="1.1" ry=".6" fill="#fff" opacity=".7"/>
+      <path d="M32 45 Q32 48.4 28.5 49 M32 45 Q32 48.4 35.5 49" stroke="#7a3b12" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+      <path d="M20 44 L6 41 M20 46.5 L6 48.5 M44 44 L58 41 M44 46.5 L58 48.5" stroke="#fff" stroke-opacity=".85" stroke-width=".9" stroke-linecap="round"/>
+    </svg>`;
+}
+
+function caoSVG(tam = 32, classe = '') {
+    return `<svg class="${classe}" viewBox="0 0 64 64" width="${tam}" height="${tam}" aria-hidden="true">
+      <ellipse cx="32" cy="59" rx="18" ry="3.5" fill="rgba(0,0,0,.28)"/>
+      <path d="M13 20 Q1 30 7 49 Q16 52 21 36 Z" fill="url(#caoOrelha)"/>
+      <path d="M51 20 Q63 30 57 49 Q48 52 43 36 Z" fill="url(#caoOrelha)"/>
+      <ellipse cx="32" cy="34" rx="21" ry="20" fill="url(#caoCorpo)"/>
+      <ellipse cx="25" cy="24" rx="9" ry="4.5" fill="#fff" opacity=".24" transform="rotate(-20 25 24)"/>
+      <ellipse cx="32" cy="45" rx="11.5" ry="8.5" fill="url(#caoFocinho)"/>
+      <g class="pet-olho"><circle cx="23" cy="32" r="3.7" fill="#1b120a"/><circle cx="21.9" cy="30.7" r="1.3" fill="#fff"/></g>
+      <g class="pet-olho"><circle cx="41" cy="32" r="3.7" fill="#1b120a"/><circle cx="39.9" cy="30.7" r="1.3" fill="#fff"/></g>
+      <path d="M30 48.6 Q32 56 34 48.6 Z" fill="#ff7f93"/>
+      <ellipse cx="32" cy="40.5" rx="4.6" ry="3.1" fill="#1b120a"/>
+      <ellipse cx="30.7" cy="39.4" rx="1.4" ry=".7" fill="#fff" opacity=".6"/>
+      <path d="M32 43.5 L32 47.2 M32 47.2 Q28 50.4 26 47 M32 47.2 Q36 50.4 38 47" stroke="#5a3414" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+    </svg>`;
+}
+
+// ---------- 3) Troca do ícone da IA por um gato ----------
+function trocarIconeIA() {
+    document.querySelectorAll('i.fa-wand-magic-sparkles').forEach(i => {
+        const grande = i.classList.contains('text-xl');
+        const span = document.createElement('span');
+        span.className = 'inline-flex items-center justify-center';
+        span.innerHTML = gatoSVG(grande ? 38 : 26);
+        i.replaceWith(span);
+    });
+}
+new MutationObserver(trocarIconeIA).observe(document.body, { childList: true, subtree: true });
+trocarIconeIA();
+
+// ---------- 4) Login: cão e gato espiando o cartão ----------
+function decorarLogin() {
+    const card = document.querySelector('#app > .min-h-screen > .max-w-md');
+    if (!card || card.querySelector('.pet-espia')) return;
+    if (getComputedStyle(card).position === 'static') card.style.position = 'relative';
+    card.insertAdjacentHTML('afterbegin',
+        `<div class="pet-espia esq">${caoSVG(60)}</div><div class="pet-espia dir">${gatoSVG(60, '')}</div>`);
+}
+
+// ---------- 5) Transição ao entrar: cão perseguindo o gato ----------
+function tocarTransicaoLogin(nome) {
+    if (reduzMovimento()) return;
+    const pegadas = Array.from({ length: 12 }, (_, i) =>
+        `<span class="tl-pegada" style="left:${4 + i * 8}%;animation-delay:${(0.2 + i * 0.115).toFixed(2)}s">🐾</span>`).join('');
+    const ov = document.createElement('div');
+    ov.id = 'transicao-login';
+    ov.innerHTML = `
+        <div class="tl-texto">Bem-vindo(a)${nome ? ', ' + escapeHTML(nome) : ''}!</div>
+        <div class="tl-pista">
+            ${pegadas}
+            <div class="tl-corredor">${gatoSVG(56, '')}</div>
+            <div class="tl-corredor" style="animation-delay:.4s">${caoSVG(60, '')}</div>
+        </div>`;
+    ov.onclick = () => ov.remove(); // clicar pula a animação
+    document.body.appendChild(ov);
+    setTimeout(() => ov.classList.add('saindo'), 1650);
+    setTimeout(() => ov.remove(), 2150);
+}
+
+// ---------- 6) Números do Dashboard contam até o valor final ----------
+function contarNumeros(atrasoMs = 0, seletor = 'main h3.text-2xl, main h3.text-xl') {
+    if (reduzMovimento()) return;
+    document.querySelectorAll(seletor).forEach(h => {
+        const original = h.textContent;
+        const m = original.match(/^(\D*?)(-?\d+(?:\.\d+)?)(.*)$/);
+        if (!m) return;
+        const [, prefixo, numTxt, sufixo] = m;
+        const alvo = parseFloat(numTxt);
+        const casas = (numTxt.split('.')[1] || '').length;
+        h.textContent = prefixo + (0).toFixed(casas) + sufixo;
+        const duracao = 950;
+        setTimeout(() => {
+            const inicio = performance.now();
+            (function passo(t) {
+                const p = Math.min((t - inicio) / duracao, 1);
+                const v = alvo * (1 - Math.pow(1 - p, 3));
+                h.textContent = p < 1 ? prefixo + v.toFixed(casas) + sufixo : original;
+                if (p < 1) requestAnimationFrame(passo);
+            })(inicio);
+        }, atrasoMs);
+    });
+}
+
+// ---------- 7) Troca de módulo e login ----------
+let animarProximaRender = false;
+let jaEstavaLogado = !!(sessao && sessao.usuarioLogado);
+
+const _abrirModuloOriginal = abrirModulo;
+abrirModulo = function (moduloId, filtroEstoqueParam) {
+    if (moduloId !== tabsState.activeTab) animarProximaRender = true;
+    _abrirModuloOriginal(moduloId, filtroEstoqueParam);
+};
+
+const _renderAppOriginal = renderApp;
+function posRenderAnimacoes() {
+
+    const logadoAgora = !!(sessao && sessao.usuarioLogado) && !usuarioPendentePrimeiroAcesso;
+    const acabouDeLogar = logadoAgora && !jaEstavaLogado;
+    jaEstavaLogado = logadoAgora;
+
+    if (!logadoAgora) decorarLogin();
+    if (acabouDeLogar) {
+        animarProximaRender = true;
+        tocarTransicaoLogin(sessao.usuarioLogado.nome || sessao.usuarioLogado.usuario);
+    }
+    if (!animarProximaRender) return;
+    animarProximaRender = false;
+
+    const main = document.querySelector('main');
+    if (!main || main.children.length === 0) return;
+
+    // No login, a entrada espera a transição dos bichinhos terminar
+    const base = (acabouDeLogar && !reduzMovimento()) ? 1500 : 0;
+    const [cabecalho, vista] = main.children;
+    const itens = [cabecalho];
+    if (vista) {
+        const blocos = vista.matches('.space-y-8, .space-y-6, .space-y-4') ? [...vista.children] : [vista];
+        itens.push(...blocos);
+    }
+    itens.forEach((el, i) => {
+        el.style.setProperty('--i', Math.min(i, 7));
+        el.style.setProperty('--base', base + 'ms');
+        el.classList.add('entrada-seq');
+    });
+
+    if (tabsState.activeTab === 'dashboard') {
+        contarNumeros(base + 150);
+        // Recria os gráficos quando a transição acaba, para o público ver o desenho
+        if (base) setTimeout(() => { initDashboardCharts(); initDashboardEstoqueChart(); }, base);
+    }
+
+    // Estoque: linhas entram em cascata e as quantidades contam até o valor
+    if (tabsState.activeTab === 'estoque') {
+        escalonarLinhas('main tbody tr', base, 2, 0.45, 12);
+        contarNumeros(base + 250, 'main h3.text-xl, main tbody td.font-mono.font-black');
+    }
+    // DRE: as linhas de receitas e despesas entram em cascata e os valores contam
+    if (tabsState.activeTab === 'relatorios') {
+        escalonarLinhas('main .space-y-2 > div', base, 2, 0.4, 14);
+        contarNumeros(base + 250, 'main .font-mono.font-black, main .font-mono.text-base');
+    }
+}
+renderApp = function () {
+    _renderAppOriginal();
+    try { posRenderAnimacoes(); } catch (e) { console.warn('Animações:', e); }
+};
+
+// ---------- 8) Modais: saída animada ----------
+let temporizadorFechaModal = null;
+const _abrirModalOriginal = abrirModalContainer;
+abrirModalContainer = function (html) {
+    clearTimeout(temporizadorFechaModal);
+    document.getElementById('modal-container').classList.remove('fechando');
+    _abrirModalOriginal(html);
+};
+const _fecharModalOriginal = fecharModalContainer;
+fecharModalContainer = function () {
+    const c = document.getElementById('modal-container');
+    if (!c || !c.firstElementChild) { _fecharModalOriginal(); return; }
+    c.classList.add('fechando');
+    clearTimeout(temporizadorFechaModal);
+    temporizadorFechaModal = setTimeout(() => { c.classList.remove('fechando'); _fecharModalOriginal(); }, 160);
+};
+
+
+// ---------- 9) Cascata de linhas (Estoque e DRE) ----------
+function escalonarLinhas(seletor, base, inicio, passo, max) {
+    Array.from(document.querySelectorAll(seletor)).slice(0, max).forEach((el, idx) => {
+        el.style.setProperty('--i', (inicio + idx * passo).toFixed(2));
+        el.style.setProperty('--base', base + 'ms');
+        el.classList.add('entrada-seq');
+    });
+}
+
+// ---------- 10) Linha salva ganha destaque; linha excluída sai deslizando ----------
+let houveGravacao = false;
+let temporizadorGravacao = null;
+const chaveLinha = tr => tr.textContent.replace(/\s+/g, ' ').trim();
+
+const _salvarDadosOriginal = salvarDados;
+salvarDados = function (dados) {
+    houveGravacao = true;
+    clearTimeout(temporizadorGravacao);
+    temporizadorGravacao = setTimeout(() => { houveGravacao = false; }, 1500);
+    return _salvarDadosOriginal(dados);
+};
+
+const _renderMainOnlyOriginal = renderMainOnly;
+renderMainOnly = function () {
+    let antes = null;
+    try {
+        if (houveGravacao) antes = new Set(Array.from(document.querySelectorAll('main tbody tr')).map(chaveLinha));
+    } catch (e) {}
+    _renderMainOnlyOriginal();
+    try {
+        if (antes) {
+            houveGravacao = false;
+            document.querySelectorAll('main tbody tr').forEach(tr => {
+                if (tr.querySelector('td[colspan]')) return; // ignora "Nenhum registo..."
+                if (!antes.has(chaveLinha(tr))) tr.classList.add('linha-nova');
+            });
+        }
+    } catch (e) { console.warn('Destaque de linha:', e); }
+};
+
+const _excluirRegistroOriginal = excluirRegistro;
+excluirRegistro = function (col, id) {
+    let tr = null;
+    try {
+        const btn = document.querySelector(`main button[onclick*="excluirRegistro('${col}','${id}')"]`);
+        tr = btn && btn.closest('tr');
+    } catch (e) {}
+    if (!tr || reduzMovimento()) return _excluirRegistroOriginal(col, id);
+    if (!confirm('Deseja eliminar este registo?')) return;
+    tr.classList.add('linha-saindo');
+    setTimeout(() => {
+        const confirmOriginal = window.confirm;
+        window.confirm = () => true; // a pergunta já foi feita acima
+        try { _excluirRegistroOriginal(col, id); } finally { window.confirm = confirmOriginal; }
+    }, 260);
+};
+    </script>
+
+    <!-- Assistente (gato): script separado; se falhar, o sistema segue normal -->
+    <script>
+// =====================================================================
+// ASSISTENTE DO CONDOMÍNIO (gato 3D + balão + chat)
+// =====================================================================
+// Para ligar uma IA de verdade (Claude), publique a função 'assistente-ia' no
+// Supabase (arquivo assistente-ia-edge-function.ts) e troque para true:
+const IA_REMOTA_ATIVA = false;
+
+let aiHistorico = [];
+const aiNorm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const aiMoeda = v => 'R$ ' + (Number(v) || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const aiQtd = st => parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0)) || 0;
+
+function aiFin() {
+    let rec = 0, pag = 0; const porConta = {};
+    (db.financeiro || []).forEach(f => {
+        const v = parseFloat(f.valor) || 0;
+        if (f.tipo === 'Receber') rec += v; else if (f.tipo === 'Pagar') pag += v;
+        const pc = (db.plano_contas || []).find(p => p.id === f.planoContaId);
+        const k = pc ? pc.codigo + ' - ' + pc.nome : 'Sem conta vinculada';
+        porConta[k] = (porConta[k] || 0) + v;
+    });
+    return { rec, pag, saldo: rec - pag, porConta };
+}
+function aiEst() {
+    const crit = [], exc = []; let ok = 0;
+    (db.estoque || []).forEach(st => {
+        const a = aiQtd(st), mn = parseInt(st.minimo || 0), mx = parseInt(st.maximo || 0);
+        if (a <= mn) crit.push(st); else if (mx > 0 && a > mx) exc.push(st); else ok++;
+    });
+    return { crit, exc, ok, total: (db.estoque || []).length };
+}
+function aiBlocos() {
+    const c = {};
+    (db.moradores || []).forEach(m => { const b = String(m.bloco || '?').trim(); c[b] = (c[b] || 0) + 1; });
+    return c;
+}
+const aiLista = (arr, fn, max = 8) => arr.slice(0, max).map(fn).join('\n') + (arr.length > max ? `\n… e mais ${arr.length - max}.` : '');
+
+// Resumo SEM dados sensíveis (sem senhas, CPF, e-mails ou telefones) para a IA remota
+function aiContexto() {
+    const f = aiFin(), e = aiEst();
+    return {
+        condominio: (db.condominio || {}).nome,
+        financeiro: { receber: f.rec, pagar: f.pag, saldo: f.saldo, porConta: f.porConta },
+        estoque: (db.estoque || []).slice(0, 150).map(s => ({ item: s.item, atual: aiQtd(s), minimo: s.minimo, maximo: s.maximo })),
+        estoqueResumo: { total: e.total, criticos: e.crit.length, excedentes: e.exc.length },
+        moradoresPorBloco: aiBlocos(),
+        totalMoradores: (db.moradores || []).length,
+        fornecedores: (db.fornecedores || []).map(x => x.razaoSocial),
+        empregados: (db.empregados || []).map(x => ({ nome: x.nome, cargo: x.cargo })),
+        documentosPorPasta: (db.documentos || []).reduce((a, d) => (a[d.pasta || 'Geral'] = (a[d.pasta || 'Geral'] || 0) + 1, a), {})
+    };
+}
+
+function aiRelatorio() {
+    const f = aiFin(), e = aiEst(), n = (db.moradores || []).length;
+    return {
+        texto: `**Relatório executivo — ${(db.condominio || {}).nome || 'Condomínio'}**\n\n` +
+            `**Financeiro:** receitas ${aiMoeda(f.rec)}, despesas ${aiMoeda(f.pag)}, saldo **${aiMoeda(f.saldo)}**. ` +
+            (f.saldo >= 0 ? 'Caixa estável.' : 'Atenção ao fluxo de caixa.') + `\n\n` +
+            `**Estoque:** ${e.total} itens — ${e.ok} adequados, ${e.crit.length} críticos, ${e.exc.length} excedentes.\n\n` +
+            `**Moradores:** ${n} cadastrados, ${(db.fornecedores || []).length} fornecedores, ${(db.empregados || []).length} empregados, ${(db.documentos || []).length} documentos.`,
+        acao: { id: 'relatorio', rotulo: 'Abrir versão para imprimir / PDF' }
+    };
+}
+
+function aiResponderLocal(pergunta) {
+    const q = aiNorm(pergunta);
+    if (/relat|panorama|resumo geral|resumo executivo/.test(q)) return aiRelatorio();
+
+    if (/mes que vem|proximo mes|previsao|projecao|futuro|ano que vem/.test(q)) return null; // não há datas nos títulos para prever
+    if (/saldo|caixa|financ|receb|pagar|despesa|receita|dinheiro|dre/.test(q)) {
+        const f = aiFin();
+        const contas = Object.entries(f.porConta).filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]).slice(0, 5);
+        return {
+            texto: `**Resumo financeiro**\nReceitas: ${aiMoeda(f.rec)}\nDespesas: ${aiMoeda(f.pag)}\nSaldo: **${aiMoeda(f.saldo)}**` +
+                (contas.length ? `\n\n**Maiores contas:**\n` + contas.map(([k, v]) => `- ${k}: ${aiMoeda(v)}`).join('\n') : ''),
+            acao: { id: 'dre', rotulo: 'Abrir DRE e relatórios' }
+        };
+    }
+
+    if (/estoque|produto|item|repor|reposi|critic|exceden|falta|acabando/.test(q)) {
+        const e = aiEst();
+        if (!e.total) return { texto: 'Ainda não há itens cadastrados no estoque.' };
+        let t = `**Estoque:** ${e.total} itens — ${e.ok} adequados, **${e.crit.length} críticos** e ${e.exc.length} excedentes.`;
+        if (e.crit.length) t += `\n\n**Repor com urgência:**\n` + aiLista(e.crit, s => `- ${s.item}: ${aiQtd(s)} (mín. ${s.minimo || 0})`);
+        if (e.exc.length && /exceden|antigo|nao comprar/.test(q)) t += `\n\n**Não comprar (excedentes):**\n` + aiLista(e.exc, s => `- ${s.item}: ${aiQtd(s)} (máx. ${s.maximo})`);
+        return { texto: t, acao: { id: 'estoque', rotulo: 'Ver itens críticos' } };
+    }
+
+    if (/morador|bloco|apart|\bap\b|apto|unidade|pet|vaga|moram|mora\b/.test(q)) {
+        const bloco = (q.match(/bloco\s*([a-z0-9]+)/) || [])[1];
+        const ap = (q.match(/\b(?:ap|apto|apartamento|unidade)\.?\s*([a-z0-9]+)/) || [])[1];
+        const ruido = new Set(['morador', 'moradores', 'quem', 'qual', 'quais', 'quantos', 'quantas', 'tem', 'mora', 'moram', 'pet', 'pets', 'vaga', 'vagas', 'unidades', 'total', 'listar', 'lista', 'mostre', 'mostrar', 'sobre', 'dos', 'das', 'que', 'existe', 'cadastrados', 'condominio', 'por', 'bloco', 'blocos', 'tem', 'no', 'na', 'do', 'da']);
+        const tokens = q.replace(/bloco\s*[a-z0-9]+|\b(?:ap|apto|apartamento|unidade)\.?\s*[a-z0-9]+/g, ' ').split(/[^a-z0-9]+/).filter(x => x.length >= 3 && !ruido.has(x));
+        const todos = db.moradores || [];
+        if (bloco || ap || tokens.length) {
+            const r = todos.filter(m => (!bloco || aiNorm(m.bloco).trim() === bloco) && (!ap || aiNorm(m.apartamento).trim() === ap) && tokens.every(x => aiNorm(m.nome).includes(x)));
+            if (!r.length) return { texto: 'Não encontrei moradores com esse critério.' };
+            return { texto: `**${r.length} morador(es) encontrado(s):**\n` + aiLista(r, m => `- Bloco ${m.bloco} / Ap ${m.apartamento}: ${m.nome}${m.telefone ? ' — ' + m.telefone : ''}`, 6), acao: { id: 'moradores', rotulo: 'Abrir moradores' } };
+        }
+        const b = aiBlocos();
+        return { texto: `**${todos.length} moradores cadastrados.**\n` + Object.entries(b).map(([k, v]) => `- Bloco ${k}: ${v}`).join('\n') +
+            `\n\nCom pet: ${todos.filter(m => m.petNome).length} • Com vaga: ${todos.filter(m => m.vagaGaragem).length}`, acao: { id: 'moradores', rotulo: 'Abrir moradores' } };
+    }
+
+    if (/fornecedor/.test(q)) {
+        const l = db.fornecedores || [];
+        return { texto: l.length ? `**${l.length} fornecedores:**\n` + aiLista(l, x => `- ${x.razaoSocial} (${x.cnpj})`) : 'Nenhum fornecedor cadastrado.' };
+    }
+    if (/empregad|funcionari|porteir|zelador|faxin/.test(q)) {
+        const l = db.empregados || [];
+        return { texto: l.length ? `**${l.length} empregados:**\n` + aiLista(l, x => `- ${x.nome} — ${x.cargo}${x.empresa ? ' (' + x.empresa + ')' : ''}`) : 'Nenhum empregado cadastrado.' };
+    }
+    if (/document|pasta|ata\b|arquivo/.test(q)) {
+        const l = db.documentos || [];
+        const p = l.reduce((a, d) => (a[d.pasta || 'Geral'] = (a[d.pasta || 'Geral'] || 0) + 1, a), {});
+        return { texto: l.length ? `**${l.length} documentos:**\n` + Object.entries(p).map(([k, v]) => `- ${k}: ${v}`).join('\n') : 'Nenhum documento inserido ainda.' };
+    }
+    if (/sindic|conselh|diretiv/.test(q)) {
+        const l = db.conselheiros || [];
+        return { texto: l.length ? `**Corpo diretivo:**\n` + aiLista(l, x => `- ${x.nome} — ${x.cargo}`) : 'Nenhum conselheiro cadastrado.' };
+    }
+    if (/^(oi|ola|bom dia|boa tarde|boa noite|ajuda|o que voce faz|quem e voce)/.test(q)) {
+        return { texto: 'Miau! 🐱 Posso responder sobre **financeiro, estoque, moradores, fornecedores, empregados e documentos**, e gerar o **relatório executivo**. É só perguntar.' };
+    }
+    // Sem intenção reconhecida: tenta achar uma pessoa pelo nome
+    const parada = new Set(['quem','qual','como','onde','esta','sobre','para','por','que','uma','dos','das','com','mora','tem','contato','telefone','fala','falar']);
+    const nomes = q.split(/[^a-z0-9]+/).filter(x => x.length >= 3 && !parada.has(x));
+    if (nomes.length) {
+        const achados = [
+            ...(db.moradores || []).filter(m => nomes.every(x => aiNorm(m.nome).includes(x))).map(m => `- Morador: ${m.nome} — Bloco ${m.bloco} / Ap ${m.apartamento}${m.telefone ? ' — ' + m.telefone : ''}`),
+            ...(db.empregados || []).filter(m => nomes.every(x => aiNorm(m.nome).includes(x))).map(m => `- Empregado: ${m.nome} — ${m.cargo}${m.telefone ? ' — ' + m.telefone : ''}`)
+        ];
+        if (achados.length) return { texto: `**Encontrei ${achados.length} resultado(s):**\n` + achados.slice(0, 6).join('\n') };
+    }
+    return null;
+}
+
+const AI_ACOES = {
+    relatorio: () => gerarRelatorioInteligenteIA(),
+    dre: () => abrirModulo('relatorios'),
+    estoque: () => abrirModulo('estoque', 'critico'),
+    moradores: () => abrirModulo('moradores')
+};
+
+function aiFormatar(txt) {
+    return escapeHTML(String(txt)).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>').replace(/^- /gm, '• ').replace(/\n/g, '<br>');
+}
+function aiAdicionar(classe, html) {
+    const box = document.getElementById('ai-msgs'); if (!box) return null;
+    const d = document.createElement('div'); d.className = 'ai-msg ' + classe; d.innerHTML = html;
+    box.appendChild(d); box.scrollTop = box.scrollHeight; return d;
+}
+
+async function aiEnviar(texto) {
+    texto = (texto || '').trim(); if (!texto) return;
+    aiAdicionar('eu', escapeHTML(texto));
+    aiHistorico.push({ role: 'user', texto });
+    const dig = aiAdicionar('bot ai-digitando', '<span></span><span></span><span></span>');
+    await new Promise(r => setTimeout(r, 550));
+    let resp = null;
+    try { resp = aiResponderLocal(texto); } catch (e) { console.warn(e); }
+    if (!resp && IA_REMOTA_ATIVA) {
+        try {
+            const { data, error } = await supabaseClient.functions.invoke('assistente-ia', { body: { pergunta: texto, historico: aiHistorico.slice(-8), contexto: aiContexto() } });
+            if (error) throw error;
+            resp = { texto: data.resposta };
+        } catch (e) { resp = { texto: 'Não consegui falar com a IA agora. Tente de novo em instantes.' }; }
+    }
+    if (!resp) resp = { texto: 'Ainda não sei responder isso com os dados do sistema. Pergunte sobre **financeiro, estoque, moradores, fornecedores, empregados ou documentos**, ou peça o **relatório executivo**.' };
+    if (dig) dig.remove();
+    const m = aiAdicionar('bot', aiFormatar(resp.texto) + (resp.acao ? `<br><button class="ai-acao" data-acao="${resp.acao.id}">${escapeHTML(resp.acao.rotulo)}</button>` : ''));
+    aiHistorico.push({ role: 'assistant', texto: resp.texto });
+}
+
+function aiAlternar(abrir) {
+    const p = document.getElementById('ai-painel'); if (!p) return;
+    const abrirAgora = abrir === undefined ? !p.classList.contains('aberto') : abrir;
+    p.classList.toggle('aberto', abrirAgora);
+    const b = document.getElementById('ai-balao'); if (b && abrirAgora) b.classList.add('sumindo');
+    if (abrirAgora) setTimeout(() => { const i = document.getElementById('ai-input'); if (i) i.focus(); }, 120);
+}
+
+function aiCriarWidget() {
+    if (document.getElementById('assistente-ia')) return;
+    const atraso = document.getElementById('transicao-login') ? 2400 : 900;
+    const w = document.createElement('div');
+    w.id = 'assistente-ia'; w.className = 'no-print';
+    w.innerHTML = `
+        <div id="ai-balao" style="--atraso:${atraso}ms">Como posso ajudar?</div>
+        <section id="ai-painel" aria-label="Assistente">
+            <div class="ai-topo">${gatoSVG(40, '')}<div><strong>Assistente Guardiões</strong><span>Pergunte ou peça um relatório</span></div><button type="button" id="ai-fechar" aria-label="Fechar"><i class="fa-solid fa-xmark"></i></button></div>
+            <div id="ai-msgs"></div>
+            <div id="ai-chips"><button type="button">Resumo financeiro</button><button type="button">Estoque crítico</button><button type="button">Moradores por bloco</button><button type="button">Gerar relatório</button></div>
+            <form id="ai-form"><input id="ai-input" type="text" placeholder="Digite sua pergunta..." autocomplete="off"><button type="submit" aria-label="Enviar"><i class="fa-solid fa-paper-plane"></i></button></form>
+        </section>
+        <button type="button" id="ai-gato" aria-label="Abrir assistente">${gatoSVG(76, '')}</button>`;
+    document.body.appendChild(w);
+
+    document.getElementById('ai-gato').onclick = () => aiAlternar();
+    document.getElementById('ai-balao').onclick = () => aiAlternar(true);
+    document.getElementById('ai-fechar').onclick = () => aiAlternar(false);
+    document.getElementById('ai-form').onsubmit = e => { e.preventDefault(); const i = document.getElementById('ai-input'); const v = i.value; i.value = ''; aiEnviar(v); };
+    document.getElementById('ai-chips').onclick = e => { if (e.target.tagName === 'BUTTON') aiEnviar(e.target.textContent); };
+    document.getElementById('ai-msgs').onclick = e => {
+        const b = e.target.closest('[data-acao]');
+        if (b && AI_ACOES[b.dataset.acao]) { aiAlternar(false); AI_ACOES[b.dataset.acao](); }
+    };
+    aiAdicionar('bot', 'Miau! 🐱 Sou o assistente do condomínio. Posso responder sobre financeiro, estoque e moradores, e gerar relatórios. <strong>Como posso ajudar?</strong>');
+    setTimeout(() => { const b = document.getElementById('ai-balao'); if (b) b.classList.add('sumindo'); }, atraso + 9000);
+}
+
+function aiAtualizarWidget() {
+    const logado = !!(sessao && sessao.usuarioLogado) && !usuarioPendentePrimeiroAcesso;
+    if (logado) aiCriarWidget();
+    else { const w = document.getElementById('assistente-ia'); if (w) w.remove(); aiHistorico = []; }
+}
+document.addEventListener('keydown', e => { if (e.key === 'Escape') aiAlternar(false); });
+
+const _renderAppAntesAssistente = renderApp;
+renderApp = function () {
+    _renderAppAntesAssistente();
+    try { aiAtualizarWidget(); } catch (e) { console.warn('Assistente:', e); }
+};
+    </script>
+
+    <!-- =====================================================================
+         FUNÇÃO DO SUPABASE (assistente-ia) GUARDADA DENTRO DESTE ARQUIVO
+         Este bloco NÃO é executado pela página (type="text/plain"). Ela precisa
+         rodar no servidor do Supabase para proteger a chave da IA.
+         Para extrair o arquivo pronto: abra o sistema, aperte F12, vá em
+         "Console", digite  baixarFuncaoIA()  e tecle Enter.
+         ===================================================================== -->
+    <script type="text/plain" id="assistente-ia-edge-function">
+// =====================================================================
+// Função do Supabase: assistente-ia
+// Liga o gato do sistema a uma IA de verdade (Claude), sem expor a chave.
+//
+// COMO PUBLICAR
+// 1. Instale o Supabase CLI e faça login:   supabase login
+// 2. Crie a função:                         supabase functions new assistente-ia
+// 3. Substitua o conteúdo de supabase/functions/assistente-ia/index.ts por este arquivo
+// 4. Guarde a chave como segredo (NUNCA no HTML):
+//        supabase secrets set ANTHROPIC_API_KEY=sua_chave_aqui
+// 5. Publique:                              supabase functions deploy assistente-ia
+// 6. No index.html, troque  const IA_REMOTA_ATIVA = false;  por  true;
+//
+// A chave da API é criada em https://console.anthropic.com (o uso é cobrado à parte).
+// =====================================================================
+
+const MODELO = 'claude-sonnet-5-5'; // troque se quiser outro modelo
+
+const cors = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
+
+  try {
+    const { pergunta, historico = [], contexto = {} } = await req.json();
+    if (!pergunta || typeof pergunta !== 'string' || pergunta.length > 1000) {
+      return new Response(JSON.stringify({ erro: 'Pergunta inválida.' }), { status: 400, headers: { ...cors, 'Content-Type': 'application/json' } });
+    }
+
+    const system =
+      'Você é o assistente do sistema de gestão do condomínio Guardiões do Bravo. ' +
+      'Responda em português do Brasil, de forma curta e clara. ' +
+      'Use SOMENTE os dados do contexto abaixo; se a informação não estiver neles, diga que não tem esse dado. ' +
+      'Nunca invente valores. Para relatórios, organize em tópicos curtos.\n\n' +
+      'DADOS ATUAIS DO CONDOMÍNIO (JSON):\n' + JSON.stringify(contexto).slice(0, 60000);
+
+    const conversa = (Array.isArray(historico) ? historico : [])
+      .slice(-8)
+      .map((h: { role: string; texto: string }) => `${h.role === 'user' ? 'Usuário' : 'Assistente'}: ${String(h.texto).slice(0, 800)}`)
+      .join('\n');
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': Deno.env.get('ANTHROPIC_API_KEY') ?? '',
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: MODELO,
+        max_tokens: 1000,
+        system,
+        messages: [{ role: 'user', content: (conversa ? `Conversa recente:\n${conversa}\n\n` : '') + `Pergunta atual: ${pergunta}` }],
+      }),
+    });
+
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data?.error?.message ?? 'Falha ao consultar a IA');
+    const texto = (data.content ?? []).filter((b: { type: string }) => b.type === 'text').map((b: { text: string }) => b.text).join('\n');
+
+    return new Response(JSON.stringify({ resposta: texto }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+  } catch (e) {
+    return new Response(JSON.stringify({ erro: String(e) }), { status: 500, headers: { ...cors, 'Content-Type': 'application/json' } });
+  }
+});
+    </script>
+    <script>
+// Baixa o arquivo da função do Supabase guardado neste HTML (assistente-ia-edge-function.ts)
+function baixarFuncaoIA() {
+    const el = document.getElementById('assistente-ia-edge-function');
+    if (!el) { alert('Função não encontrada neste arquivo.'); return; }
+    const blob = new Blob([el.textContent.replace(/^\r?\n/, '').replace(/\s+$/, '') + '\n'], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href = url; a.download = 'assistente-ia-edge-function.ts';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+}
     </script>
 </body>
 </html>
