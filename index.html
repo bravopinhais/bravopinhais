@@ -88,6 +88,10 @@
         .glass-header { background: rgba(255,255,255,.92); border-bottom: 1px solid #e8edf4; }
         ::selection { background: #99f6e4; color: #134e4a; }
         @media (max-width: 768px) {
+            .pet-espia { top: -42px; }
+            .pet-espia.esq { left: 18px; }
+            .pet-espia.dir { right: 18px; }
+            .login-google-card { margin-top: 18px; }
             .sidebar-full { height: 100dvh; }
             table { font-size: 12px; }
             #status-nuvem { padding-inline: 8px; text-align: center; }
@@ -143,10 +147,13 @@ button:active:not(:disabled) { transform: scale(.97); }
 
 /* ---------- Login: cartão + cão e gato espiando ---------- */
 #app > .min-h-screen > .max-w-md { animation: modal-caixa-in .5s cubic-bezier(.2, .8, .2, 1) both; }
-.pet-espia { position: absolute; top: -55px; pointer-events: none; }
+.pet-espia { position: absolute; top: -48px; z-index: 30; pointer-events: none; display: block; line-height: 0; }
+        .pet-login-card, .login-google-card { overflow: visible !important; }
+        .pet-login-emoji { display: block; font-size: 52px; line-height: 1; filter: drop-shadow(0 5px 5px rgba(0,0,0,.25)); animation: espiar 3.2s ease-in-out infinite; }
+        .pet-login-gato .pet-login-emoji { animation-delay: -1.4s; }
 .pet-espia svg { display: block; animation: espiar 3.2s ease-in-out infinite; transform-origin: 50% 100%; }
-.pet-espia.dir { right: 28px; }
-.pet-espia.esq { left: 28px; }
+.pet-espia.dir { right: 24px; }
+.pet-espia.esq { left: 24px; }
 .pet-espia.esq svg { animation-delay: -1.4s; }
 @keyframes espiar {
     0%, 100% { transform: translateY(0) rotate(0); }
@@ -352,7 +359,7 @@ button:active:not(:disabled) { transform: scale(.97); }
             },
             conselheiros: [],
             usuarios: [
-                { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'admin@guardioes.com', cargo: 'Administrador', loja: 'Guardiões do Bravo', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Admin@12345' },
+                { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email: 'alannrreis@gmail.com', cargo: 'Administrador', loja: 'Guardiões do Bravo', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false, senhaHash: 'Admin@12345' },
                 { id: 'usr_sheylla', usuario: 'sheylla', nome: 'Sheylla', email: 'sheylla@guardioes.com', cargo: 'Conselho Fiscal', loja: 'Guardiões do Bravo', perfil: 'Operador', status: 'Ativo', primeiroAcesso: true, senhaHash: '123456' }
             ],
             plano_contas: [
@@ -1389,28 +1396,24 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
         }
 
         function renderTelaLogin() {
-            const savedUser = localStorage.getItem('guardioes_lembrar_user') || '';
-            const isLembrarChecked = savedUser ? 'checked' : '';
-            const authGoogleAtiva = typeof AUTH_SUPABASE !== 'undefined' && AUTH_SUPABASE === true;
-            const botaoGoogle = authGoogleAtiva ? `
-                <div class="relative flex items-center py-1" aria-hidden="true">
-                    <div class="flex-grow border-t border-slate-200"></div>
-                    <span class="mx-3 text-[10px] font-bold uppercase tracking-widest text-slate-400">ou entre com</span>
-                    <div class="flex-grow border-t border-slate-200"></div>
-                </div>
-                <button id="btn-google-login" type="button" onclick="entrarComGoogle()" class="w-full inline-flex items-center justify-center gap-3 py-3 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-2xl shadow-sm text-sm" aria-label="Entrar com Google">
-                    <svg width="19" height="19" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.76 7.18l7.73 6C44.42 37.99 46.98 31.8 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59a14.4 14.4 0 0 1 0-9.18l-7.98-6.19a24 24 0 0 0 0 21.56l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.8l-7.73-6c-2.15 1.45-4.9 2.3-8.18 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
-                    Continuar com Google
-                </button>
-                <p class="text-[10px] leading-4 text-slate-500 text-center">Use a conta Google vinculada ao e-mail cadastrado no sistema.</p>
-            ` : '';
+            // Login exclusivo por Google: não renderiza campos de e-mail/senha nem ações alternativas.
+            // Os bichinhos são renderizados diretamente no cartão para não depender de um pós-render.
+            let decoracaoLogin = '';
+            try {
+                const cao = typeof caoSVG === 'function' ? caoSVG(64, '') : '<span class="pet-login-emoji">🐶</span>';
+                const gato = typeof gatoSVG === 'function' ? gatoSVG(64, '') : '<span class="pet-login-emoji">🐱</span>';
+                decoracaoLogin = `<div class="pet-espia esq pet-login-cao" aria-hidden="true">${cao}</div><div class="pet-espia dir pet-login-gato" aria-hidden="true">${gato}</div>`;
+            } catch (e) {
+                decoracaoLogin = '<div class="pet-espia esq pet-login-cao" aria-hidden="true"><span class="pet-login-emoji">🐶</span></div><div class="pet-espia dir pet-login-gato" aria-hidden="true"><span class="pet-login-emoji">🐱</span></div>';
+            }
 
             return `
                 <div class="min-h-screen flex items-center justify-center bg-slate-950 p-4 w-full relative overflow-hidden">
                     <div class="absolute -top-32 -left-32 w-96 h-96 bg-teal-500/10 rounded-full blur-3xl pointer-events-none"></div>
                     <div class="absolute -bottom-32 -right-32 w-96 h-96 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-                    <div class="bg-white/95 backdrop-blur-xl w-full max-w-md p-8 rounded-3xl shadow-2xl border border-white/20 space-y-6 relative z-10">
+                    <div class="login-google-card bg-white/95 backdrop-blur-xl w-full max-w-md p-8 rounded-3xl shadow-2xl border border-white/20 space-y-6 relative z-10">
+                        ${decoracaoLogin}
                         <div class="text-center space-y-2">
                             <div class="w-16 h-16 bg-gradient-to-tr from-teal-600 to-emerald-500 rounded-2xl flex items-center justify-center text-white text-3xl font-extrabold mx-auto shadow-lg shadow-teal-500/30">
                                 <i class="fa-solid fa-shield-halved"></i>
@@ -1418,32 +1421,13 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                             <h2 class="text-2xl font-black text-slate-900 tracking-tight">Guardiões do Bravo</h2>
                             <p class="text-[11px] text-teal-600 font-extrabold uppercase tracking-widest">Gestão Condominial em Nuvem</p>
                         </div>
-                        <form onsubmit="realizarLogin(event)" autocomplete="on" class="space-y-4">
-                            <div>
-                                <label class="block text-[11px] font-bold uppercase text-slate-500 tracking-wider mb-1">Utilizador ou E-mail</label>
-                                <input type="text" id="login_user" name="username" autocomplete="username" required value="${escapeHTML(savedUser)}" class="w-full p-3 border border-slate-200 rounded-2xl text-sm font-semibold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all outline-none" placeholder="admin ou admin@guardioes.com">
-                            </div>
-                            <div>
-                                <label class="block text-[11px] font-bold uppercase text-slate-500 tracking-wider mb-1">Palavra-passe</label>
-                                <div class="relative">
-                                    <input type="password" id="login_pass" name="password" autocomplete="current-password" required class="w-full p-3 pr-10 border border-slate-200 rounded-2xl text-sm font-semibold bg-slate-50/50 focus:bg-white focus:ring-2 focus:ring-teal-500 focus:border-teal-500 transition-all outline-none">
-                                    <button type="button" onclick="toggleMostrarSenha()" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
-                                        <i id="icon-eye" class="fa-solid fa-eye text-sm"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="flex items-center justify-between text-xs pt-1">
-                                <label class="flex items-center gap-2 cursor-pointer select-none">
-                                    <input type="checkbox" id="login_lembrar" ${isLembrarChecked} class="rounded border-slate-300 text-teal-600 focus:ring-teal-500 w-4 h-4">
-                                    <span class="font-semibold text-slate-600">Lembrar credenciais</span>
-                                </label>
-                            </div>
-                            <button type="submit" class="w-full py-3.5 bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-bold rounded-2xl shadow-lg shadow-teal-600/25 text-sm transition-all transform hover:-translate-y-0.5">Entrar no Sistema</button>
-                            ${botaoGoogle}
-                            <div class="flex justify-center pt-1">
-                                <button type="button" onclick="abrirRecuperacaoSenha()" class="text-sm font-bold text-teal-700 hover:text-teal-900 underline underline-offset-4">Esqueci minha senha</button>
-                            </div>
-                        </form>
+                        <div class="space-y-3 pt-1">
+                            <button id="btn-google-login" type="button" onclick="entrarComGoogle()" class="w-full inline-flex items-center justify-center gap-3 py-3.5 px-4 border border-slate-300 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-2xl shadow-sm text-sm" aria-label="Continuar com Google">
+                                <svg width="20" height="20" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.76 7.18l7.73 6C44.42 37.99 46.98 31.8 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59a14.4 14.4 0 0 1 0-9.18l-7.98-6.19a24 24 0 0 0 0 21.56l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.8l-7.73-6c-2.15 1.45-4.9 2.3-8.18 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                                <span>Continuar com Google</span>
+                            </button>
+                            <p class="text-[11px] leading-5 text-slate-500 text-center">Entre com a conta Google autorizada para acessar o condomínio.</p>
+                        </div>
                     </div>
                 </div>
             `;
@@ -4587,7 +4571,7 @@ renderApp = function () {
 // Leia o guia embutido no fim deste arquivo (baixarGuiaSeguranca()) ANTES de ativar.
 // =====================================================================
 const AUTH_SUPABASE = true; // Login seguro com Supabase Auth habilitado para o fluxo Google/e-mail.
-const EMAIL_ADMIN_INICIAL = ''; // Opcional: e-mail Google autorizado a assumir o perfil usr_admin, se necessário.
+const EMAIL_ADMIN_INICIAL = 'alannrreis@gmail.com'; // E-mail Google autorizado para o perfil administrador inicial.
 const URL_RETORNO_GOOGLE = 'https://guardioesdobravos.vercel.app/';
 
 let canalRealtimeAuth = null;
@@ -4705,15 +4689,32 @@ async function entrarComUsuarioAutenticado(authUser, restaurada = false) {
     };
     if (!(await carregarDadosAutenticado())) { await negar('Não foi possível carregar os dados do condomínio.'); return; }
 
-    const email = (authUser.email || '').toLowerCase();
+    const email = (authUser.email || '').trim().toLowerCase();
     if (!db.usuarios) db.usuarios = [];
-    let perfil = db.usuarios.find(u => (u.email || '').toLowerCase() === email);
+    let perfil = db.usuarios.find(u => (u.email || '').trim().toLowerCase() === email);
     let mudou = false;
-    if (!perfil && EMAIL_ADMIN_INICIAL && email === EMAIL_ADMIN_INICIAL.trim().toLowerCase()) {
-        perfil = db.usuarios.find(u => u.id === 'usr_admin');
-        if (perfil) perfil.email = email;
-        else { perfil = { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email, cargo: 'Administrador', loja: 'Guardiões do Bravo', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false }; db.usuarios.push(perfil); }
-        mudou = true;
+    const ehAdminInicial = !!EMAIL_ADMIN_INICIAL && email === EMAIL_ADMIN_INICIAL.trim().toLowerCase();
+
+    // A conta definida pelo proprietário é vinculada ao perfil de administrador.
+    // Se o e-mail já estiver cadastrado como operador, promovemos esse perfil existente
+    // sem criar uma segunda conta duplicada. Nunca reativamos um perfil inativo automaticamente.
+    if (ehAdminInicial) {
+        if (!perfil) {
+            perfil = db.usuarios.find(u => u.id === 'usr_admin');
+            if (perfil) {
+                if ((perfil.email || '').trim().toLowerCase() !== email) { perfil.email = email; mudou = true; }
+            } else {
+                perfil = { id: 'usr_admin', usuario: 'admin', nome: 'Administrador Principal', email, cargo: 'Administrador', loja: 'Guardiões do Bravo', perfil: 'Admin', status: 'Ativo', primeiroAcesso: false };
+                db.usuarios.push(perfil);
+                mudou = true;
+            }
+        }
+        if (perfil) {
+            if (perfil.perfil !== 'Admin') { perfil.perfil = 'Admin'; mudou = true; }
+            if (perfil.cargo !== 'Administrador') { perfil.cargo = 'Administrador'; mudou = true; }
+            if (!perfil.usuario) { perfil.usuario = 'admin'; mudou = true; }
+            if (!perfil.nome) { perfil.nome = 'Administrador Principal'; mudou = true; }
+        }
     }
     if (!perfil) { await negar('O seu e-mail não está cadastrado no sistema. Peça ao administrador para criar o seu perfil.'); return; }
     if (perfil.status === 'Inativo') { await negar('Utilizador inativo.'); return; }
