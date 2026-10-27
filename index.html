@@ -3304,7 +3304,7 @@ excluirRegistro = function (col, id) {
 // =====================================================================
 // Para ligar uma IA de verdade (Claude), publique a função 'assistente-ia' no
 // Supabase (arquivo assistente-ia-edge-function.ts) e troque para true:
-const IA_REMOTA_ATIVA = false;
+const IA_REMOTA_ATIVA = true;
 
 let aiHistorico = [];
 const aiNorm = s => String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
