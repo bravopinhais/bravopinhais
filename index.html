@@ -2109,6 +2109,207 @@
                     transition: none !important;
                 }
             }
+
+            /* ===== Responsividade reforçada: desktop, notebook, tablet e celular ===== */
+            html {
+                -webkit-text-size-adjust: 100%;
+                text-size-adjust: 100%;
+            }
+
+            body {
+                width: 100%;
+                max-width: 100%;
+                overflow-x: hidden;
+            }
+
+            #app {
+                width: 100%;
+                min-width: 0;
+                max-width: 100%;
+            }
+
+            #app main {
+                min-width: 0;
+                width: 100%;
+                max-width: 100%;
+                flex: 1 1 auto;
+            }
+
+            #app main > *, #app main .card-modern, #app main .grid {
+                min-width: 0;
+                max-width: 100%;
+            }
+
+            #app .overflow-x-auto, #app .overflow-auto {
+                max-width: 100%;
+                overscroll-behavior-x: contain;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            #app main img, #app main canvas, #app main video {
+                max-width: 100%;
+            }
+
+            #app main input, #app main select, #app main textarea {
+                max-width: 100%;
+            }
+
+            /* A arte do computador preenche sempre a viewport sem distorcer a proporção.
+   O botão Google real é reposicionado matematicamente sobre o botão da imagem. */
+            .login-composite-page {
+                position: fixed !important;
+                inset: 0 !important;
+                width: 100% !important;
+                max-width: 100% !important;
+                height: 100vh !important;
+                height: 100svh !important;
+                height: 100dvh !important;
+                min-height: 0 !important;
+                padding: 0 !important;
+                margin: 0 !important;
+                overflow: hidden !important;
+                box-sizing: border-box !important;
+            }
+
+            .login-composite-background {
+                object-fit: cover !important;
+                object-position: 50% 50% !important;
+                width: 100% !important;
+                height: 100% !important;
+                max-width: none !important;
+                user-select: none;
+                -webkit-user-drag: none;
+            }
+
+            .login-composite-google-button {
+                min-width: 44px !important;
+                min-height: 44px !important;
+                max-width: calc(100vw - 8px);
+                box-sizing: border-box !important;
+                touch-action: manipulation;
+                -webkit-tap-highlight-color: transparent;
+                user-select: none;
+            }
+
+            .login-composite-google-button:focus-visible {
+                outline: 3px solid #72baff !important;
+                outline-offset: 2px !important;
+                background: rgba(255,255,255,.10) !important;
+            }
+
+            @media (min-width: 1600px) {
+                .login-composite-background {
+                    object-position: center center !important;
+                }
+            }
+
+            @media (max-width: 1024px) {
+                #app main {
+                    padding: clamp(12px, 2.2vw, 22px) !important;
+                }
+
+                #app main .grid.grid-cols-4 {
+                    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                }
+
+                #app main .grid.grid-cols-3 {
+                    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                }
+            }
+
+            @media (max-width: 768px) {
+                #app main {
+                    padding: 14px !important;
+                }
+
+                #app main .overflow-x-auto {
+                    width: 100%;
+                }
+
+                #app main table {
+                    min-width: 560px;
+                }
+
+                #app main .grid.grid-cols-4, #app main .grid.grid-cols-3 {
+                    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+                }
+
+                #app main input, #app main select, #app main textarea {
+                    font-size: 16px !important;
+                }
+
+                #sidebar-menu {
+                    max-width: 88vw;
+                }
+
+                #ai-painel {
+                    max-height: calc(100dvh - 100px);
+                }
+            }
+
+            @media (max-width: 520px) {
+                #app main {
+                    padding: 10px !important;
+                }
+
+                #app main .grid.grid-cols-4, #app main .grid.grid-cols-3, #app main .grid.grid-cols-2 {
+                    grid-template-columns: minmax(0, 1fr) !important;
+                }
+
+                #app main table {
+                    min-width: 520px;
+                }
+
+                #app main .card-modern {
+                    border-radius: 14px !important;
+                }
+
+                #app main h1 {
+                    overflow-wrap: anywhere;
+                }
+
+                #ai-painel {
+                    width: calc(100vw - 20px) !important;
+                    right: 0 !important;
+                }
+
+                .login-composite-google-button {
+                    border-radius: 10px !important;
+                }
+            }
+
+            @media (max-width: 360px) {
+                #app main {
+                    padding: 8px !important;
+                }
+
+                #app main table {
+                    min-width: 500px;
+                }
+
+                #sidebar-menu {
+                    width: min(88vw, 290px) !important;
+                }
+            }
+
+            @media (max-height: 520px) and (orientation: landscape) {
+                .login-composite-page {
+                    height: 100vh !important;
+                    height: 100dvh !important;
+                }
+
+                #app main {
+                    padding-top: 10px !important;
+                    padding-bottom: 10px !important;
+                }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .login-composite-background {
+                    animation: none !important;
+                    transition: none !important;
+                }
+            }
         </style>
     </head>
     <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
@@ -3720,25 +3921,73 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     return;
 
                 const rect = page.getBoundingClientRect();
-                const scale = Math.max(rect.width / img.naturalWidth, rect.height / img.naturalHeight);
+                const vw = rect.width || window.innerWidth;
+                const vh = rect.height || window.innerHeight;
+                if (!vw || !vh)
+                    return;
+
+                // object-fit:cover e object-position:center: reproduz o recorte real da arte.
+                const scale = Math.max(vw / img.naturalWidth, vh / img.naturalHeight);
                 const renderW = img.naturalWidth * scale;
                 const renderH = img.naturalHeight * scale;
-                const offsetX = (rect.width - renderW) / 2;
-                const offsetY = (rect.height - renderH) / 2;
+                const offsetX = (vw - renderW) / 2;
+                const offsetY = (vh - renderH) / 2;
 
-                // Caixa real clicável sobre o botão Google desenhado na arte do notebook (1536x1024).
-                // A imagem usa object-fit:cover; o cálculo abaixo acompanha recortes em qualquer proporção.
+                // Caixa do botão impresso na arte original (1536 x 1024).
                 const bx = 550
                   , by = 525
                   , bw = 433
                   , bh = 76;
-                btn.style.left = `${offsetX + bx * scale}px`;
-                btn.style.top = `${offsetY + by * scale}px`;
-                btn.style.width = `${bw * scale}px`;
-                btn.style.height = `${bh * scale}px`;
+                const naturalLeft = offsetX + bx * scale;
+                const naturalTop = offsetY + by * scale;
+                const naturalWidth = bw * scale;
+                const naturalHeight = bh * scale;
+
+                // Mantém uma área de toque acessível em telas curtas/pequenas, centrada no botão visual.
+                const targetWidth = Math.max(naturalWidth, Math.min(144, vw * 0.85));
+                const targetHeight = Math.max(naturalHeight, 44);
+                const left = naturalLeft - (targetWidth - naturalWidth) / 2;
+                const top = naturalTop - (targetHeight - naturalHeight) / 2;
+
+                btn.style.left = `${left}px`;
+                btn.style.top = `${top}px`;
+                btn.style.width = `${targetWidth}px`;
+                btn.style.height = `${targetHeight}px`;
             }
             ;
-            window.addEventListener('resize', () => requestAnimationFrame( () => window.posicionarBotaoLoginGoogle()));
+
+            let loginPositionFrame = 0;
+            function agendarPosicaoBotaoLoginGoogle() {
+                if (loginPositionFrame)
+                    cancelAnimationFrame(loginPositionFrame);
+                loginPositionFrame = requestAnimationFrame( () => {
+                    loginPositionFrame = 0;
+                    window.posicionarBotaoLoginGoogle();
+                }
+                );
+            }
+            window.addEventListener('resize', agendarPosicaoBotaoLoginGoogle, {
+                passive: true
+            });
+            window.addEventListener('orientationchange', () => setTimeout(agendarPosicaoBotaoLoginGoogle, 80), {
+                passive: true
+            });
+            if (window.visualViewport) {
+                window.visualViewport.addEventListener('resize', agendarPosicaoBotaoLoginGoogle, {
+                    passive: true
+                });
+            }
+            if ('ResizeObserver'in window) {
+                const loginResizeObserver = new ResizeObserver(agendarPosicaoBotaoLoginGoogle);
+                window.addEventListener('load', () => {
+                    const page = document.querySelector('.login-composite-page');
+                    if (page)
+                        loginResizeObserver.observe(page);
+                }
+                , {
+                    once: true
+                });
+            }
 
             function renderTelaPrimeiroAcesso() {
                 return `
