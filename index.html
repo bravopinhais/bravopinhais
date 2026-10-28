@@ -4055,8 +4055,6 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     tabsState.openTabs.push(tabsState.activeTab);
                 if (!tabsState.openTabs.length)
                     tabsState.openTabs = [tabsState.activeTab];
-                const msgBoasVindas = `Seja bem-vinda, ${escapeHTML(user.nome || user.usuario)} - ${escapeHTML(user.loja || 'Loja')} - ${escapeHTML(user.cargo || user.perfil || 'Cargo')}`;
-
                 container.innerHTML = `
                 <div class="flex-1 flex flex-col md:flex-row min-h-screen w-full">
                     <div id="sidebar-backdrop" onclick="fecharMenuMobile()" class="fixed inset-0 bg-slate-950/70 z-40 hidden md:hidden backdrop-blur-md"></div>
@@ -4145,14 +4143,6 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                     ${tabsState.openTabs.length > 1 ? `<button onclick="fecharAba(event, '${tabId}')" class="hover:text-rose-600 ml-1 p-0.5 rounded-full hover:bg-slate-200 transition-all"><i class="fa-solid fa-xmark text-xs"></i></button>` : ''}
                                 </div>
                             `).join('')}
-                        </div>
-
-                        <div class="bg-gradient-to-r from-teal-800 to-teal-900 text-white px-5 py-3 text-xs font-bold flex items-center justify-between shadow-sm no-print">
-                            <div class="flex items-center gap-2.5">
-                                <span class="w-2 h-2 rounded-full bg-teal-400 animate-ping"></span>
-                                <span class="font-semibold text-slate-100">${msgBoasVindas}</span>
-                            </div>
-                            <span class="text-[10px] bg-teal-950/60 border border-teal-700/50 px-3 py-1 rounded-full text-teal-200 font-mono hidden sm:inline-block">Sessão Segura</span>
                         </div>
 
                         <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-slate-100/90 w-full">
@@ -5953,6 +5943,31 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     visualizarArquivo(st.fotoCompactadaGzip, st.fotoNome || 'produto.jpg');
             }
 
+            // Helpers de metadados do estoque: compatíveis com registros antigos.
+            function dataLocalHojeEstoque() {
+                const d = new Date();
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+            }
+            function dataEstoqueParaInput(valor) {
+                if (!valor)
+                    return '';
+                const v = String(valor).trim();
+                if (/^\d{4}-\d{2}-\d{2}$/.test(v))
+                    return v;
+                const br = v.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+                return br ? `${br[3]}-${br[2]}-${br[1]}` : '';
+            }
+            function dataEstoqueParaExibicao(valor) {
+                if (!valor)
+                    return '-';
+                const v = String(valor).trim();
+                if (/^\d{4}-\d{2}-\d{2}$/.test(v)) {
+                    const [ano,mes,dia] = v.split('-');
+                    return `${dia}/${mes}/${ano}`;
+                }
+                return v;
+            }
+
             function renderEstoqueView() {
                 let list = db.estoque || [];
 
@@ -6043,12 +6058,16 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     </div>
 
                     <div class="bg-white rounded-3xl card-modern overflow-x-auto w-full shadow-sm">
-                        <table class="w-full text-left text-xs min-w-[800px]">
+                        <table class="w-full text-left text-xs min-w-[1250px]">
                             <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
                                 <tr>
                                     <th class="p-4 w-16 text-center">Foto</th>
                                     <th class="p-4">Etiqueta / Código</th>
                                     <th class="p-4">Item / Descrição</th>
+                                    <th class="p-4">Marca</th>
+                                    <th class="p-4">Linha</th>
+                                    <th class="p-4">Fabricante</th>
+                                    <th class="p-4 whitespace-nowrap">Data de cadastro</th>
                                     <th class="p-4">Qtd Atual</th>
                                     <th class="p-4">Mín / Máx</th>
                                     <th class="p-4">Alerta Inteligente</th>
@@ -6056,10 +6075,14 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
-                                ${listFiltrada.length === 0 ? `<tr><td colspan="7" class="p-6 text-center text-slate-400">Nenhum item encontrado.</td></tr>` : listFiltrada.map(st => {
+                                ${listFiltrada.length === 0 ? `<tr><td colspan="11" class="p-6 text-center text-slate-400">Nenhum item encontrado.</td></tr>` : listFiltrada.map(st => {
                     const atual = parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
                     const minimo = parseInt(st.minimo || 0);
                     const maximo = parseInt(st.maximo || 0);
+                    const marcaEstoque = st.marca || st.brand || '';
+                    const linhaEstoque = st.linha || st.line || '';
+                    const fabricanteEstoque = st.fabricante || st.manufacturer || '';
+                    const dataCadastroEstoque = st.dataCadastro || st.data_cadastro || st.dataRegistro || st.createdAt || '';
 
                     let badgeAlerta = `<span class="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full font-extrabold inline-flex items-center gap-1.5"><i class="fa-solid fa-check"></i> Normal</span>`;
                     if (atual <= minimo) {
@@ -6078,7 +6101,11 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                                 ` : `<div class="w-10 h-10 bg-slate-100 rounded-2xl flex items-center justify-center text-slate-400 text-xs"><i class="fa-solid fa-image"></i></div>`}
                                             </td>
                                             <td class="p-4 font-mono font-bold text-teal-700">${escapeHTML(st.etiqueta || '-')}</td>
-                                            <td class="p-4 font-bold text-slate-900">${escapeHTML(st.item)}</td>
+                                            <td class="p-4 font-bold text-slate-900">${escapeHTML(st.item || '-')}</td>
+                                            <td class="p-4 text-slate-700">${escapeHTML(marcaEstoque || '-')}</td>
+                                            <td class="p-4 text-slate-700">${escapeHTML(linhaEstoque || '-')}</td>
+                                            <td class="p-4 text-slate-700">${escapeHTML(fabricanteEstoque || '-')}</td>
+                                            <td class="p-4 whitespace-nowrap text-slate-500">${escapeHTML(dataEstoqueParaExibicao(dataCadastroEstoque))}</td>
                                             <td class="p-4 font-mono font-black ${atual <= minimo ? 'text-rose-600 text-sm' : 'text-slate-700'}">${atual}</td>
                                             <td class="p-4 font-mono text-[11px] text-slate-400 font-medium">Mín: ${minimo} / Máx: ${maximo}</td>
                                             <td class="p-4">${badgeAlerta}</td>
@@ -6165,6 +6192,10 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 const item = id ? (db.estoque || []).find(x => x.id === id) : {
                     id: '',
                     item: '',
+                    marca: '',
+                    linha: '',
+                    fabricante: '',
+                    dataCadastro: dataLocalHojeEstoque(),
                     quantidade: 1,
                     minimo: 0,
                     maximo: 10,
@@ -6190,7 +6221,13 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                     <button type="button" onclick="iniciarScannerCamera()" class="px-4 py-3 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm transition-all flex items-center gap-1.5 whitespace-nowrap"><i class="fa-solid fa-barcode"></i> Escanear</button>
                                 </div>
                             </div>
-                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Item / Descrição</label><input type="text" id="m_est_item" required value="${escapeHTML(item.item || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
+                            <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Item / Descrição</label><input type="text" id="m_est_item" required value="${escapeHTML(item.item || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50" placeholder="Nome do produto ou material"></div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Marca</label><input type="text" id="m_est_marca" value="${escapeHTML(item.marca || item.brand || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50" placeholder="Marca"></div>
+                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Linha</label><input type="text" id="m_est_linha" value="${escapeHTML(item.linha || item.line || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50" placeholder="Linha / categoria comercial"></div>
+                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Fabricante</label><input type="text" id="m_est_fabricante" value="${escapeHTML(item.fabricante || item.manufacturer || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50" placeholder="Fabricante"></div>
+                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Data de cadastro</label><input type="date" id="m_est_data_cadastro" value="${escapeHTML(dataEstoqueParaInput(item.dataCadastro || item.data_cadastro || item.dataRegistro || item.createdAt || ''))}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
+                            </div>
                             <div class="grid grid-cols-2 gap-2">
                                 <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Qtd Atual</label><input type="number" id="m_est_qtd" required value="${item.quantidade !== undefined ? item.quantidade : (item.qtd || 1)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
                                 <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Mínimo</label><input type="number" id="m_est_min" value="${item.minimo !== undefined ? item.minimo : 0}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
@@ -6311,12 +6348,18 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 const itemExistente = isEdit ? db.estoque.find(x => x.id === id) : null;
 
                 const obj = {
+                    // Mantém campos adicionais já existentes no registro para evitar perda de dados ao editar.
+                    ...(itemExistente || {}),
                     id: isEdit ? id : 'est_' + Date.now(),
-                    item: document.getElementById('m_est_item').value,
-                    quantidade: parseInt(document.getElementById('m_est_qtd').value) || 0,
-                    minimo: parseInt(document.getElementById('m_est_min').value) || 0,
-                    maximo: parseInt(document.getElementById('m_est_max').value) || 0,
-                    etiqueta: document.getElementById('m_est_etiq').value,
+                    item: document.getElementById('m_est_item').value.trim(),
+                    marca: document.getElementById('m_est_marca').value.trim(),
+                    linha: document.getElementById('m_est_linha').value.trim(),
+                    fabricante: document.getElementById('m_est_fabricante').value.trim(),
+                    dataCadastro: document.getElementById('m_est_data_cadastro').value || '',
+                    quantidade: parseInt(document.getElementById('m_est_qtd').value, 10) || 0,
+                    minimo: parseInt(document.getElementById('m_est_min').value, 10) || 0,
+                    maximo: parseInt(document.getElementById('m_est_max').value, 10) || 0,
+                    etiqueta: document.getElementById('m_est_etiq').value.trim(),
                     fotoNome: tempEstoqueFotoNome || (itemExistente ? itemExistente.fotoNome : ''),
                     fotoCompactadaGzip: tempEstoqueFotoGzip || (itemExistente ? itemExistente.fotoCompactadaGzip : '')
                 };
