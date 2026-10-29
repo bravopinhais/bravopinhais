@@ -613,9 +613,14 @@
             }
 
             #ai-flutua {
-                position: relative;
+                position: fixed;
+                right: 16px;
+                bottom: 16px;
+                z-index: 81;
                 display: block;
-                animation: ai-flutua 3.2s ease-in-out infinite;
+                animation: none;
+                touch-action: none;
+                user-select: none;
             }
 
             #ai-gato {
@@ -625,9 +630,14 @@
                 padding: 0;
                 border: 0;
                 background: transparent;
-                cursor: pointer;
+                cursor: grab;
+                touch-action: none;
                 filter: drop-shadow(0 8px 10px rgba(2,6,23,.35));
                 transition: transform .2s;
+            }
+
+            #ai-gato:active {
+                cursor: grabbing;
             }
 
             #ai-gato svg {
@@ -875,6 +885,11 @@
 
             @media (max-width: 640px) {
                 #assistente-ia {
+                    right: 10px;
+                    bottom: 10px;
+                }
+
+                #ai-flutua {
                     right: 10px;
                     bottom: 10px;
                 }
@@ -2341,6 +2356,10 @@
                 nome: ''
             };
             let filtroAtivoEstoque = 'todos';
+            let filtroStatusEstoque = 'ativos';
+            // ativos por padrão; inativos permanecem preservados
+            let filtroSetorEstoque = 'todos';
+            // filtro de setor para relatórios e listagem
             let usuarioPendentePrimeiroAcesso = null;
             let chartInstanceReceitaDespesa = null;
             let chartInstanceOcupacao = null;
@@ -4278,7 +4297,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
             // =========================================================================
             function gerarRelatorioInteligenteIA() {
                 const totalMoradores = (db.moradores || []).length;
-                const estoqueList = db.estoque || [];
+                const estoqueList = (db.estoque || []).filter(st => !estoqueItemEstaInativo(st));
                 const financeiroList = db.financeiro || [];
 
                 let totalReceber = 0;
@@ -4697,7 +4716,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 if (!ctx)
                     return;
 
-                const list = db.estoque || [];
+                const list = (db.estoque || []).filter(st => !estoqueItemEstaInativo(st));
                 let qtdAdequado = 0;
                 let qtdCritico = 0;
                 let qtdExcedente = 0;
@@ -5968,14 +5987,44 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 return v;
             }
 
+            const SETORES_PADRAO_ESTOQUE = ['Salão de Festas', 'Quiosque 1', 'Quiosque 2', 'Quiosques (geral)', 'DML', 'Portaria', 'Academia', 'Piscina', 'Geral / Não definido', 'Outro'];
+            function setorEstoque(item) {
+                const setor = String(item && (item.setor || item.departamento || item.localizacao) || '').trim();
+                return setor || 'Geral / Não definido';
+            }
+            function obterSetoresEstoque(itens=(db.estoque || [])) {
+                const setores = new Set(SETORES_PADRAO_ESTOQUE);
+                (Array.isArray(itens) ? itens : []).forEach(item => setores.add(setorEstoque(item)));
+                return Array.from(setores).sort( (a, b) => {
+                    const padraoA = SETORES_PADRAO_ESTOQUE.indexOf(a);
+                    const padraoB = SETORES_PADRAO_ESTOQUE.indexOf(b);
+                    if (padraoA >= 0 && padraoB >= 0)
+                        return padraoA - padraoB;
+                    if (padraoA >= 0)
+                        return -1;
+                    if (padraoB >= 0)
+                        return 1;
+                    return a.localeCompare(b, 'pt-BR');
+                }
+                );
+            }
+
+            function estoqueItemEstaInativo(item) {
+                return String(item && item.status ? item.status : 'Ativo').trim().toLowerCase() === 'inativo';
+            }
+
             function renderEstoqueView() {
-                let list = db.estoque || [];
+                const todosItens = Array.isArray(db.estoque) ? db.estoque : [];
+                const itensAtivos = todosItens.filter(st => !estoqueItemEstaInativo(st));
+                const itensInativos = todosItens.filter(st => estoqueItemEstaInativo(st));
+                const list = filtroStatusEstoque === 'inativos' ? itensInativos : itensAtivos;
 
                 let totalCriticos = 0;
                 let totalExcedentes = 0;
                 let totalAdequados = 0;
 
-                list.forEach(st => {
+                // Indicadores sempre refletem o estoque ativo, mesmo quando a listagem de inativos está aberta.
+                itensAtivos.forEach(st => {
                     const atual = dashboardNumero(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
                     const minimo = dashboardNumero(st.minimo || 0);
                     const maximo = dashboardNumero(st.maximo || 0);
@@ -5991,7 +6040,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 );
 
                 let listFiltrada = list;
-                if (filtroAtivoEstoque === 'adequado') {
+                if (filtroStatusEstoque !== 'inativos' && filtroAtivoEstoque === 'adequado') {
                     listFiltrada = list.filter(st => {
                         const atual = parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
                         const minimo = parseInt(st.minimo || 0);
@@ -5999,14 +6048,14 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                         return !(atual <= minimo || (maximo > 0 && atual > maximo));
                     }
                     );
-                } else if (filtroAtivoEstoque === 'critico') {
+                } else if (filtroStatusEstoque !== 'inativos' && filtroAtivoEstoque === 'critico') {
                     listFiltrada = list.filter(st => {
                         const atual = parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
                         const minimo = parseInt(st.minimo || 0);
                         return atual <= minimo;
                     }
                     );
-                } else if (filtroAtivoEstoque === 'excedente') {
+                } else if (filtroStatusEstoque !== 'inativos' && filtroAtivoEstoque === 'excedente') {
                     listFiltrada = list.filter(st => {
                         const atual = parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
                         const maximo = parseInt(st.maximo || 0);
@@ -6014,10 +6063,33 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     }
                     );
                 }
+                if (filtroSetorEstoque !== 'todos') {
+                    listFiltrada = listFiltrada.filter(st => setorEstoque(st) === filtroSetorEstoque);
+                }
+                const setoresDisponiveisEstoque = obterSetoresEstoque(todosItens);
 
                 return `
                 <div class="space-y-6 w-full">
-                    ${filtroAtivoEstoque !== 'todos' ? `
+                    <div class="bg-white border border-slate-200 p-4 sm:p-5 rounded-2xl shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                            <h3 class="font-black text-slate-900 text-sm"><i class="fa-solid fa-boxes-stacked text-teal-600 mr-2"></i> Produtos do estoque</h3>
+                            <p class="text-xs text-slate-500 mt-1">Edite os dados, inative produtos sem apagar o registro ou exclua com confirmação.</p>
+                        </div>
+                        <div class="flex flex-wrap gap-2" role="group" aria-label="Filtrar produtos por situação">
+                            <button type="button" onclick="filtroStatusEstoque='ativos'; filtroAtivoEstoque='todos'; renderMainOnly();" class="px-4 py-2 rounded-xl text-xs font-extrabold border ${filtroStatusEstoque === 'ativos' ? 'bg-teal-700 text-white border-teal-700' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}">
+                                <i class="fa-solid fa-circle-check mr-1"></i> Ativos (${itensAtivos.length})
+                            </button>
+                            <button type="button" onclick="filtroStatusEstoque='inativos'; filtroAtivoEstoque='todos'; renderMainOnly();" class="px-4 py-2 rounded-xl text-xs font-extrabold border ${filtroStatusEstoque === 'inativos' ? 'bg-slate-800 text-white border-slate-800' : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'}">
+                                <i class="fa-solid fa-box-archive mr-1"></i> Inativos (${itensInativos.length})
+                            </button>
+                        </div>
+                    </div>
+                    ${filtroStatusEstoque === 'inativos' ? `
+                        <div class="bg-slate-50 border border-slate-200 p-3.5 rounded-2xl text-xs text-slate-700 flex items-start gap-2">
+                            <i class="fa-solid fa-circle-info mt-0.5"></i><span>Você está vendo produtos inativos. Eles continuam salvos e podem ser reativados a qualquer momento.</span>
+                        </div>
+                    ` : ''}
+                    ${filtroStatusEstoque === 'ativos' && filtroAtivoEstoque !== 'todos' ? `
                         <div class="bg-teal-50 border border-teal-200/80 p-3.5 rounded-2xl text-xs font-bold text-teal-900 flex items-center justify-between no-print shadow-sm">
                             <span>Filtro de estoque: <b>${filtroAtivoEstoque.toUpperCase()}</b></span>
                             <button onclick="filtroAtivoEstoque = 'todos'; renderMainOnly();" class="px-3 py-1.5 bg-teal-600 text-white rounded-xl text-[10px] font-bold shadow-sm">Ver Todos</button>
@@ -6025,25 +6097,25 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     ` : ''}
 
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-5 w-full">
-                        <div onclick="filtroAtivoEstoque = 'adequado'; renderMainOnly();" class="bg-white p-5 rounded-3xl card-modern flex items-center justify-between border-l-4 border-l-teal-600 cursor-pointer transition-all shadow-sm">
+                        <div onclick="filtroStatusEstoque='ativos'; filtroAtivoEstoque = 'adequado'; renderMainOnly();" class="bg-white p-5 rounded-3xl card-modern flex items-center justify-between border-l-4 border-l-teal-600 cursor-pointer transition-all shadow-sm">
                             <div>
-                                <p class="text-[11px] font-black text-slate-400 uppercase tracking-wider">Estoque Adequado</p>
+                                <p class="text-[11px] font-black text-slate-400 uppercase tracking-wider">Estoque Ativo Adequado</p>
                                 <h3 class="text-xl font-black text-teal-700 mt-0.5">${totalAdequados} itens</h3>
                             </div>
                             <div class="w-11 h-11 bg-teal-50 text-teal-600 rounded-2xl flex items-center justify-center font-bold"><i class="fa-solid fa-circle-check text-lg"></i></div>
                         </div>
 
-                        <div onclick="filtroAtivoEstoque = 'critico'; renderMainOnly();" class="bg-white p-5 rounded-3xl card-modern flex items-center justify-between border-l-4 border-l-rose-600 cursor-pointer transition-all shadow-sm">
+                        <div onclick="filtroStatusEstoque='ativos'; filtroAtivoEstoque = 'critico'; renderMainOnly();" class="bg-white p-5 rounded-3xl card-modern flex items-center justify-between border-l-4 border-l-rose-600 cursor-pointer transition-all shadow-sm">
                             <div>
-                                <p class="text-[11px] font-black text-rose-600 uppercase tracking-wider">Atenção: Insuficiente</p>
+                                <p class="text-[11px] font-black text-rose-600 uppercase tracking-wider">Ativos: Insuficiente</p>
                                 <h3 class="text-xl font-black text-rose-600 mt-0.5">${totalCriticos} itens críticos</h3>
                             </div>
                             <div class="w-11 h-11 bg-rose-50 text-rose-600 rounded-2xl flex items-center justify-center font-bold"><i class="fa-solid fa-triangle-exclamation animate-bounce text-lg"></i></div>
                         </div>
 
-                        <div onclick="filtroAtivoEstoque = 'excedente'; renderMainOnly();" class="bg-white p-5 rounded-3xl card-modern flex items-center justify-between border-l-4 border-l-amber-500 cursor-pointer transition-all shadow-sm">
+                        <div onclick="filtroStatusEstoque='ativos'; filtroAtivoEstoque = 'excedente'; renderMainOnly();" class="bg-white p-5 rounded-3xl card-modern flex items-center justify-between border-l-4 border-l-amber-500 cursor-pointer transition-all shadow-sm">
                             <div>
-                                <p class="text-[11px] font-black text-amber-600 uppercase tracking-wider">Excedente / Antigo</p>
+                                <p class="text-[11px] font-black text-amber-600 uppercase tracking-wider">Ativos: Excedente / Antigo</p>
                                 <h3 class="text-xl font-black text-amber-600 mt-0.5">${totalExcedentes} itens</h3>
                             </div>
                             <div class="w-11 h-11 bg-amber-50 text-amber-600 rounded-2xl flex items-center justify-center font-bold"><i class="fa-solid fa-box-archive text-lg"></i></div>
@@ -6051,19 +6123,42 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     </div>
 
                     <div class="bg-white p-6 rounded-3xl card-modern w-full max-w-xl mx-auto flex flex-col items-center justify-center shadow-sm">
-                        <h3 class="font-black text-slate-900 text-sm mb-3"><i class="fa-solid fa-chart-pie text-teal-600 mr-2"></i> Status Geral do Estoque</h3>
+                        <h3 class="font-black text-slate-900 text-sm mb-3"><i class="fa-solid fa-chart-pie text-teal-600 mr-2"></i> Status Geral do Estoque Ativo</h3>
                         <div class="relative h-48 w-full flex items-center justify-center">
                             <canvas id="chartEstoqueStatus"></canvas>
                         </div>
                     </div>
 
+                    <section class="bg-white border border-slate-200 rounded-3xl p-4 sm:p-5 shadow-sm space-y-3 no-print">
+                        <div class="flex items-start gap-3">
+                            <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-700 flex items-center justify-center shrink-0"><i class="fa-solid fa-map-location-dot"></i></div>
+                            <div class="flex-1">
+                                <h3 class="font-black text-slate-900 text-sm">Setor, relatórios e checklist de vistoria</h3>
+                                <p class="text-xs text-slate-500 mt-1">Associe cada produto ao local onde fica guardado. Ex.: pratos e talheres no Salão de Festas/Quiosques; produtos de limpeza no DML. Depois gere relatórios separados ou um checklist de entrega/devolução em PDF.</p>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-2 items-end">
+                            <div class="sm:col-span-2 xl:col-span-1">
+                                <label for="filtroSetorEstoque" class="block text-[10px] font-extrabold uppercase tracking-wide text-slate-500 mb-1">Filtrar listagem por setor</label>
+                                <select id="filtroSetorEstoque" onchange="filtroSetorEstoque=this.value; renderMainOnly();" class="w-full p-3 border rounded-xl bg-slate-50 text-xs font-bold">
+                                    <option value="todos" ${filtroSetorEstoque === 'todos' ? 'selected' : ''}>Todos os setores</option>
+                                    ${setoresDisponiveisEstoque.map(s => `<option value="${escapeHTML(s)}" ${filtroSetorEstoque === s ? 'selected' : ''}>${escapeHTML(s)}</option>`).join('')}
+                                </select>
+                            </div>
+                            <button type="button" onclick="window.exportarRelatorioEstoquePorSetor()" class="px-4 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold"><i class="fa-solid fa-file-csv mr-1.5"></i> Exportar relatório CSV</button>
+                            <button type="button" onclick="window.abrirChecklistVistoriaEstoque()" class="px-4 py-3 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold"><i class="fa-solid fa-clipboard-check mr-1.5"></i> Checklist salão / quiosque (PDF)</button>
+                            <p class="text-[11px] text-slate-500 sm:col-span-2 xl:col-span-1">PDF: abre a impressão do checklist; escolha “Salvar como PDF” no navegador.</p>
+                        </div>
+                    </section>
+
                     <div class="bg-white rounded-3xl card-modern overflow-x-auto w-full shadow-sm">
-                        <table class="w-full text-left text-xs min-w-[1250px]">
+                        <table class="w-full text-left text-xs min-w-[1540px]">
                             <thead class="bg-slate-50 text-slate-500 uppercase font-bold border-b border-slate-100">
                                 <tr>
                                     <th class="p-4 w-16 text-center">Foto</th>
                                     <th class="p-4">Etiqueta / Código</th>
                                     <th class="p-4">Item / Descrição</th>
+                                    <th class="p-4">Setor</th>
                                     <th class="p-4">Marca</th>
                                     <th class="p-4">Linha</th>
                                     <th class="p-4">Fabricante</th>
@@ -6071,11 +6166,12 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                     <th class="p-4">Qtd Atual</th>
                                     <th class="p-4">Mín / Máx</th>
                                     <th class="p-4">Alerta Inteligente</th>
+                                    <th class="p-4">Situação</th>
                                     <th class="p-4 text-center">Ações</th>
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-slate-100">
-                                ${listFiltrada.length === 0 ? `<tr><td colspan="11" class="p-6 text-center text-slate-400">Nenhum item encontrado.</td></tr>` : listFiltrada.map(st => {
+                                ${listFiltrada.length === 0 ? `<tr><td colspan="13" class="p-6 text-center text-slate-400">Nenhum produto encontrado neste filtro.</td></tr>` : listFiltrada.map(st => {
                     const atual = parseInt(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
                     const minimo = parseInt(st.minimo || 0);
                     const maximo = parseInt(st.maximo || 0);
@@ -6083,6 +6179,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     const linhaEstoque = st.linha || st.line || '';
                     const fabricanteEstoque = st.fabricante || st.manufacturer || '';
                     const dataCadastroEstoque = st.dataCadastro || st.data_cadastro || st.dataRegistro || st.createdAt || '';
+                    const itemInativo = estoqueItemEstaInativo(st);
 
                     let badgeAlerta = `<span class="px-3 py-1 bg-emerald-50 text-emerald-700 rounded-full font-extrabold inline-flex items-center gap-1.5"><i class="fa-solid fa-check"></i> Normal</span>`;
                     if (atual <= minimo) {
@@ -6092,7 +6189,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     }
 
                     return `
-                                        <tr class="hover:bg-slate-50/80 transition-colors ${atual <= minimo ? 'bg-rose-50/30' : (maximo > 0 && atual > maximo ? 'bg-amber-50/20' : '')}">
+                                        <tr class="hover:bg-slate-50/80 transition-colors ${itemInativo ? 'bg-slate-50/70 opacity-80' : (atual <= minimo ? 'bg-rose-50/30' : (maximo > 0 && atual > maximo ? 'bg-amber-50/20' : ''))}">
                                             <td class="p-4 text-center">
                                                 ${st.fotoCompactadaGzip ? `
                                                     <button onclick="visualizarFotoEstoque('${st.id}')" class="w-10 h-10 rounded-2xl overflow-hidden border border-slate-200 shadow-sm inline-block hover:opacity-80 transition-opacity" title="Ver foto">
@@ -6102,6 +6199,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                             </td>
                                             <td class="p-4 font-mono font-bold text-teal-700">${escapeHTML(st.etiqueta || '-')}</td>
                                             <td class="p-4 font-bold text-slate-900">${escapeHTML(st.item || '-')}</td>
+                                            <td class="p-4"><span class="inline-flex items-center px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 font-bold whitespace-nowrap">${escapeHTML(setorEstoque(st))}</span></td>
                                             <td class="p-4 text-slate-700">${escapeHTML(marcaEstoque || '-')}</td>
                                             <td class="p-4 text-slate-700">${escapeHTML(linhaEstoque || '-')}</td>
                                             <td class="p-4 text-slate-700">${escapeHTML(fabricanteEstoque || '-')}</td>
@@ -6109,9 +6207,15 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                             <td class="p-4 font-mono font-black ${atual <= minimo ? 'text-rose-600 text-sm' : 'text-slate-700'}">${atual}</td>
                                             <td class="p-4 font-mono text-[11px] text-slate-400 font-medium">Mín: ${minimo} / Máx: ${maximo}</td>
                                             <td class="p-4">${badgeAlerta}</td>
-                                            <td class="p-4 text-center">
-                                                <button onclick="window.renderModalEstoque('${st.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl mr-1 transition-colors"><i class="fa-solid fa-pen"></i></button>
-                                                <button onclick="excluirRegistro('estoque','${st.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button>
+                                            <td class="p-4 whitespace-nowrap">
+                                                ${itemInativo ? '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-100 text-slate-600 font-extrabold"><i class="fa-solid fa-circle-minus"></i> Inativo</span>' : '<span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 font-extrabold"><i class="fa-solid fa-circle-check"></i> Ativo</span>'}
+                                            </td>
+                                            <td class="p-3 text-center">
+                                                <div class="inline-flex items-center justify-center gap-1.5 whitespace-nowrap">
+                                                    <button type="button" onclick="window.renderModalEstoque('${st.id}')" title="Editar produto" aria-label="Editar ${escapeHTML(st.item || 'produto')}" class="px-3 py-2 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl transition-colors text-[11px] font-bold"><i class="fa-solid fa-pen mr-1"></i> Editar</button>
+                                                    <button type="button" onclick="window.alternarStatusEstoque('${st.id}')" title="${itemInativo ? 'Reativar produto' : 'Inativar produto'}" aria-label="${itemInativo ? 'Reativar' : 'Inativar'} ${escapeHTML(st.item || 'produto')}" class="px-3 py-2 ${itemInativo ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100' : 'bg-amber-50 text-amber-800 hover:bg-amber-100'} rounded-xl transition-colors text-[11px] font-bold"><i class="fa-solid ${itemInativo ? 'fa-rotate-left' : 'fa-box-archive'} mr-1"></i> ${itemInativo ? 'Reativar' : 'Inativar'}</button>
+                                                    <button type="button" onclick="window.excluirProdutoEstoque('${st.id}')" title="Excluir produto permanentemente" aria-label="Excluir ${escapeHTML(st.item || 'produto')}" class="px-3 py-2 bg-rose-50 text-rose-700 hover:bg-rose-100 rounded-xl transition-colors text-[11px] font-bold"><i class="fa-solid fa-trash mr-1"></i> Excluir</button>
+                                                </div>
                                             </td>
                                         </tr>
                                     `;
@@ -6131,7 +6235,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 if (!ctx)
                     return;
 
-                const list = db.estoque || [];
+                const list = (db.estoque || []).filter(st => !estoqueItemEstaInativo(st));
                 let qtdAdequado = 0;
                 let qtdCritico = 0;
                 let qtdExcedente = 0;
@@ -6195,7 +6299,9 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     marca: '',
                     linha: '',
                     fabricante: '',
+                    setor: 'Geral / Não definido',
                     dataCadastro: dataLocalHojeEstoque(),
+                    status: 'Ativo',
                     quantidade: 1,
                     minimo: 0,
                     maximo: 10,
@@ -6203,6 +6309,9 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     fotoNome: '',
                     fotoCompactadaGzip: ''
                 };
+                const setorItemAtual = setorEstoque(item);
+                const setorItemPadrao = SETORES_PADRAO_ESTOQUE.includes(setorItemAtual) ? setorItemAtual : 'Outro';
+                const setorItemPersonalizado = setorItemPadrao === 'Outro' && setorItemAtual !== 'Outro' ? setorItemAtual : '';
                 tempEstoqueFotoGzip = item.fotoCompactadaGzip || '';
                 tempEstoqueFotoNome = item.fotoNome || '';
 
@@ -6222,6 +6331,10 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                 </div>
                             </div>
                             <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Item / Descrição</label><input type="text" id="m_est_item" required value="${escapeHTML(item.item || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50" placeholder="Nome do produto ou material"></div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div><label for="m_est_setor" class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Setor / Local de armazenamento</label><select id="m_est_setor" class="w-full p-3 border rounded-2xl font-bold bg-slate-50">${SETORES_PADRAO_ESTOQUE.map(s => `<option value="${escapeHTML(s)}" ${setorItemPadrao === s ? 'selected' : ''}>${escapeHTML(s)}</option>`).join('')}</select></div>
+                                <div><label for="m_est_setor_personalizado" class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Outro setor (opcional)</label><input type="text" id="m_est_setor_personalizado" value="${escapeHTML(setorItemPersonalizado)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50" placeholder="Ex.: brinquedoteca / depósito"></div>
+                            </div>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Marca</label><input type="text" id="m_est_marca" value="${escapeHTML(item.marca || item.brand || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50" placeholder="Marca"></div>
                                 <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Linha</label><input type="text" id="m_est_linha" value="${escapeHTML(item.linha || item.line || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50" placeholder="Linha / categoria comercial"></div>
@@ -6246,6 +6359,49 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     </div>
                 </div>
             `);
+            }
+            ;
+
+            window.alternarStatusEstoque = function(id) {
+                if (!Array.isArray(db.estoque))
+                    db.estoque = [];
+                const item = db.estoque.find(x => String(x.id) === String(id));
+                if (!item) {
+                    alert('Produto não encontrado no estoque.');
+                    return;
+                }
+                const atualmenteInativo = estoqueItemEstaInativo(item);
+                const novoStatus = atualmenteInativo ? 'Ativo' : 'Inativo';
+                const pergunta = atualmenteInativo ? `Deseja reativar o produto "${item.item || 'sem descrição'}"? Ele voltará a aparecer no estoque ativo.` : `Deseja inativar o produto "${item.item || 'sem descrição'}"? O registro será preservado e poderá ser reativado depois.`;
+                if (!confirm(pergunta))
+                    return;
+                item.status = novoStatus;
+                item.statusAlteradoEm = new Date().toISOString();
+                salvarDados(db);
+                // Ao inativar, troca para a lista de inativos; ao reativar, volta para ativos.
+                filtroStatusEstoque = atualmenteInativo ? 'ativos' : 'inativos';
+                filtroAtivoEstoque = 'todos';
+                renderMainOnly();
+            }
+            ;
+
+            window.excluirProdutoEstoque = function(id) {
+                if (!Array.isArray(db.estoque))
+                    db.estoque = [];
+                const item = db.estoque.find(x => String(x.id) === String(id));
+                if (!item) {
+                    alert('Produto não encontrado no estoque.');
+                    return;
+                }
+                const temMovimentos = (db.acertos_estoque || []).some(ac => String(ac.estoqueId || ac.itemId || ac.idEstoque || '') === String(id));
+                const avisoHistorico = temMovimentos ? '\n\nAtenção: há movimentos que parecem estar vinculados a este produto. A exclusão não remove esses movimentos históricos.' : '';
+                if (!confirm(`Excluir permanentemente o produto "${item.item || 'sem descrição'}"? Esta ação não pode ser desfeita.${avisoHistorico}`))
+                    return;
+                db.estoque = db.estoque.filter(x => String(x.id) !== String(id));
+                salvarDados(db);
+                filtroStatusEstoque = 'ativos';
+                filtroAtivoEstoque = 'todos';
+                renderMainOnly();
             }
             ;
 
@@ -6355,7 +6511,9 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     marca: document.getElementById('m_est_marca').value.trim(),
                     linha: document.getElementById('m_est_linha').value.trim(),
                     fabricante: document.getElementById('m_est_fabricante').value.trim(),
-                    dataCadastro: document.getElementById('m_est_data_cadastro').value || '',
+                    setor: (document.getElementById('m_est_setor_personalizado')?.value.trim()) || document.getElementById('m_est_setor').value,
+                    dataCadastro: document.getElementById('m_est_data_cadastro').value || (itemExistente ? (itemExistente.dataCadastro || itemExistente.data_cadastro || itemExistente.dataRegistro || itemExistente.createdAt || '') : dataLocalHojeEstoque()),
+                    status: itemExistente ? (itemExistente.status || 'Ativo') : 'Ativo',
                     quantidade: parseInt(document.getElementById('m_est_qtd').value, 10) || 0,
                     minimo: parseInt(document.getElementById('m_est_min').value, 10) || 0,
                     maximo: parseInt(document.getElementById('m_est_max').value, 10) || 0,
@@ -6371,6 +6529,136 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 salvarDados(db);
                 fecharModalContainer();
                 renderMainOnly();
+            }
+            ;
+
+            window.exportarRelatorioEstoquePorSetor = function() {
+                const todos = Array.isArray(db.estoque) ? db.estoque : [];
+                let itens = todos.filter(item => filtroStatusEstoque === 'inativos' ? estoqueItemEstaInativo(item) : !estoqueItemEstaInativo(item));
+                if (filtroSetorEstoque !== 'todos')
+                    itens = itens.filter(item => setorEstoque(item) === filtroSetorEstoque);
+                if (!itens.length) {
+                    alert('Não há itens para exportar com os filtros atuais.');
+                    return;
+                }
+                const colunas = [['Item', x => x.item || ''], ['Setor', x => setorEstoque(x)], ['Código', x => x.etiqueta || ''], ['Marca', x => x.marca || x.brand || ''], ['Linha', x => x.linha || x.line || ''], ['Fabricante', x => x.fabricante || x.manufacturer || ''], ['Data de cadastro', x => x.dataCadastro || x.data_cadastro || x.dataRegistro || x.createdAt || ''], ['Quantidade atual', x => x.quantidade ?? x.qtd ?? 0], ['Mínimo', x => x.minimo ?? 0], ['Máximo', x => x.maximo ?? 0], ['Status', x => x.status || 'Ativo']];
+                const esc = v => '"' + String(v ?? '').replace(/"/g, '""') + '"';
+                const linhas = [colunas.map(c => esc(c[0])).join(';')];
+                itens.forEach(item => linhas.push(colunas.map(c => esc(c[1](item))).join(';')));
+                const blob = new Blob(['\uFEFF' + linhas.join('\r\n')],{
+                    type: 'text/csv;charset=utf-8;'
+                });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                const slug = (filtroSetorEstoque === 'todos' ? 'todos-setores' : filtroSetorEstoque).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+                a.href = url;
+                a.download = `estoque-${slug || 'setor'}-${new Date().toISOString().slice(0, 10)}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                setTimeout( () => URL.revokeObjectURL(url), 1000);
+            }
+            ;
+
+            function itensAtivosDoSetor(setor) {
+                return (Array.isArray(db.estoque) ? db.estoque : []).filter(item => !estoqueItemEstaInativo(item) && setorEstoque(item) === setor).sort( (a, b) => String(a.item || '').localeCompare(String(b.item || ''), 'pt-BR'));
+            }
+
+            window.abrirChecklistVistoriaEstoque = function() {
+                const setores = obterSetoresEstoque(db.estoque || []).filter(s => s !== 'Geral / Não definido' && s !== 'Outro');
+                const preferido = ['Salão de Festas', 'Quiosque 1', 'Quiosque 2', 'Quiosques (geral)'].find(s => setores.includes(s));
+                const setorInicial = filtroSetorEstoque !== 'todos' && setores.includes(filtroSetorEstoque) ? filtroSetorEstoque : (preferido || setores[0] || 'Salão de Festas');
+                const hoje = dataLocalHojeEstoque();
+                abrirModalContainer(`
+                <div class="fixed inset-0 bg-slate-950/70 z-[70] flex items-center justify-center p-3 sm:p-5 backdrop-blur-md">
+                    <div class="bg-white rounded-3xl max-w-5xl w-full max-h-[92vh] overflow-y-auto p-4 sm:p-6 shadow-2xl space-y-4">
+                        <div class="flex items-start justify-between gap-3 border-b border-slate-200 pb-3">
+                            <div><h3 class="text-lg sm:text-xl font-black text-slate-900"><i class="fa-solid fa-clipboard-check text-indigo-600 mr-2"></i>Checklist de entrega e devolução</h3><p class="text-xs text-slate-500 mt-1">Gere uma ficha para conferir os itens antes ou depois da locação do salão de festas ou quiosque.</p></div>
+                            <button type="button" onclick="fecharModalContainer()" class="p-2 text-slate-400 hover:text-slate-700" aria-label="Fechar"><i class="fa-solid fa-xmark text-xl"></i></button>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                            <div><label for="checklist_setor_estoque" class="block text-[10px] font-extrabold uppercase text-slate-500 mb-1">Salão / setor</label><select id="checklist_setor_estoque" onchange="window.atualizarPreviewChecklistEstoque()" class="w-full p-3 border rounded-xl bg-slate-50 text-xs font-bold">${setores.map(s => `<option value="${escapeHTML(s)}" ${s === setorInicial ? 'selected' : ''}>${escapeHTML(s)}</option>`).join('')}${setores.length ? '' : `<option value="Salão de Festas" selected>Salão de Festas</option>`}</select></div>
+                            <div><label for="checklist_momento" class="block text-[10px] font-extrabold uppercase text-slate-500 mb-1">Tipo de vistoria</label><select id="checklist_momento" class="w-full p-3 border rounded-xl bg-slate-50 text-xs font-bold"><option>Entrega antes do uso</option><option>Devolução após o uso</option><option>Conferência de rotina</option></select></div>
+                            <div><label for="checklist_data" class="block text-[10px] font-extrabold uppercase text-slate-500 mb-1">Data</label><input id="checklist_data" type="date" value="${hoje}" class="w-full p-3 border rounded-xl bg-slate-50 text-xs font-bold"></div>
+                            <div><label for="checklist_morador" class="block text-[10px] font-extrabold uppercase text-slate-500 mb-1">Morador responsável</label><input id="checklist_morador" type="text" maxlength="120" class="w-full p-3 border rounded-xl bg-slate-50 text-xs font-bold" placeholder="Nome do morador"></div>
+                            <div><label for="checklist_unidade" class="block text-[10px] font-extrabold uppercase text-slate-500 mb-1">Bloco / unidade</label><input id="checklist_unidade" type="text" maxlength="60" class="w-full p-3 border rounded-xl bg-slate-50 text-xs font-bold" placeholder="Ex.: Bloco A, ap. 12"></div>
+                            <div><label for="checklist_reserva" class="block text-[10px] font-extrabold uppercase text-slate-500 mb-1">Reserva / evento (opcional)</label><input id="checklist_reserva" type="text" maxlength="120" class="w-full p-3 border rounded-xl bg-slate-50 text-xs font-bold" placeholder="Festa, data ou nº da reserva"></div>
+                        </div>
+                        <div class="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-3 sm:p-4">
+                            <div class="flex flex-wrap items-center justify-between gap-2"><div><h4 class="font-black text-slate-900 text-sm">Itens que serão conferidos</h4><p class="text-[11px] text-slate-600 mt-1">A lista é carregada dos produtos ativos associados ao setor escolhido no inventário.</p></div><span id="checklist_contagem_estoque" class="text-xs font-extrabold text-indigo-800"></span></div>
+                            <div id="checklist_preview_estoque" class="mt-3 overflow-x-auto"></div>
+                        </div>
+                        <div><label for="checklist_observacoes" class="block text-[10px] font-extrabold uppercase text-slate-500 mb-1">Observações gerais (opcional)</label><textarea id="checklist_observacoes" rows="2" maxlength="1200" class="w-full p-3 border rounded-xl bg-slate-50 text-xs" placeholder="Anote ocorrências, itens quebrados ou faltantes."></textarea></div>
+                        <div class="flex flex-col sm:flex-row justify-end gap-2 border-t pt-3">
+                            <button type="button" onclick="fecharModalContainer()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">Cancelar</button>
+                            <button type="button" onclick="window.gerarChecklistVistoriaPDF()" class="px-4 py-2.5 bg-indigo-700 hover:bg-indigo-800 text-white rounded-xl text-xs font-bold"><i class="fa-solid fa-file-pdf mr-1.5"></i> Gerar checklist para PDF</button>
+                        </div>
+                    </div>
+                </div>
+            `);
+                window.atualizarPreviewChecklistEstoque();
+            }
+            ;
+
+            window.atualizarPreviewChecklistEstoque = function() {
+                const setor = document.getElementById('checklist_setor_estoque')?.value || 'Salão de Festas';
+                const itens = itensAtivosDoSetor(setor);
+                const contagem = document.getElementById('checklist_contagem_estoque');
+                const preview = document.getElementById('checklist_preview_estoque');
+                if (contagem)
+                    contagem.textContent = `${itens.length} ${itens.length === 1 ? 'item ativo' : 'itens ativos'}`;
+                if (!preview)
+                    return;
+                if (!itens.length) {
+                    preview.innerHTML = '<div class="rounded-xl border border-dashed border-indigo-200 bg-white p-4 text-xs text-slate-600">Nenhum item ativo está associado a este setor. Feche esta janela, edite os produtos no estoque e atribua o setor correspondente para que apareçam no checklist.</div>';
+                    return;
+                }
+                preview.innerHTML = `<table class="w-full min-w-[520px] text-left text-xs"><thead><tr class="text-slate-500 uppercase text-[10px]"><th class="p-2">Item</th><th class="p-2">Código</th><th class="p-2 text-right">Qtd. cadastrada</th></tr></thead><tbody class="divide-y divide-indigo-100">${itens.map(item => `<tr><td class="p-2 font-bold text-slate-800">${escapeHTML(item.item || 'Item sem descrição')}</td><td class="p-2 text-slate-500">${escapeHTML(item.etiqueta || '-')}</td><td class="p-2 text-right font-bold">${dashboardNumero(item.quantidade !== undefined ? item.quantidade : (item.qtd || 0))}</td></tr>`).join('')}</tbody></table>`;
+            }
+            ;
+
+            window.gerarChecklistVistoriaPDF = function() {
+                const setor = document.getElementById('checklist_setor_estoque')?.value || 'Salão de Festas';
+                const itens = itensAtivosDoSetor(setor);
+                if (!itens.length) {
+                    alert('Não há itens ativos nesse setor. Atribua um setor aos produtos no inventário antes de gerar o checklist.');
+                    return;
+                }
+                const win = window.open('', '_blank');
+                if (!win) {
+                    alert('O navegador bloqueou a janela do checklist. Permita pop-ups para este site e tente novamente.');
+                    return;
+                }
+                const morador = document.getElementById('checklist_morador')?.value.trim() || '';
+                const unidade = document.getElementById('checklist_unidade')?.value.trim() || '';
+                const reserva = document.getElementById('checklist_reserva')?.value.trim() || '';
+                const data = document.getElementById('checklist_data')?.value || dataLocalHojeEstoque();
+                const momento = document.getElementById('checklist_momento')?.value || 'Conferência de rotina';
+                const observacoes = document.getElementById('checklist_observacoes')?.value.trim() || '';
+                const dataBonita = dataEstoqueParaExibicao(data);
+                const esc = v => escapeHTML(String(v ?? ''));
+                const linhas = itens.map( (item, i) => `<tr><td class="num">${i + 1}</td><td><b>${esc(item.item || 'Item sem descrição')}</b><small>${esc(item.etiqueta ? 'Código: ' + item.etiqueta : '')}</small></td><td class="center">${dashboardNumero(item.quantidade !== undefined ? item.quantidade : (item.qtd || 0))}</td><td class="blank"></td><td class="status">☐ OK<br>☐ Não utilizado<br>☐ Faltando<br>☐ Danificado</td><td class="blank"></td></tr>`).join('');
+                const doc = `<!DOCTYPE html><html lang="pt-BR"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Checklist de vistoria - ${esc(setor)}</title><style>
+                @page{size:A4 portrait;margin:12mm}*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#172033;font-size:10px;margin:0}header{border-bottom:3px solid #0f766e;padding:0 0 10px;margin-bottom:12px}h1{font-size:20px;margin:0 0 4px;color:#0f172a}header p{margin:0;color:#475569;font-size:10px}.tag{display:inline-block;background:#e0f2fe;color:#075985;border-radius:12px;padding:5px 8px;font-weight:bold;margin-top:8px}.meta{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin:12px 0}.field{border:1px solid #cbd5e1;border-radius:5px;padding:7px;min-height:30px}.field b{display:block;text-transform:uppercase;color:#64748b;font-size:8px;margin-bottom:4px}.instructions{font-size:9px;color:#475569;margin:10px 0}table{width:100%;border-collapse:collapse;table-layout:fixed}th{background:#0f172a;color:#fff;text-align:left;font-size:8px;text-transform:uppercase;padding:7px 5px}td{border:1px solid #cbd5e1;padding:6px 5px;vertical-align:top;word-wrap:break-word}tbody tr{height:48px}.num{width:5%;text-align:center}.center{text-align:center;width:9%}.blank{width:12%}.status{font-size:8px;line-height:1.5;width:22%}small{display:block;color:#64748b;font-size:7px;margin-top:4px}.observ{margin-top:12px;border:1px solid #cbd5e1;border-radius:5px;padding:8px;min-height:50px;white-space:pre-wrap}.signs{display:grid;grid-template-columns:1fr 1fr;gap:30px;margin-top:35px}.sign{border-top:1px solid #64748b;text-align:center;padding-top:5px;font-size:9px}.footer{font-size:8px;color:#64748b;margin-top:14px;text-align:center}@media print{.no-print{display:none!important}}
+            </style></head><body><header><h1>Checklist de entrega e devolução</h1><p>Guardiões do Bravo · Conferência de enxoval e itens do ambiente</p><span class="tag">Setor: ${esc(setor)}</span></header>
+            <section class="meta"><div class="field"><b>Morador responsável</b>${esc(morador || '________________________________')}</div><div class="field"><b>Bloco / unidade</b>${esc(unidade || '________________________________')}</div><div class="field"><b>Data da vistoria</b>${esc(dataBonita)}</div><div class="field"><b>Tipo de vistoria</b>${esc(momento)}</div><div class="field" style="grid-column:1/-1"><b>Reserva / evento</b>${esc(reserva || '________________________________')}</div></section>
+            <p class="instructions">Confira os itens listados e preencha a quantidade encontrada. Marque uma situação para cada item; registre danos, faltas ou itens não utilizados nas observações.</p>
+            <table><thead><tr><th style="width:5%">Nº</th><th style="width:30%">Item / código</th><th style="width:9%">Qtd. esperada</th><th style="width:12%">Qtd. conferida</th><th style="width:22%">Situação</th><th style="width:22%">Observações</th></tr></thead><tbody>${linhas}</tbody></table>
+            <div class="observ"><b>Observações gerais:</b><br>${esc(observacoes || '__________________________________________________________________________________________\n__________________________________________________________________________________________')}</div>
+            <div class="signs"><div class="sign">Assinatura do morador responsável</div><div class="sign">Assinatura do responsável pela vistoria</div></div><p class="footer">Documento gerado a partir dos itens ativos cadastrados no inventário do setor selecionado. Confira e assine após a vistoria.</p></body></html>`;
+                win.document.open();
+                win.document.write(doc);
+                win.document.close();
+                fecharModalContainer();
+                setTimeout( () => {
+                    try {
+                        win.focus();
+                        win.print();
+                    } catch (e) {
+                        console.warn('Impressão do checklist:', e);
+                    }
+                }
+                , 450);
             }
             ;
 
@@ -6418,7 +6706,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
             }
 
             window.renderModalAcertoEstoque = function() {
-                const produtos = db.estoque || [];
+                const produtos = (db.estoque || []).filter(st => !estoqueItemEstaInativo(st));
                 const motivos = db.motivos_acerto_estoque || [];
 
                 abrirModalContainer(`
@@ -6472,7 +6760,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 const select = document.getElementById('m_ac_produto');
                 if (!select)
                     return;
-                const produtos = db.estoque || [];
+                const produtos = (db.estoque || []).filter(st => !estoqueItemEstaInativo(st));
                 const t = termo.toLowerCase().trim();
 
                 select.innerHTML = '<option value="">[ Selecione o Produto ]</option>';
@@ -6506,6 +6794,10 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 const prodIndex = (db.estoque || []).findIndex(st => st.id === produtoId);
                 if (prodIndex === -1) {
                     alert('Produto não encontrado.');
+                    return;
+                }
+                if (estoqueItemEstaInativo(db.estoque[prodIndex])) {
+                    alert('Este produto está inativo. Reative-o antes de registrar novos acertos.');
                     return;
                 }
 
@@ -7301,7 +7593,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 const crit = []
                   , exc = [];
                 let ok = 0;
-                (db.estoque || []).forEach(st => {
+                (db.estoque || []).filter(st => !estoqueItemEstaInativo(st)).forEach(st => {
                     const a = aiQtd(st)
                       , mn = parseInt(st.minimo || 0)
                       , mx = parseInt(st.maximo || 0);
@@ -7317,7 +7609,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     crit,
                     exc,
                     ok,
-                    total: (db.estoque || []).length
+                    total: (db.estoque || []).filter(st => !estoqueItemEstaInativo(st)).length
                 };
             }
             function aiBlocos() {
@@ -7358,7 +7650,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                         valor: Number(f.valor) || 0,
                         conta: ((db.plano_contas || []).find(p => p.id === f.planoContaId) || {}).nome
                     })),
-                    estoque: (db.estoque || []).slice(0, 150).map(s => ({
+                    estoque: (db.estoque || []).filter(s => !estoqueItemEstaInativo(s)).slice(0, 150).map(s => ({
                         item: s.item,
                         atual: aiQtd(s),
                         minimo: s.minimo,
@@ -7672,6 +7964,108 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     , 120);
             }
 
+            function aiConfigurarGatinhoMovel() {
+                const flutuante = document.getElementById('ai-flutua');
+                const botao = document.getElementById('ai-gato');
+                if (!flutuante || !botao)
+                    return;
+                flutuante.style.position = 'fixed';
+                flutuante.style.zIndex = '81';
+
+                const limitar = (left, top) => {
+                    const rect = flutuante.getBoundingClientRect();
+                    return {
+                        left: Math.max(4, Math.min(Number(left) || 0, Math.max(4, window.innerWidth - rect.width - 4))),
+                        top: Math.max(4, Math.min(Number(top) || 0, Math.max(4, window.innerHeight - rect.height - 4)))
+                    };
+                }
+                ;
+                const aplicar = (left, top, salvar=false) => {
+                    const pos = limitar(left, top);
+                    flutuante.style.left = `${pos.left}px`;
+                    flutuante.style.top = `${pos.top}px`;
+                    flutuante.style.right = 'auto';
+                    flutuante.style.bottom = 'auto';
+                    if (salvar) {
+                        try {
+                            localStorage.setItem('guardioes_gatinho_posicao_v1', JSON.stringify(pos));
+                        } catch (e) {}
+                    }
+                }
+                ;
+
+                try {
+                    const salvo = JSON.parse(localStorage.getItem('guardioes_gatinho_posicao_v1') || 'null');
+                    if (salvo && Number.isFinite(salvo.left) && Number.isFinite(salvo.top))
+                        aplicar(salvo.left, salvo.top, false);
+                } catch (e) {}
+
+                let arraste = null;
+                botao.addEventListener('pointerdown', (evento) => {
+                    if (evento.button !== undefined && evento.button !== 0)
+                        return;
+                    const rect = flutuante.getBoundingClientRect();
+                    aplicar(rect.left, rect.top, false);
+                    arraste = {
+                        id: evento.pointerId,
+                        x: evento.clientX,
+                        y: evento.clientY,
+                        left: rect.left,
+                        top: rect.top,
+                        moveu: false
+                    };
+                    try {
+                        botao.setPointerCapture(evento.pointerId);
+                    } catch (e) {}
+                }
+                );
+                botao.addEventListener('pointermove', (evento) => {
+                    if (!arraste || evento.pointerId !== arraste.id)
+                        return;
+                    const dx = evento.clientX - arraste.x;
+                    const dy = evento.clientY - arraste.y;
+                    if (Math.abs(dx) > 5 || Math.abs(dy) > 5)
+                        arraste.moveu = true;
+                    if (arraste.moveu) {
+                        evento.preventDefault();
+                        aplicar(arraste.left + dx, arraste.top + dy, false);
+                    }
+                }
+                );
+                const encerrar = (evento) => {
+                    if (!arraste || (evento && evento.pointerId !== undefined && evento.pointerId !== arraste.id))
+                        return;
+                    if (arraste.moveu) {
+                        const rect = flutuante.getBoundingClientRect();
+                        aplicar(rect.left, rect.top, true);
+                        botao.dataset.arrastado = '1';
+                        // Alguns navegadores móveis não emitem click depois do arraste; limpe o bloqueio para o próximo toque.
+                        setTimeout( () => {
+                            if (botao.dataset.arrastado === '1')
+                                botao.dataset.arrastado = '0';
+                        }
+                        , 350);
+                    } else {
+                        botao.dataset.arrastado = '0';
+                    }
+                    arraste = null;
+                }
+                ;
+                botao.addEventListener('pointerup', encerrar);
+                botao.addEventListener('pointercancel', encerrar);
+
+                if (window.__guardioesGatinhoResize)
+                    window.removeEventListener('resize', window.__guardioesGatinhoResize);
+                window.__guardioesGatinhoResize = () => {
+                    const rect = flutuante.getBoundingClientRect();
+                    if (flutuante.style.left && flutuante.style.top)
+                        aplicar(rect.left, rect.top, true);
+                }
+                ;
+                window.addEventListener('resize', window.__guardioesGatinhoResize);
+                botao.title = 'Segure e arraste para mudar o gatinho de lugar. A posição fica salva neste dispositivo.';
+            }
+
             function aiCriarWidget() {
                 if (document.getElementById('assistente-ia'))
                     return;
@@ -7688,11 +8082,21 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
         </section>
         <div id="ai-flutua">
             <div id="ai-balao" style="--atraso:${atraso}ms">Como posso ajudar?</div>
-            <button type="button" id="ai-gato" aria-label="Abrir assistente">${gatoSVG(76, '')}</button>
+            <button type="button" id="ai-gato" aria-label="Abrir assistente; segure e arraste para mover" title="Segure e arraste para mover o gatinho">${gatoSVG(76, '')}</button>
         </div>`;
                 document.body.appendChild(w);
 
-                document.getElementById('ai-gato').onclick = () => aiAlternar();
+                aiConfigurarGatinhoMovel();
+                document.getElementById('ai-gato').addEventListener('click', (evento) => {
+                    const botaoGato = evento.currentTarget;
+                    if (botaoGato.dataset.arrastado === '1') {
+                        botaoGato.dataset.arrastado = '0';
+                        evento.preventDefault();
+                        return;
+                    }
+                    aiAlternar();
+                }
+                );
                 document.getElementById('ai-balao').onclick = () => aiAlternar(true);
                 document.getElementById('ai-fechar').onclick = () => aiAlternar(false);
                 document.getElementById('ai-form').onsubmit = e => {
