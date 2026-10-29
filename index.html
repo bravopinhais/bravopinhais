@@ -2325,6 +2325,483 @@
                     transition: none !important;
                 }
             }
+
+            /* ===== Ferramentas gerais de tabela: filtros por coluna, colunas arrastáveis e ações agrupadas ===== */
+            .grid-draggable-header {
+                cursor: grab !important;
+                user-select: none;
+                position: relative;
+                min-width: 90px;
+            }
+
+            .grid-draggable-header::after {
+                content: '\f0b2';
+                font-family: 'Font Awesome 6 Free';
+                font-weight: 900;
+                opacity: .35;
+                font-size: 9px;
+                margin-left: 6px;
+            }
+
+            .grid-column-dragging {
+                opacity: .45;
+            }
+
+            .grid-column-drop-target {
+                box-shadow: inset 3px 0 0 #0d9488 !important;
+                background: #ccfbf1 !important;
+            }
+
+            .grid-filter-row th {
+                background: #f8fafc !important;
+                padding: 7px 8px !important;
+                border-bottom: 1px solid #e2e8f0 !important;
+                min-width: 90px;
+            }
+
+            .grid-column-filter {
+                width: 100%;
+                min-width: 74px;
+                padding: 7px 8px !important;
+                font-size: 10px !important;
+                font-weight: 600 !important;
+                color: #334155 !important;
+                border: 1px solid #dbe3ed !important;
+                border-radius: 8px !important;
+                background: #fff !important;
+                outline: none;
+            }
+
+            .grid-column-filter::placeholder {
+                color: #94a3b8;
+                font-weight: 500;
+            }
+
+            .grid-column-filter:focus {
+                border-color: #0d9488 !important;
+                box-shadow: 0 0 0 2px rgba(13,148,136,.12) !important;
+            }
+
+            .grid-filter-muted {
+                display: block;
+                text-align: center;
+                color: #cbd5e1;
+                font-size: 9px;
+            }
+
+            .grid-filter-status {
+                font-size: 10px;
+                line-height: 1.4;
+            }
+
+            .grid-actions-trigger {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                min-height: 36px;
+                padding: 8px 12px;
+                border: 1px solid #dbe3ed;
+                border-radius: 12px;
+                background: #fff;
+                color: #334155;
+                font-size: 11px;
+                font-weight: 800;
+                white-space: nowrap;
+                box-shadow: 0 2px 6px rgba(15,23,42,.05);
+                cursor: pointer;
+            }
+
+            .grid-actions-trigger:hover, .grid-actions-trigger[aria-expanded="true"] {
+                background: #eff6ff;
+                color: #1d4ed8;
+                border-color: #bfdbfe;
+            }
+
+            .grid-actions-trigger > i:first-child {
+                color: #2563eb;
+                font-size: 14px;
+            }
+
+            .grid-actions-chevron {
+                font-size: 9px;
+                color: #64748b;
+            }
+
+            .grid-actions-template {
+                display: none !important;
+            }
+
+            .grid-actions-popover {
+                position: fixed;
+                z-index: 100000;
+                min-width: 175px;
+                max-width: min(280px, calc(100vw - 16px));
+                max-height: min(70vh, 420px);
+                overflow: auto;
+                padding: 8px;
+                display: flex;
+                flex-direction: column;
+                gap: 6px;
+                border: 1px solid #dbe3ed;
+                border-radius: 14px;
+                background: rgba(255,255,255,.98);
+                box-shadow: 0 18px 45px rgba(2,6,23,.22);
+                backdrop-filter: blur(12px);
+            }
+
+            .grid-actions-popover button, .grid-actions-popover a[role="button"] {
+                min-height: 36px;
+                border-radius: 9px !important;
+                padding: 8px 10px !important;
+                font-size: 11px !important;
+            }
+
+            .grid-actions-popover button:hover, .grid-actions-popover a[role="button"]:hover {
+                filter: brightness(.97);
+            }
+
+            @media (max-width: 768px) {
+                .grid-filter-row th {
+                    padding: 5px !important;
+                }
+
+                .grid-column-filter {
+                    min-width: 70px;
+                    font-size: 10px !important;
+                }
+
+                .grid-actions-trigger {
+                    padding: 7px 9px;
+                }
+            }
+        </style>
+        <style id="guardioes-notifications-style">
+            #gb-notifications-anchor {
+                position: relative;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex: 0 0 auto;
+                padding: 0 8px;
+                z-index: 90;
+                background: rgba(226,232,240,.96);
+                border-left: 1px solid #cbd5e1
+            }
+
+            #gb-notifications-toggle {
+                position: relative;
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8px;
+                min-height: 34px;
+                padding: 8px 11px;
+                border: 1px solid #cbd5e1;
+                border-radius: 12px;
+                background: #fff;
+                color: #0f172a;
+                font-size: 12px;
+                font-weight: 800;
+                box-shadow: 0 2px 6px rgba(15,23,42,.06);
+                transition: background .18s ease,border-color .18s ease,transform .18s ease
+            }
+
+            #gb-notifications-toggle:hover {
+                background: #f8fafc;
+                border-color: #94a3b8;
+                transform: translateY(-1px)
+            }
+
+            #gb-notifications-toggle .gb-bell-icon {
+                font-size: 15px;
+                color: #334155
+            }
+
+            #gb-notifications-toggle.gb-has-unread .gb-bell-icon {
+                color: #0d9488;
+                animation: gb-bell-wiggle 2.8s ease-in-out infinite
+            }
+
+            #gb-notifications-count {
+                display: none;
+                align-items: center;
+                justify-content: center;
+                min-width: 18px;
+                height: 18px;
+                padding: 0 5px;
+                border-radius: 999px;
+                background: #e11d48;
+                color: #fff;
+                font-size: 10px;
+                font-weight: 900;
+                line-height: 18px;
+                box-shadow: 0 0 0 2px #fff
+            }
+
+            #gb-notifications-panel {
+                display: none;
+                position: fixed;
+                width: min(390px,calc(100vw - 20px));
+                max-height: min(72vh,560px);
+                background: #fff;
+                color: #0f172a;
+                border: 1px solid #dbe4ee;
+                border-radius: 18px;
+                box-shadow: 0 24px 70px rgba(2,6,23,.27);
+                z-index: 9999;
+                overflow: hidden
+            }
+
+            #gb-notifications-panel.gb-open {
+                display: flex;
+                flex-direction: column;
+                animation: gb-panel-in .16s ease-out
+            }
+
+            .gb-notif-head {
+                display: flex;
+                align-items: flex-start;
+                justify-content: space-between;
+                gap: 12px;
+                padding: 16px 16px 12px;
+                background: linear-gradient(135deg,#f8fafc,#eef6ff);
+                border-bottom: 1px solid #e2e8f0
+            }
+
+            .gb-notif-title {
+                margin: 0;
+                font-size: 15px;
+                font-weight: 900;
+                letter-spacing: -.02em;
+                color: #0f172a
+            }
+
+            .gb-notif-subtitle {
+                margin-top: 4px;
+                color: #64748b;
+                font-size: 11px;
+                line-height: 1.4
+            }
+
+            .gb-notif-markall {
+                border: 0;
+                border-radius: 9px;
+                padding: 7px 9px;
+                background: #e0f2fe;
+                color: #075985;
+                font-size: 10px;
+                font-weight: 800;
+                white-space: nowrap
+            }
+
+            .gb-notif-list {
+                overflow: auto;
+                padding: 7px;
+                overscroll-behavior: contain
+            }
+
+            .gb-notif-row {
+                display: flex;
+                width: 100%;
+                align-items: flex-start;
+                gap: 10px;
+                text-align: left;
+                padding: 11px;
+                border: 0;
+                border-bottom: 1px solid #f1f5f9;
+                background: #fff;
+                border-radius: 10px;
+                color: #0f172a;
+                min-height: 0!important
+            }
+
+            .gb-notif-row:hover {
+                background: #f8fafc
+            }
+
+            .gb-notif-row.gb-unread {
+                background: #f0fdfa
+            }
+
+            .gb-notif-dot {
+                flex: 0 0 8px;
+                width: 8px;
+                height: 8px;
+                margin-top: 5px;
+                border-radius: 50%;
+                background: #0d9488
+            }
+
+            .gb-notif-row.gb-read .gb-notif-dot {
+                background: #cbd5e1
+            }
+
+            .gb-notif-row-title {
+                font-size: 12px;
+                font-weight: 850;
+                line-height: 1.35;
+                color: #1e293b
+            }
+
+            .gb-notif-row-message {
+                margin-top: 3px;
+                font-size: 11px;
+                line-height: 1.45;
+                color: #64748b;
+                overflow-wrap: anywhere
+            }
+
+            .gb-notif-time {
+                margin-top: 5px;
+                color: #94a3b8;
+                font-size: 10px
+            }
+
+            .gb-notif-empty {
+                padding: 28px 18px;
+                text-align: center;
+                color: #64748b;
+                font-size: 12px;
+                line-height: 1.6
+            }
+
+            .gb-notif-empty i {
+                display: block;
+                color: #94a3b8;
+                font-size: 25px;
+                margin-bottom: 9px
+            }
+
+            .gb-notif-foot {
+                padding: 10px 14px;
+                border-top: 1px solid #e2e8f0;
+                background: #f8fafc;
+                color: #64748b;
+                font-size: 10px;
+                line-height: 1.4
+            }
+
+            @keyframes gb-bell-wiggle {
+                0%,86%,100% {
+                    transform: rotate(0)
+                }
+
+                89% {
+                    transform: rotate(12deg)
+                }
+
+                92% {
+                    transform: rotate(-10deg)
+                }
+
+                95% {
+                    transform: rotate(6deg)
+                }
+
+                98% {
+                    transform: rotate(-3deg)
+                }
+            }
+
+            @keyframes gb-panel-in {
+                from {
+                    opacity: 0;
+                    transform: translateY(-4px) scale(.99)
+                }
+
+                to {
+                    opacity: 1;
+                    transform: translateY(0) scale(1)
+                }
+            }
+
+            @media(max-width: 640px) {
+                #gb-notifications-anchor {
+                    padding:0 5px
+                }
+
+                #gb-notifications-toggle {
+                    padding: 8px 9px;
+                    gap: 5px
+                }
+
+                #gb-notifications-label {
+                    display: none
+                }
+
+                #gb-notifications-panel {
+                    max-height: 72dvh
+                }
+            }
+
+            @media(prefers-reduced-motion:reduce) {
+                #gb-notifications-toggle.gb-has-unread .gb-bell-icon {
+                    animation: none
+                }
+
+                #gb-notifications-panel.gb-open {
+                    animation: none
+                }
+            }
+
+            @media print {
+                #gb-notifications-anchor,#gb-notifications-panel {
+                    display: none!important
+                }
+            }
+        </style>
+        <style id="dashboard-organizacao-polish">
+            .dashboard-shell {
+                max-width: 100%;
+                min-width: 0;
+            }
+
+            .dashboard-shell > section, .dashboard-shell > .dashboard-section-title {
+                min-width: 0;
+            }
+
+            .dashboard-section-title {
+                margin: .15rem 0 -.15rem;
+            }
+
+            .dashboard-kpi-grid > article {
+                min-width: 0;
+                min-height: 148px;
+            }
+
+            .dashboard-analytics-grid > div, .dashboard-operations-grid > div {
+                min-width: 0;
+            }
+
+            .dashboard-shell canvas {
+                max-width: 100%;
+            }
+
+            @media (max-width: 640px) {
+                .dashboard-shell {
+                    gap: 1rem;
+                }
+
+                .dashboard-shell > section.relative {
+                    border-radius: 1.35rem;
+                    padding: 1.15rem;
+                }
+
+                .dashboard-shell .dashboard-kpi-grid > article {
+                    padding: 1rem;
+                    border-radius: 1.25rem;
+                }
+
+                .dashboard-shell .dashboard-kpi-grid > article p.text-2xl, .dashboard-shell .dashboard-kpi-grid > article p.text-3xl {
+                    font-size: 1.35rem;
+                    line-height: 1.8rem;
+                }
+
+                .dashboard-shell .dashboard-analytics-grid > div, .dashboard-shell .dashboard-operations-grid > div {
+                    border-radius: 1.25rem;
+                }
+            }
         </style>
     </head>
     <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
@@ -2901,7 +3378,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
             };
 
             const MODULE_NAMES = {
-                dashboard: 'Dashboard Executive',
+                dashboard: 'Dashboard Executivo',
                 condominio: 'Dados do Condomínio & Conselho',
                 plano_contas: 'Plano de Contas',
                 financeiro: 'Contas Pagar / Receber',
@@ -4092,7 +4569,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                             <div>
                                 <p class="px-3 pb-2 text-[10px] font-black text-slate-500 uppercase tracking-widest">Visão Geral</p>
                                 <div class="space-y-1">
-                                    <button onclick="abrirModulo('dashboard')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${tabsState.activeTab === 'dashboard' ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-md shadow-teal-600/20' : 'hover:bg-slate-900 hover:text-white text-slate-400'}"><i class="fa-solid fa-chart-pie w-5 text-center text-sm"></i> Dashboard Executive</button>
+                                    <button onclick="abrirModulo('dashboard')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${tabsState.activeTab === 'dashboard' ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-md shadow-teal-600/20' : 'hover:bg-slate-900 hover:text-white text-slate-400'}"><i class="fa-solid fa-chart-pie w-5 text-center text-sm"></i> Dashboard Executivo</button>
                                     <button onclick="abrirModulo('condominio')" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-semibold transition-all ${tabsState.activeTab === 'condominio' ? 'bg-gradient-to-r from-teal-600 to-teal-700 text-white shadow-md shadow-teal-600/20' : 'hover:bg-slate-900 hover:text-white text-slate-400'}"><i class="fa-solid fa-building w-5 text-center text-sm"></i> Dados do Condomínio</button>
                                 </div>
                             </div>
@@ -4539,15 +5016,20 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                     <span class="inline-flex items-center gap-2 rounded-xl bg-white/10 px-3 py-2"><i class="fa-solid fa-boxes-stacked text-teal-200"></i> ${estoqueList.length} itens de estoque</span>
                                 </div>
                             </div>
-                            <div class="flex flex-col gap-2 sm:flex-row lg:flex-col">
-                                <button onclick="dashboardAcionarIA('diagnostico')" class="inline-flex items-center justify-center gap-2 rounded-2xl bg-white px-5 py-3.5 text-sm font-extrabold text-teal-900 shadow-lg shadow-slate-950/10 transition hover:-translate-y-0.5 hover:bg-teal-50"><i class="fa-solid fa-wand-magic-sparkles"></i> Análise executiva Gemini</button>
-                                <button onclick="abrirModulo('relatorios')" class="inline-flex items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-xs font-bold text-white transition hover:bg-white/15"><i class="fa-solid fa-chart-column"></i> Abrir relatórios</button>
+                            <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+                                
+                                <button onclick="abrirModulo('relatorios')" class="inline-flex min-w-[176px] items-center justify-center gap-2 rounded-2xl border border-white/20 bg-white/10 px-5 py-3 text-xs font-bold text-white transition hover:bg-white/15"><i class="fa-solid fa-chart-column"></i> Abrir relatórios</button>
                             </div>
                         </div>
                         <div class="relative mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-white/15 pt-4 text-[11px] text-slate-300"><span><i class="fa-solid fa-rotate mr-1.5 text-teal-200"></i> Dados carregados nesta sessão</span><span>Atualização da visualização: ${formatadoAtualizacao}</span></div>
                     </section>
 
-                    <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                    <div class="dashboard-section-title flex flex-col gap-1 px-1 sm:flex-row sm:items-end sm:justify-between">
+                        <div><p class="text-[10px] font-extrabold uppercase tracking-[.18em] text-teal-700">Visão rápida</p><h3 class="text-lg font-black tracking-tight text-slate-900">Indicadores principais</h3><p class="text-xs text-slate-500">Resumo dos lançamentos e cadastros registrados no sistema.</p></div>
+                        <span class="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold text-slate-500"><i class="fa-solid fa-clock text-teal-600"></i> ${formatadoAtualizacao}</span>
+                    </div>
+
+                    <section class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 dashboard-kpi-grid">
                         <article class="group rounded-3xl border border-emerald-100 bg-white p-5 shadow-sm transition hover:-translate-y-1 hover:shadow-lg hover:shadow-emerald-900/5">
                             <div class="flex items-start justify-between gap-3"><div class="min-w-0"><p class="text-[10px] font-extrabold uppercase tracking-[.15em] text-slate-500">A receber · registrado</p><p class="mt-3 text-2xl font-black tracking-tight text-slate-900 break-words">${dashboardMoeda(totalReceber)}</p></div><div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-700 text-lg"><i class="fa-solid fa-arrow-down-to-line"></i></div></div>
                             <div class="mt-4 flex items-center justify-between border-t border-slate-100 pt-3"><span class="text-xs font-semibold text-slate-500">${quantidadeReceber} lançamento(s)</span><button onclick="abrirModulo('financeiro')" class="text-xs font-extrabold text-emerald-700 hover:underline">Ver contas <i class="fa-solid fa-arrow-right ml-1"></i></button></div>
@@ -4581,7 +5063,10 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                         </div>
                     </section>
 
-                    <section class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+                    <div class="dashboard-section-title flex flex-col gap-1 px-1 sm:flex-row sm:items-end sm:justify-between">
+                        <div><p class="text-[10px] font-extrabold uppercase tracking-[.18em] text-teal-700">Análise dos dados</p><h3 class="text-lg font-black tracking-tight text-slate-900">Financeiro e patrimônio</h3><p class="text-xs text-slate-500">Compare os valores registrados e acompanhe a situação do inventário.</p></div>
+                    </div>
+                    <section class="grid grid-cols-1 xl:grid-cols-3 gap-5 dashboard-analytics-grid">
                         <div class="rounded-3xl border border-slate-200 bg-white p-5 md:p-6 shadow-sm xl:col-span-2">
                             <div class="flex flex-wrap items-start justify-between gap-3"><div><p class="text-[10px] font-extrabold uppercase tracking-[.16em] text-teal-700">Financeiro</p><h3 class="mt-1 text-lg font-black text-slate-900">Panorama dos valores registrados</h3><p class="mt-1 text-xs text-slate-500">A receber, a pagar e diferença entre os registros. Não representa necessariamente saldo bancário.</p></div><button onclick="dashboardAcionarIA('despesas')" class="rounded-xl bg-teal-50 px-3 py-2 text-xs font-extrabold text-teal-800 transition hover:bg-teal-100"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Interpretar com IA</button></div>
                             <div class="relative mt-4 h-64 md:h-72 w-full"><canvas id="chartReceitaDespesa" aria-label="Gráfico dos valores registrados a receber e a pagar"></canvas></div>
@@ -4594,7 +5079,10 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                         </div>
                     </section>
 
-                    <section class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+                    <div class="dashboard-section-title flex flex-col gap-1 px-1 sm:flex-row sm:items-end sm:justify-between">
+                        <div><p class="text-[10px] font-extrabold uppercase tracking-[.18em] text-teal-700">Acompanhamento</p><h3 class="text-lg font-black tracking-tight text-slate-900">Alertas e movimentações recentes</h3><p class="text-xs text-slate-500">Priorize pendências e consulte os últimos lançamentos cadastrados.</p></div>
+                    </div>
+                    <section class="grid grid-cols-1 xl:grid-cols-3 gap-5 dashboard-operations-grid">
                         <div class="rounded-3xl border border-slate-200 bg-white p-5 md:p-6 shadow-sm xl:col-span-1">
                             <div class="flex items-center justify-between gap-3"><div><p class="text-[10px] font-extrabold uppercase tracking-[.16em] text-slate-500">Monitoramento</p><h3 class="mt-1 text-lg font-black text-slate-900">Pontos de atenção</h3></div><span class="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-extrabold text-slate-600">${alertas.length} item(ns)</span></div>
                             <div class="mt-4 space-y-3">${alertas.slice(0, 4).map(a => `<button onclick="${a.acao}" class="flex w-full items-start gap-3 rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 hover:shadow-sm ${classeAlerta(a.tipo)}"><span class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/80"><i class="fa-solid ${a.icone}"></i></span><span class="min-w-0"><span class="block text-xs font-extrabold">${escapeHTML(a.titulo)}</span><span class="mt-1 block text-[11px] leading-4 opacity-80">${escapeHTML(a.detalhe)}</span></span><i class="fa-solid fa-chevron-right ml-auto mt-1 text-[10px]"></i></button>`).join('')}</div>
@@ -9984,6 +10472,1031 @@ persistido no banco ou no gateway.
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
             }
+        </script>
+        <script>
+            (function() {
+                'use strict';
+
+                const STORAGE_PREFIX = 'guardioes_grid_columns_v1:';
+                let observerTimer = null;
+                let activePopover = null;
+                let pendingTouchDrag = null;
+                let activeTouchDrag = null;
+
+                function norm(value) {
+                    return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\s+/g, ' ').trim();
+                }
+
+                function moduleKey() {
+                    try {
+                        if (typeof tabsState !== 'undefined' && tabsState && tabsState.activeTab) {
+                            return String(tabsState.activeTab);
+                        }
+                    } catch (_) {}
+                    const active = document.querySelector('[data-module-active="true"]');
+                    return active ? norm(active.getAttribute('data-module-active')) : 'geral';
+                }
+
+                function hashText(text) {
+                    let hash = 0;
+                    for (let i = 0; i < text.length; i++)
+                        hash = ((hash << 5) - hash + text.charCodeAt(i)) | 0;
+                    return Math.abs(hash).toString(36);
+                }
+
+                function headerLabels(row) {
+                    return Array.from(row.cells).map( (th, i) => {
+                        const txt = (th.innerText || th.textContent || '').replace(/\s+/g, ' ').trim();
+                        return txt || `Coluna ${i + 1}`;
+                    }
+                    );
+                }
+
+                function makeColumnKeys(labels) {
+                    const counts = Object.create(null);
+                    return labels.map( (label, i) => {
+                        const base = norm(label) || `coluna-${i + 1}`;
+                        counts[base] = (counts[base] || 0) + 1;
+                        return `${base}::${counts[base]}`;
+                    }
+                    );
+                }
+
+                function moveColumn(table, from, to) {
+                    if (from === to || from < 0 || to < 0)
+                        return;
+                    const count = table.tHead && table.tHead.rows.length ? table.tHead.rows[0].cells.length : 0;
+                    if (!count || from >= count || to >= count)
+                        return;
+
+                    const rowGroups = [];
+                    if (table.tHead)
+                        rowGroups.push(...Array.from(table.tHead.rows));
+                    Array.from(table.tBodies).forEach(tbody => rowGroups.push(...Array.from(tbody.rows)));
+                    if (table.tFoot)
+                        rowGroups.push(...Array.from(table.tFoot.rows));
+
+                    rowGroups.forEach(row => {
+                        const cells = Array.from(row.cells);
+                        if (cells.length !== count || cells.some(cell => (cell.colSpan || 1) !== 1))
+                            return;
+                        const moving = cells[from];
+                        if (!moving)
+                            return;
+                        if (from < to)
+                            row.insertBefore(moving, cells[to].nextSibling);
+                        else
+                            row.insertBefore(moving, cells[to]);
+                    }
+                    );
+                }
+
+                function persistColumnOrder(table) {
+                    const row = table.tHead && table.tHead.rows[0];
+                    if (!row)
+                        return;
+                    const order = Array.from(row.cells).map(th => th.dataset.gridColKey || '');
+                    try {
+                        localStorage.setItem(STORAGE_PREFIX + table.dataset.gridId, JSON.stringify(order));
+                    } catch (_) {}
+                }
+
+                function restoreColumnOrder(table) {
+                    if (table.dataset.gridOrderRestored === '1')
+                        return;
+                    table.dataset.gridOrderRestored = '1';
+                    const row = table.tHead && table.tHead.rows[0];
+                    if (!row)
+                        return;
+                    let saved;
+                    try {
+                        saved = JSON.parse(localStorage.getItem(STORAGE_PREFIX + table.dataset.gridId) || 'null');
+                    } catch (_) {
+                        saved = null;
+                    }
+                    if (!Array.isArray(saved) || !saved.length)
+                        return;
+
+                    const current = Array.from(row.cells).map(th => th.dataset.gridColKey || '');
+                    saved.forEach( (key, targetIndex) => {
+                        if (!key || targetIndex >= current.length)
+                            return;
+                        const from = current.indexOf(key);
+                        if (from < 0 || from === targetIndex)
+                            return;
+                        moveColumn(table, from, targetIndex);
+                        const [item] = current.splice(from, 1);
+                        current.splice(targetIndex, 0, item);
+                    }
+                    );
+                }
+
+                function applyFilters(table) {
+                    const headerRow = table.tHead && table.tHead.rows[0];
+                    const filterRow = table.tHead && table.tHead.querySelector('tr[data-grid-filter-row="1"]');
+                    if (!headerRow || !filterRow)
+                        return;
+                    const filters = Array.from(filterRow.querySelectorAll('input[data-grid-filter-key]')).map(input => ({
+                        key: input.dataset.gridFilterKey,
+                        value: norm(input.value)
+                    })).filter(item => item.value);
+                    const headerCells = Array.from(headerRow.cells);
+                    let visibleCount = 0;
+
+                    Array.from(table.tBodies).forEach(tbody => {
+                        Array.from(tbody.rows).forEach(row => {
+                            if (row.dataset.gridFilterRow === '1')
+                                return;
+                            const cells = Array.from(row.cells);
+                            if (cells.length !== headerCells.length || cells.some(cell => (cell.colSpan || 1) !== 1)) {
+                                row.hidden = false;
+                                return;
+                            }
+                            const keep = filters.every(filter => {
+                                const index = headerCells.findIndex(th => th.dataset.gridColKey === filter.key);
+                                if (index < 0 || !cells[index])
+                                    return true;
+                                return norm(cells[index].innerText || cells[index].textContent).includes(filter.value);
+                            }
+                            );
+                            row.hidden = !keep;
+                            if (keep)
+                                visibleCount++;
+                        }
+                        );
+                    }
+                    );
+
+                    let status = table.parentElement && table.parentElement.querySelector(':scope > .grid-filter-status');
+                    if (!status && table.parentElement) {
+                        status = document.createElement('div');
+                        status.className = 'grid-filter-status text-[10px] text-slate-500 px-3 py-2 border-b border-slate-100 bg-white';
+                        status.setAttribute('aria-live', 'polite');
+                        table.parentElement.insertBefore(status, table);
+                    }
+                    if (status) {
+                        status.textContent = filters.length ? `${visibleCount} linha(s) correspondem aos filtros. Limpe os campos para mostrar tudo.` : `${visibleCount} linha(s) na tabela. Digite nos filtros para localizar registros.`;
+                    }
+                }
+
+                function addFilterRow(table, labels) {
+                    const thead = table.tHead;
+                    const headerRow = thead && thead.rows[0];
+                    if (!thead || !headerRow || thead.querySelector('tr[data-grid-filter-row="1"]'))
+                        return;
+                    const filterRow = document.createElement('tr');
+                    filterRow.dataset.gridFilterRow = '1';
+                    filterRow.className = 'grid-filter-row';
+
+                    Array.from(headerRow.cells).forEach( (th, i) => {
+                        const cell = document.createElement('th');
+                        cell.className = 'grid-filter-cell';
+                        cell.scope = 'col';
+                        cell.dataset.gridColKey = th.dataset.gridColKey || '';
+                        const label = labels[i] || `Coluna ${i + 1}`;
+                        const labelNorm = norm(label);
+                        const isActions = /\b(acoes|opcoes|acoes\s*\/\s*senha)\b/.test(labelNorm);
+                        const isPhoto = /^(foto|imagem|\s*)$/.test(labelNorm);
+                        if (!isActions && !isPhoto) {
+                            const input = document.createElement('input');
+                            input.type = 'search';
+                            input.className = 'grid-column-filter';
+                            input.placeholder = `Filtrar ${label}`;
+                            input.setAttribute('aria-label', `Filtrar coluna ${label}`);
+                            input.autocomplete = 'off';
+                            input.dataset.gridFilterKey = th.dataset.gridColKey || '';
+                            input.addEventListener('input', () => applyFilters(table));
+                            cell.appendChild(input);
+                        } else {
+                            cell.innerHTML = '<span class="grid-filter-muted" aria-hidden="true"><i class="fa-solid fa-minus"></i></span>';
+                        }
+                        filterRow.appendChild(cell);
+                    }
+                    );
+                    headerRow.after(filterRow);
+                }
+
+                function addDragToHeaders(table) {
+                    const row = table.tHead && table.tHead.rows[0];
+                    if (!row)
+                        return;
+                    Array.from(row.cells).forEach(th => {
+                        if (th.dataset.gridDragReady === '1')
+                            return;
+                        th.dataset.gridDragReady = '1';
+                        th.draggable = true;
+                        th.classList.add('grid-draggable-header');
+                        th.title = `${(th.innerText || th.textContent || '').trim()} — arraste para reorganizar a coluna`;
+                        th.addEventListener('dragstart', event => {
+                            const currentRow = table.tHead && table.tHead.rows[0];
+                            const index = currentRow ? Array.from(currentRow.cells).indexOf(th) : -1;
+                            if (index < 0) {
+                                event.preventDefault();
+                                return;
+                            }
+                            table.dataset.gridDraggingIndex = String(index);
+                            th.classList.add('grid-column-dragging');
+                            if (event.dataTransfer) {
+                                event.dataTransfer.effectAllowed = 'move';
+                                try {
+                                    event.dataTransfer.setData('text/plain', String(index));
+                                } catch (_) {}
+                            }
+                        }
+                        );
+                        th.addEventListener('dragover', event => {
+                            if (table.dataset.gridDraggingIndex === undefined)
+                                return;
+                            event.preventDefault();
+                            if (event.dataTransfer)
+                                event.dataTransfer.dropEffect = 'move';
+                            th.classList.add('grid-column-drop-target');
+                        }
+                        );
+                        th.addEventListener('dragleave', () => th.classList.remove('grid-column-drop-target'));
+                        th.addEventListener('drop', event => {
+                            event.preventDefault();
+                            th.classList.remove('grid-column-drop-target');
+                            const from = Number(table.dataset.gridDraggingIndex);
+                            const currentRow = table.tHead && table.tHead.rows[0];
+                            const to = currentRow ? Array.from(currentRow.cells).indexOf(th) : -1;
+                            if (Number.isFinite(from) && from >= 0 && to >= 0 && from !== to) {
+                                moveColumn(table, from, to);
+                                persistColumnOrder(table);
+                                // Mantém o campo de filtro associado à mesma coluna depois de mover.
+                                const filterRow = table.tHead.querySelector('tr[data-grid-filter-row="1"]');
+                                if (filterRow)
+                                    Array.from(filterRow.cells).forEach( (cell, i) => {
+                                        const input = cell.querySelector('input');
+                                        if (input)
+                                            input.dataset.gridFilterKey = cell.dataset.gridColKey || '';
+                                    }
+                                    );
+                                applyFilters(table);
+                            }
+                            delete table.dataset.gridDraggingIndex;
+                        }
+                        );
+                        th.addEventListener('dragend', () => {
+                            th.classList.remove('grid-column-dragging');
+                            Array.from(row.cells).forEach(cell => cell.classList.remove('grid-column-drop-target', 'grid-column-dragging'));
+                            delete table.dataset.gridDraggingIndex;
+                        }
+                        );
+
+                        // Em telas táteis: mantenha pressionado o cabeçalho por 450 ms e arraste para reordenar.
+                        th.addEventListener('pointerdown', event => {
+                            if (event.pointerType === 'mouse')
+                                return;
+                            if (pendingTouchDrag && pendingTouchDrag.timer)
+                                clearTimeout(pendingTouchDrag.timer);
+                            pendingTouchDrag = {
+                                table,
+                                th,
+                                pointerId: event.pointerId,
+                                startX: event.clientX,
+                                startY: event.clientY,
+                                timer: null
+                            };
+                            pendingTouchDrag.timer = setTimeout( () => {
+                                if (!pendingTouchDrag || pendingTouchDrag.th !== th)
+                                    return;
+                                const index = Array.from((table.tHead && table.tHead.rows[0] && table.tHead.rows[0].cells) || []).indexOf(th);
+                                if (index < 0) {
+                                    pendingTouchDrag = null;
+                                    return;
+                                }
+                                activeTouchDrag = {
+                                    table,
+                                    from: index,
+                                    pointerId: event.pointerId,
+                                    target: th
+                                };
+                                th.classList.add('grid-column-dragging');
+                                th.classList.add('grid-column-drop-target');
+                                if (navigator.vibrate) {
+                                    try {
+                                        navigator.vibrate(25);
+                                    } catch (_) {}
+                                }
+                            }
+                            , 450);
+                        }
+                        );
+                    }
+                    );
+                }
+
+                document.addEventListener('pointermove', event => {
+                    if (pendingTouchDrag && event.pointerId === pendingTouchDrag.pointerId && !activeTouchDrag) {
+                        const dx = Math.abs(event.clientX - pendingTouchDrag.startX);
+                        const dy = Math.abs(event.clientY - pendingTouchDrag.startY);
+                        if (dx > 12 || dy > 12) {
+                            clearTimeout(pendingTouchDrag.timer);
+                            pendingTouchDrag = null;
+                        }
+                    }
+                    if (!activeTouchDrag || event.pointerId !== activeTouchDrag.pointerId)
+                        return;
+                    event.preventDefault();
+                    const target = document.elementFromPoint(event.clientX, event.clientY);
+                    const th = target && target.closest ? target.closest('th.grid-draggable-header') : null;
+                    if (th && th.closest('table') === activeTouchDrag.table) {
+                        if (activeTouchDrag.target)
+                            activeTouchDrag.target.classList.remove('grid-column-drop-target');
+                        activeTouchDrag.target = th;
+                        th.classList.add('grid-column-drop-target');
+                    }
+                }
+                , {
+                    passive: false
+                });
+
+                document.addEventListener('pointerup', event => {
+                    if (pendingTouchDrag && event.pointerId === pendingTouchDrag.pointerId) {
+                        clearTimeout(pendingTouchDrag.timer);
+                        pendingTouchDrag = null;
+                    }
+                    if (!activeTouchDrag || event.pointerId !== activeTouchDrag.pointerId)
+                        return;
+                    const state = activeTouchDrag;
+                    const target = document.elementFromPoint(event.clientX, event.clientY);
+                    const targetTh = (target && target.closest) ? target.closest('th.grid-draggable-header') : null;
+                    const row = state.table.tHead && state.table.tHead.rows[0];
+                    const to = targetTh && targetTh.closest('table') === state.table && row ? Array.from(row.cells).indexOf(targetTh) : -1;
+                    if (to >= 0 && state.from !== to) {
+                        moveColumn(state.table, state.from, to);
+                        persistColumnOrder(state.table);
+                        applyFilters(state.table);
+                    }
+                    Array.from((state.table.tHead && state.table.tHead.rows[0] && state.table.tHead.rows[0].cells) || []).forEach(cell => cell.classList.remove('grid-column-drop-target', 'grid-column-dragging'));
+                    activeTouchDrag = null;
+                }
+                , true);
+
+                document.addEventListener('pointercancel', () => {
+                    if (pendingTouchDrag && pendingTouchDrag.timer)
+                        clearTimeout(pendingTouchDrag.timer);
+                    pendingTouchDrag = null;
+                    if (activeTouchDrag && activeTouchDrag.table.tHead) {
+                        Array.from(activeTouchDrag.table.tHead.rows[0].cells).forEach(cell => cell.classList.remove('grid-column-drop-target', 'grid-column-dragging'));
+                    }
+                    activeTouchDrag = null;
+                }
+                , true);
+
+                function closeActionPopover() {
+                    if (activePopover && activePopover.menu && activePopover.menu.isConnected)
+                        activePopover.menu.remove();
+                    if (activePopover && activePopover.trigger)
+                        activePopover.trigger.setAttribute('aria-expanded', 'false');
+                    activePopover = null;
+                }
+
+                function openActionPopover(trigger, template) {
+                    closeActionPopover();
+                    const buttons = Array.from(template.querySelectorAll('button, a[role="button"]'));
+                    if (!buttons.length)
+                        return;
+
+                    const menu = document.createElement('div');
+                    menu.className = 'grid-actions-popover';
+                    menu.setAttribute('role', 'menu');
+                    menu.setAttribute('aria-label', 'Ações do registro');
+
+                    buttons.forEach(original => {
+                        const clone = original.cloneNode(true);
+                        clone.removeAttribute('id');
+                        clone.removeAttribute('autofocus');
+                        clone.classList.add('grid-actions-menu-item');
+                        clone.setAttribute('role', 'menuitem');
+                        clone.style.width = '100%';
+                        clone.style.display = 'flex';
+                        clone.style.alignItems = 'center';
+                        clone.style.justifyContent = 'flex-start';
+                        clone.style.gap = '8px';
+                        clone.style.whiteSpace = 'normal';
+                        clone.style.textAlign = 'left';
+                        clone.addEventListener('click', () => setTimeout(closeActionPopover, 80));
+                        menu.appendChild(clone);
+                    }
+                    );
+
+                    document.body.appendChild(menu);
+                    const rect = trigger.getBoundingClientRect();
+                    const menuRect = menu.getBoundingClientRect();
+                    const margin = 8;
+                    let left = rect.right - menuRect.width;
+                    left = Math.max(margin, Math.min(left, window.innerWidth - menuRect.width - margin));
+                    let top = rect.bottom + 6;
+                    if (top + menuRect.height > window.innerHeight - margin)
+                        top = rect.top - menuRect.height - 6;
+                    top = Math.max(margin, Math.min(top, window.innerHeight - menuRect.height - margin));
+                    menu.style.left = `${left}px`;
+                    menu.style.top = `${top}px`;
+                    trigger.setAttribute('aria-expanded', 'true');
+                    activePopover = {
+                        menu,
+                        trigger
+                    };
+                    const first = menu.querySelector('button, a');
+                    if (first)
+                        first.focus({
+                            preventScroll: true
+                        });
+                }
+
+                function groupActionButtons(table) {
+                    const headerRow = table.tHead && table.tHead.rows[0];
+                    if (!headerRow)
+                        return;
+                    const actionIndexes = Array.from(headerRow.cells).map( (th, i) => ({
+                        label: norm(th.innerText || th.textContent),
+                        i
+                    })).filter(item => /\b(acoes|opcoes)\b/.test(item.label) || item.label.includes('acoes / senha')).map(item => item.i);
+                    if (!actionIndexes.length)
+                        return;
+
+                    Array.from(table.tBodies).forEach(tbody => Array.from(tbody.rows).forEach(row => {
+                        actionIndexes.forEach(index => {
+                            const cell = row.cells[index];
+                            if (!cell || cell.dataset.gridActionsEnhanced === '1')
+                                return;
+                            const buttons = cell.querySelectorAll('button, a[role="button"]');
+                            if (!buttons.length)
+                                return;
+
+                            // Evita converter um botão que já seja um menu.
+                            if (cell.querySelector('.grid-actions-trigger')) {
+                                cell.dataset.gridActionsEnhanced = '1';
+                                return;
+                            }
+
+                            const template = document.createElement('div');
+                            template.className = 'grid-actions-template';
+                            template.hidden = true;
+                            while (cell.firstChild)
+                                template.appendChild(cell.firstChild);
+
+                            const trigger = document.createElement('button');
+                            trigger.type = 'button';
+                            trigger.className = 'grid-actions-trigger';
+                            trigger.title = 'Ações do registro';
+                            trigger.setAttribute('aria-label', 'Abrir ações do registro');
+                            trigger.setAttribute('aria-haspopup', 'menu');
+                            trigger.setAttribute('aria-expanded', 'false');
+                            trigger.innerHTML = '<i class="fa-solid fa-layer-group" aria-hidden="true"></i><span>Ações</span><i class="fa-solid fa-chevron-down grid-actions-chevron" aria-hidden="true"></i>';
+                            trigger.addEventListener('click', event => {
+                                event.preventDefault();
+                                event.stopPropagation();
+                                if (activePopover && activePopover.trigger === trigger)
+                                    closeActionPopover();
+                                else
+                                    openActionPopover(trigger, template);
+                            }
+                            );
+
+                            cell.appendChild(trigger);
+                            cell.appendChild(template);
+                            cell.dataset.gridActionsEnhanced = '1';
+                        }
+                        );
+                    }
+                    ));
+                }
+
+                function enhanceTable(table, tableIndex) {
+                    if (!table || table.closest('#modal-container, .grid-actions-popover, [data-grid-no-enhance], .print-only'))
+                        return;
+                    if (table.dataset.gridEnhanced === '1')
+                        return;
+                    const thead = table.tHead;
+                    if (!thead || !thead.rows.length)
+                        return;
+                    // As tabelas operacionais dos módulos usam um cabeçalho tabular simples.
+                    // Evitamos tabelas de impressão ou cabeçalhos com células agrupadas.
+                    const existingRows = Array.from(thead.rows);
+                    if (existingRows.length !== 1)
+                        return;
+                    const headerRow = existingRows[0];
+                    if (headerRow.cells.length < 2 || Array.from(headerRow.cells).some(cell => (cell.colSpan || 1) !== 1))
+                        return;
+                    const bodyRows = Array.from(table.tBodies).flatMap(body => Array.from(body.rows));
+                    if (bodyRows.length && !bodyRows.some(row => row.cells.length === headerRow.cells.length))
+                        return;
+
+                    const labels = headerLabels(headerRow);
+                    const keys = makeColumnKeys(labels);
+                    Array.from(headerRow.cells).forEach( (th, i) => {
+                        th.dataset.gridColKey = keys[i];
+                    }
+                    );
+
+                    let module = 'geral';
+                    try {
+                        if (typeof tabsState !== 'undefined' && tabsState.activeTab)
+                            module = String(tabsState.activeTab);
+                    } catch (_) {}
+                    const identity = `${module}|${labels.map(norm).join('|')}|${tableIndex}`;
+                    table.dataset.gridId = `${module}-${hashText(identity)}`;
+
+                    addFilterRow(table, labels);
+                    // Restaura as colunas depois da linha de filtro ser criada, para mover todas em conjunto.
+                    restoreColumnOrder(table);
+                    addDragToHeaders(table);
+                    groupActionButtons(table);
+                    table.dataset.gridEnhanced = '1';
+                    applyFilters(table);
+                }
+
+                function enhanceTables() {
+                    observerTimer = null;
+                    const main = document.querySelector('#app main');
+                    if (!main)
+                        return;
+                    const tables = Array.from(main.querySelectorAll('table'));
+                    tables.forEach( (table, index) => {
+                        try {
+                            enhanceTable(table, index);
+                        } catch (error) {
+                            console.warn('Não foi possível preparar tabela do módulo:', error);
+                        }
+                    }
+                    );
+                }
+
+                function scheduleEnhance() {
+                    if (observerTimer !== null)
+                        return;
+                    observerTimer = setTimeout(enhanceTables, 80);
+                }
+
+                document.addEventListener('click', event => {
+                    if (!activePopover)
+                        return;
+                    if (activePopover.menu.contains(event.target) || activePopover.trigger.contains(event.target))
+                        return;
+                    closeActionPopover();
+                }
+                , true);
+                document.addEventListener('keydown', event => {
+                    if (event.key === 'Escape')
+                        closeActionPopover();
+                }
+                );
+                window.addEventListener('scroll', closeActionPopover, true);
+                window.addEventListener('resize', closeActionPopover, {
+                    passive: true
+                });
+
+                function boot() {
+                    const target = document.querySelector('#app') || document.body;
+                    const observer = new MutationObserver(scheduleEnhance);
+                    observer.observe(target, {
+                        childList: true,
+                        subtree: true
+                    });
+                    enhanceTables();
+                }
+
+                if (document.readyState === 'loading')
+                    document.addEventListener('DOMContentLoaded', boot, {
+                        once: true
+                    });
+                else
+                    boot();
+            }
+            )();
+        </script>
+        <script id="guardioes-notifications-script">
+            (function() {
+                'use strict';
+                const VERSION = 'gb-notifications-v1';
+                const COLLECTIONS = [{
+                    key: 'conselheiros',
+                    module: 'condominio',
+                    title: 'Novo conselheiro cadastrado'
+                }, {
+                    key: 'usuarios',
+                    module: 'usuarios',
+                    title: 'Novo usuário cadastrado'
+                }, {
+                    key: 'plano_contas',
+                    module: 'plano_contas',
+                    title: 'Nova conta no plano de contas'
+                }, {
+                    key: 'financeiro',
+                    module: 'financeiro',
+                    title: 'Novo título financeiro'
+                }, {
+                    key: 'formas_monetarias',
+                    module: 'formas_monetarias',
+                    title: 'Nova forma monetária cadastrada'
+                }, {
+                    key: 'contas_bancarias',
+                    module: 'contas_bancarias',
+                    title: 'Nova conta bancária cadastrada'
+                }, {
+                    key: 'moradores',
+                    module: 'moradores',
+                    title: 'Novo morador cadastrado'
+                }, {
+                    key: 'fornecedores',
+                    module: 'fornecedores',
+                    title: 'Novo fornecedor cadastrado'
+                }, {
+                    key: 'empregados',
+                    module: 'empregados',
+                    title: 'Novo empregado cadastrado'
+                }, {
+                    key: 'categorias',
+                    module: 'categorias',
+                    title: 'Nova pasta ou categoria cadastrada'
+                }, {
+                    key: 'estoque',
+                    module: 'estoque',
+                    title: 'Novo item adicionado ao estoque'
+                }, {
+                    key: 'acertos_estoque',
+                    module: 'acerto_estoque',
+                    title: 'Novo acerto de estoque registrado'
+                }, {
+                    key: 'documentos',
+                    module: 'documentos',
+                    title: 'Novo documento cadastrado'
+                }];
+                const MODULE_LABELS = {
+                    condominio: 'Dados do Condomínio',
+                    usuarios: 'Utilizadores',
+                    plano_contas: 'Plano de Contas',
+                    financeiro: 'Pagar / Receber',
+                    formas_monetarias: 'Formas Monetárias',
+                    contas_bancarias: 'Contas Bancárias',
+                    moradores: 'Moradores & Unidades',
+                    fornecedores: 'Fornecedores',
+                    empregados: 'Empregados',
+                    categorias: 'Pastas',
+                    estoque: 'Estoque & Inventário',
+                    acerto_estoque: 'Acerto de Estoque',
+                    documentos: 'Documentos',
+                    dashboard: 'Dashboard'
+                };
+                let userKey = '';
+                let notices = [];
+                let knownIds = [];
+                let ready = false;
+                let panelOpen = false;
+
+                const safeRead = (key, fallback) => {
+                    try {
+                        const v = localStorage.getItem(key);
+                        return v === null ? fallback : JSON.parse(v);
+                    } catch (_) {
+                        return fallback;
+                    }
+                }
+                ;
+                const safeWrite = (key, value) => {
+                    try {
+                        localStorage.setItem(key, JSON.stringify(value));
+                    } catch (e) {
+                        console.warn('Não foi possível guardar as notificações neste dispositivo.', e);
+                    }
+                }
+                ;
+                const normalize = value => String(value || '').trim().toLowerCase();
+                const esc = value => String(value == null ? '' : value).replace(/[&<>"']/g, ch => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;'
+                }[ch]));
+                const currentUserKey = () => {
+                    try {
+                        const user = typeof sessao !== 'undefined' && sessao ? sessao.usuarioLogado : null;
+                        const raw = user && (user.email || user.usuario || user.id || user.nome);
+                        return normalize(raw).replace(/[^a-z0-9@._-]/g, '_');
+                    } catch (_) {
+                        return '';
+                    }
+                }
+                ;
+                const keyFor = (kind, user) => `${VERSION}:${kind}:${user}`;
+                const recordIdentity = record => {
+                    if (!record || typeof record !== 'object')
+                        return null;
+                    const id = record.id ?? record.uuid ?? record.codigo ?? record.chave ?? record.referencia;
+                    return id == null || String(id).trim() === '' ? null : String(id).trim();
+                }
+                ;
+                function collectRecords(data) {
+                    const out = [];
+                    COLLECTIONS.forEach(collection => {
+                        const values = data && Array.isArray(data[collection.key]) ? data[collection.key] : [];
+                        values.forEach(record => {
+                            const id = recordIdentity(record);
+                            if (id === null)
+                                return;
+                            out.push({
+                                identity: `${collection.key}:${id}`,
+                                collection: collection.key,
+                                module: collection.module,
+                                title: collection.title
+                            });
+                        }
+                        );
+                    }
+                    );
+                    return out;
+                }
+                function persist() {
+                    if (!userKey)
+                        return;
+                    safeWrite(keyFor('items', userKey), notices.slice(0, 60));
+                    safeWrite(keyFor('known', userKey), knownIds);
+                }
+                function addNotice(item) {
+                    const now = new Date();
+                    notices.unshift({
+                        id: 'gbn_' + now.getTime().toString(36) + '_' + Math.random().toString(36).slice(2, 9),
+                        sourceKey: item.sourceKey || '',
+                        module: item.module || 'dashboard',
+                        title: item.title || 'Novidade do sistema',
+                        message: item.message || '',
+                        createdAt: now.toISOString(),
+                        read: false
+                    });
+                    notices = notices.slice(0, 60);
+                }
+                function announceFeatureOnce() {
+                    const id = 'release-central-notificacoes-202610';
+                    if (!notices.some(n => n && n.id === id)) {
+                        notices.unshift({
+                            id,
+                            sourceKey: id,
+                            module: 'dashboard',
+                            title: 'Novidade do sistema',
+                            message: 'Agora você recebe avisos quando novos cadastros são adicionados aos módulos. Abra o sino para consultar as novidades.',
+                            createdAt: new Date().toISOString(),
+                            read: false
+                        });
+                        notices = notices.slice(0, 60);
+                    }
+                }
+                function initializeForUser() {
+                    const nextUser = currentUserKey();
+                    if (!nextUser)
+                        return;
+                    if (ready && userKey === nextUser)
+                        return;
+                    userKey = nextUser;
+                    notices = safeRead(keyFor('items', userKey), []);
+                    if (!Array.isArray(notices))
+                        notices = [];
+                    const savedKnown = safeRead(keyFor('known', userKey), null);
+                    const current = collectRecords(typeof db !== 'undefined' ? db : {});
+                    const currentIds = current.map(x => x.identity);
+                    if (Array.isArray(savedKnown)) {
+                        const prior = new Set(savedKnown);
+                        current.filter(x => !prior.has(x.identity)).forEach(x => addNotice({
+                            module: x.module,
+                            title: x.title,
+                            message: `Foi adicionado um novo registro em ${MODULE_LABELS[x.module] || x.module}.`,
+                            sourceKey: x.identity
+                        }));
+                    }
+                    knownIds = currentIds;
+                    announceFeatureOnce();
+                    ready = true;
+                    persist();
+                    ensureWidget();
+                    renderNotifications();
+                }
+                function detectNewRecords(data) {
+                    if (!ready || !userKey)
+                        return;
+                    if (currentUserKey() !== userKey) {
+                        initializeForUser();
+                        return;
+                    }
+                    const current = collectRecords(data || (typeof db !== 'undefined' ? db : {}));
+                    const prior = new Set(knownIds);
+                    const newItems = current.filter(x => !prior.has(x.identity));
+                    if (newItems.length) {
+                        newItems.slice(0, 20).reverse().forEach(x => addNotice({
+                            module: x.module,
+                            title: x.title,
+                            message: `Foi adicionado um novo registro em ${MODULE_LABELS[x.module] || x.module}.`,
+                            sourceKey: x.identity
+                        }));
+                    }
+                    knownIds = current.map(x => x.identity);
+                    persist();
+                    renderNotifications();
+                }
+                function getUnreadCount() {
+                    return notices.filter(n => n && !n.read).length;
+                }
+                function ensureWidget() {
+                    const app = document.getElementById('app');
+                    if (!app || !currentUserKey())
+                        return;
+                    let tabsBar = Array.from(app.querySelectorAll('div')).find(el => el.classList.contains('bg-slate-200/80') && el.classList.contains('overflow-x-auto') && el.querySelector('.tab-active'));
+                    if (tabsBar && !tabsBar.querySelector('#gb-notifications-anchor')) {
+                        const scroller = document.createElement('div');
+                        scroller.className = 'gb-tabs-scroller';
+                        scroller.style.cssText = 'display:flex;align-items:center;gap:8px;overflow-x:auto;min-width:0;flex:1;scrollbar-width:thin;';
+                        while (tabsBar.firstChild)
+                            scroller.appendChild(tabsBar.firstChild);
+                        tabsBar.classList.remove('overflow-x-auto');
+                        tabsBar.classList.add('overflow-visible', 'relative', 'justify-between');
+                        tabsBar.style.overflow = 'visible';
+                        tabsBar.style.position = 'relative';
+                        tabsBar.style.zIndex = '80';
+                        tabsBar.appendChild(scroller);
+                        const anchor = document.createElement('div');
+                        anchor.id = 'gb-notifications-anchor';
+                        anchor.innerHTML = '<button type="button" id="gb-notifications-toggle" aria-label="Abrir novidades do sistema" aria-haspopup="dialog" aria-expanded="false" title="Novidades e novos cadastros"><i class="fa-solid fa-bell gb-bell-icon" aria-hidden="true"></i><span id="gb-notifications-label">Novidades</span><span id="gb-notifications-count" aria-live="polite"></span></button>';
+                        tabsBar.appendChild(anchor);
+                    }
+                    if (!document.getElementById('gb-notifications-panel')) {
+                        const panel = document.createElement('section');
+                        panel.id = 'gb-notifications-panel';
+                        panel.setAttribute('role', 'dialog');
+                        panel.setAttribute('aria-label', 'Novidades do sistema');
+                        panel.setAttribute('aria-modal', 'false');
+                        document.body.appendChild(panel);
+                    }
+                }
+                function renderNotifications() {
+                    const toggle = document.getElementById('gb-notifications-toggle');
+                    const count = document.getElementById('gb-notifications-count');
+                    const panel = document.getElementById('gb-notifications-panel');
+                    if (toggle && count) {
+                        const unread = getUnreadCount();
+                        count.textContent = unread > 99 ? '99+' : String(unread);
+                        count.style.display = unread ? 'inline-flex' : 'none';
+                        toggle.classList.toggle('gb-has-unread', unread > 0);
+                        toggle.title = unread ? `${unread} novidade(s) não lida(s)` : 'Novidades e novos cadastros';
+                        toggle.setAttribute('aria-expanded', panelOpen ? 'true' : 'false');
+                    }
+                    if (!panel)
+                        return;
+                    const sorted = notices.slice().sort( (a, b) => Date.parse(b.createdAt || 0) - Date.parse(a.createdAt || 0));
+                    const list = sorted.length ? `<div class="gb-notif-list">${sorted.map(n => `
+      <button type="button" class="gb-notif-row ${n.read ? 'gb-read' : 'gb-unread'}" data-gb-notification-id="${esc(n.id)}" data-gb-module="${esc(n.module || 'dashboard')}">
+        <span class="gb-notif-dot" aria-hidden="true"></span><span style="min-width:0;flex:1"><span class="gb-notif-row-title">${esc(n.title)}</span><span class="gb-notif-row-message" style="display:block">${esc(n.message)}</span><span class="gb-notif-time" style="display:block">${esc(n.createdAt ? new Date(n.createdAt).toLocaleString('pt-BR') : '')} ${n.read ? '· Lida' : '· Nova'}</span></span>
+      </button>`).join('')}</div>` : '<div class="gb-notif-empty"><i class="fa-regular fa-bell-slash"></i>Nenhuma novidade por enquanto.<br>Quando novos cadastros forem adicionados, eles aparecerão aqui.</div>';
+                    panel.innerHTML = `<div class="gb-notif-head"><div><h3 class="gb-notif-title">Novidades do sistema</h3><p class="gb-notif-subtitle">Avisos de novos cadastros e recursos.</p></div><button type="button" id="gb-notifications-mark-all" class="gb-notif-markall" ${getUnreadCount() ? '' : 'disabled style="opacity:.5;cursor:default"'}>Marcar lidas</button></div>${list}<div class="gb-notif-foot">Os avisos ficam guardados neste navegador e são vinculados à conta utilizada.</div>`;
+                    panel.classList.toggle('gb-open', panelOpen);
+                    if (panelOpen)
+                        positionPanel();
+                }
+                function positionPanel() {
+                    const panel = document.getElementById('gb-notifications-panel');
+                    const toggle = document.getElementById('gb-notifications-toggle');
+                    if (!panel || !toggle || !panelOpen)
+                        return;
+                    const rect = toggle.getBoundingClientRect();
+                    const width = Math.min(390, window.innerWidth - 20);
+                    panel.style.width = `${width}px`;
+                    const right = Math.max(10, window.innerWidth - rect.right);
+                    panel.style.right = `${right}px`;
+                    panel.style.left = 'auto';
+                    panel.style.top = `${Math.max(8, Math.min(rect.bottom + 8, window.innerHeight - Math.min(panel.offsetHeight || 400, window.innerHeight - 16) - 8))}px`;
+                    panel.style.maxHeight = `${Math.max(220, Math.min(window.innerHeight * 0.72, 560))}px`;
+                }
+                function closePanel() {
+                    panelOpen = false;
+                    const p = document.getElementById('gb-notifications-panel');
+                    if (p)
+                        p.classList.remove('gb-open');
+                    const b = document.getElementById('gb-notifications-toggle');
+                    if (b)
+                        b.setAttribute('aria-expanded', 'false');
+                }
+                function markAllRead() {
+                    notices.forEach(n => n.read = true);
+                    persist();
+                    renderNotifications();
+                }
+                document.addEventListener('click', event => {
+                    const toggle = event.target.closest && event.target.closest('#gb-notifications-toggle');
+                    if (toggle) {
+                        event.preventDefault();
+                        event.stopPropagation();
+                        if (currentUserKey() !== userKey)
+                            initializeForUser();
+                        panelOpen = !panelOpen;
+                        ensureWidget();
+                        renderNotifications();
+                        if (panelOpen)
+                            positionPanel();
+                        return;
+                    }
+                    const mark = event.target.closest && event.target.closest('#gb-notifications-mark-all');
+                    if (mark) {
+                        event.preventDefault();
+                        markAllRead();
+                        return;
+                    }
+                    const noticeButton = event.target.closest && event.target.closest('[data-gb-notification-id]');
+                    if (noticeButton) {
+                        const id = noticeButton.getAttribute('data-gb-notification-id');
+                        const notification = notices.find(n => n.id === id);
+                        if (notification) {
+                            notification.read = true;
+                            persist();
+                            renderNotifications();
+                        }
+                        const moduleId = noticeButton.getAttribute('data-gb-module') || 'dashboard';
+                        closePanel();
+                        try {
+                            if (typeof abrirModulo === 'function')
+                                abrirModulo(moduleId);
+                        } catch (_) {}
+                        return;
+                    }
+                    const panel = document.getElementById('gb-notifications-panel');
+                    const anchor = document.getElementById('gb-notifications-anchor');
+                    if (panelOpen && panel && !panel.contains(event.target) && anchor && !anchor.contains(event.target))
+                        closePanel();
+                }
+                , true);
+                document.addEventListener('keydown', event => {
+                    if (event.key === 'Escape')
+                        closePanel();
+                }
+                );
+                window.addEventListener('resize', positionPanel, {
+                    passive: true
+                });
+                window.addEventListener('scroll', positionPanel, {
+                    passive: true,
+                    capture: true
+                });
+                window.addEventListener('storage', event => {
+                    if (!userKey || (event.key !== keyFor('items', userKey) && event.key !== keyFor('known', userKey)))
+                        return;
+                    notices = safeRead(keyFor('items', userKey), []);
+                    if (!Array.isArray(notices))
+                        notices = [];
+                    knownIds = safeRead(keyFor('known', userKey), []);
+                    if (!Array.isArray(knownIds))
+                        knownIds = [];
+                    renderNotifications();
+                }
+                );
+
+                // Integra com a renderização já existente sem reescrever os módulos.
+                try {
+                    const oldRenderApp = renderApp;
+                    renderApp = function() {
+                        const result = oldRenderApp.apply(this, arguments);
+                        try {
+                            if (currentUserKey()) {
+                                if (!ready || userKey !== currentUserKey())
+                                    initializeForUser();
+                                else
+                                    detectNewRecords(typeof db !== 'undefined' ? db : {});
+                                ensureWidget();
+                                renderNotifications();
+                            } else {
+                                ready = false;
+                                userKey = '';
+                                panelOpen = false;
+                                const panel = document.getElementById('gb-notifications-panel');
+                                if (panel)
+                                    panel.classList.remove('gb-open');
+                            }
+                        } catch (error) {
+                            console.warn('Notificações do sistema:', error);
+                        }
+                        return result;
+                    }
+                    ;
+                } catch (error) {
+                    console.warn('Não foi possível integrar as novidades à renderização.', error);
+                }
+
+                try {
+                    const oldSave = salvarDados;
+                    salvarDados = function(data) {
+                        try {
+                            if (currentUserKey() && ready && userKey === currentUserKey())
+                                detectNewRecords(data || (typeof db !== 'undefined' ? db : {}));
+                        } catch (error) {
+                            console.warn('Não foi possível verificar novas inclusões.', error);
+                        }
+                        return oldSave.apply(this, arguments);
+                    }
+                    ;
+                } catch (error) {
+                    console.warn('Não foi possível observar gravações para notificações.', error);
+                }
+            }
+            )();
         </script>
     </body>
 </html>
