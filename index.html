@@ -5711,6 +5711,8 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                         <td class="p-4">
                                             <div class="font-bold text-slate-900">${escapeHTML(m.nome)}</div>
                                             <div class="text-[10px] text-slate-400 font-medium">${escapeHTML(m.email || '-')}</div>
+                                            ${m.condicao ? `<div class="mt-1"><span class="px-2 py-0.5 rounded-full text-[10px] font-extrabold ${m.condicao === 'Inquilino' ? 'bg-amber-50 text-amber-800' : 'bg-sky-50 text-sky-800'}">${escapeHTML(m.condicao)}</span></div>` : ''}
+                                            ${m.condicao === 'Inquilino' && m.proprietarioNome ? `<div class="text-[10px] text-slate-500 mt-1">Proprietário: <b>${escapeHTML(m.proprietarioNome)}</b>${m.proprietarioTel ? ' · ' + escapeHTML(m.proprietarioTel) : ''}</div>` : ''}
                                         </td>
                                         <td class="p-4 font-mono font-medium">${escapeHTML(m.cpf || '-')}</td>
                                         <td class="p-4 font-mono font-medium">${escapeHTML(m.telefone || '-')}</td>
@@ -5763,7 +5765,10 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     telefone: '',
                     cpf: '',
                     petNome: '',
-                    vagaGaragem: ''
+                    vagaGaragem: '',
+                    condicao: '',
+                    proprietarioNome: '',
+                    proprietarioTel: ''
                 };
                 abrirModalContainer(`
                 <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
@@ -5778,6 +5783,21 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                 <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Apartamento</label><input type="text" id="m_m_ap" required value="${escapeHTML(m.apartamento)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
                             </div>
                             <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Nome Completo</label><input type="text" id="m_m_nome" required value="${escapeHTML(m.nome)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50" placeholder="Ex: Ana Maria"></div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                <div>
+                                    <label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Condição</label>
+                                    <select id="m_m_condicao" onchange="document.getElementById('bloco-dados-proprietario').classList.toggle('hidden', this.value !== 'Inquilino')" class="w-full p-3 border rounded-2xl font-bold bg-slate-50">
+                                        <option value="" ${!m.condicao ? 'selected' : ''}>Selecione...</option>
+                                        <option value="Proprietário" ${m.condicao === 'Proprietário' ? 'selected' : ''}>Proprietário</option>
+                                        <option value="Inquilino" ${m.condicao === 'Inquilino' ? 'selected' : ''}>Inquilino</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div id="bloco-dados-proprietario" class="${m.condicao === 'Inquilino' ? '' : 'hidden'} grid grid-cols-1 sm:grid-cols-2 gap-2 p-3 bg-amber-50 border border-amber-200 rounded-2xl">
+                                <div class="sm:col-span-2 text-[10px] font-extrabold uppercase text-amber-800"><i class="fa-solid fa-key mr-1"></i> Proprietário do imóvel</div>
+                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Nome do proprietário</label><input type="text" id="m_m_prop_nome" value="${escapeHTML(m.proprietarioNome || '')}" class="w-full p-3 border rounded-2xl font-bold bg-white"></div>
+                                <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Telefone do proprietário</label><input type="text" id="m_m_prop_tel" value="${escapeHTML(m.proprietarioTel || '')}" class="w-full p-3 border rounded-2xl font-bold bg-white"></div>
+                            </div>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
                                 <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">E-mail</label><input type="email" id="m_m_email" value="${escapeHTML(m.email || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
                                 <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Telefone / WhatsApp</label><input type="text" id="m_m_tel" value="${escapeHTML(m.telefone || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
@@ -5803,6 +5823,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 if (!db.moradores)
                     db.moradores = [];
                 const obj = {
+                    ...((id && id !== 'null') ? (db.moradores.find(x => x.id === id) || {}) : {}),
                     id: id && id !== 'null' ? id : 'mor_' + Date.now(),
                     bloco: document.getElementById('m_m_bloco').value,
                     apartamento: document.getElementById('m_m_ap').value,
@@ -5811,7 +5832,10 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     telefone: document.getElementById('m_m_tel').value,
                     cpf: document.getElementById('m_m_cpf').value,
                     petNome: document.getElementById('m_m_pet').value,
-                    vagaGaragem: document.getElementById('m_m_vaga').value
+                    vagaGaragem: document.getElementById('m_m_vaga').value,
+                    condicao: document.getElementById('m_m_condicao').value,
+                    proprietarioNome: document.getElementById('m_m_condicao').value === 'Inquilino' ? document.getElementById('m_m_prop_nome').value.trim() : (((db.moradores.find(x => x.id === id) || {})).proprietarioNome || ''),
+                    proprietarioTel: document.getElementById('m_m_condicao').value === 'Inquilino' ? document.getElementById('m_m_prop_tel').value.trim() : (((db.moradores.find(x => x.id === id) || {})).proprietarioTel || '')
                 };
                 const idx = db.moradores.findIndex(x => x.id === obj.id);
                 if (idx !== -1)
