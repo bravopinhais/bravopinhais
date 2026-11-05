@@ -2960,7 +2960,56 @@
                 return mapa[ext] || 'application/octet-stream';
             }
 
-            async function enviarAnexoStorage(arquivo, pasta) {
+            const LIMITE_ANEXO_MB = 10;
+            const IMAGEM_LADO_MAXIMO = 1280;
+            const IMAGEM_QUALIDADE_JPEG = 0.75;
+
+            // Redimensiona e comprime imagens (foto de celular: de vários MB para ~200 KB).
+            // Se algo falhar (ex.: formato não suportado pelo navegador), devolve o arquivo original.
+            async function reduzirImagemArquivo(arquivo) {
+                try {
+                    const tipo = (arquivo.type || '').toLowerCase();
+                    if (!tipo.startsWith('image/') || tipo === 'image/gif' || tipo === 'image/svg+xml')
+                        return arquivo;
+                    const url = URL.createObjectURL(arquivo);
+                    const img = await new Promise((resolve,reject) => {
+                        const im = new Image();
+                        im.onload = () => resolve(im);
+                        im.onerror = () => reject(new Error('imagem ilegível'));
+                        im.src = url;
+                    }
+                    );
+                    URL.revokeObjectURL(url);
+                    const escala = Math.min(1, IMAGEM_LADO_MAXIMO / Math.max(img.naturalWidth, img.naturalHeight));
+                    const largura = Math.max(1, Math.round(img.naturalWidth * escala));
+                    const altura = Math.max(1, Math.round(img.naturalHeight * escala));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = largura;
+                    canvas.height = altura;
+                    const ctx = canvas.getContext('2d');
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(0, 0, largura, altura);
+                    ctx.drawImage(img, 0, 0, largura, altura);
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', IMAGEM_QUALIDADE_JPEG));
+                    if (!blob || blob.size >= arquivo.size)
+                        return arquivo;
+                    const base = String(arquivo.name || 'foto').replace(/\.[^.]+$/, '');
+                    return new File([blob],base + '.jpg',{
+                        type: 'image/jpeg'
+                    });
+                } catch (e) {
+                    console.warn('Não foi possível reduzir a imagem; usando o original.', e);
+                    return arquivo;
+                }
+            }
+
+            async function enviarAnexoStorage(arquivoOriginal, pasta) {
+                const arquivo = await reduzirImagemArquivo(arquivoOriginal);
+                if (arquivo.size > LIMITE_ANEXO_MB * 1024 * 1024) {
+                    const erro = new Error('O arquivo tem ' + (arquivo.size / 1048576).toFixed(1).replace('.', ',') + ' MB e o limite é ' + LIMITE_ANEXO_MB + ' MB. Reduza o arquivo (por exemplo, gerando o PDF em resolução menor) e tente novamente.');
+                    erro.tamanho = true;
+                    throw erro;
+                }
                 const path = pasta + '/' + Date.now() + '_' + Math.random().toString(36).slice(2, 8) + '_' + _nomeSeguroAnexo(arquivo.name);
                 const {error} = await supabaseClient.storage.from(BUCKET_ANEXOS).upload(path, arquivo, {
                     contentType: arquivo.type || _mimePorNome(arquivo.name),
@@ -2968,7 +3017,10 @@
                 });
                 if (error)
                     throw error;
-                return path;
+                return {
+                    path: path,
+                    nome: arquivo.name
+                };
             }
 
             async function urlAssinadaAnexo(path, segundos, opcoes) {
@@ -3101,6 +3153,160 @@
                     } catch (e) {}
                 }
                 alert('Migração concluída.\n\nMigrados: ' + ok + '\nCom falha: ' + falhas.length + (falhas.length ? '\n\n' + falhas.join('\n') : '') + '\n\nConfira se a barra do topo ficou verde ("Sincronizado com a Nuvem").');
+            }
+            ;
+
+            // Reduz as imagens que já estão no Storage (fotos antigas e documentos que sejam imagem).
+            // PDFs não são alterados. Os arquivos antigos só são apagados depois que a base foi salva com sucesso.
+            const OTIMIZAR_SOMENTE_ACIMA_KB = 250;
+            window.otimizarAnexosExistentes = async function() {
+                const itens = [];
+                let pdfs = 0, pdfsBytes = 0, legados = 0;
+                (db.estoque || []).forEach(st => {
+                    if (st.fotoPath)
+                        itens.push({
+                            ref: st,
+                            campoPath: 'fotoPath',
+                            campoNome: 'fotoNome',
+                            pasta: 'estoque'
+                        });
+                    else if (st.fotoCompactadaGzip)
+                        legados++;
+                }
+                );
+                (db.documentos || []).forEach(d => {
+                    if (d.arquivoPath) {
+                        const mime = _mimePorNome(d.nomeArquivo);
+                        if (mime.startsWith('image/') && mime !== 'image/gif')
+                            itens.push({
+                                ref: d,
+                                campoPath: 'arquivoPath',
+                                campoNome: 'nomeArquivo',
+                                pasta: 'documentos'
+                            });
+                        else
+                            pdfs++;
+                    } else if (d.arquivoCompactadoGzip)
+                        legados++;
+                }
+                );
+                if (legados > 0) {
+                    alert('Ainda existem ' + legados + ' anexo(s) no formato antigo. Rode primeiro "Migrar anexos para o Storage" e depois esta otimização.');
+                    return;
+                }
+                if (!itens.length) {
+                    alert('Não há imagens no Storage para otimizar.' + (pdfs ? '\n\nOs ' + pdfs + ' PDF(s) não são alterados pelo sistema.' : ''));
+                    return;
+                }
+                if (!confirm('Serão verificadas ' + itens.length + ' imagem(ns). As acima de ' + OTIMIZAR_SOMENTE_ACIMA_KB + ' KB serão reduzidas e substituídas.\n\nOs arquivos antigos só serão apagados depois que a base for salva com sucesso. Faça um backup JSON antes de continuar.\n\nDeseja iniciar?'))
+                    return;
+                const barra = (txt) => {
+                    if (typeof _statusNuvem === 'function')
+                        _statusNuvem('bg-slate-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print animate-pulse border-b border-slate-800', txt);
+                };
+                let reduzidas = 0, puladas = 0, bytesAntes = 0, bytesDepois = 0;
+                const falhas = [];
+                const trocas = [];
+                // {ref, campoPath, campoNome, pathAntigo, nomeAntigo, pathNovo, nomeNovo}
+                for (let i = 0; i < itens.length; i++) {
+                    const it = itens[i];
+                    const pathAntigo = it.ref[it.campoPath];
+                    const nomeAntigo = it.ref[it.campoNome] || 'imagem.jpg';
+                    barra('Otimizando imagens: ' + (i + 1) + ' de ' + itens.length + '...');
+                    try {
+                        const {data: blob, error: errDown} = await supabaseClient.storage.from(BUCKET_ANEXOS).download(pathAntigo);
+                        if (errDown)
+                            throw errDown;
+                        if (blob.size <= OTIMIZAR_SOMENTE_ACIMA_KB * 1024) {
+                            puladas++;
+                            continue;
+                        }
+                        const original = new File([blob],nomeAntigo,{
+                            type: _mimePorNome(nomeAntigo)
+                        });
+                        const reduzido = await reduzirImagemArquivo(original);
+                        if (reduzido === original || reduzido.size >= original.size) {
+                            puladas++;
+                            continue;
+                        }
+                        const pathNovo = it.pasta + '/' + it.ref.id + '_' + Date.now() + '_' + _nomeSeguroAnexo(reduzido.name);
+                        const {error: errUp} = await supabaseClient.storage.from(BUCKET_ANEXOS).upload(pathNovo, reduzido, {
+                            contentType: 'image/jpeg',
+                            upsert: false
+                        });
+                        if (errUp)
+                            throw errUp;
+                        it.ref[it.campoPath] = pathNovo;
+                        it.ref[it.campoNome] = reduzido.name;
+                        trocas.push({
+                            ref: it.ref,
+                            campoPath: it.campoPath,
+                            campoNome: it.campoNome,
+                            pathAntigo,
+                            nomeAntigo,
+                            pathNovo
+                        });
+                        reduzidas++;
+                        bytesAntes += original.size;
+                        bytesDepois += reduzido.size;
+                    } catch (err) {
+                        console.warn('Falha ao otimizar', nomeAntigo, err);
+                        falhas.push(nomeAntigo + ' (' + (err && err.message ? err.message : err) + ')');
+                    }
+                }
+                let salvou = true;
+                if (trocas.length) {
+                    barra('Salvando alterações na nuvem...');
+                    try {
+                        (db.usuarios || []).forEach(u => {
+                            delete u.senhaHash;
+                        }
+                        );
+                        const {error} = await supabaseClient.from('condominio_dados').upsert({
+                            id: 'principal',
+                            payload: db,
+                            atualizado_em: new Date()
+                        });
+                        if (error)
+                            throw error;
+                    } catch (err) {
+                        salvou = false;
+                        console.warn('Erro ao salvar após otimizar:', err);
+                        // volta a referência para os arquivos antigos, que continuam no Storage
+                        trocas.forEach(t => {
+                            t.ref[t.campoPath] = t.pathAntigo;
+                            t.ref[t.campoNome] = t.nomeAntigo;
+                        }
+                        );
+                        _removerAnexosStorage(trocas.map(t => t.pathNovo));
+                    }
+                    if (salvou) {
+                        _removerAnexosStorage(trocas.map(t => t.pathAntigo));
+                        trocas.forEach(t => {
+                            _cacheUrlAnexo.delete(t.pathAntigo);
+                        }
+                        );
+                    }
+                }
+                if (typeof _statusNuvem === 'function' && typeof CL_OK !== 'undefined' && typeof CL_ERRO !== 'undefined')
+                    _statusNuvem(salvou ? CL_OK : CL_ERRO, salvou ? 'Sincronizado com a Nuvem em Tempo Real' : 'Não foi possível salvar a otimização. Nada foi alterado.');
+                try {
+                    renderMainOnly();
+                } catch (e) {}
+                const mb = n => (n / 1048576).toFixed(1).replace('.', ',');
+                let msg;
+                if (!salvou) {
+                    msg = 'Não foi possível salvar as alterações na nuvem, então nada foi trocado. Os arquivos originais continuam intactos.';
+                } else {
+                    msg = 'Otimização concluída.\n\nImagens reduzidas: ' + reduzidas + '\nJá pequenas (puladas): ' + puladas + '\nCom falha: ' + falhas.length;
+                    if (reduzidas)
+                        msg += '\n\nEspaço antes: ' + mb(bytesAntes) + ' MB\nEspaço depois: ' + mb(bytesDepois) + ' MB\nEconomia: ' + mb(bytesAntes - bytesDepois) + ' MB';
+                    if (falhas.length)
+                        msg += '\n\nFalhas:\n' + falhas.join('\n');
+                    if (pdfs)
+                        msg += '\n\nObservação: ' + pdfs + ' PDF(s) não foram alterados.';
+                }
+                alert(msg);
             }
             ;
 
@@ -3785,6 +3991,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                         <button type="button" onclick="baixarGuiaSeguranca()" class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold"><i class="fa-solid fa-file-shield mr-1.5"></i> Baixar guia de segurança</button>
                         <button type="button" onclick="fazerBackupGeralJSON()" class="px-4 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold"><i class="fa-solid fa-download mr-1.5"></i> Criar backup JSON</button>
                         <button type="button" onclick="migrarAnexosParaStorage()" class="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold"><i class="fa-solid fa-cloud-arrow-up mr-1.5"></i> Migrar anexos para o Storage</button>
+                        <button type="button" onclick="otimizarAnexosExistentes()" class="px-4 py-2.5 rounded-xl bg-sky-700 hover:bg-sky-800 text-white text-xs font-bold"><i class="fa-solid fa-compress mr-1.5"></i> Otimizar imagens já salvas</button>
                         <button type="button" onclick="abrirModalBackupCriptografado()" class="px-4 py-2.5 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold"><i class="fa-solid fa-lock mr-1.5"></i> Criar backup criptografado</button>
                         <label class="px-4 py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-800 text-xs font-bold cursor-pointer"><i class="fa-solid fa-unlock-keyhole mr-1.5"></i> Restaurar backup criptografado<input type="file" accept=".json,.gbenc" onchange="iniciarRestauroBackupCriptografado(event)" class="hidden"></label>
                     </div>
@@ -7207,9 +7414,9 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     return;
                 if (typeof _statusNuvem === 'function')
                     _statusNuvem('bg-slate-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print animate-pulse border-b border-slate-800', 'Enviando foto para o Storage...');
-                _uploadFotoEmAndamento = enviarAnexoStorage(file, 'estoque').then(path => {
-                    tempEstoqueFotoPath = path;
-                    tempEstoqueFotoNome = file.name;
+                _uploadFotoEmAndamento = enviarAnexoStorage(file, 'estoque').then(res => {
+                    tempEstoqueFotoPath = res.path;
+                    tempEstoqueFotoNome = res.nome;
                     tempEstoqueFotoGzip = '';
                     if (typeof _statusNuvem === 'function' && typeof CL_OK !== 'undefined')
                         _statusNuvem(CL_OK, 'Foto enviada. Clique em Salvar para concluir.');
@@ -7217,7 +7424,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 }
                 ).catch(err => {
                     console.warn('Erro no envio da foto:', err);
-                    alert('Não foi possível enviar a foto: ' + (err && err.message ? err.message : err) + '\n\nConfira se o bucket "anexos-condominio" e as políticas do Storage foram criados no Supabase.');
+                    alert('Não foi possível enviar a foto: ' + (err && err.message ? err.message : err) + (err && err.tamanho ? '' : '\n\nConfira se o bucket "anexos-condominio" e as políticas do Storage foram criados no Supabase.'));
                     event.target.value = '';
                     return false;
                 }
@@ -7688,9 +7895,9 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     return;
                 if (typeof _statusNuvem === 'function')
                     _statusNuvem('bg-slate-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print animate-pulse border-b border-slate-800', 'Enviando arquivo para o Storage...');
-                _uploadArquivoEmAndamento = enviarAnexoStorage(file, 'documentos').then(path => {
-                    tempArquivoPath = path;
-                    tempArquivoNome = file.name;
+                _uploadArquivoEmAndamento = enviarAnexoStorage(file, 'documentos').then(res => {
+                    tempArquivoPath = res.path;
+                    tempArquivoNome = res.nome;
                     tempArquivoGzipBase64 = '';
                     if (typeof _statusNuvem === 'function' && typeof CL_OK !== 'undefined')
                         _statusNuvem(CL_OK, 'Arquivo enviado. Clique em Salvar para concluir.');
@@ -7698,7 +7905,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 }
                 ).catch(err => {
                     console.warn('Erro no envio do arquivo:', err);
-                    alert('Não foi possível enviar o arquivo: ' + (err && err.message ? err.message : err) + '\n\nConfira se o bucket "anexos-condominio" e as políticas do Storage foram criados no Supabase.');
+                    alert('Não foi possível enviar o arquivo: ' + (err && err.message ? err.message : err) + (err && err.tamanho ? '' : '\n\nConfira se o bucket "anexos-condominio" e as políticas do Storage foram criados no Supabase.'));
                     event.target.value = '';
                     return false;
                 }
