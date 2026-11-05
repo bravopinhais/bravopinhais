@@ -9629,6 +9629,10 @@ Deno.serve(async (req: Request) => {
                 );
                 // senhas nunca vão para a nuvem
                 _statusNuvem('bg-slate-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print animate-pulse border-b border-slate-800', '<i class="fa-solid fa-rotate fa-spin"></i> A guardar na nuvem...');
+                let _tamanhoKB = 0;
+                try {
+                    _tamanhoKB = Math.round(JSON.stringify(db).length / 1024);
+                } catch (e) {}
                 try {
                     const {error} = await supabaseClient.from('condominio_dados').upsert({
                         id: 'principal',
@@ -9639,8 +9643,21 @@ Deno.serve(async (req: Request) => {
                         throw error;
                     _statusNuvem(CL_OK, '<i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado com a Nuvem em Tempo Real');
                 } catch (err) {
-                    console.warn('Erro ao salvar:', err);
-                    _statusNuvem(CL_ERRO, '<i class="fa-solid fa-triangle-exclamation"></i> Não foi possível guardar na nuvem. Verifique a ligação ou entre novamente.');
+                    console.warn('Erro ao salvar:', err, 'Tamanho dos dados (KB):', _tamanhoKB);
+                    const _esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+                    const _partes = [];
+                    if (err && err.code)
+                        _partes.push('código: ' + err.code);
+                    if (err && err.status)
+                        _partes.push('status: ' + err.status);
+                    if (err && err.message)
+                        _partes.push(err.message);
+                    if (err && err.details)
+                        _partes.push(err.details);
+                    if (err && err.hint)
+                        _partes.push('dica: ' + err.hint);
+                    _partes.push('tamanho dos dados: ' + _tamanhoKB + ' KB');
+                    _statusNuvem(CL_ERRO, '<i class="fa-solid fa-triangle-exclamation"></i> Não foi possível guardar na nuvem. Verifique a ligação ou entre novamente.<br><span style="font-weight:400;opacity:.9">Detalhe técnico: ' + _esc(_partes.join(' | ')) + '</span>');
                 }
             }
             ;
