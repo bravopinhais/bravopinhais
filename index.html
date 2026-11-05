@@ -2827,6 +2827,10 @@
             let tempArquivoGzipBase64 = '';
             let tempEstoqueFotoNome = '';
             let tempEstoqueFotoGzip = '';
+            let tempArquivoPath = '';
+            let tempEstoqueFotoPath = '';
+            let _uploadArquivoEmAndamento = null;
+            let _uploadFotoEmAndamento = null;
 
             let filtroAtivoMoradores = {
                 bloco: '',
@@ -2929,6 +2933,176 @@
                     alert('Erro ao visualizar o ficheiro.');
                 }
             }
+
+
+            // =========================================================================
+            // ANEXOS NO SUPABASE STORAGE (substitui o armazenamento em base64 no JSON)
+            // =========================================================================
+            const BUCKET_ANEXOS = 'anexos-condominio';
+            const _FOTO_VAZIA = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+            const _cacheUrlAnexo = new Map();
+
+            function _nomeSeguroAnexo(n) {
+                return String(n || 'arquivo').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]+/g, '_').slice(-80);
+            }
+
+            function _mimePorNome(nome) {
+                const ext = String(nome || '').split('.').pop().toLowerCase();
+                const mapa = {
+                    pdf: 'application/pdf',
+                    png: 'image/png',
+                    jpg: 'image/jpeg',
+                    jpeg: 'image/jpeg',
+                    gif: 'image/gif',
+                    webp: 'image/webp',
+                    txt: 'text/plain'
+                };
+                return mapa[ext] || 'application/octet-stream';
+            }
+
+            async function enviarAnexoStorage(arquivo, pasta) {
+                const path = pasta + '/' + Date.now() + '_' + Math.random().toString(36).slice(2, 8) + '_' + _nomeSeguroAnexo(arquivo.name);
+                const {error} = await supabaseClient.storage.from(BUCKET_ANEXOS).upload(path, arquivo, {
+                    contentType: arquivo.type || _mimePorNome(arquivo.name),
+                    upsert: false
+                });
+                if (error)
+                    throw error;
+                return path;
+            }
+
+            async function urlAssinadaAnexo(path, segundos, opcoes) {
+                const {data, error} = await supabaseClient.storage.from(BUCKET_ANEXOS).createSignedUrl(path, segundos || 3600, opcoes);
+                if (error)
+                    throw error;
+                return data.signedUrl;
+            }
+
+            async function abrirAnexo(path, nome, modo) {
+                let janela = null;
+                if (modo === 'ver') {
+                    try {
+                        janela = window.open('', '_blank');
+                    } catch (e) {}
+                }
+                try {
+                    if (modo === 'baixar') {
+                        const url = await urlAssinadaAnexo(path, 300, {
+                            download: nome || true
+                        });
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = nome || '';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                    } else {
+                        const url = await urlAssinadaAnexo(path, 300);
+                        if (janela)
+                            janela.location.href = url;
+                        else
+                            window.open(url, '_blank');
+                    }
+                } catch (err) {
+                    if (janela)
+                        janela.close();
+                    console.warn('Erro ao abrir anexo:', err);
+                    alert('Não foi possível abrir o arquivo: ' + (err && err.message ? err.message : err));
+                }
+            }
+
+            async function _prepararFotoPath(path) {
+                try {
+                    const url = await urlAssinadaAnexo(path, 3600);
+                    _cacheUrlAnexo.set(path, {
+                        url: url,
+                        exp: Date.now() + 3300 * 1000
+                    });
+                    document.querySelectorAll('img[data-foto-path]').forEach(img => {
+                        if (img.getAttribute('data-foto-path') === path)
+                            img.src = url;
+                    });
+                } catch (e) {
+                    console.warn('Erro ao carregar foto:', e);
+                }
+            }
+
+            function _removerAnexosStorage(paths) {
+                const lista = (paths || []).filter(Boolean);
+                if (!lista.length)
+                    return;
+                supabaseClient.storage.from(BUCKET_ANEXOS).remove(lista).catch(e => console.warn('Erro ao remover anexos:', e));
+            }
+
+            window.migrarAnexosParaStorage = async function() {
+                const itens = [];
+                (db.documentos || []).forEach(d => {
+                    if (d.arquivoCompactadoGzip && !d.arquivoPath)
+                        itens.push({
+                            pasta: 'documentos',
+                            ref: d,
+                            campoGzip: 'arquivoCompactadoGzip',
+                            campoPath: 'arquivoPath',
+                            nome: d.nomeArquivo || 'documento.pdf'
+                        });
+                }
+                );
+                (db.estoque || []).forEach(st => {
+                    if (st.fotoCompactadaGzip && !st.fotoPath)
+                        itens.push({
+                            pasta: 'estoque',
+                            ref: st,
+                            campoGzip: 'fotoCompactadaGzip',
+                            campoPath: 'fotoPath',
+                            nome: st.fotoNome || 'foto.jpg'
+                        });
+                }
+                );
+                if (!itens.length) {
+                    alert('Não há anexos antigos para migrar. Tudo já está no Storage.');
+                    return;
+                }
+                if (!confirm('Serão migrados ' + itens.length + ' anexo(s) para o Supabase Storage.\n\nFaça um backup JSON antes de continuar. Deseja iniciar a migração agora?'))
+                    return;
+                let ok = 0;
+                const falhas = [];
+                for (let i = 0; i < itens.length; i++) {
+                    const it = itens[i];
+                    if (typeof _statusNuvem === 'function')
+                        _statusNuvem('bg-slate-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print animate-pulse border-b border-slate-800', 'Migrando anexos para o Storage: ' + (i + 1) + ' de ' + itens.length + '...');
+                    try {
+                        const bin = atob(it.ref[it.campoGzip]);
+                        const bytes = new Uint8Array(bin.length);
+                        for (let k = 0; k < bin.length; k++)
+                            bytes[k] = bin.charCodeAt(k);
+                        const blob = new Blob([pako.inflate(bytes)],{
+                            type: _mimePorNome(it.nome)
+                        });
+                        const path = it.pasta + '/' + it.ref.id + '_' + _nomeSeguroAnexo(it.nome);
+                        const {error} = await supabaseClient.storage.from(BUCKET_ANEXOS).upload(path, blob, {
+                            contentType: _mimePorNome(it.nome),
+                            upsert: true
+                        });
+                        if (error)
+                            throw error;
+                        // só remove o conteúdo antigo depois que o envio deu certo
+                        it.ref[it.campoPath] = path;
+                        it.ref[it.campoGzip] = '';
+                        ok++;
+                    } catch (err) {
+                        console.warn('Falha ao migrar', it.nome, err);
+                        falhas.push(it.nome + ' (' + (err && err.message ? err.message : err) + ')');
+                    }
+                }
+                if (ok > 0) {
+                    await salvarDadosNaNuvem(db);
+                    try {
+                        renderMainOnly();
+                    } catch (e) {}
+                }
+                alert('Migração concluída.\n\nMigrados: ' + ok + '\nCom falha: ' + falhas.length + (falhas.length ? '\n\n' + falhas.join('\n') : '') + '\n\nConfira se a barra do topo ficou verde ("Sincronizado com a Nuvem").');
+            }
+            ;
 
             const DEFAULT_DATA = {
                 condominio: {
@@ -3610,6 +3784,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     <div class="flex flex-wrap gap-2">
                         <button type="button" onclick="baixarGuiaSeguranca()" class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold"><i class="fa-solid fa-file-shield mr-1.5"></i> Baixar guia de segurança</button>
                         <button type="button" onclick="fazerBackupGeralJSON()" class="px-4 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold"><i class="fa-solid fa-download mr-1.5"></i> Criar backup JSON</button>
+                        <button type="button" onclick="migrarAnexosParaStorage()" class="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold"><i class="fa-solid fa-cloud-arrow-up mr-1.5"></i> Migrar anexos para o Storage</button>
                         <button type="button" onclick="abrirModalBackupCriptografado()" class="px-4 py-2.5 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold"><i class="fa-solid fa-lock mr-1.5"></i> Criar backup criptografado</button>
                         <label class="px-4 py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-800 text-xs font-bold cursor-pointer"><i class="fa-solid fa-unlock-keyhole mr-1.5"></i> Restaurar backup criptografado<input type="file" accept=".json,.gbenc" onchange="iniciarRestauroBackupCriptografado(event)" class="hidden"></label>
                     </div>
@@ -6446,6 +6621,13 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
 
             const cacheFotos = new Map();
             function urlDaFoto(st) {
+                if (st.fotoPath) {
+                    const c = _cacheUrlAnexo.get(st.fotoPath);
+                    if (c && c.exp > Date.now())
+                        return c.url;
+                    _prepararFotoPath(st.fotoPath);
+                    return _FOTO_VAZIA;
+                }
                 if (!st.fotoCompactadaGzip)
                     return '';
                 const chave = st.id + ':' + st.fotoCompactadaGzip.length;
@@ -6470,7 +6652,11 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
 
             function visualizarFotoEstoque(id) {
                 const st = (db.estoque || []).find(x => x.id === id);
-                if (st)
+                if (!st)
+                    return;
+                if (st.fotoPath)
+                    abrirAnexo(st.fotoPath, st.fotoNome || 'produto.jpg', 'ver');
+                else
                     visualizarArquivo(st.fotoCompactadaGzip, st.fotoNome || 'produto.jpg');
             }
 
@@ -6707,7 +6893,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
 
                     return `
                                             <tr class="transition-colors hover:bg-slate-50/80 ${itemInativo ? 'bg-slate-50/70 opacity-80' : (atual <= minimo ? 'bg-rose-50/20' : (maximo > 0 && atual > maximo ? 'bg-amber-50/20' : ''))}">
-                                                <td class="p-3.5 text-center">${st.fotoCompactadaGzip ? `<button type="button" onclick="visualizarFotoEstoque('${st.id}')" class="inline-block h-10 w-10 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:opacity-80" title="Ver foto"><img src="${urlDaFoto(st)}" loading="lazy" class="h-full w-full object-cover" alt="Foto de ${escapeHTML(st.item || 'produto')}"></button>` : `<div class="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-400"><i class="fa-solid fa-image"></i></div>`}</td>
+                                                <td class="p-3.5 text-center">${(st.fotoCompactadaGzip || st.fotoPath) ? `<button type="button" onclick="visualizarFotoEstoque('${st.id}')" class="inline-block h-10 w-10 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:opacity-80" title="Ver foto"><img data-foto-path="${escapeHTML(st.fotoPath || '')}" src="${urlDaFoto(st)}" loading="lazy" class="h-full w-full object-cover" alt="Foto de ${escapeHTML(st.item || 'produto')}"></button>` : `<div class="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-400"><i class="fa-solid fa-image"></i></div>`}</td>
                                                 <td class="p-3.5 font-mono font-bold text-teal-700">${escapeHTML(st.etiqueta || '-')}</td>
                                                 <td class="max-w-[260px] p-3.5"><div class="font-extrabold leading-5 text-slate-900">${escapeHTML(st.item || '-')}</div><div class="mt-1 text-[10px] text-slate-400">${escapeHTML(st.unidade || st.unidadeMedida || '')}</div></td>
                                                 <td class="p-3.5"><span class="inline-flex max-w-[170px] whitespace-normal rounded-lg bg-indigo-50 px-2.5 py-1.5 font-bold leading-4 text-indigo-700">${escapeHTML(setorEstoque(st))}</span></td>
@@ -6833,13 +7019,16 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     maximo: 10,
                     etiqueta: '',
                     fotoNome: '',
+                    fotoPath: '',
                     fotoCompactadaGzip: ''
                 };
                 const setorItemAtual = setorEstoque(item);
                 const setorItemPadrao = SETORES_PADRAO_ESTOQUE.includes(setorItemAtual) ? setorItemAtual : 'Outro';
                 const setorItemPersonalizado = setorItemPadrao === 'Outro' && setorItemAtual !== 'Outro' ? setorItemAtual : '';
                 tempEstoqueFotoGzip = item.fotoCompactadaGzip || '';
+                tempEstoqueFotoPath = item.fotoPath || '';
                 tempEstoqueFotoNome = item.fotoNome || '';
+                _uploadFotoEmAndamento = null;
 
                 abrirModalContainer(`
                 <div class="fixed inset-0 bg-slate-950/70 z-50 flex items-center justify-center p-4 w-full backdrop-blur-md">
@@ -7016,14 +7205,34 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 const file = event.target.files[0];
                 if (!file)
                     return;
-                compactarArquivoParaGzip(file, function(base64Gzip, nomeOriginal) {
-                    tempEstoqueFotoGzip = base64Gzip;
-                    tempEstoqueFotoNome = nomeOriginal;
-                });
+                if (typeof _statusNuvem === 'function')
+                    _statusNuvem('bg-slate-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print animate-pulse border-b border-slate-800', 'Enviando foto para o Storage...');
+                _uploadFotoEmAndamento = enviarAnexoStorage(file, 'estoque').then(path => {
+                    tempEstoqueFotoPath = path;
+                    tempEstoqueFotoNome = file.name;
+                    tempEstoqueFotoGzip = '';
+                    if (typeof _statusNuvem === 'function' && typeof CL_OK !== 'undefined')
+                        _statusNuvem(CL_OK, 'Foto enviada. Clique em Salvar para concluir.');
+                    return true;
+                }
+                ).catch(err => {
+                    console.warn('Erro no envio da foto:', err);
+                    alert('Não foi possível enviar a foto: ' + (err && err.message ? err.message : err) + '\n\nConfira se o bucket "anexos-condominio" e as políticas do Storage foram criados no Supabase.');
+                    event.target.value = '';
+                    return false;
+                }
+                );
             }
 
-            window.salvarModalEstoque = function(e, id) {
+            window.salvarModalEstoque = async function(e, id) {
                 e.preventDefault();
+                if (_uploadFotoEmAndamento) {
+                    const okUp = await _uploadFotoEmAndamento;
+                    if (okUp === false) {
+                        alert('O envio da foto falhou. Selecione a foto novamente antes de salvar.');
+                        return;
+                    }
+                }
                 if (!db.estoque)
                     db.estoque = [];
                 const isEdit = id && id !== 'null';
@@ -7045,8 +7254,11 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     maximo: parseInt(document.getElementById('m_est_max').value, 10) || 0,
                     etiqueta: document.getElementById('m_est_etiq').value.trim(),
                     fotoNome: tempEstoqueFotoNome || (itemExistente ? itemExistente.fotoNome : ''),
-                    fotoCompactadaGzip: tempEstoqueFotoGzip || (itemExistente ? itemExistente.fotoCompactadaGzip : '')
+                    fotoPath: tempEstoqueFotoPath || (itemExistente ? (itemExistente.fotoPath || '') : ''),
+                    fotoCompactadaGzip: tempEstoqueFotoPath ? '' : (tempEstoqueFotoGzip || (itemExistente ? itemExistente.fotoCompactadaGzip : ''))
                 };
+                if (itemExistente && itemExistente.fotoPath && tempEstoqueFotoPath && itemExistente.fotoPath !== tempEstoqueFotoPath)
+                    _removerAnexosStorage([itemExistente.fotoPath]);
                 const idx = db.estoque.findIndex(x => x.id === obj.id);
                 if (idx !== -1)
                     db.estoque[idx] = obj;
@@ -7366,13 +7578,21 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
 
             function visualizarDocumento(id) {
                 const d = (db.documentos || []).find(x => x.id === id);
-                if (d)
+                if (!d)
+                    return;
+                if (d.arquivoPath)
+                    abrirAnexo(d.arquivoPath, d.nomeArquivo, 'ver');
+                else
                     visualizarArquivo(d.arquivoCompactadoGzip, d.nomeArquivo);
             }
 
             function baixarDocumento(id) {
                 const d = (db.documentos || []).find(x => x.id === id);
-                if (d)
+                if (!d)
+                    return;
+                if (d.arquivoPath)
+                    abrirAnexo(d.arquivoPath, d.nomeArquivo, 'baixar');
+                else
                     extrairEDownloadArquivo(d.arquivoCompactadoGzip, d.nomeArquivo);
             }
 
@@ -7397,7 +7617,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                         <td class="p-4 font-bold text-slate-900">${escapeHTML(d.titulo)}</td>
                                         <td class="p-4 font-mono font-medium">${escapeHTML(d.nomeArquivo)}</td>
                                         <td class="p-4 text-center flex items-center justify-center gap-1">
-                                            ${d.arquivoCompactadoGzip ? `
+                                            ${(d.arquivoCompactadoGzip || d.arquivoPath) ? `
                                                 <button onclick="visualizarDocumento('${d.id}')" class="p-2 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-xl transition-colors" title="Visualizar"><i class="fa-solid fa-eye"></i></button>
                                                 <button onclick="baixarDocumento('${d.id}')" class="p-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 rounded-xl transition-colors" title="Baixar"><i class="fa-solid fa-download"></i></button>
                                             ` : ''}
@@ -7419,9 +7639,12 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     titulo: '',
                     pasta: 'Geral',
                     nomeArquivo: '',
+                    arquivoPath: '',
                     arquivoCompactadoGzip: ''
                 };
                 tempArquivoGzipBase64 = item.arquivoCompactadoGzip || '';
+                tempArquivoPath = item.arquivoPath || '';
+                _uploadArquivoEmAndamento = null;
                 tempArquivoNome = item.nomeArquivo || '';
 
                 const categoriasDisponiveis = (db.categorias || []).map(c => c.nome);
@@ -7463,14 +7686,34 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 const file = event.target.files[0];
                 if (!file)
                     return;
-                compactarArquivoParaGzip(file, function(base64Gzip, nomeOriginal) {
-                    tempArquivoGzipBase64 = base64Gzip;
-                    tempArquivoNome = nomeOriginal;
-                });
+                if (typeof _statusNuvem === 'function')
+                    _statusNuvem('bg-slate-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print animate-pulse border-b border-slate-800', 'Enviando arquivo para o Storage...');
+                _uploadArquivoEmAndamento = enviarAnexoStorage(file, 'documentos').then(path => {
+                    tempArquivoPath = path;
+                    tempArquivoNome = file.name;
+                    tempArquivoGzipBase64 = '';
+                    if (typeof _statusNuvem === 'function' && typeof CL_OK !== 'undefined')
+                        _statusNuvem(CL_OK, 'Arquivo enviado. Clique em Salvar para concluir.');
+                    return true;
+                }
+                ).catch(err => {
+                    console.warn('Erro no envio do arquivo:', err);
+                    alert('Não foi possível enviar o arquivo: ' + (err && err.message ? err.message : err) + '\n\nConfira se o bucket "anexos-condominio" e as políticas do Storage foram criados no Supabase.');
+                    event.target.value = '';
+                    return false;
+                }
+                );
             }
 
-            window.salvarModalDocumento = function(e, id) {
+            window.salvarModalDocumento = async function(e, id) {
                 e.preventDefault();
+                if (_uploadArquivoEmAndamento) {
+                    const okUp = await _uploadArquivoEmAndamento;
+                    if (okUp === false) {
+                        alert('O envio do arquivo falhou. Selecione o arquivo novamente antes de salvar.');
+                        return;
+                    }
+                }
                 if (!db.documentos)
                     db.documentos = [];
                 const isEdit = id && id !== 'null';
@@ -7481,8 +7724,11 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     pasta: document.getElementById('m_doc_pasta').value,
                     titulo: document.getElementById('m_doc_titulo').value,
                     nomeArquivo: tempArquivoNome || (docExistente ? docExistente.nomeArquivo : 'doc.pdf'),
-                    arquivoCompactadoGzip: tempArquivoGzipBase64 || (docExistente ? docExistente.arquivoCompactadoGzip : '')
+                    arquivoPath: tempArquivoPath || (docExistente ? (docExistente.arquivoPath || '') : ''),
+                    arquivoCompactadoGzip: tempArquivoPath ? '' : (tempArquivoGzipBase64 || (docExistente ? docExistente.arquivoCompactadoGzip : ''))
                 };
+                if (docExistente && docExistente.arquivoPath && tempArquivoPath && docExistente.arquivoPath !== tempArquivoPath)
+                    _removerAnexosStorage([docExistente.arquivoPath]);
 
                 const idx = db.documentos.findIndex(x => x.id === obj.id);
                 if (idx !== -1)
@@ -7726,6 +7972,9 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 if (!confirm('Deseja eliminar este registo?'))
                     return;
                 if (db[col]) {
+                    const removido = db[col].find(x => x.id === id);
+                    if (removido)
+                        _removerAnexosStorage([removido.arquivoPath, removido.fotoPath]);
                     db[col] = db[col].filter(x => x.id !== id);
                     salvarDados(db);
                     renderMainOnly();
