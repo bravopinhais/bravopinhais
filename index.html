@@ -5603,6 +5603,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 try { localStorage.setItem(DASHBOARD_IA_STORAGE_KEY, ativa ? 'true' : 'false'); }
                 catch (_) { alert('Não foi possível salvar essa preferência neste navegador.'); return; }
                 renderMainOnly();
+                if (typeof aiAtualizarWidget === 'function') aiAtualizarWidget();
             }
 
             function dashboardAcionarIA(tipo) {
@@ -10033,12 +10034,12 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
 
             function aiAtualizarWidget() {
                 const logado = !!(sessao && sessao.usuarioLogado) && !usuarioPendentePrimeiroAcesso;
-                if (logado)
+                const iaAtiva = typeof dashboardIAEstaAtiva !== 'function' || dashboardIAEstaAtiva();
+                if (logado && iaAtiva) {
                     aiCriarWidget();
-                else {
+                } else {
                     const w = document.getElementById('assistente-ia');
-                    if (w)
-                        w.remove();
+                    if (w) w.remove();
                     aiHistorico = [];
                 }
             }
