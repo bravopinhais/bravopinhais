@@ -912,6 +912,72 @@
                 }
             }
 
+            /* ===== Abas responsivas: evita sobreposição em telas pequenas ===== */
+            #app .gb-tabs-scroller,
+            #app > div > div > div.bg-slate-200\/80 {
+                min-width: 0;
+            }
+
+            #app .gb-tabs-scroller {
+                flex: 1 1 0%;
+                max-width: 100%;
+            }
+
+            #gb-notifications-anchor {
+                flex: 0 0 auto;
+                min-width: max-content;
+            }
+
+            @media (max-width: 768px) {
+                #app .gb-tabs-scroller {
+                    gap: 5px !important;
+                    padding: 0 2px 2px;
+                    overscroll-behavior-x: contain;
+                    -webkit-overflow-scrolling: touch;
+                }
+
+                #app .gb-tabs-scroller > div,
+                #app main + .gb-tabs-scroller > div {
+                    flex: 0 0 auto;
+                    min-width: max-content;
+                    gap: 6px !important;
+                    padding: 8px 10px !important;
+                    font-size: 11px !important;
+                }
+
+                #app .gb-tabs-scroller > div button {
+                    min-height: 26px !important;
+                    min-width: 26px;
+                    margin-left: 2px !important;
+                }
+
+                #gb-notifications-anchor {
+                    margin-left: 5px;
+                }
+
+                #gb-notifications-toggle {
+                    min-height: 36px !important;
+                    padding: 6px 8px;
+                    white-space: nowrap;
+                }
+
+                /* Antes de o widget de notificações envolver as abas */
+                #app .bg-slate-200\/80.border-b.flex.items-center.overflow-x-auto {
+                    gap: 5px !important;
+                    padding-left: 6px !important;
+                    padding-right: 6px !important;
+                    overflow-x: auto;
+                    overflow-y: hidden;
+                    -webkit-overflow-scrolling: touch;
+                }
+
+                #app .bg-slate-200\/80.border-b.flex.items-center.overflow-x-auto > div {
+                    flex: 0 0 auto;
+                    padding: 8px 10px !important;
+                    gap: 6px !important;
+                }
+            }
+
             /* ===== Ajustes mobile/PWA e acessibilidade ===== */
             body {
                 padding-bottom: env(safe-area-inset-bottom);
