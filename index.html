@@ -11611,7 +11611,7 @@ Deno.serve(async (req: Request) => {
                         versaoRemotaParaGravar = registroRemotoExiste ? remoto.atualizado_em : null;
                         const mesmaVersao = registroRemotoExiste && !!baseline && versoesEquivalentes(baseline, versaoRemotaParaGravar);
                         const nuvemInesperadamenteVazia = !registroRemotoExiste && !!baseline;
-                        if (!opcoes.recuperacaoConfirmada && ((registroRemotoExiste && !mesmaVersao) || nuvemInesperadamenteVazia)) {
+                        if ((registroRemotoExiste && !mesmaVersao) || nuvemInesperadamenteVazia) {
                             const podeSobrescrever = confirm('A versão da nuvem mudou desde a última sincronização deste dispositivo, ou a base remota não corresponde ao esperado.\\n\\nOK: confirmar o envio dos dados locais usando a versão que acabou de ser consultada.\\nCancelar: manter os dados salvos neste dispositivo, sem sobrescrever a nuvem.');
                             if (!podeSobrescrever) {
                                 statusSalvoLocalmente('Cadastro salvo neste dispositivo; sincronização aguardando sua confirmação.');
