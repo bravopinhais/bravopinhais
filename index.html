@@ -11243,6 +11243,30 @@ Deno.serve(async (req: Request) => {
                 db = _clonar(DEFAULT_DATA);
             }
 
+            // ---------- monitoramento de conexão durante salvamentos ----------
+            // A cópia IndexedDB é gravada antes da chamada à nuvem. Este monitor apenas
+            // avisa sobre demora; não cancela uma gravação que ainda pode ser concluída.
+            const TEMPO_AVISO_REDE_LENTA_MS = 4500;
+            function acompanharOperacaoNuvem(operacao, mensagem) {
+                let avisoExibido = false;
+                const temporizador = setTimeout(() => {
+                    avisoExibido = true;
+                    statusSalvoLocalmente(mensagem || 'Internet lenta: seu cadastro já está protegido neste dispositivo. Aguardando confirmação da nuvem...');
+                }, TEMPO_AVISO_REDE_LENTA_MS);
+                return Promise.resolve(operacao).then(resultado => {
+                    if (avisoExibido && navigator.onLine) {
+                        _statusNuvem('bg-slate-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-slate-800',
+                            '<i class="fa-solid fa-cloud-arrow-up"></i> Conexão restabelecida; confirmando o salvamento...');
+                    }
+                    return resultado;
+                }).finally(() => clearTimeout(temporizador));
+            }
+
+            window.addEventListener('offline', () => {
+                if (sessao.usuarioLogado && obterSyncPendente())
+                    statusSalvoLocalmente('Internet desconectada. Seus cadastros continuam protegidos neste dispositivo e aguardam sincronização.');
+            });
+
             // ---------- salvar (com RLS) ----------
             const _salvarNuvemOriginal = salvarDadosNaNuvem;
             salvarDadosNaNuvem = async function(dataObj, opcoes={}) {
@@ -11262,7 +11286,7 @@ Deno.serve(async (req: Request) => {
 
                 if (pendenciaAnterior && !opcoes.recuperacaoConfirmada && navigator.onLine) {
                     try {
-                        const {data: remoto, error: erroVersao} = await supabaseClient.from('condominio_dados').select('atualizado_em').eq('id', 'principal').maybeSingle();
+                        const {data: remoto, error: erroVersao} = await acompanharOperacaoNuvem(supabaseClient.from('condominio_dados').select('atualizado_em').eq('id', 'principal').maybeSingle(), 'Internet lenta: seus dados estão salvos localmente. Verificando se a nuvem pode receber as alterações...');
                         if (erroVersao) throw erroVersao;
                         const mesmaVersao = !!(remoto && remoto.atualizado_em && baseline && versoesEquivalentes(baseline, remoto.atualizado_em));
                         if (!mesmaVersao) {
@@ -11297,9 +11321,9 @@ Deno.serve(async (req: Request) => {
                 for (let tentativa = 1; tentativa <= 3; tentativa++) {
                     try {
                         const atualizadoEm = new Date().toISOString();
-                        const {error} = await supabaseClient.from('condominio_dados').upsert({
+                        const {error} = await acompanharOperacaoNuvem(supabaseClient.from('condominio_dados').upsert({
                             id: 'principal', payload: db, atualizado_em: atualizadoEm
-                        });
+                        }), 'Internet lenta: cadastro protegido neste dispositivo. A nuvem ainda está processando o salvamento...');
                         if (error) throw error;
                         limparSyncPendente();
                         atualizarVersaoConhecidaNuvem(atualizadoEm);
