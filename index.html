@@ -3788,6 +3788,59 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                 renderApp();
             }
 
+            // Migração automática e segura: anexos antigos saem do JSON e vão para o Storage.
+            // O conteúdo original só é limpo depois de o upload individual confirmar sucesso.
+            let _migracaoAutomaticaEmCurso = null;
+            async function migrarAnexosPendentesAutomaticamente(dataObj) {
+                if (_migracaoAutomaticaEmCurso) {
+                    await _migracaoAutomaticaEmCurso;
+                    return migrarAnexosPendentesAutomaticamente(dataObj);
+                }
+                const executar = async () => {
+                    const itens = [];
+                    (dataObj.documentos || []).forEach(d => {
+                        if (d.arquivoCompactadoGzip && !d.arquivoPath)
+                            itens.push({ ref: d, gzip: 'arquivoCompactadoGzip', path: 'arquivoPath', pasta: 'documentos', nome: d.nomeArquivo || 'documento.pdf' });
+                    });
+                    (dataObj.estoque || []).forEach(st => {
+                        if (st.fotoCompactadaGzip && !st.fotoPath)
+                            itens.push({ ref: st, gzip: 'fotoCompactadaGzip', path: 'fotoPath', pasta: 'estoque', nome: st.fotoNome || 'foto.jpg' });
+                    });
+                    let migrados = 0;
+                    const falhas = [];
+                    for (let i = 0; i < itens.length; i++) {
+                        const it = itens[i];
+                        try {
+                            if (!it.ref.id)
+                                throw new Error('cadastro sem identificador; arquivo mantido para nova tentativa');
+                            const bin = atob(it.ref[it.gzip]);
+                            const bytes = new Uint8Array(bin.length);
+                            for (let k = 0; k < bin.length; k++) bytes[k] = bin.charCodeAt(k);
+                            const blob = new Blob([pako.inflate(bytes)], { type: _mimePorNome(it.nome) });
+                            const path = it.pasta + '/' + it.ref.id + '_' + _nomeSeguroAnexo(it.nome);
+                            const { error } = await supabaseClient.storage.from(BUCKET_ANEXOS).upload(path, blob, {
+                                contentType: _mimePorNome(it.nome),
+                                upsert: true
+                            });
+                            if (error) throw error;
+                            it.ref[it.path] = path;
+                            it.ref[it.gzip] = '';
+                            migrados++;
+                        } catch (err) {
+                            console.warn('Anexo será mantido e tentado novamente no próximo salvamento:', it.nome, err);
+                            falhas.push(it.nome);
+                        }
+                    }
+                    return { migrados, falhas: falhas.length };
+                };
+                _migracaoAutomaticaEmCurso = executar();
+                try {
+                    return await _migracaoAutomaticaEmCurso;
+                } finally {
+                    _migracaoAutomaticaEmCurso = null;
+                }
+            }
+
             async function salvarDadosNaNuvem(dataObj, opcoes={}) {
                 db = dataObj;
                 const pendenciaAnterior = obterSyncPendente();
@@ -3825,6 +3878,17 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     }
                 }
 
+                // Tenta migrar anexos antigos em segundo plano antes de montar o JSON enviado.
+                // Se um upload falhar, o arquivo permanece no cadastro e será tentado no próximo salvamento.
+                let resultadoAnexos = { migrados: 0, falhas: 0 };
+                try {
+                    resultadoAnexos = await migrarAnexosPendentesAutomaticamente(dataObj);
+                    if (resultadoAnexos.migrados > 0)
+                        salvarCacheLocal();
+                } catch (erroAnexos) {
+                    console.warn('A otimização automática de anexos será repetida no próximo salvamento.', erroAnexos);
+                }
+
                 if (cacheLocalSalvo)
                     marcarSyncPendente('gravação local aguardando confirmação da nuvem');
                 if (elStatus) {
@@ -3846,7 +3910,9 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     atualizarVersaoConhecidaNuvem(atualizadoEm);
                     if (elStatus) {
                         elStatus.className = 'bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm';
-                        elStatus.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado com a Nuvem em Tempo Real';
+                        elStatus.innerHTML = resultadoAnexos.falhas > 0
+                            ? '<i class="fa-solid fa-cloud-arrow-up"></i> Dados sincronizados; alguns anexos serão reenviados automaticamente.'
+                            : '<i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado com a Nuvem em Tempo Real';
                     }
                     return true;
                 } catch (err) {
