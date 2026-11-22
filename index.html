@@ -3193,6 +3193,18 @@
                 supabaseClient.storage.from(BUCKET_ANEXOS).remove(lista).catch(e => console.warn('Erro ao remover anexos:', e));
             }
 
+            window.otimizarArmazenamentoComBackup = async function() {
+                if (!usuarioPodeConfigurarModulos()) { alert('Somente um administrador pode executar esta otimização.'); return; }
+                const pendentes = (db.documentos || []).filter(d => d.arquivoCompactadoGzip && !d.arquivoPath).length + (db.estoque || []).filter(st => st.fotoCompactadaGzip && !st.fotoPath).length;
+                if (!pendentes) { alert('O armazenamento já está otimizado. Não há anexos antigos pendentes.'); return; }
+                if (!confirm('Vamos fazer tudo em uma única etapa:\n\n1. Criar um backup JSON automaticamente.\n2. Enviar os ' + pendentes + ' anexos antigos para o Storage.\n3. Atualizar os dados na nuvem.\n\nNão feche esta página até terminar. Deseja continuar?')) return;
+                const backupOk = fazerBackupGeralJSON();
+                if (!backupOk) { alert('O backup não foi gerado. A migração foi cancelada para proteger seus dados.'); return; }
+                if (typeof _statusNuvem === 'function') _statusNuvem('bg-slate-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print animate-pulse border-b border-slate-800', 'Backup gerado. Preparando migração segura...');
+                await new Promise(resolve => setTimeout(resolve, 900));
+                window.__migracaoStorageComBackup = true;
+                try { await window.migrarAnexosParaStorage(); } finally { window.__migracaoStorageComBackup = false; }
+            };
             window.migrarAnexosParaStorage = async function() {
                 const itens = [];
                 (db.documentos || []).forEach(d => {
@@ -3221,7 +3233,7 @@
                     alert('Não há anexos antigos para migrar. Tudo já está no Storage.');
                     return;
                 }
-                if (!confirm('Serão migrados ' + itens.length + ' anexo(s) para o Supabase Storage.\n\nFaça um backup JSON antes de continuar. Deseja iniciar a migração agora?'))
+                if (!window.__migracaoStorageComBackup && !confirm('Serão migrados ' + itens.length + ' anexo(s) para o Supabase Storage.\n\nFaça um backup JSON antes de continuar. Deseja iniciar a migração agora?'))
                     return;
                 let ok = 0;
                 const falhas = [];
@@ -4551,7 +4563,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
             function fazerBackupGeralJSON() {
                 if (!usuarioPodeConfigurarModulos()) {
                     alert('Somente um administrador pode exportar o backup completo do condomínio.');
-                    return;
+                    return false;
                 }
                 try {
                     const json = JSON.stringify(db, null, 2);
@@ -4566,9 +4578,11 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     a.click();
                     a.remove();
                     setTimeout( () => URL.revokeObjectURL(url), 1500);
+                    return true;
                 } catch (err) {
                     console.error('Falha ao gerar backup.', err);
                     alert('Não foi possível gerar o backup. Verifique o espaço disponível no dispositivo.');
+                    return false;
                 }
             }
 
@@ -5215,6 +5229,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                         <p class="text-xs font-semibold text-slate-500 mt-0.5">Gestão em nuvem atualizada em tempo real</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2.5 no-print">
+                        ${moduloId === 'dashboard' && usuarioPodeConfigurarModulos() ? `<button onclick="otimizarArmazenamentoComBackup()" class="px-4 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-2xl font-extrabold text-xs shadow-lg transition-all flex items-center gap-2"><i class="fa-solid fa-cloud-arrow-up"></i> Otimizar armazenamento</button>` : ''} 
                         ${moduloId === 'dashboard' ? `<button onclick="dashboardAcionarIA('diagnostico')" class="px-5 py-3 bg-gradient-to-r from-teal-600 via-emerald-600 to-teal-700 hover:from-teal-700 hover:to-emerald-800 text-white rounded-2xl font-extrabold text-xs shadow-lg shadow-teal-600/25 transition-all flex items-center gap-2.5"><i class="fa-solid fa-wand-magic-sparkles text-sm"></i> Análise executiva Gemini</button>` : ''}
                         ${btnExportHtml} ${btnNovoHtml}
                     </div>
