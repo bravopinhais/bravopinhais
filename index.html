@@ -4214,8 +4214,42 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                 }
             }
 
-            function salvarDados(data) {
-                return salvarDadosNaNuvem(data);
+            let _timerCardDadosGravados = null;
+            function mostrarCardDadosGravados(modo='nuvem') {
+                try {
+                    let card = document.getElementById('bravo-card-dados-gravados');
+                    if (!card) {
+                        card = document.createElement('div');
+                        card.id = 'bravo-card-dados-gravados';
+                        card.setAttribute('role', 'status');
+                        card.setAttribute('aria-live', 'polite');
+                        card.style.cssText = 'position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%) translateY(12px);z-index:99999;width:min( calc(100% - 28px), 360px );padding:14px 16px;border-radius:14px;background:#102b22;color:#ecfdf5;box-shadow:0 12px 35px rgba(0,0,0,.28);display:flex;align-items:center;gap:12px;font:600 14px/1.35 system-ui,-apple-system,sans-serif;opacity:0;transition:opacity .2s ease,transform .2s ease;pointer-events:none;';
+                        document.body.appendChild(card);
+                    }
+                    const offline = modo === 'offline';
+                    card.innerHTML = offline
+                        ? '<span style="font-size:22px;color:#fbbf24"><i class="fa-solid fa-floppy-disk"></i></span><span><strong style="display:block">Dados guardados neste dispositivo</strong><small style="display:block;margin-top:3px;font-weight:400;color:#fde68a">Aguardando sincronização com a nuvem</small></span>'
+                        : '<span style="font-size:22px;color:#6ee7b7"><i class="fa-solid fa-circle-check"></i></span><span><strong style="display:block">Dados gravados</strong><small style="display:block;margin-top:3px;font-weight:400;color:#bbf7d0">Cadastro salvo e sincronizado</small></span>';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateX(-50%) translateY(0)';
+                    clearTimeout(_timerCardDadosGravados);
+                    _timerCardDadosGravados = setTimeout(() => {
+                        card.style.opacity = '0';
+                        card.style.transform = 'translateX(-50%) translateY(12px)';
+                    }, 2800);
+                } catch (e) {
+                    console.warn('Não foi possível exibir a confirmação do cadastro.', e);
+                }
+            }
+
+            async function salvarDados(data) {
+                const salvoNaNuvem = await salvarDadosNaNuvem(data);
+                if (salvoNaNuvem) {
+                    mostrarCardDadosGravados('nuvem');
+                } else if (obterSyncPendente() && salvarCacheLocal()) {
+                    mostrarCardDadosGravados('offline');
+                }
+                return salvoNaNuvem;
             }
 
             try {
