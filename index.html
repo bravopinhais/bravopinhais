@@ -4133,7 +4133,8 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
             // Serializa gravações e agrupa toques repetidos com o mesmo conteúdo.
             // Assim, dois cliques rápidos não disparam dois upserts idênticos em paralelo.
             let _filaGravacaoNuvem = Promise.resolve();
-            let _gravacaoNuvemEmCurso = null;
+            // Mantém todas as gravações pendentes indexadas pelo conteúdo, inclusive as que aguardam na fila.
+            const _gravacoesNuvemPendentes = new Map();
             function salvarDadosNaNuvem(dataObj, opcoes={}) {
                 let snapshot;
                 try {
@@ -4144,8 +4145,8 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     return Promise.resolve(false);
                 }
                 const chave = snapshot + '::' + JSON.stringify(opcoes || {});
-                if (_gravacaoNuvemEmCurso && _gravacaoNuvemEmCurso.chave === chave)
-                    return _gravacaoNuvemEmCurso.promise;
+                if (_gravacoesNuvemPendentes.has(chave))
+                    return _gravacoesNuvemPendentes.get(chave);
 
                 const executar = () => {
                     let dadosIsolados;
@@ -4159,14 +4160,12 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                 };
                 const promise = _filaGravacaoNuvem.then(executar, executar);
                 _filaGravacaoNuvem = promise.then(() => undefined, () => undefined);
-                _gravacaoNuvemEmCurso = { chave, promise };
-                promise.then(() => {
-                    if (_gravacaoNuvemEmCurso && _gravacaoNuvemEmCurso.promise === promise)
-                        _gravacaoNuvemEmCurso = null;
-                }, () => {
-                    if (_gravacaoNuvemEmCurso && _gravacaoNuvemEmCurso.promise === promise)
-                        _gravacaoNuvemEmCurso = null;
-                });
+                _gravacoesNuvemPendentes.set(chave, promise);
+                const limparPendencia = () => {
+                    if (_gravacoesNuvemPendentes.get(chave) === promise)
+                        _gravacoesNuvemPendentes.delete(chave);
+                };
+                promise.then(limparPendencia, limparPendencia);
                 return promise;
             }
 
