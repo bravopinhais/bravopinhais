@@ -13369,6 +13369,8 @@ persistido no banco ou no gateway.
                 let ultimaPosicao = 0;
                 let ultimoAlvo = null;
                 let botaoFlutuante = null;
+                let dicaInicial = null;
+                const CHAVE_DICA = 'gb-nav-bubble-tip-seen-v1';
 
                 function emMobile() {
                     return window.matchMedia('(max-width: 768px)').matches;
@@ -13379,107 +13381,128 @@ persistido no banco ou no gateway.
                     return main ? main.previousElementSibling : null;
                 }
 
+                function abasOcultas() {
+                    const barra = barraAbas();
+                    return !!(barra && barra.classList.contains('gb-nav-hidden'));
+                }
+
+                function atualizarBotao() {
+                    criarBotao();
+                    if (!botaoFlutuante) return;
+                    botaoFlutuante.style.display = emMobile() ? 'flex' : 'none';
+                    const ocultas = abasOcultas();
+                    botaoFlutuante.innerHTML = ocultas
+                        ? '<i class="fa-solid fa-layer-group" aria-hidden="true"></i>'
+                        : '<i class="fa-solid fa-eye-slash" aria-hidden="true"></i>';
+                    botaoFlutuante.setAttribute('aria-label', ocultas ? 'Mostrar abas de navegação' : 'Ocultar abas de navegação');
+                    botaoFlutuante.setAttribute('title', ocultas ? 'Mostrar abas' : 'Ocultar abas');
+                }
+
+                function encerrarDica() {
+                    if (dicaInicial) dicaInicial.remove();
+                    dicaInicial = null;
+                    try { localStorage.setItem(CHAVE_DICA, '1'); } catch (e) {}
+                }
+
+                function mostrarDicaUmaVez() {
+                    try {
+                        if (localStorage.getItem(CHAVE_DICA) === '1') return;
+                    } catch (e) {}
+                    if (!botaoFlutuante || dicaInicial || !emMobile()) return;
+                    dicaInicial = document.createElement('div');
+                    dicaInicial.id = 'gb-nav-bubble-tip';
+                    dicaInicial.innerHTML = '<span><strong>Atalho das abas</strong><br>Para voltar às abas, toque aqui.<br>Para ocultar as abas, toque novamente.</span><button type="button" aria-label="Fechar dica">×</button>';
+                    dicaInicial.style.cssText = 'position:fixed;left:14px;bottom:68px;z-index:10051;max-width:min(285px,calc(100vw - 28px));display:flex;align-items:center;gap:10px;padding:11px 13px;border-radius:14px;background:#fff8ef;color:#493326;border:1px solid #d8b99f;box-shadow:0 5px 18px rgba(0,0,0,.2);font:12px/1.45 system-ui,sans-serif;';
+                    const fechar = dicaInicial.querySelector('button');
+                    fechar.style.cssText = 'border:0;background:#75452f;color:white;border-radius:50%;width:24px;height:24px;flex:0 0 24px;font-size:18px;line-height:1;cursor:pointer;';
+                    fechar.addEventListener('click', encerrarDica);
+                    document.body.appendChild(dicaInicial);
+                    botaoFlutuante.addEventListener('click', encerrarDica, { once: true });
+                }
+
                 function criarBotao() {
                     if (botaoFlutuante || !document.body) return;
                     const estilo = document.createElement('style');
                     estilo.id = 'gb-nav-bubble-style';
                     estilo.textContent = `
                         #gb-nav-bubble {
-                            position: fixed; left: 14px; bottom: max(16px, env(safe-area-inset-bottom));
-                            z-index: 10050; width: 44px; height: 44px; border: 2px solid rgba(255,255,255,.9);
-                            border-radius: 50%; display: none; align-items: center; justify-content: center;
-                            color: #fff; background: #75452f; box-shadow: 0 4px 14px rgba(0,0,0,.28);
-                            font-size: 17px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+                            position:fixed;left:14px;bottom:max(16px,env(safe-area-inset-bottom));
+                            z-index:10050;width:44px;height:44px;border:2px solid rgba(255,255,255,.9);
+                            border-radius:50%;display:none;align-items:center;justify-content:center;
+                            color:#fff;background:#75452f;box-shadow:0 4px 14px rgba(0,0,0,.28);
+                            font-size:17px;cursor:pointer;-webkit-tap-highlight-color:transparent;
                         }
-                        #gb-nav-bubble:active { transform: scale(.94); }
-                        #gb-nav-bubble:focus-visible { outline: 3px solid #d6a77d; outline-offset: 3px; }
-                        @media (min-width: 769px) { #gb-nav-bubble { display: none !important; } }
-                        @media (max-width: 768px) {
-                            #app > div > div.flex-1 > [class~="bg-slate-200/80"].gb-nav-hidden {
-                                height: 0 !important; max-height: 0 !important; min-height: 0 !important;
-                                flex: 0 0 0 !important; margin: 0 !important; padding: 0 !important;
-                                border: 0 !important; overflow: hidden !important; visibility: hidden !important;
-                                opacity: 0 !important; pointer-events: none !important;
+                        #gb-nav-bubble:active{transform:scale(.94)}
+                        #gb-nav-bubble:focus-visible{outline:3px solid #d6a77d;outline-offset:3px}
+                        @media(min-width:769px){#gb-nav-bubble{display:none!important}}
+                        @media(max-width:768px){
+                            #app > div > div.flex-1 > [class~="bg-slate-200/80"].gb-nav-hidden{
+                                height:0!important;max-height:0!important;min-height:0!important;
+                                flex:0 0 0!important;margin:0!important;padding:0!important;
+                                border:0!important;overflow:hidden!important;visibility:hidden!important;
+                                opacity:0!important;pointer-events:none!important;
                             }
                         }`;
                     document.head.appendChild(estilo);
-                    botaoFlutuante = document.createElement('button');
-                    botaoFlutuante.id = 'gb-nav-bubble';
-                    botaoFlutuante.type = 'button';
-                    botaoFlutuante.setAttribute('aria-label', 'Mostrar abas de navegação');
-                    botaoFlutuante.setAttribute('title', 'Mostrar abas');
-                    botaoFlutuante.innerHTML = '<i class="fa-solid fa-layer-group" aria-hidden="true"></i>';
-                    botaoFlutuante.addEventListener('click', function () {
-                        mostrarAbas();
+                    botaoFlutuante=document.createElement('button');
+                    botaoFlutuante.id='gb-nav-bubble';
+                    botaoFlutuante.type='button';
+                    botaoFlutuante.addEventListener('click',function(){
+                        if(abasOcultas()) mostrarAbas();
+                        else ocultarAbas();
+                        encerrarDica();
                     });
                     document.body.appendChild(botaoFlutuante);
                 }
 
-                function atualizarBotao(oculto) {
-                    criarBotao();
-                    if (!botaoFlutuante) return;
-                    botaoFlutuante.style.display = emMobile() && oculto ? 'flex' : 'none';
-                }
-
                 function mostrarAbas() {
-                    const barra = barraAbas();
-                    if (barra) barra.classList.remove('gb-nav-hidden');
-                    atualizarBotao(false);
+                    const barra=barraAbas();
+                    if(barra) barra.classList.remove('gb-nav-hidden');
+                    atualizarBotao();
                 }
 
                 function ocultarAbas() {
-                    const barra = barraAbas();
-                    if (barra && emMobile()) {
-                        barra.classList.add('gb-nav-hidden');
-                        atualizarBotao(true);
-                    }
+                    const barra=barraAbas();
+                    if(barra&&emMobile()) barra.classList.add('gb-nav-hidden');
+                    atualizarBotao();
                 }
 
-                document.addEventListener('click', function (event) {
-                    const botao = event.target.closest && event.target.closest('button, [role="button"]');
-                    if (!botao || botao.id === 'gb-nav-bubble') return;
-                    const texto = (botao.innerText || botao.getAttribute('aria-label') || botao.title || '').trim();
-                    const acao = texto.toLocaleLowerCase('pt-BR');
-                    if (['novo', 'nova', 'adicionar', 'cadastrar', 'incluir'].some(p => acao === p || acao.startsWith(p + ' ')))
-                        ocultarAbas();
-                }, true);
+                document.addEventListener('click',function(event){
+                    const botao=event.target.closest&&event.target.closest('button,[role="button"]');
+                    if(!botao||botao.id==='gb-nav-bubble') return;
+                    const texto=(botao.innerText||botao.getAttribute('aria-label')||botao.title||'').trim();
+                    const acao=texto.toLocaleLowerCase('pt-BR');
+                    if(['novo','nova','adicionar','cadastrar','incluir'].some(p=>acao===p||acao.startsWith(p+' '))) ocultarAbas();
+                },true);
 
-                document.addEventListener('scroll', function (event) {
-                    if (!emMobile()) return;
-                    const main = document.querySelector('#app main');
-                    const alvo = event.target;
-                    if (alvo !== main && alvo !== document && alvo !== document.documentElement && alvo !== document.body)
-                        return;
+                document.addEventListener('scroll',function(event){
+                    if(!emMobile()) return;
+                    const main=document.querySelector('#app main');
+                    const alvo=event.target;
+                    if(alvo!==main&&alvo!==document&&alvo!==document.documentElement&&alvo!==document.body) return;
+                    const posicao=alvo===document||alvo===document.documentElement||alvo===document.body
+                        ?(window.scrollY||document.documentElement.scrollTop||0):(alvo.scrollTop||0);
+                    if(alvo!==ultimoAlvo){ultimoAlvo=alvo;ultimaPosicao=posicao;}
+                    const diferenca=posicao-ultimaPosicao;
+                    if(posicao<=8) mostrarAbas();
+                    else if(diferenca>4) ocultarAbas();
+                    else if(diferenca< -4) mostrarAbas();
+                    ultimaPosicao=posicao;
+                },true);
 
-                    const posicao = alvo === document || alvo === document.documentElement || alvo === document.body
-                        ? (window.scrollY || document.documentElement.scrollTop || 0)
-                        : (alvo.scrollTop || 0);
+                document.addEventListener('click',function(event){
+                    const aba=event.target.closest&&event.target.closest('.gb-tabs-scroller > div,.bg-slate-200\\/80 > div');
+                    if(aba) mostrarAbas();
+                },true);
 
-                    if (alvo !== ultimoAlvo) {
-                        ultimoAlvo = alvo;
-                        ultimaPosicao = posicao;
-                    }
-                    const diferenca = posicao - ultimaPosicao;
-                    if (posicao <= 8) mostrarAbas();
-                    else if (diferenca > 4) ocultarAbas();
-                    else if (diferenca < -4) mostrarAbas();
-                    ultimaPosicao = posicao;
-                }, true);
-
-                document.addEventListener('click', function (event) {
-                    const aba = event.target.closest && event.target.closest('.gb-tabs-scroller > div, .bg-slate-200\\/80 > div');
-                    if (aba) mostrarAbas();
-                }, true);
-
-                window.addEventListener('resize', function () {
-                    if (!emMobile()) mostrarAbas();
-                    else {
-                        const barra = barraAbas();
-                        atualizarBotao(!!(barra && barra.classList.contains('gb-nav-hidden')));
-                    }
-                }, { passive: true });
+                window.addEventListener('resize',function(){
+                    if(!emMobile()) mostrarAbas();
+                    atualizarBotao();
+                },{passive:true});
 
                 criarBotao();
+                atualizarBotao();
+                mostrarDicaUmaVez();
             })();
         </script>
     </body>
