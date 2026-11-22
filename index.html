@@ -4137,26 +4137,31 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
             const _gravacoesNuvemPendentes = new Map();
             function salvarDadosNaNuvem(dataObj, opcoes={}) {
                 let snapshot;
+                let snapshotOpcoes;
                 try {
                     snapshot = JSON.stringify(dataObj);
                     if (typeof snapshot !== 'string') throw new Error('Dados não serializáveis.');
+                    snapshotOpcoes = JSON.stringify(opcoes || {});
+                    if (typeof snapshotOpcoes !== 'string') throw new Error('Opções de gravação não serializáveis.');
                 } catch (erro) {
                     console.error('Não foi possível preparar os dados para sincronização.', erro);
                     return Promise.resolve(false);
                 }
-                const chave = snapshot + '::' + JSON.stringify(opcoes || {});
+                const chave = snapshot + '::' + snapshotOpcoes;
                 if (_gravacoesNuvemPendentes.has(chave))
                     return _gravacoesNuvemPendentes.get(chave);
 
                 const executar = () => {
                     let dadosIsolados;
+                    let opcoesIsoladas;
                     try {
                         dadosIsolados = JSON.parse(snapshot);
+                        opcoesIsoladas = JSON.parse(snapshotOpcoes);
                     } catch (erro) {
                         console.error('Não foi possível recuperar a cópia dos dados para salvar.', erro);
                         return false;
                     }
-                    return salvarDadosNaNuvemExecutar(dadosIsolados, opcoes);
+                    return salvarDadosNaNuvemExecutar(dadosIsolados, opcoesIsoladas);
                 };
                 const promise = _filaGravacaoNuvem.then(executar, executar);
                 _filaGravacaoNuvem = promise.then(() => undefined, () => undefined);
