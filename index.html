@@ -13368,35 +13368,84 @@ persistido no banco ou no gateway.
 
                 let ultimaPosicao = 0;
                 let ultimoAlvo = null;
+                let botaoFlutuante = null;
+
+                function emMobile() {
+                    return window.matchMedia('(max-width: 768px)').matches;
+                }
 
                 function barraAbas() {
                     const main = document.querySelector('#app main');
                     return main ? main.previousElementSibling : null;
                 }
 
+                function criarBotao() {
+                    if (botaoFlutuante || !document.body) return;
+                    const estilo = document.createElement('style');
+                    estilo.id = 'gb-nav-bubble-style';
+                    estilo.textContent = `
+                        #gb-nav-bubble {
+                            position: fixed; left: 14px; bottom: max(16px, env(safe-area-inset-bottom));
+                            z-index: 10050; width: 44px; height: 44px; border: 2px solid rgba(255,255,255,.9);
+                            border-radius: 50%; display: none; align-items: center; justify-content: center;
+                            color: #fff; background: #75452f; box-shadow: 0 4px 14px rgba(0,0,0,.28);
+                            font-size: 17px; cursor: pointer; -webkit-tap-highlight-color: transparent;
+                        }
+                        #gb-nav-bubble:active { transform: scale(.94); }
+                        #gb-nav-bubble:focus-visible { outline: 3px solid #d6a77d; outline-offset: 3px; }
+                        @media (min-width: 769px) { #gb-nav-bubble { display: none !important; } }
+                        @media (max-width: 768px) {
+                            #app > div > div.flex-1 > [class~="bg-slate-200/80"].gb-nav-hidden {
+                                height: 0 !important; max-height: 0 !important; min-height: 0 !important;
+                                flex: 0 0 0 !important; margin: 0 !important; padding: 0 !important;
+                                border: 0 !important; overflow: hidden !important; visibility: hidden !important;
+                                opacity: 0 !important; pointer-events: none !important;
+                            }
+                        }`;
+                    document.head.appendChild(estilo);
+                    botaoFlutuante = document.createElement('button');
+                    botaoFlutuante.id = 'gb-nav-bubble';
+                    botaoFlutuante.type = 'button';
+                    botaoFlutuante.setAttribute('aria-label', 'Mostrar abas de navegação');
+                    botaoFlutuante.setAttribute('title', 'Mostrar abas');
+                    botaoFlutuante.innerHTML = '<i class="fa-solid fa-layer-group" aria-hidden="true"></i>';
+                    botaoFlutuante.addEventListener('click', function () {
+                        mostrarAbas();
+                    });
+                    document.body.appendChild(botaoFlutuante);
+                }
+
+                function atualizarBotao(oculto) {
+                    criarBotao();
+                    if (!botaoFlutuante) return;
+                    botaoFlutuante.style.display = emMobile() && oculto ? 'flex' : 'none';
+                }
+
                 function mostrarAbas() {
                     const barra = barraAbas();
                     if (barra) barra.classList.remove('gb-nav-hidden');
+                    atualizarBotao(false);
                 }
 
                 function ocultarAbas() {
                     const barra = barraAbas();
-                    if (barra && window.matchMedia('(max-width: 768px)').matches)
+                    if (barra && emMobile()) {
                         barra.classList.add('gb-nav-hidden');
+                        atualizarBotao(true);
+                    }
                 }
 
                 document.addEventListener('click', function (event) {
                     const botao = event.target.closest && event.target.closest('button, [role="button"]');
-                    if (!botao) return;
+                    if (!botao || botao.id === 'gb-nav-bubble') return;
                     const texto = (botao.innerText || botao.getAttribute('aria-label') || botao.title || '').trim();
                     const acao = texto.toLocaleLowerCase('pt-BR');
-                    if (['novo', 'nova', 'adicionar', 'cadastrar', 'incluir'].some(p => acao === p || acao.startsWith(p + ' '))) {
+                    if (['novo', 'nova', 'adicionar', 'cadastrar', 'incluir'].some(p => acao === p || acao.startsWith(p + ' ')))
                         ocultarAbas();
-                    }
                 }, true);
 
                 document.addEventListener('scroll', function (event) {
-                    if (!window.matchMedia('(max-width: 768px)').matches) return;
+                    if (!emMobile()) return;
                     const main = document.querySelector('#app main');
                     const alvo = event.target;
                     if (alvo !== main && alvo !== document && alvo !== document.documentElement && alvo !== document.body)
@@ -13411,14 +13460,9 @@ persistido no banco ou no gateway.
                         ultimaPosicao = posicao;
                     }
                     const diferenca = posicao - ultimaPosicao;
-
-                    if (posicao <= 8) {
-                        mostrarAbas();
-                    } else if (diferenca > 4) {
-                        ocultarAbas();
-                    } else if (diferenca < -4) {
-                        mostrarAbas();
-                    }
+                    if (posicao <= 8) mostrarAbas();
+                    else if (diferenca > 4) ocultarAbas();
+                    else if (diferenca < -4) mostrarAbas();
                     ultimaPosicao = posicao;
                 }, true);
 
@@ -13428,8 +13472,14 @@ persistido no banco ou no gateway.
                 }, true);
 
                 window.addEventListener('resize', function () {
-                    if (!window.matchMedia('(max-width: 768px)').matches) mostrarAbas();
+                    if (!emMobile()) mostrarAbas();
+                    else {
+                        const barra = barraAbas();
+                        atualizarBotao(!!(barra && barra.classList.contains('gb-nav-hidden')));
+                    }
                 }, { passive: true });
+
+                criarBotao();
             })();
         </script>
     </body>
