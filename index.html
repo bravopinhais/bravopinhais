@@ -5593,17 +5593,25 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 }).format(dashboardNumero(valor));
             }
 
-            const DASHBOARD_IA_STORAGE_KEY = 'guardioes_dashboard_ia_ativa';
+            // Estado global da IA: armazenado na configuração compartilhada do condomínio.
             function dashboardIAEstaAtiva() {
-                try { return localStorage.getItem(DASHBOARD_IA_STORAGE_KEY) !== 'false'; }
-                catch (_) { return true; }
+                if (!db.configuracoes || typeof db.configuracoes !== 'object') db.configuracoes = {};
+                return db.configuracoes.iaDashboardAtiva !== false;
             }
-            function dashboardAlternarIA() {
+            async function dashboardAlternarIA() {
+                if (!usuarioPodeConfigurarModulos()) {
+                    alert('Somente um administrador pode alterar a disponibilidade global da IA.');
+                    return;
+                }
                 const ativa = !dashboardIAEstaAtiva();
-                try { localStorage.setItem(DASHBOARD_IA_STORAGE_KEY, ativa ? 'true' : 'false'); }
-                catch (_) { alert('Não foi possível salvar essa preferência neste navegador.'); return; }
+                if (!db.configuracoes || typeof db.configuracoes !== 'object') db.configuracoes = {};
+                db.configuracoes.iaDashboardAtiva = ativa;
                 renderMainOnly();
                 if (typeof aiAtualizarWidget === 'function') aiAtualizarWidget();
+                const salvo = await salvarDados(db);
+                if (!salvo) {
+                    alert('A alteração foi mantida neste dispositivo, mas ainda não foi confirmada na nuvem. Verifique a sincronização.');
+                }
             }
 
             function dashboardAcionarIA(tipo) {
