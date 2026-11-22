@@ -3848,7 +3848,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
             }
 
             function salvarDados(data) {
-                salvarDadosNaNuvem(data);
+                return salvarDadosNaNuvem(data);
             }
 
             try {
@@ -10730,34 +10730,61 @@ Deno.serve(async (req: Request) => {
                 try {
                     _tamanhoKB = Math.round(JSON.stringify(db).length / 1024);
                 } catch (e) {}
-                try {
-                    const {error} = await supabaseClient.from('condominio_dados').upsert({
-                        id: 'principal',
-                        payload: db,
-                        atualizado_em: new Date()
-                    });
-                    if (error)
-                        throw error;
-                    _statusNuvem(CL_OK, '<i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado com a Nuvem em Tempo Real');
-                } catch (err) {
-                    console.warn('Erro ao salvar:', err, 'Tamanho dos dados (KB):', _tamanhoKB);
-                    const _esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-                    const _partes = [];
-                    if (err && err.code)
-                        _partes.push('código: ' + err.code);
-                    if (err && err.status)
-                        _partes.push('status: ' + err.status);
-                    if (err && err.message)
-                        _partes.push(err.message);
-                    if (err && err.details)
-                        _partes.push(err.details);
-                    if (err && err.hint)
-                        _partes.push('dica: ' + err.hint);
-                    _partes.push('tamanho dos dados: ' + _tamanhoKB + ' KB');
-                    _statusNuvem(CL_ERRO, '<i class="fa-solid fa-triangle-exclamation"></i> Não foi possível guardar na nuvem. Verifique a ligação ou entre novamente.<br><span style="font-weight:400;opacity:.9">Detalhe técnico: ' + _esc(_partes.join(' | ')) + '</span>');
+                let _ultimoErro = null;
+                for (let _tentativa = 1; _tentativa <= 3; _tentativa++) {
+                    try {
+                        const {error} = await supabaseClient.from('condominio_dados').upsert({
+                            id: 'principal',
+                            payload: db,
+                            atualizado_em: new Date()
+                        });
+                        if (error)
+                            throw error;
+                        _statusNuvem(CL_OK, '<i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado com a Nuvem em Tempo Real');
+                        return true;
+                    } catch (err) {
+                        _ultimoErro = err;
+                        const _status = Number(err && err.status || 0);
+                        const _transitorio = ['55P03', '40P01', '57014', '53300', '08000', '08003', '08006', '57P01'].includes(String(err && err.code || '')) || _status >= 500;
+                        if (!_transitorio || _tentativa === 3)
+                            break;
+                        await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, _tentativa - 1)));
+                    }
                 }
+                const err = _ultimoErro || new Error('Falha desconhecida ao salvar.');
+                console.warn('Erro ao salvar após tentativas:', err, 'Tamanho dos dados (KB):', _tamanhoKB);
+                const _esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+                const _partes = [];
+                if (err && err.code)
+                    _partes.push('código: ' + err.code);
+                if (err && err.status)
+                    _partes.push('status: ' + err.status);
+                if (err && err.message)
+                    _partes.push(err.message);
+                if (err && err.details)
+                    _partes.push(err.details);
+                if (err && err.hint)
+                    _partes.push('dica: ' + err.hint);
+                _partes.push('tamanho dos dados: ' + _tamanhoKB + ' KB');
+                _statusNuvem(CL_ERRO, '<i class="fa-solid fa-triangle-exclamation"></i> Não foi possível guardar na nuvem. As alterações permanecem locais; tente novamente.<br><span style="font-weight:400;opacity:.9">Detalhe técnico: ' + _esc(_partes.join(' | ')) + '</span>');
+                return false;
             }
             ;
+
+            // Fila única de gravação: impede que várias telas/disparos concorram pela mesma linha no Supabase.
+            let _filaGravacaoNuvem = Promise.resolve();
+            const _salvarDadosNaNuvemComRetry = salvarDadosNaNuvem;
+            salvarDadosNaNuvem = function(dataObj, opcoes={}) {
+                let _snapshot;
+                try {
+                    _snapshot = JSON.parse(JSON.stringify(dataObj));
+                } catch (e) {
+                    _snapshot = dataObj;
+                }
+                const _tarefa = _filaGravacaoNuvem.then(() => _salvarDadosNaNuvemComRetry(_snapshot, opcoes));
+                _filaGravacaoNuvem = _tarefa.catch(() => false);
+                return _tarefa;
+            };
 
             // ---------- carregar (só depois de autenticado) ----------
             async function carregarDadosAutenticado() {
