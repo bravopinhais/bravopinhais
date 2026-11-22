@@ -11600,13 +11600,15 @@ Deno.serve(async (req: Request) => {
                 marcarSyncPendente('cadastros salvos neste dispositivo aguardando sincronização');
                 const elStatus = document.getElementById('status-nuvem');
 
-                if (pendenciaAnterior && !opcoes.recuperacaoConfirmada && navigator.onLine) {
+                // Verifica a versão remota antes de cada gravação online, não apenas nas recuperações.
+                // Isso detecta alterações feitas por outro usuário desde a última sincronização deste dispositivo.
+                if ((pendenciaAnterior || baseline) && !opcoes.recuperacaoConfirmada && navigator.onLine) {
                     try {
-                        const {data: remoto, error: erroVersao} = await acompanharOperacaoNuvem(supabaseClient.from('condominio_dados').select('atualizado_em').eq('id', 'principal').maybeSingle(), 'Internet lenta: seus dados estão salvos localmente. Verificando se a nuvem pode receber as alterações...');
+                        const {data: remoto, error: erroVersao} = await acompanharOperacaoNuvem(supabaseClient.from('condominio_dados').select('atualizado_em').eq('id', 'principal').maybeSingle(), 'Internet lenta: seus dados estão salvos localmente. Conferindo se outro usuário alterou a base...');
                         if (erroVersao) throw erroVersao;
                         const mesmaVersao = !!(remoto && remoto.atualizado_em && baseline && versoesEquivalentes(baseline, remoto.atualizado_em));
                         if (!mesmaVersao) {
-                            const podeSobrescrever = confirm('Existem alterações locais aguardando sincronização e a versão da nuvem mudou ou não pôde ser confirmada.\n\nOK: enviar os dados deste dispositivo para a nuvem.\nCancelar: manter tudo salvo localmente e não sobrescrever a nuvem.');
+                            const podeSobrescrever = confirm('A versão da nuvem mudou desde a última sincronização deste dispositivo, ou não foi possível confirmar a versão.\\n\\nOK: enviar os dados locais e substituir a versão remota.\\nCancelar: manter os dados salvos neste dispositivo, sem sobrescrever a nuvem.\\n\\nSe outro usuário fez alterações, combine a atualização antes de confirmar.');
                             if (!podeSobrescrever) {
                                 statusSalvoLocalmente('Cadastro salvo neste dispositivo; sincronização aguardando sua confirmação.');
                                 return true;
@@ -11614,7 +11616,7 @@ Deno.serve(async (req: Request) => {
                         }
                     } catch (erroVersao) {
                         console.warn('Verificação da versão remota indisponível; mantendo a cópia local.', erroVersao);
-                        statusSalvoLocalmente('Cadastro salvo neste dispositivo; aguardando conexão para sincronizar.');
+                        statusSalvoLocalmente('Cadastro salvo neste dispositivo; aguardando confirmação da versão da nuvem.');
                         return true;
                     }
                 }
