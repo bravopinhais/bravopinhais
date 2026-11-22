@@ -5975,20 +5975,38 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     }
                 } catch (e) { console.warn('Não foi possível limpar o rascunho após salvar.', e); }
             }
+            // Agrupa digitações rápidas para evitar gravações síncronas excessivas no localStorage.
+            let _timerSalvarRascunhoFormulario = null;
+            function agendarSalvamentoRascunhoFormulario() {
+                clearTimeout(_timerSalvarRascunhoFormulario);
+                _timerSalvarRascunhoFormulario = setTimeout(() => {
+                    _timerSalvarRascunhoFormulario = null;
+                    salvarRascunhoFormulario();
+                }, 350);
+            }
+            function salvarRascunhoPendenteAntesDeFechar() {
+                if (_timerSalvarRascunhoFormulario) {
+                    clearTimeout(_timerSalvarRascunhoFormulario);
+                    _timerSalvarRascunhoFormulario = null;
+                    salvarRascunhoFormulario();
+                }
+            }
             document.addEventListener('input', event => {
                 if (event.target && event.target.closest && event.target.closest('#modal-container') && campoElegivelParaRascunho(event.target))
-                    salvarRascunhoFormulario();
+                    agendarSalvamentoRascunhoFormulario();
             }, true);
             document.addEventListener('change', event => {
                 if (event.target && event.target.closest && event.target.closest('#modal-container') && campoElegivelParaRascunho(event.target))
-                    salvarRascunhoFormulario();
+                    agendarSalvamentoRascunhoFormulario();
             }, true);
+            window.addEventListener('pagehide', salvarRascunhoPendenteAntesDeFechar);
 
             function abrirModalContainer(html) {
                 document.getElementById('modal-container').innerHTML = html;
                 setTimeout(recuperarRascunhoFormulario, 0);
             }
             function fecharModalContainer() {
+                salvarRascunhoPendenteAntesDeFechar();
                 document.getElementById('modal-container').innerHTML = '';
             }
 
