@@ -3582,6 +3582,66 @@
             const CHAVE_SYNC_PENDENTE = 'guardioes_bravo_sync_pendente';
             const CHAVE_ULTIMA_SYNC_NUVEM = 'guardioes_bravo_ultima_sync_nuvem';
 
+            // Cofre local offline em IndexedDB: suporta bases maiores que o limite do localStorage.
+            const DB_OFFLINE_NOME = 'guardioes_bravo_offline';
+            const DB_OFFLINE_STORE = 'snapshots';
+            let usuarioAuthUidAtivo = null;
+            function abrirBancoOffline() {
+                return new Promise((resolve, reject) => {
+                    if (!('indexedDB' in window)) return reject(new Error('IndexedDB indisponível neste navegador.'));
+                    const req = indexedDB.open(DB_OFFLINE_NOME, 1);
+                    req.onupgradeneeded = () => {
+                        const banco = req.result;
+                        if (!banco.objectStoreNames.contains(DB_OFFLINE_STORE))
+                            banco.createObjectStore(DB_OFFLINE_STORE, { keyPath: 'userId' });
+                    };
+                    req.onsuccess = () => resolve(req.result);
+                    req.onerror = () => reject(req.error || new Error('Não foi possível abrir o armazenamento offline.'));
+                });
+            }
+            async function salvarCacheOffline(payload, userId, pendente, baseline) {
+                if (!userId) return false;
+                let banco;
+                try {
+                    banco = await abrirBancoOffline();
+                    await new Promise((resolve, reject) => {
+                        const tx = banco.transaction(DB_OFFLINE_STORE, 'readwrite');
+                        tx.objectStore(DB_OFFLINE_STORE).put({
+                            userId: String(userId), payload, pendente: !!pendente,
+                            baseline: baseline || localStorage.getItem(CHAVE_ULTIMA_SYNC_NUVEM) || null,
+                            salvoEm: new Date().toISOString()
+                        });
+                        tx.oncomplete = resolve;
+                        tx.onerror = () => reject(tx.error || new Error('Falha ao gravar cópia offline.'));
+                        tx.onabort = () => reject(tx.error || new Error('Gravação offline cancelada.'));
+                    });
+                    return true;
+                } catch (erro) {
+                    console.error('Não foi possível proteger o cadastro no armazenamento offline:', erro);
+                    return false;
+                } finally { if (banco) banco.close(); }
+            }
+            async function obterCacheOffline(userId) {
+                if (!userId) return null;
+                let banco;
+                try {
+                    banco = await abrirBancoOffline();
+                    return await new Promise((resolve, reject) => {
+                        const tx = banco.transaction(DB_OFFLINE_STORE, 'readonly');
+                        const req = tx.objectStore(DB_OFFLINE_STORE).get(String(userId));
+                        req.onsuccess = () => resolve(req.result || null);
+                        req.onerror = () => reject(req.error || new Error('Falha ao ler cópia offline.'));
+                    });
+                } catch (erro) {
+                    console.warn('Cópia offline indisponível:', erro);
+                    return null;
+                } finally { if (banco) banco.close(); }
+            }
+            function statusSalvoLocalmente(mensagem) {
+                _statusNuvem('bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800',
+                    '<i class="fa-solid fa-floppy-disk"></i> ' + mensagem);
+            }
+
             function salvarCacheLocal() {
                 try {
                     localStorage.setItem('guardioes_bravo_db', JSON.stringify(db));
@@ -10797,60 +10857,76 @@ Deno.serve(async (req: Request) => {
 
             // ---------- salvar (com RLS) ----------
             const _salvarNuvemOriginal = salvarDadosNaNuvem;
-            salvarDadosNaNuvem = async function(dataObj) {
-                if (!AUTH_SUPABASE)
-                    return _salvarNuvemOriginal(dataObj);
+            salvarDadosNaNuvem = async function(dataObj, opcoes={}) {
+                if (!AUTH_SUPABASE) return _salvarNuvemOriginal(dataObj, opcoes);
                 db = dataObj;
-                (db.usuarios || []).forEach(u => {
-                    delete u.senhaHash;
+                (db.usuarios || []).forEach(u => { delete u.senhaHash; });
+                const uid = usuarioAuthUidAtivo;
+                const pendenciaAnterior = obterSyncPendente();
+                const baseline = localStorage.getItem(CHAVE_ULTIMA_SYNC_NUVEM) || null;
+                const cacheSalvo = await salvarCacheOffline(db, uid, true, baseline);
+                if (!cacheSalvo) {
+                    statusSalvoLocalmente('Não foi possível confirmar o salvamento local. Não feche esta página; exporte um backup.');
+                    return false;
                 }
-                );
-                // senhas nunca vão para a nuvem
-                _statusNuvem('bg-slate-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print animate-pulse border-b border-slate-800', '<i class="fa-solid fa-rotate fa-spin"></i> A guardar na nuvem...');
-                let _tamanhoKB = 0;
-                try {
-                    _tamanhoKB = Math.round(JSON.stringify(db).length / 1024);
-                } catch (e) {}
-                let _ultimoErro = null;
-                for (let _tentativa = 1; _tentativa <= 3; _tentativa++) {
+                marcarSyncPendente('cadastros salvos neste dispositivo aguardando sincronização');
+                const elStatus = document.getElementById('status-nuvem');
+
+                if (pendenciaAnterior && !opcoes.recuperacaoConfirmada && navigator.onLine) {
                     try {
-                        const {error} = await supabaseClient.from('condominio_dados').upsert({
-                            id: 'principal',
-                            payload: db,
-                            atualizado_em: new Date()
-                        });
-                        if (error)
-                            throw error;
-                        _statusNuvem(CL_OK, '<i class="fa-solid fa-cloud-arrow-up"></i> Sincronizado com a Nuvem em Tempo Real');
+                        const {data: remoto, error: erroVersao} = await supabaseClient.from('condominio_dados').select('atualizado_em').eq('id', 'principal').maybeSingle();
+                        if (erroVersao) throw erroVersao;
+                        const mesmaVersao = !!(remoto && remoto.atualizado_em && baseline && versoesEquivalentes(baseline, remoto.atualizado_em));
+                        if (!mesmaVersao) {
+                            const podeSobrescrever = confirm('Existem alterações locais aguardando sincronização e a versão da nuvem mudou ou não pôde ser confirmada.\n\nOK: enviar os dados deste dispositivo para a nuvem.\nCancelar: manter tudo salvo localmente e não sobrescrever a nuvem.');
+                            if (!podeSobrescrever) {
+                                statusSalvoLocalmente('Cadastro salvo neste dispositivo; sincronização aguardando sua confirmação.');
+                                return true;
+                            }
+                        }
+                    } catch (erroVersao) {
+                        console.warn('Verificação da versão remota indisponível; mantendo a cópia local.', erroVersao);
+                        statusSalvoLocalmente('Cadastro salvo neste dispositivo; aguardando conexão para sincronizar.');
                         return true;
-                    } catch (err) {
-                        _ultimoErro = err;
-                        const _status = Number(err && err.status || 0);
-                        const _transitorio = ['55P03', '40P01', '57014', '53300', '08000', '08003', '08006', '57P01'].includes(String(err && err.code || '')) || _status >= 500;
-                        if (!_transitorio || _tentativa === 3)
-                            break;
-                        await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, _tentativa - 1)));
                     }
                 }
-                const err = _ultimoErro || new Error('Falha desconhecida ao salvar.');
-                console.warn('Erro ao salvar após tentativas:', err, 'Tamanho dos dados (KB):', _tamanhoKB);
-                const _esc = t => String(t == null ? '' : t).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-                const _partes = [];
-                if (err && err.code)
-                    _partes.push('código: ' + err.code);
-                if (err && err.status)
-                    _partes.push('status: ' + err.status);
-                if (err && err.message)
-                    _partes.push(err.message);
-                if (err && err.details)
-                    _partes.push(err.details);
-                if (err && err.hint)
-                    _partes.push('dica: ' + err.hint);
-                _partes.push('tamanho dos dados: ' + _tamanhoKB + ' KB');
-                _statusNuvem(CL_ERRO, '<i class="fa-solid fa-triangle-exclamation"></i> Não foi possível guardar na nuvem. As alterações permanecem locais; tente novamente.<br><span style="font-weight:400;opacity:.9">Detalhe técnico: ' + _esc(_partes.join(' | ')) + '</span>');
-                return false;
-            }
-            ;
+                if (!navigator.onLine) {
+                    statusSalvoLocalmente('Cadastro salvo neste dispositivo; será enviado quando a internet voltar.');
+                    return true;
+                }
+                _statusNuvem('bg-slate-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print animate-pulse border-b border-slate-800',
+                    '<i class="fa-solid fa-rotate fa-spin"></i> Cadastro salvo localmente; sincronizando com a nuvem...');
+
+                let resultadoAnexos = { migrados: 0, falhas: 0 };
+                try {
+                    resultadoAnexos = await migrarAnexosPendentesAutomaticamente(dataObj);
+                    if (resultadoAnexos.migrados > 0)
+                        await salvarCacheOffline(db, uid, true, baseline);
+                } catch (erroAnexos) {
+                    console.warn('Anexos mantidos localmente para nova tentativa:', erroAnexos);
+                }
+                const atualizadoEm = new Date().toISOString();
+                try {
+                    const {error} = await supabaseClient.from('condominio_dados').upsert({
+                        id: 'principal', payload: db, atualizado_em: atualizadoEm
+                    });
+                    if (error) throw error;
+                    limparSyncPendente();
+                    atualizarVersaoConhecidaNuvem(atualizadoEm);
+                    await salvarCacheOffline(db, uid, false, atualizadoEm);
+                    if (elStatus) {
+                        elStatus.className = 'bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-emerald-800 shadow-sm';
+                        elStatus.innerHTML = resultadoAnexos.falhas > 0
+                            ? '<i class="fa-solid fa-cloud-arrow-up"></i> Cadastro sincronizado; alguns anexos serão reenviados automaticamente.'
+                            : '<i class="fa-solid fa-circle-check"></i> Salvo com sucesso e sincronizado com a nuvem.';
+                    }
+                    return true;
+                } catch (err) {
+                    console.warn('Sincronização indisponível; cadastro preservado no dispositivo.', err);
+                    statusSalvoLocalmente('Cadastro salvo neste dispositivo; sincronização pendente.');
+                    return true;
+                }
+            };
 
             // Fila inteligente: mantém apenas o envio em andamento e o snapshot mais recente pendente.
             // Assim, vários cliques/edições próximos não disparam uma sequência de uploads completos.
@@ -10912,23 +10988,48 @@ Deno.serve(async (req: Request) => {
             };
 
             // ---------- carregar (só depois de autenticado) ----------
-            async function carregarDadosAutenticado() {
-                const {data, error} = await supabaseClient.from('condominio_dados').select('payload').eq('id', 'principal').maybeSingle();
+            async function carregarDadosAutenticado(authUser) {
+                const {data, error} = await supabaseClient.from('condominio_dados').select('payload, atualizado_em').eq('id', 'principal').maybeSingle();
                 if (error) {
-                    console.warn(error);
-                    return false;
+                    console.warn('Falha ao carregar a nuvem; procurando cópia offline autorizada.', error);
+                    const local = await obterCacheOffline(authUser && authUser.id);
+                    if (!local || !local.payload) return false;
+                    db = local.payload;
+                    _completarPadroes();
+                    window.__guardioesRecuperarOffline = !!local.pendente;
+                    statusSalvoLocalmente(local.pendente
+                        ? 'Cópia local recuperada; alterações aguardam sincronização.'
+                        : 'Modo offline: usando a última cópia salva neste dispositivo.');
+                    return true;
                 }
                 if (data && data.payload) {
-                    db = data.payload;
+                    const local = await obterCacheOffline(authUser && authUser.id);
+                    if (local && local.payload && local.pendente) {
+                        const baseline = local.baseline;
+                        const mesmaVersao = !!(baseline && data.atualizado_em && versoesEquivalentes(baseline, data.atualizado_em));
+                        const recuperar = mesmaVersao || confirm('Há cadastros salvos neste dispositivo que ainda não chegaram à nuvem.\n\nOK: manter os cadastros locais e tentar sincronizar.\nCancelar: carregar a versão da nuvem e manter a cópia local guardada para recuperação posterior.');
+                        if (recuperar) {
+                            db = local.payload;
+                            window.__guardioesRecuperarOffline = true;
+                            statusSalvoLocalmente('Cadastros locais recuperados; preparando sincronização.');
+                        } else {
+                            db = data.payload;
+                            await salvarCacheOffline(db, authUser && authUser.id, false, data.atualizado_em);
+                        }
+                    } else {
+                        db = data.payload;
+                        await salvarCacheOffline(db, authUser && authUser.id, false, data.atualizado_em);
+                    }
+                    if (data.atualizado_em) atualizarVersaoConhecidaNuvem(data.atualizado_em);
                     _completarPadroes();
                 } else {
-                    // Proteção crítica: nunca criar/substituir a base existente durante a migração de login.
                     _statusNuvem(CL_ERRO, '<i class="fa-solid fa-triangle-exclamation"></i> A nuvem não retornou a base esperada; nenhum dado foi alterado.');
                     alert('O Supabase não retornou os dados do condomínio. Por segurança, o sistema não criará uma base vazia. Verifique a tabela condominio_dados, as permissões RLS e a existência da linha principal.');
                     return false;
                 }
                 iniciarRealtimeAuth();
-                _statusNuvem(CL_OK, '<i class="fa-solid fa-cloud-arrow-down"></i> Sincronizado com a Nuvem em Tempo Real');
+                if (!window.__guardioesRecuperarOffline)
+                    _statusNuvem(CL_OK, '<i class="fa-solid fa-cloud-arrow-down"></i> Sincronizado com a Nuvem em Tempo Real');
                 return true;
             }
 
@@ -10968,7 +11069,7 @@ Deno.serve(async (req: Request) => {
                     renderApp();
                 }
                 ;
-                if (!(await carregarDadosAutenticado())) {
+                if (!(await carregarDadosAutenticado(authUser))) {
                     await negar('Não foi possível carregar os dados do condomínio.');
                     return;
                 }
@@ -11037,6 +11138,13 @@ Deno.serve(async (req: Request) => {
 
                 // Marca o perfil como autorizado somente após validar o e-mail contra o cadastro do sistema.
                 perfilSupabaseAutorizado = true;
+                usuarioAuthUidAtivo = authUser.id || null;
+                if (window.__guardioesRecuperarOffline) {
+                    window.__guardioesRecuperarOffline = false;
+                    await salvarDadosNaNuvem(db, { recuperacaoConfirmada: true });
+                } else {
+                    await salvarCacheOffline(db, usuarioAuthUidAtivo, false, localStorage.getItem(CHAVE_ULTIMA_SYNC_NUVEM));
+                }
                 try {
                     localStorage.removeItem('guardioes_bravo_db');
                 } catch (e) {}
@@ -11356,7 +11464,7 @@ Deno.serve(async (req: Request) => {
             (function configurarRecuperacaoConexao() {
                 let verificacaoEmAndamento = false;
                 window.addEventListener('online', async () => {
-                    if (verificacaoEmAndamento || !obterSyncPendente() || !sessao.usuarioLogado || (typeof AUTH_SUPABASE !== 'undefined' && AUTH_SUPABASE))
+                    if (verificacaoEmAndamento || !obterSyncPendente() || !sessao.usuarioLogado)
                         return;
                     verificacaoEmAndamento = true;
                     try {
