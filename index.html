@@ -4130,7 +4130,47 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                 }
             }
 
-            async function salvarDadosNaNuvem(dataObj, opcoes={}) {
+            // Serializa gravações e agrupa toques repetidos com o mesmo conteúdo.
+            // Assim, dois cliques rápidos não disparam dois upserts idênticos em paralelo.
+            let _filaGravacaoNuvem = Promise.resolve();
+            let _gravacaoNuvemEmCurso = null;
+            function salvarDadosNaNuvem(dataObj, opcoes={}) {
+                let snapshot;
+                try {
+                    snapshot = JSON.stringify(dataObj);
+                    if (typeof snapshot !== 'string') throw new Error('Dados não serializáveis.');
+                } catch (erro) {
+                    console.error('Não foi possível preparar os dados para sincronização.', erro);
+                    return Promise.resolve(false);
+                }
+                const chave = snapshot + '::' + JSON.stringify(opcoes || {});
+                if (_gravacaoNuvemEmCurso && _gravacaoNuvemEmCurso.chave === chave)
+                    return _gravacaoNuvemEmCurso.promise;
+
+                const executar = () => {
+                    let dadosIsolados;
+                    try {
+                        dadosIsolados = JSON.parse(snapshot);
+                    } catch (erro) {
+                        console.error('Não foi possível recuperar a cópia dos dados para salvar.', erro);
+                        return false;
+                    }
+                    return salvarDadosNaNuvemExecutar(dadosIsolados, opcoes);
+                };
+                const promise = _filaGravacaoNuvem.then(executar, executar);
+                _filaGravacaoNuvem = promise.then(() => undefined, () => undefined);
+                _gravacaoNuvemEmCurso = { chave, promise };
+                promise.then(() => {
+                    if (_gravacaoNuvemEmCurso && _gravacaoNuvemEmCurso.promise === promise)
+                        _gravacaoNuvemEmCurso = null;
+                }, () => {
+                    if (_gravacaoNuvemEmCurso && _gravacaoNuvemEmCurso.promise === promise)
+                        _gravacaoNuvemEmCurso = null;
+                });
+                return promise;
+            }
+
+            async function salvarDadosNaNuvemExecutar(dataObj, opcoes={}) {
                 db = dataObj;
                 const pendenciaAnterior = obterSyncPendente();
                 const cacheLocalSalvo = salvarCacheLocal();
