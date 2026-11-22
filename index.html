@@ -5428,7 +5428,6 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                         <p class="text-xs font-semibold text-slate-500 mt-0.5">Gestão em nuvem atualizada em tempo real</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2.5 no-print">
-                        ${moduloId === 'dashboard' && usuarioPodeConfigurarModulos() ? `<button onclick="otimizarArmazenamentoComBackup()" class="px-4 py-3 bg-amber-600 hover:bg-amber-700 text-white rounded-2xl font-extrabold text-xs shadow-lg transition-all flex items-center gap-2"><i class="fa-solid fa-cloud-arrow-up"></i> Otimizar armazenamento</button>` : ''} 
                         ${moduloId === 'dashboard' ? `<button onclick="dashboardAcionarIA('diagnostico')" class="px-5 py-3 bg-gradient-to-r from-teal-600 via-emerald-600 to-teal-700 hover:from-teal-700 hover:to-emerald-800 text-white rounded-2xl font-extrabold text-xs shadow-lg shadow-teal-600/25 transition-all flex items-center gap-2.5"><i class="fa-solid fa-wand-magic-sparkles text-sm"></i> Análise executiva Gemini</button>` : ''}
                         ${btnExportHtml} ${btnNovoHtml}
                     </div>
