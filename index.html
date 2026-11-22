@@ -5177,6 +5177,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 const mainEl = document.querySelector('main');
                 if (mainEl) {
                     mainEl.innerHTML = renderModuleContent(tabsState.activeTab);
+                    if (tabsState.activeTab === 'estoque') inicializarFotosEstoque();
                     inicializarGraficosDoModulo();
                 }
             }
@@ -5317,6 +5318,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 </div>
             `;
                 aplicarVisibilidadeModulos();
+                if (tabsState.activeTab === 'estoque') inicializarFotosEstoque();
                 if (tabsState.activeTab === 'dashboard' || tabsState.activeTab === 'estoque') {
                     setTimeout(inicializarGraficosDoModulo, 50);
                 }
@@ -7110,6 +7112,36 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
             }
 
             const cacheFotos = new Map();
+            let observadorFotosEstoque = null;
+
+            function inicializarFotosEstoque() {
+                if (observadorFotosEstoque) {
+                    observadorFotosEstoque.disconnect();
+                    observadorFotosEstoque = null;
+                }
+                const imagens = document.querySelectorAll('main img[data-foto-id]');
+                if (!imagens.length) return;
+                const itensPorId = new Map((db.estoque || []).map(item => [String(item.id), item]));
+                const carregarImagem = img => {
+                    const item = itensPorId.get(String(img.dataset.fotoId || ''));
+                    if (!item) return;
+                    img.removeAttribute('data-foto-id');
+                    img.src = urlDaFoto(item);
+                };
+                if (!('IntersectionObserver' in window)) {
+                    imagens.forEach(carregarImagem);
+                    return;
+                }
+                observadorFotosEstoque = new IntersectionObserver((entries, observer) => {
+                    entries.forEach(entry => {
+                        if (!entry.isIntersecting) return;
+                        observer.unobserve(entry.target);
+                        carregarImagem(entry.target);
+                    });
+                }, { rootMargin: '180px 0px', threshold: 0.01 });
+                imagens.forEach(img => observadorFotosEstoque.observe(img));
+            }
+
             function urlDaFoto(st) {
                 if (st.fotoPath) {
                     const c = _cacheUrlAnexo.get(st.fotoPath);
@@ -7391,7 +7423,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
 
                     return `
                                             <tr class="transition-colors hover:bg-slate-50/80 ${itemInativo ? 'bg-slate-50/70 opacity-80' : (atual <= minimo ? 'bg-rose-50/20' : (maximo > 0 && atual > maximo ? 'bg-amber-50/20' : ''))}">
-                                                <td class="p-3.5 text-center">${(st.fotoCompactadaGzip || st.fotoPath) ? `<button type="button" onclick="visualizarFotoEstoque('${st.id}')" class="inline-block h-10 w-10 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:opacity-80" title="Ver foto"><img data-foto-path="${escapeHTML(st.fotoPath || '')}" src="${urlDaFoto(st)}" loading="lazy" decoding="async" fetchpriority="low" class="h-full w-full object-cover" alt="Foto de ${escapeHTML(st.item || 'produto')}"></button>` : `<div class="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-400"><i class="fa-solid fa-image"></i></div>`}</td>
+                                                <td class="p-3.5 text-center">${(st.fotoCompactadaGzip || st.fotoPath) ? `<button type="button" onclick="visualizarFotoEstoque('${st.id}')" class="inline-block h-10 w-10 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm transition hover:opacity-80" title="Ver foto"><img data-foto-path="${escapeHTML(st.fotoPath || '')}" data-foto-id="${escapeHTML(st.id)}" src="${_FOTO_VAZIA}" loading="lazy" decoding="async" fetchpriority="low" class="h-full w-full object-cover" alt="Foto de ${escapeHTML(st.item || 'produto')}"></button>` : `<div class="mx-auto flex h-10 w-10 items-center justify-center rounded-xl bg-slate-100 text-slate-400"><i class="fa-solid fa-image"></i></div>`}</td>
                                                 <td class="p-3.5 font-mono font-bold text-teal-700">${escapeHTML(st.etiqueta || '-')}</td>
                                                 <td class="max-w-[260px] p-3.5"><div class="font-extrabold leading-5 text-slate-900">${escapeHTML(st.item || '-')}</div><div class="mt-1 text-[10px] text-slate-400">${escapeHTML(st.unidade || st.unidadeMedida || '')}</div></td>
                                                 <td class="p-3.5"><span class="inline-flex max-w-[170px] whitespace-normal rounded-lg bg-indigo-50 px-2.5 py-1.5 font-bold leading-4 text-indigo-700">${escapeHTML(setorEstoque(st))}</span></td>
