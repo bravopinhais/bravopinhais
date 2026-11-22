@@ -4288,9 +4288,24 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                 condominio: 'Condomínio', plano_contas: 'Plano de contas', financeiro: 'Financeiro',
                 formas_monetarias: 'Formas monetárias', contas_bancarias: 'Contas bancárias',
                 moradores: 'Moradores', fornecedores: 'Fornecedores', empregados: 'Empregados',
-                categorias: 'Categorias', estoque: 'Estoque', acerto_estoque: 'Acerto de estoque',
+                categorias: 'Categorias', estoque: 'Estoque', acertos_estoque: 'Acerto de estoque',
                 compras_consumo: 'Compras e consumo', documentos: 'Documentos', usuarios: 'Usuários'
             };
+            function normalizarParaComparacaoHistorico(valor) {
+                if (Array.isArray(valor)) return valor.map(normalizarParaComparacaoHistorico);
+                if (!valor || typeof valor !== 'object') return valor;
+                return Object.keys(valor).sort().reduce((resultado, chave) => {
+                    resultado[chave] = normalizarParaComparacaoHistorico(valor[chave]);
+                    return resultado;
+                }, {});
+            }
+            function saoRegistrosDiferentesHistorico(a, b) {
+                try {
+                    return JSON.stringify(normalizarParaComparacaoHistorico(a)) !== JSON.stringify(normalizarParaComparacaoHistorico(b));
+                } catch (e) {
+                    return a !== b;
+                }
+            }
             function gerarEventosHistorico(dadosNovos) {
                 let dadosAnteriores = null;
                 try { dadosAnteriores = JSON.parse(localStorage.getItem('guardioes_bravo_db') || 'null'); } catch (e) {}
@@ -4308,7 +4323,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                         const anterior = mapaAntes.get(id);
                         let acao = '';
                         if (!mapaAntes.has(id)) acao = 'Cadastro';
-                        else if (JSON.stringify(anterior) !== JSON.stringify(item)) acao = 'Alteração';
+                        else if (saoRegistrosDiferentesHistorico(anterior, item)) acao = 'Alteração';
                         if (acao) eventos.push({ id: (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)), data: agora, usuario: ator, modulo: MODULOS_HISTORICO[chave], acao });
                     });
                     mapaAntes.forEach((item, id) => {
