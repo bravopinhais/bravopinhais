@@ -2483,7 +2483,53 @@
                     padding: 7px 9px;
                 }
             }
-        </style>
+        
+            /* Correção do menu lateral no celular: camada acima do conteúdo e da barra de abas. */
+            @media (max-width: 768px) {
+                #status-nuvem {
+                    z-index: 80;
+                }
+
+                #sidebar-backdrop:not(.hidden) {
+                    z-index: 90;
+                }
+
+                #sidebar-menu {
+                    position: fixed !important;
+                    top: 0 !important;
+                    bottom: 0 !important;
+                    left: 0 !important;
+                    z-index: 100 !important;
+                    height: 100dvh !important;
+                    max-height: 100dvh !important;
+                    overflow: hidden;
+                    display: flex;
+                    flex-direction: column;
+                    width: min(86vw, 320px);
+                    padding-bottom: env(safe-area-inset-bottom);
+                }
+
+                #sidebar-menu > nav {
+                    min-height: 0;
+                    flex: 1 1 auto;
+                    overflow-y: auto;
+                    overscroll-behavior: contain;
+                }
+
+                #sidebar-menu > div:last-child {
+                    flex-shrink: 0;
+                }
+            }
+
+            /* Em telas maiores, preserva o menu fixo na coluna lateral. */
+            @media (min-width: 769px) {
+                #sidebar-menu {
+                    position: sticky;
+                    z-index: 50;
+                }
+            }
+
+            </style>
         <style id="guardioes-notifications-style">
             #gb-notifications-anchor {
                 position: relative;
