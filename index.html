@@ -11564,6 +11564,15 @@ Deno.serve(async (req: Request) => {
                     statusSalvoLocalmente('Internet desconectada. Seus cadastros continuam protegidos neste dispositivo e aguardam sincronização.');
             });
 
+            // Evita fechamento ou atualização acidental enquanto houver dados locais sem confirmação da nuvem.
+            // O navegador controla o texto e pode não exibir o aviso em alguns cenários de dispositivos móveis.
+            window.addEventListener('beforeunload', (event) => {
+                if (!sessao.usuarioLogado || !obterSyncPendente()) return;
+                event.preventDefault();
+                event.returnValue = '';
+                return '';
+            });
+
             // ---------- salvar (com RLS) ----------
             const _salvarNuvemOriginal = salvarDadosNaNuvem;
             salvarDadosNaNuvem = async function(dataObj, opcoes={}) {
