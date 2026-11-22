@@ -5480,11 +5480,15 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 return chartJsCarregamento;
             }
 
+            // Identificador para impedir que carregamentos assíncronos antigos
+            // inicializem gráficos de um módulo que já foi fechado ou trocado.
+            let _geracaoGraficosModulo = 0;
             function inicializarGraficosDoModulo() {
+                const geracao = ++_geracaoGraficosModulo;
                 const modulo = tabsState.activeTab;
                 if (modulo !== 'dashboard' && modulo !== 'estoque') return;
                 carregarChartJs().then(ok => {
-                    if (!ok || tabsState.activeTab !== modulo) return;
+                    if (!ok || geracao !== _geracaoGraficosModulo || tabsState.activeTab !== modulo) return;
                     if (modulo === 'dashboard') {
                         initDashboardCharts();
                         initDashboardEstoqueChart();
