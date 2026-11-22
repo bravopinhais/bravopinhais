@@ -9068,17 +9068,29 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
             }
 
             // ---------- 3) Troca do ícone da IA por um gato ----------
-            function trocarIconeIA() {
-                document.querySelectorAll('i.fa-wand-magic-sparkles').forEach(i => {
+            function trocarIconeIA(raiz=document) {
+                // Examina somente a região recém-inserida, evitando varrer a página inteira a cada mudança no DOM.
+                const icones = [];
+                if (raiz.nodeType === 1 && raiz.matches && raiz.matches('i.fa-wand-magic-sparkles'))
+                    icones.push(raiz);
+                if (raiz.querySelectorAll)
+                    icones.push(...raiz.querySelectorAll('i.fa-wand-magic-sparkles'));
+                icones.forEach(i => {
                     const grande = i.classList.contains('text-xl');
                     const span = document.createElement('span');
                     span.className = 'inline-flex items-center justify-center';
                     span.innerHTML = gatoSVG(grande ? 38 : 26);
                     i.replaceWith(span);
-                }
-                );
+                });
             }
-            new MutationObserver(trocarIconeIA).observe(document.body, {
+            const observadorIconesIA = new MutationObserver(mudancas => {
+                mudancas.forEach(mudanca => {
+                    mudanca.addedNodes.forEach(no => {
+                        if (no.nodeType === 1) trocarIconeIA(no);
+                    });
+                });
+            });
+            observadorIconesIA.observe(document.body, {
                 childList: true,
                 subtree: true
             });
