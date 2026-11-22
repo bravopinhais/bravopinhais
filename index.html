@@ -12104,6 +12104,16 @@ persistido no banco ou no gateway.
                     }
                 }
 
+                // Agrupa a digitação nos filtros para não recalcular todas as linhas a cada tecla.
+                function agendarAplicacaoFiltros(table) {
+                    if (table._gridFilterTimer)
+                        clearTimeout(table._gridFilterTimer);
+                    table._gridFilterTimer = setTimeout(() => {
+                        table._gridFilterTimer = null;
+                        applyFilters(table);
+                    }, 110);
+                }
+
                 function addFilterRow(table, labels) {
                     const thead = table.tHead;
                     const headerRow = thead && thead.rows[0];
@@ -12130,7 +12140,7 @@ persistido no banco ou no gateway.
                             input.setAttribute('aria-label', `Filtrar coluna ${label}`);
                             input.autocomplete = 'off';
                             input.dataset.gridFilterKey = th.dataset.gridColKey || '';
-                            input.addEventListener('input', () => applyFilters(table));
+                            input.addEventListener('input', () => agendarAplicacaoFiltros(table));
                             cell.appendChild(input);
                         } else {
                             cell.innerHTML = '<span class="grid-filter-muted" aria-hidden="true"><i class="fa-solid fa-minus"></i></span>';
