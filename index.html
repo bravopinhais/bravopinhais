@@ -12474,26 +12474,51 @@ persistido no banco ou no gateway.
                     applyFilters(table);
                 }
 
+                const tabelasPendentes = new Set();
                 function enhanceTables() {
                     observerTimer = null;
                     const main = document.querySelector('#app main');
-                    if (!main)
+                    if (!main || !tabelasPendentes.size)
                         return;
-                    const tables = Array.from(main.querySelectorAll('table'));
-                    tables.forEach( (table, index) => {
+                    const pendentes = Array.from(tabelasPendentes);
+                    tabelasPendentes.clear();
+                    pendentes.forEach(table => {
+                        if (!table.isConnected || !main.contains(table)) return;
                         try {
-                            enhanceTable(table, index);
+                            if (table.dataset.gridEnhanced === '1') {
+                                // Novas linhas podem chegar depois da renderização inicial; prepara apenas suas ações.
+                                groupActionButtons(table);
+                            } else {
+                                const indice = Array.from(main.querySelectorAll('table')).indexOf(table);
+                                enhanceTable(table, indice < 0 ? 0 : indice);
+                            }
                         } catch (error) {
                             console.warn('Não foi possível preparar tabela do módulo:', error);
                         }
-                    }
-                    );
+                    });
                 }
 
                 function scheduleEnhance() {
-                    if (observerTimer !== null)
-                        return;
+                    if (observerTimer !== null) return;
                     observerTimer = setTimeout(enhanceTables, 80);
+                }
+
+                function coletarTabelasAlteradas(mudancas) {
+                    const main = document.querySelector('#app main');
+                    if (!main) return;
+                    mudancas.forEach(mudanca => {
+                        mudanca.addedNodes.forEach(no => {
+                            if (no.nodeType !== 1) return;
+                            const tabela = no.matches && no.matches('table') ? no : (no.closest && no.closest('table'));
+                            if (tabela && main.contains(tabela)) tabelasPendentes.add(tabela);
+                            if (no.querySelectorAll) {
+                                no.querySelectorAll('table').forEach(t => {
+                                    if (main.contains(t)) tabelasPendentes.add(t);
+                                });
+                            }
+                        });
+                    });
+                    if (tabelasPendentes.size) scheduleEnhance();
                 }
 
                 document.addEventListener('click', event => {
@@ -12516,11 +12541,13 @@ persistido no banco ou no gateway.
 
                 function boot() {
                     const target = document.querySelector('#app') || document.body;
-                    const observer = new MutationObserver(scheduleEnhance);
+                    const observer = new MutationObserver(coletarTabelasAlteradas);
                     observer.observe(target, {
                         childList: true,
                         subtree: true
                     });
+                    const main = document.querySelector('#app main');
+                    if (main) main.querySelectorAll('table').forEach(t => tabelasPendentes.add(t));
                     enhanceTables();
                 }
 
