@@ -11707,8 +11707,10 @@ Deno.serve(async (req: Request) => {
                     }
                     if (_gravacaoNuvemPendente) {
                         const anterior = _gravacaoNuvemPendente;
+                        // A confirmação de sobrescrita pertence somente ao snapshot mais recente.
+                        // Não herde uma autorização antiga para uma gravação nova que chegou depois.
                         const opcoesCombinadas = Object.assign({}, anterior.opcoes, opcoesIsoladas, {
-                            recuperacaoConfirmada: !!(anterior.opcoes && anterior.opcoes.recuperacaoConfirmada || opcoesIsoladas && opcoesIsoladas.recuperacaoConfirmada)
+                            recuperacaoConfirmada: !!opcoesIsoladas.recuperacaoConfirmada
                         });
                         const textoOpcoesCombinadas = JSON.stringify(opcoesCombinadas);
                         _gravacaoNuvemPendente = {
