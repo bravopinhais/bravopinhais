@@ -2595,7 +2595,76 @@
                 }
             }
 
-            </style>
+    
+            /* ===== Cabeçalho e abas compactos; conteúdo sempre abaixo ===== */
+            @media (max-width: 768px) {
+                #app > div > div.flex-1 > header {
+                    min-height: 42px;
+                    padding: 6px 10px !important;
+                    gap: 8px;
+                }
+
+                #app > div > div.flex-1 > header .w-8.h-8 {
+                    width: 26px !important;
+                    height: 26px !important;
+                    border-radius: 8px !important;
+                }
+
+                #app > div > div.flex-1 > header span {
+                    font-size: 11px !important;
+                    line-height: 1.2;
+                }
+
+                #app > div > div.flex-1 > header button {
+                    min-height: 32px !important;
+                    padding: 6px 9px !important;
+                }
+
+                #app > div > div.flex-1 > .bg-slate-200\\/80 {
+                    min-height: 38px;
+                    padding: 4px 6px 0 !important;
+                    gap: 4px !important;
+                    align-items: stretch;
+                }
+
+                #app .gb-tabs-scroller {
+                    align-items: stretch;
+                    gap: 4px !important;
+                }
+
+                #app .gb-tabs-scroller > div {
+                    min-height: 34px;
+                    padding: 6px 9px !important;
+                    border-radius: 9px 9px 0 0 !important;
+                    font-size: 10px !important;
+                }
+
+                #app > div > div.flex-1 > main {
+                    min-height: 0;
+                    padding: 12px !important;
+                    overflow-x: hidden;
+                }
+
+                #gb-notifications-toggle {
+                    min-height: 32px !important;
+                    padding: 5px 7px !important;
+                    font-size: 10px;
+                }
+            }
+
+            /* Mantém formulários e cadastros no fluxo normal, abaixo da navegação. */
+            #app > div > div.flex-1 {
+                min-width: 0;
+            }
+
+            #app > div > div.flex-1 > main {
+                position: relative;
+                z-index: 1;
+                flex: 1 1 auto;
+                min-width: 0;
+            }
+
+        </style>
         <style id="guardioes-notifications-style">
             #gb-notifications-anchor {
                 position: relative;
