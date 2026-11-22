@@ -11567,7 +11567,12 @@ Deno.serve(async (req: Request) => {
             // Evita fechamento ou atualização acidental enquanto houver dados locais sem confirmação da nuvem.
             // O navegador controla o texto e pode não exibir o aviso em alguns cenários de dispositivos móveis.
             window.addEventListener('beforeunload', (event) => {
-                if (!sessao.usuarioLogado || !obterSyncPendente()) return;
+                if (!sessao.usuarioLogado) return;
+                // Considera também uma gravação que começou, mas ainda não conseguiu
+                // registrar a pendência local ou entrou na fila de sincronização.
+                const gravacaoEmCurso = typeof _gravacoesNuvemPendentes !== 'undefined'
+                    && _gravacoesNuvemPendentes.size > 0;
+                if (!obterSyncPendente() && !gravacaoEmCurso) return;
                 event.preventDefault();
                 event.returnValue = '';
                 return '';
