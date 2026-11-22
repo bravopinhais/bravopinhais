@@ -12267,6 +12267,13 @@ Faça um backup antes de confirmar.`);
                     }
                 }
                 window.addEventListener('online', verificarESincronizarPendencias);
+                // Também verifica ao abrir/recarregar o sistema: a conexão pode já ter voltado
+                // antes do evento "online", deixando uma gravação local aguardando indefinidamente.
+                if (document.readyState === 'complete') {
+                    verificarESincronizarPendencias();
+                } else {
+                    window.addEventListener('load', verificarESincronizarPendencias, { once: true });
+                }
                 document.addEventListener('visibilitychange', () => {
                     if (document.visibilityState === 'visible')
                         verificarESincronizarPendencias();
