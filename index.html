@@ -7185,6 +7185,8 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                         <th class="p-3.5">Marca</th>
                                         <th class="p-3.5">Linha</th>
                                         <th class="p-3.5">Fabricante</th>
+                                        <th class="p-3.5">Cor</th>
+                                        <th class="p-3.5">Cadeado</th>
                                         <th class="whitespace-nowrap p-3.5">Data de cadastro</th>
                                         <th class="p-3.5">Qtd atual</th>
                                         <th class="p-3.5">Mín / Máx</th>
@@ -7194,13 +7196,15 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
-                                    ${listFiltrada.length === 0 ? `<tr><td colspan="13" class="p-10 text-center"><span class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400"><i class="fa-solid fa-box-open text-xl"></i></span><p class="font-extrabold text-slate-700">Nenhum produto encontrado</p><p class="mt-1 text-[11px] text-slate-500">Tente limpar os filtros ou cadastrar um novo item.</p></td></tr>` : listFiltrada.map(st => {
+                                    ${listFiltrada.length === 0 ? `<tr><td colspan="15" class="p-10 text-center"><span class="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400"><i class="fa-solid fa-box-open text-xl"></i></span><p class="font-extrabold text-slate-700">Nenhum produto encontrado</p><p class="mt-1 text-[11px] text-slate-500">Tente limpar os filtros ou cadastrar um novo item.</p></td></tr>` : listFiltrada.map(st => {
                     const atual = dashboardNumero(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
                     const minimo = dashboardNumero(st.minimo || 0);
                     const maximo = dashboardNumero(st.maximo || 0);
                     const marcaEstoque = st.marca || st.brand || '';
                     const linhaEstoque = st.linha || st.line || '';
                     const fabricanteEstoque = st.fabricante || st.manufacturer || '';
+                    const corEstoque = st.cor || st.color || '';
+                    const possuiSenhaCadeado = !!(st.senhaCadeado || st.senha_cadeado);
                     const dataCadastroEstoque = st.dataCadastro || st.data_cadastro || st.dataRegistro || st.createdAt || '';
                     const itemInativo = estoqueItemEstaInativo(st);
 
@@ -7219,6 +7223,8 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                                 <td class="p-3.5 text-slate-700">${escapeHTML(marcaEstoque || '-')}</td>
                                                 <td class="p-3.5 text-slate-700">${escapeHTML(linhaEstoque || '-')}</td>
                                                 <td class="p-3.5 text-slate-700">${escapeHTML(fabricanteEstoque || '-')}</td>
+                                                <td class="p-3.5 text-slate-700">${escapeHTML(corEstoque || '-')}</td>
+                                                <td class="p-3.5 text-slate-700">${possuiSenhaCadeado ? '<span class="font-bold text-emerald-700"><i class="fa-solid fa-lock mr-1"></i> Cadastrado</span>' : '<span class="text-slate-400">Não informado</span>'}</td>
                                                 <td class="whitespace-nowrap p-3.5 text-slate-500">${escapeHTML(dataEstoqueParaExibicao(dataCadastroEstoque))}</td>
                                                 <td class="whitespace-nowrap p-3.5 font-mono text-sm font-black ${atual <= minimo ? 'text-rose-600' : 'text-slate-800'}">${_fmtQtd(atual)} <span class="text-[10px] font-semibold text-slate-400">${escapeHTML(unidadeDoItem(st).sigla)}</span></td>
                                                 <td class="whitespace-nowrap p-3.5 font-mono text-[10px] font-semibold text-slate-500">Mín. ${_fmtQtd(minimo)}<br>Máx. ${_fmtQtd(maximo)}</td>
@@ -7337,8 +7343,10 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     minimo: 0,
                     maximo: 10,
                     etiqueta: '',
+                    cor: '',
+                    senhaCadeado: '',
                     fotoNome: '',
-                    fotoPath: '',
+                    fotoPath: ''
                     fotoCompactadaGzip: ''
                 };
                 const setorItemAtual = setorEstoque(item);
@@ -7374,6 +7382,8 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                 <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Linha</label><input type="text" id="m_est_linha" value="${escapeHTML(item.linha || item.line || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50" placeholder="Linha / categoria comercial"></div>
                                 <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Fabricante</label><input type="text" id="m_est_fabricante" value="${escapeHTML(item.fabricante || item.manufacturer || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50" placeholder="Fabricante"></div>
                                 <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Data de cadastro</label><input type="date" id="m_est_data_cadastro" value="${escapeHTML(dataEstoqueParaInput(item.dataCadastro || item.data_cadastro || item.dataRegistro || item.createdAt || ''))}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
+                                <div><label for="m_est_cor" class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Cor</label><input type="text" id="m_est_cor" value="${escapeHTML(item.cor || item.color || '')}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50" placeholder="Ex.: branco, preto, azul"></div>
+                                <div><label for="m_est_senha_cadeado" class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Senha do cadeado (opcional)</label><input type="text" id="m_est_senha_cadeado" value="${escapeHTML(item.senhaCadeado || item.senha_cadeado || '')}" autocomplete="off" class="w-full p-3 border rounded-2xl font-bold bg-slate-50" placeholder="Senha / combinação do cadeado"></div>
                             </div>
                             <div class="grid grid-cols-2 gap-2">
                                 <div><label class="block font-bold uppercase text-slate-500 text-[10px] mb-1">Qtd Atual</label><input type="number" id="m_est_qtd" required step="any" min="0" value="${item.quantidade !== undefined ? item.quantidade : (item.qtd || 1)}" class="w-full p-3 border rounded-2xl font-bold bg-slate-50"></div>
@@ -7569,6 +7579,8 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     marca: document.getElementById('m_est_marca').value.trim(),
                     linha: document.getElementById('m_est_linha').value.trim(),
                     fabricante: document.getElementById('m_est_fabricante').value.trim(),
+                    cor: document.getElementById('m_est_cor').value.trim(),
+                    senhaCadeado: document.getElementById('m_est_senha_cadeado').value.trim(),
                     setor: (document.getElementById('m_est_setor_personalizado')?.value.trim()) || document.getElementById('m_est_setor').value,
                     dataCadastro: document.getElementById('m_est_data_cadastro').value || (itemExistente ? (itemExistente.dataCadastro || itemExistente.data_cadastro || itemExistente.dataRegistro || itemExistente.createdAt || '') : dataLocalHojeEstoque()),
                     status: itemExistente ? (itemExistente.status || 'Ativo') : 'Ativo',
