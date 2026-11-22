@@ -11648,6 +11648,7 @@ Deno.serve(async (req: Request) => {
             // Fila inteligente: mantém apenas o envio em andamento e o snapshot mais recente pendente.
             // Assim, vários cliques/edições próximos não disparam uma sequência de uploads completos.
             let _gravacaoNuvemEmAndamento = false;
+            let _gravacaoNuvemAtual = null;
             let _gravacaoNuvemPendente = null;
             const _salvarDadosNaNuvemComRetry = salvarDadosNaNuvem;
 
@@ -11659,6 +11660,7 @@ Deno.serve(async (req: Request) => {
                     while (_gravacaoNuvemPendente) {
                         const atual = _gravacaoNuvemPendente;
                         _gravacaoNuvemPendente = null;
+                        _gravacaoNuvemAtual = atual;
                         let resultado = false;
                         try {
                             resultado = await _salvarDadosNaNuvemComRetry(atual.snapshot, atual.opcoes);
@@ -11667,8 +11669,10 @@ Deno.serve(async (req: Request) => {
                             resultado = false;
                         }
                         atual.resolvers.forEach(resolve => resolve(resultado));
+                        _gravacaoNuvemAtual = null;
                     }
                 } finally {
+                    _gravacaoNuvemAtual = null;
                     _gravacaoNuvemEmAndamento = false;
                     // Protege contra uma nova solicitação que chegue no limite entre o último ciclo e o finally.
                     if (_gravacaoNuvemPendente)
@@ -11678,25 +11682,46 @@ Deno.serve(async (req: Request) => {
 
             salvarDadosNaNuvem = function(dataObj, opcoes={}) {
                 let snapshot;
+                let opcoesIsoladas;
+                let chave;
                 try {
-                    snapshot = JSON.parse(JSON.stringify(dataObj));
-                } catch (e) {
-                    snapshot = dataObj;
+                    const textoSnapshot = JSON.stringify(dataObj);
+                    if (typeof textoSnapshot !== 'string') throw new Error('Dados não serializáveis.');
+                    snapshot = JSON.parse(textoSnapshot);
+                    const textoOpcoes = JSON.stringify(opcoes || {});
+                    if (typeof textoOpcoes !== 'string') throw new Error('Opções não serializáveis.');
+                    opcoesIsoladas = JSON.parse(textoOpcoes);
+                    chave = textoSnapshot + '::' + textoOpcoes;
+                } catch (erro) {
+                    console.error('Não foi possível preparar a gravação para a fila.', erro);
+                    return Promise.resolve(false);
                 }
                 return new Promise(resolve => {
+                    if (_gravacaoNuvemAtual && _gravacaoNuvemAtual.chave === chave) {
+                        _gravacaoNuvemAtual.resolvers.push(resolve);
+                        return;
+                    }
+                    if (_gravacaoNuvemPendente && _gravacaoNuvemPendente.chave === chave) {
+                        _gravacaoNuvemPendente.resolvers.push(resolve);
+                        return;
+                    }
                     if (_gravacaoNuvemPendente) {
                         const anterior = _gravacaoNuvemPendente;
+                        const opcoesCombinadas = Object.assign({}, anterior.opcoes, opcoesIsoladas, {
+                            recuperacaoConfirmada: !!(anterior.opcoes && anterior.opcoes.recuperacaoConfirmada || opcoesIsoladas && opcoesIsoladas.recuperacaoConfirmada)
+                        });
+                        const textoOpcoesCombinadas = JSON.stringify(opcoesCombinadas);
                         _gravacaoNuvemPendente = {
                             snapshot,
-                            opcoes: Object.assign({}, anterior.opcoes, opcoes, {
-                                recuperacaoConfirmada: !!(anterior.opcoes && anterior.opcoes.recuperacaoConfirmada || opcoes && opcoes.recuperacaoConfirmada)
-                            }),
+                            opcoes: opcoesCombinadas,
+                            chave: JSON.stringify(snapshot) + '::' + textoOpcoesCombinadas,
                             resolvers: anterior.resolvers.concat(resolve)
                         };
                     } else {
                         _gravacaoNuvemPendente = {
                             snapshot,
-                            opcoes: Object.assign({}, opcoes),
+                            opcoes: opcoesIsoladas,
+                            chave,
                             resolvers: [resolve]
                         };
                     }
