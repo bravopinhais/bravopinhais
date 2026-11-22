@@ -13389,8 +13389,8 @@ persistido no banco ou no gateway.
                     const botao = event.target.closest && event.target.closest('button, [role="button"]');
                     if (!botao) return;
                     const texto = (botao.innerText || botao.getAttribute('aria-label') || botao.title || '').trim();
-                    if (/^(novo|nova|adicionar|cadastrar|incluir)(\\b|\\s)/i.test(texto) ||
-                        /^(novo|nova|adicionar|cadastrar|incluir)$/i.test(texto)) {
+                    const acao = texto.toLocaleLowerCase('pt-BR');
+                    if (['novo', 'nova', 'adicionar', 'cadastrar', 'incluir'].some(p => acao === p || acao.startsWith(p + ' '))) {
                         ocultarAbas();
                     }
                 }, true);
