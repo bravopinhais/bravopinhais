@@ -31,8 +31,7 @@
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
         <!-- FontAwesome Icons CDN -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-        <!-- Chart.js CDN -->
-        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <!-- Chart.js será carregado sob demanda apenas nas telas com gráficos -->
         <!-- Pako (Compressão Gzip para arquivos grandes) -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
         <!-- Supabase JS Client para Banco de Dados na Nuvem -->
@@ -5140,16 +5139,45 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
             `;
             }
 
+            let chartJsCarregamento = null;
+
+            function carregarChartJs() {
+                if (typeof Chart !== 'undefined') return Promise.resolve(true);
+                if (chartJsCarregamento) return chartJsCarregamento;
+                chartJsCarregamento = new Promise(resolve => {
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+                    script.async = true;
+                    script.onload = () => resolve(true);
+                    script.onerror = () => {
+                        chartJsCarregamento = null;
+                        console.warn('Não foi possível carregar os gráficos. O restante do sistema continua disponível.');
+                        resolve(false);
+                    };
+                    document.head.appendChild(script);
+                });
+                return chartJsCarregamento;
+            }
+
+            function inicializarGraficosDoModulo() {
+                const modulo = tabsState.activeTab;
+                if (modulo !== 'dashboard' && modulo !== 'estoque') return;
+                carregarChartJs().then(ok => {
+                    if (!ok || tabsState.activeTab !== modulo) return;
+                    if (modulo === 'dashboard') {
+                        initDashboardCharts();
+                        initDashboardEstoqueChart();
+                    } else {
+                        initEstoqueChart();
+                    }
+                });
+            }
+
             function renderMainOnly() {
                 const mainEl = document.querySelector('main');
                 if (mainEl) {
                     mainEl.innerHTML = renderModuleContent(tabsState.activeTab);
-                    if (tabsState.activeTab === 'dashboard') {
-                        initDashboardCharts();
-                        initDashboardEstoqueChart();
-                    }
-                    if (tabsState.activeTab === 'estoque')
-                        initEstoqueChart();
+                    inicializarGraficosDoModulo();
                 }
             }
 
@@ -5289,15 +5317,8 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 </div>
             `;
                 aplicarVisibilidadeModulos();
-                if (tabsState.activeTab === 'dashboard') {
-                    setTimeout( () => {
-                        initDashboardCharts();
-                        initDashboardEstoqueChart();
-                    }
-                    , 50);
-                }
-                if (tabsState.activeTab === 'estoque') {
-                    setTimeout(initEstoqueChart, 50);
+                if (tabsState.activeTab === 'dashboard' || tabsState.activeTab === 'estoque') {
+                    setTimeout(inicializarGraficosDoModulo, 50);
                 }
             }
 
@@ -9181,11 +9202,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     contarNumeros(base + 150);
                     // Recria os gráficos quando a transição acaba, para o público ver o desenho
                     if (base)
-                        setTimeout( () => {
-                            initDashboardCharts();
-                            initDashboardEstoqueChart();
-                        }
-                        , base);
+                        setTimeout(inicializarGraficosDoModulo, base);
                 }
 
                 // Estoque: linhas entram em cascata e as quantidades contam até o valor
