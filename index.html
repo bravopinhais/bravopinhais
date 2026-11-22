@@ -11600,22 +11600,26 @@ Deno.serve(async (req: Request) => {
                 marcarSyncPendente('cadastros salvos neste dispositivo aguardando sincronização');
                 const elStatus = document.getElementById('status-nuvem');
 
-                // Verifica a versão remota antes de cada gravação online, não apenas nas recuperações.
-                // Isso detecta alterações feitas por outro usuário desde a última sincronização deste dispositivo.
-                if ((pendenciaAnterior || baseline) && !opcoes.recuperacaoConfirmada && navigator.onLine) {
+                // Guarda a versão observada para usar uma atualização condicional atômica (compare-and-swap).
+                let versaoRemotaParaGravar = null;
+                let registroRemotoExiste = false;
+                if (navigator.onLine && !opcoes.recuperacaoConfirmada) {
                     try {
-                        const {data: remoto, error: erroVersao} = await acompanharOperacaoNuvem(supabaseClient.from('condominio_dados').select('atualizado_em').eq('id', 'principal').maybeSingle(), 'Internet lenta: seus dados estão salvos localmente. Conferindo se outro usuário alterou a base...');
+                        const {data: remoto, error: erroVersao} = await acompanharOperacaoNuvem(supabaseClient.from('condominio_dados').select('atualizado_em').eq('id', 'principal').maybeSingle(), 'Internet lenta: seus dados estão salvos localmente. Conferindo a versão da nuvem...');
                         if (erroVersao) throw erroVersao;
-                        const mesmaVersao = !!(remoto && remoto.atualizado_em && baseline && versoesEquivalentes(baseline, remoto.atualizado_em));
-                        if (!mesmaVersao) {
-                            const podeSobrescrever = confirm('A versão da nuvem mudou desde a última sincronização deste dispositivo, ou não foi possível confirmar a versão.\\n\\nOK: enviar os dados locais e substituir a versão remota.\\nCancelar: manter os dados salvos neste dispositivo, sem sobrescrever a nuvem.\\n\\nSe outro usuário fez alterações, combine a atualização antes de confirmar.');
+                        registroRemotoExiste = !!(remoto && remoto.atualizado_em);
+                        versaoRemotaParaGravar = registroRemotoExiste ? remoto.atualizado_em : null;
+                        const mesmaVersao = registroRemotoExiste && !!baseline && versoesEquivalentes(baseline, versaoRemotaParaGravar);
+                        const nuvemInesperadamenteVazia = !registroRemotoExiste && !!baseline;
+                        if ((registroRemotoExiste && !mesmaVersao) || nuvemInesperadamenteVazia) {
+                            const podeSobrescrever = confirm('A versão da nuvem mudou desde a última sincronização deste dispositivo, ou a base remota não corresponde ao esperado.\\n\\nOK: confirmar o envio dos dados locais usando a versão que acabou de ser consultada.\\nCancelar: manter os dados salvos neste dispositivo, sem sobrescrever a nuvem.');
                             if (!podeSobrescrever) {
                                 statusSalvoLocalmente('Cadastro salvo neste dispositivo; sincronização aguardando sua confirmação.');
                                 return true;
                             }
                         }
                     } catch (erroVersao) {
-                        console.warn('Verificação da versão remota indisponível; mantendo a cópia local.', erroVersao);
+                        console.warn('Não foi possível conferir a versão remota; mantendo a cópia local.', erroVersao);
                         statusSalvoLocalmente('Cadastro salvo neste dispositivo; aguardando confirmação da versão da nuvem.');
                         return true;
                     }
@@ -11639,10 +11643,28 @@ Deno.serve(async (req: Request) => {
                 for (let tentativa = 1; tentativa <= 3; tentativa++) {
                     try {
                         const atualizadoEm = new Date().toISOString();
-                        const {error} = await acompanharOperacaoNuvem(supabaseClient.from('condominio_dados').upsert({
-                            id: 'principal', payload: db, atualizado_em: atualizadoEm
-                        }), 'Internet lenta: cadastro protegido neste dispositivo. A nuvem ainda está processando o salvamento...');
+                        let consultaGravacao;
+                        if (registroRemotoExiste && versaoRemotaParaGravar) {
+                            // O filtro pela versão faz o UPDATE falhar silenciosamente (sem linhas)
+                            // se outro usuário gravar depois da nossa consulta.
+                            consultaGravacao = supabaseClient.from('condominio_dados')
+                                .update({ payload: db, atualizado_em: atualizadoEm })
+                                .eq('id', 'principal')
+                                .eq('atualizado_em', versaoRemotaParaGravar)
+                                .select('id');
+                        } else {
+                            // Primeiro cadastro da base: INSERT; conflito de chave significa que outro usuário chegou antes.
+                            consultaGravacao = supabaseClient.from('condominio_dados')
+                                .insert({ id: 'principal', payload: db, atualizado_em: atualizadoEm })
+                                .select('id');
+                        }
+                        const {data: linhasGravadas, error} = await acompanharOperacaoNuvem(consultaGravacao, 'Internet lenta: cadastro protegido neste dispositivo. Confirmando a gravação segura na nuvem...');
                         if (error) throw error;
+                        if (!linhasGravadas || !linhasGravadas.length) {
+                            const conflito = new Error('A nuvem foi alterada por outro usuário durante este salvamento. Os dados foram preservados neste dispositivo.');
+                            conflito.code = 'BRAVO_CONFLITO_VERSAO';
+                            throw conflito;
+                        }
                         limparSyncPendente();
                         atualizarVersaoConhecidaNuvem(atualizadoEm);
                         await salvarCacheOffline(db, uid, false, atualizadoEm);
