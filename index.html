@@ -10905,27 +10905,35 @@ Deno.serve(async (req: Request) => {
                 } catch (erroAnexos) {
                     console.warn('Anexos mantidos localmente para nova tentativa:', erroAnexos);
                 }
-                const atualizadoEm = new Date().toISOString();
-                try {
-                    const {error} = await supabaseClient.from('condominio_dados').upsert({
-                        id: 'principal', payload: db, atualizado_em: atualizadoEm
-                    });
-                    if (error) throw error;
-                    limparSyncPendente();
-                    atualizarVersaoConhecidaNuvem(atualizadoEm);
-                    await salvarCacheOffline(db, uid, false, atualizadoEm);
-                    if (elStatus) {
-                        elStatus.className = 'bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-emerald-800 shadow-sm';
-                        elStatus.innerHTML = resultadoAnexos.falhas > 0
-                            ? '<i class="fa-solid fa-cloud-arrow-up"></i> Cadastro sincronizado; alguns anexos serão reenviados automaticamente.'
-                            : '<i class="fa-solid fa-circle-check"></i> Salvo com sucesso e sincronizado com a nuvem.';
+                let erroFinal = null;
+                for (let tentativa = 1; tentativa <= 3; tentativa++) {
+                    try {
+                        const atualizadoEm = new Date().toISOString();
+                        const {error} = await supabaseClient.from('condominio_dados').upsert({
+                            id: 'principal', payload: db, atualizado_em: atualizadoEm
+                        });
+                        if (error) throw error;
+                        limparSyncPendente();
+                        atualizarVersaoConhecidaNuvem(atualizadoEm);
+                        await salvarCacheOffline(db, uid, false, atualizadoEm);
+                        if (elStatus) {
+                            elStatus.className = 'bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-emerald-800 shadow-sm';
+                            elStatus.innerHTML = resultadoAnexos.falhas > 0
+                                ? '<i class="fa-solid fa-cloud-arrow-up"></i> Cadastro sincronizado; alguns anexos serão reenviados automaticamente.'
+                                : '<i class="fa-solid fa-circle-check"></i> Salvo com sucesso e sincronizado com a nuvem.';
+                        }
+                        return true;
+                    } catch (err) {
+                        erroFinal = err;
+                        const transitorio = ['55P03','40P01','57014','53300','08000','08003','08006','57P01'].includes(String(err && err.code || '')) || Number(err && err.status || 0) >= 500 || !navigator.onLine;
+                        if (!transitorio || tentativa === 3) break;
+                        statusSalvoLocalmente('Cadastro protegido; tentando sincronizar novamente (' + tentativa + '/3)...');
+                        await new Promise(resolve => setTimeout(resolve, 500 * Math.pow(2, tentativa - 1)));
                     }
-                    return true;
-                } catch (err) {
-                    console.warn('Sincronização indisponível; cadastro preservado no dispositivo.', err);
-                    statusSalvoLocalmente('Cadastro salvo neste dispositivo; sincronização pendente.');
-                    return true;
                 }
+                console.warn('Sincronização indisponível; cadastro preservado no dispositivo.', erroFinal);
+                statusSalvoLocalmente('Cadastro salvo neste dispositivo; sincronização pendente.');
+                return true;
             };
 
             // Fila inteligente: mantém apenas o envio em andamento e o snapshot mais recente pendente.
@@ -11014,7 +11022,9 @@ Deno.serve(async (req: Request) => {
                             statusSalvoLocalmente('Cadastros locais recuperados; preparando sincronização.');
                         } else {
                             db = data.payload;
-                            await salvarCacheOffline(db, authUser && authUser.id, false, data.atualizado_em);
+                            // Mantém a cópia pendente no IndexedDB para recuperação posterior, sem ativar conflito em cada novo cadastro.
+                            window.__guardioesPreservarOffline = true;
+                            limparSyncPendente();
                         }
                     } else {
                         db = data.payload;
@@ -11142,6 +11152,8 @@ Deno.serve(async (req: Request) => {
                 if (window.__guardioesRecuperarOffline) {
                     window.__guardioesRecuperarOffline = false;
                     await salvarDadosNaNuvem(db, { recuperacaoConfirmada: true });
+                } else if (window.__guardioesPreservarOffline) {
+                    window.__guardioesPreservarOffline = false;
                 } else {
                     await salvarCacheOffline(db, usuarioAuthUidAtivo, false, localStorage.getItem(CHAVE_ULTIMA_SYNC_NUVEM));
                 }
