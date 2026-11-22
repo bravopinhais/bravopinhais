@@ -3864,7 +3864,7 @@
                 } catch (erro) {
                     console.warn('Cópia offline indisponível:', erro);
                     return null;
-                } finally { if (banco) banco.close(); }
+                }
             }
             function statusSalvoLocalmente(mensagem) {
                 _statusNuvem('bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800',
