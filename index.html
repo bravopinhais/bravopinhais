@@ -11896,11 +11896,12 @@ Deno.serve(async (req: Request) => {
             )();
         </script>
         <script>
-            // Sincronização assistida ao recuperar conexão: se a nuvem mudou, nunca sobrescreve silenciosamente.
+            // Retoma a sincronização tanto ao recuperar a internet quanto ao voltar ao aplicativo.
+            // A comparação de versões continua protegendo alterações feitas por outros usuários.
             (function configurarRecuperacaoConexao() {
                 let verificacaoEmAndamento = false;
-                window.addEventListener('online', async () => {
-                    if (verificacaoEmAndamento || !obterSyncPendente() || !sessao.usuarioLogado)
+                async function verificarESincronizarPendencias() {
+                    if (verificacaoEmAndamento || !navigator.onLine || !obterSyncPendente() || !sessao.usuarioLogado)
                         return;
                     verificacaoEmAndamento = true;
                     try {
@@ -11911,19 +11912,15 @@ Deno.serve(async (req: Request) => {
                         if (!pendencia)
                             return;
                         if (!data || !data.payload) {
-                            if (confirm('A conexão voltou, mas a nuvem não retornou uma base acessível. Deseja tentar enviar os dados locais?')) {
-                                await salvarDadosNaNuvem(db, {
-                                    recuperacaoConfirmada: true
-                                });
+                            if (confirm('A conexão está disponível, mas a nuvem não retornou uma base acessível. Deseja tentar enviar os dados locais?')) {
+                                await salvarDadosNaNuvem(db, { recuperacaoConfirmada: true });
                             }
                             return;
                         }
                         const baseline = pendencia.ultimaVersaoNuvem || localStorage.getItem(CHAVE_ULTIMA_SYNC_NUVEM);
                         const remotoMudou = !baseline || !data.atualizado_em || !versoesEquivalentes(baseline, data.atualizado_em);
                         if (!remotoMudou) {
-                            await salvarDadosNaNuvem(db, {
-                                recuperacaoConfirmada: true
-                            });
+                            await salvarDadosNaNuvem(db, { recuperacaoConfirmada: true });
                             return;
                         }
                         const escolha = confirm(`A conexão voltou, mas os dados na nuvem podem ter mudado desde a última sincronização.
@@ -11933,9 +11930,7 @@ Cancelar: manter a pendência sem sobrescrever a nuvem.
 
 Faça um backup antes de confirmar.`);
                         if (escolha)
-                            await salvarDadosNaNuvem(db, {
-                                recuperacaoConfirmada: true
-                            });
+                            await salvarDadosNaNuvem(db, { recuperacaoConfirmada: true });
                         else {
                             const el = document.getElementById('status-nuvem');
                             if (el) {
@@ -11944,12 +11939,16 @@ Faça um backup antes de confirmar.`);
                             }
                         }
                     } catch (e) {
-                        console.warn('A conexão voltou, mas não foi possível verificar a sincronização.', e);
+                        console.warn('Não foi possível retomar a sincronização pendente.', e);
                     } finally {
                         verificacaoEmAndamento = false;
                     }
                 }
-                );
+                window.addEventListener('online', verificarESincronizarPendencias);
+                document.addEventListener('visibilitychange', () => {
+                    if (document.visibilityState === 'visible')
+                        verificarESincronizarPendencias();
+                });
             }
             )();
 
