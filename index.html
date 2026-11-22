@@ -4159,6 +4159,8 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     alert('Este módulo está desativado nas Configurações do Sistema.');
                     return;
                 }
+                const moduloJaAtivo = tabsState.activeTab === moduloId && tabsState.openTabs.includes(moduloId);
+                const filtroEstoqueAnterior = filtroAtivoEstoque;
                 if (moduloId === 'estoque' && filtroEstoqueParam) {
                     filtroAtivoEstoque = filtroEstoqueParam;
                 }
@@ -4166,6 +4168,13 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     tabsState.openTabs.push(moduloId);
                 tabsState.activeTab = moduloId;
                 fecharMenuMobile();
+
+                // Evita reconstruir menu, abas e estrutura inteira ao clicar no módulo já aberto.
+                if (moduloJaAtivo) {
+                    if (moduloId === 'estoque' && filtroEstoqueAnterior !== filtroAtivoEstoque)
+                        renderMainOnly();
+                    return;
+                }
                 renderApp();
             }
 
