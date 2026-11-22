@@ -11603,7 +11603,7 @@ Deno.serve(async (req: Request) => {
                 // Guarda a versão observada para usar uma atualização condicional atômica (compare-and-swap).
                 let versaoRemotaParaGravar = null;
                 let registroRemotoExiste = false;
-                if (navigator.onLine && !opcoes.recuperacaoConfirmada) {
+                if (navigator.onLine) {
                     try {
                         const {data: remoto, error: erroVersao} = await acompanharOperacaoNuvem(supabaseClient.from('condominio_dados').select('atualizado_em').eq('id', 'principal').maybeSingle(), 'Internet lenta: seus dados estão salvos localmente. Conferindo a versão da nuvem...');
                         if (erroVersao) throw erroVersao;
@@ -11611,7 +11611,7 @@ Deno.serve(async (req: Request) => {
                         versaoRemotaParaGravar = registroRemotoExiste ? remoto.atualizado_em : null;
                         const mesmaVersao = registroRemotoExiste && !!baseline && versoesEquivalentes(baseline, versaoRemotaParaGravar);
                         const nuvemInesperadamenteVazia = !registroRemotoExiste && !!baseline;
-                        if ((registroRemotoExiste && !mesmaVersao) || nuvemInesperadamenteVazia) {
+                        if (!opcoes.recuperacaoConfirmada && ((registroRemotoExiste && !mesmaVersao) || nuvemInesperadamenteVazia)) {
                             const podeSobrescrever = confirm('A versão da nuvem mudou desde a última sincronização deste dispositivo, ou a base remota não corresponde ao esperado.\\n\\nOK: confirmar o envio dos dados locais usando a versão que acabou de ser consultada.\\nCancelar: manter os dados salvos neste dispositivo, sem sobrescrever a nuvem.');
                             if (!podeSobrescrever) {
                                 statusSalvoLocalmente('Cadastro salvo neste dispositivo; sincronização aguardando sua confirmação.');
