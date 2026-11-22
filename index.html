@@ -4285,8 +4285,10 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
             async function salvarDados(data) {
                 const salvoNaNuvem = await salvarDadosNaNuvem(data);
                 if (salvoNaNuvem) {
+                    limparRascunhoFormulario();
                     mostrarCardDadosGravados('nuvem');
                 } else if (obterSyncPendente() && salvarCacheLocal()) {
+                    limparRascunhoFormulario();
                     mostrarCardDadosGravados('offline');
                 }
                 return salvoNaNuvem;
@@ -5793,8 +5795,109 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 exportarParaExcel(db[moduloId] || [], `relatorio_${moduloId}.csv`);
             }
 
+            // Rascunhos automáticos dos formulários: armazenamento local por usuário/módulo.
+            // Campos de senha, arquivos e segredos nunca são copiados para o rascunho.
+            const CHAVE_RASCUNHOS_FORMULARIOS = 'bravo_rascunhos_formularios_v1';
+            let _timerRascunhoFormulario = null;
+            function campoElegivelParaRascunho(campo) {
+                if (!campo || !campo.matches || !campo.matches('input, textarea, select')) return false;
+                const tipo = String(campo.type || '').toLowerCase();
+                if (['password', 'file', 'hidden', 'button', 'submit', 'reset', 'image'].includes(tipo)) return false;
+                const identificacao = [campo.name, campo.id, campo.autocomplete].join(' ').toLowerCase();
+                if (/(senha|password|token|secret|cvv|cvc|cartao.numero)/i.test(identificacao)) return false;
+                return true;
+            }
+            function obterChaveRascunhoModal() {
+                const container = document.getElementById('modal-container');
+                if (!container || !container.firstElementChild) return null;
+                const titulo = container.querySelector('h1, h2, h3, [data-modal-title]');
+                const textoTitulo = (titulo ? titulo.textContent : container.firstElementChild.textContent || 'formulario')
+                    .replace(/\s+/g, ' ').trim().slice(0, 100);
+                const usuario = sessao.usuarioLogado || {};
+                const identificadorUsuario = String(usuario.id || usuario.usuario || usuario.email || usuario.nome || 'sessao');
+                return [String(tabsState.activeTab || 'geral'), identificadorUsuario, textoTitulo].join('::');
+            }
+            function lerRascunhosFormularios() {
+                try { return JSON.parse(localStorage.getItem(CHAVE_RASCUNHOS_FORMULARIOS) || '{}') || {}; }
+                catch (e) { return {}; }
+            }
+            function mostrarAvisoRascunho(mensagem) {
+                let aviso = document.getElementById('bravo-aviso-rascunho');
+                if (!aviso) {
+                    aviso = document.createElement('div');
+                    aviso.id = 'bravo-aviso-rascunho';
+                    aviso.setAttribute('role', 'status');
+                    aviso.style.cssText = 'position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%);z-index:99998;width:min(calc(100% - 28px),380px);padding:11px 14px;border-radius:12px;background:#16352d;color:#ecfdf5;box-shadow:0 8px 24px rgba(0,0,0,.2);font:600 13px/1.4 system-ui;text-align:center;pointer-events:none;';
+                    document.body.appendChild(aviso);
+                }
+                aviso.textContent = mensagem;
+                aviso.style.opacity = '1';
+                clearTimeout(_timerRascunhoFormulario);
+                _timerRascunhoFormulario = setTimeout(() => { aviso.style.opacity = '0'; }, 3200);
+            }
+            function salvarRascunhoFormulario() {
+                const container = document.getElementById('modal-container');
+                const chave = obterChaveRascunhoModal();
+                if (!container || !chave) return;
+                const campos = Array.from(container.querySelectorAll('input, textarea, select')).filter(campoElegivelParaRascunho);
+                if (!campos.length) return;
+                const valores = campos.map((campo, indice) => ({
+                    chave: campo.name || campo.id || campo.dataset.field || String(indice),
+                    tipo: String(campo.type || campo.tagName).toLowerCase(),
+                    valor: campo.type === 'checkbox' || campo.type === 'radio' ? !!campo.checked : campo.value
+                }));
+                if (!valores.some(item => item.tipo === 'checkbox' || item.tipo === 'radio' ? item.valor : String(item.valor || '').trim())) return;
+                try {
+                    const rascunhos = lerRascunhosFormularios();
+                    rascunhos[chave] = { atualizadoEm: new Date().toISOString(), valores };
+                    const chaves = Object.keys(rascunhos);
+                    if (chaves.length > 30) {
+                        chaves.sort((a,b) => String(rascunhos[a].atualizadoEm || '').localeCompare(String(rascunhos[b].atualizadoEm || '')));
+                        chaves.slice(0, chaves.length - 30).forEach(k => delete rascunhos[k]);
+                    }
+                    localStorage.setItem(CHAVE_RASCUNHOS_FORMULARIOS, JSON.stringify(rascunhos));
+                } catch (e) { console.warn('Não foi possível guardar o rascunho deste formulário.', e); }
+            }
+            function recuperarRascunhoFormulario() {
+                const container = document.getElementById('modal-container');
+                const chave = obterChaveRascunhoModal();
+                if (!container || !chave) return;
+                const rascunho = lerRascunhosFormularios()[chave];
+                if (!rascunho || !Array.isArray(rascunho.valores)) return;
+                const campos = Array.from(container.querySelectorAll('input, textarea, select')).filter(campoElegivelParaRascunho);
+                let recuperados = 0;
+                rascunho.valores.forEach((item, indice) => {
+                    const campo = campos.find((c, i) => (c.name || c.id || c.dataset.field || String(i)) === item.chave);
+                    if (!campo || !campoElegivelParaRascunho(campo)) return;
+                    if (campo.type === 'checkbox' || campo.type === 'radio') campo.checked = !!item.valor;
+                    else campo.value = item.valor == null ? '' : item.valor;
+                    recuperados++;
+                });
+                if (recuperados) mostrarAvisoRascunho('Rascunho recuperado automaticamente. Confira os dados antes de salvar.');
+            }
+            function limparRascunhoFormulario() {
+                const chave = obterChaveRascunhoModal();
+                if (!chave) return;
+                try {
+                    const rascunhos = lerRascunhosFormularios();
+                    if (rascunhos[chave]) {
+                        delete rascunhos[chave];
+                        localStorage.setItem(CHAVE_RASCUNHOS_FORMULARIOS, JSON.stringify(rascunhos));
+                    }
+                } catch (e) { console.warn('Não foi possível limpar o rascunho após salvar.', e); }
+            }
+            document.addEventListener('input', event => {
+                if (event.target && event.target.closest && event.target.closest('#modal-container') && campoElegivelParaRascunho(event.target))
+                    salvarRascunhoFormulario();
+            }, true);
+            document.addEventListener('change', event => {
+                if (event.target && event.target.closest && event.target.closest('#modal-container') && campoElegivelParaRascunho(event.target))
+                    salvarRascunhoFormulario();
+            }, true);
+
             function abrirModalContainer(html) {
                 document.getElementById('modal-container').innerHTML = html;
+                setTimeout(recuperarRascunhoFormulario, 0);
             }
             function fecharModalContainer() {
                 document.getElementById('modal-container').innerHTML = '';
