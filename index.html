@@ -8555,7 +8555,44 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 h1{font-size:18px;margin:0 0 4px;color:#0f766e}p{margin:0 0 8px;color:#475569}
                 .kpis{display:flex;gap:10px;margin:10px 0}.kpi{flex:1;border:1px solid #cbd5e1;border-radius:8px;padding:8px}.kpi b{display:block;font-size:15px}.kpi small{display:block;color:#64748b;font-size:8px}
                 table{width:100%;border-collapse:collapse}th,td{border:1px solid #cbd5e1;padding:4px 6px;text-align:left}th{background:#f1f5f9;font-size:9px;text-transform:uppercase}td.n{text-align:right;font-family:monospace;white-space:nowrap}
-                </style></head><body><h1>Compras x Consumo</h1><p>Guardiões do Bravo · ${e(r.rotulo)} (${_ccFmtData(r.ini)} a ${_ccFmtData(r.fim)})${filtroComprasConsumo.setor !== 'Todos' ? ' · Setor: ' + e(filtroComprasConsumo.setor) : ''}</p>
+                
+            /* Modal de cadastro sempre acima das abas, da barra de nuvem e do menu lateral. */
+            #modal-container {
+                position: relative;
+                z-index: 120;
+            }
+
+            #modal-container > .fixed {
+                position: fixed !important;
+                inset: 0 !important;
+                z-index: 120 !important;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                overflow-y: auto;
+                overscroll-behavior: contain;
+            }
+
+            #modal-container > .fixed > div {
+                flex-shrink: 0;
+            }
+
+            @media (max-width: 768px) {
+                #modal-container > .fixed {
+                    align-items: flex-start !important;
+                    padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) !important;
+                }
+
+                #modal-container > .fixed > div {
+                    width: 100% !important;
+                    max-width: 520px !important;
+                    max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+                    overflow-y: auto !important;
+                    -webkit-overflow-scrolling: touch;
+                }
+            }
+
+            </style></head><body><h1>Compras x Consumo</h1><p>Guardiões do Bravo · ${e(r.rotulo)} (${_ccFmtData(r.ini)} a ${_ccFmtData(r.fim)})${filtroComprasConsumo.setor !== 'Todos' ? ' · Setor: ' + e(filtroComprasConsumo.setor) : ''}</p>
                 <div class="kpis">${kpis}</div>
                 <table><thead><tr><th>Código</th><th>Produto</th><th>Compras</th>${mostraOutras ? '<th>Outras entradas</th>' : ''}<th>Consumo</th><th>Perdas / ajustes</th><th>Compras − consumo</th><th>Estoque atual</th><th>Consumo médio / mês</th><th>Cobertura</th>${temValor ? '<th>Valor comprado</th><th>Valor consumido</th>' : ''}<th>Situação</th></tr></thead><tbody>${linhas}</tbody></table>
                 <p style="margin-top:8px">Emitido em ${new Date().toLocaleString('pt-BR')}.${temValor ? ' Valores calculados com o valor unitário atual de cada item.' : ''}</p></body></html>`;
