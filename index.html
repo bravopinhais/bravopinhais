@@ -10771,19 +10771,63 @@ Deno.serve(async (req: Request) => {
             }
             ;
 
-            // Fila única de gravação: impede que várias telas/disparos concorram pela mesma linha no Supabase.
-            let _filaGravacaoNuvem = Promise.resolve();
+            // Fila inteligente: mantém apenas o envio em andamento e o snapshot mais recente pendente.
+            // Assim, vários cliques/edições próximos não disparam uma sequência de uploads completos.
+            let _gravacaoNuvemEmAndamento = false;
+            let _gravacaoNuvemPendente = null;
             const _salvarDadosNaNuvemComRetry = salvarDadosNaNuvem;
-            salvarDadosNaNuvem = function(dataObj, opcoes={}) {
-                let _snapshot;
+
+            async function _processarFilaGravacaoNuvem() {
+                if (_gravacaoNuvemEmAndamento)
+                    return;
+                _gravacaoNuvemEmAndamento = true;
                 try {
-                    _snapshot = JSON.parse(JSON.stringify(dataObj));
-                } catch (e) {
-                    _snapshot = dataObj;
+                    while (_gravacaoNuvemPendente) {
+                        const atual = _gravacaoNuvemPendente;
+                        _gravacaoNuvemPendente = null;
+                        let resultado = false;
+                        try {
+                            resultado = await _salvarDadosNaNuvemComRetry(atual.snapshot, atual.opcoes);
+                        } catch (erro) {
+                            console.warn('Falha inesperada na fila de sincronização:', erro);
+                            resultado = false;
+                        }
+                        atual.resolvers.forEach(resolve => resolve(resultado));
+                    }
+                } finally {
+                    _gravacaoNuvemEmAndamento = false;
+                    // Protege contra uma nova solicitação que chegue no limite entre o último ciclo e o finally.
+                    if (_gravacaoNuvemPendente)
+                        _processarFilaGravacaoNuvem();
                 }
-                const _tarefa = _filaGravacaoNuvem.then(() => _salvarDadosNaNuvemComRetry(_snapshot, opcoes));
-                _filaGravacaoNuvem = _tarefa.catch(() => false);
-                return _tarefa;
+            }
+
+            salvarDadosNaNuvem = function(dataObj, opcoes={}) {
+                let snapshot;
+                try {
+                    snapshot = JSON.parse(JSON.stringify(dataObj));
+                } catch (e) {
+                    snapshot = dataObj;
+                }
+                return new Promise(resolve => {
+                    if (_gravacaoNuvemPendente) {
+                        const anterior = _gravacaoNuvemPendente;
+                        _gravacaoNuvemPendente = {
+                            snapshot,
+                            opcoes: Object.assign({}, anterior.opcoes, opcoes, {
+                                recuperacaoConfirmada: !!(anterior.opcoes && anterior.opcoes.recuperacaoConfirmada || opcoes && opcoes.recuperacaoConfirmada)
+                            }),
+                            resolvers: anterior.resolvers.concat(resolve)
+                        };
+                    } else {
+                        _gravacaoNuvemPendente = {
+                            snapshot,
+                            opcoes: Object.assign({}, opcoes),
+                            resolvers: [resolve]
+                        };
+                    }
+                    _processarFilaGravacaoNuvem();
+                });
             };
 
             // ---------- carregar (só depois de autenticado) ----------
