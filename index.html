@@ -5924,14 +5924,25 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 clearTimeout(_timerRascunhoFormulario);
                 _timerRascunhoFormulario = setTimeout(() => { aviso.style.opacity = '0'; }, 3200);
             }
+            function gerarChavesCamposRascunho(campos) {
+                const ocorrencias = new Map();
+                return campos.map((campo, indice) => {
+                    const base = campo.name || campo.id || campo.dataset.field || 'campo';
+                    const ocorrencia = ocorrencias.get(base) || 0;
+                    ocorrencias.set(base, ocorrencia + 1);
+                    return String(base) + '::' + ocorrencia + '::' + indice;
+                });
+            }
             function salvarRascunhoFormulario() {
                 const container = document.getElementById('modal-container');
                 const chave = obterChaveRascunhoModal();
                 if (!container || !chave) return;
                 const campos = Array.from(container.querySelectorAll('input, textarea, select')).filter(campoElegivelParaRascunho);
                 if (!campos.length) return;
+                const chavesCampos = gerarChavesCamposRascunho(campos);
                 const valores = campos.map((campo, indice) => ({
-                    chave: campo.name || campo.id || campo.dataset.field || String(indice),
+                    chave: chavesCampos[indice],
+                    chaveLegada: campo.name || campo.id || campo.dataset.field || String(indice),
                     tipo: String(campo.type || campo.tagName).toLowerCase(),
                     valor: campo.type === 'checkbox' || campo.type === 'radio' ? !!campo.checked : campo.value
                 }));
@@ -5954,9 +5965,13 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 const rascunho = lerRascunhosFormularios()[chave];
                 if (!rascunho || !Array.isArray(rascunho.valores)) return;
                 const campos = Array.from(container.querySelectorAll('input, textarea, select')).filter(campoElegivelParaRascunho);
+                const chavesCampos = gerarChavesCamposRascunho(campos);
+                const mapaCampos = new Map(campos.map((campo, indice) => [chavesCampos[indice], campo]));
                 let recuperados = 0;
-                rascunho.valores.forEach((item, indice) => {
-                    const campo = campos.find((c, i) => (c.name || c.id || c.dataset.field || String(i)) === item.chave);
+                rascunho.valores.forEach(item => {
+                    // A chave antiga continua aceita para rascunhos criados antes desta correção.
+                    const campo = mapaCampos.get(item.chave) || campos.find((c, i) =>
+                        (c.name || c.id || c.dataset.field || String(i)) === (item.chaveLegada || item.chave));
                     if (!campo || !campoElegivelParaRascunho(campo)) return;
                     if (campo.type === 'checkbox' || campo.type === 'radio') campo.checked = !!item.valor;
                     else campo.value = item.valor == null ? '' : item.valor;
