@@ -2664,6 +2664,28 @@
                 min-width: 0;
             }
 
+
+            /* ===== Navegação recolhível durante a rolagem no celular ===== */
+            @media (max-width: 768px) {
+                #app > div > div.flex-1 > .bg-slate-200\\/80 {
+                    max-height: 48px;
+                    opacity: 1;
+                    overflow: hidden;
+                    transition: max-height .22s ease, opacity .18s ease, padding .22s ease, border-width .22s ease;
+                    will-change: max-height, opacity;
+                }
+
+                #app > div > div.flex-1 > .bg-slate-200\\/80.gb-nav-hidden {
+                    max-height: 0 !important;
+                    min-height: 0 !important;
+                    padding-top: 0 !important;
+                    padding-bottom: 0 !important;
+                    border-bottom-width: 0 !important;
+                    opacity: 0;
+                    pointer-events: none;
+                }
+            }
+
         </style>
         <style id="guardioes-notifications-style">
             #gb-notifications-anchor {
@@ -13336,6 +13358,79 @@ persistido no banco ou no gateway.
                 }
             }
             )();
+        </script>
+
+        <script id="guardioes-auto-hide-tabs">
+            (function () {
+                'use strict';
+                if (window.__gbAutoHideTabsInstalled) return;
+                window.__gbAutoHideTabsInstalled = true;
+
+                let ultimaPosicao = 0;
+                let ultimoAlvo = null;
+
+                function barraAbas() {
+                    const main = document.querySelector('#app main');
+                    return main ? main.previousElementSibling : null;
+                }
+
+                function mostrarAbas() {
+                    const barra = barraAbas();
+                    if (barra) barra.classList.remove('gb-nav-hidden');
+                }
+
+                function ocultarAbas() {
+                    const barra = barraAbas();
+                    if (barra && window.matchMedia('(max-width: 768px)').matches)
+                        barra.classList.add('gb-nav-hidden');
+                }
+
+                document.addEventListener('click', function (event) {
+                    const botao = event.target.closest && event.target.closest('button, [role="button"]');
+                    if (!botao) return;
+                    const texto = (botao.innerText || botao.getAttribute('aria-label') || botao.title || '').trim();
+                    if (/^(novo|nova|adicionar|cadastrar|incluir)(\\b|\\s)/i.test(texto) ||
+                        /^(novo|nova|adicionar|cadastrar|incluir)$/i.test(texto)) {
+                        ocultarAbas();
+                    }
+                }, true);
+
+                document.addEventListener('scroll', function (event) {
+                    if (!window.matchMedia('(max-width: 768px)').matches) return;
+                    const main = document.querySelector('#app main');
+                    const alvo = event.target;
+                    if (alvo !== main && alvo !== document && alvo !== document.documentElement && alvo !== document.body)
+                        return;
+
+                    const posicao = alvo === document || alvo === document.documentElement || alvo === document.body
+                        ? (window.scrollY || document.documentElement.scrollTop || 0)
+                        : (alvo.scrollTop || 0);
+
+                    if (alvo !== ultimoAlvo) {
+                        ultimoAlvo = alvo;
+                        ultimaPosicao = posicao;
+                    }
+                    const diferenca = posicao - ultimaPosicao;
+
+                    if (posicao <= 8) {
+                        mostrarAbas();
+                    } else if (diferenca > 4) {
+                        ocultarAbas();
+                    } else if (diferenca < -4) {
+                        mostrarAbas();
+                    }
+                    ultimaPosicao = posicao;
+                }, true);
+
+                document.addEventListener('click', function (event) {
+                    const aba = event.target.closest && event.target.closest('.gb-tabs-scroller > div, .bg-slate-200\\/80 > div');
+                    if (aba) mostrarAbas();
+                }, true);
+
+                window.addEventListener('resize', function () {
+                    if (!window.matchMedia('(max-width: 768px)').matches) mostrarAbas();
+                }, { passive: true });
+            })();
         </script>
     </body>
 </html>
