@@ -11053,13 +11053,25 @@ Deno.serve(async (req: Request) => {
                     schema: 'public',
                     table: 'condominio_dados',
                     filter: 'id=eq.principal'
-                }, payload => {
+                }, async payload => {
                     if (payload.new && payload.new.payload && sessao.usuarioLogado) {
+                        // Nunca substitui a cópia em edição quando há gravações locais pendentes.
+                        // A sincronização/reconciliação será feita pelo fluxo de recuperação.
+                        if (obterSyncPendente()) {
+                            statusSalvoLocalmente('Há cadastros locais aguardando sincronização; atualização remota preservada sem substituir seus dados.');
+                            return;
+                        }
                         db = payload.new.payload;
                         _completarPadroes();
+                        if (payload.new.atualizado_em) {
+                            atualizarVersaoConhecidaNuvem(payload.new.atualizado_em);
+                            await salvarCacheOffline(db, usuarioAuthUidAtivo, false, payload.new.atualizado_em);
+                        }
                         renderMainOnly();
                         _statusNuvem('bg-teal-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-teal-800', '<i class="fa-solid fa-rotate"></i> Dados atualizados em tempo real por outro utilizador!');
-                        setTimeout( () => _statusNuvem(CL_OK, '<i class="fa-solid fa-cloud-arrow-down"></i> Sincronizado com a Nuvem em Tempo Real'), 2000);
+                        setTimeout( () => {
+                            if (!obterSyncPendente()) _statusNuvem(CL_OK, '<i class="fa-solid fa-cloud-arrow-down"></i> Sincronizado com a Nuvem em Tempo Real');
+                        }, 2000);
                     }
                 }
                 ).subscribe();
