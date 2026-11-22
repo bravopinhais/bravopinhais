@@ -11570,9 +11570,14 @@ Deno.serve(async (req: Request) => {
                 if (!sessao.usuarioLogado) return;
                 // Considera também uma gravação que começou, mas ainda não conseguiu
                 // registrar a pendência local ou entrou na fila de sincronização.
-                const gravacaoEmCurso = typeof _gravacoesNuvemPendentes !== 'undefined'
+                const gravacaoNaFilaBase = typeof _gravacoesNuvemPendentes !== 'undefined'
                     && _gravacoesNuvemPendentes.size > 0;
-                if (!obterSyncPendente() && !gravacaoEmCurso) return;
+                // Com autenticação ativa, a fila de retry usa um controlador próprio
+                // e pode não aparecer no Map da fila base.
+                const gravacaoNaFilaAutenticada =
+                    (typeof _gravacaoNuvemEmAndamento !== 'undefined' && _gravacaoNuvemEmAndamento)
+                    || (typeof _gravacaoNuvemPendente !== 'undefined' && !!_gravacaoNuvemPendente);
+                if (!obterSyncPendente() && !gravacaoNaFilaBase && !gravacaoNaFilaAutenticada) return;
                 event.preventDefault();
                 event.returnValue = '';
                 return '';
