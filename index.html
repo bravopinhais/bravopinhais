@@ -5428,7 +5428,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                         <p class="text-xs font-semibold text-slate-500 mt-0.5">Gestão em nuvem atualizada em tempo real</p>
                     </div>
                     <div class="flex flex-wrap items-center gap-2.5 no-print">
-                        ${moduloId === 'dashboard' ? `<button onclick="dashboardAcionarIA('diagnostico')" class="px-5 py-3 bg-gradient-to-r from-teal-600 via-emerald-600 to-teal-700 hover:from-teal-700 hover:to-emerald-800 text-white rounded-2xl font-extrabold text-xs shadow-lg shadow-teal-600/25 transition-all flex items-center gap-2.5"><i class="fa-solid fa-wand-magic-sparkles text-sm"></i> Análise executiva Gemini</button>` : ''}
+                        ${moduloId === 'dashboard' ? `<button onclick="dashboardAlternarIA()" class="px-4 py-3 ${dashboardIAEstaAtiva() ? 'bg-rose-600 hover:bg-rose-700' : 'bg-emerald-700 hover:bg-emerald-800'} text-white rounded-2xl font-extrabold text-xs shadow-lg transition-all flex items-center gap-2"><i class="fa-solid ${dashboardIAEstaAtiva() ? 'fa-toggle-on' : 'fa-toggle-off'}"></i> ${dashboardIAEstaAtiva() ? 'Desativar IA' : 'Ativar IA'}</button>` : ''}
                         ${btnExportHtml} ${btnNovoHtml}
                     </div>
                 </div>
@@ -5586,7 +5586,23 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 }).format(dashboardNumero(valor));
             }
 
+            const DASHBOARD_IA_STORAGE_KEY = 'guardioes_dashboard_ia_ativa';
+            function dashboardIAEstaAtiva() {
+                try { return localStorage.getItem(DASHBOARD_IA_STORAGE_KEY) !== 'false'; }
+                catch (_) { return true; }
+            }
+            function dashboardAlternarIA() {
+                const ativa = !dashboardIAEstaAtiva();
+                try { localStorage.setItem(DASHBOARD_IA_STORAGE_KEY, ativa ? 'true' : 'false'); }
+                catch (_) { alert('Não foi possível salvar essa preferência neste navegador.'); return; }
+                renderMainOnly();
+            }
+
             function dashboardAcionarIA(tipo) {
+                if (!dashboardIAEstaAtiva()) {
+                    alert('Os recursos de IA do Dashboard estão desativados. Use “Ativar IA” para habilitá-los novamente.');
+                    return;
+                }
                 const prompts = {
                     diagnostico: {
                         titulo: 'Diagnóstico executivo',
@@ -5764,6 +5780,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                         </article>
                     </section>
 
+                    ${dashboardIAEstaAtiva() ? `
                     <section class="overflow-hidden rounded-3xl border border-teal-100 bg-white shadow-sm">
                         <div class="bg-gradient-to-r from-slate-950 via-teal-950 to-teal-800 px-5 py-5 md:px-6">
                             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -5778,13 +5795,14 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                             <button onclick="dashboardAcionarIA('economia')" class="group rounded-2xl border border-slate-200 bg-white p-4 text-left transition hover:-translate-y-0.5 hover:border-sky-300 hover:shadow-md"><span class="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 text-sky-700"><i class="fa-solid fa-calendar-check"></i></span><span class="mt-3 block text-sm font-extrabold text-slate-900">Plano de 90 dias</span><span class="mt-1 block text-[11px] leading-4 text-slate-500">Ações priorizadas e indicadores para acompanhar.</span><span class="mt-3 inline-flex items-center gap-1 text-[11px] font-extrabold text-sky-700">Planejar <i class="fa-solid fa-arrow-right transition group-hover:translate-x-1"></i></span></button>
                         </div>
                     </section>
+                    ` : ''}
 
                     <div class="dashboard-section-title flex flex-col gap-1 px-1 sm:flex-row sm:items-end sm:justify-between">
                         <div><p class="text-[10px] font-extrabold uppercase tracking-[.18em] text-teal-700">Análise dos dados</p><h3 class="text-lg font-black tracking-tight text-slate-900">Financeiro e patrimônio</h3><p class="text-xs text-slate-500">Compare os valores registrados e acompanhe a situação do inventário.</p></div>
                     </div>
                     <section class="grid grid-cols-1 xl:grid-cols-3 gap-5 dashboard-analytics-grid">
                         <div class="rounded-3xl border border-slate-200 bg-white p-5 md:p-6 shadow-sm xl:col-span-2">
-                            <div class="flex flex-wrap items-start justify-between gap-3"><div><p class="text-[10px] font-extrabold uppercase tracking-[.16em] text-teal-700">Financeiro</p><h3 class="mt-1 text-lg font-black text-slate-900">Panorama dos valores registrados</h3><p class="mt-1 text-xs text-slate-500">A receber, a pagar e diferença entre os registros. Não representa necessariamente saldo bancário.</p></div><button onclick="dashboardAcionarIA('despesas')" class="rounded-xl bg-teal-50 px-3 py-2 text-xs font-extrabold text-teal-800 transition hover:bg-teal-100"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Interpretar com IA</button></div>
+                            <div class="flex flex-wrap items-start justify-between gap-3"><div><p class="text-[10px] font-extrabold uppercase tracking-[.16em] text-teal-700">Financeiro</p><h3 class="mt-1 text-lg font-black text-slate-900">Panorama dos valores registrados</h3><p class="mt-1 text-xs text-slate-500">A receber, a pagar e diferença entre os registros. Não representa necessariamente saldo bancário.</p></div>${dashboardIAEstaAtiva() ? `<button onclick="dashboardAcionarIA('despesas')" class="rounded-xl bg-teal-50 px-3 py-2 text-xs font-extrabold text-teal-800 transition hover:bg-teal-100"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Interpretar com IA</button>` : ''}</div>
                             <div class="relative mt-4 h-64 md:h-72 w-full"><canvas id="chartReceitaDespesa" aria-label="Gráfico dos valores registrados a receber e a pagar"></canvas></div>
                             <div class="mt-3 flex flex-wrap gap-2"><span class="rounded-lg bg-emerald-50 px-3 py-2 text-[11px] font-bold text-emerald-800">A receber: ${dashboardMoeda(totalReceber)}</span><span class="rounded-lg bg-rose-50 px-3 py-2 text-[11px] font-bold text-rose-800">A pagar: ${dashboardMoeda(totalPagar)}</span><span class="rounded-lg bg-slate-100 px-3 py-2 text-[11px] font-bold text-slate-700">Diferença: ${dashboardMoeda(diferencaRegistrada)}</span></div>
                         </div>
