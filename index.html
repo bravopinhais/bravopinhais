@@ -3788,18 +3788,45 @@
             const DB_OFFLINE_NOME = 'guardioes_bravo_offline';
             const DB_OFFLINE_STORE = 'snapshots';
             let usuarioAuthUidAtivo = null;
+            // Mantém uma única conexão IndexedDB reutilizável para evitar abrir/fechar o banco a cada gravação.
+            let bancoOfflineCompartilhado = null;
+            let aberturaBancoOfflineEmAndamento = null;
             function abrirBancoOffline() {
-                return new Promise((resolve, reject) => {
-                    if (!('indexedDB' in window)) return reject(new Error('IndexedDB indisponível neste navegador.'));
+                if (bancoOfflineCompartilhado)
+                    return Promise.resolve(bancoOfflineCompartilhado);
+                if (aberturaBancoOfflineEmAndamento)
+                    return aberturaBancoOfflineEmAndamento;
+                aberturaBancoOfflineEmAndamento = new Promise((resolve, reject) => {
+                    if (!('indexedDB' in window)) {
+                        aberturaBancoOfflineEmAndamento = null;
+                        reject(new Error('IndexedDB indisponível neste navegador.'));
+                        return;
+                    }
                     const req = indexedDB.open(DB_OFFLINE_NOME, 1);
                     req.onupgradeneeded = () => {
                         const banco = req.result;
                         if (!banco.objectStoreNames.contains(DB_OFFLINE_STORE))
                             banco.createObjectStore(DB_OFFLINE_STORE, { keyPath: 'userId' });
                     };
-                    req.onsuccess = () => resolve(req.result);
-                    req.onerror = () => reject(req.error || new Error('Não foi possível abrir o armazenamento offline.'));
+                    req.onsuccess = () => {
+                        bancoOfflineCompartilhado = req.result;
+                        bancoOfflineCompartilhado.onversionchange = () => {
+                            bancoOfflineCompartilhado.close();
+                            bancoOfflineCompartilhado = null;
+                            aberturaBancoOfflineEmAndamento = null;
+                        };
+                        bancoOfflineCompartilhado.onclose = () => {
+                            bancoOfflineCompartilhado = null;
+                            aberturaBancoOfflineEmAndamento = null;
+                        };
+                        resolve(bancoOfflineCompartilhado);
+                    };
+                    req.onerror = () => {
+                        aberturaBancoOfflineEmAndamento = null;
+                        reject(req.error || new Error('Não foi possível abrir o armazenamento offline.'));
+                    };
                 });
+                return aberturaBancoOfflineEmAndamento;
             }
             async function salvarCacheOffline(payload, userId, pendente, baseline) {
                 if (!userId) return false;
@@ -3821,7 +3848,7 @@
                 } catch (erro) {
                     console.error('Não foi possível proteger o cadastro no armazenamento offline:', erro);
                     return false;
-                } finally { if (banco) banco.close(); }
+                }
             }
             async function obterCacheOffline(userId) {
                 if (!userId) return null;
