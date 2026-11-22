@@ -4175,7 +4175,48 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                         renderMainOnly();
                     return;
                 }
+                // Em navegação normal, atualiza somente abas, menu ativo e conteúdo central.
+                // Se a estrutura ainda não estiver montada (ex.: primeiro acesso), usa o fluxo completo.
+                if (renderNavegacaoModulo()) return;
                 renderApp();
+            }
+
+            function renderNavegacaoModulo() {
+                const mainEl = document.querySelector('#app main');
+                const sidebar = document.getElementById('sidebar-menu');
+                const barraAbas = mainEl ? mainEl.previousElementSibling : null;
+                if (!mainEl || !sidebar || !barraAbas || !sessao.usuarioLogado)
+                    return false;
+
+                // Mantém a mesma validação de permissões e módulos usada na renderização completa.
+                tabsState.openTabs = tabsState.openTabs.filter(id => {
+                    if (id === 'configuracoes' || id === 'usuarios')
+                        return usuarioPodeConfigurarModulos() && (id === 'configuracoes' || moduloEstaAtivo(id));
+                    return moduloEstaAtivo(id);
+                });
+                if (!tabsState.openTabs.includes(tabsState.activeTab))
+                    tabsState.openTabs.push(tabsState.activeTab);
+                if (!tabsState.openTabs.length)
+                    tabsState.openTabs = [tabsState.activeTab];
+
+                barraAbas.innerHTML = tabsState.openTabs.filter(tabId => tabId === 'configuracoes' ? usuarioPodeConfigurarModulos() : moduloEstaAtivo(tabId)).map(tabId => `
+                    <div onclick="abrirModulo('${tabId}')" class="flex items-center gap-2.5 px-4 py-2.5 rounded-t-2xl text-xs cursor-pointer whitespace-nowrap transition-all ${tabsState.activeTab === tabId ? 'tab-active' : 'bg-slate-300/60 text-slate-600 hover:bg-slate-300 hover:text-slate-900 font-semibold'}">
+                        <span>${MODULE_NAMES[tabId] || tabId}</span>
+                        ${tabsState.openTabs.length > 1 ? `<button onclick="fecharAba(event, '${tabId}')" class="hover:text-rose-600 ml-1 p-0.5 rounded-full hover:bg-slate-200 transition-all"><i class="fa-solid fa-xmark text-xs"></i></button>` : ''}
+                    </div>
+                `).join('');
+
+                sidebar.querySelectorAll('button[onclick^="abrirModulo("]').forEach(botao => {
+                    const match = (botao.getAttribute('onclick') || '').match(/abrirModulo\('([^']+)'/);
+                    if (!match) return;
+                    const ativo = match[1] === tabsState.activeTab;
+                    ['bg-gradient-to-r', 'from-teal-600', 'to-teal-700', 'text-white', 'shadow-md', 'shadow-teal-600/20'].forEach(classe => botao.classList.toggle(classe, ativo));
+                    ['hover:bg-slate-900', 'hover:text-white', 'text-slate-400'].forEach(classe => botao.classList.toggle(classe, !ativo));
+                });
+
+                renderMainOnly();
+                aplicarVisibilidadeModulos();
+                return true;
             }
 
             function fecharAba(e, moduloId) {
