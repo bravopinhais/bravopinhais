@@ -4282,7 +4282,75 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                 }
             }
 
+            // Histórico de atividades: compara o estado salvo anteriormente com o novo snapshot.
+            // Guarda apenas tipo de operação e módulo, sem copiar campos pessoais ou financeiros.
+            const MODULOS_HISTORICO = {
+                condominio: 'Condomínio', plano_contas: 'Plano de contas', financeiro: 'Financeiro',
+                formas_monetarias: 'Formas monetárias', contas_bancarias: 'Contas bancárias',
+                moradores: 'Moradores', fornecedores: 'Fornecedores', empregados: 'Empregados',
+                categorias: 'Categorias', estoque: 'Estoque', acerto_estoque: 'Acerto de estoque',
+                compras_consumo: 'Compras e consumo', documentos: 'Documentos', usuarios: 'Usuários'
+            };
+            function gerarEventosHistorico(dadosNovos) {
+                let dadosAnteriores = null;
+                try { dadosAnteriores = JSON.parse(localStorage.getItem('guardioes_bravo_db') || 'null'); } catch (e) {}
+                if (!dadosAnteriores || typeof dadosAnteriores !== 'object') return [];
+                const usuario = sessao && sessao.usuarioLogado ? sessao.usuarioLogado : {};
+                const ator = String(usuario.nome || usuario.usuario || usuario.email || 'Usuário').slice(0, 80);
+                const agora = new Date().toISOString();
+                const eventos = [];
+                Object.keys(MODULOS_HISTORICO).forEach(chave => {
+                    const antes = Array.isArray(dadosAnteriores[chave]) ? dadosAnteriores[chave] : [];
+                    const depois = Array.isArray(dadosNovos[chave]) ? dadosNovos[chave] : [];
+                    const mapaAntes = new Map(antes.map((item, indice) => [String(item && item.id != null ? item.id : indice), item]));
+                    const mapaDepois = new Map(depois.map((item, indice) => [String(item && item.id != null ? item.id : indice), item]));
+                    mapaDepois.forEach((item, id) => {
+                        const anterior = mapaAntes.get(id);
+                        let acao = '';
+                        if (!mapaAntes.has(id)) acao = 'Cadastro';
+                        else if (JSON.stringify(anterior) !== JSON.stringify(item)) acao = 'Alteração';
+                        if (acao) eventos.push({ id: (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)), data: agora, usuario: ator, modulo: MODULOS_HISTORICO[chave], acao });
+                    });
+                    mapaAntes.forEach((item, id) => {
+                        if (!mapaDepois.has(id)) eventos.push({ id: (Date.now().toString(36) + Math.random().toString(36).slice(2, 8)), data: agora, usuario: ator, modulo: MODULOS_HISTORICO[chave], acao: 'Exclusão' });
+                    });
+                });
+                return eventos;
+            }
+            function renderPainelHistoricoAtividades() {
+                const historico = Array.isArray(db.historico_atividades) ? db.historico_atividades.slice().reverse().slice(0, 100) : [];
+                const dataFormatada = valor => {
+                    const data = new Date(valor);
+                    return Number.isNaN(data.getTime()) ? 'Data indisponível' : data.toLocaleString('pt-BR');
+                };
+                return `
+                <div class="bg-white border border-slate-200 rounded-3xl p-5 sm:p-6 shadow-sm space-y-4">
+                    <div class="flex items-start justify-between gap-3">
+                        <div class="flex items-start gap-3">
+                            <div class="w-11 h-11 rounded-xl bg-indigo-50 text-indigo-700 flex items-center justify-center text-lg"><i class="fa-solid fa-clock-rotate-left"></i></div>
+                            <div><h3 class="font-black text-slate-900">Histórico de atividades</h3><p class="text-sm text-slate-500 mt-1">Registro de cadastros, alterações e exclusões identificados nas gravações do sistema.</p></div>
+                        </div>
+                        <span class="text-xs font-bold text-slate-500">${historico.length} registros</span>
+                    </div>
+                    ${historico.length ? `
+                    <div class="overflow-x-auto"><table class="w-full text-left text-xs min-w-[520px]">
+                        <thead class="text-[10px] uppercase tracking-wider text-slate-400 border-b"><tr><th class="py-3 pr-3">Data e hora</th><th class="py-3 pr-3">Usuário</th><th class="py-3 pr-3">Atividade</th><th class="py-3">Módulo</th></tr></thead>
+                        <tbody class="divide-y divide-slate-100">${historico.map(item => `
+                            <tr><td class="py-3 pr-3 text-slate-500 whitespace-nowrap">${escapeHTML(dataFormatada(item.data))}</td><td class="py-3 pr-3 font-semibold text-slate-700">${escapeHTML(item.usuario || 'Usuário')}</td><td class="py-3 pr-3"><span class="inline-flex px-2 py-1 rounded-lg ${item.acao === 'Exclusão' ? 'bg-rose-50 text-rose-700' : item.acao === 'Cadastro' ? 'bg-emerald-50 text-emerald-700' : 'bg-amber-50 text-amber-700'} font-bold">${escapeHTML(item.acao || 'Atividade')}</span></td><td class="py-3 text-slate-600">${escapeHTML(item.modulo || '-')}</td></tr>
+                        `).join('')}</tbody>
+                    </table></div>` : '<p class="text-sm text-slate-500 bg-slate-50 rounded-xl p-4">Nenhuma atividade registrada ainda. Os próximos cadastros, alterações e exclusões aparecerão aqui.</p>'}
+                    <p class="text-[11px] text-slate-400">O histórico registra operações identificadas a partir das diferenças entre gravações. São mantidos os 500 eventos mais recentes.</p>
+                </div>`;
+            }
+
             async function salvarDados(data) {
+                if (data && typeof data === 'object') {
+                    const novosEventos = gerarEventosHistorico(data);
+                    if (novosEventos.length) {
+                        const historicoAtual = Array.isArray(data.historico_atividades) ? data.historico_atividades : [];
+                        data.historico_atividades = historicoAtual.concat(novosEventos).slice(-500);
+                    }
+                }
                 const salvoNaNuvem = await salvarDadosNaNuvem(data);
                 if (salvoNaNuvem) {
                     limparRascunhoFormulario();
@@ -4707,6 +4775,8 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     ${renderPainelConfiguracaoIA()}
 
                     ${renderPainelSegurancaSistema()}
+
+                    ${renderPainelHistoricoAtividades()}
 
                     ${grupos.map(grupo => `
                         <div class="space-y-3">
