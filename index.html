@@ -8244,6 +8244,8 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
             ;
 
             let cameraStreamAtiva = null;
+            let cameraScanInterval = null;
+            let cameraScanEmAndamento = false;
             function iniciarScannerCamera() {
                 const divScanner = document.createElement('div');
                 divScanner.id = 'scanner-modal-overlay';
@@ -8273,37 +8275,51 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                         facingMode: 'environment'
                     }
                 }).then(stream => {
+                    // Se o usuário fechou o leitor enquanto a permissão/câmera era carregada,
+                    // encerra imediatamente o fluxo para não deixar a câmera ligada em segundo plano.
+                    if (!document.getElementById('scanner-modal-overlay') || !videoElement.isConnected) {
+                        stream.getTracks().forEach(track => track.stop());
+                        return;
+                    }
                     cameraStreamAtiva = stream;
                     videoElement.srcObject = stream;
-                    videoElement.play();
+                    videoElement.play().catch(() => {});
 
-                    if ('BarcodeDetector'in window) {
+                    if ('BarcodeDetector' in window) {
                         const barcodeDetector = new BarcodeDetector({
                             formats: ['code_128', 'ean_13', 'ean_8', 'qr_code', 'upc_a']
                         });
-                        const scanInterval = setInterval(async () => {
+                        cameraScanInterval = setInterval(async () => {
                             if (!cameraStreamAtiva) {
-                                clearInterval(scanInterval);
+                                clearInterval(cameraScanInterval);
+                                cameraScanInterval = null;
                                 return;
                             }
+                            // Não disputa processamento com a aba em segundo plano nem
+                            // inicia uma nova leitura enquanto a anterior ainda está ativa.
+                            if (document.hidden || videoElement.readyState < 2 || cameraScanEmAndamento)
+                                return;
+                            cameraScanEmAndamento = true;
                             try {
                                 const barcodes = await barcodeDetector.detect(videoElement);
                                 if (barcodes.length > 0) {
                                     const codigoLido = barcodes[0].rawValue;
-                                    document.getElementById('m_est_etiq').value = codigoLido;
-                                    clearInterval(scanInterval);
+                                    const campoCodigo = document.getElementById('m_est_etiq');
+                                    if (campoCodigo)
+                                        campoCodigo.value = codigoLido;
                                     fecharScannerCamera();
                                     alert(`Código lido: ${codigoLido}`);
                                 }
-                            } catch (err) {}
-                        }
-                        , 500);
+                            } catch (err) {
+                                // Uma falha pontual de leitura não interrompe o scanner.
+                            } finally {
+                                cameraScanEmAndamento = false;
+                            }
+                        }, 500);
                     }
-                }
-                ).catch(err => {
+                }).catch(err => {
                     alert('Câmera indisponível. Utilize a digitação manual.');
-                }
-                );
+                });
             }
 
             function confirmarCodigoDigitadoScanner() {
@@ -8315,6 +8331,11 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
             }
 
             function fecharScannerCamera() {
+                if (cameraScanInterval) {
+                    clearInterval(cameraScanInterval);
+                    cameraScanInterval = null;
+                }
+                cameraScanEmAndamento = false;
                 if (cameraStreamAtiva) {
                     cameraStreamAtiva.getTracks().forEach(track => track.stop());
                     cameraStreamAtiva = null;
