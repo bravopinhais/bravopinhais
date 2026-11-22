@@ -2620,7 +2620,7 @@
                     padding: 6px 9px !important;
                 }
 
-                #app > div > div.flex-1 > .bg-slate-200\\/80 {
+                #app > div > div.flex-1 > [class~="bg-slate-200/80"] {
                     min-height: 38px;
                     padding: 4px 6px 0 !important;
                     gap: 4px !important;
@@ -2667,7 +2667,7 @@
 
             /* ===== Navegação recolhível durante a rolagem no celular ===== */
             @media (max-width: 768px) {
-                #app > div > div.flex-1 > .bg-slate-200\\/80 {
+                #app > div > div.flex-1 > [class~="bg-slate-200/80"] {
                     max-height: 48px;
                     opacity: 1;
                     overflow: hidden;
@@ -2675,7 +2675,7 @@
                     will-change: max-height, opacity;
                 }
 
-                #app > div > div.flex-1 > .bg-slate-200\\/80.gb-nav-hidden {
+                #app > div > div.flex-1 > [class~="bg-slate-200/80"].gb-nav-hidden {
                     max-height: 0 !important;
                     min-height: 0 !important;
                     padding-top: 0 !important;
