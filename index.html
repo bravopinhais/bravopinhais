@@ -8682,10 +8682,30 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
 
             window.salvarModalEstoque = async function(e, id) {
                 e.preventDefault();
+                const formularioEstoque = e.currentTarget;
+                const botaoSalvarEstoque = e.submitter || formularioEstoque?.querySelector('button[type="submit"]');
+                // Bloqueia duplo clique/toque enquanto o mesmo formulário está sendo processado.
+                if (formularioEstoque?.dataset.salvando === '1') return;
+                if (formularioEstoque) formularioEstoque.dataset.salvando = '1';
+                if (botaoSalvarEstoque) {
+                    botaoSalvarEstoque.disabled = true;
+                    botaoSalvarEstoque.dataset.textoOriginal = botaoSalvarEstoque.textContent;
+                    botaoSalvarEstoque.textContent = 'Salvando...';
+                    botaoSalvarEstoque.classList.add('opacity-60', 'cursor-wait');
+                }
+                const liberarFormularioEstoque = () => {
+                    if (formularioEstoque) delete formularioEstoque.dataset.salvando;
+                    if (botaoSalvarEstoque) {
+                        botaoSalvarEstoque.disabled = false;
+                        botaoSalvarEstoque.textContent = botaoSalvarEstoque.dataset.textoOriginal || 'Salvar';
+                        botaoSalvarEstoque.classList.remove('opacity-60', 'cursor-wait');
+                    }
+                };
                 if (_uploadFotoEmAndamento) {
                     const okUp = await _uploadFotoEmAndamento;
                     if (okUp === false) {
                         alert('O envio da foto falhou. Selecione a foto novamente antes de salvar.');
+                        liberarFormularioEstoque();
                         return;
                     }
                 }
@@ -8693,6 +8713,26 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     db.estoque = [];
                 const isEdit = id && id !== 'null';
                 const itemExistente = isEdit ? db.estoque.find(x => x.id === id) : null;
+                const normalizarIdentificadorEstoque = valor => String(valor || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLocaleLowerCase('pt-BR').replace(/\s+/g, ' ');
+                const codigoInformado = normalizarIdentificadorEstoque(document.getElementById('m_est_etiq').value);
+                const nomeInformado = normalizarIdentificadorEstoque(document.getElementById('m_est_item').value);
+                const marcaInformada = normalizarIdentificadorEstoque(document.getElementById('m_est_marca').value);
+                const setorInformado = normalizarIdentificadorEstoque(document.getElementById('m_est_setor_personalizado')?.value || document.getElementById('m_est_setor').value);
+                const duplicadoCodigo = codigoInformado && db.estoque.find(x => String(x.id) !== String(id || '') && normalizarIdentificadorEstoque(x.etiqueta) === codigoInformado);
+                if (duplicadoCodigo) {
+                    alert('Este código de barras já está cadastrado no estoque para "' + (duplicadoCodigo.item || 'outro produto') + '". Confira o item existente para evitar duplicidade.');
+                    liberarFormularioEstoque();
+                    return;
+                }
+                const duplicadoDescricao = !isEdit && db.estoque.find(x =>
+                    normalizarIdentificadorEstoque(x.item) === nomeInformado &&
+                    normalizarIdentificadorEstoque(x.marca || x.brand) === marcaInformada &&
+                    normalizarIdentificadorEstoque(setorEstoque(x)) === setorInformado
+                );
+                if (duplicadoDescricao && !confirm('Já existe um item com a mesma descrição, marca e setor. Deseja cadastrar outro mesmo assim?')) {
+                    liberarFormularioEstoque();
+                    return;
+                }
 
                 const obj = {
                     // Mantém campos adicionais já existentes no registro para evitar perda de dados ao editar.
