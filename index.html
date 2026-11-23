@@ -8489,6 +8489,19 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                         <div class="relative mt-6 flex flex-wrap items-center justify-between gap-2 border-t border-white/15 pt-4 text-[11px] text-slate-300"><span><i class="fa-solid fa-rotate mr-1.5 text-teal-200"></i> Dados carregados nesta sessão</span><span>Atualização da visualização: ${formatadoAtualizacao}</span></div>
                     </section>
 
+                    <section class="dashboard-quick-access" aria-label="Acessos rápidos">
+                        <div class="dashboard-quick-access-heading">
+                            <div><p class="dashboard-quick-eyebrow">Navegação rápida</p><h3>Acessos rápidos</h3><p>Entre diretamente nos módulos do dia a dia.</p></div>
+                            <span class="dashboard-quick-hint"><i class="fa-solid fa-bolt"></i> Atalhos</span>
+                        </div>
+                        <div class="dashboard-quick-grid">
+                            <button type="button" onclick="abrirModulo('moradores')" aria-label="Abrir módulo de moradores"><span class="dashboard-quick-icon quick-blue"><i class="fa-solid fa-users"></i></span><span><strong>Moradores</strong><small>Cadastros e unidades</small></span><i class="fa-solid fa-chevron-right dashboard-quick-arrow"></i></button>
+                            <button type="button" onclick="abrirModulo('financeiro')" aria-label="Abrir módulo financeiro"><span class="dashboard-quick-icon quick-green"><i class="fa-solid fa-wallet"></i></span><span><strong>Financeiro</strong><small>Contas e lançamentos</small></span><i class="fa-solid fa-chevron-right dashboard-quick-arrow"></i></button>
+                            <button type="button" onclick="abrirModulo('estoque')" aria-label="Abrir módulo de estoque"><span class="dashboard-quick-icon quick-amber"><i class="fa-solid fa-boxes-stacked"></i></span><span><strong>Estoque</strong><small>Materiais e reposição</small></span><i class="fa-solid fa-chevron-right dashboard-quick-arrow"></i></button>
+                            <button type="button" onclick="abrirModulo('documentos')" aria-label="Abrir módulo de documentos"><span class="dashboard-quick-icon quick-violet"><i class="fa-solid fa-folder-open"></i></span><span><strong>Documentos</strong><small>Arquivos e registros</small></span><i class="fa-solid fa-chevron-right dashboard-quick-arrow"></i></button>
+                        </div>
+                    </section>
+
                     <div class="dashboard-section-title flex flex-col gap-1 px-1 sm:flex-row sm:items-end sm:justify-between">
                         <div><p class="text-[10px] font-extrabold uppercase tracking-[.18em] text-teal-700">Visão rápida</p><h3 class="text-lg font-black tracking-tight text-slate-900">Indicadores principais</h3><p class="text-xs text-slate-500">Resumo dos lançamentos e cadastros registrados no sistema.</p></div>
                         <span class="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-[10px] font-bold text-slate-500"><i class="fa-solid fa-clock text-teal-600"></i> ${formatadoAtualizacao}</span>
@@ -10891,7 +10904,84 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
             <p class="instructions">Confira os itens listados e preencha a quantidade encontrada. Marque uma situação para cada item; registre danos, faltas ou itens não utilizados nas observações.</p>
             <table><thead><tr><th style="width:5%">Nº</th><th style="width:30%">Item / código</th><th style="width:9%">Qtd. esperada</th><th style="width:12%">Qtd. conferida</th><th style="width:22%">Situação</th><th style="width:22%">Observações</th></tr></thead><tbody>${linhas}</tbody></table>
             <div class="observ"><b>Observações gerais:</b><br>${esc(observacoes || '__________________________________________________________________________________________\n__________________________________________________________________________________________')}</div>
-            <div class="signs"><div class="sign">Assinatura do morador responsável</div><div class="sign">Assinatura do responsável pela vistoria</div></div><p class="footer">Documento gerado a partir dos itens ativos cadastrados no inventário do setor selecionado. Confira e assine após a vistoria.</p></body></html>`;
+            <div class="signs"><div class="sign">Assinatura do morador responsável</div><div class="sign">Assinatura do responsável pela vistoria</div></div><p class="footer">Documento gerado a partir dos itens ativos cadastrados no inventário do setor selecionado. Confira e assine após a vistoria.</p>        <style id="bravo-dashboard-acessos-rapidos-2026">
+            .dashboard-quick-access {
+                padding: 1.1rem;
+                border: 1px solid #e2e8f0;
+                border-radius: 1.5rem;
+                background: linear-gradient(135deg,#fff 0%,#f8fafc 100%);
+                box-shadow: 0 6px 20px rgba(15,23,42,.04);
+            }
+            .dashboard-quick-access-heading {
+                display:flex; align-items:center; justify-content:space-between;
+                gap:1rem; margin-bottom:1rem;
+            }
+            .dashboard-quick-access-heading h3 {
+                margin-top:.15rem; color:#0f172a; font-size:1.05rem;
+                font-weight:900; letter-spacing:-.025em;
+            }
+            .dashboard-quick-access-heading p:last-child {
+                margin-top:.2rem; color:#64748b; font-size:.75rem;
+            }
+            .dashboard-quick-eyebrow {
+                color:#0f766e; font-size:.62rem; font-weight:900;
+                letter-spacing:.15em; text-transform:uppercase;
+            }
+            .dashboard-quick-hint {
+                display:inline-flex; align-items:center; gap:.4rem;
+                padding:.45rem .7rem; border-radius:999px;
+                background:#f0fdfa; color:#0f766e; font-size:.68rem; font-weight:800;
+                white-space:nowrap;
+            }
+            .dashboard-quick-grid {
+                display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.7rem;
+            }
+            .dashboard-quick-grid > button {
+                display:flex; align-items:center; gap:.7rem; min-width:0;
+                padding:.85rem; border:1px solid #e5eaf1; border-radius:1rem;
+                background:#fff; text-align:left; touch-action:manipulation;
+                transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease;
+            }
+            .dashboard-quick-grid > button:hover {
+                border-color:#99f6e4; box-shadow:0 8px 20px rgba(15,23,42,.07);
+                transform:translateY(-2px);
+            }
+            .dashboard-quick-grid > button:focus-visible {
+                outline:3px solid rgba(13,148,136,.35); outline-offset:2px;
+            }
+            .dashboard-quick-icon {
+                display:flex; align-items:center; justify-content:center;
+                flex:0 0 2.65rem; width:2.65rem; height:2.65rem;
+                border-radius:.85rem; font-size:1rem;
+            }
+            .dashboard-quick-icon.quick-blue {background:#eff6ff;color:#2563eb}
+            .dashboard-quick-icon.quick-green {background:#ecfdf5;color:#059669}
+            .dashboard-quick-icon.quick-amber {background:#fffbeb;color:#d97706}
+            .dashboard-quick-icon.quick-violet {background:#f5f3ff;color:#7c3aed}
+            .dashboard-quick-grid strong,.dashboard-quick-grid small {
+                display:block; min-width:0; overflow-wrap:anywhere;
+            }
+            .dashboard-quick-grid strong {color:#1e293b;font-size:.78rem;font-weight:900}
+            .dashboard-quick-grid small {margin-top:.18rem;color:#64748b;font-size:.65rem;line-height:1.35}
+            .dashboard-quick-arrow {margin-left:auto;color:#94a3b8;font-size:.65rem}
+            @media(max-width:900px) {
+                .dashboard-quick-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
+            }
+            @media(max-width:480px) {
+                .dashboard-quick-access {padding:.9rem;border-radius:1.2rem}
+                .dashboard-quick-grid {gap:.55rem}
+                .dashboard-quick-grid > button {gap:.55rem;padding:.7rem;border-radius:.9rem}
+                .dashboard-quick-icon {flex-basis:2.35rem;width:2.35rem;height:2.35rem}
+                .dashboard-quick-grid strong {font-size:.72rem}
+                .dashboard-quick-grid small {font-size:.6rem}
+            }
+            @media(prefers-reduced-motion:reduce) {
+                .dashboard-quick-grid > button {transition:none}
+                .dashboard-quick-grid > button:hover {transform:none}
+            }
+        </style>
+
+</body></html>`;
                 win.document.open();
                 win.document.write(doc);
                 win.document.close();
