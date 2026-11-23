@@ -14011,15 +14011,18 @@ persistido no banco ou no gateway.
                         return;
                     const pendentes = Array.from(tabelasPendentes);
                     tabelasPendentes.clear();
+                    // Calcula a posição das tabelas uma única vez por lote, em vez de
+                    // consultar e percorrer todas as tabelas para cada tabela pendente.
+                    const todasTabelas = Array.from(main.querySelectorAll('table'));
+                    const indicesTabelas = new Map(todasTabelas.map((table, indice) => [table, indice]));
                     pendentes.forEach(table => {
-                        if (!table.isConnected || !main.contains(table)) return;
+                        if (!table.isConnected || !indicesTabelas.has(table)) return;
                         try {
                             if (table.dataset.gridEnhanced === '1') {
                                 // Novas linhas podem chegar depois da renderização inicial; prepara apenas suas ações.
                                 groupActionButtons(table);
                             } else {
-                                const indice = Array.from(main.querySelectorAll('table')).indexOf(table);
-                                enhanceTable(table, indice < 0 ? 0 : indice);
+                                enhanceTable(table, indicesTabelas.get(table) ?? 0);
                             }
                         } catch (error) {
                             console.warn('Não foi possível preparar tabela do módulo:', error);
