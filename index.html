@@ -6230,9 +6230,17 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     tipo: String(campo.type || campo.tagName).toLowerCase(),
                     valor: campo.type === 'checkbox' || campo.type === 'radio' ? !!campo.checked : campo.value
                 }));
-                if (!valores.some(item => item.tipo === 'checkbox' || item.tipo === 'radio' ? item.valor : String(item.valor || '').trim())) return;
+                const possuiConteudo = valores.some(item => item.tipo === 'checkbox' || item.tipo === 'radio' ? item.valor : String(item.valor || '').trim());
                 try {
                     const rascunhos = lerRascunhosFormularios();
+                    // Se a pessoa apagar todos os campos, remove o rascunho antigo para não restaurar dados obsoletos.
+                    if (!possuiConteudo) {
+                        if (rascunhos[chave]) {
+                            delete rascunhos[chave];
+                            localStorage.setItem(CHAVE_RASCUNHOS_FORMULARIOS, JSON.stringify(rascunhos));
+                        }
+                        return;
+                    }
                     rascunhos[chave] = { atualizadoEm: new Date().toISOString(), valores };
                     const chaves = Object.keys(rascunhos);
                     if (chaves.length > 30) {
