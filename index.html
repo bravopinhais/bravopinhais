@@ -17441,5 +17441,49 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
 }
 </style>
 
+
+<style id="bravo-consulta-registros-acabamento-2026">
+/* Consulta de registros: leitura por linha, metadados e ações mais claras. */
+#app main .card-modern:has(>table),
+#app main .card-modern:has(>div>table){overflow:hidden;border:1px solid #e3ebef;box-shadow:0 5px 18px rgba(15,35,48,.035);}
+#app main .card-modern table{border-collapse:separate;border-spacing:0;}
+#app main .card-modern table tbody tr{transition:background-color .16s ease;}
+#app main .card-modern table tbody td{vertical-align:middle;overflow-wrap:anywhere;}
+#app main .card-modern table tbody td:first-child{color:#294454;}
+#app main .card-modern table tbody td button[title],
+#app main .card-modern table tbody td button[aria-label]{
+ min-width:36px;min-height:36px;border:1px solid rgba(148,163,184,.12);
+ box-shadow:0 1px 2px rgba(15,23,42,.035);
+}
+#app main .card-modern table tbody td button[title]:focus-visible,
+#app main .card-modern table tbody td button[aria-label]:focus-visible{
+ outline:3px solid rgba(13,148,136,.3);outline-offset:2px;
+}
+#app main .card-modern table tbody td button[title*="Visualizar"],
+#app main .card-modern table tbody td button[title*="visualizar"]{background:#eff6ff;color:#1d4ed8;}
+#app main .card-modern table tbody td button[title*="Baixar"],
+#app main .card-modern table tbody td button[title*="baixar"]{background:#ecfdf5;color:#047857;}
+#app main .card-modern table tbody td button[title*="Excluir"],
+#app main .card-modern table tbody td button[title*="excluir"]{background:#fff1f2;color:#be123c;}
+#app main .card-modern table tbody td button[title]:hover{filter:brightness(.96);transform:translateY(-1px);}
+#app main .card-modern table tbody td .font-mono{overflow-wrap:anywhere;word-break:break-word;color:#526777;}
+#app main .card-modern table tbody td [class*="rounded-full"]{white-space:normal;line-height:1.4;}
+#app main .card-modern table tbody td[colspan]{padding:28px 16px;color:#8293a0;font-weight:650;background:#fbfdfd;}
+@media(max-width:640px){
+ #app main .card-modern:has(>table),
+ #app main .card-modern:has(>div>table){border-radius:14px;}
+ #app main .card-modern table tbody td{line-height:1.45;}
+ #app main .card-modern table tbody td button[title],
+ #app main .card-modern table tbody td button[aria-label]{min-width:40px;min-height:40px;}
+}
+@media(hover:hover) and (pointer:fine){
+ #app main .card-modern table tbody tr:hover td{background:#f3faf9;}
+}
+@media(prefers-reduced-motion:reduce){
+ #app main .card-modern table tbody tr,
+ #app main .card-modern table tbody td button[title]{transition:none!important;}
+}
+</style>
+
 </body>
 </html>
