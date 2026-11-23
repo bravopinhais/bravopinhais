@@ -4371,6 +4371,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                 db = dataObj;
                 const pendenciaAnterior = obterSyncPendente();
                 const cacheLocalSalvo = salvarCacheLocal();
+                const versaoBaseDaGravacao = (pendenciaAnterior && pendenciaAnterior.ultimaVersaoNuvem) || localStorage.getItem(CHAVE_ULTIMA_SYNC_NUVEM);
                 const elStatus = document.getElementById('status-nuvem');
 
                 // Se já havia uma pendência, confirme que a versão remota não mudou antes de fazer upsert.
@@ -4424,6 +4425,27 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
 
                 const atualizadoEm = new Date().toISOString();
                 try {
+                    // Última checagem imediatamente antes do upsert: evita sobrescrever silenciosamente uma versão remota mais nova.
+                    if (!opcoes.recuperacaoConfirmada) {
+                        const { data: versaoRemota, error: erroLeituraVersao } = await supabaseClient
+                            .from('condominio_dados')
+                            .select('payload, atualizado_em')
+                            .eq('id', 'principal')
+                            .maybeSingle();
+                        if (erroLeituraVersao) throw erroLeituraVersao;
+                        const nuvemPossuiDados = !!(versaoRemota && versaoRemota.payload);
+                        const conflitoVersao = nuvemPossuiDados
+                            ? (!versaoBaseDaGravacao || !versaoRemota.atualizado_em || !versoesEquivalentes(versaoBaseDaGravacao, versaoRemota.atualizado_em))
+                            : !!versaoBaseDaGravacao;
+                        if (conflitoVersao) {
+                            marcarSyncPendente('conflito detectado na verificação final; cópia local preservada');
+                            if (elStatus) {
+                                elStatus.className = 'bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800';
+                                elStatus.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> A nuvem mudou durante o salvamento. Seus dados locais foram preservados; faça backup e resolva a sincronização.';
+                            }
+                            return false;
+                        }
+                    }
                     const {error} = await supabaseClient.from('condominio_dados').upsert({
                         id: 'principal',
                         payload: db,
