@@ -17354,5 +17354,92 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
 }
 @media(prefers-reduced-motion:reduce){#gb-notifications-toggle,#bravo-card-dados-gravados{transition:none!important;}}
 </style>
+
+<style id="bravo-modal-experiencia-polish-2026">
+/* Acabamento dos modais: foco no conteúdo, hierarquia e ações. */
+#modal-container{z-index:120!important;}
+#modal-container>div{backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);}
+#modal-container>div>div{
+  max-height:min(92dvh,940px)!important;
+  border:1px solid #dce8eb!important;
+  border-radius:22px!important;
+  background:#fff!important;
+  box-shadow:0 28px 90px rgba(8,27,42,.28),0 5px 18px rgba(8,27,42,.08)!important;
+}
+#modal-container>div>div>div:first-child:not(form),
+#modal-container>div>div>header{
+  position:relative;
+}
+#modal-container>div>div h1,
+#modal-container>div>div h2,
+#modal-container>div>div h3{
+  color:#173746;
+  letter-spacing:-.025em;
+}
+#modal-container form{gap:16px;}
+#modal-container form .grid{row-gap:14px;}
+#modal-container form label{color:#405666;font-weight:750;}
+#modal-container form :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea){
+  border-color:#d9e4e9;
+  border-radius:12px;
+  color:#203847;
+  box-shadow:0 1px 2px rgba(15,23,42,.025);
+}
+#modal-container form :is(input,select,textarea):focus{
+  border-color:#0d9488!important;
+  box-shadow:0 0 0 3px rgba(13,148,136,.13)!important;
+}
+#modal-container form :is(input,select,textarea):hover:not(:focus):not(:disabled){
+  border-color:#b9cbd2;
+}
+#modal-container form :is(button[type=submit],button.bg-teal-600,button.bg-teal-700,button.bg-teal-800){
+  min-height:42px;
+  border:1px solid rgba(13,148,136,.16);
+  box-shadow:0 4px 10px rgba(13,148,136,.13);
+  font-weight:800;
+}
+#modal-container form button[type=button]{
+  min-height:42px;
+  font-weight:750;
+}
+#modal-container form :is(.border-t,[class*=border-slate-200],[class*=border-gray-200]){
+  border-color:#e7eef1!important;
+}
+#modal-container form fieldset{
+  padding:14px;
+  background:linear-gradient(180deg,#fff,#fbfdfd);
+}
+#modal-container form legend{color:#0f766e;}
+#modal-container form [type=file]{
+  max-width:100%;
+  border:1px dashed #cbd9df;
+  border-radius:12px;
+  background:#f8fbfc;
+  padding:10px;
+}
+#modal-container>div>div :is(.overflow-y-auto,.overflow-auto){
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+  scrollbar-color:#c5d4da transparent;
+}
+@media(max-width:640px){
+  #modal-container>div>div{
+    max-height:calc(100dvh - 20px)!important;
+    border-radius:18px!important;
+  }
+  #modal-container form{gap:13px;}
+  #modal-container form .grid{row-gap:12px;}
+  #modal-container form :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea){
+    font-size:16px!important;
+    min-height:46px;
+  }
+  #modal-container form textarea{min-height:104px;}
+  #modal-container form :is(button[type=submit],button[type=button]){min-height:46px;}
+}
+@media(prefers-reduced-motion:reduce){
+  #modal-container>div,#modal-container>div>div{animation:none!important;transition:none!important;}
+}
+</style>
+
 </body>
 </html>
