@@ -3864,6 +3864,27 @@
                 }
             }
         </style>
+        <style id="bravo-dashboard-graficos-recolhiveis-2026">
+            .dashboard-analytics-disclosure { min-width: 0; }
+            .dashboard-analytics-disclosure > summary { gap: 1rem; }
+            .dashboard-analytics-disclosure > summary::-webkit-details-marker { display: none; }
+            .dashboard-analytics-disclosure > summary::marker { content: ""; }
+            .dashboard-analytics-disclosure > summary:focus-visible {
+                outline: 3px solid rgba(13,148,136,.35);
+                outline-offset: 3px;
+            }
+            .dashboard-disclosure-chevron { transition: transform .18s ease; }
+            .dashboard-analytics-disclosure[open] .dashboard-disclosure-chevron { transform: rotate(180deg); }
+            .dashboard-analytics-disclosure[open] .dashboard-disclosure-label::after { content: " ocultar"; }
+            .dashboard-analytics-disclosure:not([open]) .dashboard-disclosure-label::after { content: ""; }
+            @media (max-width: 640px) {
+                .dashboard-analytics-disclosure > summary { align-items: flex-start; }
+                .dashboard-analytics-disclosure > summary > span:last-child { align-self: flex-start; }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                .dashboard-disclosure-chevron { transition: none; }
+            }
+        </style>
     </head>
     <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
         <!-- Indicador de Status da Nuvem -->
@@ -7902,10 +7923,12 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     </section>
                     ` : ''}
 
-                    <div class="dashboard-section-title flex flex-col gap-1 px-1 sm:flex-row sm:items-end sm:justify-between">
-                        <div><p class="text-[10px] font-extrabold uppercase tracking-[.18em] text-teal-700">Análise dos dados</p><h3 class="text-lg font-black tracking-tight text-slate-900">Financeiro e patrimônio</h3><p class="text-xs text-slate-500">Compare os valores registrados e acompanhe a situação do inventário.</p></div>
-                    </div>
-                    <section class="grid grid-cols-1 xl:grid-cols-3 gap-5 dashboard-analytics-grid">
+                    <details class="dashboard-analytics-disclosure" ontoggle="dashboardRedimensionarGraficos(this)">
+                        <summary class="dashboard-section-title flex cursor-pointer list-none flex-col gap-1 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-end sm:justify-between">
+                            <div><p class="text-[10px] font-extrabold uppercase tracking-[.18em] text-teal-700">Análise dos dados · sob demanda</p><h3 class="text-lg font-black tracking-tight text-slate-900">Financeiro e patrimônio</h3><p class="text-xs text-slate-500">Toque aqui para exibir os gráficos e indicadores analíticos.</p></div>
+                            <span class="inline-flex w-fit items-center gap-2 rounded-full bg-teal-50 px-3 py-2 text-[11px] font-extrabold text-teal-800"><i class="fa-solid fa-chart-column"></i><span class="dashboard-disclosure-label">Exibir gráficos</span><i class="fa-solid fa-chevron-down dashboard-disclosure-chevron"></i></span>
+                        </summary>
+                    <section class="mt-4 grid grid-cols-1 xl:grid-cols-3 gap-5 dashboard-analytics-grid">
                         <div class="rounded-3xl border border-slate-200 bg-white p-5 md:p-6 shadow-sm xl:col-span-2">
                             <div class="flex flex-wrap items-start justify-between gap-3"><div><p class="text-[10px] font-extrabold uppercase tracking-[.16em] text-teal-700">Financeiro</p><h3 class="mt-1 text-lg font-black text-slate-900">Panorama dos valores registrados</h3><p class="mt-1 text-xs text-slate-500">A receber, a pagar e diferença entre os registros. Não representa necessariamente saldo bancário.</p></div>${dashboardIAEstaAtiva() ? `<button onclick="dashboardAcionarIA('despesas')" class="rounded-xl bg-teal-50 px-3 py-2 text-xs font-extrabold text-teal-800 transition hover:bg-teal-100"><i class="fa-solid fa-wand-magic-sparkles mr-1"></i> Interpretar com IA</button>` : ''}</div>
                             <div class="relative mt-4 h-64 md:h-72 w-full"><canvas id="chartReceitaDespesa" aria-label="Gráfico dos valores registrados a receber e a pagar"></canvas></div>
@@ -7917,6 +7940,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                             <div class="mt-3 grid grid-cols-3 gap-2 border-t border-slate-100 pt-4"><div><p class="text-[10px] font-bold text-slate-500">Adequados</p><p class="mt-1 text-xl font-black text-teal-700">${totalAdequados}</p></div><div><p class="text-[10px] font-bold text-slate-500">Críticos</p><p class="mt-1 text-xl font-black text-rose-600">${totalCriticos}</p></div><div><p class="text-[10px] font-bold text-slate-500">Excedentes</p><p class="mt-1 text-xl font-black text-amber-600">${totalExcedentes}</p></div></div>
                         </div>
                     </section>
+                    </details>
 
                     <div class="dashboard-section-title flex flex-col gap-1 px-1 sm:flex-row sm:items-end sm:justify-between">
                         <div><p class="text-[10px] font-extrabold uppercase tracking-[.18em] text-teal-700">Acompanhamento</p><h3 class="text-lg font-black tracking-tight text-slate-900">Alertas e movimentações recentes</h3><p class="text-xs text-slate-500">Priorize pendências e consulte os últimos lançamentos cadastrados.</p></div>
@@ -7939,6 +7963,18 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     <p class="px-1 pb-2 text-[10px] leading-5 text-slate-400"><i class="fa-solid fa-circle-info mr-1"></i> Indicadores financeiros representam lançamentos cadastrados. Sem status confiável de quitação, data de vencimento e conciliação bancária, eles não devem ser interpretados automaticamente como inadimplência, pagamentos efetuados ou saldo bancário real. Documentos cadastrados: ${documentos.length}. Atualizado na visualização às ${formatadoAtualizacao}.</p>
                 </div>
             `;
+            }
+
+            function dashboardRedimensionarGraficos(painel) {
+                if (!painel || !painel.open) return;
+                // O gráfico é recalculado depois que o painel deixa de estar oculto.
+                requestAnimationFrame(() => {
+                    if (!painel.isConnected || !painel.open) return;
+                    if (chartInstanceReceitaDespesa && typeof chartInstanceReceitaDespesa.resize === 'function')
+                        chartInstanceReceitaDespesa.resize();
+                    if (chartInstanceEstoqueDash && typeof chartInstanceEstoqueDash.resize === 'function')
+                        chartInstanceEstoqueDash.resize();
+                });
             }
 
             function initDashboardCharts() {
