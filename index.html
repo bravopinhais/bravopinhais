@@ -3902,9 +3902,17 @@
             // Cópias automáticas das últimas versões confirmadas na nuvem, separadas do cache de trabalho.
             // Retenção limitada a três versões por usuário para controlar o uso de espaço.
             const DB_OFFLINE_BACKUPS_STORE = 'backups';
+            async function calcularHashBackupAutomatico(payload) {
+                if (!window.crypto || !crypto.subtle) return null;
+                const bytes = new TextEncoder().encode(JSON.stringify(payload));
+                const digest = await crypto.subtle.digest('SHA-256', bytes);
+                return Array.from(new Uint8Array(digest)).map(b => b.toString(16).padStart(2, '0')).join('');
+            }
             async function salvarBackupAutomaticoOffline(payload, userId) {
                 if (!userId || !payload) return false;
                 try {
+                    const copia = JSON.parse(JSON.stringify(payload));
+                    const hash = await calcularHashBackupAutomatico(copia);
                     const banco = await abrirBancoOffline();
                     await new Promise((resolve, reject) => {
                         const tx = banco.transaction(DB_OFFLINE_BACKUPS_STORE, 'readwrite');
@@ -3915,7 +3923,7 @@
                                 .sort((a, b) => Date.parse(b.criadoEm || 0) - Date.parse(a.criadoEm || 0));
                             const agora = new Date().toISOString();
                             store.put({ id: String(userId) + ':' + Date.now(), userId: String(userId),
-                                payload: JSON.parse(JSON.stringify(payload)), criadoEm: agora });
+                                payload: copia, hash, criadoEm: agora });
                             atuais.slice(2).forEach(item => store.delete(item.id));
                         };
                         req.onerror = () => reject(req.error || new Error('Não foi possível consultar as cópias automáticas.'));
@@ -3960,11 +3968,18 @@
                 const data = new Date(ultima.criadoEm).toLocaleString('pt-BR');
                 if (!confirm('Encontramos uma cópia automática de ' + data + '.\n\nRestaurar essa cópia substituirá os dados atualmente carregados e solicitará uma nova sincronização. Faça um backup JSON antes de continuar. Deseja prosseguir?')) return;
                 try {
+                    if (ultima.hash) {
+                        const hashAtual = await calcularHashBackupAutomatico(ultima.payload);
+                        if (!hashAtual || hashAtual !== ultima.hash)
+                            throw new Error('A verificação de integridade SHA-256 não corresponde.');
+                    } else if (!confirm('Esta cópia foi criada por uma versão anterior e não possui verificação de integridade. Deseja continuar após a validação estrutural?')) {
+                        return;
+                    }
                     const restaurado = prepararBackupRestaurado(ultima.payload);
                     aplicarBackupRestaurado(restaurado, 'cópia automática local de ' + data);
                 } catch (erro) {
                     console.error('Falha ao validar cópia automática:', erro);
-                    alert('A cópia automática não passou na validação e não foi aplicada. Seus dados atuais foram mantidos.');
+                    alert('A cópia automática não passou na verificação de integridade ou estrutura e não foi aplicada. Seus dados atuais foram mantidos.');
                 }
             }
             function statusSalvoLocalmente(mensagem) {
