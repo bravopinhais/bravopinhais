@@ -17144,5 +17144,18 @@ persistido no banco ou no gateway.
             }
         </style>
 
-    </body>
+    <style id="bravo-dashboard-alertas-prioridade-2026">
+/* Identificação visual das prioridades sem modificar as regras ou os dados dos alertas. */
+.dashboard-operations-grid > div:first-child .mt-4.space-y-3 > button{min-height:78px;gap:.75rem;padding:.9rem;border-radius:1rem;align-items:flex-start;}
+.dashboard-operations-grid > div:first-child .mt-4.space-y-3 > button:focus-visible{outline:3px solid rgba(13,148,136,.38);outline-offset:3px;}
+.dashboard-operations-grid > div:first-child .mt-4.space-y-3 > button > span:nth-child(2){flex:1;min-width:0;}
+.dashboard-operations-grid > div:first-child .mt-4.space-y-3 > button > span:nth-child(2)::after{display:inline-flex;margin-top:.45rem;border:1px solid currentColor;border-radius:999px;padding:.18rem .48rem;font-size:9px;font-weight:900;letter-spacing:.025em;line-height:1.2;background:rgba(255,255,255,.72);}
+.dashboard-operations-grid > div:first-child .mt-4.space-y-3 > button.border-rose-200 > span:nth-child(2)::after{content:"Prioridade alta";color:#be123c;}
+.dashboard-operations-grid > div:first-child .mt-4.space-y-3 > button.border-amber-200 > span:nth-child(2)::after{content:"Atenção";color:#a16207;}
+.dashboard-operations-grid > div:first-child .mt-4.space-y-3 > button.border-sky-200 > span:nth-child(2)::after{content:"Informativo";color:#0369a1;}
+.dashboard-operations-grid > div:first-child .mt-4.space-y-3 > button.border-emerald-200 > span:nth-child(2)::after{content:"Tudo em ordem";color:#047857;}
+@media(max-width:640px){.dashboard-operations-grid > div:first-child .mt-4.space-y-3 > button{min-height:82px;padding:.85rem;gap:.65rem}.dashboard-operations-grid > div:first-child .mt-4.space-y-3 > button:active{transform:scale(.99)}}
+@media(prefers-reduced-motion:reduce){.dashboard-operations-grid > div:first-child .mt-4.space-y-3 > button{transition:none!important}}
+</style>
+</body>
 </html>
