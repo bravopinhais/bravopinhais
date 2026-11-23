@@ -3276,19 +3276,20 @@
             // Redimensiona e comprime imagens (foto de celular: de vários MB para ~200 KB).
             // Se algo falhar (ex.: formato não suportado pelo navegador), devolve o arquivo original.
             async function reduzirImagemArquivo(arquivo) {
+                let urlTemporaria = null;
                 try {
                     const tipo = (arquivo.type || '').toLowerCase();
                     if (!tipo.startsWith('image/') || tipo === 'image/gif' || tipo === 'image/svg+xml')
                         return arquivo;
-                    const url = URL.createObjectURL(arquivo);
+                    urlTemporaria = URL.createObjectURL(arquivo);
                     const img = await new Promise((resolve,reject) => {
                         const im = new Image();
                         im.onload = () => resolve(im);
                         im.onerror = () => reject(new Error('imagem ilegível'));
-                        im.src = url;
-                    }
-                    );
-                    URL.revokeObjectURL(url);
+                        im.src = urlTemporaria;
+                    });
+                    if (!img.naturalWidth || !img.naturalHeight)
+                        return arquivo;
                     const escala = Math.min(1, IMAGEM_LADO_MAXIMO / Math.max(img.naturalWidth, img.naturalHeight));
                     const largura = Math.max(1, Math.round(img.naturalWidth * escala));
                     const altura = Math.max(1, Math.round(img.naturalHeight * escala));
@@ -3296,6 +3297,7 @@
                     canvas.width = largura;
                     canvas.height = altura;
                     const ctx = canvas.getContext('2d');
+                    if (!ctx) return arquivo;
                     ctx.fillStyle = '#ffffff';
                     ctx.fillRect(0, 0, largura, altura);
                     ctx.drawImage(img, 0, 0, largura, altura);
@@ -3309,6 +3311,8 @@
                 } catch (e) {
                     console.warn('Não foi possível reduzir a imagem; usando o original.', e);
                     return arquivo;
+                } finally {
+                    if (urlTemporaria) URL.revokeObjectURL(urlTemporaria);
                 }
             }
 
