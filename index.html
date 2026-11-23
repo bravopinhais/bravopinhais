@@ -4591,10 +4591,16 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     card.style.opacity = '1';
                     card.style.transform = 'translateX(-50%) translateY(0)';
                     clearTimeout(_timerCardDadosGravados);
-                    _timerCardDadosGravados = setTimeout(() => {
-                        card.style.opacity = '0';
-                        card.style.transform = 'translateX(-50%) translateY(12px)';
-                    }, 2800);
+                    _timerCardDadosGravados = null;
+                    // Enquanto a gravação estiver em andamento, mantenha o aviso visível.
+                    // O aviso só desaparece automaticamente após uma confirmação ou falha.
+                    if (!salvando) {
+                        _timerCardDadosGravados = setTimeout(() => {
+                            card.style.opacity = '0';
+                            card.style.transform = 'translateX(-50%) translateY(12px)';
+                            _timerCardDadosGravados = null;
+                        }, 2800);
+                    }
                 } catch (e) {
                     console.warn('Não foi possível exibir a confirmação do cadastro.', e);
                 }
