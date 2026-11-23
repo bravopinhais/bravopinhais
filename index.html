@@ -6529,7 +6529,25 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                         chaves.sort((a,b) => String(rascunhos[a].atualizadoEm || '').localeCompare(String(rascunhos[b].atualizadoEm || '')));
                         chaves.slice(0, chaves.length - 30).forEach(k => delete rascunhos[k]);
                     }
-                    localStorage.setItem(CHAVE_RASCUNHOS_FORMULARIOS, JSON.stringify(rascunhos));
+                    try {
+                        localStorage.setItem(CHAVE_RASCUNHOS_FORMULARIOS, JSON.stringify(rascunhos));
+                    } catch (erroQuota) {
+                        // Se o armazenamento estiver cheio, libera primeiro os rascunhos mais antigos,
+                        // preservando o formulário que acabou de ser editado, e tenta novamente.
+                        const antigos = Object.keys(rascunhos)
+                            .filter(k => k !== chave)
+                            .sort((a, b) => Date.parse(rascunhos[a].atualizadoEm || 0) - Date.parse(rascunhos[b].atualizadoEm || 0));
+                        let gravou = false;
+                        for (const antiga of antigos) {
+                            delete rascunhos[antiga];
+                            try {
+                                localStorage.setItem(CHAVE_RASCUNHOS_FORMULARIOS, JSON.stringify(rascunhos));
+                                gravou = true;
+                                break;
+                            } catch (_) {}
+                        }
+                        if (!gravou) throw erroQuota;
+                    }
                 } catch (e) { console.warn('Não foi possível guardar o rascunho deste formulário.', e); }
             }
             function recuperarRascunhoFormulario() {
