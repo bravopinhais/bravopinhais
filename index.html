@@ -6174,12 +6174,21 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 if (modulo !== 'dashboard' && modulo !== 'estoque') return;
                 carregarChartJs().then(ok => {
                     if (!ok || geracao !== _geracaoGraficosModulo || tabsState.activeTab !== modulo) return;
-                    if (modulo === 'dashboard') {
-                        initDashboardCharts();
-                        initDashboardEstoqueChart();
-                    } else {
-                        initEstoqueChart();
-                    }
+                    // Deixa o navegador pintar o conteúdo principal antes de montar gráficos,
+                    // que podem exigir mais processamento em celulares.
+                    const montarGraficos = () => {
+                        if (geracao !== _geracaoGraficosModulo || tabsState.activeTab !== modulo) return;
+                        if (modulo === 'dashboard') {
+                            initDashboardCharts();
+                            initDashboardEstoqueChart();
+                        } else {
+                            initEstoqueChart();
+                        }
+                    };
+                    if (typeof requestAnimationFrame === 'function')
+                        requestAnimationFrame(montarGraficos);
+                    else
+                        setTimeout(montarGraficos, 0);
                 });
             }
 
