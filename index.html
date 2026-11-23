@@ -4119,6 +4119,32 @@
                 return Number.isFinite(ta) && Number.isFinite(tb) ? ta === tb : String(a) === String(b);
             }
 
+            // Resume diferenças por seção sem expor o conteúdo dos registros na tela.
+            function gerarResumoConflitoDados(dadosLocais, dadosNuvem) {
+                try {
+                    const local = dadosLocais && typeof dadosLocais === 'object' ? dadosLocais : {};
+                    const remoto = dadosNuvem && typeof dadosNuvem === 'object' ? dadosNuvem : {};
+                    const chaves = [...new Set([...Object.keys(local), ...Object.keys(remoto)])];
+                    const alteradas = chaves.filter(chave => {
+                        try { return JSON.stringify(local[chave]) !== JSON.stringify(remoto[chave]); }
+                        catch (e) { return true; }
+                    });
+                    if (!alteradas.length)
+                        return 'Não foram identificadas diferenças por seção; a versão remota mudou durante a gravação.';
+                    const linhas = alteradas.slice(0, 8).map(chave => {
+                        const nome = chave.replace(/_/g, ' ').replace(/\\b\\w/g, letra => letra.toUpperCase());
+                        const a = local[chave], b = remoto[chave];
+                        if (Array.isArray(a) || Array.isArray(b))
+                            return '- ' + nome + ': local ' + (Array.isArray(a) ? a.length : 0) + ' registro(s) / nuvem ' + (Array.isArray(b) ? b.length : 0) + ' registro(s)';
+                        return '- ' + nome + ': conteúdo diferente';
+                    });
+                    if (alteradas.length > 8) linhas.push('- e mais ' + (alteradas.length - 8) + ' seção(ões)');
+                    return 'Seções com diferenças encontradas:\\n' + linhas.join('\\n');
+                } catch (e) {
+                    return 'Não foi possível montar o resumo das diferenças. Os dados locais continuam preservados.';
+                }
+            }
+
             async function carregarDadosDaNuvem() {
                 const elStatus = document.getElementById('status-nuvem');
                 const dadosLocaisAntesDaNuvem = db;
@@ -4133,13 +4159,12 @@
                         if (pendencia && dadosLocaisAntesDaNuvem && dadosLocaisAntesDaNuvem.condominio) {
                             const baseline = pendencia.ultimaVersaoNuvem || localStorage.getItem(CHAVE_ULTIMA_SYNC_NUVEM);
                             const conflitoProvavel = baseline && data.atualizado_em && !versoesEquivalentes(baseline, data.atualizado_em);
-                            const aviso = conflitoProvavel ? `Existe uma cópia local não sincronizada E a nuvem parece ter sido alterada por outro acesso.
-
-OK: enviar a cópia local para a nuvem (pode substituir alterações mais recentes).
-Cancelar: manter a cópia local pendente e decidir depois.` : `Há alterações guardadas localmente que ainda não foram confirmadas na nuvem.
-
-OK: tentar recuperar e enviar essas alterações.
-Cancelar: manter a cópia local pendente sem sobrescrever a nuvem agora.`;
+                            const resumoDiferencas = gerarResumoConflitoDados(dadosLocaisAntesDaNuvem, data.payload);
+                            const aviso = (conflitoProvavel
+                                ? 'Existe uma cópia local não sincronizada e a nuvem parece ter sido alterada por outro acesso.\\n\\n'
+                                : 'Há alterações guardadas localmente que ainda não foram confirmadas na nuvem.\\n\\n')
+                                + resumoDiferencas
+                                + '\\n\\nOK: tentar enviar a cópia local para a nuvem.\\nCancelar: manter a cópia local pendente sem sobrescrever a nuvem agora.';
                             const recuperarLocal = confirm(aviso);
                             if (recuperarLocal) {
                                 db = dadosLocaisAntesDaNuvem;
@@ -4438,7 +4463,8 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                         : !!versaoBaseDaGravacao;
                     if (conflitoVersao) {
                         marcarSyncPendente('conflito detectado na verificação final; cópia local preservada');
-                        const podeContinuar = !!opcoes.recuperacaoConfirmada && confirm('A nuvem mudou novamente durante a preparação do salvamento.\n\nOK: confirmar mais uma vez o envio da cópia local, substituindo a versão remota.\nCancelar: manter os dados locais e interromper o envio.');
+                        const resumoDiferencas = gerarResumoConflitoDados(db, versaoRemota && versaoRemota.payload);
+                        const podeContinuar = !!opcoes.recuperacaoConfirmada && confirm('A nuvem mudou novamente durante a preparação do salvamento.\\n\\n' + resumoDiferencas + '\\n\\nOK: confirmar mais uma vez o envio da cópia local, substituindo a versão remota.\\nCancelar: manter os dados locais e interromper o envio.');
                         if (!podeContinuar) {
                             if (elStatus) {
                                 elStatus.className = 'bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800';
@@ -4460,6 +4486,13 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                         throw erroGravacaoAtomica;
                     if (gravacaoAceita !== true) {
                         marcarSyncPendente('outra sessão gravou primeiro; atualização simultânea preservada sem sobrescrita');
+                        try {
+                            const { data: versaoConcorrente } = await supabaseClient.from('condominio_dados').select('payload').eq('id', 'principal').maybeSingle();
+                            if (versaoConcorrente && versaoConcorrente.payload)
+                                alert('Outro usuário salvou primeiro. Nenhum dado local foi descartado.\\n\\n' + gerarResumoConflitoDados(db, versaoConcorrente.payload) + '\\n\\nFaça um backup antes de decidir como continuar.');
+                        } catch (erroResumo) {
+                            console.warn('Não foi possível consultar o resumo do conflito.', erroResumo);
+                        }
                         if (elStatus) {
                             elStatus.className = 'bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800';
                             elStatus.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Outro usuário salvou alterações ao mesmo tempo. Seus dados locais foram preservados; atualize a tela e revise antes de tentar novamente.';
