@@ -4969,9 +4969,20 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                             backupsEl.className = 'text-xs text-amber-700';
                         } else {
                             const maisRecente = new Date(backups[0].criadoEm).toLocaleString('pt-BR');
-                            const integridade = backups[0].hash ? 'integridade SHA-256 disponível' : 'cópia antiga sem assinatura';
+                            let integridade = 'cópia antiga sem assinatura';
+                            let classeBackup = 'text-amber-700';
+                            if (backups[0].hash) {
+                                const hashAtual = await calcularHashBackupAutomatico(backups[0].payload);
+                                if (hashAtual && hashAtual === backups[0].hash) {
+                                    integridade = 'integridade SHA-256 verificada';
+                                    classeBackup = 'text-emerald-700';
+                                } else {
+                                    integridade = 'ATENÇÃO: falha na integridade SHA-256';
+                                    classeBackup = 'text-rose-700';
+                                }
+                            }
                             backupsEl.textContent = 'Backups automáticos: ' + backups.length + ' de até 3 cópias locais · mais recente em ' + maisRecente + ' · ' + integridade + '.';
-                            backupsEl.className = 'text-xs text-emerald-700';
+                            backupsEl.className = 'text-xs font-semibold ' + classeBackup;
                         }
                     } catch (erro) {
                         backupsEl.textContent = 'Não foi possível consultar as cópias automáticas neste momento.';
