@@ -8472,6 +8472,10 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 const carregarImagem = img => {
                     const item = itensPorId.get(String(img.dataset.fotoId || ''));
                     if (!item) return;
+                    // Prioriza a renderização do conteúdo e deixa a decodificação da foto em segundo plano.
+                    // Isso reduz engasgos quando muitas imagens entram na tela no celular.
+                    img.decoding = 'async';
+                    if ('fetchPriority' in img) img.fetchPriority = 'low';
                     img.removeAttribute('data-foto-id');
                     img.src = urlDaFoto(item);
                 };
