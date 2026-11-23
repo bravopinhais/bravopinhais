@@ -8410,11 +8410,17 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
 
             function limitarCacheFotosEstoque() {
                 if (cacheFotos.size <= LIMITE_CACHE_FOTOS_ESTOQUE) return;
-                // Nunca revoga uma URL ainda usada por uma imagem visível no DOM.
+                // Faz uma única leitura do DOM por limpeza, em vez de percorrê-lo
+                // novamente para cada foto armazenada no cache.
+                const urlsEmUso = new Set(
+                    Array.from(document.querySelectorAll('main img'))
+                        .map(img => img.src)
+                        .filter(Boolean)
+                );
                 for (const [chave, url] of cacheFotos) {
                     if (cacheFotos.size <= LIMITE_CACHE_FOTOS_ESTOQUE) break;
-                    const emUso = Array.from(document.querySelectorAll('main img')).some(img => img.src === url);
-                    if (emUso) continue;
+                    // Nunca revoga uma URL ainda utilizada por uma imagem da tela.
+                    if (urlsEmUso.has(url)) continue;
                     try { URL.revokeObjectURL(url); } catch (e) {}
                     cacheFotos.delete(chave);
                 }
