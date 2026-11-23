@@ -3336,6 +3336,144 @@
                 #sidebar-menu nav button i { transition:none !important; }
             }
         </style>
+        <style id="bravo-internal-screens-2026">
+            /* Telas internas: formulários, listagens e ações com hierarquia visual consistente. */
+            #app main {
+                --screen-border: #e5eaf1;
+                --screen-ink: #172033;
+                --screen-muted: #64748b;
+            }
+            #app main h2 {
+                letter-spacing: -.025em;
+            }
+            #app main h3 {
+                letter-spacing: -.015em;
+            }
+            #app main label {
+                color: #475569;
+                font-size: 11px;
+                font-weight: 700;
+                letter-spacing: .01em;
+            }
+            #app main input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+            #app main select,
+            #app main textarea {
+                width: 100%;
+                max-width: 100%;
+                min-height: 43px;
+                padding: 10px 12px;
+                border: 1px solid #dbe3ed;
+                border-radius: 11px;
+                color: var(--screen-ink);
+                background: #fff;
+                font-size: 13px;
+            }
+            #app main textarea {
+                min-height: 92px;
+                line-height: 1.5;
+            }
+            #app main input::placeholder,
+            #app main textarea::placeholder {
+                color: #9aa7b8;
+            }
+            #app main input:focus,
+            #app main select:focus,
+            #app main textarea:focus {
+                border-color: #0d9488 !important;
+                box-shadow: 0 0 0 3px rgba(13,148,136,.11) !important;
+                outline: none;
+            }
+            #app main table {
+                border: 1px solid var(--screen-border);
+                border-radius: 14px;
+                background: #fff;
+                overflow: hidden;
+            }
+            #app main table thead th {
+                padding: 12px 14px;
+                color: #526176;
+                background: #f5f8fb;
+                border-bottom: 1px solid var(--screen-border);
+                font-size: 10px;
+                font-weight: 800;
+                text-transform: uppercase;
+                letter-spacing: .055em;
+                white-space: nowrap;
+            }
+            #app main table tbody td {
+                padding: 11px 14px;
+                border-bottom: 1px solid #edf1f5;
+                color: #334155;
+                font-size: 12px;
+                vertical-align: middle;
+            }
+            #app main table tbody tr:last-child td {
+                border-bottom: 0;
+            }
+            #app main table tbody tr:hover td {
+                background: #f7fbfb;
+            }
+            #app main button {
+                touch-action: manipulation;
+            }
+            #app main button:disabled {
+                cursor: not-allowed;
+                opacity: .55;
+                transform: none !important;
+                box-shadow: none !important;
+            }
+            #app main button:not(:disabled):active {
+                transform: translateY(1px);
+            }
+            #modal-container input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+            #modal-container select,
+            #modal-container textarea {
+                width: 100%;
+                max-width: 100%;
+                min-height: 43px;
+                padding: 10px 12px;
+                border: 1px solid #dbe3ed;
+                border-radius: 11px;
+                font-size: 13px;
+            }
+            #modal-container label {
+                display: inline-block;
+                margin-bottom: 5px;
+                color: #475569;
+                font-size: 11px;
+                font-weight: 700;
+            }
+            @media (max-width:768px) {
+                #app main {
+                    padding: 14px !important;
+                }
+                #app main table {
+                    display: block;
+                    max-width: 100%;
+                    overflow-x: auto;
+                    -webkit-overflow-scrolling: touch;
+                    scrollbar-width: thin;
+                }
+                #app main table thead th,
+                #app main table tbody td {
+                    padding: 10px 11px;
+                }
+                #app main button {
+                    min-height: 40px;
+                }
+                #modal-container > div {
+                    padding: 10px !important;
+                }
+                #modal-container > div > div {
+                    width: 100%;
+                    max-width: 100%;
+                    border-radius: 18px;
+                }
+            }
+            @media (prefers-reduced-motion:reduce) {
+                #app main button { transition: none !important; }
+            }
+        </style>
     </head>
     <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
         <!-- Indicador de Status da Nuvem -->
