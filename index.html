@@ -5707,6 +5707,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 const mainEl = document.querySelector('main');
                 if (mainEl) {
                     mainEl.innerHTML = renderModuleContent(tabsState.activeTab);
+                    if (tabsState.activeTab === 'configuracoes') atualizarPainelSaudeSistema();
                     if (tabsState.activeTab === 'estoque') inicializarFotosEstoque();
                     inicializarGraficosDoModulo();
                 }
