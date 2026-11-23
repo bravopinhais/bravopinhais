@@ -6447,9 +6447,12 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 if (!campo || !campo.matches || !campo.matches('input, textarea, select')) return false;
                 const tipo = String(campo.type || '').toLowerCase();
                 if (['password', 'file', 'hidden', 'button', 'submit', 'reset', 'image'].includes(tipo)) return false;
-                const identificacao = [campo.name, campo.id, campo.autocomplete].join(' ').toLowerCase();
+                const identificacao = [
+                    campo.name, campo.id, campo.autocomplete, campo.placeholder,
+                    campo.getAttribute('aria-label'), campo.getAttribute('title')
+                ].filter(Boolean).join(' ').toLowerCase();
                 // Não persistir credenciais, códigos temporários ou dados de cartão nos rascunhos locais.
-                if (/(senha|password|token|secret|cvv|cvc|cart[aã]o|card.number|cc-number|cc-csc|cc-exp|cc-name|one-time-code|otp)/i.test(identificacao)) return false;
+                if (/(senha|password|token|secret|cvv|cvc|cart[aã]o|card[._ -]?number|cc-number|cc-csc|cc-exp|cc-name|one-time-code|otp|c[oó]digo de seguran[cç]a)/i.test(identificacao)) return false;
                 return true;
             }
             function obterChaveRascunhoModal() {
