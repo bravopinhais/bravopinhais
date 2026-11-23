@@ -17485,5 +17485,68 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
 }
 </style>
 
+
+<style id="bravo-sidebar-navigation-polish-2026">
+/* Navegação: reforço de hierarquia, estados e conforto de uso. */
+#sidebar-menu{isolation:isolate;}
+#sidebar-menu nav{scroll-padding-block:18px;}
+#sidebar-menu nav>div>p{
+ display:flex;align-items:center;gap:9px;
+ margin:7px 2px 8px;
+ color:#91a3b8!important;
+ font-size:9px!important;
+ letter-spacing:.15em!important;
+}
+#sidebar-menu nav>div>p::before{
+ content:"";display:block;width:14px;height:2px;flex:0 0 14px;
+ border-radius:4px;background:linear-gradient(90deg,#0d9488,#5eead4);
+ opacity:.85;
+}
+#sidebar-menu nav>div+div{margin-top:3px;}
+#sidebar-menu nav button{
+ display:flex;align-items:center;
+ line-height:1.35;
+ overflow-wrap:anywhere;
+}
+#sidebar-menu nav button i{transition:color .18s ease,transform .18s ease;}
+#sidebar-menu nav button[class*="from-teal-"]{
+ position:relative;
+}
+#sidebar-menu nav button[class*="from-teal-"]::after{
+ content:"";position:absolute;right:11px;top:50%;
+ width:6px;height:6px;border-radius:50%;
+ background:#99f6e4;box-shadow:0 0 0 4px rgba(153,246,228,.10);
+ transform:translateY(-50%);
+}
+#sidebar-menu nav button:not([class*="from-teal-"]):focus-visible{
+ outline:2px solid rgba(94,234,212,.85)!important;outline-offset:2px;
+ background:rgba(20,184,166,.10)!important;color:#f8fafc!important;
+}
+#sidebar-menu nav button:not([class*="from-teal-"]):active{
+ background:rgba(20,184,166,.15)!important;
+}
+#sidebar-menu>div:first-child{padding-top:max(18px,env(safe-area-inset-top))!important;}
+#sidebar-menu>div:first-child button{
+ width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;
+ border:1px solid rgba(148,163,184,.16);border-radius:12px;
+ background:rgba(148,163,184,.07);
+}
+#sidebar-menu>div:first-child button:hover{background:rgba(148,163,184,.15);color:#fff;}
+#sidebar-backdrop{backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);}
+@media(max-width:768px){
+ #sidebar-menu{padding-bottom:env(safe-area-inset-bottom);}
+ #sidebar-menu nav{padding-left:12px!important;padding-right:12px!important;}
+ #sidebar-menu nav button{min-height:48px!important;border-radius:13px!important;}
+ #sidebar-menu nav>div+div{padding-top:13px;}
+ #sidebar-menu nav>div>p{margin-top:5px;}
+}
+@media(hover:hover) and (pointer:fine){
+ #sidebar-menu nav button:not([class*="from-teal-"]):hover i{transform:translateX(2px);}
+}
+@media(prefers-reduced-motion:reduce){
+ #sidebar-menu nav button,#sidebar-menu nav button i{transition:none!important;}
+}
+</style>
+
 </body>
 </html>
