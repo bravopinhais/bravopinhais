@@ -3606,6 +3606,69 @@
                 }
             }
         </style>
+        <style id="bravo-botoes-interacao-2026">
+            /* Botões: resposta tátil clara, acessibilidade e estados consistentes. */
+            #app main button,
+            #app main [role="button"],
+            #modal-container button {
+                -webkit-tap-highlight-color: transparent;
+                touch-action: manipulation;
+                transition: transform .14s ease, filter .14s ease,
+                    box-shadow .14s ease, background-color .18s ease,
+                    border-color .18s ease, color .18s ease;
+            }
+
+            #app main button:not(:disabled):active,
+            #app main [role="button"]:not([aria-disabled="true"]):active,
+            #modal-container button:not(:disabled):active {
+                transform: scale(.98);
+                filter: brightness(.96);
+            }
+
+            #app main button:disabled,
+            #modal-container button:disabled {
+                cursor: not-allowed;
+                opacity: .55;
+                transform: none;
+                filter: none;
+                box-shadow: none;
+            }
+
+            @media (hover: hover) and (pointer: fine) {
+                #app main button:not(:disabled):hover,
+                #modal-container button:not(:disabled):hover {
+                    filter: brightness(.975);
+                }
+
+                #app main button[class*="bg-teal"]:not(:disabled):hover,
+                #app main button[class*="bg-blue"]:not(:disabled):hover,
+                #app main button[class*="bg-indigo"]:not(:disabled):hover {
+                    box-shadow: 0 4px 12px rgba(15, 118, 110, .14);
+                }
+            }
+
+            @media (max-width: 640px) {
+                #app main button,
+                #app main [role="button"],
+                #modal-container button {
+                    -webkit-tap-highlight-color: transparent;
+                }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                #app main button,
+                #app main [role="button"],
+                #modal-container button {
+                    transition: none !important;
+                }
+
+                #app main button:not(:disabled):active,
+                #app main [role="button"]:not([aria-disabled="true"]):active,
+                #modal-container button:not(:disabled):active {
+                    transform: none;
+                }
+            }
+        </style>
     </head>
     <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
         <!-- Indicador de Status da Nuvem -->
