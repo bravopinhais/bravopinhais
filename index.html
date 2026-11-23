@@ -3506,6 +3506,70 @@
                 }
             }
         </style>
+        <style id="bravo-card-cabecalhos-2026">
+            /* Cabeçalhos dos cards: títulos mais claros e ações alinhadas. */
+            #app main .card-modern > h3,
+            #app main .card-modern > div:first-child > h3,
+            #app main .card-modern > div:first-child > div > h3 {
+                color: #172033;
+                font-weight: 800;
+                letter-spacing: -.025em;
+                line-height: 1.35;
+            }
+
+            #app main .card-modern > h3 {
+                padding-bottom: .8rem;
+                border-bottom: 1px solid #edf1f5;
+                position: relative;
+            }
+
+            #app main .card-modern > h3::after {
+                content: "";
+                position: absolute;
+                left: 0;
+                bottom: -1px;
+                width: 42px;
+                height: 2px;
+                border-radius: 99px;
+                background: #0d9488;
+            }
+
+            #app main .card-modern > div.flex.justify-between.items-center,
+            #app main .card-modern > div.flex.items-center.justify-between {
+                gap: 12px;
+                flex-wrap: wrap;
+            }
+
+            #app main .card-modern > div.flex.justify-between.items-center h3,
+            #app main .card-modern > div.flex.items-center.justify-between h3 {
+                min-width: 0;
+                overflow-wrap: anywhere;
+            }
+
+            #app main .card-modern h3 i,
+            #app main .card-modern h3 .fa-solid,
+            #app main .card-modern h3 .fa-regular {
+                color: #0f766e;
+            }
+
+            @media (max-width: 640px) {
+                #app main .card-modern > h3 {
+                    font-size: 1rem;
+                    padding-bottom: .65rem;
+                }
+
+                #app main .card-modern > div.flex.justify-between.items-center,
+                #app main .card-modern > div.flex.items-center.justify-between {
+                    align-items: flex-start;
+                }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                #app main .card-modern > h3::after {
+                    transition: none !important;
+                }
+            }
+        </style>
     </head>
     <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
         <!-- Indicador de Status da Nuvem -->
