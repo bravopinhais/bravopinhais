@@ -6434,7 +6434,8 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 const tipo = String(campo.type || '').toLowerCase();
                 if (['password', 'file', 'hidden', 'button', 'submit', 'reset', 'image'].includes(tipo)) return false;
                 const identificacao = [campo.name, campo.id, campo.autocomplete].join(' ').toLowerCase();
-                if (/(senha|password|token|secret|cvv|cvc|cartao.numero)/i.test(identificacao)) return false;
+                // Não persistir credenciais, códigos temporários ou dados de cartão nos rascunhos locais.
+                if (/(senha|password|token|secret|cvv|cvc|cart[aã]o|card.number|cc-number|cc-csc|cc-exp|cc-name|one-time-code|otp)/i.test(identificacao)) return false;
                 return true;
             }
             function obterChaveRascunhoModal() {
