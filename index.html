@@ -6583,6 +6583,12 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 if (recuperados) mostrarAvisoRascunho('Rascunho recuperado automaticamente. Confira os dados antes de salvar.');
             }
             function limparRascunhoFormulario() {
+                // Cancela qualquer gravação agendada antes de remover o rascunho,
+                // evitando que o debounce recrie dados já enviados com sucesso.
+                if (typeof _timerSalvarRascunhoFormulario !== 'undefined' && _timerSalvarRascunhoFormulario) {
+                    clearTimeout(_timerSalvarRascunhoFormulario);
+                    _timerSalvarRascunhoFormulario = null;
+                }
                 const chave = obterChaveRascunhoModal();
                 if (!chave) return;
                 try {
