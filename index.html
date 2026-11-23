@@ -3821,6 +3821,52 @@
             const CHAVE_ULTIMA_SYNC_NUVEM = 'guardioes_bravo_ultima_sync_nuvem';
 
             // Registro local e limitado de falhas operacionais: não armazena dados dos cadastros nem mensagens técnicas sensíveis.
+            const CHAVE_HISTORICO_SYNC = 'guardioes_bravo_historico_sync';
+            function registrarHistoricoSincronizacao(resultado, opcoes={}) {
+                try {
+                    const usuario = sessao && sessao.usuarioLogado ? sessao.usuarioLogado : {};
+                    const nomeUsuario = String(usuario.nome || usuario.nomeCompleto || usuario.email || 'Usuário').slice(0, 80);
+                    const modulo = String(opcoes.modulo || opcoes.origem || 'Base geral').replace(/[<>]/g, '').slice(0, 60);
+                    let historico = JSON.parse(localStorage.getItem(CHAVE_HISTORICO_SYNC) || '[]');
+                    if (!Array.isArray(historico)) historico = [];
+                    historico.unshift({ data: new Date().toISOString(), usuario: nomeUsuario, modulo, resultado: String(resultado).slice(0, 40), online: !!navigator.onLine });
+                    localStorage.setItem(CHAVE_HISTORICO_SYNC, JSON.stringify(historico.slice(0, 20)));
+                    atualizarHistoricoSincronizacao();
+                } catch (erro) {
+                    console.warn('Não foi possível registrar o histórico de sincronização.', erro);
+                }
+            }
+            function atualizarHistoricoSincronizacao() {
+                const lista = document.getElementById('saude-historico-sync');
+                const resumo = document.getElementById('saude-historico-resumo');
+                if (!lista) return;
+                let itens = [];
+                try { itens = JSON.parse(localStorage.getItem(CHAVE_HISTORICO_SYNC) || '[]'); } catch (_) {}
+                if (!Array.isArray(itens)) itens = [];
+                if (resumo) resumo.textContent = itens.length + ' evento(s) recente(s) neste dispositivo · limite de 20 registros.';
+                lista.replaceChildren();
+                if (!itens.length) {
+                    const vazio = document.createElement('li');
+                    vazio.className = 'text-xs text-slate-500 py-2';
+                    vazio.textContent = 'O histórico aparecerá aqui após as próximas tentativas de sincronização.';
+                    lista.appendChild(vazio);
+                    return;
+                }
+                itens.slice(0, 12).forEach(item => {
+                    const linha = document.createElement('li');
+                    linha.className = 'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 py-2 border-b border-slate-100 last:border-0';
+                    const principal = document.createElement('span');
+                    principal.className = 'text-xs font-semibold text-slate-700';
+                    principal.textContent = (item.resultado || 'Evento') + ' · ' + (item.modulo || 'Base geral');
+                    const detalhe = document.createElement('span');
+                    detalhe.className = 'text-[11px] text-slate-500';
+                    const data = item.data && Number.isFinite(Date.parse(item.data)) ? new Date(item.data).toLocaleString('pt-BR') : 'Data indisponível';
+                    detalhe.textContent = data + ' · ' + (item.usuario || 'Usuário') + (item.online ? ' · online' : ' · offline');
+                    linha.append(principal, detalhe);
+                    lista.appendChild(linha);
+                });
+            }
+
             const CHAVE_FALHAS_SISTEMA = 'guardioes_bravo_falhas_sistema';
             function registrarFalhaSistema(tipo) {
                 try {
@@ -4393,6 +4439,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
             }
 
             async function salvarDadosNaNuvemExecutar(dataObj, opcoes={}) {
+                registrarHistoricoSincronizacao('Envio iniciado', opcoes);
                 db = dataObj;
                 const pendenciaAnterior = obterSyncPendente();
                 const cacheLocalSalvo = salvarCacheLocal();
@@ -4501,6 +4548,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     }
                     limparSyncPendente();
                     atualizarVersaoConhecidaNuvem(atualizadoEm);
+                    registrarHistoricoSincronizacao('Sincronizado', opcoes);
                     if (elStatus) {
                         elStatus.className = 'bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm';
                         elStatus.innerHTML = resultadoAnexos.falhas > 0
@@ -4511,6 +4559,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                 } catch (err) {
                     console.warn('Não foi possível sincronizar dados na nuvem.', err);
                     registrarFalhaSistema('Falha ao sincronizar com a nuvem');
+                    registrarHistoricoSincronizacao('Falha na sincronização', opcoes);
                     if (elStatus) {
                         elStatus.className = 'bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800';
                         elStatus.innerHTML = cacheLocalSalvo ? '<i class="fa-solid fa-triangle-exclamation"></i> Alterações mantidas neste dispositivo; sincronização pendente.' : '<i class="fa-solid fa-triangle-exclamation"></i> Falha na nuvem e no armazenamento local. Baixe um backup e não feche a página.';
@@ -5055,6 +5104,11 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                         </div>
                         <p id="saude-fila-detalhe" class="text-[10px] text-slate-500">Os indicadores mostram o estado da sincronização deste dispositivo.</p>
                     </div>
+                    <div class="rounded-2xl border border-slate-200 bg-white p-4 space-y-2">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1"><h4 class="text-sm font-black text-slate-800"><i class="fa-solid fa-clock-rotate-left text-slate-500 mr-1.5"></i> Histórico de sincronizações</h4><span id="saude-historico-resumo" class="text-[11px] text-slate-500">Consultando...</span></div>
+                        <ul id="saude-historico-sync" aria-live="polite"><li class="text-xs text-slate-500 py-2">Carregando histórico...</li></ul>
+                        <p class="text-[10px] text-slate-500">Histórico local deste dispositivo. Não armazena conteúdo dos cadastros e mantém somente os 20 eventos mais recentes.</p>
+                    </div>
                     <p id="saude-backups" class="text-xs text-slate-500" aria-live="polite">Consultando cópias automáticas...</p>
                     <div id="saude-backups-lista" class="space-y-2" aria-live="polite"></div>
                     <p id="saude-armazenamento" class="text-xs text-slate-500" aria-live="polite">Verificando armazenamento local...</p>
@@ -5115,6 +5169,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                 };
                 atualizarListaFalhasSistema();
                 atualizarIndicadoresFilaSincronizacao();
+                atualizarHistoricoSincronizacao();
                 const internet = navigator.onLine;
                 definir('saude-internet', internet ? 'Conectada' : 'Sem conexão', internet ? 'text-emerald-700' : 'text-rose-700');
                 const pendencia = obterSyncPendente();
