@@ -5046,6 +5046,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                         <div class="rounded-2xl bg-slate-50 border border-slate-100 p-3"><p class="text-[10px] uppercase tracking-wider font-bold text-slate-500">Última confirmação</p><p id="saude-ultima-sync" class="text-sm font-extrabold text-slate-700 mt-1">Consultando...</p></div>
                     </div>
                     <p id="saude-backups" class="text-xs text-slate-500" aria-live="polite">Consultando cópias automáticas...</p>
+                    <div id="saude-backups-lista" class="space-y-2" aria-live="polite"></div>
                     <p id="saude-armazenamento" class="text-xs text-slate-500" aria-live="polite">Verificando armazenamento local...</p>
                     <p id="saude-resumo" class="text-xs text-slate-500" aria-live="polite">O diagnóstico não altera nem envia cadastros.</p>
                     <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-2">
@@ -5069,6 +5070,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                 const pendencia = obterSyncPendente();
                 definir('saude-sync', pendencia ? 'Aguardando envio' : 'Sem pendências locais', pendencia ? 'text-amber-700' : 'text-emerald-700');
                 const backupsEl = document.getElementById('saude-backups');
+                const backupsLista = document.getElementById('saude-backups-lista');
                 if (backupsEl) {
                     try {
                         const backups = await obterBackupsAutomaticosOffline(usuarioAuthUidAtivo);
@@ -5091,9 +5093,44 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                             backupsEl.textContent = 'Backups automáticos: ' + backups.length + ' de até 3 cópias locais · mais recente em ' + maisRecente + ' · ' + integridade + '.';
                             backupsEl.className = 'text-xs font-semibold ' + classeBackup;
                         }
+                        if (backupsLista) {
+                            backupsLista.replaceChildren();
+                            if (!usuarioPodeConfigurarModulos()) {
+                                backupsLista.textContent = 'A lista e a restauração de cópias ficam disponíveis somente para administradores.';
+                                backupsLista.className = 'text-xs text-slate-500';
+                            } else if (!backups.length) {
+                                backupsLista.textContent = 'Quando uma sincronização for concluída, as cópias aparecerão aqui.';
+                                backupsLista.className = 'text-xs text-slate-500';
+                            } else {
+                                backupsLista.className = 'space-y-2';
+                                backups.forEach((copia, indice) => {
+                                    const linha = document.createElement('div');
+                                    linha.className = 'flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 rounded-xl border border-slate-200 bg-white p-3';
+                                    const detalhes = document.createElement('div');
+                                    detalhes.className = 'min-w-0';
+                                    const titulo = document.createElement('p');
+                                    titulo.className = 'text-xs font-bold text-slate-800';
+                                    titulo.textContent = (indice === 0 ? 'Mais recente · ' : 'Cópia ' + (indice + 1) + ' · ') + new Date(copia.criadoEm).toLocaleString('pt-BR');
+                                    const meta = document.createElement('p');
+                                    meta.className = 'text-[11px] text-slate-500 mt-1';
+                                    let tamanho = 'tamanho indisponível';
+                                    try { tamanho = (new Blob([JSON.stringify(copia.payload)]).size / 1024).toFixed(0) + ' KB'; } catch (_) {}
+                                    meta.textContent = tamanho + (copia.hash ? ' · integridade verificável' : ' · cópia antiga sem assinatura') + (copia.origem ? ' · ' + copia.origem : '');
+                                    detalhes.append(titulo, meta);
+                                    const acao = document.createElement('button');
+                                    acao.type = 'button';
+                                    acao.className = 'shrink-0 rounded-lg bg-amber-50 px-3 py-2 text-xs font-bold text-amber-800 hover:bg-amber-100';
+                                    acao.textContent = 'Restaurar esta cópia';
+                                    acao.addEventListener('click', () => restaurarCopiaAutomaticaSelecionada(indice));
+                                    linha.append(detalhes, acao);
+                                    backupsLista.appendChild(linha);
+                                });
+                            }
+                        }
                     } catch (erro) {
                         backupsEl.textContent = 'Não foi possível consultar as cópias automáticas neste momento.';
                         backupsEl.className = 'text-xs text-amber-700';
+                        if (backupsLista) backupsLista.textContent = 'Lista de cópias temporariamente indisponível.';
                     }
                 }
                 const ultima = localStorage.getItem(CHAVE_ULTIMA_SYNC_NUVEM);
