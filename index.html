@@ -15548,9 +15548,11 @@ persistido no banco ou no gateway.
                         if (inactive) return;
                         const id = recordIdentity(item);
                         if (id === null) return;
-                        const quantity = Number(item.quantidade !== undefined ? item.quantidade : (item.qtd || 0));
+                        const rawQuantity = item.quantidade !== undefined ? item.quantidade : item.qtd;
+                        if (rawQuantity === undefined || rawQuantity === null || rawQuantity === '') return;
+                        const quantity = Number(rawQuantity);
                         const minimum = Number(item.minimo || 0);
-                        if (!Number.isFinite(quantity) || !Number.isFinite(minimum) || minimum <= 0 || quantity > minimum) return;
+                        if (!Number.isFinite(quantity) || !Number.isFinite(minimum) || (quantity > 0 && (minimum <= 0 || quantity > minimum))) return;
                         const name = String(item.item || item.nome || item.descricao || 'Produto sem nome').slice(0, 100);
                         const key = String(id);
                         activeNow[key] = { name, quantity, minimum };
