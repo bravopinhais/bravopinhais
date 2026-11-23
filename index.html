@@ -3257,6 +3257,23 @@
             const BUCKET_ANEXOS = 'anexos-condominio';
             const _FOTO_VAZIA = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
             const _cacheUrlAnexo = new Map();
+            const _promessasUrlAnexo = new Map();
+            const LIMITE_CACHE_URL_ANEXO = 80;
+
+            function _guardarUrlAnexoNoCache(path, url) {
+                const agora = Date.now();
+                // Remove links expirados antes de inserir novos.
+                for (const [chave, valor] of _cacheUrlAnexo) {
+                    if (!valor || valor.exp <= agora) _cacheUrlAnexo.delete(chave);
+                }
+                // Mantém o cache limitado para não crescer indefinidamente em sessões longas.
+                while (_cacheUrlAnexo.size >= LIMITE_CACHE_URL_ANEXO) {
+                    const chaveAntiga = _cacheUrlAnexo.keys().next().value;
+                    if (chaveAntiga === undefined) break;
+                    _cacheUrlAnexo.delete(chaveAntiga);
+                }
+                _cacheUrlAnexo.set(path, { url: url, exp: agora + 3300 * 1000 });
+            }
 
             function _nomeSeguroAnexo(n) {
                 return String(n || 'arquivo').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9._-]+/g, '_').slice(-80);
@@ -3384,19 +3401,25 @@
             }
 
             async function _prepararFotoPath(path) {
-                try {
-                    const url = await urlAssinadaAnexo(path, 3600);
-                    _cacheUrlAnexo.set(path, {
-                        url: url,
-                        exp: Date.now() + 3300 * 1000
-                    });
-                    document.querySelectorAll('img[data-foto-path]').forEach(img => {
-                        if (img.getAttribute('data-foto-path') === path)
-                            img.src = url;
-                    });
-                } catch (e) {
-                    console.warn('Erro ao carregar foto:', e);
-                }
+                if (!path) return;
+                // Várias imagens do mesmo anexo compartilham uma única solicitação em andamento.
+                if (_promessasUrlAnexo.has(path)) return _promessasUrlAnexo.get(path);
+                const promessa = (async () => {
+                    try {
+                        const url = await urlAssinadaAnexo(path, 3600);
+                        _guardarUrlAnexoNoCache(path, url);
+                        document.querySelectorAll('img[data-foto-path]').forEach(img => {
+                            if (img.getAttribute('data-foto-path') === path)
+                                img.src = url;
+                        });
+                    } catch (e) {
+                        console.warn('Erro ao carregar foto:', e);
+                    } finally {
+                        _promessasUrlAnexo.delete(path);
+                    }
+                })();
+                _promessasUrlAnexo.set(path, promessa);
+                return promessa;
             }
 
             function _removerAnexosSeSemReferencia(paths, registroIgnorado = null) {
