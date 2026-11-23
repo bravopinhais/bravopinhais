@@ -15535,6 +15535,60 @@ persistido no banco ou no gateway.
                         notices = notices.slice(0, 60);
                     }
                 }
+                function syncStockAlerts(data) {
+                    if (!userKey) return;
+                    const source = data || (typeof db !== 'undefined' ? db : {});
+                    const items = Array.isArray(source.estoque) ? source.estoque : [];
+                    const activeNow = {};
+                    items.forEach(item => {
+                        if (!item || typeof item !== 'object') return;
+                        const inactive = typeof estoqueItemEstaInativo === 'function'
+                            ? estoqueItemEstaInativo(item)
+                            : String(item.status || '').trim().toLowerCase() === 'inativo';
+                        if (inactive) return;
+                        const id = recordIdentity(item);
+                        if (id === null) return;
+                        const quantity = Number(item.quantidade !== undefined ? item.quantidade : (item.qtd || 0));
+                        const minimum = Number(item.minimo || 0);
+                        if (!Number.isFinite(quantity) || !Number.isFinite(minimum) || minimum <= 0 || quantity > minimum) return;
+                        const name = String(item.item || item.nome || item.descricao || 'Produto sem nome').slice(0, 100);
+                        const key = String(id);
+                        activeNow[key] = { name, quantity, minimum };
+                    });
+
+                    const activeKey = keyFor('stock-active', userKey);
+                    const previous = safeRead(activeKey, {});
+                    const was = previous && typeof previous === 'object' ? previous : {};
+                    const stockEnabled = typeof moduloEstaAtivo !== 'function' || moduloEstaAtivo('estoque');
+
+                    if (stockEnabled) {
+                        Object.keys(activeNow).forEach(id => {
+                            if (was[id]) return;
+                            const item = activeNow[id];
+                            const zero = item.quantity <= 0;
+                            addNotice({
+                                module: 'estoque',
+                                title: zero ? 'Produto com estoque zerado' : 'Estoque atingiu o nível mínimo',
+                                message: zero
+                                    ? `${item.name}: não há unidades disponíveis. Reposição necessária.`
+                                    : `${item.name}: ${item.quantity} unidade(s), mínimo configurado: ${item.minimum}.`,
+                                sourceKey: `stock-critical:${id}`
+                            });
+                        });
+                        Object.keys(was).forEach(id => {
+                            if (activeNow[id]) return;
+                            const old = was[id] || {};
+                            addNotice({
+                                module: 'estoque',
+                                title: 'Alerta de estoque resolvido',
+                                message: `${String(old.name || 'Produto').slice(0, 100)} voltou a ficar acima do nível mínimo.`,
+                                sourceKey: `stock-resolved:${id}:${Date.now()}`
+                            });
+                        });
+                    }
+
+                    safeWrite(activeKey, activeNow);
+                }
                 function initializeForUser() {
                     const nextUser = currentUserKey();
                     if (!nextUser)
@@ -15558,6 +15612,7 @@ persistido no banco ou no gateway.
                         }));
                     }
                     knownIds = currentIds;
+                    syncStockAlerts(typeof db !== 'undefined' ? db : {});
                     announceFeatureOnce();
                     ready = true;
                     persist();
@@ -15583,6 +15638,7 @@ persistido no banco ou no gateway.
                         }));
                     }
                     knownIds = current.map(x => x.identity);
+                    syncStockAlerts(data || (typeof db !== 'undefined' ? db : {}));
                     persist();
                     renderNotifications();
                 }
