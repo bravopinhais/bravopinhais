@@ -14085,9 +14085,21 @@ persistido no banco ou no gateway.
                     const headerRow = existingRows[0];
                     if (headerRow.cells.length < 2 || Array.from(headerRow.cells).some(cell => (cell.colSpan || 1) !== 1))
                         return;
-                    const bodyRows = Array.from(table.tBodies).flatMap(body => Array.from(body.rows));
-                    if (bodyRows.length && !bodyRows.some(row => row.cells.length === headerRow.cells.length))
-                        return;
+                    // Valida as linhas sem criar um array temporário com todas elas.
+                    // Em tabelas grandes, interrompe a leitura assim que encontra uma linha compatível.
+                    let possuiLinhaCompativel = false;
+                    let possuiLinhas = false;
+                    for (const body of table.tBodies) {
+                        if (body.rows.length) possuiLinhas = true;
+                        for (const row of body.rows) {
+                            if (row.cells.length === headerRow.cells.length) {
+                                possuiLinhaCompativel = true;
+                                break;
+                            }
+                        }
+                        if (possuiLinhaCompativel) break;
+                    }
+                    if (possuiLinhas && !possuiLinhaCompativel) return;
 
                     const labels = headerLabels(headerRow);
                     const keys = makeColumnKeys(labels);
