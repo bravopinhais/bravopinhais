@@ -3570,6 +3570,42 @@
                 }
             }
         </style>
+        <style id="bravo-card-espacamento-2026">
+            /* Espaçamento interno mais equilibrado, preservando tabelas e áreas com rolagem horizontal. */
+            #app main .card-modern.p-6 {
+                padding: 1.5rem;
+            }
+
+            #app main .card-modern.p-5 {
+                padding: 1.25rem;
+            }
+
+            #app main .card-modern.p-8 {
+                padding: 2rem;
+            }
+
+            @media (max-width: 640px) {
+                #app main .card-modern.p-6 {
+                    padding: 1rem !important;
+                }
+
+                #app main .card-modern.p-5 {
+                    padding: .9rem !important;
+                }
+
+                #app main .card-modern.p-8 {
+                    padding: 1.25rem !important;
+                }
+
+                #app main .card-modern:not(.overflow-x-auto) > .space-y-4 {
+                    row-gap: .85rem;
+                }
+
+                #app main .card-modern:not(.overflow-x-auto) > .grid {
+                    row-gap: .85rem;
+                }
+            }
+        </style>
     </head>
     <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
         <!-- Indicador de Status da Nuvem -->
