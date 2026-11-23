@@ -10461,11 +10461,35 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     i.replaceWith(span);
                 });
             }
+            // Agrupa inserções feitas no mesmo quadro para evitar várias varreduras
+            // de DOM durante renderizações grandes de módulos e tabelas.
+            const raizesIconesIAPendentes = new Set();
+            let quadroIconesIAPendente = false;
+            function agendarTrocaIconesIA(no) {
+                if (!no || no.nodeType !== 1) return;
+                // Mantém apenas a raiz mais externa para não examinar o mesmo bloco
+                // repetidamente quando vários elementos internos são inseridos juntos.
+                for (const raiz of raizesIconesIAPendentes) {
+                    if (raiz === no || raiz.contains(no)) return;
+                    if (no.contains(raiz)) raizesIconesIAPendentes.delete(raiz);
+                }
+                raizesIconesIAPendentes.add(no);
+                if (quadroIconesIAPendente) return;
+                quadroIconesIAPendente = true;
+                const processar = () => {
+                    quadroIconesIAPendente = false;
+                    const raizes = Array.from(raizesIconesIAPendentes);
+                    raizesIconesIAPendentes.clear();
+                    raizes.forEach(raiz => {
+                        if (raiz.isConnected) trocarIconeIA(raiz);
+                    });
+                };
+                if (typeof requestAnimationFrame === 'function') requestAnimationFrame(processar);
+                else setTimeout(processar, 16);
+            }
             const observadorIconesIA = new MutationObserver(mudancas => {
                 mudancas.forEach(mudanca => {
-                    mudanca.addedNodes.forEach(no => {
-                        if (no.nodeType === 1) trocarIconeIA(no);
-                    });
+                    mudanca.addedNodes.forEach(agendarTrocaIconesIA);
                 });
             });
             observadorIconesIA.observe(document.body, {
