@@ -6225,9 +6225,12 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     });
                     cacheFotos.clear();
                 }
-                if (tabsState.activeTab !== 'estoque' && observadorFotosEstoque) {
-                    observadorFotosEstoque.disconnect();
-                    observadorFotosEstoque = null;
+                if (tabsState.activeTab !== 'estoque') {
+                    if (observadorFotosEstoque) {
+                        observadorFotosEstoque.disconnect();
+                        observadorFotosEstoque = null;
+                    }
+                    liberarCacheFotosEstoque();
                 }
             }
 
@@ -8404,6 +8407,16 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
 
             const cacheFotos = new Map();
             let observadorFotosEstoque = null;
+
+            function liberarCacheFotosEstoque() {
+                // URLs blob deixam de ser necessárias quando a tela de estoque é fechada.
+                cacheFotos.forEach(url => {
+                    if (typeof url === 'string' && url.startsWith('blob:')) {
+                        try { URL.revokeObjectURL(url); } catch (e) {}
+                    }
+                });
+                cacheFotos.clear();
+            }
 
             function inicializarFotosEstoque() {
                 if (observadorFotosEstoque) {
