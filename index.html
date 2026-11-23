@@ -6228,7 +6228,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     chave: chavesCampos[indice],
                     chaveLegada: campo.name || campo.id || campo.dataset.field || String(indice),
                     tipo: String(campo.type || campo.tagName).toLowerCase(),
-                    valor: campo.type === 'checkbox' || campo.type === 'radio' ? !!campo.checked : campo.value
+                    valor: campo.type === 'checkbox' || campo.type === 'radio' ? !!campo.checked : (campo.tagName === 'SELECT' && campo.multiple ? Array.from(campo.selectedOptions).map(opcao => opcao.value) : campo.value)
                 }));
                 const possuiConteudo = valores.some(item => item.tipo === 'checkbox' || item.tipo === 'radio' ? item.valor : String(item.valor || '').trim());
                 try {
@@ -6266,7 +6266,15 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                         (c.name || c.id || c.dataset.field || String(i)) === (item.chaveLegada || item.chave));
                     if (!campo || !campoElegivelParaRascunho(campo)) return;
                     if (campo.type === 'checkbox' || campo.type === 'radio') campo.checked = !!item.valor;
-                    else campo.value = item.valor == null ? '' : item.valor;
+                    else if (campo.tagName === 'SELECT' && campo.multiple) {
+                        const selecionados = new Set(Array.isArray(item.valor) ? item.valor.map(String) : []);
+                        Array.from(campo.options).forEach(opcao => { opcao.selected = selecionados.has(String(opcao.value)); });
+                    } else campo.value = item.valor == null ? '' : item.valor;
+                    // Atualiza máscaras, validações e campos dependentes após a recuperação.
+                    try {
+                        campo.dispatchEvent(new Event('input', { bubbles: true }));
+                        campo.dispatchEvent(new Event('change', { bubbles: true }));
+                    } catch (e) { /* Recuperação do valor não deve ser interrompida por evento auxiliar. */ }
                     recuperados++;
                 });
                 if (recuperados) mostrarAvisoRascunho('Rascunho recuperado automaticamente. Confira os dados antes de salvar.');
