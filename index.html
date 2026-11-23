@@ -5929,6 +5929,9 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
             }
 
             function encerrarSessao() {
+                // Grava o rascunho pendente ainda associado ao usuário atual antes de encerrar a sessão.
+                if (typeof salvarRascunhoPendenteAntesDeFechar === 'function')
+                    salvarRascunhoPendenteAntesDeFechar();
                 if (temporizadorInatividade)
                     clearTimeout(temporizadorInatividade);
                 sessao.usuarioLogado = null;
