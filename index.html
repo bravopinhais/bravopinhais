@@ -4429,9 +4429,13 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                         document.body.appendChild(card);
                     }
                     const offline = modo === 'offline';
-                    card.innerHTML = offline
-                        ? '<span style="font-size:22px;color:#fbbf24"><i class="fa-solid fa-floppy-disk"></i></span><span><strong style="display:block">Dados guardados neste dispositivo</strong><small style="display:block;margin-top:3px;font-weight:400;color:#fde68a">Aguardando sincronização com a nuvem</small></span>'
-                        : '<span style="font-size:22px;color:#6ee7b7"><i class="fa-solid fa-circle-check"></i></span><span><strong style="display:block">Dados gravados</strong><small style="display:block;margin-top:3px;font-weight:400;color:#bbf7d0">Cadastro salvo e sincronizado</small></span>';
+                    const salvando = modo === 'salvando';
+                    card.style.background = salvando ? '#1e293b' : '#102b22';
+                    card.innerHTML = salvando
+                        ? '<span style="font-size:22px;color:#93c5fd"><i class="fa-solid fa-rotate fa-spin"></i></span><span><strong style="display:block">Salvando dados...</strong><small style="display:block;margin-top:3px;font-weight:400;color:#cbd5e1">Aguarde a confirmação para fechar ou sair</small></span>'
+                        : offline
+                            ? '<span style="font-size:22px;color:#fbbf24"><i class="fa-solid fa-floppy-disk"></i></span><span><strong style="display:block">Dados guardados neste dispositivo</strong><small style="display:block;margin-top:3px;font-weight:400;color:#fde68a">Aguardando sincronização com a nuvem</small></span>'
+                            : '<span style="font-size:22px;color:#6ee7b7"><i class="fa-solid fa-circle-check"></i></span><span><strong style="display:block">Dados gravados</strong><small style="display:block;margin-top:3px;font-weight:400;color:#bbf7d0">Cadastro salvo e sincronizado</small></span>';
                     card.style.opacity = '1';
                     card.style.transform = 'translateX(-50%) translateY(0)';
                     clearTimeout(_timerCardDadosGravados);
@@ -4521,6 +4525,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
             }
 
             async function salvarDados(data) {
+                mostrarCardDadosGravados('salvando');
                 if (data && typeof data === 'object') {
                     const novosEventos = gerarEventosHistorico(data);
                     if (novosEventos.length) {
