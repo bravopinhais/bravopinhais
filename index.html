@@ -6417,11 +6417,26 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     tabsState.openTabs = [tabsState.activeTab];
 
                 barraAbas.innerHTML = tabsState.openTabs.filter(tabId => tabId === 'configuracoes' ? usuarioPodeConfigurarModulos() : moduloEstaAtivo(tabId)).map(tabId => `
-                    <div onclick="abrirModulo('${tabId}')" class="flex items-center gap-2.5 px-4 py-2.5 rounded-t-2xl text-xs cursor-pointer whitespace-nowrap transition-all ${tabsState.activeTab === tabId ? 'tab-active' : 'bg-slate-300/60 text-slate-600 hover:bg-slate-300 hover:text-slate-900 font-semibold'}">
+                    <div onclick="abrirModulo('${tabId}')" aria-current="${tabsState.activeTab === tabId ? 'page' : 'false'}" title="${MODULE_NAMES[tabId] || tabId}" class="flex items-center gap-2.5 px-4 py-2.5 rounded-t-2xl text-xs cursor-pointer whitespace-nowrap transition-all ${tabsState.activeTab === tabId ? 'tab-active' : 'bg-slate-300/60 text-slate-600 hover:bg-slate-300 hover:text-slate-900 font-semibold'}">
                         <span>${MODULE_NAMES[tabId] || tabId}</span>
-                        ${tabsState.openTabs.length > 1 ? `<button onclick="fecharAba(event, '${tabId}')" class="hover:text-rose-600 ml-1 p-0.5 rounded-full hover:bg-slate-200 transition-all"><i class="fa-solid fa-xmark text-xs"></i></button>` : ''}
+                        ${tabsState.openTabs.length > 1 ? `<button type="button" aria-label="Fechar aba ${MODULE_NAMES[tabId] || tabId}" title="Fechar aba" onclick="fecharAba(event, '${tabId}')" class="hover:text-rose-600 ml-1 p-0.5 rounded-full hover:bg-slate-200 transition-all"><i class="fa-solid fa-xmark text-xs" aria-hidden="true"></i></button>` : ''}
                     </div>
                 `).join('');
+                // Mantém a aba selecionada visível na faixa horizontal, inclusive no celular.
+                requestAnimationFrame(() => {
+                    const faixa = barraAbas.matches('.gb-tabs-scroller') ? barraAbas : barraAbas.querySelector('.gb-tabs-scroller');
+                    const ativa = barraAbas.querySelector('[aria-current="page"]');
+                    if (faixa && ativa) {
+                        const limite = faixa.getBoundingClientRect();
+                        const item = ativa.getBoundingClientRect();
+                        if (item.left < limite.left || item.right > limite.right) {
+                            faixa.scrollTo({
+                                left: faixa.scrollLeft + (item.left - limite.left) - (limite.width - item.width) / 2,
+                                behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+                            });
+                        }
+                    }
+                });
 
                 sidebar.querySelectorAll('button[onclick^="abrirModulo("]').forEach(botao => {
                     const match = (botao.getAttribute('onclick') || '').match(/abrirModulo\('([^']+)'/);
@@ -17013,6 +17028,49 @@ persistido no banco ou no gateway.
                 #modal-container form button {
                     transition:none !important;
                 }
+            }
+        </style>
+
+        <style id="bravo-navegacao-abas-acessivel-2026">
+            /* Estado ativo e controles de abas mais claros e acessíveis. */
+            #app .gb-tabs-scroller > div[aria-current="page"] {
+                position:relative;
+                color:#0f766e;
+                background:rgba(255,255,255,.96);
+                border-color:rgba(13,148,136,.24);
+                font-weight:800;
+                scroll-margin-inline:12px;
+            }
+            #app .gb-tabs-scroller > div[aria-current="page"] > span {
+                text-shadow:0 0 .01px currentColor;
+            }
+            #app .gb-tabs-scroller > div[aria-current="false"] {
+                opacity:.86;
+            }
+            #app .gb-tabs-scroller > div:focus-visible {
+                outline:2px solid #0d9488;
+                outline-offset:2px;
+            }
+            #app .gb-tabs-scroller > div button[aria-label^="Fechar aba"] {
+                display:inline-flex;
+                align-items:center;
+                justify-content:center;
+                min-width:28px;
+                min-height:28px;
+                flex:0 0 28px;
+            }
+            #app .gb-tabs-scroller > div button[aria-label^="Fechar aba"]:focus-visible {
+                outline:2px solid #e11d48;
+                outline-offset:2px;
+            }
+            @media(max-width:768px) {
+                #app .gb-tabs-scroller > div[aria-current="page"] {
+                    background:#fff;
+                    box-shadow:inset 0 -2px 0 #0d9488,0 3px 10px rgba(15,23,42,.06);
+                }
+            }
+            @media(prefers-reduced-motion:reduce) {
+                #app .gb-tabs-scroller { scroll-behavior:auto !important; }
             }
         </style>
 
