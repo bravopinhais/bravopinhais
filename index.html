@@ -4937,6 +4937,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                         <div class="rounded-2xl bg-slate-50 border border-slate-100 p-3"><p class="text-[10px] uppercase tracking-wider font-bold text-slate-500">Sincronização</p><p id="saude-sync" class="text-sm font-extrabold text-slate-700 mt-1">Verificando...</p></div>
                         <div class="rounded-2xl bg-slate-50 border border-slate-100 p-3"><p class="text-[10px] uppercase tracking-wider font-bold text-slate-500">Última confirmação</p><p id="saude-ultima-sync" class="text-sm font-extrabold text-slate-700 mt-1">Consultando...</p></div>
                     </div>
+                    <p id="saude-backups" class="text-xs text-slate-500" aria-live="polite">Consultando cópias automáticas...</p>
                     <p id="saude-armazenamento" class="text-xs text-slate-500" aria-live="polite">Verificando armazenamento local...</p>
                     <p id="saude-resumo" class="text-xs text-slate-500" aria-live="polite">O diagnóstico não altera nem envia cadastros.</p>
                     <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-2">
@@ -4959,6 +4960,24 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                 definir('saude-internet', internet ? 'Conectada' : 'Sem conexão', internet ? 'text-emerald-700' : 'text-rose-700');
                 const pendencia = obterSyncPendente();
                 definir('saude-sync', pendencia ? 'Aguardando envio' : 'Sem pendências locais', pendencia ? 'text-amber-700' : 'text-emerald-700');
+                const backupsEl = document.getElementById('saude-backups');
+                if (backupsEl) {
+                    try {
+                        const backups = await obterBackupsAutomaticosOffline(usuarioAuthUidAtivo);
+                        if (!backups.length) {
+                            backupsEl.textContent = 'Backups automáticos: nenhuma cópia confirmada neste dispositivo ainda.';
+                            backupsEl.className = 'text-xs text-amber-700';
+                        } else {
+                            const maisRecente = new Date(backups[0].criadoEm).toLocaleString('pt-BR');
+                            const integridade = backups[0].hash ? 'integridade SHA-256 disponível' : 'cópia antiga sem assinatura';
+                            backupsEl.textContent = 'Backups automáticos: ' + backups.length + ' de até 3 cópias locais · mais recente em ' + maisRecente + ' · ' + integridade + '.';
+                            backupsEl.className = 'text-xs text-emerald-700';
+                        }
+                    } catch (erro) {
+                        backupsEl.textContent = 'Não foi possível consultar as cópias automáticas neste momento.';
+                        backupsEl.className = 'text-xs text-amber-700';
+                    }
+                }
                 const ultima = localStorage.getItem(CHAVE_ULTIMA_SYNC_NUVEM);
                 let ultimaFormatada = 'Ainda não registrada';
                 if (ultima && Number.isFinite(Date.parse(ultima))) ultimaFormatada = new Date(ultima).toLocaleString('pt-BR');
