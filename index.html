@@ -3895,6 +3895,74 @@
                 .estoque-analytics-disclosure > summary > span { max-width: 46%; white-space: normal; }
             }
         </style>
+            <style id="bravo-navegacao-icones-2026">
+            /* Ícones em áreas próprias para facilitar a leitura e o toque. */
+            #sidebar-menu nav button {
+                gap: 11px !important;
+                min-width: 0;
+                line-height: 1.35;
+                -webkit-tap-highlight-color: transparent;
+                transition: background-color .16s ease, border-color .16s ease, color .16s ease, transform .16s ease;
+            }
+            #sidebar-menu nav button i {
+                display: inline-flex !important;
+                align-items: center;
+                justify-content: center;
+                width: 32px !important;
+                height: 32px;
+                flex: 0 0 32px !important;
+                border: 1px solid rgba(148,163,184,.13);
+                border-radius: 10px;
+                background: rgba(148,163,184,.08);
+                color: #a5b4c8;
+                font-size: 13px !important;
+            }
+            #sidebar-menu nav button:hover i {
+                background: rgba(45,212,191,.12);
+                border-color: rgba(45,212,191,.22);
+            }
+            #sidebar-menu nav button[class*="from-teal-"] i {
+                background: rgba(255,255,255,.15) !important;
+                border-color: rgba(255,255,255,.18) !important;
+                color: #fff !important;
+            }
+            #sidebar-menu nav button:active,
+            #sidebar-menu nav a:active { transform: scale(.985); }
+            #sidebar-menu nav button:focus-visible,
+            #sidebar-menu nav a:focus-visible {
+                outline: 2px solid #5eead4;
+                outline-offset: 2px;
+            }
+            #sidebar-menu nav > div > p {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            #sidebar-menu nav > div > p::before {
+                content: "";
+                display: inline-block;
+                width: 5px;
+                height: 5px;
+                flex: 0 0 5px;
+                border-radius: 50%;
+                background: #2dd4bf;
+                box-shadow: 0 0 0 3px rgba(45,212,191,.10);
+            }
+            #sidebar-menu nav > div + div { margin-top: 4px; }
+            @media (max-width: 768px) {
+                #sidebar-menu nav button i {
+                    width: 34px !important;
+                    height: 34px;
+                    flex-basis: 34px !important;
+                }
+                #sidebar-menu nav button { min-height: 49px !important; }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                #sidebar-menu nav button,
+                #sidebar-menu nav button i,
+                #sidebar-menu nav a { transition: none !important; }
+            }
+        </style>
     </head>
     <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
         <!-- Indicador de Status da Nuvem -->
