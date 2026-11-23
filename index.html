@@ -16592,5 +16592,90 @@ persistido no banco ou no gateway.
             }
         </style>
 
+        <!-- Refinamento visual de formulários, filtros e listagens -->
+        <style id="bravo-listagens-tabelas-ux-2026">
+            #app main form,
+            #modal-container form { display:block; }
+            #app main form > * + *,
+            #modal-container form > * + * { margin-top:.15rem; }
+            #app main input[type="search"],
+            #app main input[type="date"],
+            #app main input[type="number"],
+            #modal-container input[type="search"],
+            #modal-container input[type="date"],
+            #modal-container input[type="number"] {
+                font-variant-numeric:tabular-nums;
+            }
+            #app main input[type="checkbox"],
+            #app main input[type="radio"],
+            #modal-container input[type="checkbox"],
+            #modal-container input[type="radio"] {
+                accent-color:#0d9488;
+            }
+            #app main table tbody tr:nth-child(even) td {
+                background:#fbfcfd;
+            }
+            #app main table tbody tr:hover td {
+                background:#f0fdfa !important;
+            }
+            #app main table tbody td:first-child {
+                color:#1e293b;
+            }
+            #app main table tbody td button,
+            #app main table tbody td [role="button"] {
+                min-width:34px;
+                min-height:34px;
+                border-radius:9px;
+            }
+            #app main table caption {
+                padding:10px 13px;
+                color:#64748b;
+                font-size:11px;
+                text-align:left;
+            }
+            #app main .overflow-x-auto,
+            #app main .overflow-auto {
+                border-radius:15px;
+                scrollbar-width:thin;
+                scrollbar-color:#cbd5e1 transparent;
+            }
+            #app main .overflow-x-auto:focus-visible,
+            #app main .overflow-auto:focus-visible {
+                outline:2px solid rgba(13,148,136,.45);
+                outline-offset:2px;
+            }
+            #modal-container > div > div {
+                box-shadow:0 24px 70px rgba(2,6,23,.22);
+            }
+            #modal-container h3 {
+                line-height:1.3;
+                letter-spacing:-.02em;
+            }
+            #modal-container button {
+                touch-action:manipulation;
+            }
+            @media(max-width:640px) {
+                #app main table tbody td { white-space:normal; }
+                #app main table tbody td button,
+                #app main table tbody td [role="button"] {
+                    min-width:38px;
+                    min-height:38px;
+                }
+                #app main .overflow-x-auto,
+                #app main .overflow-auto {
+                    border-radius:12px;
+                }
+                #modal-container > div > div {
+                    max-height:calc(100dvh - 20px);
+                    overflow-y:auto;
+                    overscroll-behavior:contain;
+                }
+            }
+            @media(prefers-reduced-motion:reduce) {
+                #app main table tbody tr,
+                #app main table tbody td { transition:none !important; }
+            }
+        </style>
+
     </body>
 </html>
