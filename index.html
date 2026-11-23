@@ -3963,6 +3963,72 @@
                 #sidebar-menu nav a { transition: none !important; }
             }
         </style>
+            <style id="bravo-listagens-filtros-2026">
+            /* Listagens mais fáceis de percorrer, sem alterar dados ou ações. */
+            #app main .overflow-x-auto {
+                max-width: 100%;
+                overscroll-behavior-inline: contain;
+                scrollbar-width: thin;
+                scrollbar-color: #cbd5e1 transparent;
+            }
+            #app main .overflow-x-auto::-webkit-scrollbar { height: 6px; }
+            #app main .overflow-x-auto::-webkit-scrollbar-thumb {
+                background: #cbd5e1;
+                border-radius: 999px;
+            }
+            #app main table {
+                border-collapse: separate;
+                border-spacing: 0;
+            }
+            #app main table thead th {
+                line-height: 1.4;
+                vertical-align: middle;
+            }
+            #app main table tbody tr {
+                transition: background-color .14s ease;
+            }
+            #app main table tbody tr:nth-child(even) td {
+                background-color: #fbfcfe;
+            }
+            #app main table tbody tr:hover td {
+                background-color: #f0fdfa;
+            }
+            #app main table tbody td {
+                line-height: 1.45;
+                overflow-wrap: anywhere;
+            }
+            #app main input[type="search"],
+            #app main input[placeholder*="Buscar"],
+            #app main input[placeholder*="buscar"],
+            #app main input[placeholder*="Pesquisar"],
+            #app main input[placeholder*="pesquisar"] {
+                padding-left: 14px;
+                background-color: #fff;
+            }
+            #app main select {
+                text-overflow: ellipsis;
+            }
+            #app main .overflow-x-auto table {
+                margin-bottom: 1px;
+            }
+            @media (max-width: 640px) {
+                #app main table thead th {
+                    padding: 11px 12px;
+                    font-size: 9px;
+                }
+                #app main table tbody td {
+                    padding: 10px 12px;
+                    font-size: 11px;
+                }
+                #app main .overflow-x-auto {
+                    border-radius: 13px;
+                    -webkit-overflow-scrolling: touch;
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                #app main table tbody tr { transition: none !important; }
+            }
+        </style>
     </head>
     <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
         <!-- Indicador de Status da Nuvem -->
