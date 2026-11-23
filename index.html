@@ -16924,5 +16924,97 @@ persistido no banco ou no gateway.
             }
         </style>
 
+        <style id="bravo-modal-formularios-conforto-2026">
+            /* Organização visual dos formulários dentro dos modais. */
+            #modal-container form {
+                min-width:0;
+            }
+            #modal-container form label {
+                display:block;
+                min-width:0;
+                color:#334155;
+                font-size:12px;
+                font-weight:700;
+                line-height:1.45;
+            }
+            #modal-container form label > input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+            #modal-container form label > select,
+            #modal-container form label > textarea {
+                display:block;
+                width:100%;
+                margin-top:6px;
+                background-color:#fff;
+            }
+            #modal-container form input::placeholder,
+            #modal-container form textarea::placeholder {
+                color:#94a3b8;
+                opacity:1;
+                font-weight:400;
+            }
+            #modal-container form input:disabled,
+            #modal-container form select:disabled,
+            #modal-container form textarea:disabled {
+                background:#f1f5f9;
+                color:#64748b;
+                cursor:not-allowed;
+            }
+            #modal-container form input[type="checkbox"],
+            #modal-container form input[type="radio"] {
+                accent-color:#0d9488;
+            }
+            #modal-container form button[type="submit"],
+            #modal-container form button[type="button"] {
+                -webkit-tap-highlight-color:transparent;
+                touch-action:manipulation;
+            }
+            #modal-container form button:active:not(:disabled) {
+                transform:scale(.985);
+            }
+            #modal-container form button:disabled {
+                cursor:not-allowed;
+                opacity:.58;
+                filter:saturate(.65);
+            }
+            #modal-container form [class*="text-rose-"],
+            #modal-container form [role="alert"] {
+                overflow-wrap:anywhere;
+            }
+            #modal-container form fieldset {
+                min-width:0;
+                border-color:#e2e8f0;
+                border-radius:14px;
+            }
+            #modal-container form legend {
+                padding:0 7px;
+                color:#0f766e;
+                font-size:11px;
+                font-weight:800;
+                letter-spacing:.025em;
+            }
+            @media(max-width:640px) {
+                #modal-container form {
+                    min-width:0;
+                }
+                #modal-container form label {
+                    font-size:12px;
+                }
+                #modal-container form button[type="submit"],
+                #modal-container form button[type="button"] {
+                    min-height:44px;
+                }
+                #modal-container form textarea {
+                    min-height:96px;
+                }
+                #modal-container form fieldset {
+                    padding:12px;
+                }
+            }
+            @media(prefers-reduced-motion:reduce) {
+                #modal-container form button {
+                    transition:none !important;
+                }
+            }
+        </style>
+
     </body>
 </html>
