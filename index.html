@@ -3812,8 +3812,14 @@
             }
             );
             document.addEventListener('visibilitychange', () => {
-                if (document.visibilityState === 'visible')
+                if (document.visibilityState === 'visible') {
                     reiniciarTemporizadorInatividade();
+                } else if (document.visibilityState === 'hidden') {
+                    // Em celulares, o navegador pode suspender a página ao alternar de aplicativo.
+                    // Antecipe a gravação de qualquer rascunho que ainda esteja no debounce.
+                    if (typeof salvarRascunhoPendenteAntesDeFechar === 'function')
+                        salvarRascunhoPendenteAntesDeFechar();
+                }
             }
             );
 
