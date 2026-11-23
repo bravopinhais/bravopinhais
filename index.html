@@ -6197,9 +6197,34 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 });
             }
 
+            function liberarGraficosForaDaTela() {
+                // Invalida montagens pendentes e libera instâncias ligadas ao conteúdo anterior.
+                _geracaoGraficosModulo++;
+                [
+                    'chartInstanceReceitaDespesa',
+                    'chartInstanceEstoqueDash',
+                    'chartInstanceEstoque'
+                ].forEach(nome => {
+                    const grafico = nome === 'chartInstanceReceitaDespesa' ? chartInstanceReceitaDespesa
+                        : nome === 'chartInstanceEstoqueDash' ? chartInstanceEstoqueDash
+                        : chartInstanceEstoque;
+                    if (grafico && typeof grafico.destroy === 'function') {
+                        try { grafico.destroy(); } catch (e) { console.warn('Não foi possível liberar um gráfico.', e); }
+                    }
+                });
+                chartInstanceReceitaDespesa = null;
+                chartInstanceEstoqueDash = null;
+                chartInstanceEstoque = null;
+                if (tabsState.activeTab !== 'estoque' && observadorFotosEstoque) {
+                    observadorFotosEstoque.disconnect();
+                    observadorFotosEstoque = null;
+                }
+            }
+
             function renderMainOnly() {
                 const mainEl = document.querySelector('main');
                 if (mainEl) {
+                    liberarGraficosForaDaTela();
                     mainEl.innerHTML = renderModuleContent(tabsState.activeTab);
                     if (tabsState.activeTab === 'configuracoes') atualizarPainelSaudeSistema();
                     if (tabsState.activeTab === 'estoque') inicializarFotosEstoque();
