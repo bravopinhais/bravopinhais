@@ -9099,7 +9099,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     listFiltrada = listFiltrada.filter(st => setorEstoque(st) === filtroSetorEstoque);
                 }
                 if (pesquisaRapidaEstoque.trim()) {
-                    const termoBusca = pesquisaRapidaEstoque.trim().toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');
+                    const termoBusca = pesquisaRapidaEstoque.trim().toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
                     listFiltrada = listFiltrada.filter(st => {
                         const camposBusca = [
                             st.item, st.descricao, st.etiqueta, st.codigo, st.id,
@@ -9109,7 +9109,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                             st.dataCadastro, st.data_cadastro, st.dataRegistro, st.createdAt
                         ];
                         const textoBusca = camposBusca.filter(v => v !== null && v !== undefined)
-                            .join(' ').toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');
+                            .join(' ').toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
                         return textoBusca.includes(termoBusca);
                     });
                 }
