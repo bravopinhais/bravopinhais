@@ -6215,6 +6215,16 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 chartInstanceReceitaDespesa = null;
                 chartInstanceEstoqueDash = null;
                 chartInstanceEstoque = null;
+                // URLs Blob das fotos só são necessárias enquanto o módulo Estoque está aberto.
+                // Ao sair dele, libera os recursos para evitar crescimento contínuo de memória no celular.
+                if (tabsState.activeTab !== 'estoque' && cacheFotos.size) {
+                    cacheFotos.forEach(url => {
+                        if (typeof url === 'string' && url.startsWith('blob:')) {
+                            try { URL.revokeObjectURL(url); } catch (e) {}
+                        }
+                    });
+                    cacheFotos.clear();
+                }
                 if (tabsState.activeTab !== 'estoque' && observadorFotosEstoque) {
                     observadorFotosEstoque.disconnect();
                     observadorFotosEstoque = null;
