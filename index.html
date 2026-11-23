@@ -3832,11 +3832,13 @@
                         reject(new Error('IndexedDB indisponível neste navegador.'));
                         return;
                     }
-                    const req = indexedDB.open(DB_OFFLINE_NOME, 1);
+                    const req = indexedDB.open(DB_OFFLINE_NOME, 2);
                     req.onupgradeneeded = () => {
                         const banco = req.result;
                         if (!banco.objectStoreNames.contains(DB_OFFLINE_STORE))
                             banco.createObjectStore(DB_OFFLINE_STORE, { keyPath: 'userId' });
+                        if (!banco.objectStoreNames.contains('backups'))
+                            banco.createObjectStore('backups', { keyPath: 'id' });
                     };
                     req.onsuccess = () => {
                         bancoOfflineCompartilhado = req.result;
@@ -3894,6 +3896,75 @@
                 } catch (erro) {
                     console.warn('Cópia offline indisponível:', erro);
                     return null;
+                }
+            }
+
+            // Cópias automáticas das últimas versões confirmadas na nuvem, separadas do cache de trabalho.
+            // Retenção limitada a três versões por usuário para controlar o uso de espaço.
+            const DB_OFFLINE_BACKUPS_STORE = 'backups';
+            async function salvarBackupAutomaticoOffline(payload, userId) {
+                if (!userId || !payload) return false;
+                try {
+                    const banco = await abrirBancoOffline();
+                    await new Promise((resolve, reject) => {
+                        const tx = banco.transaction(DB_OFFLINE_BACKUPS_STORE, 'readwrite');
+                        const store = tx.objectStore(DB_OFFLINE_BACKUPS_STORE);
+                        const req = store.getAll();
+                        req.onsuccess = () => {
+                            const atuais = (req.result || []).filter(item => item.userId === String(userId))
+                                .sort((a, b) => Date.parse(b.criadoEm || 0) - Date.parse(a.criadoEm || 0));
+                            const agora = new Date().toISOString();
+                            store.put({ id: String(userId) + ':' + Date.now(), userId: String(userId),
+                                payload: JSON.parse(JSON.stringify(payload)), criadoEm: agora });
+                            atuais.slice(2).forEach(item => store.delete(item.id));
+                        };
+                        req.onerror = () => reject(req.error || new Error('Não foi possível consultar as cópias automáticas.'));
+                        tx.oncomplete = resolve;
+                        tx.onerror = () => reject(tx.error || new Error('Falha ao gravar cópia automática.'));
+                        tx.onabort = () => reject(tx.error || new Error('Gravação da cópia automática cancelada.'));
+                    });
+                    return true;
+                } catch (erro) {
+                    console.warn('Cópia automática local não foi concluída:', erro);
+                    return false;
+                }
+            }
+            async function obterBackupsAutomaticosOffline(userId) {
+                if (!userId) return [];
+                try {
+                    const banco = await abrirBancoOffline();
+                    return await new Promise((resolve, reject) => {
+                        const tx = banco.transaction(DB_OFFLINE_BACKUPS_STORE, 'readonly');
+                        const req = tx.objectStore(DB_OFFLINE_BACKUPS_STORE).getAll();
+                        req.onsuccess = () => resolve((req.result || []).filter(item => item.userId === String(userId))
+                            .sort((a, b) => Date.parse(b.criadoEm || 0) - Date.parse(a.criadoEm || 0)));
+                        req.onerror = () => reject(req.error || new Error('Falha ao consultar cópias automáticas.'));
+                    });
+                } catch (erro) {
+                    console.warn('Não foi possível consultar cópias automáticas:', erro);
+                    return [];
+                }
+            }
+            async function restaurarUltimaCopiaAutomatica() {
+                if (!usuarioPodeConfigurarModulos()) {
+                    alert('Somente um administrador pode restaurar uma cópia automática.');
+                    return;
+                }
+                const uid = usuarioAuthUidAtivo;
+                const backups = await obterBackupsAutomaticosOffline(uid);
+                if (!backups.length) {
+                    alert('Ainda não existe uma cópia automática confirmada neste dispositivo. As cópias são criadas após uma sincronização bem-sucedida.');
+                    return;
+                }
+                const ultima = backups[0];
+                const data = new Date(ultima.criadoEm).toLocaleString('pt-BR');
+                if (!confirm('Encontramos uma cópia automática de ' + data + '.\n\nRestaurar essa cópia substituirá os dados atualmente carregados e solicitará uma nova sincronização. Faça um backup JSON antes de continuar. Deseja prosseguir?')) return;
+                try {
+                    const restaurado = prepararBackupRestaurado(ultima.payload);
+                    aplicarBackupRestaurado(restaurado, 'cópia automática local de ' + data);
+                } catch (erro) {
+                    console.error('Falha ao validar cópia automática:', erro);
+                    alert('A cópia automática não passou na validação e não foi aplicada. Seus dados atuais foram mantidos.');
                 }
             }
             function statusSalvoLocalmente(mensagem) {
@@ -4717,12 +4788,13 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     <div class="flex flex-wrap gap-2">
                         <button type="button" onclick="baixarGuiaSeguranca()" class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold"><i class="fa-solid fa-file-shield mr-1.5"></i> Baixar guia de segurança</button>
                         <button type="button" onclick="fazerBackupGeralJSON()" class="px-4 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold"><i class="fa-solid fa-download mr-1.5"></i> Criar backup JSON</button>
+                        <button type="button" onclick="restaurarUltimaCopiaAutomatica()" class="px-4 py-2.5 rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-200 text-amber-900 text-xs font-bold"><i class="fa-solid fa-clock-rotate-left mr-1.5"></i> Restaurar última cópia automática</button>
                         <button type="button" onclick="migrarAnexosParaStorage()" class="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold"><i class="fa-solid fa-cloud-arrow-up mr-1.5"></i> Migrar anexos para o Storage</button>
                         <button type="button" onclick="otimizarAnexosExistentes()" class="px-4 py-2.5 rounded-xl bg-sky-700 hover:bg-sky-800 text-white text-xs font-bold"><i class="fa-solid fa-compress mr-1.5"></i> Otimizar imagens já salvas</button>
                         <button type="button" onclick="abrirModalBackupCriptografado()" class="px-4 py-2.5 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold"><i class="fa-solid fa-lock mr-1.5"></i> Criar backup criptografado</button>
                         <label class="px-4 py-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-800 text-xs font-bold cursor-pointer"><i class="fa-solid fa-unlock-keyhole mr-1.5"></i> Restaurar backup criptografado<input type="file" accept=".json,.gbenc" onchange="iniciarRestauroBackupCriptografado(event)" class="hidden"></label>
                     </div>
-                    <p class="text-[11px] leading-5 text-slate-500">O backup JSON comum contém dados do condomínio e pode incluir hashes de senha; guarde-o em local privado. O backup criptografado protege o arquivo exportado com AES-256-GCM e senha definida por você. Se a senha for perdida, não será possível recuperar o arquivo. Isso protege o arquivo de backup, não criptografa por si só os dados armazenados na tabela do Supabase. O HTML não altera políticas do Supabase automaticamente. Nunca publique uma chave secreta de servidor no navegador. Antes de atualizar o arquivo publicado, faça backup e mantenha a versão anterior.</p>
+                    <p class="text-[11px] leading-5 text-slate-500">O sistema mantém até 3 cópias automáticas locais após sincronizações confirmadas. Elas ficam neste navegador e não substituem o backup JSON externo; se os dados do navegador forem apagados, essas cópias também podem ser perdidas. O backup JSON comum contém dados do condomínio e pode incluir hashes de senha; guarde-o em local privado. O backup criptografado protege o arquivo exportado com AES-256-GCM e senha definida por você. Se a senha for perdida, não será possível recuperar o arquivo. Isso protege o arquivo de backup, não criptografa por si só os dados armazenados na tabela do Supabase. O HTML não altera políticas do Supabase automaticamente. Nunca publique uma chave secreta de servidor no navegador. Antes de atualizar o arquivo publicado, faça backup e mantenha a versão anterior.</p>
                 </div>`;
             }
 
@@ -11846,6 +11918,8 @@ Deno.serve(async (req: Request) => {
                         limparSyncPendente();
                         atualizarVersaoConhecidaNuvem(atualizadoEm);
                         await salvarCacheOffline(db, uid, false, atualizadoEm);
+                        const backupAutomaticoOk = await salvarBackupAutomaticoOffline(db, uid);
+                        if (!backupAutomaticoOk) console.warn('Sincronização concluída, mas a cópia automática local não foi atualizada.');
                         if (elStatus) {
                             elStatus.className = 'bg-slate-900 text-emerald-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-emerald-800 shadow-sm';
                             elStatus.innerHTML = resultadoAnexos.falhas > 0
