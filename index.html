@@ -8406,6 +8406,20 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
             }
 
             const cacheFotos = new Map();
+            const LIMITE_CACHE_FOTOS_ESTOQUE = 40;
+
+            function limitarCacheFotosEstoque() {
+                if (cacheFotos.size <= LIMITE_CACHE_FOTOS_ESTOQUE) return;
+                // Nunca revoga uma URL ainda usada por uma imagem visível no DOM.
+                for (const [chave, url] of cacheFotos) {
+                    if (cacheFotos.size <= LIMITE_CACHE_FOTOS_ESTOQUE) break;
+                    const emUso = Array.from(document.querySelectorAll('main img')).some(img => img.src === url);
+                    if (emUso) continue;
+                    try { URL.revokeObjectURL(url); } catch (e) {}
+                    cacheFotos.delete(chave);
+                }
+            }
+
             let observadorFotosEstoque = null;
 
             function liberarCacheFotosEstoque() {
@@ -8470,6 +8484,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                         type: mime
                     }));
                     cacheFotos.set(chave, url);
+                    limitarCacheFotosEstoque();
                     return url;
                 } catch (e) {
                     return '';
