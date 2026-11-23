@@ -3785,6 +3785,85 @@
                 }
             }
         </style>
+        <style id="bravo-dashboard-indicadores-ux-2026">
+            /* Indicadores: leitura rápida, contraste consistente e interação acessível. */
+            .dashboard-kpi-grid > article {
+                display: flex;
+                flex-direction: column;
+                justify-content: space-between;
+                gap: 1rem;
+                min-width: 0;
+            }
+
+            .dashboard-kpi-grid > article > div:first-child {
+                min-width: 0;
+            }
+
+            .dashboard-kpi-grid > article > div:first-child p:first-child {
+                line-height: 1.45;
+                min-height: 2.7em;
+                overflow-wrap: anywhere;
+            }
+
+            .dashboard-kpi-grid > article > div:first-child p.text-2xl,
+            .dashboard-kpi-grid > article > div:first-child p.text-3xl {
+                font-variant-numeric: tabular-nums;
+                letter-spacing: -.045em;
+                line-height: 1.2;
+                overflow-wrap: anywhere;
+            }
+
+            .dashboard-kpi-grid > article > div:last-child {
+                min-width: 0;
+                flex-wrap: wrap;
+                row-gap: .55rem;
+            }
+
+            .dashboard-kpi-grid > article > div:last-child > span {
+                min-width: 0;
+                overflow-wrap: anywhere;
+            }
+
+            .dashboard-kpi-grid > article button,
+            .dashboard-operations-grid button {
+                min-height: 36px;
+                touch-action: manipulation;
+            }
+
+            .dashboard-shell button:focus-visible {
+                outline: 3px solid rgba(13,148,136,.45);
+                outline-offset: 3px;
+            }
+
+            .dashboard-operations-grid button {
+                transition: border-color .18s ease, box-shadow .18s ease, background-color .18s ease;
+            }
+
+            @media (max-width: 640px) {
+                .dashboard-kpi-grid > article > div:first-child p:first-child {
+                    min-height: 0;
+                }
+
+                .dashboard-kpi-grid > article > div:last-child {
+                    align-items: flex-start;
+                }
+
+                .dashboard-kpi-grid > article button {
+                    padding-top: .45rem;
+                    padding-bottom: .45rem;
+                }
+
+                .dashboard-operations-grid button {
+                    min-height: 48px;
+                }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                .dashboard-operations-grid button {
+                    transition: none !important;
+                }
+            }
+        </style>
     </head>
     <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
         <!-- Indicador de Status da Nuvem -->
