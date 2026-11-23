@@ -17270,5 +17270,32 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
 }
 @media(prefers-reduced-motion:reduce){#app main .card-modern{transition:none!important;}}
 </style>
+<style id="bravo-tabelas-listagens-acabamento-2026">
+/* Acabamento das tabelas e listagens: leitura rápida e ações acessíveis. */
+#app main .overflow-x-auto:has(>table),
+#app main .overflow-x-auto:has(table){border:1px solid #e5edf1;border-radius:15px;background:#fff;box-shadow:0 2px 8px rgba(15,23,42,.025);}
+#app main table thead th{background:#f5f8fa;color:#536777;font-size:10px;font-weight:850;letter-spacing:.065em;text-transform:uppercase;border-bottom:1px solid #e2eaf0;white-space:nowrap;}
+#app main table thead th:first-child{border-top-left-radius:10px;}
+#app main table thead th:last-child{border-top-right-radius:10px;}
+#app main table tbody td{color:#425466;border-bottom:1px solid #edf1f5;line-height:1.5;}
+#app main table tbody tr:last-child td{border-bottom:0;}
+#app main table tbody td:first-child{color:#243746;font-weight:650;}
+#app main table tbody tr:hover td{background:#f0faf8!important;}
+#app main table tbody td button,#app main table tbody td [role="button"]{display:inline-flex;align-items:center;justify-content:center;vertical-align:middle;transition:background-color .16s ease,border-color .16s ease,transform .16s ease;}
+#app main table tbody td button:active,#app main table tbody td [role="button"]:active{transform:scale(.96);}
+#app main table tfoot td{background:#f7fafb;border-top:1px solid #e5edf1;font-weight:750;color:#334155;}
+#app main table caption{caption-side:bottom;padding:11px 14px;color:#718096;font-size:11px;}
+#app main .overflow-x-auto table{min-width:100%;}
+@media(max-width:640px){
+ #app main .overflow-x-auto:has(table){border-radius:12px;}
+ #app main table thead th{font-size:9px;letter-spacing:.045em;padding:10px 11px;}
+ #app main table tbody td{font-size:11px;padding:10px 11px;}
+ #app main table tbody td:first-child{font-weight:700;}
+ #app main table tbody td button,#app main table tbody td [role="button"]{min-width:38px;min-height:38px;}
+}
+@media(prefers-reduced-motion:reduce){
+ #app main table tbody td button,#app main table tbody td [role="button"]{transition:none!important;}
+}
+</style>
 </body>
 </html>
