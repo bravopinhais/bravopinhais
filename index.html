@@ -3784,6 +3784,36 @@
             const CHAVE_SYNC_PENDENTE = 'guardioes_bravo_sync_pendente';
             const CHAVE_ULTIMA_SYNC_NUVEM = 'guardioes_bravo_ultima_sync_nuvem';
 
+            // Registro local e limitado de falhas operacionais: não armazena dados dos cadastros nem mensagens técnicas sensíveis.
+            const CHAVE_FALHAS_SISTEMA = 'guardioes_bravo_falhas_sistema';
+            function registrarFalhaSistema(tipo) {
+                try {
+                    const permitidos = ['Falha ao sincronizar com a nuvem', 'Falha ao preparar dados para salvar', 'Falha ao recuperar gravação da fila'];
+                    const descricao = permitidos.includes(tipo) ? tipo : 'Falha operacional';
+                    const registros = JSON.parse(localStorage.getItem(CHAVE_FALHAS_SISTEMA) || '[]');
+                    registros.unshift({ tipo: descricao, data: new Date().toISOString(), online: !!navigator.onLine });
+                    localStorage.setItem(CHAVE_FALHAS_SISTEMA, JSON.stringify(registros.slice(0, 10)));
+                    const lista = document.getElementById('saude-falhas-lista');
+                    if (lista) atualizarListaFalhasSistema();
+                } catch (e) {
+                    console.warn('Não foi possível registrar a ocorrência localmente.', e);
+                }
+            }
+            function atualizarListaFalhasSistema() {
+                const lista = document.getElementById('saude-falhas-lista');
+                const resumo = document.getElementById('saude-falhas-resumo');
+                if (!lista) return;
+                let registros = [];
+                try { registros = JSON.parse(localStorage.getItem(CHAVE_FALHAS_SISTEMA) || '[]'); } catch (e) {}
+                if (!Array.isArray(registros)) registros = [];
+                if (resumo) resumo.textContent = registros.length ? registros.length + ' ocorrência(s) recente(s) registradas neste dispositivo.' : 'Nenhuma falha de salvamento registrada neste dispositivo.';
+                lista.innerHTML = registros.length ? registros.slice(0, 5).map(item => {
+                    const data = item && item.data && Number.isFinite(Date.parse(item.data)) ? new Date(item.data).toLocaleString('pt-BR') : 'Data não disponível';
+                    const tipo = ['Falha ao sincronizar com a nuvem', 'Falha ao preparar dados para salvar', 'Falha ao recuperar gravação da fila'].includes(item && item.tipo) ? item.tipo : 'Falha operacional';
+                    return '<li class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 py-2 border-b border-slate-100 last:border-0"><span class="text-xs font-semibold text-slate-700">' + tipo + '</span><span class="text-[11px] text-slate-500">' + data + (item.online ? ' · internet conectada' : ' · sem internet') + '</span></li>';
+                }).join('') : '<li class="text-xs text-emerald-700 py-2">Tudo certo por aqui. Nenhuma falha recente registrada.</li>';
+            }
+
             // Cofre local offline em IndexedDB: suporta bases maiores que o limite do localStorage.
             const DB_OFFLINE_NOME = 'guardioes_bravo_offline';
             const DB_OFFLINE_STORE = 'snapshots';
@@ -4145,6 +4175,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     if (typeof snapshotOpcoes !== 'string') throw new Error('Opções de gravação não serializáveis.');
                 } catch (erro) {
                     console.error('Não foi possível preparar os dados para sincronização.', erro);
+                    registrarFalhaSistema('Falha ao preparar dados para salvar');
                     return Promise.resolve(false);
                 }
                 const chave = snapshot + '::' + snapshotOpcoes;
@@ -4159,6 +4190,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                         opcoesIsoladas = JSON.parse(snapshotOpcoes);
                     } catch (erro) {
                         console.error('Não foi possível recuperar a cópia dos dados para salvar.', erro);
+                        registrarFalhaSistema('Falha ao recuperar gravação da fila');
                         return false;
                     }
                     return salvarDadosNaNuvemExecutar(dadosIsolados, opcoesIsoladas);
@@ -4250,6 +4282,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     return true;
                 } catch (err) {
                     console.warn('Não foi possível sincronizar dados na nuvem.', err);
+                    registrarFalhaSistema('Falha ao sincronizar com a nuvem');
                     if (elStatus) {
                         elStatus.className = 'bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800';
                         elStatus.innerHTML = cacheLocalSalvo ? '<i class="fa-solid fa-triangle-exclamation"></i> Alterações mantidas neste dispositivo; sincronização pendente.' : '<i class="fa-solid fa-triangle-exclamation"></i> Falha na nuvem e no armazenamento local. Baixe um backup e não feche a página.';
@@ -4780,6 +4813,11 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     </div>
                     <p id="saude-armazenamento" class="text-xs text-slate-500" aria-live="polite">Verificando armazenamento local...</p>
                     <p id="saude-resumo" class="text-xs text-slate-500" aria-live="polite">O diagnóstico não altera nem envia cadastros.</p>
+                    <div class="rounded-2xl border border-slate-200 bg-slate-50 p-4 space-y-2">
+                        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1"><h4 class="text-sm font-black text-slate-800"><i class="fa-solid fa-triangle-exclamation text-amber-600 mr-1.5"></i> Ocorrências recentes</h4><span id="saude-falhas-resumo" class="text-[11px] text-slate-500">Consultando registros...</span></div>
+                        <ul id="saude-falhas-lista" aria-live="polite"><li class="text-xs text-slate-500 py-2">Consultando registros...</li></ul>
+                        <p class="text-[10px] text-slate-500">O histórico fica somente neste dispositivo e não guarda informações dos cadastros.</p>
+                    </div>
                 </section>`;
             }
 
@@ -4790,6 +4828,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     const el = document.getElementById(id);
                     if (el) { el.textContent = valor; el.className = 'text-sm font-extrabold mt-1 ' + classe; }
                 };
+                atualizarListaFalhasSistema();
                 const internet = navigator.onLine;
                 definir('saude-internet', internet ? 'Conectada' : 'Sem conexão', internet ? 'text-emerald-700' : 'text-rose-700');
                 const pendencia = obterSyncPendente();
