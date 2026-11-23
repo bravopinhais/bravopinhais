@@ -5665,10 +5665,14 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     status.className = 'text-[10px] font-bold ' + (!navigator.onLine ? 'text-rose-700' : enviando ? 'text-sky-700' : pendentes ? 'text-amber-700' : 'text-emerald-700');
                 }
                 if (detalhe) {
-                    const desde = pendencia && pendencia.desde ? new Date(pendencia.desde).toLocaleString('pt-BR') : '';
+                    const instante = pendencia && pendencia.desde ? Date.parse(pendencia.desde) : NaN;
+                    const desde = Number.isFinite(instante) ? new Date(instante).toLocaleString('pt-BR') : '';
+                    const minutos = Number.isFinite(instante) ? Math.max(0, Math.floor((Date.now() - instante) / 60000)) : null;
+                    const tempo = minutos === null ? '' : minutos < 1 ? 'há menos de 1 minuto' : 'há ' + minutos + ' minuto' + (minutos === 1 ? '' : 's');
                     detalhe.textContent = pendencia
-                        ? 'Última pendência desde ' + (desde || 'horário não informado') + '. Os dados locais permanecem preservados até a confirmação da nuvem.'
+                        ? 'Aguardando confirmação ' + (tempo ? tempo + ' · ' : '') + (desde ? 'desde ' + desde + '. ' : '') + 'Os dados locais permanecem preservados até a confirmação da nuvem.' + (minutos !== null && minutos >= 15 ? ' Verifique a conexão e mantenha o sistema aberto para a próxima tentativa.' : '')
                         : 'Nenhuma gravação aguardando confirmação local no momento.';
+                    detalhe.className = 'text-[10px] ' + (minutos !== null && minutos >= 15 ? 'font-semibold text-amber-700' : 'text-slate-500');
                 }
             }
 
