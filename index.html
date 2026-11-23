@@ -5082,12 +5082,15 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     }
                     const offline = modo === 'offline';
                     const salvando = modo === 'salvando';
-                    card.style.background = salvando ? '#1e293b' : '#102b22';
+                    const erro = modo === 'erro';
+                    card.style.background = salvando ? '#1e293b' : erro ? '#451a1a' : offline ? '#422006' : '#102b22';
                     card.innerHTML = salvando
                         ? '<span style="font-size:22px;color:#93c5fd"><i class="fa-solid fa-rotate fa-spin"></i></span><span><strong style="display:block">Salvando dados...</strong><small style="display:block;margin-top:3px;font-weight:400;color:#cbd5e1">Aguarde a confirmação para fechar ou sair</small></span>'
-                        : offline
-                            ? '<span style="font-size:22px;color:#fbbf24"><i class="fa-solid fa-floppy-disk"></i></span><span><strong style="display:block">Dados guardados neste dispositivo</strong><small style="display:block;margin-top:3px;font-weight:400;color:#fde68a">Aguardando sincronização com a nuvem</small></span>'
-                            : '<span style="font-size:22px;color:#6ee7b7"><i class="fa-solid fa-circle-check"></i></span><span><strong style="display:block">Dados gravados</strong><small style="display:block;margin-top:3px;font-weight:400;color:#bbf7d0">Cadastro salvo e sincronizado</small></span>';
+                        : erro
+                            ? '<span style="font-size:22px;color:#fca5a5"><i class="fa-solid fa-circle-exclamation"></i></span><span><strong style="display:block">Não foi possível salvar</strong><small style="display:block;margin-top:3px;font-weight:400;color:#fecaca">Verifique sua conexão e tente novamente. Seus dados podem não ter sido gravados.</small></span>'
+                            : offline
+                                ? '<span style="font-size:22px;color:#fbbf24"><i class="fa-solid fa-floppy-disk"></i></span><span><strong style="display:block">Dados guardados neste dispositivo</strong><small style="display:block;margin-top:3px;font-weight:400;color:#fde68a">Aguardando sincronização com a nuvem</small></span>'
+                                : '<span style="font-size:22px;color:#6ee7b7"><i class="fa-solid fa-circle-check"></i></span><span><strong style="display:block">Dados gravados</strong><small style="display:block;margin-top:3px;font-weight:400;color:#bbf7d0">Cadastro salvo e sincronizado</small></span>';
                     card.style.opacity = '1';
                     card.style.transform = 'translateX(-50%) translateY(0)';
                     clearTimeout(_timerCardDadosGravados);
@@ -5198,6 +5201,8 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                 } else if (obterSyncPendente() && salvarCacheLocal()) {
                     limparRascunhoFormulario();
                     mostrarCardDadosGravados('offline');
+                } else {
+                    mostrarCardDadosGravados('erro');
                 }
                 return salvoNaNuvem;
             }
