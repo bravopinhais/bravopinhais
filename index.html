@@ -5045,6 +5045,16 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                         <div class="rounded-2xl bg-slate-50 border border-slate-100 p-3"><p class="text-[10px] uppercase tracking-wider font-bold text-slate-500">Sincronização</p><p id="saude-sync" class="text-sm font-extrabold text-slate-700 mt-1">Verificando...</p></div>
                         <div class="rounded-2xl bg-slate-50 border border-slate-100 p-3"><p class="text-[10px] uppercase tracking-wider font-bold text-slate-500">Última confirmação</p><p id="saude-ultima-sync" class="text-sm font-extrabold text-slate-700 mt-1">Consultando...</p></div>
                     </div>
+                    <div class="rounded-xl border border-slate-200 bg-white p-3 space-y-2" aria-live="polite">
+                        <div class="flex items-center justify-between gap-2"><h4 class="text-xs font-black text-slate-800">Fila de sincronização</h4><span id="saude-fila-status" class="text-[10px] font-bold text-slate-500">Consultando...</span></div>
+                        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                            <div class="rounded-lg bg-amber-50 p-2"><p class="text-[10px] text-amber-700">Aguardando</p><p id="saude-fila-pendente" class="text-lg font-black text-amber-800">—</p></div>
+                            <div class="rounded-lg bg-sky-50 p-2"><p class="text-[10px] text-sky-700">Em envio</p><p id="saude-fila-enviando" class="text-lg font-black text-sky-800">—</p></div>
+                            <div class="rounded-lg bg-emerald-50 p-2"><p class="text-[10px] text-emerald-700">Confirmados</p><p id="saude-fila-confirmados" class="text-lg font-black text-emerald-800">—</p></div>
+                            <div class="rounded-lg bg-rose-50 p-2"><p class="text-[10px] text-rose-700">Com falha</p><p id="saude-fila-falhas" class="text-lg font-black text-rose-800">—</p></div>
+                        </div>
+                        <p id="saude-fila-detalhe" class="text-[10px] text-slate-500">Os indicadores mostram o estado da sincronização deste dispositivo.</p>
+                    </div>
                     <p id="saude-backups" class="text-xs text-slate-500" aria-live="polite">Consultando cópias automáticas...</p>
                     <div id="saude-backups-lista" class="space-y-2" aria-live="polite"></div>
                     <p id="saude-armazenamento" class="text-xs text-slate-500" aria-live="polite">Verificando armazenamento local...</p>
@@ -5057,6 +5067,45 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                 </section>`;
             }
 
+            function atualizarIndicadoresFilaSincronizacao() {
+                const el = id => document.getElementById(id);
+                const pendencia = obterSyncPendente();
+                // O sistema mantém uma fila compactada: um envio ativo e, no máximo, o snapshot mais recente aguardando.
+                let enviando = false, aguardando = 0;
+                try {
+                    enviando = typeof _gravacaoNuvemEmAndamento !== 'undefined' && !!_gravacaoNuvemEmAndamento;
+                    aguardando = typeof _gravacaoNuvemPendente !== 'undefined' && _gravacaoNuvemPendente ? 1 : 0;
+                    if (!aguardando && typeof _gravacoesNuvemPendentes !== 'undefined')
+                        aguardando = Math.min(1, _gravacoesNuvemPendentes.size);
+                } catch (_) {}
+                const temPendencia = !!pendencia;
+                const falhas = (() => {
+                    try {
+                        const itens = JSON.parse(localStorage.getItem(CHAVE_FALHAS_SISTEMA) || '[]');
+                        return Array.isArray(itens) ? itens.filter(x => x && /Falha ao sincronizar|Falha ao recuperar gravação/.test(x.tipo || '')).length : 0;
+                    } catch (_) { return 0; }
+                })();
+                const pendentes = Math.max(aguardando, temPendencia && !enviando ? 1 : 0);
+                const set = (id, valor) => { const node = el(id); if (node) node.textContent = String(valor); };
+                set('saude-fila-pendente', pendentes);
+                set('saude-fila-enviando', enviando ? 1 : 0);
+                // A confirmação é derivada do último marco de sincronização registrado, não de contagem histórica de cadastros.
+                set('saude-fila-confirmados', localStorage.getItem(CHAVE_ULTIMA_SYNC_NUVEM) ? 'OK' : '—');
+                set('saude-fila-falhas', falhas);
+                const status = el('saude-fila-status');
+                const detalhe = el('saude-fila-detalhe');
+                if (status) {
+                    status.textContent = !navigator.onLine ? 'Sem internet' : enviando ? 'Enviando' : pendentes ? 'Pendente' : 'Em dia';
+                    status.className = 'text-[10px] font-bold ' + (!navigator.onLine ? 'text-rose-700' : enviando ? 'text-sky-700' : pendentes ? 'text-amber-700' : 'text-emerald-700');
+                }
+                if (detalhe) {
+                    const desde = pendencia && pendencia.desde ? new Date(pendencia.desde).toLocaleString('pt-BR') : '';
+                    detalhe.textContent = pendencia
+                        ? 'Última pendência desde ' + (desde || 'horário não informado') + '. Os dados locais permanecem preservados até a confirmação da nuvem.'
+                        : 'Nenhuma gravação aguardando confirmação local no momento.';
+                }
+            }
+
             async function atualizarPainelSaudeSistema() {
                 const painel = document.getElementById('painel-saude-sistema');
                 if (!painel) return;
@@ -5065,6 +5114,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     if (el) { el.textContent = valor; el.className = 'text-sm font-extrabold mt-1 ' + classe; }
                 };
                 atualizarListaFalhasSistema();
+                atualizarIndicadoresFilaSincronizacao();
                 const internet = navigator.onLine;
                 definir('saude-internet', internet ? 'Conectada' : 'Sem conexão', internet ? 'text-emerald-700' : 'text-rose-700');
                 const pendencia = obterSyncPendente();
