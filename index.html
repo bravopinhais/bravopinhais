@@ -6449,8 +6449,32 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 return [String(tabsState.activeTab || 'geral'), identificadorUsuario, textoTitulo].join('::');
             }
             function lerRascunhosFormularios() {
-                try { return JSON.parse(localStorage.getItem(CHAVE_RASCUNHOS_FORMULARIOS) || '{}') || {}; }
-                catch (e) { return {}; }
+                try {
+                    const bruto = JSON.parse(localStorage.getItem(CHAVE_RASCUNHOS_FORMULARIOS) || '{}');
+                    if (!bruto || typeof bruto !== 'object' || Array.isArray(bruto)) return {};
+                    const agora = Date.now();
+                    const limiteIdade = 30 * 24 * 60 * 60 * 1000;
+                    let alterado = false;
+                    Object.keys(bruto).forEach(chave => {
+                        const item = bruto[chave];
+                        if (!item || typeof item !== 'object' || !Array.isArray(item.valores)) {
+                            delete bruto[chave];
+                            alterado = true;
+                            return;
+                        }
+                        const atualizado = Date.parse(item.atualizadoEm || '');
+                        // Remove rascunhos antigos após 30 dias para evitar acúmulo de dados no aparelho.
+                        if (Number.isFinite(atualizado) && agora - atualizado > limiteIdade) {
+                            delete bruto[chave];
+                            alterado = true;
+                        }
+                    });
+                    if (alterado) localStorage.setItem(CHAVE_RASCUNHOS_FORMULARIOS, JSON.stringify(bruto));
+                    return bruto;
+                } catch (e) {
+                    console.warn('Não foi possível ler os rascunhos locais.', e);
+                    return {};
+                }
             }
             function mostrarAvisoRascunho(mensagem) {
                 let aviso = document.getElementById('bravo-aviso-rascunho');
