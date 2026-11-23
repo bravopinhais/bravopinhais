@@ -3953,7 +3953,35 @@
                     return [];
                 }
             }
+            async function listarBackupsAutomaticos() {
+                if (!usuarioPodeConfigurarModulos()) {
+                    alert('Somente um administrador pode consultar as cópias automáticas.');
+                    return;
+                }
+                const backups = await obterBackupsAutomaticosOffline(usuarioAuthUidAtivo);
+                if (!backups.length) {
+                    alert('Ainda não existe uma cópia automática confirmada neste dispositivo. As cópias são criadas após uma sincronização bem-sucedida.');
+                    return;
+                }
+                const resumo = backups.map((item, indice) => {
+                    const data = new Date(item.criadoEm).toLocaleString('pt-BR');
+                    let tamanho = 'tamanho indisponível';
+                    try { tamanho = (new Blob([JSON.stringify(item.payload)]).size / 1024).toFixed(0) + ' KB'; } catch (_) {}
+                    return (indice + 1) + ' — ' + data + ' · ' + tamanho + ' · ' + (item.hash ? 'com verificação SHA-256' : 'cópia antiga sem assinatura');
+                });
+                const escolha = prompt('CÓPIAS AUTOMÁTICAS DISPONÍVEIS\n\n' + resumo.join('\n') + '\n\nDigite o número da versão que deseja restaurar (1 é a mais recente). Cancele para voltar.');
+                if (escolha === null || escolha.trim() === '') return;
+                const indice = Number(escolha) - 1;
+                if (!Number.isInteger(indice) || indice < 0 || indice >= backups.length) {
+                    alert('Número inválido. Nenhuma informação foi alterada.');
+                    return;
+                }
+                await restaurarCopiaAutomaticaSelecionada(indice);
+            }
             async function restaurarUltimaCopiaAutomatica() {
+                await restaurarCopiaAutomaticaSelecionada(0);
+            }
+            async function restaurarCopiaAutomaticaSelecionada(indiceSelecionado) {
                 if (!usuarioPodeConfigurarModulos()) {
                     alert('Somente um administrador pode restaurar uma cópia automática.');
                     return;
@@ -3964,7 +3992,12 @@
                     alert('Ainda não existe uma cópia automática confirmada neste dispositivo. As cópias são criadas após uma sincronização bem-sucedida.');
                     return;
                 }
-                const ultima = backups[0];
+                const indice = Number(indiceSelecionado);
+                if (!Number.isInteger(indice) || indice < 0 || indice >= backups.length) {
+                    alert('Esta versão não está mais disponível. Atualize a lista e tente novamente.');
+                    return;
+                }
+                const ultima = backups[indice];
                 const data = new Date(ultima.criadoEm).toLocaleString('pt-BR');
                 if (!confirm('Encontramos uma cópia automática de ' + data + '.\n\nRestaurar essa cópia substituirá os dados atualmente carregados e solicitará uma nova sincronização. Faça um backup JSON antes de continuar. Deseja prosseguir?')) return;
                 try {
@@ -4803,7 +4836,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     <div class="flex flex-wrap gap-2">
                         <button type="button" onclick="baixarGuiaSeguranca()" class="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold"><i class="fa-solid fa-file-shield mr-1.5"></i> Baixar guia de segurança</button>
                         <button type="button" onclick="fazerBackupGeralJSON()" class="px-4 py-2.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold"><i class="fa-solid fa-download mr-1.5"></i> Criar backup JSON</button>
-                        <button type="button" onclick="restaurarUltimaCopiaAutomatica()" class="px-4 py-2.5 rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-200 text-amber-900 text-xs font-bold"><i class="fa-solid fa-clock-rotate-left mr-1.5"></i> Restaurar última cópia automática</button>
+                        <button type="button" onclick="listarBackupsAutomaticos()" class="px-4 py-2.5 rounded-xl bg-amber-100 hover:bg-amber-200 border border-amber-200 text-amber-900 text-xs font-bold"><i class="fa-solid fa-clock-rotate-left mr-1.5"></i> Ver e restaurar cópias automáticas</button>
                         <button type="button" onclick="migrarAnexosParaStorage()" class="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold"><i class="fa-solid fa-cloud-arrow-up mr-1.5"></i> Migrar anexos para o Storage</button>
                         <button type="button" onclick="otimizarAnexosExistentes()" class="px-4 py-2.5 rounded-xl bg-sky-700 hover:bg-sky-800 text-white text-xs font-bold"><i class="fa-solid fa-compress mr-1.5"></i> Otimizar imagens já salvas</button>
                         <button type="button" onclick="abrirModalBackupCriptografado()" class="px-4 py-2.5 rounded-xl bg-indigo-700 hover:bg-indigo-800 text-white text-xs font-bold"><i class="fa-solid fa-lock mr-1.5"></i> Criar backup criptografado</button>
