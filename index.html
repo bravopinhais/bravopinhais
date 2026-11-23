@@ -14131,10 +14131,11 @@ persistido no banco ou no gateway.
                     const main = document.querySelector('#app main');
                     if (!main || !tabelasPendentes.size)
                         return;
-                    const pendentes = Array.from(tabelasPendentes);
-                    tabelasPendentes.clear();
-                    // Calcula a posição das tabelas uma única vez por lote, em vez de
-                    // consultar e percorrer todas as tabelas para cada tabela pendente.
+                    // Processa no máximo duas tabelas por quadro para não bloquear a interface
+                    // quando um módulo adiciona várias listagens de uma só vez.
+                    const pendentes = Array.from(tabelasPendentes).slice(0, 2);
+                    pendentes.forEach(table => tabelasPendentes.delete(table));
+                    // Calcula a posição das tabelas uma única vez por lote.
                     const todasTabelas = Array.from(main.querySelectorAll('table'));
                     const indicesTabelas = new Map(todasTabelas.map((table, indice) => [table, indice]));
                     pendentes.forEach(table => {
@@ -14150,11 +14151,16 @@ persistido no banco ou no gateway.
                             console.warn('Não foi possível preparar tabela do módulo:', error);
                         }
                     });
+                    // Continua no próximo quadro, dando tempo para o navegador responder aos toques.
+                    if (tabelasPendentes.size) scheduleEnhance();
                 }
 
                 function scheduleEnhance() {
                     if (observerTimer !== null) return;
-                    observerTimer = setTimeout(enhanceTables, 80);
+                    if (typeof requestAnimationFrame === 'function')
+                        observerTimer = requestAnimationFrame(enhanceTables);
+                    else
+                        observerTimer = setTimeout(enhanceTables, 16);
                 }
 
                 function coletarTabelasAlteradas(mudancas) {
