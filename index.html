@@ -4969,18 +4969,17 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                             backupsEl.className = 'text-xs text-amber-700';
                         } else {
                             const maisRecente = new Date(backups[0].criadoEm).toLocaleString('pt-BR');
-                            let integridade = 'cópia antiga sem assinatura';
-                            let classeBackup = 'text-amber-700';
-                            if (backups[0].hash) {
-                                const hashAtual = await calcularHashBackupAutomatico(backups[0].payload);
-                                if (hashAtual && hashAtual === backups[0].hash) {
-                                    integridade = 'integridade SHA-256 verificada';
-                                    classeBackup = 'text-emerald-700';
-                                } else {
-                                    integridade = 'ATENÇÃO: falha na integridade SHA-256';
-                                    classeBackup = 'text-rose-700';
-                                }
+                            let verificadas = 0, antigas = 0, falhas = 0;
+                            for (const copia of backups) {
+                                if (!copia.hash) { antigas++; continue; }
+                                try {
+                                    const hashAtual = await calcularHashBackupAutomatico(copia.payload);
+                                    if (hashAtual && hashAtual === copia.hash) verificadas++;
+                                    else falhas++;
+                                } catch (_) { falhas++; }
                             }
+                            const integridade = verificadas + ' verificadas · ' + antigas + ' antigas sem assinatura · ' + falhas + ' com falha';
+                            const classeBackup = falhas ? 'text-rose-700' : antigas ? 'text-amber-700' : 'text-emerald-700';
                             backupsEl.textContent = 'Backups automáticos: ' + backups.length + ' de até 3 cópias locais · mais recente em ' + maisRecente + ' · ' + integridade + '.';
                             backupsEl.className = 'text-xs font-semibold ' + classeBackup;
                         }
