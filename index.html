@@ -4425,20 +4425,21 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
 
                 const atualizadoEm = new Date().toISOString();
                 try {
-                    // Última checagem imediatamente antes do upsert: evita sobrescrever silenciosamente uma versão remota mais nova.
-                    if (!opcoes.recuperacaoConfirmada) {
-                        const { data: versaoRemota, error: erroLeituraVersao } = await supabaseClient
-                            .from('condominio_dados')
-                            .select('payload, atualizado_em')
-                            .eq('id', 'principal')
-                            .maybeSingle();
-                        if (erroLeituraVersao) throw erroLeituraVersao;
-                        const nuvemPossuiDados = !!(versaoRemota && versaoRemota.payload);
-                        const conflitoVersao = nuvemPossuiDados
-                            ? (!versaoBaseDaGravacao || !versaoRemota.atualizado_em || !versoesEquivalentes(versaoBaseDaGravacao, versaoRemota.atualizado_em))
-                            : !!versaoBaseDaGravacao;
-                        if (conflitoVersao) {
-                            marcarSyncPendente('conflito detectado na verificação final; cópia local preservada');
+                    // Última checagem imediatamente antes do upsert, inclusive em recuperações já confirmadas.
+                    const { data: versaoRemota, error: erroLeituraVersao } = await supabaseClient
+                        .from('condominio_dados')
+                        .select('payload, atualizado_em')
+                        .eq('id', 'principal')
+                        .maybeSingle();
+                    if (erroLeituraVersao) throw erroLeituraVersao;
+                    const nuvemPossuiDados = !!(versaoRemota && versaoRemota.payload);
+                    const conflitoVersao = nuvemPossuiDados
+                        ? (!versaoBaseDaGravacao || !versaoRemota.atualizado_em || !versoesEquivalentes(versaoBaseDaGravacao, versaoRemota.atualizado_em))
+                        : !!versaoBaseDaGravacao;
+                    if (conflitoVersao) {
+                        marcarSyncPendente('conflito detectado na verificação final; cópia local preservada');
+                        const podeContinuar = !!opcoes.recuperacaoConfirmada && confirm('A nuvem mudou novamente durante a preparação do salvamento.\n\nOK: confirmar mais uma vez o envio da cópia local, substituindo a versão remota.\nCancelar: manter os dados locais e interromper o envio.');
+                        if (!podeContinuar) {
                             if (elStatus) {
                                 elStatus.className = 'bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800';
                                 elStatus.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> A nuvem mudou durante o salvamento. Seus dados locais foram preservados; faça backup e resolva a sincronização.';
