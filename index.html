@@ -3042,6 +3042,8 @@
             let tempEstoqueFotoPath = '';
             let _uploadArquivoEmAndamento = null;
             let _uploadFotoEmAndamento = null;
+            let tempArquivoPathOriginal = '';
+            let tempEstoqueFotoPathOriginal = '';
 
             let filtroAtivoMoradores = {
                 bloco: '',
@@ -3398,6 +3400,19 @@
                     return;
                 supabaseClient.storage.from(BUCKET_ANEXOS).remove(lista).catch(e => console.warn('Erro ao remover anexos:', e));
             }
+
+            // Limpa apenas uploads novos quando o formulário de anexo é cancelado.
+            window.cancelarFormularioComAnexo = async function(tipo) {
+                const estoque = tipo === 'estoque';
+                const pendente = estoque ? _uploadFotoEmAndamento : _uploadArquivoEmAndamento;
+                if (pendente) { try { await pendente; } catch (e) {} }
+                const atual = estoque ? tempEstoqueFotoPath : tempArquivoPath;
+                const original = estoque ? tempEstoqueFotoPathOriginal : tempArquivoPathOriginal;
+                if (atual && atual !== original) _removerAnexosStorage([atual]);
+                if (estoque) { tempEstoqueFotoPath = original; _uploadFotoEmAndamento = null; }
+                else { tempArquivoPath = original; _uploadArquivoEmAndamento = null; }
+                fecharModalContainer();
+            };
 
             window.otimizarArmazenamentoComBackup = async function() {
                 if (!usuarioPodeConfigurarModulos()) { alert('Somente um administrador pode executar esta otimização.'); return; }
@@ -8481,6 +8496,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 const setorItemPersonalizado = setorItemPadrao === 'Outro' && setorItemAtual !== 'Outro' ? setorItemAtual : '';
                 tempEstoqueFotoGzip = item.fotoCompactadaGzip || '';
                 tempEstoqueFotoPath = item.fotoPath || '';
+                tempEstoqueFotoPathOriginal = tempEstoqueFotoPath;
                 tempEstoqueFotoNome = item.fotoNome || '';
                 _uploadFotoEmAndamento = null;
 
@@ -8527,7 +8543,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                 <p class="text-[10px] text-slate-400 mt-1 font-medium">Foto atual: <span class="font-bold text-slate-700">${escapeHTML(item.fotoNome || 'Nenhuma')}</span></p>
                             </div>
                             <div class="flex justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button>
+                                <button type="button" onclick="cancelarFormularioComAnexo('estoque')" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button>
                                 <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Salvar</button>
                             </div>
                         </form>
@@ -9708,6 +9724,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 };
                 tempArquivoGzipBase64 = item.arquivoCompactadoGzip || '';
                 tempArquivoPath = item.arquivoPath || '';
+                tempArquivoPathOriginal = tempArquivoPath;
                 _uploadArquivoEmAndamento = null;
                 tempArquivoNome = item.nomeArquivo || '';
 
@@ -9736,7 +9753,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                 <p class="text-[10px] text-slate-400 mt-1 font-medium">Atual: <span class="font-bold text-slate-700">${escapeHTML(item.nomeArquivo || 'Nenhum')}</span></p>
                             </div>
                             <div class="flex justify-end gap-2 pt-3 border-t">
-                                <button type="button" onclick="fecharModalContainer()" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button>
+                                <button type="button" onclick="cancelarFormularioComAnexo('documento')" class="px-4 py-2 bg-slate-200 text-slate-700 rounded-2xl font-bold">Cancelar</button>
                                 <button type="submit" class="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-2xl font-bold shadow-sm">Salvar</button>
                             </div>
                         </form>
