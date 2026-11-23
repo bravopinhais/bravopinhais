@@ -3019,6 +3019,155 @@
                 }
             }
         </style>
+        <style id="bravo-visual-polish-2026">
+            /* Refinamento visual global: hierarquia, consistência e legibilidade. */
+            :root {
+                --gb-accent: #0d9488;
+                --gb-accent-dark: #0f766e;
+                --gb-border: #e2e8f0;
+                --gb-shadow: 0 8px 24px rgba(15, 23, 42, .055);
+                --gb-shadow-hover: 0 14px 32px rgba(15, 23, 42, .09);
+            }
+
+            #app {
+                color: #1e293b;
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            #app button, #app [role="button"], #modal-container button {
+                transition: background-color .18s ease, border-color .18s ease,
+                    box-shadow .18s ease, transform .18s ease, color .18s ease;
+            }
+
+            #app button:focus-visible, #app [role="button"]:focus-visible,
+            #app a:focus-visible, #modal-container button:focus-visible {
+                outline: 3px solid rgba(13, 148, 136, .35);
+                outline-offset: 2px;
+            }
+
+            #app input, #app select, #app textarea,
+            #modal-container input, #modal-container select, #modal-container textarea {
+                min-height: 42px;
+                border: 1px solid #dbe3ed;
+                border-radius: 11px;
+                background-color: #fff;
+                transition: border-color .18s ease, box-shadow .18s ease;
+            }
+
+            #app input:focus, #app select:focus, #app textarea:focus,
+            #modal-container input:focus, #modal-container select:focus,
+            #modal-container textarea:focus {
+                border-color: var(--gb-accent) !important;
+                box-shadow: 0 0 0 3px rgba(13, 148, 136, .12) !important;
+                outline: none;
+            }
+
+            #app main {
+                min-width: 0;
+                padding-bottom: max(1rem, env(safe-area-inset-bottom));
+            }
+
+            #app main .rounded-xl, #app main .rounded-2xl,
+            #app main .rounded-3xl {
+                background-clip: padding-box;
+            }
+
+            #app main .shadow, #app main .shadow-sm,
+            #app main .shadow-md {
+                box-shadow: var(--gb-shadow);
+            }
+
+            #app main table {
+                width: 100%;
+                border-collapse: separate;
+                border-spacing: 0;
+                overflow: hidden;
+            }
+
+            #app main thead th {
+                padding-top: .85rem;
+                padding-bottom: .85rem;
+                color: #64748b;
+                background: #f8fafc;
+                font-weight: 700;
+                white-space: nowrap;
+            }
+
+            #app main tbody td {
+                vertical-align: middle;
+            }
+
+            #app main tbody tr {
+                transition: background-color .15s ease;
+            }
+
+            #app main tbody tr:hover {
+                background-color: #f0fdfa;
+            }
+
+            #modal-container > div > div {
+                border-radius: 18px;
+                box-shadow: 0 24px 70px rgba(2, 6, 23, .22);
+            }
+
+            @media (hover: hover) and (pointer: fine) {
+                #app button:hover, #modal-container button:hover {
+                    filter: brightness(.985);
+                }
+
+                #app main .rounded-xl:hover,
+                #app main .rounded-2xl:hover {
+                    transition: box-shadow .2s ease, border-color .2s ease;
+                }
+            }
+
+            @media (max-width: 768px) {
+                #app main {
+                    padding-left: 12px;
+                    padding-right: 12px;
+                }
+
+                #app button, #app [role="button"],
+                #modal-container button {
+                    min-height: 40px;
+                }
+
+                #app main .overflow-x-auto {
+                    max-width: 100%;
+                    overscroll-behavior-x: contain;
+                    -webkit-overflow-scrolling: touch;
+                }
+
+                #app main table {
+                    font-size: 13px;
+                }
+
+                #app main th, #app main td {
+                    padding-left: 10px;
+                    padding-right: 10px;
+                }
+
+                #modal-container > div {
+                    padding: 10px !important;
+                    padding-bottom: max(10px, env(safe-area-inset-bottom)) !important;
+                }
+
+                #modal-container > div > div {
+                    width: 100%;
+                    max-width: 100%;
+                    border-radius: 16px;
+                }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                #app *, #modal-container * {
+                    scroll-behavior: auto !important;
+                    animation-duration: .01ms !important;
+                    animation-iteration-count: 1 !important;
+                    transition-duration: .01ms !important;
+                }
+            }
+        </style>
     </head>
     <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
         <!-- Indicador de Status da Nuvem -->
