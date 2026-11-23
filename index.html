@@ -12805,10 +12805,18 @@ Deno.serve(async (req: Request) => {
             // A comparação de versões continua protegendo alterações feitas por outros usuários.
             (function configurarRecuperacaoConexao() {
                 let verificacaoEmAndamento = false;
+                let ultimaVerificacaoEm = 0;
+                let tentarNovamenteApos = 0;
                 async function verificarESincronizarPendencias() {
-                    if (verificacaoEmAndamento || !navigator.onLine || !obterSyncPendente() || !sessao.usuarioLogado)
+                    const agora = Date.now();
+                    // Evita consultas e confirmações repetidas quando o navegador dispara vários eventos juntos.
+                    if (verificacaoEmAndamento || agora < tentarNovamenteApos ||
+                        agora - ultimaVerificacaoEm < 15000 || !navigator.onLine ||
+                        !obterSyncPendente() || !sessao.usuarioLogado ||
+                        typeof supabaseClient === 'undefined' || !supabaseClient)
                         return;
                     verificacaoEmAndamento = true;
+                    ultimaVerificacaoEm = agora;
                     try {
                         const {data, error} = await supabaseClient.from('condominio_dados').select('payload, atualizado_em').eq('id', 'principal').maybeSingle();
                         if (error)
@@ -12834,9 +12842,14 @@ OK: enviar a versão local para a nuvem (pode substituir alterações remotas).
 Cancelar: manter a pendência sem sobrescrever a nuvem.
 
 Faça um backup antes de confirmar.`);
-                        if (escolha)
-                            await salvarDadosNaNuvem(db, { recuperacaoConfirmada: true });
-                        else {
+                        if (escolha) {
+                            const resultado = await salvarDadosNaNuvem(db, { recuperacaoConfirmada: true });
+                            if (resultado === false) {
+                                tentarNovamenteApos = Date.now() + 60000;
+                            }
+                        } else {
+                            // Se o usuário optar por não sobrescrever, aguarda cinco minutos antes de perguntar novamente.
+                            tentarNovamenteApos = Date.now() + 5 * 60 * 1000;
                             const el = document.getElementById('status-nuvem');
                             if (el) {
                                 el.className = 'bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800';
@@ -12845,6 +12858,8 @@ Faça um backup antes de confirmar.`);
                         }
                     } catch (e) {
                         console.warn('Não foi possível retomar a sincronização pendente.', e);
+                        // Falhas transitórias recebem intervalo curto para evitar tentativas em loop.
+                        tentarNovamenteApos = Date.now() + 60000;
                     } finally {
                         verificacaoEmAndamento = false;
                     }
