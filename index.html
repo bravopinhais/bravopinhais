@@ -17325,5 +17325,34 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
 }
 @media(prefers-reduced-motion:reduce){#app main .dashboard-kpi-grid>article{transition:none!important;}}
 </style>
+<style id="bravo-feedback-mensagens-polish-2026">
+/* Mensagens de sistema: confirmação, alertas, notificações e erros de formulário. */
+#bravo-card-dados-gravados{box-sizing:border-box!important;min-height:64px!important;border:1px solid rgba(255,255,255,.16)!important;border-radius:17px!important;box-shadow:0 18px 48px rgba(2,6,23,.28),0 3px 10px rgba(2,6,23,.12)!important;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);overflow:hidden;isolation:isolate;}
+#bravo-card-dados-gravados>span:first-child{flex:0 0 36px!important;width:36px!important;height:36px!important;border:1px solid rgba(255,255,255,.12);border-radius:12px!important;background:rgba(255,255,255,.11)!important;}
+#bravo-card-dados-gravados>span:last-child{min-width:0;overflow-wrap:anywhere;}
+#bravo-card-dados-gravados strong{display:block;font-weight:850!important;line-height:1.3;}
+#bravo-card-dados-gravados small{display:block;margin-top:3px;color:rgba(236,253,245,.78);font-weight:500;}
+#gb-notifications-anchor{z-index:80;}
+#gb-notifications-toggle{min-width:40px;min-height:40px;border:1px solid rgba(148,163,184,.18);box-shadow:0 3px 10px rgba(15,23,42,.07);}
+#gb-notifications-anchor [role="menu"],
+#gb-notifications-anchor [role="dialog"],
+#gb-notifications-anchor [role="list"]{border:1px solid #e2eaf0;border-radius:17px;background:#fff;box-shadow:0 18px 48px rgba(15,23,42,.17);color:#243746;}
+#gb-notifications-anchor [role="menu"]>*,
+#gb-notifications-anchor [role="list"]>*{min-width:0;overflow-wrap:anywhere;}
+#app main [role="alert"],#modal-container [role="alert"]{border-radius:13px;line-height:1.5;overflow-wrap:anywhere;}
+#app main [role="alert"] :is(strong,b){font-weight:850;}
+#modal-container form [class*="text-rose-"],#modal-container form [role="alert"]{line-height:1.45;}
+#modal-container form [class*="border-rose-"]{border-radius:12px;}
+#modal-container form input:invalid:not(:placeholder-shown),
+#modal-container form select:invalid:not(:placeholder-shown),
+#modal-container form textarea:invalid:not(:placeholder-shown){border-color:#fda4af;}
+#modal-container form :is(input,select,textarea)[aria-invalid="true"]{border-color:#fb7185!important;box-shadow:0 0 0 3px rgba(244,63,94,.10)!important;}
+@media(max-width:640px){
+ #bravo-card-dados-gravados{width:min(calc(100vw - 24px),420px)!important;min-height:60px!important;padding:12px 13px!important;border-radius:15px!important;}
+ #bravo-card-dados-gravados>span:first-child{flex-basis:33px!important;width:33px!important;height:33px!important;}
+ #gb-notifications-anchor [role="menu"],#gb-notifications-anchor [role="dialog"],#gb-notifications-anchor [role="list"]{max-width:calc(100vw - 20px);max-height:min(70dvh,560px);overflow:auto;overscroll-behavior:contain;}
+}
+@media(prefers-reduced-motion:reduce){#gb-notifications-toggle,#bravo-card-dados-gravados{transition:none!important;}}
+</style>
 </body>
 </html>
