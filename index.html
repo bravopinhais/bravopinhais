@@ -4157,6 +4157,58 @@
                 }
             }
         </style>
+
+        <style id="bravo-feedback-notificacoes-2026">
+            /* Padroniza avisos de gravação e central de notificações. */
+            #bravo-card-dados-gravados {
+                max-width: calc(100vw - 28px);
+                min-height: 58px;
+                border: 1px solid rgba(255,255,255,.12);
+                backdrop-filter: blur(14px);
+                -webkit-backdrop-filter: blur(14px);
+                overflow-wrap: anywhere;
+                z-index: 100000 !important;
+            }
+            #bravo-card-dados-gravados strong {
+                font-size: 14px;
+                letter-spacing: -.01em;
+            }
+            #bravo-card-dados-gravados small {
+                line-height: 1.4;
+            }
+            #gb-notifications-anchor {
+                -webkit-tap-highlight-color: transparent;
+            }
+            #gb-notifications-toggle {
+                border-radius: 12px;
+                transition: background-color .16s ease, box-shadow .16s ease, transform .16s ease;
+            }
+            #gb-notifications-toggle:focus-visible {
+                outline: 3px solid rgba(20,184,166,.55);
+                outline-offset: 2px;
+            }
+            #gb-notifications-anchor [role="menu"],
+            #gb-notifications-anchor [role="dialog"],
+            #gb-notifications-anchor [role="list"] {
+                max-width: min( calc(100vw - 20px), 420px );
+                overflow-wrap: anywhere;
+            }
+            @media (max-width: 640px) {
+                #bravo-card-dados-gravados {
+                    bottom: calc(14px + env(safe-area-inset-bottom, 0px)) !important;
+                    width: min(calc(100vw - 24px), 420px) !important;
+                    padding: 13px 14px !important;
+                    border-radius: 16px !important;
+                    font-size: 13px !important;
+                }
+                #bravo-card-dados-gravados strong { font-size: 13px; }
+                #bravo-card-dados-gravados small { font-size: 11px; }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                #gb-notifications-toggle { transition: none !important; }
+                #bravo-card-dados-gravados { transition: none !important; }
+            }
+        </style>
     </head>
     <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
         <!-- Indicador de Status da Nuvem -->
