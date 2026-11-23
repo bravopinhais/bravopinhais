@@ -16403,5 +16403,70 @@ persistido no banco ou no gateway.
         })();
         </script>
 
+        <!-- Indicador compacto de integridade e sincronização dos dados -->
+        <script id="guardioes-integridade-dados-v1">
+        (function () {
+            'use strict';
+            if (window.__gbIntegridadeDadosV1) return;
+            window.__gbIntegridadeDadosV1 = true;
+            const KEY_PENDENTE = 'guardioes_bravo_sync_pendente';
+            const KEY_ULTIMA = 'guardioes_bravo_ultima_sync_nuvem';
+            const KEY_CACHE = 'guardioes_bravo_db';
+            let aberto = false;
+            let ultimoEstado = '';
+            function ler(chave) { try { return localStorage.getItem(chave); } catch (_) { return null; } }
+            function dataLegivel(valor) {
+                if (!valor) return 'Ainda não há confirmação registrada neste dispositivo';
+                const n = Number(valor);
+                const d = new Date(Number.isFinite(n) && n > 1000000000 ? n : valor);
+                return Number.isNaN(d.getTime()) ? 'Confirmação anterior registrada' : d.toLocaleString('pt-BR');
+            }
+            function criar() {
+                if (document.getElementById('gb-integridade-dados')) return;
+                const wrap=document.createElement('div');
+                wrap.id='gb-integridade-dados';
+                wrap.style.cssText='position:fixed;right:12px;bottom:calc(86px + env(safe-area-inset-bottom,0px));z-index:9990;font-family:system-ui,-apple-system,sans-serif;';
+                const btn=document.createElement('button');
+                btn.type='button'; btn.id='gb-integridade-botao';
+                btn.style.cssText='display:flex;align-items:center;gap:7px;padding:9px 12px;border-radius:999px;border:1px solid #cbd5e1;background:#fff;color:#334155;box-shadow:0 5px 18px rgba(15,23,42,.14);font-size:11px;font-weight:800;min-height:36px;';
+                btn.setAttribute('aria-expanded','false');
+                btn.addEventListener('click',()=>{aberto=!aberto;atualizar(true);});
+                const painel=document.createElement('div');
+                painel.id='gb-integridade-painel';
+                painel.style.cssText='display:none;position:absolute;right:0;bottom:46px;width:min( calc(100vw - 24px), 310px );padding:14px;border:1px solid #e2e8f0;border-radius:16px;background:#fff;color:#334155;box-shadow:0 12px 34px rgba(15,23,42,.2);font-size:12px;line-height:1.5;';
+                wrap.append(painel,btn); document.body.appendChild(wrap);
+                document.addEventListener('click',e=>{if(aberto&&!wrap.contains(e.target)){aberto=false;atualizar(true);}});
+            }
+            function estadoAtual() {
+                const pendente=ler(KEY_PENDENTE);
+                const cache=ler(KEY_CACHE);
+                const status=document.getElementById('status-nuvem');
+                const texto=(status?status.textContent:'').toLowerCase();
+                if(!navigator.onLine) return {id:'offline',titulo:'Offline',cor:'#b45309',fundo:'#fffbeb',icone:'fa-wifi',descricao:'Sem internet. Os dados podem permanecer neste dispositivo aguardando envio.'};
+                if(pendente) return {id:'pendente',titulo:'Aguardando nuvem',cor:'#b45309',fundo:'#fffbeb',icone:'fa-cloud-arrow-up',descricao:'Há uma gravação local aguardando confirmação da nuvem.'};
+                if(/falha|erro|não foi possível|nao foi possivel/.test(texto)) return {id:'atencao',titulo:'Verificar salvamento',cor:'#b91c1c',fundo:'#fef2f2',icone:'fa-triangle-exclamation',descricao:'O último aviso indica uma possível falha. Confira o módulo de saúde do sistema.'};
+                if(cache) return {id:'ok',titulo:'Dados sincronizados',cor:'#047857',fundo:'#ecfdf5',icone:'fa-cloud-check',descricao:'Nenhuma sincronização pendente foi identificada neste dispositivo.'};
+                return {id:'verificando',titulo:'Verificando dados',cor:'#64748b',fundo:'#f8fafc',icone:'fa-shield-halved',descricao:'Aguardando a leitura do estado de armazenamento.'};
+            }
+            function atualizar(forcar) {
+                const wrap=document.getElementById('gb-integridade-dados'); if(!wrap) return;
+                const btn=document.getElementById('gb-integridade-botao');
+                const painel=document.getElementById('gb-integridade-painel');
+                const e=estadoAtual();
+                btn.style.color=e.cor; btn.style.background=e.fundo; btn.style.borderColor=e.cor+'55';
+                btn.innerHTML='<i class="fa-solid '+e.icone+'" aria-hidden="true"></i><span>'+e.titulo+'</span><i class="fa-solid fa-chevron-'+(aberto?'down':'up')+'" style="font-size:9px" aria-hidden="true"></i>';
+                btn.setAttribute('aria-expanded',String(aberto));
+                painel.style.display=aberto?'block':'none';
+                if(aberto||forcar) {
+                    const ultima=dataLegivel(ler(KEY_ULTIMA));
+                    painel.innerHTML='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;color:'+e.cor+'"><i class="fa-solid '+e.icone+'" style="font-size:17px"></i><strong style="font-size:13px">'+e.titulo+'</strong></div><p style="margin:0 0 10px;color:#475569">'+e.descricao+'</p><div style="padding:9px 10px;background:#f8fafc;border-radius:10px"><div style="font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#64748b;font-weight:800">Última confirmação registrada</div><div style="font-weight:700;margin-top:3px">'+ultima+'</div></div><div style="display:flex;align-items:center;gap:6px;margin-top:10px;color:#64748b;font-size:10px"><i class="fa-solid fa-lock"></i> Indicador deste dispositivo; não substitui um backup.</div>';
+                }
+                ultimoEstado=e.id;
+            }
+            function iniciar(){criar();atualizar(true);setInterval(()=>atualizar(false),2500);window.addEventListener('online',()=>atualizar(true));window.addEventListener('offline',()=>atualizar(true));window.addEventListener('storage',()=>atualizar(true));}
+            if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',iniciar,{once:true}); else iniciar();
+        })();
+        </script>
+
     </body>
 </html>
