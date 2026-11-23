@@ -4844,7 +4844,17 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                         const usado = Number(estimativa.usage || 0);
                         const quota = Number(estimativa.quota || 0);
                         const formatar = bytes => bytes < 1048576 ? (bytes / 1024).toFixed(0) + ' KB' : (bytes / 1048576).toFixed(1) + ' MB';
-                        armazenamento.textContent = quota ? 'Armazenamento do navegador: ' + formatar(usado) + ' utilizados de ' + formatar(quota) + ' estimados.' : 'Armazenamento local disponível; cota não informada pelo navegador.';
+                        if (quota > 0) {
+                            const percentual = Math.min(100, Math.round((usado / quota) * 100));
+                            armazenamento.textContent = 'Armazenamento do navegador: ' + formatar(usado) + ' utilizados de ' + formatar(quota) + ' estimados (' + percentual + '%). ' +
+                                (percentual >= 95 ? 'Atenção: espaço muito próximo do limite. Exporte um backup e evite acumular anexos desnecessários.' :
+                                percentual >= 80 ? 'Atenção: o espaço está ficando limitado. Recomendamos manter um backup atualizado.' :
+                                'Espaço dentro de uma faixa confortável.');
+                            armazenamento.className = percentual >= 95 ? 'text-xs font-bold text-rose-700' : percentual >= 80 ? 'text-xs font-bold text-amber-700' : 'text-xs text-slate-500';
+                        } else {
+                            armazenamento.textContent = 'Armazenamento local disponível; cota não informada pelo navegador.';
+                            armazenamento.className = 'text-xs text-slate-500';
+                        }
                     } catch (e) { armazenamento.textContent = 'Não foi possível consultar a cota de armazenamento deste navegador.'; }
                 }
                 const nuvemEl = document.getElementById('saude-nuvem');
