@@ -4132,14 +4132,14 @@
                     if (!alteradas.length)
                         return 'Não foram identificadas diferenças por seção; a versão remota mudou durante a gravação.';
                     const linhas = alteradas.slice(0, 8).map(chave => {
-                        const nome = chave.replace(/_/g, ' ').replace(/\\b\\w/g, letra => letra.toUpperCase());
+                        const nome = chave.replace(/_/g, ' ').replace(/\b\w/g, letra => letra.toUpperCase());
                         const a = local[chave], b = remoto[chave];
                         if (Array.isArray(a) || Array.isArray(b))
                             return '- ' + nome + ': local ' + (Array.isArray(a) ? a.length : 0) + ' registro(s) / nuvem ' + (Array.isArray(b) ? b.length : 0) + ' registro(s)';
                         return '- ' + nome + ': conteúdo diferente';
                     });
                     if (alteradas.length > 8) linhas.push('- e mais ' + (alteradas.length - 8) + ' seção(ões)');
-                    return 'Seções com diferenças encontradas:\\n' + linhas.join('\\n');
+                    return 'Seções com diferenças encontradas:\n' + linhas.join('\n');
                 } catch (e) {
                     return 'Não foi possível montar o resumo das diferenças. Os dados locais continuam preservados.';
                 }
@@ -4161,10 +4161,10 @@
                             const conflitoProvavel = baseline && data.atualizado_em && !versoesEquivalentes(baseline, data.atualizado_em);
                             const resumoDiferencas = gerarResumoConflitoDados(dadosLocaisAntesDaNuvem, data.payload);
                             const aviso = (conflitoProvavel
-                                ? 'Existe uma cópia local não sincronizada e a nuvem parece ter sido alterada por outro acesso.\\n\\n'
-                                : 'Há alterações guardadas localmente que ainda não foram confirmadas na nuvem.\\n\\n')
+                                ? 'Existe uma cópia local não sincronizada e a nuvem parece ter sido alterada por outro acesso.\n\n'
+                                : 'Há alterações guardadas localmente que ainda não foram confirmadas na nuvem.\n\n')
                                 + resumoDiferencas
-                                + '\\n\\nOK: tentar enviar a cópia local para a nuvem.\\nCancelar: manter a cópia local pendente sem sobrescrever a nuvem agora.';
+                                + '\n\nOK: tentar enviar a cópia local para a nuvem.\nCancelar: manter a cópia local pendente sem sobrescrever a nuvem agora.';
                             const recuperarLocal = confirm(aviso);
                             if (recuperarLocal) {
                                 db = dadosLocaisAntesDaNuvem;
@@ -4464,7 +4464,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     if (conflitoVersao) {
                         marcarSyncPendente('conflito detectado na verificação final; cópia local preservada');
                         const resumoDiferencas = gerarResumoConflitoDados(db, versaoRemota && versaoRemota.payload);
-                        const podeContinuar = !!opcoes.recuperacaoConfirmada && confirm('A nuvem mudou novamente durante a preparação do salvamento.\\n\\n' + resumoDiferencas + '\\n\\nOK: confirmar mais uma vez o envio da cópia local, substituindo a versão remota.\\nCancelar: manter os dados locais e interromper o envio.');
+                        const podeContinuar = !!opcoes.recuperacaoConfirmada && confirm('A nuvem mudou novamente durante a preparação do salvamento.\n\n' + resumoDiferencas + '\n\nOK: confirmar mais uma vez o envio da cópia local, substituindo a versão remota.\nCancelar: manter os dados locais e interromper o envio.');
                         if (!podeContinuar) {
                             if (elStatus) {
                                 elStatus.className = 'bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800';
@@ -4489,7 +4489,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                         try {
                             const { data: versaoConcorrente } = await supabaseClient.from('condominio_dados').select('payload').eq('id', 'principal').maybeSingle();
                             if (versaoConcorrente && versaoConcorrente.payload)
-                                alert('Outro usuário salvou primeiro. Nenhum dado local foi descartado.\\n\\n' + gerarResumoConflitoDados(db, versaoConcorrente.payload) + '\\n\\nFaça um backup antes de decidir como continuar.');
+                                alert('Outro usuário salvou primeiro. Nenhum dado local foi descartado.\n\n' + gerarResumoConflitoDados(db, versaoConcorrente.payload) + '\n\nFaça um backup antes de decidir como continuar.');
                         } catch (erroResumo) {
                             console.warn('Não foi possível consultar o resumo do conflito.', erroResumo);
                         }
@@ -12111,7 +12111,7 @@ Deno.serve(async (req: Request) => {
                         const mesmaVersao = registroRemotoExiste && !!baseline && versoesEquivalentes(baseline, versaoRemotaParaGravar);
                         const nuvemInesperadamenteVazia = !registroRemotoExiste && !!baseline;
                         if ((registroRemotoExiste && !mesmaVersao) || nuvemInesperadamenteVazia) {
-                            const podeSobrescrever = confirm('A versão da nuvem mudou desde a última sincronização deste dispositivo, ou a base remota não corresponde ao esperado.\\n\\nOK: confirmar o envio dos dados locais usando a versão que acabou de ser consultada.\\nCancelar: manter os dados salvos neste dispositivo, sem sobrescrever a nuvem.');
+                            const podeSobrescrever = confirm('A versão da nuvem mudou desde a última sincronização deste dispositivo, ou a base remota não corresponde ao esperado.\n\nOK: confirmar o envio dos dados locais usando a versão que acabou de ser consultada.\nCancelar: manter os dados salvos neste dispositivo, sem sobrescrever a nuvem.');
                             if (!podeSobrescrever) {
                                 statusSalvoLocalmente('Cadastro salvo neste dispositivo; sincronização aguardando sua confirmação.');
                                 return true;
