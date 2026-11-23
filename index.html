@@ -3885,6 +3885,16 @@
                 .dashboard-disclosure-chevron { transition: none; }
             }
         </style>
+        <style id="bravo-graficos-sob-demanda-2026">
+            .dashboard-analytics-disclosure > summary { list-style: none; }
+            .dashboard-analytics-disclosure > summary::-webkit-details-marker { display: none; }
+            .estoque-analytics-disclosure > summary:focus-visible { outline: 3px solid rgba(79,70,229,.28); outline-offset: 3px; }
+            .estoque-analytics-disclosure[open] { background: #fff; }
+            @media (max-width: 480px) {
+                .estoque-analytics-disclosure > summary { align-items: flex-start; }
+                .estoque-analytics-disclosure > summary > span { max-width: 46%; white-space: normal; }
+            }
+        </style>
     </head>
     <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
         <!-- Indicador de Status da Nuvem -->
@@ -7967,18 +7977,32 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
 
             function dashboardRedimensionarGraficos(painel) {
                 if (!painel || !painel.open) return;
-                // O gráfico é recalculado depois que o painel deixa de estar oculto.
-                requestAnimationFrame(() => {
-                    if (!painel.isConnected || !painel.open) return;
-                    if (chartInstanceReceitaDespesa && typeof chartInstanceReceitaDespesa.resize === 'function')
-                        chartInstanceReceitaDespesa.resize();
-                    if (chartInstanceEstoqueDash && typeof chartInstanceEstoqueDash.resize === 'function')
-                        chartInstanceEstoqueDash.resize();
+                carregarChartJs().then(ok => {
+                    if (!ok || !painel.isConnected || !painel.open || tabsState.activeTab !== 'dashboard') return;
+                    initDashboardCharts();
+                    initDashboardEstoqueChart();
+                    requestAnimationFrame(() => {
+                        if (!painel.isConnected || !painel.open) return;
+                        if (chartInstanceReceitaDespesa && typeof chartInstanceReceitaDespesa.resize === 'function') chartInstanceReceitaDespesa.resize();
+                        if (chartInstanceEstoqueDash && typeof chartInstanceEstoqueDash.resize === 'function') chartInstanceEstoqueDash.resize();
+                    });
+                });
+            }
+
+            function estoqueRedimensionarGrafico(painel) {
+                if (!painel || !painel.open) return;
+                carregarChartJs().then(ok => {
+                    if (!ok || !painel.isConnected || !painel.open || tabsState.activeTab !== 'estoque') return;
+                    initEstoqueChart();
+                    requestAnimationFrame(() => {
+                        if (painel.isConnected && painel.open && chartInstanceEstoque && typeof chartInstanceEstoque.resize === 'function') chartInstanceEstoque.resize();
+                    });
                 });
             }
 
             function initDashboardCharts() {
-                if (tabsState.activeTab !== 'dashboard')
+                const painelAnalitico = document.querySelector('.dashboard-analytics-disclosure');
+                if (tabsState.activeTab !== 'dashboard' || !painelAnalitico || !painelAnalitico.open)
                     return;
 
                 const finList = Array.isArray(db.financeiro) ? db.financeiro : [];
@@ -8073,7 +8097,8 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
             }
 
             function initDashboardEstoqueChart() {
-                if (tabsState.activeTab !== 'dashboard')
+                const painelAnalitico = document.querySelector('.dashboard-analytics-disclosure');
+                if (tabsState.activeTab !== 'dashboard' || !painelAnalitico || !painelAnalitico.open)
                     return;
                 const ctx = document.getElementById('chartEstoqueDash');
                 if (!ctx)
@@ -9613,11 +9638,14 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
 
                     <!-- Gráfico e ferramentas de trabalho -->
                     <section class="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-3">
-                        <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
-                            <div class="mb-3 flex items-start justify-between gap-3"><div><h3 class="text-sm font-black text-slate-900">Status do inventário</h3><p class="mt-1 text-[11px] text-slate-500">Distribuição dos produtos ativos</p></div><span class="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700"><i class="fa-solid fa-chart-pie"></i></span></div>
-                            <div class="relative mx-auto h-52 w-full max-w-sm"><canvas id="chartEstoqueStatus"></canvas></div>
+                        <details class="dashboard-analytics-disclosure estoque-analytics-disclosure min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5" ontoggle="estoqueRedimensionarGrafico(this)">
+                            <summary class="flex cursor-pointer list-none items-center justify-between gap-3 rounded-xl px-1 py-1">
+                                <div><p class="text-[10px] font-extrabold uppercase tracking-[.16em] text-indigo-700">Análise do estoque · sob demanda</p><h3 class="mt-1 text-sm font-black text-slate-900">Status do inventário</h3><p class="mt-1 text-[11px] text-slate-500">Toque para exibir o gráfico e a distribuição dos produtos.</p></div>
+                                <span class="inline-flex shrink-0 items-center gap-2 rounded-full bg-indigo-50 px-3 py-2 text-[10px] font-extrabold text-indigo-800"><i class="fa-solid fa-chart-pie"></i><span class="dashboard-disclosure-label">Exibir gráficos</span><i class="fa-solid fa-chevron-down dashboard-disclosure-chevron"></i></span>
+                            </summary>
+                            <div class="relative mx-auto mt-3 h-52 w-full max-w-sm"><canvas id="chartEstoqueStatus"></canvas></div>
                             <div class="mt-2 grid grid-cols-3 gap-2 border-t border-slate-100 pt-3 text-center"><div><span class="mb-1 inline-block h-2 w-2 rounded-full bg-emerald-500"></span><p class="text-[10px] font-bold text-slate-500">Adequado</p><p class="text-sm font-black text-slate-800">${totalAdequados}</p></div><div><span class="mb-1 inline-block h-2 w-2 rounded-full bg-rose-500"></span><p class="text-[10px] font-bold text-slate-500">Crítico</p><p class="text-sm font-black text-slate-800">${totalCriticos}</p></div><div><span class="mb-1 inline-block h-2 w-2 rounded-full bg-amber-500"></span><p class="text-[10px] font-bold text-slate-500">Excedente</p><p class="text-sm font-black text-slate-800">${totalExcedentes}</p></div></div>
-                        </div>
+                        </details>
 
                         <div class="min-w-0 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5 xl:col-span-2">
                             <div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-700"><i class="fa-solid fa-folder-tree"></i></span><div class="min-w-0"><h3 class="text-sm font-black text-slate-900">Organização por setor e relatórios</h3><p class="mt-1 text-xs leading-5 text-slate-500">Separe o enxoval do salão e dos quiosques dos materiais de limpeza do DML. Os relatórios e checklists respeitam o setor selecionado.</p></div></div>
@@ -9745,7 +9773,8 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
             ;
 
             function initEstoqueChart() {
-                if (tabsState.activeTab !== 'estoque')
+                const painelEstoque = document.querySelector('.estoque-analytics-disclosure');
+                if (tabsState.activeTab !== 'estoque' || !painelEstoque || !painelEstoque.open)
                     return;
                 const ctx = document.getElementById('chartEstoqueStatus');
                 if (!ctx)
