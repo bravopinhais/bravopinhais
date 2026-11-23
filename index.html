@@ -4494,8 +4494,15 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     console.warn('A otimização automática de anexos será repetida no próximo salvamento.', erroAnexos);
                 }
 
-                if (cacheLocalSalvo)
-                    marcarSyncPendente('gravação local aguardando confirmação da nuvem');
+                // A cópia local pode ser gravada mesmo quando não há espaço para registrar a fila.
+                // Guarde esse resultado para não prometer sincronização automática sem garantia.
+                const marcadorSyncSalvo = cacheLocalSalvo
+                    ? marcarSyncPendente('gravação local aguardando confirmação da nuvem')
+                    : false;
+                if (cacheLocalSalvo && !marcadorSyncSalvo && elStatus) {
+                    elStatus.className = 'bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800';
+                    elStatus.textContent = 'Cópia local gravada, mas não foi possível registrar a sincronização automática. Libere espaço e faça um backup.';
+                }
                 if (elStatus) {
                     elStatus.className = 'bg-slate-900 text-teal-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print animate-pulse border-b border-slate-800';
                     elStatus.innerHTML = '<i class="fa-solid fa-rotate fa-spin"></i> A guardar na nuvem...';
@@ -4568,7 +4575,11 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                     registrarHistoricoSincronizacao('Falha na sincronização', opcoes);
                     if (elStatus) {
                         elStatus.className = 'bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800';
-                        elStatus.innerHTML = cacheLocalSalvo ? '<i class="fa-solid fa-triangle-exclamation"></i> Alterações mantidas neste dispositivo; sincronização pendente.' : '<i class="fa-solid fa-triangle-exclamation"></i> Falha na nuvem e no armazenamento local. Baixe um backup e não feche a página.';
+                        elStatus.innerHTML = cacheLocalSalvo
+                            ? (marcadorSyncSalvo
+                                ? '<i class="fa-solid fa-triangle-exclamation"></i> Alterações mantidas neste dispositivo; sincronização pendente.'
+                                : '<i class="fa-solid fa-triangle-exclamation"></i> Cópia local gravada, mas a fila automática não pôde ser registrada. Libere espaço e faça um backup.')
+                            : '<i class="fa-solid fa-triangle-exclamation"></i> Falha na nuvem e no armazenamento local. Baixe um backup e não feche a página.';
                     }
                     return false;
                 }
