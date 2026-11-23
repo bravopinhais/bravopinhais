@@ -4292,6 +4292,72 @@
                 }
             }
         </style>
+
+        <style id="bravo-navegacao-abas-transicao-2026">
+            /* Abas abertas: estado ativo evidente e troca de módulo confortável. */
+            #app .gb-tabs-scroller {
+                scrollbar-width: none;
+                scroll-behavior: smooth;
+                overscroll-behavior-x: contain;
+            }
+            #app .gb-tabs-scroller::-webkit-scrollbar { display: none; }
+            #app .gb-tabs-scroller > div {
+                position: relative;
+                min-height: 40px;
+                border: 1px solid transparent;
+                user-select: none;
+                -webkit-tap-highlight-color: transparent;
+                transition: background-color .16s ease, color .16s ease,
+                    border-color .16s ease, box-shadow .16s ease;
+            }
+            #app .gb-tabs-scroller > div.tab-active,
+            #app .gb-tabs-scroller > div[class*="tab-active"] {
+                border-color: rgba(13,148,136,.2);
+                box-shadow: inset 0 -3px 0 #0d9488, 0 3px 10px rgba(15,23,42,.045);
+                font-weight: 800;
+            }
+            #app .gb-tabs-scroller > div:not(.tab-active):hover {
+                border-color: #cbd5e1;
+            }
+            #app .gb-tabs-scroller > div button {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                width: 25px;
+                height: 25px;
+                border-radius: 999px;
+                flex: 0 0 25px;
+            }
+            #app .gb-tabs-scroller > div button:focus-visible {
+                outline: 2px solid #0d9488;
+                outline-offset: 2px;
+            }
+            #app main {
+                scroll-behavior: smooth;
+                overscroll-behavior-y: contain;
+            }
+            @media (max-width: 768px) {
+                #app .gb-tabs-scroller {
+                    scroll-snap-type: x proximity;
+                    padding-bottom: 4px;
+                }
+                #app .gb-tabs-scroller > div {
+                    scroll-snap-align: start;
+                    min-height: 38px;
+                    padding: 8px 12px !important;
+                    border-radius: 12px !important;
+                }
+                #app .gb-tabs-scroller > div.tab-active,
+                #app .gb-tabs-scroller > div[class*="tab-active"] {
+                    box-shadow: inset 0 -2px 0 #0d9488, 0 2px 8px rgba(15,23,42,.05);
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                #app .gb-tabs-scroller,
+                #app .gb-tabs-scroller > div,
+                #app main { scroll-behavior: auto !important; transition: none !important; }
+            }
+        </style>
     </head>
     <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
         <!-- Indicador de Status da Nuvem -->
