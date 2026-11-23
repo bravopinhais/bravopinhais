@@ -3514,6 +3514,7 @@
             // ativos por padrão; inativos permanecem preservados
             let filtroSetorEstoque = 'todos';
             // filtro de setor para relatórios e listagem
+            let pesquisaRapidaEstoque = '';
             let usuarioPendentePrimeiroAcesso = null;
             let chartInstanceReceitaDespesa = null;
             let chartInstanceOcupacao = null;
@@ -9097,6 +9098,21 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 if (filtroSetorEstoque !== 'todos') {
                     listFiltrada = listFiltrada.filter(st => setorEstoque(st) === filtroSetorEstoque);
                 }
+                if (pesquisaRapidaEstoque.trim()) {
+                    const termoBusca = pesquisaRapidaEstoque.trim().toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');
+                    listFiltrada = listFiltrada.filter(st => {
+                        const camposBusca = [
+                            st.item, st.descricao, st.etiqueta, st.codigo, st.id,
+                            setorEstoque(st), st.marca, st.brand, st.linha, st.line,
+                            st.fabricante, st.manufacturer, st.cor, st.color,
+                            st.unidade, st.unidadeMedida, st.senhaCadeado, st.senha_cadeado,
+                            st.dataCadastro, st.data_cadastro, st.dataRegistro, st.createdAt
+                        ];
+                        const textoBusca = camposBusca.filter(v => v !== null && v !== undefined)
+                            .join(' ').toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '');
+                        return textoBusca.includes(termoBusca);
+                    });
+                }
                 const setoresDisponiveisEstoque = obterSetoresEstoque(todosItens);
                 const filtrosAtivosTexto = [filtroStatusEstoque === 'inativos' ? 'Inativos' : 'Ativos', filtroAtivoEstoque !== 'todos' ? ({
                     adequado: 'Adequados',
@@ -9193,6 +9209,19 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                             <div class="min-w-0"><div class="flex flex-wrap items-center gap-2"><h3 class="text-sm font-black text-slate-900">Produtos cadastrados</h3><span class="rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-extrabold text-slate-600">${listFiltrada.length} registro(s)</span></div><p class="mt-1 text-[11px] leading-4 text-slate-500">${escapeHTML(filtrosAtivosTexto)}${filtroSetorEstoque !== 'todos' ? ' · setor filtrado' : ''}. A coluna Ações reúne edição, inativação/reativação e exclusão.</p></div>
                             <div class="flex flex-wrap items-center gap-2"><button type="button" onclick="window.limparFiltrosEstoque()" class="inline-flex min-h-9 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-[11px] font-extrabold text-slate-600 transition hover:border-teal-300 hover:text-teal-800"><i class="fa-solid fa-filter-circle-xmark"></i> Limpar filtros</button><span class="hidden items-center gap-1.5 text-[10px] font-semibold text-slate-400 md:inline-flex"><i class="fa-solid fa-arrows-left-right"></i> Tabela rolável</span></div>
                         </div>
+                        <div class="border-b border-slate-100 bg-slate-50/70 p-3 sm:px-5">
+                            <div class="flex flex-col gap-2 sm:flex-row">
+                                <label class="relative min-w-0 flex-1">
+                                    <span class="sr-only">Pesquisar produtos no estoque</span>
+                                    <i class="fa-solid fa-magnifying-glass pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                    <input id="pesquisaRapidaEstoque" type="search" value="${escapeHTML(pesquisaRapidaEstoque)}" placeholder="Buscar por produto, etiqueta, marca, linha, fabricante, cor ou setor..." class="w-full rounded-xl border border-slate-200 bg-white py-3 pl-9 pr-3 text-xs outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100" onkeydown="if(event.key==='Enter'){event.preventDefault(); pesquisaRapidaEstoque=this.value; renderMainOnly();}">
+                                </label>
+                                <div class="flex gap-2">
+                                    <button type="button" onclick="pesquisaRapidaEstoque=document.getElementById('pesquisaRapidaEstoque').value; renderMainOnly();" class="inline-flex min-h-11 flex-1 items-center justify-center gap-2 rounded-xl bg-teal-700 px-4 py-2.5 text-xs font-extrabold text-white hover:bg-teal-800"><i class="fa-solid fa-magnifying-glass"></i> Pesquisar</button>
+                                    <button type="button" onclick="pesquisaRapidaEstoque=''; renderMainOnly();" class="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-xs font-bold text-slate-600 hover:bg-slate-100" aria-label="Limpar pesquisa"><i class="fa-solid fa-xmark"></i><span class="sm:hidden">Limpar</span></button>
+                                </div>
+                            </div>
+                        </div>
                         <div class="overflow-x-auto">
                             <table id="tabelaEstoquePrincipal" class="w-full min-w-[1420px] text-left text-xs">
                                 <thead class="border-b border-slate-100 bg-slate-50 text-[10px] font-extrabold uppercase tracking-wider text-slate-500">
@@ -9266,6 +9295,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 filtroStatusEstoque = 'ativos';
                 filtroAtivoEstoque = 'todos';
                 filtroSetorEstoque = 'todos';
+                pesquisaRapidaEstoque = '';
                 renderMainOnly();
                 // Os filtros de coluna são criados após a renderização; limpamos os campos que existirem.
                 setTimeout( () => {
