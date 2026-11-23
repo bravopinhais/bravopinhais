@@ -16327,5 +16327,81 @@ persistido no banco ou no gateway.
                 mostrarDicaUmaVez();
             })();
         </script>
+        <!-- Monitor de conexão: avisos discretos para rede instável e salvamento demorado -->
+        <script id="guardioes-monitor-conexao-v1">
+        (function () {
+            'use strict';
+            if (window.__gbMonitorConexaoV1) return;
+            window.__gbMonitorConexaoV1 = true;
+            let avisoTimer = null;
+            let ultimoEstado = '';
+            function criarAviso() {
+                let el = document.getElementById('gb-aviso-conexao');
+                if (el) return el;
+                el = document.createElement('div');
+                el.id = 'gb-aviso-conexao';
+                el.setAttribute('role', 'status');
+                el.setAttribute('aria-live', 'polite');
+                el.style.cssText = 'position:fixed;top:calc(42px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%) translateY(-8px);z-index:10080;width:min( calc(100% - 24px), 440px );display:none;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:14px;background:#422006;color:#fff7ed;border:1px solid #92400e;box-shadow:0 10px 28px rgba(15,23,42,.22);font:600 12px/1.45 system-ui,-apple-system,sans-serif;';
+                document.body.appendChild(el);
+                return el;
+            }
+            function avisar(tipo, titulo, detalhe, duracao) {
+                const el = criarAviso();
+                const chave = tipo + '|' + titulo + '|' + detalhe;
+                if (ultimoEstado === chave && el.style.display !== 'none') return;
+                ultimoEstado = chave;
+                el.style.background = tipo === 'erro' ? '#450a0a' : tipo === 'ok' ? '#064e3b' : '#422006';
+                el.style.borderColor = tipo === 'erro' ? '#991b1b' : tipo === 'ok' ? '#047857' : '#92400e';
+                const icone = tipo === 'erro' ? 'fa-triangle-exclamation' : tipo === 'ok' ? 'fa-circle-check' : 'fa-wifi';
+                el.innerHTML = '<i class="fa-solid ' + icone + '" aria-hidden="true" style="font-size:17px;margin-top:1px"></i><span style="flex:1;min-width:0"><strong style="display:block;font-size:13px">' + titulo + '</strong><span style="display:block;font-weight:400;opacity:.92">' + detalhe + '</span></span><button type="button" aria-label="Fechar aviso" style="border:0;background:transparent;color:inherit;font-size:19px;line-height:1;padding:0 2px;min-height:24px">×</button>';
+                el.querySelector('button').addEventListener('click', () => { el.style.display = 'none'; ultimoEstado = ''; });
+                el.style.display = 'flex';
+                el.style.transform = 'translateX(-50%) translateY(0)';
+                clearTimeout(avisoTimer);
+                if (duracao) avisoTimer = setTimeout(() => { el.style.display = 'none'; ultimoEstado = ''; }, duracao);
+            }
+            function verificarConexao() {
+                if (!navigator.onLine) {
+                    avisar('alerta', 'Sem conexão com a internet', 'Seus dados podem ficar aguardando sincronização. Evite fechar a tela até confirmar o salvamento.', 0);
+                    return;
+                }
+                const c = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+                const lenta = c && (c.saveData || ['slow-2g','2g'].includes(c.effectiveType) || (Number(c.downlink) > 0 && Number(c.downlink) < 0.7));
+                if (lenta) avisar('alerta', 'Conexão instável ou lenta', 'O salvamento pode demorar. Mantenha a tela aberta até aparecer “Dados gravados”.', 9000);
+                else if (ultimoEstado.startsWith('alerta|Sem conexão')) avisar('ok', 'Conexão restabelecida', 'Aguarde a confirmação da sincronização dos dados.', 6500);
+            }
+            window.addEventListener('offline', verificarConexao);
+            window.addEventListener('online', verificarConexao);
+            const conexao = navigator.connection || navigator.mozConnection || navigator.webkitConnection;
+            if (conexao && conexao.addEventListener) conexao.addEventListener('change', verificarConexao);
+            document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') verificarConexao(); });
+            // Mede a duração da rotina de gravação sem alterar seu resultado nem sua fila.
+            function monitorarSalvamento() {
+                if (typeof window.salvarDadosNaNuvem !== 'function' || window.salvarDadosNaNuvem.__gbMonitorada) return;
+                const original = window.salvarDadosNaNuvem;
+                const monitorada = function () {
+                    const inicio = Date.now();
+                    let resultado;
+                    try { resultado = original.apply(this, arguments); }
+                    catch (erro) { throw erro; }
+                    if (resultado && typeof resultado.then === 'function') {
+                        return resultado.then(valor => {
+                            const tempo = Date.now() - inicio;
+                            if (tempo >= 5000 && navigator.onLine) avisar('alerta', 'Salvamento demorando mais que o normal', 'Sua conexão pode estar instável. Aguarde a confirmação “Dados gravados” antes de sair.', 10000);
+                            return valor;
+                        }, erro => { throw erro; });
+                    }
+                    return resultado;
+                };
+                monitorada.__gbMonitorada = true;
+                window.salvarDadosNaNuvem = monitorada;
+            }
+            monitorarSalvamento();
+            if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', monitorarSalvamento, {once:true});
+            verificarConexao();
+        })();
+        </script>
+
     </body>
 </html>
