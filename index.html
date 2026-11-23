@@ -6548,7 +6548,10 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                         }
                         if (!gravou) throw erroQuota;
                     }
-                } catch (e) { console.warn('Não foi possível guardar o rascunho deste formulário.', e); }
+                } catch (e) {
+                    console.warn('Não foi possível guardar o rascunho deste formulário.', e);
+                    mostrarAvisoRascunho('Não foi possível guardar este rascunho. Verifique o espaço disponível no aparelho e mantenha os dados copiados antes de fechar.');
+                }
             }
             function recuperarRascunhoFormulario() {
                 const container = document.getElementById('modal-container');
