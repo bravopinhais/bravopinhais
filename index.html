@@ -4358,6 +4358,49 @@
                 #app main { scroll-behavior: auto !important; transition: none !important; }
             }
         </style>
+
+        <style id="bravo-feedback-entrada-telas-2026">
+            /* Feedback imediato e discreto quando o conteúdo de um módulo é renderizado. */
+            @keyframes bravoTelaEntrar2026 {
+                from { opacity: .72; transform: translateY(5px); }
+                to { opacity: 1; transform: translateY(0); }
+            }
+            #app main > * {
+                animation: bravoTelaEntrar2026 .22s ease-out both;
+            }
+            #app main :where(button, a, input, select, textarea) {
+                -webkit-tap-highlight-color: rgba(13,148,136,.12);
+            }
+            #app main :where(button, a):focus-visible {
+                outline: 2px solid #0d9488;
+                outline-offset: 3px;
+            }
+            #app main [aria-busy="true"] {
+                cursor: progress;
+            }
+            #app main [aria-busy="true"]::after {
+                content: "";
+                display: block;
+                height: 3px;
+                width: 100%;
+                margin-top: 10px;
+                border-radius: 999px;
+                background: linear-gradient(90deg, transparent, #0d9488 45%, #5eead4 55%, transparent);
+                background-size: 220% 100%;
+                animation: bravoTelaProgresso2026 1.15s linear infinite;
+            }
+            @keyframes bravoTelaProgresso2026 {
+                from { background-position: 100% 0; }
+                to { background-position: -120% 0; }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                #app main > * { animation: none !important; }
+                #app main [aria-busy="true"]::after { animation: none !important; }
+            }
+            html[data-animacoes="desativadas"] #app main > * {
+                animation: none !important;
+            }
+        </style>
     </head>
     <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
         <!-- Indicador de Status da Nuvem -->
