@@ -4447,14 +4447,25 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                             return false;
                         }
                     }
-                    const {error} = await supabaseClient.from('condominio_dados').upsert({
-                        id: 'principal',
-                        payload: db,
-                        atualizado_em: atualizadoEm
+                    // Compare-and-swap no próprio PostgreSQL: a gravação só ocorre se a versão
+                    // ainda for exatamente a que acabámos de ler. Isso fecha a janela de corrida
+                    // entre a última consulta e o upsert tradicional.
+                    const { data: gravacaoAceita, error: erroGravacaoAtomica } = await supabaseClient.rpc('salvar_condominio_dados_se_versao', {
+                        p_payload: db,
+                        p_atualizado_em: atualizadoEm,
+                        p_versao_esperada: versaoRemota ? versaoRemota.atualizado_em : null,
+                        p_registro_existe: !!versaoRemota
                     });
-
-                    if (error)
-                        throw error;
+                    if (erroGravacaoAtomica)
+                        throw erroGravacaoAtomica;
+                    if (gravacaoAceita !== true) {
+                        marcarSyncPendente('outra sessão gravou primeiro; atualização simultânea preservada sem sobrescrita');
+                        if (elStatus) {
+                            elStatus.className = 'bg-amber-950 text-amber-300 text-[11px] font-semibold py-1.5 px-4 text-center no-print border-b border-amber-800';
+                            elStatus.innerHTML = '<i class="fa-solid fa-triangle-exclamation"></i> Outro usuário salvou alterações ao mesmo tempo. Seus dados locais foram preservados; atualize a tela e revise antes de tentar novamente.';
+                        }
+                        return false;
+                    }
                     limparSyncPendente();
                     atualizarVersaoConhecidaNuvem(atualizadoEm);
                     if (elStatus) {
