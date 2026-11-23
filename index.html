@@ -4085,6 +4085,78 @@
                 #app main textarea { transition: none !important; }
             }
         </style>
+
+        <style id="bravo-modais-janela-polimento-2026">
+            /* Modais mais confortáveis, com foco em leitura e uso por toque. */
+            #modal-container {
+                overscroll-behavior: contain;
+            }
+            #modal-container > div {
+                overscroll-behavior: contain;
+                -webkit-tap-highlight-color: transparent;
+            }
+            #modal-container > div > div {
+                overscroll-behavior: contain;
+                scrollbar-width: thin;
+                scrollbar-color: #cbd5e1 transparent;
+                -webkit-overflow-scrolling: touch;
+            }
+            #modal-container > div > div h1,
+            #modal-container > div > div h2,
+            #modal-container > div > div h3 {
+                text-wrap: balance;
+                line-height: 1.25;
+            }
+            #modal-container input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+            #modal-container select,
+            #modal-container textarea {
+                min-height: 42px;
+                border-radius: 11px;
+                max-width: 100%;
+            }
+            #modal-container input:focus,
+            #modal-container select:focus,
+            #modal-container textarea:focus {
+                outline: none;
+                border-color: #14b8a6;
+                box-shadow: 0 0 0 3px rgba(20,184,166,.14);
+            }
+            #modal-container button {
+                touch-action: manipulation;
+            }
+            #modal-container button:focus-visible {
+                outline: 3px solid rgba(20,184,166,.5);
+                outline-offset: 2px;
+            }
+            @media (max-width: 640px) {
+                #modal-container > div {
+                    padding: max(10px, env(safe-area-inset-top)) 10px max(10px, env(safe-area-inset-bottom));
+                    align-items: center;
+                }
+                #modal-container > div > div {
+                    width: 100%;
+                    max-width: 100%;
+                    max-height: calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 20px);
+                    padding-left: clamp(14px, 4vw, 22px);
+                    padding-right: clamp(14px, 4vw, 22px);
+                    border-radius: 20px;
+                }
+                #modal-container input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),
+                #modal-container select,
+                #modal-container textarea {
+                    font-size: 16px;
+                }
+                #modal-container button {
+                    min-height: 40px;
+                }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                #modal-container > div,
+                #modal-container > div > div {
+                    animation: none !important;
+                }
+            }
+        </style>
     </head>
     <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
         <!-- Indicador de Status da Nuvem -->
