@@ -3394,6 +3394,23 @@
                 }
             }
 
+            function _removerAnexosSeSemReferencia(paths, registroIgnorado = null) {
+                const candidatos = [...new Set((paths || []).filter(Boolean))];
+                const seguros = candidatos.filter(path => {
+                    for (const chave of Object.keys(db || {})) {
+                        const lista = db[chave];
+                        if (!Array.isArray(lista)) continue;
+                        for (const registro of lista) {
+                            if (!registro || registro === registroIgnorado) continue;
+                            if (registro.arquivoPath === path || registro.fotoPath === path) return false;
+                        }
+                    }
+                    return true;
+                });
+                if (seguros.length) _removerAnexosStorage(seguros);
+                return seguros;
+            }
+
             function _removerAnexosStorage(paths) {
                 const lista = (paths || []).filter(Boolean);
                 if (!lista.length)
@@ -8803,7 +8820,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     fotoCompactadaGzip: tempEstoqueFotoPath ? '' : (tempEstoqueFotoGzip || (itemExistente ? itemExistente.fotoCompactadaGzip : ''))
                 };
                 if (itemExistente && itemExistente.fotoPath && tempEstoqueFotoPath && itemExistente.fotoPath !== tempEstoqueFotoPath)
-                    _removerAnexosStorage([itemExistente.fotoPath]);
+                    _removerAnexosSeSemReferencia([itemExistente.fotoPath], itemExistente);
                 const idx = db.estoque.findIndex(x => x.id === obj.id);
                 if (idx !== -1)
                     db.estoque[idx] = obj;
@@ -9809,7 +9826,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     arquivoCompactadoGzip: tempArquivoPath ? '' : (tempArquivoGzipBase64 || (docExistente ? docExistente.arquivoCompactadoGzip : ''))
                 };
                 if (docExistente && docExistente.arquivoPath && tempArquivoPath && docExistente.arquivoPath !== tempArquivoPath)
-                    _removerAnexosStorage([docExistente.arquivoPath]);
+                    _removerAnexosSeSemReferencia([docExistente.arquivoPath], docExistente);
 
                 const idx = db.documentos.findIndex(x => x.id === obj.id);
                 if (idx !== -1)
@@ -10055,7 +10072,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 if (db[col]) {
                     const removido = db[col].find(x => x.id === id);
                     if (removido)
-                        _removerAnexosStorage([removido.arquivoPath, removido.fotoPath]);
+                        _removerAnexosSeSemReferencia([removido.arquivoPath, removido.fotoPath], removido);
                     db[col] = db[col].filter(x => x.id !== id);
                     salvarDados(db);
                     renderMainOnly();
