@@ -16752,5 +16752,99 @@ persistido no banco ou no gateway.
             }
         </style>
 
+        <style id="bravo-cabecalhos-modulos-2026">
+            /* Cabeçalho padrão dos módulos: título, contexto e ações em uma área única. */
+            #app main > div:first-child.flex.flex-col {
+                position:relative;
+                isolation:isolate;
+                overflow:hidden;
+                padding:clamp(16px,2.2vw,24px);
+                margin:0 0 24px !important;
+                border:1px solid #dbe7e9;
+                border-radius:22px;
+                background:linear-gradient(115deg,#ffffff 0%,#f8fbfc 62%,#effaf8 100%);
+                box-shadow:0 8px 24px rgba(15,23,42,.045);
+                gap:16px;
+            }
+            #app main > div:first-child.flex.flex-col::before {
+                content:"";
+                position:absolute;
+                z-index:-1;
+                top:0;left:0;bottom:0;
+                width:4px;
+                border-radius:22px 0 0 22px;
+                background:linear-gradient(180deg,#0d9488,#34d399);
+            }
+            #app main > div:first-child.flex.flex-col h2 {
+                margin:0;
+                color:#0f172a;
+                font-size:clamp(1.35rem,2.2vw,1.85rem);
+                line-height:1.2;
+                letter-spacing:-.035em;
+            }
+            #app main > div:first-child.flex.flex-col p {
+                margin-top:6px;
+                color:#64748b;
+                font-size:11px;
+                line-height:1.5;
+                letter-spacing:.015em;
+            }
+            #app main > div:first-child.flex.flex-col .no-print {
+                display:flex;
+                align-items:center;
+                gap:9px;
+            }
+            #app main > div:first-child.flex.flex-col .no-print > button,
+            #app main > div:first-child.flex.flex-col .no-print > label {
+                min-height:40px;
+                justify-content:center;
+                border-radius:13px;
+                box-shadow:0 3px 9px rgba(15,23,42,.08);
+                transition:transform .18s ease,box-shadow .18s ease,filter .18s ease;
+            }
+            #app main > div:first-child.flex.flex-col .no-print > button:hover,
+            #app main > div:first-child.flex.flex-col .no-print > label:hover {
+                transform:translateY(-1px);
+                box-shadow:0 7px 16px rgba(15,23,42,.12);
+            }
+            #app main > div:first-child.flex.flex-col .no-print > button:active,
+            #app main > div:first-child.flex.flex-col .no-print > label:active {
+                transform:scale(.98);
+            }
+            @media(max-width:640px) {
+                #app main > div:first-child.flex.flex-col {
+                    padding:16px 15px;
+                    margin-bottom:18px !important;
+                    border-radius:18px;
+                    gap:13px;
+                }
+                #app main > div:first-child.flex.flex-col::before {
+                    border-radius:18px 0 0 18px;
+                }
+                #app main > div:first-child.flex.flex-col .no-print {
+                    display:grid;
+                    grid-template-columns:repeat(2,minmax(0,1fr));
+                    width:100%;
+                    gap:8px;
+                }
+                #app main > div:first-child.flex.flex-col .no-print > button,
+                #app main > div:first-child.flex.flex-col .no-print > label {
+                    min-width:0;
+                    min-height:42px;
+                    padding:9px 10px;
+                    font-size:11px;
+                    line-height:1.25;
+                    white-space:normal;
+                    text-align:center;
+                }
+            }
+            @media(prefers-reduced-motion:reduce) {
+                #app main > div:first-child.flex.flex-col .no-print > button,
+                #app main > div:first-child.flex.flex-col .no-print > label {
+                    transition:none;
+                }
+            }
+        </style>
+
     </body>
 </html>
