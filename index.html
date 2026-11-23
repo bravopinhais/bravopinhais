@@ -3474,6 +3474,38 @@
                 #app main button { transition: none !important; }
             }
         </style>
+        <style id="bravo-card-modernizacao-2026">
+            /* Cards: acabamento consistente, sem interferir no conteúdo ou nas ações internas. */
+            #app main .card-modern {
+                background-color: #fff;
+                border: 1px solid #e6edf3 !important;
+                border-radius: 20px !important;
+                box-shadow: 0 5px 18px rgba(15, 23, 42, .045);
+                transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease;
+                background-clip: padding-box;
+            }
+
+            @media (hover: hover) and (pointer: fine) {
+                #app main .card-modern:hover {
+                    border-color: #cbdedb !important;
+                    box-shadow: 0 12px 28px rgba(15, 23, 42, .075);
+                    transform: translateY(-2px);
+                }
+            }
+
+            @media (max-width: 640px) {
+                #app main .card-modern {
+                    border-radius: 16px !important;
+                    box-shadow: 0 4px 14px rgba(15, 23, 42, .04);
+                }
+            }
+
+            @media (prefers-reduced-motion: reduce) {
+                #app main .card-modern {
+                    transition: none !important;
+                }
+            }
+        </style>
     </head>
     <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
         <!-- Indicador de Status da Nuvem -->
