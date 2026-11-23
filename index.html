@@ -4441,6 +4441,36 @@
                 }
             }
         </style>
+
+        <style id="bravo-carregamento-telas-2026">
+            /* Indicador discreto de atualização do módulo, sem bloquear interações. */
+            body.bravo-renderizando-modulo::before {
+                content: "";
+                position: fixed;
+                z-index: 99999;
+                top: 0;
+                left: 0;
+                width: 38%;
+                height: 3px;
+                border-radius: 0 4px 4px 0;
+                pointer-events: none;
+                background: linear-gradient(90deg, #0d9488, #5eead4, #0d9488);
+                box-shadow: 0 1px 8px rgba(13,148,136,.32);
+                animation: bravo-progresso-tela .52s cubic-bezier(.2,.75,.25,1) forwards;
+            }
+            @keyframes bravo-progresso-tela {
+                0% { width: 4%; opacity: .65; }
+                45% { width: 68%; opacity: 1; }
+                85% { width: 92%; opacity: 1; }
+                100% { width: 100%; opacity: 0; }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                body.bravo-renderizando-modulo::before { animation-duration: .01ms; }
+            }
+            html[data-animacoes="desativadas"] body.bravo-renderizando-modulo::before {
+                animation-duration: .01ms !important;
+            }
+        </style>
     </head>
     <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
         <!-- Indicador de Status da Nuvem -->
@@ -7692,6 +7722,12 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
             function renderMainOnly() {
                 const mainEl = document.querySelector('main');
                 if (mainEl) {
+                    // Feedback visual breve durante a atualização do conteúdo central.
+                    document.body.classList.add('bravo-renderizando-modulo');
+                    clearTimeout(window.__bravoRenderFeedbackTimer);
+                    window.__bravoRenderFeedbackTimer = setTimeout(() => {
+                        document.body.classList.remove('bravo-renderizando-modulo');
+                    }, 520);
                     liberarGraficosForaDaTela();
                     mainEl.innerHTML = renderModuleContent(tabsState.activeTab);
                     if (tabsState.activeTab === 'configuracoes') atualizarPainelSaudeSistema();
