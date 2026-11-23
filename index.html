@@ -4401,6 +4401,46 @@
                 animation: none !important;
             }
         </style>
+
+        <style id="bravo-progresso-salvamento-2026">
+            /* Feedback visual contínuo enquanto uma gravação aguarda a nuvem. */
+            #bravo-card-dados-gravados:has(.fa-rotate) {
+                overflow: hidden;
+                padding-bottom: 18px !important;
+            }
+            #bravo-card-dados-gravados:has(.fa-rotate)::after {
+                content: "";
+                position: absolute;
+                left: 0;
+                bottom: 0;
+                width: 38%;
+                height: 3px;
+                border-radius: 0 99px 99px 0;
+                background: linear-gradient(90deg, #38bdf8, #5eead4, #38bdf8);
+                background-size: 200% 100%;
+                animation: bravo-progresso-salvamento 1.35s ease-in-out infinite;
+                box-shadow: 0 0 10px rgba(94,234,212,.35);
+            }
+            #bravo-card-dados-gravados:has(.fa-rotate) .fa-rotate {
+                animation-duration: 1.2s;
+            }
+            @keyframes bravo-progresso-salvamento {
+                0% { left: 0; width: 12%; background-position: 0 0; }
+                50% { left: 42%; width: 48%; background-position: 100% 0; }
+                100% { left: 100%; width: 12%; background-position: 0 0; }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                #bravo-card-dados-gravados:has(.fa-rotate)::after {
+                    animation: none;
+                    left: 0;
+                    width: 100%;
+                    opacity: .65;
+                }
+                #bravo-card-dados-gravados:has(.fa-rotate) .fa-rotate {
+                    animation: none !important;
+                }
+            }
+        </style>
     </head>
     <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
         <!-- Indicador de Status da Nuvem -->
