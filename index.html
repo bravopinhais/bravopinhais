@@ -17794,5 +17794,76 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
 }
 </style>
 
+
+<style id="bravo-tabelas-filtros-leitura-2026">
+/* Consulta de dados: contraste, leitura por linha e filtros agrupados. */
+#app main :is(.overflow-x-auto,.overflow-auto):has(>table){
+ max-width:100%;overscroll-behavior-x:contain;
+ scrollbar-width:thin;scrollbar-color:#bdcdd3 transparent;
+}
+#app main table thead th{
+ position:relative;z-index:1;
+}
+#app main table tbody tr:nth-child(even) td{
+ background-color:#fbfdfe;
+}
+#app main table tbody tr:nth-child(even):hover td{
+ background-color:#eff9f7!important;
+}
+#app main table tbody td{
+ max-width:360px;
+}
+#app main table tbody td :is(a,button){
+ overflow-wrap:anywhere;
+}
+#app main table tbody td .whitespace-nowrap{
+ white-space:nowrap;
+}
+#app main :is(.card-modern,.bg-white):has(input[type=search]){
+ min-width:0;
+}
+#app main input[type=search]{
+ max-width:100%;
+}
+#app main :is(input[type=search],select):focus-visible{
+ outline:3px solid rgba(13,148,136,.18);
+ outline-offset:1px;
+}
+#app main :is(.flex,.grid):has(>input[type=search]){
+ min-width:0;
+}
+#app main table tbody td [class*="bg-green-"],
+#app main table tbody td [class*="bg-emerald-"],
+#app main table tbody td [class*="bg-red-"],
+#app main table tbody td [class*="bg-rose-"],
+#app main table tbody td [class*="bg-amber-"],
+#app main table tbody td [class*="bg-yellow-"]{
+ display:inline-flex;align-items:center;justify-content:center;
+ min-height:24px;padding:4px 9px;border-radius:999px;
+ font-size:10px;font-weight:800;line-height:1.25;
+}
+#app main table tbody td[colspan]{
+ text-align:center;
+}
+@media(max-width:640px){
+ #app main :is(.overflow-x-auto,.overflow-auto):has(>table){
+  -webkit-overflow-scrolling:touch;
+  scroll-padding-inline:10px;
+ }
+ #app main table{font-variant-numeric:tabular-nums;}
+ #app main table tbody td{max-width:220px;}
+ #app main table tbody td button{white-space:nowrap;}
+ #app main :is(.flex,.grid):has(>input[type=search]){
+  flex-wrap:wrap;gap:9px;
+ }
+ #app main :is(.flex,.grid):has(>input[type=search])>input[type=search]{
+  flex:1 1 100%;width:100%;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ #app main table tbody tr{transition:none!important;}
+}
+</style>
+
 </body>
 </html>
