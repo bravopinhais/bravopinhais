@@ -21458,4 +21458,201 @@ html,body,#app{background:#fff!important;color:#171717!important}
             }
 nt; }
             }
+
+            /* ===== Experiência mobile: navegação e leitura ===== */
+            html, body {
+                max-width: 100%;
+                overflow-x: hidden;
+            }
+            #app > div.flex-1.flex.flex-col.md\\:flex-row {
+                min-width: 0;
+                width: 100%;
+            }
+            #sidebar-backdrop {
+                background: rgba(0,0,0,.42) !important;
+                -webkit-backdrop-filter: blur(2px);
+                backdrop-filter: blur(2px);
+            }
+            #sidebar-menu {
+                height: 100dvh !important;
+                max-height: 100dvh !important;
+                overflow: hidden !important;
+                display: flex !important;
+                flex-direction: column !important;
+            }
+            #sidebar-menu > div:first-child {
+                flex: 0 0 auto;
+                min-height: 70px;
+                padding: 14px 16px !important;
+            }
+            #sidebar-menu nav {
+                flex: 1 1 auto;
+                min-height: 0;
+                overflow-y: auto !important;
+                overscroll-behavior: contain;
+                scrollbar-width: thin;
+                scrollbar-color: #d4d4d4 transparent;
+            }
+            #sidebar-menu > div:last-child {
+                flex: 0 0 auto;
+                background: #ffffff !important;
+                border-top: 1px solid #e5e5e5 !important;
+                padding-bottom: max(14px, env(safe-area-inset-bottom)) !important;
+            }
+            #sidebar-menu > div:last-child span:first-child {
+                color: #171717 !important;
+            }
+            #sidebar-menu > div:last-child span:nth-child(2) {
+                color: #737373 !important;
+            }
+            #sidebar-menu > div:last-child button {
+                color: #525252 !important;
+            }
+            #app .gb-tabs-scroller,
+            #app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto {
+                background: #f7f7f7 !important;
+                border-color: #e5e5e5 !important;
+                scrollbar-width: none;
+            }
+            #app .gb-tabs-scroller::-webkit-scrollbar,
+            #app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto::-webkit-scrollbar {
+                display: none;
+            }
+            #app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto > div {
+                border: 1px solid transparent !important;
+                border-radius: 11px 11px 0 0 !important;
+                background: transparent !important;
+                color: #737373 !important;
+            }
+            #app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto > div.tab-active,
+            #app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto > div[class*="tab-active"] {
+                background: #ffffff !important;
+                color: #171717 !important;
+                border-color: #e5e5e5 !important;
+                border-bottom-color: #ffffff !important;
+            }
+            #app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto > div button {
+                color: inherit !important;
+                background: transparent !important;
+            }
+            #ai-painel {
+                border-color: #e5e5e5 !important;
+                box-shadow: 0 18px 48px rgba(0,0,0,.16) !important;
+            }
+            .ai-topo {
+                background: #171717 !important;
+                color: #ffffff !important;
+            }
+            .ai-msg.eu, .ai-acao, #ai-form button {
+                background: #171717 !important;
+                color: #ffffff !important;
+            }
+            #ai-msgs { background: #f7f7f7 !important; }
+            #ai-chips button {
+                color: #404040 !important;
+                background: #f5f5f5 !important;
+                border-color: #e5e5e5 !important;
+            }
+            @media (max-width: 768px) {
+                #app > div.flex-1.flex.flex-col.md\\:flex-row > div.flex-1.flex.flex-col {
+                    width: 100%;
+                    min-width: 0;
+                }
+                #app header.bg-slate-950 {
+                    min-height: 60px;
+                    padding: 10px 14px !important;
+                    background: #ffffff !important;
+                    color: #171717 !important;
+                    border-bottom: 1px solid #e5e5e5 !important;
+                    position: sticky;
+                    top: 0;
+                    z-index: 30;
+                }
+                #app header.bg-slate-950 > button {
+                    width: 42px;
+                    height: 42px;
+                    display: inline-flex;
+                    align-items: center;
+                    justify-content: center;
+                    padding: 0 !important;
+                    background: #f3f3f3 !important;
+                    color: #171717 !important;
+                    border: 1px solid #e5e5e5 !important;
+                    border-radius: 12px !important;
+                }
+                #app header.bg-slate-950 > div > div {
+                    background: #171717 !important;
+                    color: #ffffff !important;
+                    box-shadow: none !important;
+                }
+                #app header.bg-slate-950 > div span {
+                    color: #171717 !important;
+                    font-weight: 750 !important;
+                }
+                #app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto {
+                    position: sticky;
+                    top: 60px;
+                    z-index: 25;
+                    min-height: 48px;
+                    padding: 7px 10px 0 !important;
+                    gap: 6px !important;
+                    background: rgba(247,247,247,.97) !important;
+                    -webkit-backdrop-filter: blur(12px);
+                    backdrop-filter: blur(12px);
+                }
+                #app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto > div {
+                    min-height: 39px;
+                    padding: 9px 12px !important;
+                    font-size: 11px !important;
+                }
+                #app main {
+                    width: 100%;
+                    min-width: 0;
+                    padding: 16px 13px max(22px, env(safe-area-inset-bottom)) !important;
+                    overflow-x: hidden;
+                }
+                #app main > * {
+                    min-width: 0;
+                    max-width: 100%;
+                }
+                #cabecalho-modulo-global {
+                    gap: 12px !important;
+                }
+                #cabecalho-modulo-global > div:last-child {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px !important;
+                }
+                #cabecalho-modulo-global > div:last-child > button,
+                #cabecalho-modulo-global > div:last-child > label {
+                    min-height: 40px;
+                    padding: 9px 12px !important;
+                    font-size: 11px !important;
+                    border-radius: 11px !important;
+                }
+                #ai-painel {
+                    position: fixed !important;
+                    left: 10px !important;
+                    right: 10px !important;
+                    bottom: max(78px, calc(env(safe-area-inset-bottom) + 70px)) !important;
+                    width: auto !important;
+                    max-width: 520px;
+                    margin-left: auto;
+                    margin-right: auto;
+                    height: min(68dvh, 560px) !important;
+                }
+            }
+            @media (max-width: 380px) {
+                #app header.bg-slate-950 > div span {
+                    font-size: 12px !important;
+                }
+                #cabecalho-modulo-global h2 {
+                    font-size: 22px !important;
+                }
+                #cabecalho-modulo-global > div:last-child > button,
+                #cabecalho-modulo-global > div:last-child > label {
+                    flex: 1 1 100%;
+                    justify-content: center;
+                }
+            }
 </style>
