@@ -20128,3 +20128,88 @@ body.bg-slate-100{background:#fff!important;color:#222!important}
  #gb-notifications-toggle,#gb-notifications-toggle .gb-bell-icon{animation:none!important;transition:none!important}
 }
 </style>
+
+<style id="bravo-mobile-cabecalho-status-atalho-monocromatico-2026">
+/* Ajuste guiado pela visualização mobile: unifica cabeçalho, sincronização e atalho flutuante. */
+#status-nuvem{
+  background:#fff!important;
+  color:#333!important;
+  border:0!important;
+  border-bottom:1px solid #e8e8e8!important;
+  box-shadow:none!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+#status-nuvem i{color:#555!important;filter:none!important}
+
+/* Cabeçalho compacto do aplicativo no celular */
+#app header.md\\:hidden{
+  background:#fff!important;
+  color:#171717!important;
+  border:0!important;
+  border-bottom:1px solid #e7e7e7!important;
+  box-shadow:none!important;
+}
+#app header.md\\:hidden button{
+  background:#f5f5f5!important;
+  color:#222!important;
+  border:1px solid #e4e4e4!important;
+  border-radius:11px!important;
+  box-shadow:none!important;
+}
+#app header.md\\:hidden button:hover{background:#ededed!important}
+#app header.md\\:hidden .bg-teal-600,
+#app header.md\\:hidden [class*="bg-gradient"]{
+  background:#ededed!important;
+  color:#222!important;
+  box-shadow:none!important;
+}
+#app header.md\\:hidden span{color:#222!important}
+
+/* Barra de abas: cinza muito claro, seleção preta e sem azul */
+#app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto{
+  background:#fafafa!important;
+  border-color:#e8e8e8!important;
+  box-shadow:none!important;
+  -webkit-backdrop-filter:none!important;
+  backdrop-filter:none!important;
+}
+#app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto>div.tab-active{
+  background:#222!important;
+  color:#fff!important;
+  border-color:#222!important;
+  box-shadow:none!important;
+}
+#app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto>div:not(.tab-active){
+  background:#f0f0f0!important;
+  color:#555!important;
+}
+
+/* Atalho flutuante das abas: preto e branco, mantendo o mesmo funcionamento */
+#gb-nav-bubble{
+  background:#222!important;
+  color:#fff!important;
+  border:2px solid #fff!important;
+  box-shadow:0 3px 12px rgba(0,0,0,.16)!important;
+}
+#gb-nav-bubble:focus-visible{
+  outline:2px solid #555!important;
+  outline-offset:3px!important;
+}
+#gb-nav-bubble-style + #gb-nav-bubble{background:#222!important}
+#gb-nav-bubble-tip{
+  background:#fff!important;
+  color:#222!important;
+  border:1px solid #ddd!important;
+  box-shadow:0 4px 16px rgba(0,0,0,.12)!important;
+}
+#gb-nav-bubble-tip button{
+  background:#222!important;
+  color:#fff!important;
+}
+@media(max-width:640px){
+  #status-nuvem{min-height:36px!important;padding:8px 10px!important;font-size:11px!important}
+  #app header.md\\:hidden{min-height:66px!important;padding:10px 14px!important}
+  #app header.md\\:hidden span{font-size:13px!important}
+}
+</style>
