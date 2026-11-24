@@ -20058,3 +20058,73 @@ body.bg-slate-100{background:#fff!important;color:#222!important}
   #app main button:not(:disabled):active,#modal-container button:not(:disabled):active{transform:none!important}
 }
 </style>
+
+
+<style id="bravo-status-avisos-etiquetas-monocromatico-2026">
+/* Décima etapa: estados, etiquetas, avisos e notificações em escala neutra. */
+/* Mantém a informação semântica pelo texto e ícones; remove apenas o excesso cromático. */
+#app main :is(.bg-emerald-50,.bg-green-50,.bg-teal-50,.bg-sky-50,.bg-blue-50,.bg-amber-50,.bg-yellow-50,.bg-rose-50,.bg-red-50,.bg-orange-50){
+ background:#f5f5f5!important;color:#444!important;border-color:#e5e5e5!important;
+ box-shadow:none!important;
+}
+#app main :is(.text-emerald-700,.text-emerald-800,.text-green-700,.text-green-800,.text-teal-700,.text-teal-800,.text-sky-700,.text-blue-700,.text-amber-700,.text-amber-800,.text-yellow-700,.text-rose-700,.text-rose-800,.text-red-700,.text-red-800,.text-orange-700){
+ color:#444!important;
+}
+#app main :is(.border-emerald-200,.border-green-200,.border-teal-200,.border-sky-200,.border-blue-200,.border-amber-200,.border-yellow-200,.border-rose-200,.border-red-200,.border-orange-200){
+ border-color:#e3e3e3!important;
+}
+/* Badges e etiquetas compactas */
+#app main :is(span,small)[class*="rounded-full"][class*="px-"],
+#app main :is(span,small)[class*="rounded-lg"][class*="px-"]{
+ box-shadow:none!important;
+}
+#app main :is(.inline-flex.items-center.gap-1,.inline-flex.items-center.gap-1\.5)[class*="rounded-full"]{
+ border-color:#e1e1e1!important;
+}
+/* Alertas e avisos: cartão branco com faixa lateral discreta. */
+#app main .dashboard-shell [class*="border-rose-"][class*="bg-rose-"],
+#app main .dashboard-shell [class*="border-amber-"][class*="bg-amber-"],
+#app main .dashboard-shell [class*="border-emerald-"][class*="bg-emerald-"],
+#app main .dashboard-shell [class*="border-sky-"][class*="bg-sky-"]{
+ background:#fafafa!important;border-color:#e5e5e5!important;color:#333!important;
+ box-shadow:none!important;
+}
+#app main .dashboard-shell [class*="border-rose-"][class*="bg-rose-"]{border-left:3px solid #777!important}
+#app main .dashboard-shell [class*="border-amber-"][class*="bg-amber-"]{border-left:3px solid #999!important}
+#app main .dashboard-shell [class*="border-emerald-"][class*="bg-emerald-"]{border-left:3px solid #555!important}
+#app main .dashboard-shell [class*="border-sky-"][class*="bg-sky-"]{border-left:3px solid #bbb!important}
+/* Status de conexão e central de notificações */
+#status-nuvem{
+ background:#fff!important;color:#444!important;border:1px solid #e5e5e5!important;
+ box-shadow:none!important;
+}
+#status-nuvem :is(i,svg){color:#555!important}
+#gb-notifications-anchor{
+ background:#f7f7f7!important;border-left:1px solid #e5e5e5!important;
+}
+#gb-notifications-toggle{
+ background:#fff!important;color:#222!important;border:1px solid #e2e2e2!important;
+ border-radius:9px!important;box-shadow:none!important;
+}
+#gb-notifications-toggle:hover{
+ background:#f1f1f1!important;border-color:#ccc!important;transform:none!important;
+}
+#gb-notifications-toggle .gb-bell-icon{color:#444!important}
+#gb-notifications-toggle.gb-has-unread .gb-bell-icon{color:#222!important}
+#gb-notifications-count{
+ background:#222!important;color:#fff!important;box-shadow:none!important;
+}
+#gb-notifications-toggle:focus-visible{
+ outline:2px solid #777!important;outline-offset:2px!important;
+}
+@media(max-width:640px){
+ #app main :is(.inline-flex.items-center.gap-1,.inline-flex.items-center.gap-1\.5)[class*="rounded-full"]{
+  max-width:100%;white-space:normal;
+ }
+ #gb-notifications-anchor{padding:0 5px!important}
+ #gb-notifications-toggle{min-height:36px!important;padding:7px 9px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #gb-notifications-toggle,#gb-notifications-toggle .gb-bell-icon{animation:none!important;transition:none!important}
+}
+</style>
