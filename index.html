@@ -18024,5 +18024,88 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
 }
 </style>
 
+
+<style id="bravo-interacoes-selecao-botoes-2026">
+/* Estados de interação: consistência visual, feedback claro e foco acessível. */
+#app main :is(button,[role="button"],a),
+#sidebar-menu nav button{
+ -webkit-tap-highlight-color:transparent;
+}
+#app main button{
+ border-radius:10px;
+ transition:background-color .16s ease,border-color .16s ease,color .16s ease,box-shadow .16s ease,transform .16s ease,filter .16s ease;
+}
+#app main button:focus-visible,
+#app main [role="button"]:focus-visible,
+#app main a:focus-visible,
+#sidebar-menu nav button:focus-visible{
+ outline:3px solid rgba(20,184,166,.48)!important;
+ outline-offset:3px!important;
+ box-shadow:0 0 0 2px rgba(255,255,255,.88)!important;
+}
+#app main button:disabled,
+#app main button[aria-disabled="true"]{
+ cursor:not-allowed!important;
+ opacity:.52;
+ filter:saturate(.65);
+ box-shadow:none!important;
+ transform:none!important;
+}
+#app main button:is([class*="bg-teal-"],[class*="bg-brand-"]):not(:disabled){
+ box-shadow:0 3px 9px rgba(13,148,136,.13);
+}
+#app main button:is([class*="bg-teal-"],[class*="bg-brand-"]):not(:disabled):hover{
+ filter:brightness(.97) saturate(1.05);
+ box-shadow:0 5px 13px rgba(13,148,136,.19);
+}
+#app main button:is([class*="bg-red-"],[class*="bg-rose-"]):not(:disabled):hover{
+ filter:brightness(.96);
+ box-shadow:0 4px 11px rgba(220,38,38,.13);
+}
+#app main button:is([class*="bg-slate-"],[class*="bg-gray-"],[class*="bg-white"]):not(:disabled):hover{
+ border-color:rgba(13,148,136,.25);
+}
+#app main button:not(:disabled):active,
+#sidebar-menu nav button:not(:disabled):active{
+ transform:translateY(1px) scale(.99);
+}
+#app main .tab-active,
+#app main [aria-selected="true"]{
+ color:#0f766e;
+}
+#app main input[type="checkbox"],
+#app main input[type="radio"]{
+ accent-color:#0d9488;
+}
+#app main :is(select,input,textarea):focus-visible{
+ outline:3px solid rgba(20,184,166,.24)!important;
+ outline-offset:1px;
+}
+#sidebar-menu nav button{
+ min-height:42px;
+ border-radius:12px;
+}
+@media(max-width:640px){
+ #app main button:not(.h-7):not(.h-8):not(.text-xs){
+  min-height:40px;
+ }
+ #sidebar-menu nav button{min-height:44px;}
+}
+@media(hover:none){
+ #app main button:not(:disabled):active{
+  filter:brightness(.96);
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ #app main button,#sidebar-menu nav button{
+  transition:none!important;
+ }
+ #app main button:not(:disabled):active,
+ #sidebar-menu nav button:not(:disabled):active{
+  transform:none!important;
+ }
+}
+</style>
+
 </body>
 </html>
