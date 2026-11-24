@@ -11188,6 +11188,63 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
 }
 </style>
 
+
+<style id="bravo-tabelas-listas-polish-2026">
+/* Tabelas e listas: leitura organizada sem remover colunas ou dados. */
+#app main .overflow-x-auto:has(>table),
+#app main .overflow-x-auto:has(table){
+ border:1px solid #e4ebf0;border-radius:16px;
+ background:rgba(255,255,255,.82);
+ box-shadow:0 5px 18px rgba(15,35,50,.035);
+ scrollbar-width:thin;scrollbar-color:#b8cbd1 transparent;
+}
+#app main .overflow-x-auto:has(table) table{
+ border-collapse:separate;border-spacing:0;
+}
+#app main table thead th{
+ background:#f4f8fa;color:#607482;
+ font-size:10px;font-weight:850;letter-spacing:.055em;
+ line-height:1.4;white-space:nowrap;
+ border-bottom:1px solid #e4ebf0;
+}
+#app main table thead tr:first-child th:first-child{border-top-left-radius:10px;}
+#app main table thead tr:first-child th:last-child{border-top-right-radius:10px;}
+#app main table tbody tr{
+ transition:background-color .14s ease;
+}
+#app main table tbody tr:not(:last-child) td{
+ border-bottom:1px solid #edf1f4;
+}
+#app main table tbody tr:hover{background-color:rgba(235,247,246,.62);}
+#app main table tbody td{
+ color:#405565;vertical-align:middle;
+}
+#app main table tbody td :is(button,a){white-space:nowrap;}
+#app main table tbody td button{
+ transition:background-color .14s ease,border-color .14s ease,transform .14s ease;
+}
+#app main table tbody td button:focus-visible{
+ outline:3px solid rgba(20,184,166,.35);outline-offset:2px;
+}
+#app main table tbody tr td[colspan]{
+ color:#8495a2;text-align:center;line-height:1.6;
+}
+#app main .overflow-x-auto:has(table)::-webkit-scrollbar{height:8px;}
+#app main .overflow-x-auto:has(table)::-webkit-scrollbar-thumb{
+ background:#c4d3d9;border:2px solid transparent;border-radius:20px;background-clip:padding-box;
+}
+@media(max-width:640px){
+ #app main .overflow-x-auto:has(table){border-radius:13px;}
+ #app main table thead th{font-size:9px;}
+ #app main table tbody td{font-size:11px;}
+ #app main table :is(th,td){padding:11px 12px;}
+ #app main table tbody td button{min-width:36px;min-height:36px;}
+}
+@media(prefers-reduced-motion:reduce){
+ #app main table tbody tr,#app main table tbody td button{transition:none!important;}
+}
+</style>
+
 </body></html>`;
                 win.document.open();
                 win.document.write(doc);
