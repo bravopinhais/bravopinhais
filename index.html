@@ -22202,3 +22202,35 @@ body.bravo-renderizando-modulo::before{
  display:inline-flex;align-items:center;justify-content:center;line-height:1
 }
 </style>
+
+
+<!-- Etapa 41 — força a fonte e o estado padrão dos ícones -->
+<style id="bravo-icones-menu-etapa-41">
+#sidebar-menu nav button>i.fa-solid,
+#sidebar-menu nav button>i.fa-regular,
+#sidebar-menu nav button>i.fa-brands,
+#sidebar-menu nav a>i.fa-solid,
+#sidebar-menu nav a>i.fa-regular,
+#sidebar-menu nav a>i.fa-brands{
+ font-family:"Font Awesome 6 Free","Font Awesome 6 Brands"!important;
+ font-style:normal!important;font-weight:900!important;
+ font-variant:normal!important;text-rendering:auto!important;
+ -webkit-font-smoothing:antialiased!important;
+ opacity:1!important;visibility:visible!important;
+ color:#555!important;-webkit-text-fill-color:#555!important;
+}
+#sidebar-menu nav button:not([aria-current="page"]):not([class*="bg-"])>i.fa-solid,
+#sidebar-menu nav button:not([aria-current="page"]):not([class*="bg-"])>i.fa-regular,
+#sidebar-menu nav a>i.fa-solid,
+#sidebar-menu nav a>i.fa-regular{
+ color:#555!important;-webkit-text-fill-color:#555!important
+}
+#sidebar-menu nav button:hover>i,
+#sidebar-menu nav a:hover>i{
+ color:#222!important;-webkit-text-fill-color:#222!important
+}
+#sidebar-menu nav button[aria-current="page"]>i,
+#sidebar-menu nav button[class*="bg-"]>i{
+ color:#fff!important;-webkit-text-fill-color:#fff!important
+}
+</style>
