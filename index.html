@@ -21933,3 +21933,128 @@ body.bravo-renderizando-modulo::before{
  #app main .dashboard-shell .dashboard-operations-grid table tbody td{padding:11px 10px!important}
 }
 </style>
+
+
+<!-- Etapa 38 — acessos rápidos e contornos do dashboard -->
+<style id="bravo-dashboard-acessos-contornos-etapa-38">
+/* Bloco de acessos rápidos: painel mais definido e alinhado */
+#app main .dashboard-shell .dashboard-quick-access{
+ position:relative;isolation:isolate;
+ padding:21px!important;border:1px solid #dedede!important;
+ border-radius:19px!important;background:#fff!important;
+ box-shadow:0 3px 12px rgba(0,0,0,.035)!important
+}
+#app main .dashboard-shell .dashboard-quick-access:before{
+ content:"";position:absolute;inset:0 0 auto;height:3px;
+ border-radius:19px 19px 0 0;background:#262626;opacity:.85;z-index:-1
+}
+#app main .dashboard-shell .dashboard-quick-access-heading{
+ display:flex;align-items:center;justify-content:space-between;
+ gap:14px;margin:0 0 17px!important;padding-bottom:14px;
+ border-bottom:1px solid #ededed
+}
+#app main .dashboard-shell .dashboard-quick-eyebrow{
+ margin:0 0 4px!important;color:#777!important;font-size:9px!important;
+ font-weight:800!important;letter-spacing:.16em!important
+}
+#app main .dashboard-shell .dashboard-quick-access-heading h3{
+ margin:0!important;color:#171717!important;font-size:17px!important;
+ font-weight:850!important;letter-spacing:-.04em!important;line-height:1.25!important
+}
+#app main .dashboard-shell .dashboard-quick-access-heading p:last-child{
+ margin-top:5px!important;color:#777!important;font-size:11px!important;line-height:1.45!important
+}
+#app main .dashboard-shell .dashboard-quick-hint{
+ padding:7px 10px!important;border:1px solid #e5e5e5!important;
+ border-radius:10px!important;background:#f7f7f7!important;
+ color:#444!important;font-size:10px!important;font-weight:800!important
+}
+#app main .dashboard-shell .dashboard-quick-hint i{color:#555!important}
+#app main .dashboard-shell .dashboard-quick-grid{
+ display:grid!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;
+ gap:11px!important
+}
+#app main .dashboard-shell .dashboard-quick-grid>button{
+ position:relative;display:flex!important;align-items:center!important;
+ min-width:0;min-height:78px!important;gap:11px!important;
+ padding:13px!important;border:1px solid #e5e5e5!important;
+ border-radius:14px!important;background:#fff!important;
+ text-align:left!important;box-shadow:0 1px 3px rgba(0,0,0,.018)!important;
+ transition:background .18s,border-color .18s,box-shadow .18s,transform .18s!important
+}
+#app main .dashboard-shell .dashboard-quick-grid>button:hover{
+ background:#fafafa!important;border-color:#bdbdbd!important;
+ box-shadow:0 5px 14px rgba(0,0,0,.045)!important;transform:translateY(-2px)!important
+}
+#app main .dashboard-shell .dashboard-quick-grid>button:active{transform:translateY(0)!important}
+#app main .dashboard-shell .dashboard-quick-grid>button:focus-visible{
+ outline:2px solid #555!important;outline-offset:3px!important
+}
+#app main .dashboard-shell .dashboard-quick-icon{
+ display:grid!important;place-items:center!important;flex:0 0 40px!important;
+ width:40px!important;height:40px!important;border:1px solid #e5e5e5!important;
+ border-radius:12px!important;background:#f3f3f3!important;color:#292929!important;
+ font-size:15px!important
+}
+#app main .dashboard-shell .dashboard-quick-icon :is(i,svg){color:inherit!important}
+#app main .dashboard-shell .dashboard-quick-grid>button>span:nth-child(2){
+ display:block;min-width:0;flex:1
+}
+#app main .dashboard-shell .dashboard-quick-grid strong{
+ display:block;color:#222!important;font-size:12px!important;
+ font-weight:800!important;line-height:1.3!important
+}
+#app main .dashboard-shell .dashboard-quick-grid small{
+ display:block;margin-top:4px!important;color:#858585!important;
+ font-size:10px!important;line-height:1.35!important
+}
+#app main .dashboard-shell .dashboard-quick-arrow{
+ flex:0 0 auto;margin-left:auto!important;color:#aaa!important;
+ font-size:10px!important;transition:transform .18s,color .18s
+}
+#app main .dashboard-shell .dashboard-quick-grid>button:hover .dashboard-quick-arrow{
+ color:#333!important;transform:translateX(2px)
+}
+/* Nome/área de indicadores: contorno coerente com os demais painéis */
+#app main .dashboard-shell>.dashboard-section-title{
+ display:flex;align-items:flex-end;justify-content:space-between;gap:14px;
+ margin:0!important;padding:15px 17px!important;
+ border:1px solid #e3e3e3!important;border-radius:15px!important;
+ background:#fff!important;box-shadow:0 2px 8px rgba(0,0,0,.02)!important
+}
+#app main .dashboard-shell>.dashboard-section-title>div{
+ min-width:0
+}
+#app main .dashboard-shell>.dashboard-section-title>div>p:first-child{
+ color:#777!important;font-size:9px!important;letter-spacing:.16em!important
+}
+#app main .dashboard-shell>.dashboard-section-title h3{
+ color:#171717!important;font-size:16px!important;font-weight:850!important;
+ letter-spacing:-.035em!important
+}
+#app main .dashboard-shell>.dashboard-section-title>div>p:last-child{
+ color:#777!important;font-size:11px!important
+}
+#app main .dashboard-shell>.dashboard-section-title>span{
+ flex:0 0 auto;border:1px solid #e7e7e7!important;
+ border-radius:9px!important;background:#f8f8f8!important;
+ color:#666!important
+}
+#app main .dashboard-shell>.dashboard-section-title>span i{color:#666!important}
+@media(max-width:900px){
+ #app main .dashboard-shell .dashboard-quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:640px){
+ #app main .dashboard-shell .dashboard-quick-access{padding:16px!important;border-radius:16px!important}
+ #app main .dashboard-shell .dashboard-quick-access-heading{align-items:flex-start;margin-bottom:13px!important;padding-bottom:12px}
+ #app main .dashboard-shell .dashboard-quick-grid{gap:8px!important}
+ #app main .dashboard-shell .dashboard-quick-grid>button{min-height:70px!important;padding:10px!important;gap:9px!important;border-radius:12px!important}
+ #app main .dashboard-shell .dashboard-quick-icon{width:35px!important;height:35px!important;flex-basis:35px!important;border-radius:10px!important}
+ #app main .dashboard-shell .dashboard-quick-grid strong{font-size:11px!important}
+ #app main .dashboard-shell .dashboard-quick-grid small{font-size:9px!important}
+ #app main .dashboard-shell>.dashboard-section-title{align-items:flex-start!important;flex-direction:column!important;padding:13px!important;gap:8px!important}
+}
+@media(max-width:370px){
+ #app main .dashboard-shell .dashboard-quick-grid{grid-template-columns:1fr!important}
+}
+</style>
