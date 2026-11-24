@@ -11132,6 +11132,62 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
 }
 </style>
 
+
+<style id="bravo-formularios-campos-modal-polish-2026">
+/* Campos de formulário: estados claros, toque confortável e leitura consistente. */
+#app main :is(input:not([type="checkbox]):not([type="radio]):not([type="range]):not([type="file]):not([type="hidden"]),select,textarea),
+#modal-container :is(input:not([type="checkbox]):not([type="radio]):not([type="range]):not([type="file]):not([type="hidden"]),select,textarea){
+ max-width:100%;min-width:0;border-color:#d8e2e9!important;
+ border-radius:12px!important;background-color:rgba(248,250,252,.88);
+ color:#203647;transition:border-color .16s ease,box-shadow .16s ease,background-color .16s ease;
+}
+#app main :is(input:not([type="checkbox]):not([type="radio]):not([type="range]):not([type="file]):not([type="hidden"]),select,textarea):hover,
+#modal-container :is(input:not([type="checkbox]):not([type="radio]):not([type="range]):not([type="file]):not([type="hidden"]),select,textarea):hover{
+ border-color:#a9c4ce!important;
+}
+#app main :is(input:not([type="checkbox]):not([type="radio]):not([type="range]):not([type="file]):not([type="hidden"]),select,textarea):focus,
+#modal-container :is(input:not([type="checkbox]):not([type="radio]):not([type="range]):not([type="file]):not([type="hidden"]),select,textarea):focus{
+ outline:none!important;border-color:#2aa99c!important;
+ background-color:#fff!important;
+ box-shadow:0 0 0 3px rgba(45,170,156,.14)!important;
+}
+#app main textarea,#modal-container textarea{line-height:1.55;resize:vertical;}
+#app main select,#modal-container select{cursor:pointer;}
+#app main input::placeholder,#app main textarea::placeholder,
+#modal-container input::placeholder,#modal-container textarea::placeholder{color:#9aaab7;opacity:1;}
+#app main form label,#modal-container form label{
+ display:inline-block;max-width:100%;line-height:1.45;
+}
+#app main input:disabled,#app main select:disabled,#app main textarea:disabled,
+#modal-container input:disabled,#modal-container select:disabled,#modal-container textarea:disabled{
+ cursor:not-allowed;opacity:.62;background-color:#eef2f5!important;
+}
+#modal-container>div{background:rgba(12,25,39,.48);}
+#modal-container>div>div{
+ width:100%;max-width:min(94vw,920px);
+ border-radius:22px!important;background:rgba(255,255,255,.98);
+ box-shadow:0 26px 80px rgba(10,30,45,.24)!important;
+}
+#modal-container form{min-width:0;}
+#modal-container form>div:last-child:has(>button),
+#modal-container form .flex.justify-end{gap:9px!important;}
+#modal-container form button{min-height:40px;border-radius:12px!important;}
+@media(max-width:640px){
+ #app main :is(input:not([type="checkbox]):not([type="radio]):not([type="range]):not([type="file]):not([type="hidden"]),select,textarea),
+ #modal-container :is(input:not([type="checkbox]):not([type="radio]):not([type="range]):not([type="file]):not([type="hidden"]),select,textarea){
+  min-height:44px;padding:11px 12px!important;font-size:16px!important;
+ }
+ #app main textarea,#modal-container textarea{min-height:88px;}
+ #modal-container>div{padding:10px!important;}
+ #modal-container>div>div{max-width:100%;max-height:calc(100dvh - 20px)!important;border-radius:18px!important;}
+ #modal-container form .flex.justify-end{flex-wrap:wrap;}
+ #modal-container form .flex.justify-end button{flex:1 1 auto;}
+}
+@media(prefers-reduced-motion:reduce){
+ #app main :is(input,select,textarea),#modal-container :is(input,select,textarea){transition:none!important;}
+}
+</style>
+
 </body></html>`;
                 win.document.open();
                 win.document.write(doc);
