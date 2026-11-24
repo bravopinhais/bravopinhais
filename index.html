@@ -21091,3 +21091,64 @@ html,body,#app,#app main{background:#fff!important;color:var(--bravo-ink)!import
 }
 #app main .relatorios-dre-result *{color:#262626!important}
 </style>
+
+
+<!-- Bravo Pinhais — correção dos resíduos de identidade verde, etapa 22 -->
+<style id="bravo-neutralizacao-residuos-verdes-etapa-22">
+:root{
+ --app-primary:#171717!important;
+ --bravo-primary:#171717!important;
+ --tw-ring-color:#a3a3a3!important;
+ --tw-gradient-from:#fff!important;
+ --tw-gradient-to:#f5f5f5!important;
+}
+/* Faixa vertical e brilho decorativo do cabeçalho dos módulos */
+#app main>div:first-child.flex.flex-col{
+ background:#fff!important;
+ background-image:none!important;
+ border-color:#e5e5e5!important;
+ box-shadow:none!important;
+ color:#171717!important;
+}
+#app main>div:first-child.flex.flex-col::before{
+ background:#d4d4d4!important;
+ background-image:none!important;
+}
+#app main>div:first-child.flex.flex-col::after{
+ background:none!important;
+ background-image:none!important;
+ box-shadow:none!important;
+}
+#app main>div:first-child.flex.flex-col :is(h1,h2,h3,strong){color:#171717!important}
+#app main>div:first-child.flex.flex-col :is(p,small){color:#737373!important}
+/* Estado ativo de abas e componentes auxiliares que ainda usavam teal */
+#app .tab-active{border-color:#171717!important;color:#171717!important;background:#f5f5f5!important}
+#app :is(.ai-topo,.ai-msg.eu,.ai-acao,#ai-form button){
+ background:#171717!important;background-image:none!important;color:#fff!important;border-color:#171717!important;box-shadow:none!important
+}
+#app #ai-chips button{background:#f5f5f5!important;color:#333!important;border-color:#e5e5e5!important}
+#app :is(input,select,textarea):focus{
+ border-color:#777!important;box-shadow:0 0 0 3px rgba(0,0,0,.07)!important
+}
+#app :is(button,a,[role="button"]):focus-visible{
+ outline-color:#a3a3a3!important
+}
+#app ::selection{background:#d4d4d4!important;color:#171717!important}
+/* Menu lateral: retirar botão, indicadores e textos verdes antigos */
+#sidebar-menu nav button[class*="from-teal-"],
+#sidebar-menu nav button[class*="bg-teal-"],
+#sidebar-menu nav button[class*="bg-emerald-"]{
+ background:#f5f5f5!important;background-image:none!important;color:#222!important;border:1px solid #e5e5e5!important;box-shadow:none!important
+}
+#sidebar-menu nav button[class*="from-teal-"] *,
+#sidebar-menu nav button[class*="bg-teal-"] *,
+#sidebar-menu nav button[class*="bg-emerald-"] *{color:#333!important}
+#sidebar-menu>div:last-child span:last-child{color:#a3a3a3!important}
+/* Neutralizar classes de cor verde em qualquer área do aplicativo, inclusive conteúdo dinâmico */
+#app :is([class*="bg-teal-"],[class*="bg-emerald-"],[class*="bg-green-"],[class*="bg-lime-"],[class*="bg-mint-"]){
+ background-color:#f3f3f3!important;background-image:none!important;color:#333!important;border-color:#e5e5e5!important
+}
+#app :is([class*="text-teal-"],[class*="text-emerald-"],[class*="text-green-"],[class*="text-lime-"],[class*="text-mint-"]){color:#525252!important}
+#app :is([class*="border-teal-"],[class*="border-emerald-"],[class*="border-green-"],[class*="border-lime-"],[class*="border-mint-"]){border-color:#e5e5e5!important}
+#app :is([class*="from-teal-"],[class*="to-teal-"],[class*="via-teal-"],[class*="from-emerald-"],[class*="to-emerald-"],[class*="via-emerald-"],[class*="from-green-"],[class*="to-green-"],[class*="via-green-"],[class*="from-lime-"],[class*="to-lime-"],[class*="via-lime-"]){background-image:none!important}
+</style>
