@@ -24984,3 +24984,138 @@ body.bravo-renderizando-modulo::before{
  #modal-container>div>div{background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 }
 </style>
+
+
+<!-- Bravo Pinhais — cadastro e edição: acabamento premium | etapa 76 -->
+<style id="bravo-cadastro-edicao-acabamento-etapa-76">
+/* Formulários de cadastro/edição: hierarquia, agrupamento e leitura. */
+#modal-container form{
+ display:flex!important;
+ flex-direction:column!important;
+ gap:16px!important;
+}
+#modal-container form :is(.grid,.flex){min-width:0!important}
+#modal-container form label{
+ display:block!important;
+ color:#444!important;
+ font-size:12px!important;
+ font-weight:750!important;
+ letter-spacing:.005em!important;
+ margin-bottom:5px!important;
+}
+#modal-container form :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea){
+ width:100%!important;
+ min-height:42px!important;
+ padding:10px 12px!important;
+ border:1px solid #dedede!important;
+ border-radius:11px!important;
+ background:rgba(255,255,255,.94)!important;
+ color:#292929!important;
+ box-shadow:inset 0 1px 2px rgba(0,0,0,.025)!important;
+ transition:border-color .16s ease,box-shadow .16s ease!important;
+}
+#modal-container form textarea{min-height:92px!important;line-height:1.5!important}
+#modal-container form :is(input,select,textarea)::placeholder{color:#999!important;opacity:1!important}
+#modal-container form :is(input,select,textarea):focus{
+ outline:none!important;
+ border-color:#888!important;
+ box-shadow:0 0 0 3px rgba(0,0,0,.07)!important;
+}
+#modal-container form :is(input,select,textarea):disabled{
+ background:#f0f0f0!important;
+ color:#888!important;
+ cursor:not-allowed!important;
+}
+#modal-container form input[type=file]{
+ width:100%!important;
+ max-width:100%!important;
+ padding:9px!important;
+ border:1px dashed #cfcfcf!important;
+ border-radius:11px!important;
+ background:#f7f7f7!important;
+ color:#555!important;
+ font-size:12px!important;
+}
+#modal-container form input[type=file]::file-selector-button{
+ margin-right:10px!important;
+ padding:7px 11px!important;
+ border:1px solid #d7d7d7!important;
+ border-radius:8px!important;
+ background:#ededed!important;
+ color:#333!important;
+ font-weight:750!important;
+}
+#modal-container form :is(input[type=checkbox],input[type=radio]){
+ accent-color:#333!important;
+}
+#modal-container form fieldset{
+ padding:14px!important;
+ border:1px solid #e2e2e2!important;
+ border-radius:14px!important;
+ background:rgba(248,248,248,.62)!important;
+}
+#modal-container form legend{
+ padding:0 7px!important;
+ color:#555!important;
+ font-size:11px!important;
+ font-weight:850!important;
+ letter-spacing:.04em!important;
+}
+#modal-container form hr,
+#modal-container form .border-t{border-color:#e7e7e7!important}
+#modal-container form button[type=submit],
+#modal-container form button:not([type]){
+ min-height:40px!important;
+ border-radius:10px!important;
+}
+#modal-container form button[type=submit]{
+ background:#242424!important;
+ color:#fff!important;
+ border:1px solid #242424!important;
+ box-shadow:none!important;
+}
+#modal-container form button[type=submit]:hover{
+ background:#444!important;
+ border-color:#444!important;
+}
+#modal-container form button:disabled{
+ opacity:.55!important;
+ cursor:not-allowed!important;
+}
+#modal-container form :is(.text-xs,.text-\[11px\],.text-\[10px\]){
+ line-height:1.5!important;
+}
+#modal-container form .text-rose-500,
+#modal-container form .text-red-500{color:#555!important}
+#modal-container form :is(.bg-teal-50,.bg-emerald-50,.bg-sky-50,.bg-amber-50){
+ background:#f0f0f0!important;
+}
+#modal-container form :is(.text-teal-700,.text-emerald-700,.text-sky-700,.text-amber-700){
+ color:#444!important;
+}
+#modal-container form :is(.border-teal-200,.border-emerald-200,.border-sky-200,.border-amber-200){
+ border-color:#dedede!important;
+}
+#modal-container form :is(.sticky,.sticky.bottom-0){
+ background:rgba(255,255,255,.96)!important;
+ border-color:#e5e5e5!important;
+ -webkit-backdrop-filter:blur(12px)!important;
+ backdrop-filter:blur(12px)!important;
+}
+#modal-container form :is(input,select,textarea,button):focus-visible{
+ outline:2px solid #666!important;
+ outline-offset:2px!important;
+}
+@media(max-width:640px){
+ #modal-container form{gap:13px!important}
+ #modal-container form :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea){
+  min-height:44px!important;
+  font-size:16px!important;
+ }
+ #modal-container form fieldset{padding:11px!important}
+ #modal-container form button[type=submit]{width:100%!important;min-height:44px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #modal-container form *{transition:none!important}
+}
+</style>
