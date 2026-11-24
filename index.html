@@ -21060,4 +21060,122 @@ html,body,#app{background:#fff!important;color:#171717!important}
                 box-shadow: 0 0 0 3px rgba(23,23,23,.08) !important;
             }
             ::selection { background: #d4d4d4; color: #171717; }
+
+            /* ===== Padronização global da interface: preto, branco e cinza ===== */
+            :root {
+                --app-ink: #171717 !important;
+                --app-muted: #737373 !important;
+                --app-primary: #171717 !important;
+                --app-border: #e5e5e5 !important;
+            }
+            body, #app, #app main, #app .bg-slate-100,
+            #app .bg-slate-50 {
+                background-color: #ffffff !important;
+                color: #171717 !important;
+            }
+            #sidebar-menu {
+                background: #ffffff !important;
+                color: #171717 !important;
+                border-color: #e5e5e5 !important;
+                box-shadow: 8px 0 28px rgba(0,0,0,.045) !important;
+            }
+            #sidebar-menu nav button {
+                color: #404040 !important;
+                border-color: #e5e5e5 !important;
+            }
+            #sidebar-menu nav button:hover {
+                background: #f5f5f5 !important;
+                color: #171717 !important;
+            }
+            #app [class*="bg-slate-950"],
+            #app [class*="bg-slate-900"],
+            #app [class*="bg-gray-950"],
+            #app [class*="bg-gray-900"] {
+                background-color: #171717 !important;
+                color: #ffffff !important;
+                border-color: #262626 !important;
+            }
+            #app [class*="bg-teal-"],
+            #app [class*="bg-emerald-"],
+            #app [class*="bg-blue-"],
+            #app [class*="bg-indigo-"],
+            #app [class*="bg-sky-"],
+            #app [class*="bg-green-"] {
+                background-color: #f3f3f3 !important;
+                background-image: none !important;
+                color: #262626 !important;
+                border-color: #e5e5e5 !important;
+            }
+            #app button[class*="bg-teal-"],
+            #app button[class*="bg-emerald-"],
+            #app button[class*="bg-blue-"],
+            #app button[class*="bg-indigo-"],
+            #app button[class*="bg-sky-"],
+            #app button[class*="bg-green-"],
+            #app [role="tab"][class*="bg-teal-"],
+            #app [role="tab"][class*="bg-emerald-"] {
+                background: #171717 !important;
+                color: #ffffff !important;
+                border-color: #171717 !important;
+            }
+            #app [class*="text-teal-"],
+            #app [class*="text-emerald-"],
+            #app [class*="text-blue-"],
+            #app [class*="text-indigo-"],
+            #app [class*="text-sky-"],
+            #app [class*="text-green-"] {
+                color: #404040 !important;
+            }
+            #app [class*="border-teal-"],
+            #app [class*="border-emerald-"],
+            #app [class*="border-blue-"],
+            #app [class*="border-indigo-"],
+            #app [class*="border-sky-"],
+            #app [class*="border-green-"],
+            #app [class*="ring-teal-"],
+            #app [class*="ring-emerald-"],
+            #app [class*="ring-blue-"] {
+                border-color: #e5e5e5 !important;
+                --tw-ring-color: #d4d4d4 !important;
+            }
+            #app [class*="from-teal-"],
+            #app [class*="to-teal-"],
+            #app [class*="via-teal-"],
+            #app [class*="from-emerald-"],
+            #app [class*="to-emerald-"],
+            #app [class*="via-emerald-"],
+            #app [class*="from-blue-"],
+            #app [class*="to-blue-"],
+            #app [class*="from-indigo-"],
+            #app [class*="to-indigo-"] {
+                background-image: none !important;
+            }
+            #app .tab-active {
+                background: #ffffff !important;
+                color: #171717 !important;
+                border-bottom-color: #171717 !important;
+            }
+            #app .card-modern,
+            #app [class*="shadow-sm"],
+            #app [class*="shadow-md"] {
+                box-shadow: 0 2px 10px rgba(0,0,0,.035) !important;
+            }
+            #app [class*="border-slate-"],
+            #app [class*="border-gray-"] {
+                border-color: #e5e5e5 !important;
+            }
+            #app input:focus, #app select:focus, #app textarea:focus {
+                border-color: #737373 !important;
+                box-shadow: 0 0 0 3px rgba(23,23,23,.08) !important;
+            }
+            #app button:focus-visible, #app a:focus-visible {
+                outline-color: rgba(23,23,23,.28) !important;
+            }
+            #app table tbody tr:hover {
+                background-color: #f7f7f7 !important;
+            }
+            @media (max-width: 768px) {
+                #sidebar-menu { background: #ffffff !important; }
+                #app header { background: #ffffff !important; color: #171717 !important; }
+            }
 </style>
