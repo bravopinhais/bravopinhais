@@ -23575,3 +23575,79 @@ body.bravo-renderizando-modulo::before{
  #sidebar-menu nav button{transition:none!important}
 }
 </style>
+
+
+<!-- Bravo Pinhais — cartões e indicadores em vidro premium | etapa 65 -->
+<style id="bravo-dashboard-cartoes-vidro-etapa-65">
+/* Indicadores principais: vidro branco com contorno e profundidade discretos. */
+#app main .dashboard-kpi-grid>article{
+ position:relative!important;
+ overflow:hidden!important;
+ background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(245,245,245,.78))!important;
+ border:1px solid rgba(0,0,0,.10)!important;
+ border-top-color:rgba(255,255,255,.95)!important;
+ border-radius:22px!important;
+ box-shadow:0 8px 26px rgba(0,0,0,.055),inset 0 1px 0 rgba(255,255,255,.90)!important;
+ -webkit-backdrop-filter:blur(16px) saturate(120%)!important;
+ backdrop-filter:blur(16px) saturate(120%)!important;
+ transition:box-shadow .22s ease,border-color .22s ease,background .22s ease!important;
+}
+#app main .dashboard-kpi-grid>article:hover{
+ transform:none!important;
+ border-color:rgba(0,0,0,.17)!important;
+ box-shadow:0 13px 32px rgba(0,0,0,.09),inset 0 1px 0 rgba(255,255,255,.95)!important;
+}
+#app main .dashboard-kpi-grid>article>div:first-child>div:last-child{
+ background:rgba(235,235,235,.88)!important;
+ color:#333!important;
+ border:1px solid rgba(0,0,0,.055)!important;
+}
+#app main .dashboard-kpi-grid>article :is(p,span){color:#626262!important}
+#app main .dashboard-kpi-grid>article p[class*="text-2xl"],
+#app main .dashboard-kpi-grid>article p[class*="text-3xl"]{color:#171717!important}
+#app main .dashboard-kpi-grid>article button{
+ color:#292929!important;
+}
+#app main .dashboard-kpi-grid>article>div:last-child{
+ border-top-color:rgba(0,0,0,.09)!important;
+}
+/* Títulos das seções com hierarquia neutra. */
+#app main .dashboard-section-title{
+ padding-bottom:3px!important;
+}
+#app main .dashboard-section-title :is(p, i){color:#777!important}
+#app main .dashboard-section-title h3{color:#171717!important}
+#app main .dashboard-section-title>span{
+ background:rgba(255,255,255,.78)!important;
+ border-color:rgba(0,0,0,.10)!important;
+ -webkit-backdrop-filter:blur(10px)!important;
+ backdrop-filter:blur(10px)!important;
+}
+/* Painel de inteligência: mantém o conteúdo e elimina o gradiente verde antigo. */
+#app main section:has(>div.bg-gradient-to-r.from-slate-950){
+ border-color:rgba(0,0,0,.12)!important;
+ background:rgba(255,255,255,.86)!important;
+ box-shadow:0 10px 30px rgba(0,0,0,.07)!important;
+ -webkit-backdrop-filter:blur(14px)!important;
+ backdrop-filter:blur(14px)!important;
+}
+#app main section:has(>div.bg-gradient-to-r.from-slate-950)>div.bg-gradient-to-r{
+ background:linear-gradient(115deg,#171717,#303030)!important;
+}
+#app main section:has(>div.bg-gradient-to-r.from-slate-950) :is(.text-teal-100,.text-emerald-200){
+ color:#e5e5e5!important;
+}
+#app main section:has(>div.bg-gradient-to-r.from-slate-950) :is(.bg-teal-300\/10,.bg-white\/10){
+ background:rgba(255,255,255,.10)!important;
+}
+@media(max-width:640px){
+ #app main .dashboard-kpi-grid>article{border-radius:18px!important;padding:17px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #app main .dashboard-kpi-grid>article{transition:none!important}
+}
+@media(prefers-reduced-transparency:reduce){
+ #app main .dashboard-kpi-grid>article{background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+ #app main .dashboard-section-title>span{background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+}
+</style>
