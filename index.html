@@ -22373,3 +22373,69 @@ body.bravo-renderizando-modulo::before{
 }
 #app main{background:#f7f7f7!important}
 </style>
+
+
+<!-- Etapa 45 — padronização dos cabeçalhos e ações dos módulos -->
+<style id="bravo-cabecalhos-acoes-modulos-etapa-45">
+#cabecalho-modulo-global{
+ align-items:center!important;gap:16px!important;
+ margin:0 0 22px!important;padding:0 0 17px!important;
+ border-bottom:1px solid #e5e5e5!important;
+ background:transparent!important;box-shadow:none!important
+}
+#cabecalho-modulo-global>div:first-child{min-width:0!important}
+#cabecalho-modulo-global h2{
+ color:#171717!important;font-size:clamp(21px,2.4vw,29px)!important;
+ line-height:1.2!important;font-weight:800!important;
+ letter-spacing:-.045em!important;margin:0!important
+}
+#cabecalho-modulo-global p{
+ color:#777!important;font-size:11px!important;
+ font-weight:550!important;letter-spacing:.005em!important;
+ margin-top:5px!important
+}
+#cabecalho-modulo-global>div:last-child{
+ display:flex!important;flex-wrap:wrap!important;
+ align-items:center!important;gap:8px!important
+}
+#cabecalho-modulo-global button,
+#cabecalho-modulo-global label{
+ min-height:38px!important;padding:9px 13px!important;
+ display:inline-flex!important;align-items:center!important;
+ justify-content:center!important;gap:8px!important;
+ border:1px solid #dedede!important;border-radius:10px!important;
+ background:#fff!important;background-image:none!important;
+ color:#292929!important;font-size:11px!important;font-weight:750!important;
+ box-shadow:none!important;text-shadow:none!important;
+ transition:background .16s,border-color .16s,color .16s!important
+}
+#cabecalho-modulo-global button:hover,
+#cabecalho-modulo-global label:hover{
+ background:#f3f3f3!important;border-color:#bdbdbd!important;
+ color:#111!important;box-shadow:none!important;transform:none!important
+}
+#cabecalho-modulo-global button i,
+#cabecalho-modulo-global label i{color:#555!important}
+#cabecalho-modulo-global button:focus-visible,
+#cabecalho-modulo-global label:focus-within{
+ outline:2px solid #777!important;outline-offset:2px!important
+}
+#cabecalho-modulo-global button[class*="bg-"],
+#cabecalho-modulo-global label[class*="bg-"]{
+ background:#fff!important;color:#292929!important;
+ border-color:#dedede!important
+}
+#cabecalho-modulo-global button[class*="from-"],
+#cabecalho-modulo-global button[class*="to-"]{
+ background:#fff!important;background-image:none!important;
+ color:#292929!important;border-color:#dedede!important
+}
+@media(max-width:640px){
+ #cabecalho-modulo-global{align-items:stretch!important;margin-bottom:17px!important;padding-bottom:14px!important;gap:12px!important}
+ #cabecalho-modulo-global>div:last-child{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ #cabecalho-modulo-global button,#cabecalho-modulo-global label{
+  width:100%!important;min-width:0!important;padding:9px 8px!important;
+  white-space:normal!important;text-align:center!important
+ }
+}
+</style>
