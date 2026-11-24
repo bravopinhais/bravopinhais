@@ -17872,5 +17872,61 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
 }
 </style>
 
+
+<style id="bravo-transparencia-glass-visual-2026">
+/* Transparência controlada: profundidade visual sem comprometer contraste. */
+#sidebar-menu{
+ background:linear-gradient(155deg,rgba(10,25,43,.94),rgba(5,17,31,.91))!important;
+ border-right:1px solid rgba(148,205,207,.18)!important;
+ -webkit-backdrop-filter:blur(18px) saturate(135%);
+ backdrop-filter:blur(18px) saturate(135%);
+ box-shadow:10px 0 34px rgba(2,12,24,.19)!important;
+}
+#sidebar-menu>div:first-child{
+ background:linear-gradient(110deg,rgba(15,38,57,.78),rgba(7,23,39,.72))!important;
+ border-bottom-color:rgba(148,205,207,.17)!important;
+}
+#sidebar-menu nav{
+ background:transparent!important;
+}
+#sidebar-menu nav button{
+ background-color:rgba(255,255,255,.025);
+ border:1px solid transparent;
+ transition:background-color .18s ease,border-color .18s ease,transform .18s ease;
+}
+#sidebar-menu nav button:hover{
+ background-color:rgba(94,234,212,.09)!important;
+ border-color:rgba(94,234,212,.13);
+}
+#sidebar-menu nav button[aria-current="page"],
+#sidebar-menu nav button.active{
+ background:linear-gradient(100deg,rgba(13,148,136,.24),rgba(20,184,166,.10))!important;
+ border-color:rgba(94,234,212,.20)!important;
+}
+#app header.md\\:hidden{
+ background:linear-gradient(100deg,rgba(9,23,40,.94),rgba(15,48,67,.91))!important;
+ -webkit-backdrop-filter:blur(16px) saturate(130%);
+ backdrop-filter:blur(16px) saturate(130%);
+}
+#sidebar-backdrop{
+ background-color:rgba(2,10,20,.58)!important;
+ -webkit-backdrop-filter:blur(7px);
+ backdrop-filter:blur(7px);
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+ #sidebar-menu{background:#0a192b!important;}
+ #sidebar-menu>div:first-child{background:#10263b!important;}
+ #app header.md\\:hidden{background:#0b2034!important;}
+}
+@media(max-width:767px){
+ #sidebar-menu{
+  background:linear-gradient(155deg,rgba(9,23,40,.98),rgba(4,15,28,.97))!important;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ #sidebar-menu nav button{transition:none!important;}
+}
+</style>
+
 </body>
 </html>
