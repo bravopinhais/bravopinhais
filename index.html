@@ -25701,3 +25701,50 @@ body.bravo-renderizando-modulo::before{
   }
 }
 </style>
+
+
+<!-- Bravo Pinhais — hierarquia tipográfica e rótulos | etapa 85 -->
+<style id="bravo-tipografia-hierarquia-etapa-85">
+/* Hierarquia consistente sem alterar conteúdo, estrutura ou regras dos módulos. */
+#app main :is(h1,h2,h3,h4){
+  color:#202020;
+  text-wrap:balance;
+}
+#app main :is(h1){letter-spacing:-.025em}
+#app main :is(h2){letter-spacing:-.018em}
+#app main :is(label){
+  color:#414141;
+  font-weight:600;
+}
+#app main :is(input,select,textarea)::placeholder{
+  color:#999!important;
+  opacity:1;
+}
+#app main :is(p,small,.text-xs,.text-sm){
+  overflow-wrap:anywhere;
+}
+#app main :is(.text-gray-400,.text-slate-400,.text-neutral-400){
+  color:#858585!important;
+}
+#app main :is(.text-gray-500,.text-slate-500,.text-neutral-500){
+  color:#707070!important;
+}
+#app main :is(.border-gray-100,.border-slate-100,.border-neutral-100){
+  border-color:#ededed!important;
+}
+#app main :is(.border-gray-200,.border-slate-200,.border-neutral-200){
+  border-color:#e2e2e2!important;
+}
+#app main :is(h1,h2,h3,h4)+:is(p,small){
+  margin-top:.25rem;
+}
+#app main :is(button,a):focus-visible,
+#app main :is(input,select,textarea):focus-visible{
+  outline-offset:2px;
+}
+@media(max-width:640px){
+  #app main :is(h1){line-height:1.2}
+  #app main :is(h2,h3){line-height:1.25}
+  #app main :is(label){line-height:1.35}
+}
+</style>
