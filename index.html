@@ -21408,3 +21408,62 @@ body.bravo-renderizando-modulo::before{
 #modal-container button[class*="bg-teal-"]:hover,
 #modal-container button[class*="bg-emerald-"]:hover{background:#333!important}
 </style>
+
+
+<!-- Etapa 30 — acabamento de formulários, modais e controles -->
+<style id="bravo-acabamento-formularios-modais-etapa-30">
+/* Camada de modal: fundo neutro, superfície branca e sem excesso de sombra */
+#modal-container>div[class*="fixed"]{background:rgba(15,15,15,.62)!important;backdrop-filter:blur(5px)!important}
+#modal-container>div[class*="fixed"]>div,
+#modal-container [class*="rounded-3xl"][class*="bg-white"]{
+ background:#fff!important;border:1px solid #e5e5e5!important;
+ box-shadow:0 18px 55px rgba(0,0,0,.16)!important;border-radius:20px!important;
+}
+#modal-container :is(h1,h2,h3,h4){color:#171717!important}
+#modal-container label{color:#525252!important;letter-spacing:.045em}
+#modal-container :is(input,select,textarea){
+ background:#fafafa!important;color:#171717!important;border:1px solid #dedede!important;
+ border-radius:11px!important;box-shadow:none!important;
+}
+#modal-container :is(input,select,textarea):focus{
+ outline:none!important;border-color:#777!important;box-shadow:0 0 0 3px rgba(0,0,0,.07)!important;
+}
+#modal-container :is(input,select,textarea)::placeholder{color:#a3a3a3!important}
+#modal-container button[class*="bg-teal-"],
+#modal-container button[class*="bg-emerald-"],
+#modal-container button[class*="bg-blue-"]{
+ background:#171717!important;color:#fff!important;border:1px solid #171717!important;box-shadow:none!important
+}
+#modal-container button[class*="bg-teal-"]:hover,
+#modal-container button[class*="bg-emerald-"]:hover,
+#modal-container button[class*="bg-blue-"]:hover{background:#333!important}
+#modal-container button[class*="bg-amber-"],
+#modal-container button[class*="bg-rose-"],
+#modal-container button[class*="bg-red-"]{
+ background:#f3f3f3!important;color:#404040!important;border:1px solid #e5e5e5!important
+}
+/* Menu e abas: estado selecionado preto, sem gradiente antigo */
+#app aside button[class*="bg-gradient-to-r"],
+#app nav button[class*="bg-gradient-to-r"],
+#app [id*="sidebar"] button[class*="bg-gradient-to-r"]{
+ background:#171717!important;background-image:none!important;color:#fff!important;
+ box-shadow:none!important;border-color:#171717!important
+}
+/* Painéis informativos e de configuração com fundo cinza leve */
+#app main [class*="bg-blue-50"][class*="border-blue-"],
+#app main [class*="bg-teal-50"][class*="border-teal-"]{
+ background:#f5f5f5!important;color:#404040!important;border-color:#e5e5e5!important
+}
+#app main [class*="text-blue-900"],#app main [class*="text-teal-900"]{color:#404040!important}
+#app main [class*="text-blue-700"],#app main [class*="text-teal-700"]{color:#404040!important}
+/* Controles de alternância e checkboxes */
+#modal-container input[type="checkbox"],#modal-container input[type="radio"],
+#app main input[type="checkbox"],#app main input[type="radio"]{accent-color:#222!important}
+#modal-container button:focus-visible,#app main button:focus-visible{
+ outline:2px solid #737373!important;outline-offset:2px!important
+}
+@media(max-width:640px){
+ #modal-container>div[class*="fixed"]{align-items:flex-end!important;padding:10px!important}
+ #modal-container>div[class*="fixed"]>div{max-height:92dvh!important;overflow-y:auto!important;border-radius:20px 20px 12px 12px!important}
+}
+</style>
