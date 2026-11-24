@@ -22953,3 +22953,82 @@ body.bravo-renderizando-modulo::before{
  #app main table tbody tr{transition:none!important}
 }
 </style>
+
+
+<!-- bravo-formularios-campos-etapa-54 -->
+<style id="bravo-formularios-campos-etapa-54">
+/* Campos de cadastro e edição com hierarquia limpa e neutra. */
+#app main form :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea),
+#modal-container form :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea),
+#app main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea),
+#modal-container :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea){
+ background-color:#fff!important;
+ color:#292929!important;
+ border:1px solid #dedede!important;
+ border-radius:10px!important;
+ box-shadow:none!important;
+ transition:border-color .15s ease,background-color .15s ease!important;
+}
+#app main form :is(input,select,textarea)::placeholder,
+#modal-container form :is(input,select,textarea)::placeholder{
+ color:#a0a0a0!important;opacity:1!important;
+}
+#app main form :is(input,select,textarea):hover,
+#modal-container form :is(input,select,textarea):hover{
+ border-color:#c6c6c6!important;
+}
+#app main form :is(input,select,textarea):focus,
+#modal-container form :is(input,select,textarea):focus{
+ border-color:#888!important;
+ outline:3px solid rgba(0,0,0,.055)!important;
+ box-shadow:none!important;
+}
+#app main form label,
+#modal-container form label{
+ display:inline-block;
+ color:#626262!important;
+ font-size:10px!important;
+ font-weight:750!important;
+ letter-spacing:.045em!important;
+ line-height:1.45!important;
+}
+#app main form :is(input,select,textarea),
+#modal-container form :is(input,select,textarea){
+ min-height:42px;
+ padding:10px 12px!important;
+ font-size:13px!important;
+}
+#app main form textarea,
+#modal-container form textarea{
+ min-height:88px;resize:vertical;
+}
+#app main form input[type="checkbox"],
+#app main form input[type="radio"],
+#modal-container form input[type="checkbox"],
+#modal-container form input[type="radio"]{
+ accent-color:#333!important;
+}
+#app main form fieldset,
+#modal-container form fieldset{
+ border-color:#e5e5e5!important;border-radius:12px!important;
+}
+#app main form :is(.form-section,.form-group-title),
+#modal-container form :is(.form-section,.form-group-title){
+ color:#292929!important;border-color:#ededed!important;
+}
+#app main form button[type="submit"],
+#modal-container form button[type="submit"]{
+ min-height:42px;border-radius:10px!important;
+ box-shadow:none!important;font-weight:700!important;
+}
+@media(max-width:640px){
+ #app main form :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea),
+ #modal-container form :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea){
+  font-size:16px!important;min-height:44px;
+ }
+ #app main form label,#modal-container form label{font-size:10px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #app main form :is(input,select,textarea),#modal-container form :is(input,select,textarea){transition:none!important}
+}
+</style>
