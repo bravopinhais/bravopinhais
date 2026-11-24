@@ -21683,4 +21683,63 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-motion:reduce){
  #status-nuvem *,#app main *{scroll-behavior:auto!important;transition-duration:.01ms!important}
 }
+
+/* ETAPA 34 — redesign de acabamento do dashboard */
+#app main .dashboard-shell{max-width:100%;gap:1.5rem!important;color:#171717}
+#app main .dashboard-shell .dashboard-quick-access{
+ background:#fff!important;border:1px solid #e5e5e5!important;border-radius:22px!important;
+ padding:22px!important;box-shadow:0 5px 20px rgba(0,0,0,.035)!important
+}
+#app main .dashboard-quick-access-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:18px}
+#app main .dashboard-quick-access-heading h3{font-size:18px!important;font-weight:800!important;letter-spacing:-.035em;color:#171717!important;margin-top:3px}
+#app main .dashboard-quick-access-heading p:not(.dashboard-quick-eyebrow){font-size:12px;color:#737373;margin-top:4px}
+#app main .dashboard-quick-eyebrow{font-size:9px!important;letter-spacing:.16em;text-transform:uppercase;font-weight:800;color:#737373!important}
+#app main .dashboard-quick-hint{display:inline-flex;align-items:center;gap:7px;padding:7px 11px;border:1px solid #e5e5e5;border-radius:999px;background:#fafafa;color:#525252;font-size:10px;font-weight:700}
+#app main .dashboard-quick-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+#app main .dashboard-quick-grid>button{min-width:0;display:flex;align-items:center;gap:12px;padding:14px!important;border:1px solid #ebebeb!important;border-radius:16px!important;background:#fff!important;text-align:left;transition:background .18s,border-color .18s,transform .18s}
+#app main .dashboard-quick-grid>button:hover{background:#fafafa!important;border-color:#cfcfcf!important;transform:translateY(-2px)}
+#app main .dashboard-quick-icon{width:38px!important;height:38px!important;flex:0 0 38px;border-radius:12px!important;background:#f2f2f2!important;color:#333!important;display:grid;place-items:center}
+#app main .dashboard-quick-grid strong{display:block;font-size:12px;font-weight:800;color:#262626}
+#app main .dashboard-quick-grid small{display:block;margin-top:3px;font-size:10px;color:#858585}
+#app main .dashboard-quick-arrow{margin-left:auto;color:#a3a3a3;font-size:10px}
+#app main .dashboard-section-title{margin:0!important}
+#app main .dashboard-section-title p:first-child{color:#737373!important}
+#app main .dashboard-section-title h3{font-size:19px!important;letter-spacing:-.04em}
+#app main .dashboard-kpi-grid{gap:12px!important}
+#app main .dashboard-kpi-grid>article{border:1px solid #e7e7e7!important;border-radius:19px!important;padding:19px!important;box-shadow:0 3px 14px rgba(0,0,0,.025)!important;transition:border-color .18s,transform .18s!important}
+#app main .dashboard-kpi-grid>article:hover{transform:translateY(-2px)!important;border-color:#c9c9c9!important;box-shadow:0 8px 22px rgba(0,0,0,.05)!important}
+#app main .dashboard-kpi-grid article :is([class*="text-emerald-"],[class*="text-rose-"],[class*="text-sky-"],[class*="text-teal-"],[class*="text-amber-"]){color:#404040!important}
+#app main .dashboard-kpi-grid article :is([class*="bg-emerald-"],[class*="bg-rose-"],[class*="bg-sky-"],[class*="bg-teal-"],[class*="bg-amber-"]){background:#f2f2f2!important}
+#app main .dashboard-kpi-grid article :is([class*="border-emerald-"],[class*="border-rose-"],[class*="border-sky-"],[class*="border-teal-"],[class*="border-amber-"]){border-color:#e7e7e7!important}
+#app main .dashboard-kpi-grid article>div:first-child>div:last-child{border-radius:13px!important}
+#app main .dashboard-kpi-grid article p.text-2xl,#app main .dashboard-kpi-grid article p.text-3xl{font-variant-numeric:tabular-nums;letter-spacing:-.055em}
+#app main .dashboard-kpi-grid article button{color:#404040!important;font-weight:800}
+#app main .dashboard-kpi-grid article button:hover{color:#000!important}
+#app main .dashboard-shell>section:has(.fa-brain){border:1px solid #e5e5e5!important;border-radius:20px!important;box-shadow:0 4px 18px rgba(0,0,0,.035)!important}
+#app main .dashboard-shell>section:has(.fa-brain)>div:first-child{background:#f4f4f4!important;background-image:none!important;padding:20px 22px!important}
+#app main .dashboard-shell>section:has(.fa-brain)>div:first-child :is(h3,p,span,i){color:#292929!important}
+#app main .dashboard-shell>section:has(.fa-brain)>div:first-child>div>div>div:first-child>div:first-child{background:#e7e7e7!important;box-shadow:none!important}
+#app main .dashboard-shell>section:has(.fa-brain)>div:nth-child(2){background:#fafafa!important}
+#app main .dashboard-shell>section:has(.fa-brain) button{border-color:#e5e5e5!important;border-radius:15px!important;box-shadow:none!important}
+#app main .dashboard-shell>section:has(.fa-brain) button:hover{border-color:#bdbdbd!important;background:#fafafa!important}
+#app main .dashboard-shell>section:has(.fa-brain) button :is(span,i){color:#404040!important}
+#app main .dashboard-analytics-disclosure>summary{border:1px solid #e5e5e5!important;border-radius:17px!important;padding:17px 19px!important;box-shadow:0 3px 12px rgba(0,0,0,.025)!important;transition:background .18s,border-color .18s}
+#app main .dashboard-analytics-disclosure>summary:hover{background:#fafafa!important;border-color:#d0d0d0!important}
+#app main .dashboard-analytics-disclosure>summary :is(p,span,i){color:#555!important}
+#app main .dashboard-analytics-disclosure>summary h3{color:#171717!important}
+#app main .dashboard-analytics-disclosure>summary>span{background:#f1f1f1!important;border:1px solid #e5e5e5}
+#app main .dashboard-analytics-grid>div{border-color:#e5e5e5!important;border-radius:19px!important;box-shadow:0 3px 14px rgba(0,0,0,.025)!important}
+#app main .dashboard-shell :is(.dashboard-alertas,.dashboard-alert-list)>*{border-radius:14px}
+@media(max-width:767px){
+ #app main .dashboard-shell{gap:18px!important}
+ #app main .dashboard-quick-access{padding:16px!important;border-radius:18px!important}
+ #app main .dashboard-quick-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ #app main .dashboard-quick-grid>button{padding:11px!important;gap:9px}
+ #app main .dashboard-quick-icon{width:34px!important;height:34px!important;flex-basis:34px}
+ #app main .dashboard-quick-grid small{font-size:9px}
+ #app main .dashboard-kpi-grid>article{padding:15px!important;border-radius:16px!important}
+ #app main .dashboard-analytics-disclosure>summary{padding:14px!important}
+}
+@media(max-width:380px){#app main .dashboard-quick-grid{grid-template-columns:1fr}}
+
 </style>
