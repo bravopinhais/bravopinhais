@@ -21638,3 +21638,49 @@ body.bravo-renderizando-modulo::before{
  #app main table thead th{white-space:nowrap;padding-top:11px!important;padding-bottom:11px!important}
 }
 </style>
+
+
+<!-- Etapa 33 — acabamento de ícones, etiquetas e sincronização -->
+<style id="bravo-acabamento-icones-status-etapa-33">
+/* Barra de sincronização e mensagens de estado */
+#status-nuvem{
+ background:#fff!important;background-image:none!important;color:#525252!important;
+ border-bottom:1px solid #e5e5e5!important;box-shadow:none!important
+}
+#status-nuvem :is(i,svg,span,strong){color:#525252!important}
+#status-nuvem.animate-pulse{animation:none!important}
+/* Símbolos e pequenos blocos de ícones coloridos nos módulos */
+#app main :is(div,span).rounded-xl:has(>i),
+#app main :is(div,span).rounded-2xl:has(>i),
+#app main :is(div,span).rounded-lg:has(>i){
+ box-shadow:none!important
+}
+#app main :is(div,span):is([class*="bg-emerald-50"],[class*="bg-teal-50"],[class*="bg-green-50"],[class*="bg-sky-50"],[class*="bg-blue-50"],[class*="bg-indigo-50"],[class*="bg-violet-50"],[class*="bg-amber-50"],[class*="bg-rose-50"]):has(>i){
+ background:#f1f1f1!important;border-color:#e5e5e5!important
+}
+#app main :is(div,span):is([class*="bg-emerald-50"],[class*="bg-teal-50"],[class*="bg-green-50"],[class*="bg-sky-50"],[class*="bg-blue-50"],[class*="bg-indigo-50"],[class*="bg-violet-50"],[class*="bg-amber-50"],[class*="bg-rose-50"]):has(>i) i{
+ color:#404040!important
+}
+/* Etiquetas pequenas e badges de status */
+#app main :is(span,small):is([class*="bg-emerald-50"],[class*="bg-teal-50"],[class*="bg-green-50"],[class*="bg-sky-50"],[class*="bg-blue-50"],[class*="bg-indigo-50"],[class*="bg-violet-50"],[class*="bg-amber-50"],[class*="bg-rose-50"]){
+ background:#f1f1f1!important;color:#404040!important;border-color:#e5e5e5!important
+}
+#app main :is(span,small):is([class*="text-emerald-"],[class*="text-teal-"],[class*="text-green-"],[class*="text-sky-"],[class*="text-blue-"],[class*="text-indigo-"],[class*="text-violet-"],[class*="text-amber-"],[class*="text-rose-"]){
+ color:#525252!important
+}
+/* Pequenos cabeçalhos de seção e títulos de cards */
+#app main :is(h2,h3,h4) [class*="text-teal-"],
+#app main :is(h2,h3,h4) [class*="text-emerald-"],
+#app main :is(h2,h3,h4) [class*="text-green-"]{color:#262626!important}
+/* Neutralizar gradientes residuais apenas nos elementos de marca e superfícies */
+#sidebar-menu [class*="bg-gradient-"],
+#app main [class*="bg-gradient-to-r"][class*="from-teal-"],
+#app main [class*="bg-gradient-to-tr"][class*="from-teal-"]{
+ background:#f1f1f1!important;background-image:none!important;color:#333!important;box-shadow:none!important
+}
+#sidebar-menu [class*="bg-gradient-"] :is(i,svg),
+#app main [class*="bg-gradient-to-r"][class*="from-teal-"] :is(i,svg){color:#333!important}
+@media(prefers-reduced-motion:reduce){
+ #status-nuvem *,#app main *{scroll-behavior:auto!important;transition-duration:.01ms!important}
+}
+</style>
