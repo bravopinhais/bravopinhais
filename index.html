@@ -20570,3 +20570,76 @@ html,body,#app{background:#fff!important;color:#171717!important}
  #modal-container>div,#modal-container>div>div{transition:none!important;animation:none!important}
 }
 </style>
+
+
+<style id="bravo-cabecalhos-modulos-etapa-16">
+/* Etapa 16 — cabeçalho global e faixa de módulos com hierarquia visual uniforme. */
+#app>div>div>div.flex-1.flex.flex-col.min-h-screen{background:#fff!important}
+#app main{
+ background:#fff!important;color:#222!important;
+ padding:clamp(14px,2.2vw,30px)!important;
+}
+#cabecalho-modulo-global{
+ position:relative;display:flex!important;align-items:center!important;
+ gap:16px!important;margin:0 0 22px!important;padding:0 0 18px!important;
+ border-bottom:1px solid #ededed!important;
+}
+#cabecalho-modulo-global h2{
+ margin:0!important;color:#171717!important;font-size:clamp(21px,2vw,27px)!important;
+ font-weight:750!important;letter-spacing:-.045em!important;line-height:1.2!important
+}
+#cabecalho-modulo-global p{
+ margin-top:6px!important;color:#888!important;font-size:11px!important;
+ font-weight:500!important;letter-spacing:.005em!important
+}
+#cabecalho-modulo-global>div:last-child{
+ display:flex!important;align-items:center!important;justify-content:flex-end!important;
+ gap:8px!important;flex-wrap:wrap!important
+}
+#cabecalho-modulo-global button,
+#cabecalho-modulo-global label{
+ min-height:38px!important;padding:9px 13px!important;border-radius:9px!important;
+ font-size:11px!important;font-weight:700!important;box-shadow:none!important;
+ border:1px solid #171717!important;background:#171717!important;color:#fff!important;
+ transition:background .15s ease,border-color .15s ease!important
+}
+#cabecalho-modulo-global button:hover,
+#cabecalho-modulo-global label:hover{background:#3a3a3a!important;border-color:#3a3a3a!important}
+#cabecalho-modulo-global button i,
+#cabecalho-modulo-global label i{color:inherit!important}
+#cabecalho-modulo-global button:focus-visible,
+#cabecalho-modulo-global label:focus-within{outline:2px solid #a3a3a3!important;outline-offset:2px}
+#app .gb-tabs-scroller{scrollbar-width:thin;scrollbar-color:#ccc transparent}
+#app>div>div>div.flex-1.flex.flex-col.min-h-screen>div.bg-slate-200\/80{
+ background:#fff!important;border-bottom:1px solid #e8e8e8!important;
+ padding:8px 14px 0!important;gap:5px!important;backdrop-filter:none!important
+}
+#app>div>div>div.flex-1.flex.flex-col.min-h-screen>div.bg-slate-200\/80>div{
+ border-radius:8px 8px 0 0!important;padding:10px 14px!important;
+ border:1px solid transparent!important;font-size:11px!important
+}
+#app .tab-active{
+ background:#171717!important;color:#fff!important;
+ border-color:#171717!important;box-shadow:none!important;font-weight:700!important
+}
+#app>div>div>div.flex-1.flex.flex-col.min-h-screen>div.bg-slate-200\/80>div:not(.tab-active){
+ background:#f6f6f6!important;color:#666!important
+}
+#app>div>div>div.flex-1.flex.flex-col.min-h-screen>div.bg-slate-200\/80>div:not(.tab-active):hover{
+ background:#ededed!important;color:#222!important
+}
+@media(max-width:640px){
+ #app main{padding:14px 12px!important}
+ #cabecalho-modulo-global{
+  align-items:flex-start!important;flex-direction:column!important;
+  gap:13px!important;margin-bottom:16px!important;padding-bottom:15px!important
+ }
+ #cabecalho-modulo-global>div:last-child{width:100%!important;justify-content:flex-start!important}
+ #cabecalho-modulo-global button,#cabecalho-modulo-global label{
+  flex:1 1 auto!important;justify-content:center!important;white-space:nowrap!important
+ }
+ #app>div>div>div.flex-1.flex.flex-col.min-h-screen>div.bg-slate-200\/80{
+  padding-left:9px!important;padding-right:9px!important
+ }
+}
+</style>
