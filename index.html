@@ -22810,3 +22810,70 @@ body.bravo-renderizando-modulo::before{
  #cabecalho-modulo-global>div:last-child :is(button,label){justify-content:center!important;width:100%!important;white-space:normal!important;text-align:center!important}
 }
 </style>
+
+
+<!-- bravo-paineis-cartoes-modulos-etapa-52 -->
+<style id="bravo-paineis-cartoes-modulos-etapa-52">
+/* Superfícies internas dos módulos: branco, cinza e acabamento consistente. */
+#app main .card-modern{
+ background:#fff!important;
+ border:1px solid #e5e5e5!important;
+ border-radius:15px!important;
+ box-shadow:0 2px 8px rgba(0,0,0,.025)!important;
+ transition:border-color .16s ease,box-shadow .16s ease!important;
+}
+#app main .card-modern:hover{
+ transform:none!important;
+ border-color:#d2d2d2!important;
+ box-shadow:0 5px 16px rgba(0,0,0,.045)!important;
+}
+#app main :is(.card-modern,[class*="rounded-2xl"],[class*="rounded-xl"]){
+ background-color:#fff;
+}
+#app main .card-modern :is(h3,h4){
+ color:#242424!important;
+ letter-spacing:-.02em;
+}
+#app main .card-modern :is(p small,.text-xs,.text-sm){
+ color:#737373;
+}
+#app main :is(.card-modern,.gb-panel,.gb-section-panel){
+ border-color:#e5e5e5!important;
+}
+#app main :is(.card-modern,.gb-panel,.gb-section-panel)>:is(header,.card-header,.panel-header){
+ border-bottom:1px solid #ededed!important;
+}
+#app main :is(.card-modern,.gb-panel,.gb-section-panel) hr{
+ border-color:#ededed!important;
+}
+#app main :is(.card-modern,.gb-panel,.gb-section-panel) :is(input,select,textarea){
+ border-color:#dedede!important;
+ box-shadow:none!important;
+}
+#app main :is(.card-modern,.gb-panel,.gb-section-panel) :is(input,select,textarea):focus{
+ border-color:#999!important;
+ outline:2px solid rgba(0,0,0,.06)!important;
+}
+#app main :is(.empty-state,.empty-state-container,[class*="empty-state"]){
+ background:#fafafa!important;
+ border:1px dashed #d8d8d8!important;
+ border-radius:13px!important;
+ color:#686868!important;
+}
+#app main :is(.empty-state,.empty-state-container,[class*="empty-state"]) :is(i,svg){
+ color:#929292!important;
+}
+#app main :is(.card-modern,.gb-panel,.gb-section-panel) :is(table){
+ border-color:#ededed!important;
+}
+@media(max-width:640px){
+ #app main .card-modern{
+  border-radius:13px!important;
+  padding:14px!important;
+ }
+ #app main :is(.gb-panel,.gb-section-panel){border-radius:13px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #app main .card-modern{transition:none!important}
+}
+</style>
