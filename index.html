@@ -12331,17 +12331,17 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 const resultadoLiquidoDRE = totalReceitasDRE - totalDespesasDRE;
 
                 return `
-                <div class="bg-white p-8 rounded-3xl card-modern shadow-sm space-y-6 w-full">
-                    <div class="flex justify-between items-center border-b border-slate-100 pb-4">
-                        <h3 class="font-black text-slate-900 text-lg uppercase tracking-tight"><i class="fa-solid fa-file-invoice-dollar mr-2 text-teal-600"></i> Demonstrativo do Resultado (DRE)</h3>
-                        <span class="text-xs bg-teal-50 text-teal-700 px-4 py-1.5 rounded-full font-bold">Plano de Contas Ativo</span>
+                <div class="relatorios-dre-page bg-white p-8 rounded-3xl card-modern shadow-sm space-y-6 w-full">
+                    <div class="relatorios-dre-header flex justify-between items-center border-b border-slate-100 pb-4">
+                        <div><p class="relatorios-dre-eyebrow">Relatório financeiro</p><h3 class="font-black text-slate-900 text-lg tracking-tight"><i class="fa-solid fa-file-invoice-dollar mr-2"></i> Demonstrativo do Resultado</h3><p class="relatorios-dre-subtitle">Consolidação dos valores registrados por plano de contas</p></div>
+                        <span class="relatorios-dre-status">Plano de contas ativo</span>
                     </div>
 
-                    <div class="space-y-5 text-xs">
+                    <div class="relatorios-dre-summary" aria-label="Resumo do demonstrativo"><div><span>Receitas registradas</span><strong>R$ ${totalReceitasDRE.toFixed(2)}</strong></div><div><span>Despesas registradas</span><strong>R$ ${totalDespesasDRE.toFixed(2)}</strong></div><div><span>Resultado líquido</span><strong>R$ ${resultadoLiquidoDRE.toFixed(2)}</strong></div></div>\n                    <div class="space-y-5 text-xs">
                         <div class="space-y-2">
                             <p class="font-black text-slate-400 uppercase tracking-widest text-[10px]">Receitas Operacionais</p>
                             ${Object.values(itensPorConta).filter(i => i.tipo === 'Receita').map(i => `
-                                <div class="flex justify-between p-4 bg-emerald-50/60 text-emerald-950 font-bold rounded-2xl border border-emerald-100/60">
+                                <div class="relatorios-dre-row flex justify-between p-4 bg-emerald-50/60 text-emerald-950 font-bold rounded-2xl border border-emerald-100/60">
                                     <span>(+) ${escapeHTML(i.codigo + ' - ' + i.nome)}</span>
                                     <span class="font-mono font-black">R$ ${i.total.toFixed(2)}</span>
                                 </div>
@@ -12351,7 +12351,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                         <div class="space-y-2 pt-2">
                             <p class="font-black text-slate-400 uppercase tracking-widest text-[10px]">Despesas Operacionais</p>
                             ${Object.values(itensPorConta).filter(i => i.tipo === 'Despesa').map(i => `
-                                <div class="flex justify-between p-4 bg-rose-50/60 text-rose-950 font-bold rounded-2xl border border-rose-100/60">
+                                <div class="relatorios-dre-row flex justify-between p-4 bg-rose-50/60 text-rose-950 font-bold rounded-2xl border border-rose-100/60">
                                     <span>(-) ${escapeHTML(i.codigo + ' - ' + i.nome)}</span>
                                     <span class="font-mono font-black">R$ ${i.total.toFixed(2)}</span>
                                 </div>
@@ -12359,7 +12359,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                         </div>
 
                         <div class="pt-4 border-t border-slate-100">
-                            <div class="flex justify-between p-5 bg-gradient-to-r from-teal-700 to-teal-800 text-white font-black text-sm rounded-2xl shadow-lg shadow-teal-700/20">
+                            <div class="relatorios-dre-result flex justify-between p-5 bg-gradient-to-r from-teal-700 to-teal-800 text-white font-black text-sm rounded-2xl shadow-lg shadow-teal-700/20">
                                 <span>(=) RESULTADO LÍQUIDO DO EXERCÍCIO</span>
                                 <span class="font-mono text-base">R$ ${resultadoLiquidoDRE.toFixed(2)}</span>
                             </div>
@@ -19056,6 +19056,30 @@ html,body,#app,#app header.bg-slate-950.no-print,#app header.md\\:hidden{backgro
 @media(prefers-reduced-motion:reduce){
  #app main :is(.dashboard-analytics-disclosure,.estoque-analytics-disclosure) *{scroll-behavior:auto!important;}
 }
+</style>
+
+
+<style id="bravo-relatorios-indicadores-monocromatico-2026">
+/* Relatórios: hierarquia clara, leitura financeira e indicadores discretos. */
+#app main .relatorios-dre-page{padding:clamp(16px,2.4vw,30px)!important;border:1px solid #e8e8e8!important;border-radius:16px!important;box-shadow:none!important;min-width:0;}
+#app main .relatorios-dre-header{gap:14px!important;align-items:flex-start!important;border-color:#ededed!important;padding-bottom:18px!important;}
+#app main .relatorios-dre-eyebrow{margin:0 0 5px!important;color:#777!important;font-size:10px!important;font-weight:800!important;letter-spacing:.13em!important;text-transform:uppercase;}
+#app main .relatorios-dre-header h3{margin:0!important;color:#171717!important;font-size:clamp(17px,2vw,21px)!important;line-height:1.3!important;font-weight:800!important;}
+#app main .relatorios-dre-header h3 i{color:#444!important;}
+#app main .relatorios-dre-subtitle{margin:5px 0 0!important;color:#858585!important;font-size:12px!important;}
+#app main .relatorios-dre-status{display:inline-flex;align-items:center;white-space:nowrap;padding:7px 10px!important;border:1px solid #e7e7e7!important;border-radius:8px!important;background:#f7f7f7!important;color:#555!important;font-size:10px!important;font-weight:700!important;}
+#app main .relatorios-dre-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:20px 0 24px;}
+#app main .relatorios-dre-summary>div{min-width:0;padding:13px 15px;border:1px solid #e9e9e9;border-radius:11px;background:#fff;display:flex;flex-direction:column;gap:7px;}
+#app main .relatorios-dre-summary span{color:#777;font-size:10px;font-weight:700;letter-spacing:.035em;}
+#app main .relatorios-dre-summary strong{color:#171717;font-size:clamp(15px,2vw,19px);font-weight:800;font-variant-numeric:tabular-nums;overflow-wrap:anywhere;}
+#app main .relatorios-dre-page .space-y-5>div>p{color:#777!important;font-size:10px!important;letter-spacing:.1em!important;}
+#app main .relatorios-dre-row{background:#fafafa!important;color:#333!important;border:1px solid #ededed!important;border-radius:10px!important;box-shadow:none!important;gap:12px;margin-top:7px;}
+#app main .relatorios-dre-row span{color:#333!important;overflow-wrap:anywhere;}
+#app main .relatorios-dre-row .font-mono{color:#222!important;white-space:nowrap;}
+#app main .relatorios-dre-result{background:#171717!important;color:#fff!important;border:1px solid #171717!important;border-radius:11px!important;box-shadow:none!important;gap:12px;}
+#app main .relatorios-dre-result span,#app main .relatorios-dre-result .font-mono{color:#fff!important;}
+@media(max-width:640px){#app main .relatorios-dre-header{flex-direction:column!important;}#app main .relatorios-dre-summary{grid-template-columns:1fr;gap:8px;margin:16px 0 20px;}#app main .relatorios-dre-summary>div{padding:11px 13px;}#app main .relatorios-dre-row,#app main .relatorios-dre-result{padding:12px!important;align-items:flex-start!important;font-size:11px!important;}}
+@media(prefers-reduced-motion:reduce){#app main .relatorios-dre-page *{transition:none!important;animation:none!important;}}
 </style>
 
 </body>
