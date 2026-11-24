@@ -19426,3 +19426,79 @@ body.bg-slate-100{background:#fff!important;color:#222!important}
  #app main .dashboard-kpi-grid>article{transition:none!important}
 }
 </style>
+
+
+<style id="bravo-modulos-tabelas-listas-2026">
+/* Quarta etapa: acabamento uniforme das listas e tabelas dos módulos. */
+#app main :is(.card-modern, .overflow-x-auto):has(>table){
+ border:1px solid #e8e8e8!important;border-radius:13px!important;
+ background:#fff!important;box-shadow:none!important;
+}
+#app main table{border-collapse:separate!important;border-spacing:0!important;color:#333!important}
+#app main table thead{
+ background:#f6f6f6!important;color:#666!important;
+}
+#app main table thead th{
+ padding:13px 15px!important;background:#f6f6f6!important;
+ color:#666!important;border-bottom:1px solid #e8e8e8!important;
+ font-size:9px!important;font-weight:800!important;letter-spacing:.075em!important;
+ white-space:nowrap;
+}
+#app main table tbody tr{background:#fff!important}
+#app main table tbody td{
+ padding:13px 15px!important;border-color:#ededed!important;
+ color:#444!important;font-size:11px!important;vertical-align:middle!important;
+}
+#app main table tbody tr:hover td{background:#f8f8f8!important}
+#app main table tbody tr:last-child td{border-bottom:0!important}
+#app main table :is(.font-mono,.font-black){font-variant-numeric:tabular-nums}
+#app main table :is(.text-teal-700,.text-teal-800,.text-emerald-700,.text-emerald-800,.text-green-700,.text-green-800,.text-sky-700,.text-blue-700){
+ color:#333!important;
+}
+#app main table :is(.text-rose-600,.text-rose-700,.text-red-600,.text-red-700){
+ color:#555!important;
+}
+#app main table :is([class*="bg-teal-"],[class*="bg-emerald-"],[class*="bg-green-"],[class*="bg-sky-"],[class*="bg-blue-"],[class*="bg-rose-"],[class*="bg-red-"],[class*="bg-amber-"],[class*="bg-yellow-"]){
+ background:#f1f1f1!important;color:#444!important;border-color:#e6e6e6!important;
+}
+#app main table button{
+ min-width:30px;min-height:30px;border:1px solid #e7e7e7!important;
+ border-radius:8px!important;background:#f7f7f7!important;color:#333!important;
+ box-shadow:none!important;transition:background .15s ease,border-color .15s ease!important;
+}
+#app main table button:hover{background:#ededed!important;border-color:#d5d5d5!important}
+#app main :is(#menu-filtro-bloco,#menu-filtro-nome,[id^="menu-filtro-"]){
+ border:1px solid #e5e5e5!important;border-radius:12px!important;
+ box-shadow:0 12px 28px rgba(0,0,0,.09)!important;
+}
+#app main :is(#menu-filtro-bloco,#menu-filtro-nome,[id^="menu-filtro-"]) button{
+ border-radius:7px!important;box-shadow:none!important;
+}
+#app main :is(.space-y-4,.space-y-5)>:is(.bg-teal-50,.bg-emerald-50,.bg-rose-50,.bg-amber-50){
+ border-color:#e7e7e7!important;background:#f7f7f7!important;color:#444!important;
+ box-shadow:none!important;
+}
+#app main :is(.space-y-4,.space-y-5)>div>button[class*="bg-teal-"],
+#app main :is(.space-y-4,.space-y-5)>div>button[class*="bg-emerald-"]{
+ background:#191919!important;color:#fff!important;border-color:#191919!important;
+}
+#app main :is(input,select,textarea){
+ background-color:#fff!important;color:#262626!important;
+ border-color:#dedede!important;box-shadow:none!important;
+}
+#app main :is(input,select,textarea):focus{
+ border-color:#888!important;outline:2px solid rgba(0,0,0,.07)!important;
+}
+#app main input::placeholder,#app main textarea::placeholder{color:#a0a0a0!important}
+#app main :is(.bg-white.rounded-3xl.card-modern,.bg-white.rounded-2xl.card-modern){
+ border-color:#e8e8e8!important;box-shadow:none!important;
+}
+@media(max-width:640px){
+ #app main :is(.card-modern,.overflow-x-auto):has(>table){border-radius:10px!important}
+ #app main table thead th{padding:11px 12px!important;font-size:8px!important}
+ #app main table tbody td{padding:11px 12px!important;font-size:10px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #app main table button{transition:none!important}
+}
+</style>
