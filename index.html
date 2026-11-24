@@ -25276,3 +25276,65 @@ body.bravo-renderizando-modulo::before{
  }
 }
 </style>
+
+
+<!-- Bravo Pinhais — refinamento responsivo do dashboard | etapa 79 -->
+<style id="bravo-dashboard-mobile-refino-etapa-79">
+/* Leitura e toque mais confortáveis em telas compactas. */
+#app main .dashboard-shell{min-width:0}
+#app main .dashboard-shell :is(.dashboard-quick-access,.dashboard-analytics-disclosure,.dashboard-analytics-grid){min-width:0}
+#app main .dashboard-quick-grid>button{min-width:0}
+#app main .dashboard-quick-grid>button :is(strong,small){
+ min-width:0;overflow-wrap:anywhere;
+}
+#app main .dashboard-kpi-grid>article{min-width:0}
+#app main .dashboard-kpi-grid>article :is(.text-2xl,.text-3xl){
+ overflow-wrap:anywhere;font-variant-numeric:tabular-nums;
+}
+#app main .dashboard-analytics-disclosure>summary{
+ min-height:48px;cursor:pointer;list-style:none;
+}
+#app main .dashboard-analytics-disclosure>summary::-webkit-details-marker{display:none}
+#app main .dashboard-analytics-disclosure[open]>summary{
+ border-bottom-left-radius:12px!important;border-bottom-right-radius:12px!important;
+}
+#app main .dashboard-analytics-disclosure :is(canvas,svg){
+ max-width:100%;
+}
+@media(max-width:767px){
+ #app main .dashboard-shell{width:100%;max-width:100%;overflow:visible}
+ #app main .dashboard-quick-access{padding:14px!important}
+ #app main .dashboard-quick-access-heading{
+  align-items:flex-start;gap:10px;flex-wrap:wrap;
+ }
+ #app main .dashboard-quick-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+ }
+ #app main .dashboard-quick-grid>button{
+  min-height:64px!important;padding:10px!important;
+ }
+ #app main .dashboard-kpi-grid{
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:10px!important;
+ }
+ #app main .dashboard-kpi-grid>article{
+  min-height:0!important;padding:13px!important;
+ }
+ #app main .dashboard-analytics-disclosure>summary{
+  padding:13px!important;gap:10px!important;
+ }
+ #app main .dashboard-analytics-disclosure>div,
+ #app main .dashboard-analytics-disclosure>[class*="content"]{
+  min-width:0;max-width:100%;overflow-x:auto;
+ }
+}
+@media(max-width:360px){
+ #app main .dashboard-quick-grid{grid-template-columns:minmax(0,1fr)!important}
+ #app main .dashboard-kpi-grid{gap:8px!important}
+ #app main .dashboard-kpi-grid>article{padding:11px!important}
+ #app main .dashboard-kpi-grid>article :is(.text-2xl,.text-3xl){font-size:1.25rem!important}
+}
+@media(prefers-reduced-transparency:reduce){
+ #app main .dashboard-analytics-disclosure>summary{background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+}
+</style>
