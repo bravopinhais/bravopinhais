@@ -25218,3 +25218,61 @@ body.bravo-renderizando-modulo::before{
  #app main table *{transition:none!important}
 }
 </style>
+
+
+<!-- Bravo Pinhais — acabamento global de interação e acessibilidade | etapa 78 -->
+<style id="bravo-acabamento-global-interacoes-etapa-78">
+/* Acabamento neutro dos estados globais, sem alterar fluxos ou componentes funcionais. */
+#app :is(button,a,[role="button"],input,select,textarea,[tabindex]):focus-visible,
+#modal-container :is(button,a,[role="button"],input,select,textarea,[tabindex]):focus-visible{
+ outline:2px solid #777!important;
+ outline-offset:3px!important;
+}
+#app :is(button,a,[role="button"]),
+#modal-container :is(button,a,[role="button"]){
+ -webkit-tap-highlight-color:transparent;
+}
+#app :is(button:disabled,a[aria-disabled="true"],[role="button"][aria-disabled="true"]),
+#modal-container :is(button:disabled,[role="button"][aria-disabled="true"]){
+ cursor:not-allowed!important;
+}
+#app :is(button:disabled,[aria-disabled="true"]),
+#modal-container :is(button:disabled,[aria-disabled="true"]){
+ opacity:.58;
+}
+#app :is(input,select,textarea):disabled,
+#modal-container :is(input,select,textarea):disabled{
+ background:#f1f1f1!important;
+ color:#777!important;
+ border-color:#e3e3e3!important;
+}
+#app :is(.overflow-auto,.overflow-x-auto,.overflow-y-auto),
+#modal-container :is(.overflow-auto,.overflow-x-auto,.overflow-y-auto){
+ scrollbar-width:thin;
+ scrollbar-color:#bdbdbd transparent;
+ overscroll-behavior:contain;
+}
+#app :is(.overflow-auto,.overflow-x-auto,.overflow-y-auto)::-webkit-scrollbar,
+#modal-container :is(.overflow-auto,.overflow-x-auto,.overflow-y-auto)::-webkit-scrollbar{
+ width:7px;height:7px;
+}
+#app :is(.overflow-auto,.overflow-x-auto,.overflow-y-auto)::-webkit-scrollbar-thumb,
+#modal-container :is(.overflow-auto,.overflow-x-auto,.overflow-y-auto)::-webkit-scrollbar-thumb{
+ background:#c4c4c4;
+ border:2px solid transparent;
+ border-radius:20px;
+ background-clip:padding-box;
+}
+#app ::selection,#modal-container ::selection{
+ background:#292929;
+ color:#fff;
+}
+@media(prefers-reduced-motion:reduce){
+ #app *,#modal-container *{
+  scroll-behavior:auto!important;
+  animation-duration:.01ms!important;
+  animation-iteration-count:1!important;
+  transition-duration:.01ms!important;
+ }
+}
+</style>
