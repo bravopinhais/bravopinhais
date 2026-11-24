@@ -21467,3 +21467,81 @@ body.bravo-renderizando-modulo::before{
  #modal-container>div[class*="fixed"]>div{max-height:92dvh!important;overflow-y:auto!important;border-radius:20px 20px 12px 12px!important}
 }
 </style>
+
+
+<!-- Etapa 31 — dashboard monocromático e gráficos sob demanda -->
+<style id="bravo-dashboard-monocromatico-etapa-31">
+/* Cabeçalho e atalhos do painel */
+#app main .dashboard-shell .dashboard-quick-access,
+#app main .dashboard-shell .dashboard-quick-access button,
+#app main .dashboard-shell .dashboard-analytics-disclosure>summary{
+ background:#fff!important;background-image:none!important;border-color:#e5e5e5!important;
+ box-shadow:none!important;color:#262626!important;
+}
+#app main .dashboard-shell .dashboard-quick-icon{
+ background:#f1f1f1!important;color:#404040!important;border:1px solid #e5e5e5!important
+}
+#app main .dashboard-shell :is(.dashboard-quick-eyebrow,.dashboard-section-title p:first-child){
+ color:#737373!important
+}
+#app main .dashboard-shell :is(.dashboard-quick-hint,.dashboard-quick-arrow){color:#737373!important}
+/* Indicadores principais: todos os cards no mesmo padrão */
+#app main .dashboard-shell .dashboard-kpi-grid article{
+ background:#fff!important;border:1px solid #e5e5e5!important;
+ border-radius:18px!important;box-shadow:none!important
+}
+#app main .dashboard-shell .dashboard-kpi-grid article:hover{
+ transform:translateY(-1px)!important;box-shadow:0 5px 16px rgba(0,0,0,.045)!important
+}
+#app main .dashboard-shell .dashboard-kpi-grid article :is([class*="bg-emerald-"],[class*="bg-rose-"],[class*="bg-sky-"],[class*="bg-teal-"],[class*="bg-amber-"]){
+ background:#f2f2f2!important;color:#404040!important;border-color:#e5e5e5!important
+}
+#app main .dashboard-shell .dashboard-kpi-grid article :is([class*="text-emerald-"],[class*="text-rose-"],[class*="text-sky-"],[class*="text-teal-"],[class*="text-amber-"]){color:#404040!important}
+#app main .dashboard-shell .dashboard-kpi-grid article :is([class*="border-emerald-"],[class*="border-rose-"],[class*="border-sky-"],[class*="border-teal-"],[class*="border-amber-"]){border-color:#e5e5e5!important}
+/* Área de inteligência e ações rápidas */
+#app main .dashboard-shell section:has(>div.bg-gradient-to-r.from-slate-950){
+ border-color:#e5e5e5!important
+}
+#app main .dashboard-shell section>div.bg-gradient-to-r.from-slate-950{
+ background:#f3f3f3!important;background-image:none!important;color:#262626!important;border-bottom:1px solid #e5e5e5!important
+}
+#app main .dashboard-shell section>div.bg-gradient-to-r.from-slate-950 :is(h3,p,span,i){color:#404040!important}
+#app main .dashboard-shell section>div.bg-gradient-to-r.from-slate-950 [class*="bg-white/10"]{
+ background:#e8e8e8!important;color:#404040!important
+}
+#app main .dashboard-shell section>div.bg-slate-50\/70{background:#fafafa!important}
+#app main .dashboard-shell section>div.bg-slate-50\/70 button{
+ border-color:#e5e5e5!important;box-shadow:none!important
+}
+#app main .dashboard-shell section>div.bg-slate-50\/70 button:hover{border-color:#bdbdbd!important}
+#app main .dashboard-shell section>div.bg-slate-50\/70 button :is([class*="bg-teal-"],[class*="bg-rose-"],[class*="bg-amber-"],[class*="bg-sky-"]){
+ background:#f0f0f0!important;color:#404040!important
+}
+#app main .dashboard-shell section>div.bg-slate-50\/70 button :is([class*="text-teal-"],[class*="text-rose-"],[class*="text-amber-"],[class*="text-sky-"]){color:#404040!important}
+/* Gráficos: moldura neutra; manter cores dos dados para distinguir séries */
+#app main .dashboard-shell .dashboard-analytics-disclosure>summary{
+ border-radius:16px!important;cursor:pointer
+}
+#app main .dashboard-shell .dashboard-analytics-disclosure>summary:hover{border-color:#c7c7c7!important}
+#app main .dashboard-shell .dashboard-disclosure-chevron{transition:transform .2s ease}
+#app main .dashboard-shell .dashboard-analytics-disclosure[open] .dashboard-disclosure-chevron{transform:rotate(180deg)}
+#app main .dashboard-shell .dashboard-analytics-grid>div{
+ border-color:#e5e5e5!important;border-radius:18px!important;box-shadow:none!important
+}
+#app main .dashboard-shell .dashboard-analytics-grid :is(.text-teal-700,.text-teal-800){color:#404040!important}
+#app main .dashboard-shell .dashboard-analytics-grid :is(.bg-teal-50,.bg-emerald-50,.bg-rose-50,.bg-sky-50,.bg-amber-50){
+ background:#f2f2f2!important;color:#404040!important
+}
+#app main .dashboard-shell .dashboard-analytics-grid :is(.border-teal-100,.border-emerald-100,.border-rose-100,.border-sky-100,.border-amber-100){border-color:#e5e5e5!important}
+/* Alertas: preservar o significado do texto/ícone, retirar apenas a saturação do fundo */
+#app main .dashboard-shell [class*="border-rose-200"][class*="bg-rose-50"],
+#app main .dashboard-shell [class*="border-amber-200"][class*="bg-amber-50"],
+#app main .dashboard-shell [class*="border-emerald-200"][class*="bg-emerald-50"],
+#app main .dashboard-shell [class*="border-sky-200"][class*="bg-sky-50"]{
+ background:#f5f5f5!important;border-color:#e5e5e5!important;color:#404040!important
+}
+@media(max-width:640px){
+ #app main .dashboard-shell .dashboard-kpi-grid article{padding:16px!important;border-radius:15px!important}
+ #app main .dashboard-shell .dashboard-quick-grid{gap:8px!important}
+}
+</style>
