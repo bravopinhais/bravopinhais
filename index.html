@@ -23651,3 +23651,111 @@ body.bravo-renderizando-modulo::before{
  #app main .dashboard-section-title>span{background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 }
 </style>
+
+
+<!-- Bravo Pinhais — painéis analíticos e gráficos em vidro | etapa 66 -->
+<style id="bravo-paineis-graficos-vidro-etapa-66">
+/* Painéis recolhíveis do dashboard e estoque: superfície de vidro consistente. */
+#app main .dashboard-analytics-disclosure,
+#app main .estoque-analytics-disclosure{
+ background:linear-gradient(145deg,rgba(255,255,255,.94),rgba(246,246,246,.82))!important;
+ border:1px solid rgba(0,0,0,.10)!important;
+ border-radius:20px!important;
+ box-shadow:0 9px 26px rgba(0,0,0,.055),inset 0 1px 0 rgba(255,255,255,.9)!important;
+ -webkit-backdrop-filter:blur(14px) saturate(120%)!important;
+ backdrop-filter:blur(14px) saturate(120%)!important;
+ overflow:hidden!important;
+}
+#app main .dashboard-analytics-disclosure>summary,
+#app main .estoque-analytics-disclosure>summary{
+ padding:16px 18px!important;
+ color:#242424!important;
+ background:rgba(255,255,255,.48)!important;
+ border-bottom:1px solid rgba(0,0,0,.07)!important;
+ transition:background .18s ease,border-color .18s ease!important;
+}
+#app main .dashboard-analytics-disclosure>summary:hover,
+#app main .estoque-analytics-disclosure>summary:hover{
+ background:rgba(238,238,238,.72)!important;
+}
+#app main .dashboard-analytics-disclosure>summary :is(h2,h3,strong),
+#app main .estoque-analytics-disclosure>summary :is(h2,h3,strong){
+ color:#202020!important;
+}
+#app main .dashboard-analytics-disclosure>summary :is(p,small),
+#app main .estoque-analytics-disclosure>summary :is(p,small){
+ color:#777!important;
+}
+#app main .dashboard-analytics-disclosure>summary :is(i,svg),
+#app main .estoque-analytics-disclosure>summary :is(i,svg){
+ color:#555!important;
+}
+#app main .dashboard-analytics-disclosure[open]>summary,
+#app main .estoque-analytics-disclosure[open]>summary{
+ background:rgba(242,242,242,.72)!important;
+ border-bottom-color:rgba(0,0,0,.10)!important;
+}
+#app main .dashboard-analytics-disclosure>summary:focus-visible,
+#app main .estoque-analytics-disclosure>summary:focus-visible{
+ outline:2px solid #777!important;
+ outline-offset:-3px!important;
+ border-radius:14px!important;
+}
+/* Área de plotagem: fundo limpo, sem alterar datasets ou instâncias Chart.js. */
+#app main .dashboard-analytics-disclosure> :not(summary),
+#app main .estoque-analytics-disclosure> :not(summary){
+ color:#555;
+}
+#app main .dashboard-analytics-disclosure .relative:has(>canvas),
+#app main .estoque-analytics-disclosure .relative:has(>canvas){
+ background:rgba(255,255,255,.66)!important;
+ border:1px solid rgba(0,0,0,.065)!important;
+ border-radius:15px!important;
+ padding:12px!important;
+ box-shadow:inset 0 1px 0 rgba(255,255,255,.92)!important;
+}
+#app main .dashboard-analytics-disclosure canvas,
+#app main .estoque-analytics-disclosure canvas{
+ display:block!important;
+ max-width:100%!important;
+}
+#app main .dashboard-analytics-disclosure :is(.border-t,.border-b){
+ border-color:rgba(0,0,0,.09)!important;
+}
+#app main .dashboard-analytics-disclosure :is(.text-slate-900,.text-slate-800),
+#app main .estoque-analytics-disclosure :is(.text-slate-900,.text-slate-800){
+ color:#292929!important;
+}
+#app main .dashboard-analytics-disclosure :is(.text-slate-500,.text-slate-600),
+#app main .estoque-analytics-disclosure :is(.text-slate-500,.text-slate-600){
+ color:#737373!important;
+}
+/* Cartões de apoio aos gráficos com tons neutros e divisórias leves. */
+#app main .dashboard-analytics-disclosure :is(.bg-slate-50,.bg-slate-100),
+#app main .estoque-analytics-disclosure :is(.bg-slate-50,.bg-slate-100){
+ background:rgba(240,240,240,.78)!important;
+ border-color:rgba(0,0,0,.08)!important;
+}
+#app main .dashboard-analytics-disclosure :is(.text-emerald-800,.text-rose-800,.text-teal-800,.text-amber-800),
+#app main .estoque-analytics-disclosure :is(.text-emerald-800,.text-rose-800,.text-teal-800,.text-amber-800){
+ color:#555!important;
+}
+@media(max-width:640px){
+ #app main .dashboard-analytics-disclosure,
+ #app main .estoque-analytics-disclosure{border-radius:17px!important}
+ #app main .dashboard-analytics-disclosure>summary,
+ #app main .estoque-analytics-disclosure>summary{padding:14px!important}
+ #app main .dashboard-analytics-disclosure .relative:has(>canvas),
+ #app main .estoque-analytics-disclosure .relative:has(>canvas){padding:8px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #app main .dashboard-analytics-disclosure>summary,
+ #app main .estoque-analytics-disclosure>summary{transition:none!important}
+}
+@media(prefers-reduced-transparency:reduce){
+ #app main .dashboard-analytics-disclosure,
+ #app main .estoque-analytics-disclosure{background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+ #app main .dashboard-analytics-disclosure .relative:has(>canvas),
+ #app main .estoque-analytics-disclosure .relative:has(>canvas){background:#fafafa!important}
+}
+</style>
