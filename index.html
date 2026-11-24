@@ -25338,3 +25338,73 @@ body.bravo-renderizando-modulo::before{
  #app main .dashboard-analytics-disclosure>summary{background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 }
 </style>
+
+
+<!-- Bravo Pinhais — consistência visual de formulários | etapa 80 -->
+<style id="bravo-formularios-consistencia-etapa-80">
+/* Campos e rótulos: leitura clara, estados previsíveis e contraste monocromático. */
+#app main form :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea),
+#modal-container form :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea){
+ max-width:100%;
+ border-radius:10px!important;
+ border-color:#dedede!important;
+ color:#292929!important;
+ background-color:rgba(255,255,255,.96)!important;
+ box-shadow:inset 0 1px 2px rgba(0,0,0,.025)!important;
+}
+#app main form :is(input,select,textarea)::placeholder,
+#modal-container form :is(input,select,textarea)::placeholder{
+ color:#999!important;opacity:1;
+}
+#app main form :is(input,select,textarea):focus,
+#modal-container form :is(input,select,textarea):focus{
+ border-color:#777!important;
+ box-shadow:0 0 0 3px rgba(0,0,0,.07)!important;
+ outline:none!important;
+}
+#app main form label,
+#modal-container form label{
+ color:#4b4b4b;
+}
+#app main form :is(fieldset,legend),
+#modal-container form :is(fieldset,legend){
+ border-color:#e4e4e4!important;
+}
+#app main form input[type=file],
+#modal-container form input[type=file]{
+ max-width:100%;color:#666!important;
+}
+#app main form input[type=file]::file-selector-button,
+#modal-container form input[type=file]::file-selector-button{
+ margin-right:10px;padding:8px 12px;border:1px solid #dedede;
+ border-radius:8px;background:#f3f3f3;color:#333;font-weight:700;
+}
+#app main form :is(input[type=checkbox],input[type=radio]),
+#modal-container form :is(input[type=checkbox],input[type=radio]){
+ accent-color:#292929;
+}
+#app main form :is(.text-red-500,.text-rose-500,.text-red-600,.text-rose-600),
+#modal-container form :is(.text-red-500,.text-rose-500,.text-red-600,.text-rose-600){
+ color:#555!important;font-weight:700;
+}
+#app main form :is(.border-red-300,.border-rose-300,.border-red-400,.border-rose-400),
+#modal-container form :is(.border-red-300,.border-rose-300,.border-red-400,.border-rose-400){
+ border-color:#999!important;
+}
+@media(max-width:640px){
+ #app main form :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea),
+ #modal-container form :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea){
+  width:100%;min-width:0;min-height:44px;font-size:16px!important;
+ }
+ #app main form textarea,#modal-container form textarea{min-height:96px}
+ #app main form :is(fieldset),#modal-container form :is(fieldset){min-width:0;max-width:100%}
+ #app main form :is(button[type=submit],button[type=button]),
+ #modal-container form :is(button[type=submit],button[type=button]){
+  min-height:42px;
+ }
+}
+@media(prefers-reduced-transparency:reduce){
+ #app main form :is(input,select,textarea),
+ #modal-container form :is(input,select,textarea){background:#fff!important}
+}
+</style>
