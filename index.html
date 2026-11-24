@@ -21043,3 +21043,51 @@ html,body,#app,#app main{background:#fff!important;color:var(--bravo-ink)!import
 }
 </style>
 
+
+
+<!-- Bravo Pinhais — neutralização definitiva das tarjas verdes -->
+<style id="bravo-neutralizacao-tarjas-verdes-etapa-21">
+/* Cabeçalho superior, inclusive a versão compacta/mobile */
+#app header,
+#app header.md\\:hidden,
+#app header[class*="bg-"],
+#app header [class*="bg-gradient"]{
+  background:#fff!important;
+  background-color:#fff!important;
+  background-image:none!important;
+  color:#171717!important;
+  border-color:#e7e7e7!important;
+  box-shadow:none!important;
+}
+#app header :is(h1,h2,h3,strong,span,p,i){color:inherit!important}
+#app header :is(button,a){box-shadow:none!important}
+/* Faixas e barras coloridas que aparecem dentro dos módulos */
+#app main [class*="bg-gradient"],
+#app main [class*="from-teal-"],
+#app main [class*="from-emerald-"],
+#app main [class*="from-green-"],
+#app main [class*="to-teal-"],
+#app main [class*="to-emerald-"],
+#app main [class*="to-green-"]{
+  background:#fff!important;
+  background-color:#fff!important;
+  background-image:none!important;
+  color:#262626!important;
+  border-color:#e7e7e7!important;
+  box-shadow:none!important;
+}
+#app main [class*="bg-gradient"] :is(h1,h2,h3,h4,p,span,strong,small,i),
+#app main [class*="from-teal-"] :is(h1,h2,h3,h4,p,span,strong,small,i),
+#app main [class*="from-emerald-"] :is(h1,h2,h3,h4,p,span,strong,small,i),
+#app main [class*="from-green-"] :is(h1,h2,h3,h4,p,span,strong,small,i){
+  color:#262626!important;
+}
+#app main .relatorios-dre-result{
+  background:#f5f5f5!important;
+  background-image:none!important;
+  color:#262626!important;
+  border:1px solid #e7e7e7!important;
+  box-shadow:none!important;
+}
+#app main .relatorios-dre-result *{color:#262626!important}
+</style>
