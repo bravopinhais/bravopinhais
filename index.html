@@ -23833,3 +23833,123 @@ body.bravo-renderizando-modulo::before{
  }
 }
 </style>
+
+
+<!-- Bravo Pinhais — menus internos e filtros avançados em vidro | etapa 68 -->
+<style id="bravo-menus-filtros-vidro-etapa-68">
+/* Menus de ações das listagens: vidro claro e contraste monocromático. */
+#app main .grid-actions-popover{
+ background:rgba(250,250,250,.96)!important;
+ color:#262626!important;
+ border:1px solid rgba(0,0,0,.12)!important;
+ border-radius:16px!important;
+ box-shadow:0 18px 44px rgba(0,0,0,.16),inset 0 1px 0 rgba(255,255,255,.96)!important;
+ -webkit-backdrop-filter:blur(18px) saturate(125%)!important;
+ backdrop-filter:blur(18px) saturate(125%)!important;
+}
+#app main .grid-actions-popover :is(button,a[role="button"]){
+ background:rgba(255,255,255,.76)!important;
+ color:#333!important;
+ border:1px solid rgba(0,0,0,.07)!important;
+ box-shadow:none!important;
+}
+#app main .grid-actions-popover :is(button,a[role="button"]):hover{
+ background:#ededed!important;
+ color:#111!important;
+ filter:none!important;
+}
+#app main .grid-actions-popover :is(i,svg){color:#666!important}
+/* Botões que abrem ações e filtros de coluna. */
+#app main .grid-actions-trigger{
+ background:rgba(255,255,255,.88)!important;
+ color:#292929!important;
+ border:1px solid #d8d8d8!important;
+ border-radius:11px!important;
+ box-shadow:0 2px 8px rgba(0,0,0,.035)!important;
+}
+#app main .grid-actions-trigger:hover,
+#app main .grid-actions-trigger[aria-expanded="true"]{
+ background:#ededed!important;
+ color:#111!important;
+ border-color:#bdbdbd!important;
+}
+#app main .grid-actions-trigger>i:first-child,
+#app main .grid-actions-chevron{color:#666!important}
+#app main .grid-column-filter{
+ background:rgba(255,255,255,.92)!important;
+ color:#333!important;
+ border:1px solid #dedede!important;
+ border-radius:9px!important;
+ box-shadow:none!important;
+}
+#app main .grid-filter-row th{
+ background:rgba(244,244,244,.92)!important;
+ border-color:rgba(0,0,0,.08)!important;
+}
+/* Filtros suspensos por coluna, inclusive os de moradores. */
+#app main [id^="menu-filtro-"]{
+ background:rgba(255,255,255,.97)!important;
+ color:#292929!important;
+ border:1px solid rgba(0,0,0,.12)!important;
+ border-radius:17px!important;
+ box-shadow:0 18px 42px rgba(0,0,0,.15)!important;
+ -webkit-backdrop-filter:blur(18px) saturate(125%)!important;
+ backdrop-filter:blur(18px) saturate(125%)!important;
+}
+#app main [id^="menu-filtro-"] :is(p,label){
+ color:#666!important;
+}
+#app main [id^="menu-filtro-"] button{
+ background:rgba(246,246,246,.86)!important;
+ color:#333!important;
+ border:1px solid rgba(0,0,0,.055)!important;
+ box-shadow:none!important;
+}
+#app main [id^="menu-filtro-"] button:hover{
+ background:#eaeaea!important;
+ color:#111!important;
+}
+#app main [id^="menu-filtro-"] input{
+ background:#fff!important;
+ border:1px solid #d7d7d7!important;
+ color:#222!important;
+ border-radius:10px!important;
+}
+#app main [id^="menu-filtro-"] input:focus{
+ border-color:#888!important;
+ box-shadow:0 0 0 3px rgba(0,0,0,.06)!important;
+}
+/* Área de pesquisa e barras de ferramentas das listagens. */
+#app main input[type="search"],
+#app main input[placeholder*="Buscar"],
+#app main input[placeholder*="buscar"],
+#app main input[placeholder*="Pesquisar"],
+#app main input[placeholder*="pesquisar"]{
+ border-color:#d8d8d8!important;
+ border-radius:12px!important;
+ color:#292929!important;
+}
+#app main :is(.filter-chip,.filtro-chip,[data-filter]){
+ background:rgba(244,244,244,.92)!important;
+ background-image:none!important;
+ color:#333!important;
+ border:1px solid #dedede!important;
+ box-shadow:none!important;
+}
+#app main :is(.filter-chip,.filtro-chip,[data-filter]):hover{
+ background:#e9e9e9!important;
+ color:#171717!important;
+}
+#app main :is([class*="filter"],[class*="filtro"]):is(button,[role="button"]){
+ border-color:#d8d8d8;
+}
+@media(max-width:640px){
+ #app main .grid-actions-popover{max-width:calc(100vw - 20px)!important;border-radius:14px!important}
+ #app main [id^="menu-filtro-"]{max-width:calc(100vw - 24px)!important;border-radius:15px!important}
+ #app main .grid-actions-trigger{min-height:36px!important}
+}
+@media(prefers-reduced-transparency:reduce){
+ #app main .grid-actions-popover,
+ #app main [id^="menu-filtro-"]{background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+}
+</style>
