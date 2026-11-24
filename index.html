@@ -23251,3 +23251,57 @@ body.bravo-renderizando-modulo::before{
  #app main #cabecalho-modulo-global .no-print > :is(button,label){transition:none!important}
 }
 </style>
+
+
+<!-- Bravo Pinhais — filtros, seleções e indicadores compactos | etapa 60 -->
+<style id="bravo-filtros-indicadores-etapa-60">
+/* Estados de filtro e seleção: preto/cinza no lugar dos destaques coloridos antigos. */
+#app main :is(button,[role="button"],a)[class*="bg-teal-"],
+#app main :is(button,[role="button"],a)[class*="from-teal-"]{
+ background-color:#292929!important;
+ background-image:none!important;
+ border-color:#292929!important;
+ color:#fff!important;
+ box-shadow:none!important;
+}
+#app main :is(button,[role="button"],a)[class*="bg-teal-"] :is(i,svg,span),
+#app main :is(button,[role="button"],a)[class*="from-teal-"] :is(i,svg,span){
+ color:inherit!important;
+}
+#app main :is(button,[role="button"],a)[class*="bg-teal-"]:hover,
+#app main :is(button,[role="button"],a)[class*="from-teal-"]:hover{
+ background:#111!important;
+ border-color:#111!important;
+ color:#fff!important;
+}
+/* Chips, contadores e etiquetas pequenas. */
+#app main :is(span,small,div)[class*="bg-teal-"]:not(button):not([role="button"]),
+#app main :is(span,small,div)[class*="bg-emerald-"]:not(button):not([role="button"]),
+#app main :is(span,small,div)[class*="bg-green-"]:not(button):not([role="button"]){
+ background-color:#ededed!important;
+ background-image:none!important;
+ color:#444!important;
+ border-color:#dedede!important;
+}
+#app main :is(span,small,div)[class*="text-teal-"]:not(button):not([role="button"]),
+#app main :is(span,small,div)[class*="text-emerald-"]:not(button):not([role="button"]),
+#app main :is(span,small,div)[class*="text-green-"]:not(button):not([role="button"]){
+ color:#555!important;
+}
+/* Contadores circulares e etiquetas neutras, sem alterar conteúdo ou estados funcionais. */
+#app main :is(.rounded-full)[class*="bg-"]:not(button){
+ border:1px solid #e1e1e1;
+}
+#app main :is(button,a)[class*="hover:bg-teal-"]:hover{
+ background:#f0f0f0!important;
+ color:#222!important;
+}
+#app main :is(button,a)[class*="hover:border-teal-"]:hover{
+ border-color:#bdbdbd!important;
+}
+@media(max-width:640px){
+ #app main :is(button,[role="button"])[class*="min-h-10"]{
+  min-height:40px!important;
+ }
+}
+</style>
