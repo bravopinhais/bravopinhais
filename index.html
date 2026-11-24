@@ -22708,3 +22708,48 @@ body.bravo-renderizando-modulo::before{
  stroke:currentColor;
 }
 </style>
+
+<!-- bravo-acabamento-navegacao-feedback-etapa-50 -->
+<style id="bravo-acabamento-navegacao-feedback-etapa-50">
+/* Navegação e notificações no mesmo padrão branco, preto e cinza. */
+#app .gb-tabs-scroller{scrollbar-width:thin;scrollbar-color:#c8c8c8 transparent}
+#app .gb-tabs-scroller :is(button,a){
+ border-color:#e2e2e2!important;
+ box-shadow:none!important;
+}
+#gb-notifications-anchor{
+ background:#fff!important;
+ border-left:1px solid #e5e5e5!important;
+}
+#gb-notifications-toggle{
+ color:#333!important;background:#fff!important;
+ border:1px solid #dedede!important;
+ border-radius:10px!important;box-shadow:none!important;
+ transition:background .16s ease,border-color .16s ease;
+}
+#gb-notifications-toggle:hover{
+ background:#f5f5f5!important;border-color:#bdbdbd!important;
+ transform:none!important;
+}
+#gb-notifications-toggle :is(i,svg){color:#555!important}
+#app :is([class*="toast"],[class*="notification"],[class*="notificacao"],[role="status"],[role="alert"]){
+ border-color:#dedede!important;
+ box-shadow:0 8px 26px rgba(0,0,0,.08)!important;
+}
+#app main :is(.fa-spinner,.animate-spin){color:#555!important}
+#app main [aria-busy="true"]::after{
+ background:linear-gradient(90deg,transparent,#777 45%,#bbb 55%,transparent)!important;
+}
+#bravo-card-dados-gravados:has(.fa-rotate)::after{
+ background:linear-gradient(90deg,#777,#bdbdbd,#777)!important;
+ box-shadow:0 0 8px rgba(0,0,0,.12)!important;
+}
+#bravo-card-dados-gravados:has(.fa-rotate) .fa-rotate{color:#555!important}
+@media(max-width:768px){
+ #gb-notifications-anchor{background:#fff!important}
+ #gb-notifications-toggle{min-height:34px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #gb-notifications-toggle{transition:none!important}
+}
+</style>
