@@ -22877,3 +22877,79 @@ body.bravo-renderizando-modulo::before{
  #app main .card-modern{transition:none!important}
 }
 </style>
+
+
+<!-- bravo-listagens-tabelas-etapa-53 -->
+<style id="bravo-listagens-tabelas-etapa-53">
+/* Listagens e tabelas: leitura mais clara sem alterar dados ou ações. */
+#app main .overflow-x-auto{
+ scrollbar-width:thin;
+ scrollbar-color:#c8c8c8 #f7f7f7;
+ border-radius:12px;
+}
+#app main table{
+ width:100%;
+ border-collapse:separate!important;
+ border-spacing:0!important;
+ color:#333;
+}
+#app main table thead th{
+ background:#f7f7f7!important;
+ color:#666!important;
+ font-size:10px!important;
+ font-weight:700!important;
+ letter-spacing:.055em!important;
+ text-transform:uppercase;
+ padding-top:12px!important;
+ padding-bottom:12px!important;
+ border-bottom:1px solid #e5e5e5!important;
+ white-space:nowrap;
+}
+#app main table thead th:first-child{border-top-left-radius:9px}
+#app main table thead th:last-child{border-top-right-radius:9px}
+#app main table tbody tr{
+ background:#fff!important;
+ transition:background-color .14s ease;
+}
+#app main table tbody tr:nth-child(even){background:#fcfcfc!important}
+#app main table tbody tr:hover{background:#f5f5f5!important}
+#app main table tbody td{
+ color:#555;
+ border-bottom:1px solid #eeeeee!important;
+ padding-top:11px!important;
+ padding-bottom:11px!important;
+ vertical-align:middle;
+}
+#app main table tbody tr:last-child td{border-bottom:0!important}
+#app main table tbody td :is(button,a){
+ box-shadow:none!important;
+}
+#app main table tbody td :is(button,a):hover{
+ filter:brightness(.94);
+}
+#app main :is(.pagination,.table-pagination,[aria-label*="pagina" i]){
+ color:#666;
+}
+#app main :is(.pagination,.table-pagination) :is(button,a){
+ min-width:32px;min-height:32px;
+ border:1px solid #e2e2e2!important;
+ border-radius:8px!important;
+ background:#fff!important;
+ color:#444!important;
+ box-shadow:none!important;
+}
+#app main :is(.pagination,.table-pagination) :is(button,a):hover{
+ background:#f2f2f2!important;border-color:#c8c8c8!important;
+}
+@media(max-width:640px){
+ #app main .overflow-x-auto{
+  max-width:100%;overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
+ }
+ #app main table thead th{padding-left:10px!important;padding-right:10px!important}
+ #app main table tbody td{padding-left:10px!important;padding-right:10px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #app main table tbody tr{transition:none!important}
+}
+</style>
