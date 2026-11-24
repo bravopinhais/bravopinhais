@@ -22234,3 +22234,66 @@ body.bravo-renderizando-modulo::before{
  color:#fff!important;-webkit-text-fill-color:#fff!important
 }
 </style>
+
+
+<!-- Etapa 42 — refinamento de espaçamento e hierarquia do dashboard -->
+<style id="bravo-dashboard-refino-etapa-42">
+#app main .dashboard-shell{
+ width:100%!important;max-width:100%!important;
+ display:flex!important;flex-direction:column!important;
+ gap:20px!important
+}
+#app main .dashboard-shell :is(h1,h2,h3){
+ text-wrap:balance
+}
+#app main .dashboard-shell .dashboard-quick-access,
+#app main .dashboard-shell>.dashboard-section-title,
+#app main .dashboard-shell .dashboard-kpi-grid>article,
+#app main .dashboard-shell .dashboard-operations-grid>div,
+#app main .dashboard-shell .dashboard-analytics-grid>div{
+ min-width:0!important
+}
+#app main .dashboard-shell .dashboard-kpi-grid{
+ gap:12px!important
+}
+#app main .dashboard-shell .dashboard-kpi-grid>article{
+ border-radius:16px!important
+}
+#app main .dashboard-shell .dashboard-operations-grid{
+ gap:12px!important
+}
+#app main .dashboard-shell .dashboard-operations-grid>div{
+ border-radius:16px!important;overflow:hidden!important
+}
+#app main .dashboard-shell .dashboard-operations-grid table{
+ border-collapse:separate!important;border-spacing:0!important
+}
+#app main .dashboard-shell .dashboard-operations-grid table thead th{
+ background:#f7f7f7!important;color:#555!important;
+ font-size:10px!important;font-weight:800!important;
+ letter-spacing:.045em!important
+}
+#app main .dashboard-shell .dashboard-operations-grid table tbody tr:hover{
+ background:#fafafa!important
+}
+#app main .dashboard-shell .dashboard-analytics-grid{
+ gap:12px!important
+}
+#app main .dashboard-shell .dashboard-analytics-grid>div{
+ border-radius:16px!important
+}
+#app main .dashboard-shell :is(button,a):focus-visible{
+ outline:2px solid #777!important;outline-offset:3px!important
+}
+@media(max-width:640px){
+ #app main .dashboard-shell{gap:15px!important}
+ #app main .dashboard-shell .dashboard-kpi-grid{gap:9px!important}
+ #app main .dashboard-shell .dashboard-operations-grid{gap:9px!important}
+ #app main .dashboard-shell .dashboard-analytics-grid{gap:9px!important}
+ #app main .dashboard-shell .dashboard-operations-grid>div,
+ #app main .dashboard-shell .dashboard-analytics-grid>div{border-radius:13px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #app main .dashboard-shell *{scroll-behavior:auto!important;transition-duration:.01ms!important}
+}
+</style>
