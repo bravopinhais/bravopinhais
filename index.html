@@ -21169,3 +21169,43 @@ html,body,#app,#app main{background:#fff!important;color:var(--bravo-ink)!import
 #app main .dashboard-quick-access .dashboard-quick-icon{background:#f3f3f3!important;color:#404040!important;border:1px solid #e5e5e5!important}
 #app main .dashboard-quick-access .dashboard-quick-arrow{color:#a3a3a3!important}
 </style>
+
+<!-- Etapa 24 — neutralização dos elementos internos das tarjas superiores -->
+<style id="bravo-neutralizacao-miolo-tarjas-etapa-24">
+/* Marca no cabeçalho do menu: retirar o gradiente teal/verde do símbolo */
+#sidebar-menu>div:first-child .bg-gradient-to-tr,
+#sidebar-menu>div:first-child [class*="from-teal-"],
+#sidebar-menu>div:first-child [class*="to-emerald-"]{
+ background:#262626!important;background-image:none!important;
+ color:#fff!important;box-shadow:none!important;
+}
+#sidebar-menu>div:first-child .shadow-teal-500\/20{box-shadow:none!important}
+#sidebar-menu>div:first-child .text-teal-400{color:#525252!important}
+/* Indicador da nuvem: a classe é atualizada pelo JavaScript, então neutralizar todos os estados */
+#status-nuvem{
+ background:#fff!important;background-color:#fff!important;background-image:none!important;
+ color:#525252!important;border-color:#e5e5e5!important;box-shadow:none!important;
+}
+#status-nuvem i,#status-nuvem [class*="text-"]{color:#525252!important}
+#status-nuvem[class*="bg-"]{background:#fff!important;background-image:none!important}
+#status-nuvem[class*="border-"]{border-color:#e5e5e5!important}
+/* Acessos rápidos: neutralizar também as variações de cores dos atalhos */
+.dashboard-quick-access,
+#app .dashboard-quick-access{
+ background:#fff!important;background-image:none!important;border-color:#e5e5e5!important;
+ box-shadow:none!important;
+}
+.dashboard-quick-access .quick-blue,
+.dashboard-quick-access .quick-green,
+.dashboard-quick-access .quick-purple,
+.dashboard-quick-access .quick-orange,
+.dashboard-quick-access .quick-teal,
+.dashboard-quick-access [class*="quick-"]{
+ background:#f3f3f3!important;background-image:none!important;color:#404040!important;
+ border-color:#e5e5e5!important;box-shadow:none!important;
+}
+.dashboard-quick-access .dashboard-quick-grid>button:hover{
+ background:#f7f7f7!important;border-color:#d4d4d4!important;
+ transform:translateY(-1px);
+}
+</style>
