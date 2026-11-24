@@ -24043,3 +24043,113 @@ body.bravo-renderizando-modulo::before{
  #app main table thead th.grid-draggable-header{transition:none!important}
 }
 </style>
+
+
+<!-- Bravo Pinhais — acabamento de diálogos e notificações | etapa 70 -->
+<style id="bravo-dialogos-notificacoes-vidro-etapa-70">
+/* Superfícies e hierarquia dos modais do sistema. */
+#modal-container > div > div{
+ background:rgba(255,255,255,.97)!important;
+ color:#262626!important;
+ border:1px solid rgba(255,255,255,.82)!important;
+ border-radius:20px!important;
+ box-shadow:0 24px 68px rgba(0,0,0,.20),inset 0 1px 0 rgba(255,255,255,.95)!important;
+ -webkit-backdrop-filter:blur(20px) saturate(125%)!important;
+ backdrop-filter:blur(20px) saturate(125%)!important;
+}
+#modal-container :is(h1,h2,h3,h4){
+ color:#171717!important;
+ letter-spacing:-.018em;
+}
+#modal-container :is(hr,[class*="border-b"],[class*="border-t"]){
+ border-color:rgba(0,0,0,.09)!important;
+}
+#modal-container :is(p,small,label){color:#555}
+#modal-container :is(input,select,textarea){
+ background:rgba(255,255,255,.98)!important;
+ border-color:#d9d9d9!important;
+ border-radius:10px!important;
+ color:#292929!important;
+}
+#modal-container :is(input,select,textarea):focus{
+ border-color:#858585!important;
+ outline:3px solid rgba(0,0,0,.055)!important;
+ box-shadow:none!important;
+}
+/* Rodapés e grupos de ação: separação visual sem alterar handlers. */
+#modal-container :is(.flex.justify-end,.flex.items-center.justify-end){
+ gap:8px;
+}
+#modal-container button{
+ border-radius:10px!important;
+ box-shadow:none!important;
+}
+#modal-container button:focus-visible{
+ outline:3px solid rgba(0,0,0,.22)!important;
+ outline-offset:2px!important;
+}
+#modal-container button[class*="bg-teal-"],
+#modal-container button[class*="bg-emerald-"],
+#modal-container button[class*="bg-green-"],
+#modal-container button[class*="from-teal-"],
+#modal-container button[class*="from-emerald-"]{
+ background:#222!important;
+ background-image:none!important;
+ color:#fff!important;
+ border:1px solid #222!important;
+}
+#modal-container button[class*="bg-slate-100"],
+#modal-container button[class*="bg-gray-100"],
+#modal-container button[class*="bg-neutral-100"],
+#modal-container button[class*="bg-slate-200"],
+#modal-container button[class*="bg-gray-200"]{
+ background:#f1f1f1!important;
+ color:#333!important;
+ border:1px solid #dedede!important;
+}
+/* Leitor de câmera e seus controles, sem afetar o vídeo. */
+#scanner-modal-overlay{
+ background:rgba(0,0,0,.68)!important;
+ -webkit-backdrop-filter:blur(9px)!important;
+ backdrop-filter:blur(9px)!important;
+}
+#scanner-modal-overlay > div{
+ background:rgba(255,255,255,.97)!important;
+ color:#262626!important;
+ border:1px solid rgba(255,255,255,.75)!important;
+ border-radius:22px!important;
+ box-shadow:0 24px 65px rgba(0,0,0,.24)!important;
+}
+#scanner-modal-overlay h4{color:#171717!important}
+#scanner-modal-overlay button{
+ border-radius:10px!important;
+ box-shadow:none!important;
+}
+/* Painel de novidades fora do conteúdo principal. */
+#gb-notifications-panel{
+ background:rgba(255,255,255,.96)!important;
+ color:#292929!important;
+ border:1px solid rgba(0,0,0,.10)!important;
+ border-radius:18px!important;
+ box-shadow:0 20px 54px rgba(0,0,0,.16)!important;
+ -webkit-backdrop-filter:blur(20px) saturate(130%)!important;
+ backdrop-filter:blur(20px) saturate(130%)!important;
+}
+#gb-notifications-panel :is(h1,h2,h3,strong){color:#222!important}
+#gb-notifications-panel :is(p,small,span){color:#666}
+#gb-notifications-panel :is(button,a){
+ border-radius:10px!important;
+}
+@media(max-width:640px){
+ #modal-container > div{padding:10px!important}
+ #modal-container > div > div{max-height:calc(100dvh - 20px)!important;border-radius:17px!important}
+ #scanner-modal-overlay{padding:12px!important}
+ #scanner-modal-overlay > div{border-radius:18px!important}
+ #gb-notifications-panel{max-width:calc(100vw - 20px)!important;border-radius:16px!important}
+}
+@media(prefers-reduced-transparency:reduce){
+ #modal-container > div > div,#scanner-modal-overlay > div,#gb-notifications-panel{
+  background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important
+ }
+}
+</style>
