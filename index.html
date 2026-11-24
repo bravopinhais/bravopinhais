@@ -21209,3 +21209,74 @@ html,body,#app,#app main{background:#fff!important;color:var(--bravo-ink)!import
  transform:translateY(-1px);
 }
 </style>
+
+<!-- Etapa 25 — identidade monocromática do menu, cabeçalho e carregamento -->
+<style id="bravo-identidade-monocromatica-global-etapa-25">
+/* Menu lateral claro e limpo */
+#sidebar-menu{
+ background:#fff!important;background-image:none!important;color:#404040!important;
+ border-right:1px solid #e5e5e5!important;box-shadow:none!important;
+}
+#sidebar-menu>div:first-child{
+ background:#fff!important;background-image:none!important;border-bottom:1px solid #e5e5e5!important;
+}
+#sidebar-menu>div:first-child :is(h1,h2,h3,strong){color:#171717!important}
+#sidebar-menu>div:first-child :is(p,span){color:#737373!important}
+#sidebar-menu nav{background:#fff!important;color:#404040!important}
+#sidebar-menu nav button,
+#sidebar-menu nav a{
+ background:transparent!important;background-image:none!important;color:#525252!important;
+ border-color:transparent!important;box-shadow:none!important;
+}
+#sidebar-menu nav button i,#sidebar-menu nav a i{color:#737373!important}
+#sidebar-menu nav button:hover,#sidebar-menu nav a:hover{
+ background:#f5f5f5!important;color:#171717!important;border-color:#e5e5e5!important;
+}
+#sidebar-menu nav button:hover i,#sidebar-menu nav a:hover i{color:#262626!important}
+/* Item ativo: preto sólido com texto branco, sem faixa verde lateral */
+#sidebar-menu nav button[class*="from-teal-"],
+#sidebar-menu nav button[class*="bg-teal-"],
+#sidebar-menu nav button[class*="bg-emerald-"],
+#sidebar-menu nav button[aria-current="page"]{
+ background:#171717!important;background-image:none!important;color:#fff!important;
+ border:1px solid #171717!important;box-shadow:none!important;font-weight:700!important;
+}
+#sidebar-menu nav button[class*="from-teal-"] *,
+#sidebar-menu nav button[class*="bg-teal-"] *,
+#sidebar-menu nav button[class*="bg-emerald-"] *,
+#sidebar-menu nav button[aria-current="page"] *{color:#fff!important}
+#sidebar-menu nav button[class*="from-teal-"]::before,
+#sidebar-menu nav button[class*="bg-teal-"]::before,
+#sidebar-menu nav button[class*="bg-emerald-"]::before{display:none!important;content:none!important}
+#sidebar-menu nav button:focus-visible,#sidebar-menu nav a:focus-visible{outline:2px solid #a3a3a3!important}
+#sidebar-menu nav>div+div{border-color:#e5e5e5!important}
+#sidebar-menu>div:last-child{background:#fff!important;border-top:1px solid #e5e5e5!important;color:#737373!important}
+#sidebar-menu>div:last-child :is(span,p,strong){color:#737373!important}
+/* Cabeçalhos superiores, desktop e mobile */
+#app header.bg-slate-950.no-print,
+#app header.md\\:hidden{
+ background:#fff!important;background-image:none!important;color:#262626!important;
+ border-bottom:1px solid #e5e5e5!important;box-shadow:none!important;
+ -webkit-backdrop-filter:none!important;backdrop-filter:none!important;
+}
+#app header.bg-slate-950.no-print :is(button,a,span,i,svg),
+#app header.md\\:hidden :is(button,a,span,i,svg){color:#404040!important}
+#app header.bg-slate-950.no-print button:hover,
+#app header.md\\:hidden button:hover{background:#f5f5f5!important}
+/* Barra de progresso de troca de módulo: substituir gradiente verde por cinza */
+body.bravo-renderizando-modulo::before{
+ background:linear-gradient(90deg,#737373,#171717,#737373)!important;
+ box-shadow:0 1px 8px rgba(0,0,0,.16)!important;
+}
+/* Card de atalhos com acabamento consistente */
+#app main .dashboard-quick-access{
+ background:#fff!important;background-image:none!important;border:1px solid #e5e5e5!important;
+ border-radius:14px!important;box-shadow:none!important;
+}
+#app main .dashboard-quick-access .dashboard-quick-grid>button{
+ border-radius:12px!important;transition:background .18s ease,border-color .18s ease!important;
+}
+#app main .dashboard-quick-access .dashboard-quick-grid>button:hover{
+ background:#f5f5f5!important;border-color:#d4d4d4!important;transform:none!important;
+}
+</style>
