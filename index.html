@@ -25803,3 +25803,50 @@ body.bravo-renderizando-modulo::before{
  #app main :is(.card,.gb-card){transition:none!important;transform:none!important}
 }
 </style>
+
+
+<!-- Bravo Pinhais — ações e botões monocromáticos | etapa 87 -->
+<style id="bravo-acoes-monocromaticas-etapa-87">
+/* Uniformiza botões coloridos antigos sem alterar handlers ou regras de negócio. */
+#app button[class*="bg-teal-"],
+#app button[class*="bg-emerald-"],
+#app button[class*="bg-sky-"],
+#app button[class*="bg-indigo-"]{
+  background:#202020!important;
+  border-color:#202020!important;
+  color:#fff!important;
+}
+#app button[class*="bg-teal-"]:hover,
+#app button[class*="bg-emerald-"]:hover,
+#app button[class*="bg-sky-"]:hover,
+#app button[class*="bg-indigo-"]:hover{
+  background:#3b3b3b!important;
+  border-color:#3b3b3b!important;
+}
+#app button[class*="bg-amber-"]{
+  background:#f1f1f1!important;
+  border-color:#dedede!important;
+  color:#292929!important;
+}
+#app button[class*="bg-amber-"]:hover{
+  background:#e5e5e5!important;
+  border-color:#cfcfcf!important;
+}
+#app button[class*="bg-teal-"]:disabled,
+#app button[class*="bg-emerald-"]:disabled,
+#app button[class*="bg-sky-"]:disabled,
+#app button[class*="bg-indigo-"]:disabled,
+#app button[class*="bg-amber-"]:disabled{
+  opacity:.48!important;cursor:not-allowed!important;
+}
+#app button:focus-visible{
+  outline:2px solid #555!important;
+  outline-offset:3px!important;
+}
+#app button :is(svg,i){
+  flex-shrink:0;
+}
+@media(prefers-reduced-motion:reduce){
+ #app button{transition:none!important}
+}
+</style>
