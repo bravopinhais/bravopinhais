@@ -21316,3 +21316,46 @@ body.bravo-renderizando-modulo::before{
 #app main :is(button,a):hover{filter:brightness(.97)}
 #app main :is(button,a):active{transform:translateY(0)!important}
 </style>
+
+
+<!-- Etapa 28 — consistência visual dos módulos e navegação -->
+<style id="bravo-consistencia-modulos-navegacao-etapa-28">
+/* Barra de abas abertas */
+#app main>div:has(>.tab-active),
+#app main .tab-active,
+#app main [class*="bg-slate-200/80"]{
+ background:#f5f5f5!important;background-image:none!important;border-color:#e5e5e5!important;
+ box-shadow:none!important;backdrop-filter:none!important;
+}
+#app main .tab-active{background:#171717!important;color:#fff!important;border-color:#171717!important}
+#app main [class*="bg-slate-300"]{background:#ededed!important;color:#525252!important}
+#app main [class*="bg-slate-300"]:hover{background:#e5e5e5!important;color:#171717!important}
+/* Etiquetas de situação: monocromáticas, mantendo contraste e legibilidade */
+#app main :is(span,badge,[class*="rounded-full"])[class*="bg-emerald-"],
+#app main :is(span,badge,[class*="rounded-full"])[class*="bg-teal-"],
+#app main :is(span,badge,[class*="rounded-full"])[class*="bg-green-"]{
+ background:#f1f1f1!important;color:#404040!important;border:1px solid #e5e5e5!important;
+}
+#app main :is(span,badge,[class*="rounded-full"])[class*="text-emerald-"],
+#app main :is(span,badge,[class*="rounded-full"])[class*="text-teal-"],
+#app main :is(span,badge,[class*="rounded-full"])[class*="text-green-"]{color:#404040!important}
+/* Cabeçalhos e cartões de cada módulo */
+#app main .card-modern{border:1px solid #e5e5e5!important;border-radius:16px!important;box-shadow:none!important}
+#app main .card-modern :is(h1,h2,h3,h4){color:#171717!important}
+#app main .card-modern :is(.text-teal-700,.text-teal-800,.text-emerald-700,.text-green-700){color:#404040!important}
+/* Avisos e estados da nuvem sem cores saturadas */
+#status-nuvem[class*="bg-amber-"],#status-nuvem[class*="bg-teal-"],#status-nuvem[class*="bg-slate-"]{
+ background:#f5f5f5!important;color:#404040!important;border-color:#e5e5e5!important;box-shadow:none!important;
+}
+#status-nuvem[class*="text-amber-"],#status-nuvem[class*="text-emerald-"],#status-nuvem[class*="text-teal-"]{color:#525252!important}
+/* Etiquetas de pasta e tipo em Documentos/Financeiro */
+#app main table td :is(span[class*="bg-teal-"],span[class*="bg-emerald-"],span[class*="bg-rose-"]){
+ background:#f3f3f3!important;color:#404040!important;border:1px solid #e5e5e5!important;
+}
+/* Mobile: preservar rolagem horizontal de abas e tabelas */
+@media(max-width:768px){
+ #app main [class*="overflow-x-auto"]{overscroll-behavior-x:contain}
+ #app main table th,#app main table td{white-space:nowrap}
+ #app main .card-modern{border-radius:13px!important}
+}
+</style>
