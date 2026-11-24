@@ -8619,8 +8619,8 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                             datasets: [{
                                 label: 'Valores registrados',
                                 data: [totalReceber, totalPagar, totalReceber - totalPagar],
-                                backgroundColor: ['rgba(13,148,136,.88)', 'rgba(244,63,94,.84)', 'rgba(59,130,246,.82)'],
-                                borderColor: ['#0f766e', '#e11d48', '#2563eb'],
+                                backgroundColor: ['#262626', '#737373', '#bdbdbd'],
+                                borderColor: ['#171717', '#525252', '#a3a3a3'],
                                 borderWidth: 1,
                                 borderRadius: 10,
                                 maxBarThickness: 46
@@ -8724,7 +8724,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                         labels: ['Adequado', 'Insuficiente (Crítico)', 'Excedente (Antigo)'],
                         datasets: [{
                             data: [qtdAdequado, qtdCritico, qtdExcedente],
-                            backgroundColor: ['#0d9488', '#f43f5e', '#f59e0b'],
+                            backgroundColor: ['#262626', '#737373', '#bdbdbd'],
                             borderWidth: 3,
                             borderColor: '#ffffff'
                         }]
@@ -21790,5 +21790,42 @@ nt; }
                     max-height: 90dvh !important;
                     padding: 18px !important;
                 }
+            }
+
+            /* ===== Indicadores, gráficos e feedback de sistema ===== */
+            #app main .fa-spinner,
+            #app main .animate-spin {
+                color: #525252 !important;
+            }
+            #app main [aria-busy="true"]::after {
+                background: linear-gradient(90deg, transparent, #525252 45%, #d4d4d4 55%, transparent) !important;
+            }
+            #app main progress {
+                accent-color: #262626 !important;
+                background: #e5e5e5 !important;
+                border-radius: 999px;
+                overflow: hidden;
+            }
+            #app main progress::-webkit-progress-bar { background: #e5e5e5; }
+            #app main progress::-webkit-progress-value { background: #262626; }
+            #app main progress::-moz-progress-bar { background: #262626; }
+            #app main [role="progressbar"] {
+                background-color: #e5e5e5 !important;
+                accent-color: #262626 !important;
+            }
+            #app main [role="progressbar"] > *,
+            #app main [role="progressbar"] [class*="bg-teal-"],
+            #app main [role="progressbar"] [class*="bg-emerald-"] {
+                background-color: #262626 !important;
+                background-image: none !important;
+            }
+            #app main .chart-legend,
+            #app main .chart-caption { color: #737373 !important; }
+            #app main canvas { max-width: 100%; }
+            #app main .status-success,
+            #app main .status-warning,
+            #app main .status-danger {
+                border-color: #e5e5e5 !important;
+                color: #404040 !important;
             }
 </style>
