@@ -24153,3 +24153,55 @@ body.bravo-renderizando-modulo::before{
  }
 }
 </style>
+
+
+<!-- Bravo Pinhais — ícones, microinterações e acessibilidade | etapa 71 -->
+<style id="bravo-icones-microinteracoes-etapa-71">
+/* Ícones de títulos e cartões: monocromáticos, sem perder legibilidade. */
+#app main :is(.card-modern h3,.card-modern h4,.dashboard-kpi-grid article h3,.dashboard-kpi-grid article h4) :is(i,.fa-solid,.fa-regular,svg){
+ color:#555!important;
+}
+#app main :is(.card-modern,.dashboard-kpi-grid article) :is(i.fa-solid,i.fa-regular){
+ transition:color .16s ease,background-color .16s ease,transform .16s ease!important;
+}
+#app main :is(.card-modern,.dashboard-kpi-grid article):hover :is(i.fa-solid,i.fa-regular){
+ color:#222!important;
+}
+/* Ícones de botões e links: contraste consistente com a ação. */
+#app main button:not(:disabled) :is(i.fa-solid,i.fa-regular,svg),
+#app main a :is(i.fa-solid,i.fa-regular,svg){
+ transition:color .16s ease,opacity .16s ease!important;
+}
+#app main button:not(:disabled):hover :is(i.fa-solid,i.fa-regular),
+#app main a:hover :is(i.fa-solid,i.fa-regular){opacity:1!important}
+#app main button:disabled :is(i,svg){opacity:.48!important}
+/* Badges e contadores com superfície de vidro neutra. */
+#app main :is(.badge,.status-badge,[class*="badge-"],[class*="rounded-full"][class*="text-[10px]"]){
+ box-shadow:none!important;
+}
+#app main :is(.badge,.status-badge){
+ border-color:#dedede!important;
+}
+/* Transições suaves e estados de foco sem cor de marca antiga. */
+#app main :is(button,a,[role="button"],input,select,textarea):focus-visible{
+ outline:2px solid rgba(55,55,55,.48)!important;
+ outline-offset:2px!important;
+}
+#app main :is(button,a,[role="button"]):active:not(:disabled){
+ filter:brightness(.97);
+}
+#app main :is(button,a,[role="button"]):disabled{
+ cursor:not-allowed!important;
+}
+#app main :is(.card-modern,[class*="dashboard-kpi-grid"] article){
+ -webkit-tap-highlight-color:transparent;
+}
+@media(hover:none){
+ #app main :is(.card-modern,.dashboard-kpi-grid article):hover{
+  transform:none!important;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ #app main :is(i,svg,button,a){transition:none!important}
+}
+</style>
