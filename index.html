@@ -17928,5 +17928,57 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
 }
 </style>
 
+
+<style id="bravo-glass-cabecalhos-barras-2026">
+/* Glass sutil nos cabeçalhos de módulos e barras de ações. */
+#app main>div:first-child.flex.flex-col{
+ position:relative;
+ padding:17px 19px!important;
+ border:1px solid rgba(255,255,255,.78);
+ border-radius:20px;
+ background:linear-gradient(115deg,rgba(255,255,255,.83),rgba(248,253,252,.70))!important;
+ -webkit-backdrop-filter:blur(12px) saturate(125%);
+ backdrop-filter:blur(12px) saturate(125%);
+ box-shadow:0 7px 22px rgba(22,54,68,.045),inset 0 1px 0 rgba(255,255,255,.8);
+}
+#app main>div:first-child.flex.flex-col .no-print{
+ padding:7px;
+ border:1px solid rgba(218,233,233,.78);
+ border-radius:15px;
+ background:rgba(241,248,247,.58);
+ -webkit-backdrop-filter:blur(8px);
+ backdrop-filter:blur(8px);
+}
+#app main>div:first-child.flex.flex-col h2{
+ text-shadow:0 1px 0 rgba(255,255,255,.55);
+}
+#app header.bg-slate-950.no-print{
+ background:linear-gradient(100deg,rgba(9,23,40,.95),rgba(15,48,67,.92))!important;
+ border-bottom:1px solid rgba(94,234,212,.16)!important;
+ -webkit-backdrop-filter:blur(16px) saturate(130%);
+ backdrop-filter:blur(16px) saturate(130%);
+}
+#app main>div:first-child.flex.flex-col .no-print>button,
+#app main>div:first-child.flex.flex-col .no-print>label{
+ box-shadow:0 2px 8px rgba(15,35,48,.045);
+}
+@media(max-width:640px){
+ #app main>div:first-child.flex.flex-col{
+  padding:14px!important;border-radius:17px;
+  gap:13px!important;
+ }
+ #app main>div:first-child.flex.flex-col .no-print{
+  padding:6px;gap:7px!important;border-radius:13px;
+ }
+}
+@supports not ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){
+ #app main>div:first-child.flex.flex-col{background:#f8fbfb!important;}
+ #app main>div:first-child.flex.flex-col .no-print{background:#f1f7f6;}
+}
+@media(prefers-reduced-motion:reduce){
+ #app main>div:first-child.flex.flex-col *{transition:none!important;}
+}
+</style>
+
 </body>
 </html>
