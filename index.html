@@ -23305,3 +23305,71 @@ body.bravo-renderizando-modulo::before{
  }
 }
 </style>
+
+
+<!-- Bravo Pinhais — controles de seleção e campos nativos neutros | etapa 61 -->
+<style id="bravo-controles-selecao-etapa-61">
+/* Selects e listas suspensas: fundo branco e foco neutro. */
+#app main :is(select,input,textarea),
+#modal-container :is(select,input,textarea){
+ accent-color:#555!important;
+}
+#app main select,
+#modal-container select{
+ color:#292929!important;
+ background-color:#fff!important;
+ border:1px solid #d8d8d8!important;
+ border-radius:10px!important;
+ box-shadow:none!important;
+}
+#app main select:focus,
+#modal-container select:focus{
+ border-color:#888!important;
+ outline:0!important;
+ box-shadow:0 0 0 3px rgba(0,0,0,.055)!important;
+}
+#app main select option,
+#modal-container select option{
+ background:#fff!important;
+ color:#292929!important;
+}
+#app main input[type="date"],
+#app main input[type="time"],
+#app main input[type="datetime-local"],
+#modal-container input[type="date"],
+#modal-container input[type="time"],
+#modal-container input[type="datetime-local"]{
+ color-scheme:light;
+ background-color:#fff!important;
+ border-color:#d8d8d8!important;
+}
+#app main input[type="date"]::-webkit-calendar-picker-indicator,
+#app main input[type="time"]::-webkit-calendar-picker-indicator,
+#modal-container input[type="date"]::-webkit-calendar-picker-indicator,
+#modal-container input[type="time"]::-webkit-calendar-picker-indicator{
+ opacity:.65;
+ cursor:pointer;
+}
+/* Checkbox e radio nativos acompanham a paleta monocromática. */
+#app main input[type="checkbox"],
+#app main input[type="radio"],
+#modal-container input[type="checkbox"],
+#modal-container input[type="radio"]{
+ accent-color:#333!important;
+}
+#app main input[type="checkbox"]:focus-visible,
+#app main input[type="radio"]:focus-visible,
+#modal-container input[type="checkbox"]:focus-visible,
+#modal-container input[type="radio"]:focus-visible{
+ outline:2px solid #888!important;
+ outline-offset:2px!important;
+}
+/* Remove o realce verde de foco herdado dos formulários antigos. */
+#app main :is(input,select,textarea):focus,
+#modal-container :is(input,select,textarea):focus{
+ border-color:#999!important;
+ --tw-ring-color:rgba(0,0,0,.12)!important;
+ --tw-ring-offset-shadow:0 0 #0000!important;
+ --tw-ring-shadow:0 0 0 3px rgba(0,0,0,.055)!important;
+}
+</style>
