@@ -20953,3 +20953,93 @@ html,body,#app{background:#fff!important;color:#171717!important}
  #modal-container .fixed.inset-0.z-50>div.bg-white.rounded-3xl *{transition:none!important}
 }
 </style>
+
+
+
+<style id="bravo-limpeza-global-cabecalhos-cards-etapa-20">
+/* Etapa 20 — remoção dos últimos resíduos cromáticos e visuais em cabeçalhos e cards. */
+:root{
+ --bravo-ink:#171717;
+ --bravo-muted:#737373;
+ --bravo-line:#e7e7e7;
+ --bravo-surface:#fff;
+ --bravo-soft:#f6f6f6;
+}
+html,body,#app,#app main{background:#fff!important;color:var(--bravo-ink)!important}
+#app main header,
+#app main [id*="cabecalho"],
+#app main [class*="cabecalho"],
+#cabecalho-modulo-global{
+ background:#fff!important;
+ background-image:none!important;
+ color:var(--bravo-ink)!important;
+ border-color:var(--bravo-line)!important;
+ box-shadow:none!important;
+}
+#cabecalho-modulo-global{
+ border-bottom:1px solid var(--bravo-line)!important;
+}
+#cabecalho-modulo-global :is(h1,h2,h3,strong){
+ color:var(--bravo-ink)!important;
+}
+#cabecalho-modulo-global :is(p,small,span:not([class*="text-"])){
+ color:var(--bravo-muted)!important;
+}
+#app main :is(.card,.card-modern,[class*="card-"],[data-card]),
+#app main [class*="rounded-"][class*="shadow"]{
+ background-color:#fff!important;
+ background-image:none!important;
+ color:#262626!important;
+ border:1px solid var(--bravo-line)!important;
+ border-top-color:var(--bravo-line)!important;
+ box-shadow:none!important;
+}
+#app main :is(.card,.card-modern,[class*="card-"],[data-card]) :is(h1,h2,h3,h4,strong){
+ color:var(--bravo-ink)!important;
+}
+#app main :is(.card,.card-modern,[class*="card-"],[data-card]) :is(p,small){
+ color:#737373!important;
+}
+#app :is([class*="bg-teal-"],[class*="bg-emerald-"],[class*="bg-green-"],[class*="bg-lime-"]){
+ background-color:#f3f3f3!important;
+ background-image:none!important;
+ color:#333!important;
+ border-color:#e5e5e5!important;
+}
+#app :is([class*="text-teal-"],[class*="text-emerald-"],[class*="text-green-"],[class*="text-lime-"]){
+ color:#525252!important;
+}
+#app :is([class*="border-teal-"],[class*="border-emerald-"],[class*="border-green-"],[class*="border-lime-"]){
+ border-color:#e5e5e5!important;
+}
+#app :is([class*="from-teal-"],[class*="to-teal-"],[class*="via-teal-"],
+[class*="from-emerald-"],[class*="to-emerald-"],[class*="via-emerald-"],
+[class*="from-green-"],[class*="to-green-"],[class*="via-green-"],
+[class*="from-lime-"],[class*="to-lime-"],[class*="via-lime-"]){
+ background-image:none!important;
+}
+#app button:is([class*="bg-teal-"],[class*="bg-emerald-"],[class*="bg-green-"],[class*="bg-lime-"]),
+#app a:is([class*="bg-teal-"],[class*="bg-emerald-"],[class*="bg-green-"],[class*="bg-lime-"]){
+ background:#171717!important;color:#fff!important;border:1px solid #171717!important;
+}
+#app button:is([class*="bg-teal-"],[class*="bg-emerald-"],[class*="bg-green-"],[class*="bg-lime-"]):hover,
+#app a:is([class*="bg-teal-"],[class*="bg-emerald-"],[class*="bg-green-"],[class*="bg-lime-"]):hover{
+ background:#3a3a3a!important;color:#fff!important;
+}
+#app main :is(.card,.card-modern,[class*="card-"],[data-card]):hover{
+ transform:none!important;box-shadow:none!important;border-color:#dcdcdc!important;
+}
+#app main :is(.overflow-hidden,.overflow-x-auto,.table-responsive){
+ border-color:var(--bravo-line)!important;
+}
+#app main :is(table,th,td){border-color:#ededed!important}
+#app main thead th{background:#f5f5f5!important;color:#525252!important}
+#app main tbody tr:hover td{background:#fafafa!important}
+@media(max-width:640px){
+ #cabecalho-modulo-global{background:#fff!important}
+ #app main :is(.card,.card-modern,[class*="card-"],[data-card]){
+  border-radius:12px!important;
+ }
+}
+</style>
+
