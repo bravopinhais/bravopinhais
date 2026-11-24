@@ -8621,8 +8621,8 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                             datasets: [{
                                 label: 'Valores registrados',
                                 data: [totalReceber, totalPagar, totalReceber - totalPagar],
-                                backgroundColor: ['rgba(13,148,136,.88)', 'rgba(244,63,94,.84)', 'rgba(59,130,246,.82)'],
-                                borderColor: ['#0f766e', '#e11d48', '#2563eb'],
+                                backgroundColor: ['rgba(55,65,81,.92)', 'rgba(107,114,128,.82)', 'rgba(156,163,175,.78)'],
+                                borderColor: ['#374151', '#6b7280', '#9ca3af'],
                                 borderWidth: 1,
                                 borderRadius: 10,
                                 maxBarThickness: 46
@@ -8649,7 +8649,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                 y: {
                                     beginAtZero: true,
                                     grid: {
-                                        color: 'rgba(226,232,240,.72)'
+                                        color: 'rgba(148,163,184,.24)'
                                     },
                                     border: {
                                         display: false
@@ -8726,7 +8726,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                         labels: ['Adequado', 'Insuficiente (Crítico)', 'Excedente (Antigo)'],
                         datasets: [{
                             data: [qtdAdequado, qtdCritico, qtdExcedente],
-                            backgroundColor: ['#0d9488', '#f43f5e', '#f59e0b'],
+                            backgroundColor: ['#374151', '#6b7280', '#d1d5db'],
                             borderWidth: 3,
                             borderColor: '#ffffff'
                         }]
@@ -24572,5 +24572,117 @@ body.bravo-renderizando-modulo::before{
  #app main .dashboard-analytics-disclosure>summary,
  #app main .dashboard-analytics-grid>div,
  #app main .estoque-analytics-disclosure{background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+}
+</style>
+
+
+<!-- Bravo Pinhais — gráficos analíticos monocromáticos | etapa 73 -->
+<style id="bravo-graficos-analiticos-monocromaticos-etapa-73">
+/* Painel expansível: vidro branco, contorno suave e hierarquia clara. */
+#app main .dashboard-analytics-disclosure,
+#app main .estoque-analytics-disclosure{
+ min-width:0!important;
+ border:1px solid rgba(0,0,0,.10)!important;
+ border-radius:23px!important;
+ background:linear-gradient(145deg,rgba(255,255,255,.96),rgba(246,246,246,.88))!important;
+ box-shadow:0 12px 30px rgba(0,0,0,.055),inset 0 1px 0 rgba(255,255,255,.95)!important;
+ -webkit-backdrop-filter:blur(16px) saturate(125%)!important;
+ backdrop-filter:blur(16px) saturate(125%)!important;
+ overflow:hidden!important;
+}
+#app main .dashboard-analytics-disclosure>summary,
+#app main .estoque-analytics-disclosure>summary{
+ margin:0!important;
+ padding:17px 19px!important;
+ border:0!important;
+ border-bottom:1px solid rgba(0,0,0,.075)!important;
+ border-radius:0!important;
+ background:rgba(255,255,255,.70)!important;
+ box-shadow:none!important;
+ transition:background .18s ease!important;
+}
+#app main .dashboard-analytics-disclosure>summary:hover,
+#app main .estoque-analytics-disclosure>summary:hover{
+ background:rgba(239,239,239,.78)!important;
+}
+#app main .dashboard-analytics-disclosure[open]>summary,
+#app main .estoque-analytics-disclosure[open]>summary{
+ background:rgba(239,239,239,.72)!important;
+}
+#app main .dashboard-analytics-disclosure>summary :is(p,h3),
+#app main .estoque-analytics-disclosure>summary :is(p,h3){color:#292929!important}
+#app main .dashboard-analytics-disclosure>summary p:first-child,
+#app main .estoque-analytics-disclosure>summary p:first-child{
+ color:#777!important;letter-spacing:.14em!important;
+}
+#app main .dashboard-analytics-disclosure>summary>span:last-child,
+#app main .estoque-analytics-disclosure>summary>span:last-child{
+ background:rgba(235,235,235,.92)!important;
+ color:#333!important;
+ border:1px solid #dedede!important;
+ border-radius:999px!important;
+}
+#app main .dashboard-analytics-disclosure>summary>span:last-child i,
+#app main .estoque-analytics-disclosure>summary>span:last-child i{color:#555!important}
+#app main .dashboard-analytics-disclosure .dashboard-analytics-grid>div,
+#app main .dashboard-analytics-disclosure .dashboard-analytics-grid>section{
+ min-width:0!important;
+ background:rgba(255,255,255,.82)!important;
+ border:1px solid rgba(0,0,0,.085)!important;
+ border-radius:19px!important;
+ box-shadow:0 5px 18px rgba(0,0,0,.035)!important;
+}
+#app main .dashboard-analytics-disclosure .dashboard-analytics-grid{
+ padding:16px!important;
+}
+#app main .dashboard-analytics-disclosure :is(h3,h4){color:#222!important}
+#app main .dashboard-analytics-disclosure :is(p,small){color:#777}
+#app main .dashboard-analytics-disclosure :is(.text-teal-700,.text-teal-800,.text-emerald-800,.text-rose-800,.text-amber-600,.text-rose-600){
+ color:#555!important;
+}
+#app main .dashboard-analytics-disclosure :is(.bg-teal-50,.bg-emerald-50,.bg-rose-50,.bg-amber-50,.bg-slate-100){
+ background:#eeeeee!important;
+ color:#444!important;
+}
+#app main .dashboard-analytics-disclosure :is(.border-slate-100,.border-slate-200){border-color:#e5e5e5!important}
+#app main .dashboard-analytics-disclosure canvas,
+#app main .estoque-analytics-disclosure canvas{
+ display:block!important;
+ max-width:100%!important;
+}
+#app main .dashboard-analytics-disclosure .relative:has(>canvas),
+#app main .estoque-analytics-disclosure .relative:has(>canvas){
+ min-width:0!important;
+ border-radius:14px!important;
+ background:linear-gradient(180deg,rgba(250,250,250,.70),rgba(255,255,255,.92))!important;
+}
+#app main .dashboard-analytics-disclosure .dashboard-analytics-grid>div .mt-3.grid{
+ background:rgba(247,247,247,.72)!important;
+ border-radius:13px!important;
+ padding:13px 10px 9px!important;
+}
+#app main .dashboard-analytics-disclosure .dashboard-analytics-grid>div .mt-3.grid p{
+ color:#777!important;
+}
+#app main .dashboard-analytics-disclosure .dashboard-analytics-grid>div .mt-3.grid p.text-xl{
+ color:#252525!important;
+}
+#app main .estoque-analytics-disclosure[open]{
+ background:linear-gradient(145deg,rgba(255,255,255,.97),rgba(246,246,246,.9))!important;
+}
+@media(max-width:640px){
+ #app main .dashboard-analytics-disclosure,
+ #app main .estoque-analytics-disclosure{border-radius:18px!important}
+ #app main .dashboard-analytics-disclosure>summary,
+ #app main .estoque-analytics-disclosure>summary{padding:14px!important}
+ #app main .dashboard-analytics-disclosure .dashboard-analytics-grid{padding:10px!important;gap:12px!important}
+}
+@media(prefers-reduced-transparency:reduce){
+ #app main .dashboard-analytics-disclosure,
+ #app main .estoque-analytics-disclosure{background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #app main .dashboard-analytics-disclosure>summary,
+ #app main .estoque-analytics-disclosure>summary{transition:none!important}
 }
 </style>
