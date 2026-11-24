@@ -19877,3 +19877,82 @@ body.bg-slate-100{background:#fff!important;color:#222!important}
  #app main #cabecalho-modulo-global label{transition:none!important}
 }
 </style>
+
+
+<style id="bravo-abas-filtros-navegacao-interna-2026">
+/* Abas: trilho discreto, contraste claro e seleção monocromática. */
+#app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto{
+  background:#f7f7f7!important;border-color:#e5e5e5!important;
+  gap:6px!important;padding:8px 12px 0!important;
+  scrollbar-width:thin;scrollbar-color:#c9c9c9 transparent;
+  overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;
+}
+#app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto>div{
+  flex:0 0 auto;min-height:38px;padding:9px 14px!important;
+  border:1px solid transparent;border-bottom:0!important;
+  border-radius:9px 9px 0 0!important;background:#ededed!important;
+  color:#666!important;font-size:11px!important;font-weight:650!important;
+  box-shadow:none!important;transition:background .16s ease,color .16s ease,border-color .16s ease;
+}
+#app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto>div.tab-active{
+  background:#fff!important;color:#111!important;
+  border-color:#dedede!important;border-bottom:1px solid #fff!important;
+  box-shadow:inset 0 2px 0 #171717!important;font-weight:800!important;
+}
+#app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto>div:not(.tab-active):hover{
+  background:#e4e4e4!important;color:#222!important;
+}
+#app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto>div button{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:24px;height:24px;min-width:24px;border-radius:50%!important;
+  margin-left:2px!important;background:transparent!important;color:#777!important;
+}
+#app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto>div button:hover{
+  background:#e5e5e5!important;color:#111!important;
+}
+#app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto>div:focus-visible,
+#app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto>div button:focus-visible{
+  outline:2px solid #555!important;outline-offset:2px;
+}
+/* Menus de filtros e seletores: superfície branca, sem cores de destaque antigas. */
+#app main [id^="menu-filtro-"]{
+  background:#fff!important;color:#222!important;border:1px solid #e3e3e3!important;
+  border-radius:12px!important;box-shadow:0 14px 30px rgba(0,0,0,.10)!important;
+  padding:12px!important;z-index:40;
+}
+#app main [id^="menu-filtro-"] p{
+  color:#777!important;letter-spacing:.08em;
+}
+#app main [id^="menu-filtro-"] button{
+  min-height:34px;border-radius:8px!important;box-shadow:none!important;
+  transition:background .15s ease,color .15s ease;
+}
+#app main [id^="menu-filtro-"] button:hover{
+  background:#f0f0f0!important;color:#111!important;
+}
+#app main [id^="menu-filtro-"] button[class*="bg-teal-"],
+#app main [id^="menu-filtro-"] button[class*="bg-emerald-"]{
+  background:#202020!important;color:#fff!important;border-color:#202020!important;
+}
+#app main [id^="menu-filtro-"] input,
+#app main [id^="menu-filtro-"] select{
+  background:#fff!important;border:1px solid #dedede!important;border-radius:8px!important;
+}
+#app main [id^="menu-filtro-"] input:focus,
+#app main [id^="menu-filtro-"] select:focus{
+  outline:2px solid #d1d1d1!important;border-color:#777!important;box-shadow:none!important;
+}
+@media(max-width:640px){
+  #app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto{
+    gap:4px!important;padding:7px 8px 0!important;
+  }
+  #app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto>div{
+    min-height:36px;padding:8px 11px!important;font-size:10px!important;
+  }
+  #app main [id^="menu-filtro-"]{max-width:calc(100vw - 28px);padding:10px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto>div,
+  #app main [id^="menu-filtro-"] button{transition:none!important}
+}
+</style>
