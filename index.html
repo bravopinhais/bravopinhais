@@ -11245,6 +11245,67 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
 }
 </style>
 
+
+<style id="bravo-navegacao-acoes-polish-2026">
+/* Interações e navegação: estados consistentes sem alterar cores funcionais. */
+#app main button,#sidebar-menu nav button,#modal-container button{
+ touch-action:manipulation;
+ -webkit-tap-highlight-color:transparent;
+ transition:box-shadow .16s ease,filter .16s ease,transform .16s ease,border-color .16s ease;
+}
+#app main button:focus-visible,#sidebar-menu nav button:focus-visible,
+#modal-container button:focus-visible{
+ outline:3px solid rgba(20,184,166,.36)!important;
+ outline-offset:2px;
+}
+#app main button:disabled,#sidebar-menu nav button:disabled,
+#modal-container button:disabled{
+ cursor:not-allowed;opacity:.55;filter:saturate(.65);
+}
+#app main button:not(:disabled):hover,#modal-container button:not(:disabled):hover{
+ filter:brightness(.985);
+}
+#sidebar-menu nav button{
+ min-height:42px;border-radius:12px;
+}
+#sidebar-menu nav button[aria-current="page"],
+#sidebar-menu nav button[aria-selected="true"]{
+ box-shadow:inset 3px 0 0 #5eead4;
+}
+#app main [role="menu"],#app main [role="listbox"],
+#modal-container [role="menu"],#modal-container [role="listbox"],
+#app main .grid-actions-popover{
+ border:1px solid #e1eaf0;
+ border-radius:15px;
+ background:rgba(255,255,255,.98);
+ box-shadow:0 16px 42px rgba(15,35,50,.16);
+ color:#263d4d;
+}
+#app main [role="menu"] :is(button,a),
+#app main [role="listbox"]>*,
+#modal-container [role="menu"] :is(button,a),
+#modal-container [role="listbox"]>*{
+ border-radius:9px;
+}
+#app main [role="menu"] :is(button,a):focus-visible,
+#modal-container [role="menu"] :is(button,a):focus-visible{
+ outline:2px solid rgba(20,184,166,.4);outline-offset:-2px;
+}
+#app main .grid-actions-trigger{
+ border-radius:11px;border-color:#e0e8ef;
+}
+#app main .grid-actions-popover{padding:8px;}
+@media(max-width:640px){
+ #sidebar-menu nav button{min-height:44px;}
+ #app main button{min-height:38px;}
+ #app main button:has(i:only-child){min-width:38px;}
+ #app main .grid-actions-popover{max-width:calc(100vw - 20px);}
+}
+@media(prefers-reduced-motion:reduce){
+ #app main button,#sidebar-menu nav button,#modal-container button{transition:none!important;}
+}
+</style>
+
 </body></html>`;
                 win.document.open();
                 win.document.write(doc);
