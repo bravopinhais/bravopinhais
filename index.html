@@ -25576,3 +25576,66 @@ body.bravo-renderizando-modulo::before{
  #sidebar-menu nav button,#sidebar-menu nav a{transition:none!important;transform:none!important}
 }
 </style>
+
+
+<!-- Bravo Pinhais — acabamento responsivo de diálogos e avisos | etapa 83 -->
+<style id="bravo-dialogos-responsivos-etapa-83">
+/* Superfícies de diálogo: leitura confortável, contraste neutro e rolagem segura. */
+#app :is([role="dialog"],[aria-modal="true"],.modal,.modal-content){
+  color:#262626;
+  border-color:rgba(0,0,0,.10)!important;
+  scrollbar-width:thin;
+  scrollbar-color:rgba(0,0,0,.28) transparent;
+}
+#app :is([role="dialog"],[aria-modal="true"],.modal,.modal-content) :is(h1,h2,h3,h4){
+  color:#171717!important;
+}
+#app :is([role="dialog"],[aria-modal="true"],.modal,.modal-content) :is(button,a):focus-visible{
+  outline:2px solid #525252!important;
+  outline-offset:3px!important;
+}
+#gb-notifications-panel{
+  background:rgba(255,255,255,.98)!important;
+  color:#262626!important;
+  border:1px solid rgba(0,0,0,.10)!important;
+  border-radius:18px!important;
+  box-shadow:0 18px 55px rgba(0,0,0,.18)!important;
+  backdrop-filter:blur(18px);
+  -webkit-backdrop-filter:blur(18px);
+}
+#gb-notifications-panel :is(h1,h2,h3,strong){color:#171717}
+#gb-notifications-panel :is(p,small){color:#626262}
+#gb-notifications-panel :is(button,a):focus-visible{
+  outline:2px solid #525252!important;outline-offset:2px!important;
+}
+#scanner-modal-overlay{
+  background:rgba(12,12,12,.82)!important;
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+}
+#scanner-modal-overlay > :is(div,section){
+  max-height:calc(100dvh - 32px);
+  overflow-y:auto;
+  overscroll-behavior:contain;
+}
+@media(max-width:640px){
+  #app :is([role="dialog"],[aria-modal="true"],.modal,.modal-content){
+    max-width:calc(100vw - 20px);
+    max-height:calc(100dvh - 24px);
+    overflow-y:auto;
+    overscroll-behavior:contain;
+  }
+  #gb-notifications-panel{
+    max-width:calc(100vw - 20px)!important;
+    max-height:calc(100dvh - 24px)!important;
+    overflow-y:auto;
+  }
+  #scanner-modal-overlay{
+    padding:12px!important;
+    padding-bottom:calc(12px + env(safe-area-inset-bottom,0px))!important;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  #gb-notifications-panel{backdrop-filter:none;-webkit-backdrop-filter:none}
+}
+</style>
