@@ -19141,3 +19141,26 @@ html,body,#app,#app header.bg-slate-950.no-print,#app header.md\\:hidden{backgro
 
 </body>
 </html>
+
+<style id="bravo-responsividade-acabamento-final-2026">
+/* Ajustes de leitura e toque em telas pequenas, sem alterar lógica dos módulos. */
+#app, #app main, #app main *{min-width:0}
+#app main :is(.overflow-x-auto,.table-responsive){max-width:100%;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+#app main table{width:100%;border-collapse:separate;border-spacing:0}
+#app main :is(th,td){vertical-align:middle}
+#app main :is(input,select,textarea){max-width:100%;min-height:40px}
+#app main textarea{min-height:88px}
+#app main :is(button,a[role="button"]){touch-action:manipulation}
+@media(max-width:768px){
+ #app main{padding-left:14px!important;padding-right:14px!important}
+ #app main :is(.grid,.dashboard-kpi-grid){grid-template-columns:repeat(2,minmax(0,1fr))}
+ #app main :is(.flex.justify-between,.flex.items-center.justify-between){flex-wrap:wrap;gap:10px}
+ #app main :is(h1,h2){overflow-wrap:anywhere}
+ #app main :is(.overflow-x-auto,.table-responsive) table{min-width:640px}
+ #app main :is(.card,.card-modern){padding:14px!important}
+}
+@media(max-width:420px){
+ #app main :is(.grid,.dashboard-kpi-grid){grid-template-columns:minmax(0,1fr)}
+ #app main{padding-left:11px!important;padding-right:11px!important}
+}
+</style>
