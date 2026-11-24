@@ -18107,5 +18107,76 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
 }
 </style>
 
+
+<style id="bravo-icones-indicadores-detalhes-2026">
+/* Ícones e microdetalhes: acabamento uniforme sem apagar cores semânticas. */
+#app main :is(svg,.fa,.fas,.far,.fab,[class^="fa-"],[class*=" fa-"]){
+ vertical-align:-.12em;
+}
+#app main svg{
+ shape-rendering:geometricPrecision;
+}
+#app main button :is(svg,.fa,.fas,.far),
+#app main a :is(svg,.fa,.fas,.far){
+ flex-shrink:0;
+}
+#app main button :is(svg,.fa,.fas,.far){
+ transition:transform .16s ease,opacity .16s ease;
+}
+@media(hover:hover) and (pointer:fine){
+ #app main button:not(:disabled):hover :is(svg,.fa,.fas,.far){
+  transform:translateY(-1px);
+ }
+}
+#app main .dashboard-kpi-grid>article>div:first-child>div:last-child{
+ display:grid;
+ place-items:center;
+ flex:0 0 44px;
+ color:#0f766e;
+ background:linear-gradient(145deg,rgba(204,251,241,.72),rgba(224,242,254,.58));
+}
+#app main .dashboard-kpi-grid>article>div:first-child>div:last-child :is(svg,.fa,.fas,.far){
+ font-size:18px;
+}
+#app main .dashboard-section-title>span{
+ display:inline-flex;
+ align-items:center;
+ gap:6px;
+ border-radius:999px;
+ padding:5px 10px;
+ font-size:11px;
+ font-weight:750;
+}
+#app main .card-modern :is(.rounded-full)[class*="bg-"]{
+ border:1px solid rgba(148,163,184,.12);
+}
+#app main :is(.text-emerald-600,.text-green-600,.text-teal-600,.text-brand-600){
+ font-weight:700;
+}
+#app main :is(.text-rose-600,.text-red-600){
+ font-weight:700;
+}
+#app main :is(.text-amber-600,.text-orange-600){
+ font-weight:700;
+}
+#app main .card-modern :is(.border-l-4,.border-l-\[3px\]){
+ border-radius:0 12px 12px 0;
+}
+#app main .card-modern :is(.divide-y,.divide-x)>:not([hidden])~:not([hidden]){
+ border-color:#eaf0f2;
+}
+#app main .card-modern hr{
+ border-color:rgba(203,213,225,.58);
+}
+@media(max-width:640px){
+ #app main .dashboard-kpi-grid>article>div:first-child>div:last-child{
+  flex-basis:40px;width:40px;height:40px;border-radius:13px;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ #app main button :is(svg,.fa,.fas,.far){transition:none!important;}
+}
+</style>
+
 </body>
 </html>
