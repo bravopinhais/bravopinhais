@@ -18688,5 +18688,38 @@ html,body,#app,#app header.bg-slate-950.no-print,#app header.md\\:hidden{backgro
 @media(prefers-reduced-motion:reduce){#app main *,#sidebar-menu *{transition:none!important;animation:none!important;}}
 </style>
 
+
+<style id="bravo-padrao-interacoes-monocromatico-2026">
+/* Consolidação de controles: monocromia, legibilidade e foco acessível. */
+:root{--bravo-ink:#111;--bravo-text:#262626;--bravo-muted:#737373;--bravo-line:#e5e5e5;--bravo-surface:#fff;--bravo-subtle:#f5f5f5;--bravo-focus:rgba(17,17,17,.16);}
+#app :is(button,[role="button"],input,select,textarea){font-family:inherit;}
+#app :is(input,select,textarea){color:var(--bravo-text)!important;background:#fff!important;border:1px solid #dedede!important;border-radius:9px!important;box-shadow:none!important;}
+#app :is(input,select,textarea)::placeholder{color:#9a9a9a!important;font-weight:400!important;}
+#app :is(input,select,textarea):focus{border-color:#777!important;outline:2px solid var(--bravo-focus)!important;outline-offset:1px;box-shadow:none!important;}
+#app :is(input[type="checkbox"],input[type="radio"]){accent-color:#111!important;}
+#app :is(button,[role="button"],a):focus-visible{outline:2px solid #555!important;outline-offset:3px!important;box-shadow:none!important;}
+#app main button{border-radius:9px;box-shadow:none;}
+#app main button:not(:disabled):active{transform:translateY(1px);}
+#app main button:disabled{opacity:.48;cursor:not-allowed;box-shadow:none!important;}
+#app main :is(button,a)[class*="bg-teal-"],#app main :is(button,a)[class*="bg-emerald-"],#app main :is(button,a)[class*="bg-green-"],#app main :is(button,a)[class*="bg-brand-"]{color:#fff!important;background:#111!important;border-color:#111!important;box-shadow:none!important;}
+#app main :is(button,a)[class*="bg-teal-"]:hover,#app main :is(button,a)[class*="bg-emerald-"]:hover,#app main :is(button,a)[class*="bg-green-"]:hover,#app main :is(button,a)[class*="bg-brand-"]:hover{background:#333!important;}
+#app main :is(.text-teal-500,.text-teal-600,.text-teal-700,.text-emerald-500,.text-emerald-600,.text-emerald-700,.text-green-500,.text-green-600,.text-green-700,.text-brand-500,.text-brand-600,.text-brand-700){color:#333!important;}
+#app main :is([class*="bg-teal-"],[class*="bg-emerald-"],[class*="bg-green-"],[class*="bg-brand-"]):not(button):not(a){background-color:#f2f2f2!important;}
+#app main :is([class*="border-teal-"],[class*="border-emerald-"],[class*="border-green-"],[class*="border-brand-"]){border-color:#dedede!important;}
+#app main :is(.tab-active,[aria-selected="true"]){color:#111!important;border-color:#111!important;box-shadow:none!important;}
+#sidebar-menu nav button{border-radius:9px!important;box-shadow:none!important;}
+#sidebar-menu nav button[aria-current="page"],#sidebar-menu nav button.active{color:#fff!important;background:#111!important;border-color:#111!important;}
+#sidebar-menu nav button[aria-current="page"] :is(span,i,svg),#sidebar-menu nav button.active :is(span,i,svg){color:#fff!important;}
+#modal-container>div>div{border:1px solid #e8e8e8!important;border-radius:16px!important;box-shadow:0 18px 55px rgba(0,0,0,.13)!important;}
+#gb-notifications-panel{border:1px solid #e5e5e5!important;border-radius:14px!important;box-shadow:0 16px 42px rgba(0,0,0,.11)!important;}
+#app main table thead th{background:#f4f4f4!important;color:#333!important;border-color:#e7e7e7!important;}
+#app main table tbody tr:hover{background:#f8f8f8!important;}
+#app main :is(hr,.divide-y,.divide-x){border-color:#e8e8e8!important;}
+#app main :is(.overflow-auto,.overflow-x-auto,.overflow-y-auto){scrollbar-color:#bdbdbd transparent;}
+#app main :is(.overflow-auto,.overflow-x-auto,.overflow-y-auto)::-webkit-scrollbar-thumb{background:#bdbdbd!important;background-clip:padding-box;}
+@media(max-width:640px){#app main button:not(.h-7):not(.h-8){min-height:38px;}#app main .card-modern{border-radius:12px!important;}#modal-container>div{padding:10px!important;}}
+@media(prefers-reduced-motion:reduce){#app main *,#sidebar-menu *,#modal-container *,#gb-notifications-panel *{transition:none!important;animation:none!important;scroll-behavior:auto!important;}}
+</style>
+
 </body>
 </html>
