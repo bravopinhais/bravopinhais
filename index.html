@@ -21545,3 +21545,96 @@ body.bravo-renderizando-modulo::before{
  #app main .dashboard-shell .dashboard-quick-grid{gap:8px!important}
 }
 </style>
+
+
+<!-- Etapa 32 — navegação, tabelas e ações consistentes -->
+<style id="bravo-navegacao-tabelas-acoes-etapa-32">
+/* Menu lateral e navegação: superfícies claras e tipografia uniforme */
+#sidebar-menu{
+ background:#fff!important;color:#404040!important;border-color:#e5e5e5!important;
+ box-shadow:4px 0 18px rgba(0,0,0,.045)!important
+}
+#sidebar-menu>div:first-child{
+ background:#fff!important;border-color:#e5e5e5!important
+}
+#sidebar-menu>div:first-child h1{color:#171717!important}
+#sidebar-menu>div:first-child p{color:#737373!important}
+#sidebar-menu>div:first-child [class*="bg-gradient-"]{
+ background:#f0f0f0!important;color:#333!important;box-shadow:none!important
+}
+#sidebar-menu nav p{color:#8a8a8a!important}
+#sidebar-menu nav button{
+ color:#525252!important;background:transparent!important;
+ border:1px solid transparent!important;border-radius:11px!important;
+ box-shadow:none!important;transform:none!important
+}
+#sidebar-menu nav button:hover{
+ color:#171717!important;background:#f5f5f5!important;border-color:#ededed!important
+}
+#sidebar-menu nav button[class*="bg-"],
+#sidebar-menu nav button[aria-current="page"]{
+ color:#fff!important;background:#242424!important;border-color:#242424!important
+}
+#sidebar-menu nav button i{color:inherit!important}
+#sidebar-menu nav button :is(span,strong){color:inherit!important}
+/* Botões e ações dentro dos módulos */
+#app main button:not(.dashboard-quick-grid button):not([class*="bg-rose-700"]){
+ box-shadow:none
+}
+#app main button[class*="bg-teal-"],
+#app main button[class*="bg-emerald-"],
+#app main button[class*="bg-green-"],
+#app main button[class*="bg-sky-"],
+#app main button[class*="bg-blue-"],
+#app main button[class*="bg-indigo-"],
+#app main button[class*="bg-violet-"]{
+ background:#252525!important;color:#fff!important;border-color:#252525!important
+}
+#app main button[class*="text-teal-"],
+#app main button[class*="text-emerald-"],
+#app main button[class*="text-green-"],
+#app main button[class*="text-sky-"],
+#app main button[class*="text-blue-"],
+#app main button[class*="text-indigo-"],
+#app main button[class*="text-violet-"]{
+ color:#404040!important
+}
+#app main button[class*="border-teal-"],
+#app main button[class*="border-emerald-"],
+#app main button[class*="border-green-"],
+#app main button[class*="border-sky-"],
+#app main button[class*="border-blue-"],
+#app main button[class*="border-indigo-"]{border-color:#d9d9d9!important}
+#app main button:focus-visible,#sidebar-menu button:focus-visible{
+ outline:2px solid #737373!important;outline-offset:2px!important
+}
+/* Tabelas: cabeçalho limpo, linhas discretas e leitura consistente */
+#app main table{border-collapse:separate!important;border-spacing:0!important}
+#app main table thead{background:#f5f5f5!important}
+#app main table thead th{
+ color:#525252!important;background:#f5f5f5!important;
+ border-bottom:1px solid #e5e5e5!important;font-weight:750!important
+}
+#app main table tbody tr{background:#fff!important}
+#app main table tbody tr:hover{background:#f8f8f8!important}
+#app main table tbody td{border-color:#ededed!important}
+#app main table :is([class*="bg-emerald-"],[class*="bg-teal-"],[class*="bg-green-"],[class*="bg-sky-"],[class*="bg-blue-"],[class*="bg-rose-"],[class*="bg-amber-"],[class*="bg-violet-"]){
+ background:#f1f1f1!important;color:#404040!important
+}
+#app main table :is([class*="text-emerald-"],[class*="text-teal-"],[class*="text-green-"],[class*="text-sky-"],[class*="text-blue-"],[class*="text-violet-"]){color:#404040!important}
+/* Menus flutuantes de ações por linha */
+.grid-actions-menu{
+ background:#fff!important;border:1px solid #e5e5e5!important;
+ border-radius:13px!important;box-shadow:0 12px 32px rgba(0,0,0,.12)!important
+}
+.grid-actions-menu .grid-actions-menu-item{
+ background:#fff!important;color:#404040!important;border-color:transparent!important;
+ border-radius:8px!important;box-shadow:none!important
+}
+.grid-actions-menu .grid-actions-menu-item:hover{background:#f3f3f3!important;color:#171717!important}
+@media(max-width:768px){
+ #sidebar-menu{box-shadow:8px 0 28px rgba(0,0,0,.10)!important}
+ #app main table{font-size:12px}
+ #app main table thead th{white-space:nowrap;padding-top:11px!important;padding-bottom:11px!important}
+}
+</style>
