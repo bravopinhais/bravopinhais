@@ -25850,3 +25850,42 @@ body.bravo-renderizando-modulo::before{
  #app button{transition:none!important}
 }
 </style>
+
+
+<!-- Bravo Pinhais — barra de rolagem vertical visível | etapa 88 -->
+<style id="bravo-rolagem-vertical-visivel-etapa-88">
+/* O painel central é o contêiner vertical principal do sistema. */
+#app main.flex-1.overflow-y-auto{
+  min-height:0!important;
+  overscroll-behavior-y:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:auto!important;
+  scrollbar-color:#888 #e7e7e7!important;
+  scrollbar-gutter:stable;
+}
+#app main.flex-1.overflow-y-auto::-webkit-scrollbar{
+  width:10px!important;
+  height:10px!important;
+}
+#app main.flex-1.overflow-y-auto::-webkit-scrollbar-track{
+  background:#e7e7e7!important;
+  border-left:1px solid #d7d7d7;
+}
+#app main.flex-1.overflow-y-auto::-webkit-scrollbar-thumb{
+  background:#888!important;
+  border:2px solid #e7e7e7!important;
+  border-radius:12px!important;
+  background-clip:padding-box!important;
+}
+#app main.flex-1.overflow-y-auto::-webkit-scrollbar-thumb:hover{
+  background:#555!important;
+  border-color:#e7e7e7!important;
+}
+@media(max-width:640px){
+ #app main.flex-1.overflow-y-auto{
+  scrollbar-width:thin!important;
+  scrollbar-color:#999 #ededed!important;
+ }
+ #app main.flex-1.overflow-y-auto::-webkit-scrollbar{width:7px!important}
+}
+</style>
