@@ -21655,4 +21655,140 @@ nt; }
                     justify-content: center;
                 }
             }
+
+            /* ===== Modais, formulários e confirmações: identidade monocromática ===== */
+            #modal-container .fixed.inset-0,
+            #scanner-modal-overlay {
+                background: rgba(0,0,0,.48) !important;
+                -webkit-backdrop-filter: blur(3px);
+                backdrop-filter: blur(3px);
+            }
+            #modal-container .fixed.inset-0 > .bg-white,
+            #scanner-modal-overlay > .bg-white {
+                background: #ffffff !important;
+                color: #171717 !important;
+                border: 1px solid #e5e5e5 !important;
+                border-radius: 20px !important;
+                box-shadow: 0 24px 70px rgba(0,0,0,.18) !important;
+                max-height: min(88dvh, 820px);
+                overflow-y: auto;
+                overscroll-behavior: contain;
+            }
+            #modal-container h1, #modal-container h2,
+            #modal-container h3, #modal-container h4,
+            #scanner-modal-overlay h1, #scanner-modal-overlay h2,
+            #scanner-modal-overlay h3, #scanner-modal-overlay h4 {
+                color: #171717 !important;
+                letter-spacing: -.025em;
+            }
+            #modal-container p, #scanner-modal-overlay p {
+                color: #737373 !important;
+            }
+            #modal-container label, #scanner-modal-overlay label {
+                color: #525252 !important;
+                font-size: 10px !important;
+                font-weight: 750 !important;
+                letter-spacing: .045em;
+            }
+            #modal-container input, #modal-container select,
+            #modal-container textarea,
+            #scanner-modal-overlay input,
+            #scanner-modal-overlay select,
+            #scanner-modal-overlay textarea {
+                background: #ffffff !important;
+                color: #171717 !important;
+                border: 1px solid #dedede !important;
+                border-radius: 10px !important;
+                min-height: 42px;
+                box-shadow: none !important;
+            }
+            #modal-container input:focus, #modal-container select:focus,
+            #modal-container textarea:focus,
+            #scanner-modal-overlay input:focus {
+                border-color: #737373 !important;
+                outline: 0 !important;
+                box-shadow: 0 0 0 3px rgba(23,23,23,.08) !important;
+            }
+            #modal-container input::placeholder,
+            #modal-container textarea::placeholder {
+                color: #a3a3a3 !important;
+            }
+            #modal-container button[class*="bg-teal-"],
+            #modal-container button[class*="bg-emerald-"],
+            #modal-container button[class*="bg-sky-"],
+            #modal-container button[class*="bg-blue-"],
+            #scanner-modal-overlay button[class*="bg-teal-"] {
+                background: #171717 !important;
+                color: #ffffff !important;
+                border: 1px solid #171717 !important;
+                box-shadow: none !important;
+            }
+            #modal-container button[class*="bg-slate-100"],
+            #modal-container button[class*="bg-slate-200"],
+            #modal-container button[class*="bg-gray-100"],
+            #scanner-modal-overlay button[class*="bg-slate-200"] {
+                background: #f3f3f3 !important;
+                color: #262626 !important;
+                border: 1px solid #e5e5e5 !important;
+            }
+            #modal-container [class*="bg-teal-50"],
+            #modal-container [class*="bg-emerald-50"],
+            #modal-container [class*="bg-blue-50"],
+            #modal-container [class*="bg-sky-50"],
+            #modal-container [class*="bg-amber-50"],
+            #modal-container [class*="bg-rose-50"],
+            #scanner-modal-overlay [class*="bg-teal-50"] {
+                background: #f3f3f3 !important;
+                color: #404040 !important;
+                border-color: #e5e5e5 !important;
+            }
+            #modal-container [class*="text-teal-"],
+            #modal-container [class*="text-emerald-"],
+            #modal-container [class*="text-blue-"],
+            #modal-container [class*="text-sky-"],
+            #scanner-modal-overlay [class*="text-teal-"] {
+                color: #404040 !important;
+            }
+            #modal-container [class*="border-teal-"],
+            #modal-container [class*="border-emerald-"],
+            #modal-container [class*="border-blue-"],
+            #modal-container [class*="border-sky-"] {
+                border-color: #e5e5e5 !important;
+            }
+            #modal-container .border-b,
+            #modal-container .border-t {
+                border-color: #ededed !important;
+            }
+            #scanner-modal-overlay #video-scanner {
+                border-radius: 14px;
+            }
+            @media (max-width: 640px) {
+                #modal-container .fixed.inset-0 {
+                    align-items: flex-end !important;
+                    padding: 10px !important;
+                }
+                #modal-container .fixed.inset-0 > .bg-white {
+                    width: 100% !important;
+                    max-width: none !important;
+                    max-height: 90dvh !important;
+                    border-radius: 20px 20px 14px 14px !important;
+                    padding: 20px !important;
+                }
+                #modal-container .fixed.inset-0 form > div:last-child {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 8px !important;
+                }
+                #modal-container .fixed.inset-0 form > div:last-child button {
+                    flex: 1 1 auto;
+                    min-height: 44px;
+                }
+                #scanner-modal-overlay {
+                    padding: 10px !important;
+                }
+                #scanner-modal-overlay > .bg-white {
+                    max-height: 90dvh !important;
+                    padding: 18px !important;
+                }
+            }
 </style>
