@@ -22648,3 +22648,63 @@ body.bravo-renderizando-modulo::before{
  #app main button:not(#sidebar-menu button){min-height:38px}
 }
 </style>
+
+<!-- bravo-residuos-identidade-monocromatica-etapa-49 -->
+<style id="bravo-residuos-identidade-monocromatica-etapa-49">
+/* Neutraliza as antigas cores de etiquetas, alertas, status e indicadores.
+   Mantém conteúdo, ícones, estados e ações originais. */
+#app :is(
+ [class*="bg-teal-"],[class*="bg-emerald-"],[class*="bg-green-"],
+ [class*="bg-sky-"],[class*="bg-blue-"],[class*="bg-indigo-"],
+ [class*="bg-violet-"],[class*="bg-purple-"],[class*="bg-cyan-"],
+ [class*="bg-amber-"],[class*="bg-yellow-"],[class*="bg-orange-"],
+ [class*="bg-rose-"],[class*="bg-red-"],[class*="bg-pink-"],
+ [class*="bg-lime-"]
+):not(button):not([role="button"]){
+ background-color:#f3f3f3!important;
+ background-image:none!important;
+}
+#app :is(
+ [class*="text-teal-"],[class*="text-emerald-"],[class*="text-green-"],
+ [class*="text-sky-"],[class*="text-blue-"],[class*="text-indigo-"],
+ [class*="text-violet-"],[class*="text-purple-"],[class*="text-cyan-"],
+ [class*="text-amber-"],[class*="text-yellow-"],[class*="text-orange-"],
+ [class*="text-rose-"],[class*="text-red-"],[class*="text-pink-"],
+ [class*="text-lime-"]
+){color:#505050!important}
+#app :is(
+ [class*="border-teal-"],[class*="border-emerald-"],[class*="border-green-"],
+ [class*="border-sky-"],[class*="border-blue-"],[class*="border-indigo-"],
+ [class*="border-violet-"],[class*="border-purple-"],[class*="border-cyan-"],
+ [class*="border-amber-"],[class*="border-yellow-"],[class*="border-orange-"],
+ [class*="border-rose-"],[class*="border-red-"],[class*="border-pink-"],
+ [class*="border-lime-"]
+){border-color:#dedede!important}
+#app :is(
+ [class*="ring-teal-"],[class*="ring-emerald-"],[class*="ring-green-"],
+ [class*="ring-sky-"],[class*="ring-blue-"],[class*="ring-indigo-"],
+ [class*="ring-violet-"],[class*="ring-purple-"],[class*="ring-cyan-"],
+ [class*="ring-amber-"],[class*="ring-yellow-"],[class*="ring-orange-"],
+ [class*="ring-rose-"],[class*="ring-red-"],[class*="ring-pink-"],
+ [class*="ring-lime-"]
+){--tw-ring-color:#d4d4d4!important}
+#app :is(
+ [class*="from-teal-"],[class*="from-emerald-"],[class*="from-green-"],
+ [class*="from-sky-"],[class*="from-blue-"],[class*="from-indigo-"],
+ [class*="from-violet-"],[class*="from-purple-"],[class*="from-cyan-"],
+ [class*="from-amber-"],[class*="from-yellow-"],[class*="from-orange-"],
+ [class*="from-rose-"],[class*="from-red-"],[class*="from-pink-"],
+ [class*="from-lime-"]
+){--tw-gradient-from:#eeeeee var(--tw-gradient-from-position)!important;--tw-gradient-to:rgb(238 238 238 / 0) var(--tw-gradient-to-position)!important}
+#app :is(
+ [class*="to-teal-"],[class*="to-emerald-"],[class*="to-green-"],
+ [class*="to-sky-"],[class*="to-blue-"],[class*="to-indigo-"],
+ [class*="to-violet-"],[class*="to-purple-"],[class*="to-cyan-"],
+ [class*="to-amber-"],[class*="to-yellow-"],[class*="to-orange-"],
+ [class*="to-rose-"],[class*="to-red-"],[class*="to-pink-"],
+ [class*="to-lime-"]
+){--tw-gradient-to:#dedede var(--tw-gradient-to-position)!important}
+#app :is(svg,[class*="icon"]) :is(path,circle,rect,line,polyline,polygon){
+ stroke:currentColor;
+}
+</style>
