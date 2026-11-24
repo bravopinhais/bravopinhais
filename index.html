@@ -19080,6 +19080,28 @@ html,body,#app,#app header.bg-slate-950.no-print,#app header.md\\:hidden{backgro
 #app main .relatorios-dre-result span,#app main .relatorios-dre-result .font-mono{color:#fff!important;}
 @media(max-width:640px){#app main .relatorios-dre-header{flex-direction:column!important;}#app main .relatorios-dre-summary{grid-template-columns:1fr;gap:8px;margin:16px 0 20px;}#app main .relatorios-dre-summary>div{padding:11px 13px;}#app main .relatorios-dre-row,#app main .relatorios-dre-result{padding:12px!important;align-items:flex-start!important;font-size:11px!important;}}
 @media(prefers-reduced-motion:reduce){#app main .relatorios-dre-page *{transition:none!important;animation:none!important;}}
+
+<style id="bravo-graficos-indicadores-relatorios-2026">
+/* Acabamento monocromático para análises, indicadores e DRE. */
+#app main .dashboard-analytics-disclosure,#app main .estoque-analytics-disclosure{border:1px solid #e7e7e7!important;border-radius:14px!important;background:#fff!important;box-shadow:none!important;overflow:hidden}
+#app main :is(.dashboard-analytics-disclosure,.estoque-analytics-disclosure)>summary{min-height:62px;padding:16px 18px!important;color:#171717!important;background:#fff!important;cursor:pointer;transition:background-color .16s ease}
+#app main :is(.dashboard-analytics-disclosure,.estoque-analytics-disclosure)>summary:hover{background:#f8f8f8!important}
+#app main :is(.dashboard-analytics-disclosure,.estoque-analytics-disclosure)>summary :is(i,svg){color:#333!important}
+#app main :is(.dashboard-analytics-disclosure,.estoque-analytics-disclosure)>summary:focus-visible{outline:2px solid #777!important;outline-offset:-3px!important}
+#app main :is(.dashboard-analytics-disclosure,.estoque-analytics-disclosure) canvas{filter:grayscale(1)}
+#app main .dashboard-kpi-grid>article{border:1px solid #e9e9e9!important;border-radius:13px!important;box-shadow:none!important;background:#fff!important}
+#app main .dashboard-kpi-grid>article :is(.text-teal-600,.text-emerald-600,.text-green-600,.text-blue-600,.text-indigo-600,.text-rose-600){color:#292929!important}
+#app main .dashboard-kpi-grid>article :is([class*="bg-teal-"],[class*="bg-emerald-"],[class*="bg-green-"],[class*="bg-blue-"],[class*="bg-indigo-"],[class*="bg-rose-"]){background:#f2f2f2!important;color:#292929!important}
+#app main .card-modern:has(.fa-file-invoice-dollar){padding:clamp(18px,3vw,30px)!important;border:1px solid #e8e8e8!important;border-radius:15px!important;background:#fff!important;box-shadow:none!important}
+#app main .card-modern:has(.fa-file-invoice-dollar) h3{color:#171717!important;font-size:clamp(15px,2vw,18px)!important;letter-spacing:-.02em!important}
+#app main .card-modern:has(.fa-file-invoice-dollar) h3 i{color:#333!important}
+#app main .card-modern:has(.fa-file-invoice-dollar) :is(.bg-teal-50,.bg-emerald-50\/60,.bg-rose-50\/60){background:#f6f6f6!important;color:#292929!important;border-color:#e9e9e9!important}
+#app main .card-modern:has(.fa-file-invoice-dollar) :is(.text-teal-700,.text-emerald-950,.text-rose-950){color:#292929!important}
+#app main .card-modern:has(.fa-file-invoice-dollar) .bg-gradient-to-r{background:#171717!important;color:#fff!important;box-shadow:none!important}
+#app main .card-modern:has(.fa-file-invoice-dollar) .font-mono{font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+@media(max-width:640px){#app main :is(.dashboard-analytics-disclosure,.estoque-analytics-disclosure)>summary{min-height:56px;padding:13px 14px!important}#app main .card-modern:has(.fa-file-invoice-dollar){border-radius:12px!important}#app main .card-modern:has(.fa-file-invoice-dollar) .flex.justify-between{gap:12px;align-items:flex-start}#app main .card-modern:has(.fa-file-invoice-dollar) .font-mono{white-space:nowrap}}
+@media(prefers-reduced-motion:reduce){#app main :is(.dashboard-analytics-disclosure,.estoque-analytics-disclosure)>summary{transition:none!important}}
+</style>
 </style>
 
 </body>
