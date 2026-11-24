@@ -24686,3 +24686,146 @@ body.bravo-renderizando-modulo::before{
  #app main .estoque-analytics-disclosure>summary{transition:none!important}
 }
 </style>
+
+
+<!-- Bravo Pinhais — alertas e movimentações em vidro | etapa 74 -->
+<style id="bravo-alertas-movimentacoes-vidro-etapa-74">
+/* Seção operacional: hierarquia visual consistente com o dashboard em vidro. */
+#app main .dashboard-section-title{
+ margin-top:28px!important;
+ margin-bottom:14px!important;
+}
+#app main .dashboard-section-title>div>p:first-child{
+ color:#777!important;
+ letter-spacing:.17em!important;
+}
+#app main .dashboard-section-title h3{
+ color:#202020!important;
+ letter-spacing:-.025em!important;
+}
+#app main .dashboard-section-title>div>p:last-child{color:#777!important}
+#app main .dashboard-operations-grid{
+ align-items:stretch!important;
+ gap:18px!important;
+}
+#app main .dashboard-operations-grid>div{
+ min-width:0!important;
+ border:1px solid rgba(0,0,0,.10)!important;
+ border-radius:22px!important;
+ background:linear-gradient(145deg,rgba(255,255,255,.97),rgba(246,246,246,.90))!important;
+ box-shadow:0 10px 28px rgba(0,0,0,.045),inset 0 1px 0 rgba(255,255,255,.95)!important;
+ -webkit-backdrop-filter:blur(15px) saturate(120%)!important;
+ backdrop-filter:blur(15px) saturate(120%)!important;
+}
+#app main .dashboard-operations-grid>div:first-child{padding:21px!important}
+#app main .dashboard-operations-grid>div :is(h3,h4){color:#222!important}
+#app main .dashboard-operations-grid>div :is(p,small){color:#777}
+#app main .dashboard-operations-grid>div:first-child>div:first-child{
+ padding-bottom:13px!important;
+ border-bottom:1px solid rgba(0,0,0,.075)!important;
+}
+#app main .dashboard-operations-grid>div:first-child>div:first-child>span{
+ background:rgba(235,235,235,.9)!important;
+ border:1px solid #dedede!important;
+ color:#444!important;
+ border-radius:999px!important;
+}
+/* Alertas clicáveis mantêm prioridade e ação, com aparência neutra. */
+#app main .dashboard-operations-grid>div:first-child .mt-4.space-y-3>button{
+ min-height:76px!important;
+ border:1px solid #e1e1e1!important;
+ border-radius:15px!important;
+ background:rgba(255,255,255,.78)!important;
+ color:#333!important;
+ box-shadow:0 3px 12px rgba(0,0,0,.025)!important;
+ transition:border-color .18s ease,background .18s ease,box-shadow .18s ease!important;
+}
+#app main .dashboard-operations-grid>div:first-child .mt-4.space-y-3>button:is(.border-rose-200,.border-amber-200,.border-sky-200,.border-emerald-200){
+ border-color:#dedede!important;
+}
+#app main .dashboard-operations-grid>div:first-child .mt-4.space-y-3>button:hover{
+ transform:none!important;
+ background:#f3f3f3!important;
+ border-color:#bdbdbd!important;
+ box-shadow:0 7px 18px rgba(0,0,0,.055)!important;
+}
+#app main .dashboard-operations-grid>div:first-child .mt-4.space-y-3>button>span:first-child{
+ background:#ededed!important;
+ color:#444!important;
+ border:1px solid #e1e1e1!important;
+ border-radius:11px!important;
+}
+#app main .dashboard-operations-grid>div:first-child .mt-4.space-y-3>button>span:nth-child(2)>span:first-child{
+ color:#252525!important;
+}
+#app main .dashboard-operations-grid>div:first-child .mt-4.space-y-3>button>span:nth-child(2)>span:nth-child(2){
+ color:#777!important;
+}
+#app main .dashboard-operations-grid>div:first-child .mt-4.space-y-3>button>span:nth-child(2)::after{
+ color:#555!important;
+ border-color:#dedede!important;
+ background:#f1f1f1!important;
+}
+#app main .dashboard-operations-grid>div:first-child .mt-4.space-y-3>button>i:last-child{color:#777!important}
+/* Movimentações financeiras: cabeçalho, tabela e estados vazios. */
+#app main .dashboard-operations-grid>div:nth-child(2)>div:first-child{
+ background:rgba(255,255,255,.62)!important;
+ border-bottom:1px solid #e5e5e5!important;
+}
+#app main .dashboard-operations-grid>div:nth-child(2)>div:first-child button{
+ background:#242424!important;
+ color:#fff!important;
+ border:1px solid #242424!important;
+ border-radius:10px!important;
+ box-shadow:none!important;
+}
+#app main .dashboard-operations-grid>div:nth-child(2)>div:first-child button:hover{
+ background:#444!important;
+ border-color:#444!important;
+}
+#app main .dashboard-operations-grid table thead{background:#f0f0f0!important;color:#666!important}
+#app main .dashboard-operations-grid table thead th{
+ color:#666!important;
+ letter-spacing:.10em!important;
+}
+#app main .dashboard-operations-grid table tbody tr{
+ border-color:#e9e9e9!important;
+ transition:background .16s ease!important;
+}
+#app main .dashboard-operations-grid table tbody tr:nth-child(even){background:rgba(245,245,245,.52)!important}
+#app main .dashboard-operations-grid table tbody tr:hover{background:#eeeeee!important}
+#app main .dashboard-operations-grid table tbody td{color:#555!important}
+#app main .dashboard-operations-grid table tbody td .rounded-full{
+ background:#ededed!important;
+ color:#444!important;
+ border:1px solid #dedede!important;
+}
+#app main .dashboard-operations-grid table tbody td.text-emerald-700,
+#app main .dashboard-operations-grid table tbody td.text-rose-700{color:#292929!important}
+#app main .dashboard-operations-grid table tbody td .text-emerald-700,
+#app main .dashboard-operations-grid table tbody td .text-rose-700{color:#444!important}
+#app main .dashboard-operations-grid table tbody td button{color:#333!important}
+#app main .dashboard-operations-grid table tbody tr td[colspan] .rounded-2xl{
+ background:#ededed!important;color:#555!important;
+}
+#app main .dashboard-operations-grid table tbody tr td[colspan] :is(p,button){color:#555!important}
+#app main .dashboard-operations-grid+ p{
+ color:#888!important;
+ border-top:1px solid rgba(0,0,0,.06)!important;
+ margin-top:13px!important;
+ padding-top:12px!important;
+}
+@media(max-width:767px){
+ #app main .dashboard-operations-grid{gap:13px!important}
+ #app main .dashboard-operations-grid>div{border-radius:18px!important}
+ #app main .dashboard-operations-grid>div:first-child{padding:16px!important}
+ #app main .dashboard-operations-grid>div:nth-child(2)>div:first-child{padding:16px!important}
+ #app main .dashboard-operations-grid table{min-width:540px!important}
+}
+@media(prefers-reduced-transparency:reduce){
+ #app main .dashboard-operations-grid>div{background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #app main .dashboard-operations-grid *{transition:none!important}
+}
+</style>
