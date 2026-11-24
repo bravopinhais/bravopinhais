@@ -36,6 +36,8 @@
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
         <!-- FontAwesome Icons CDN -->
         <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+        <!-- Fallback de ícones: segundo CDN caso o cdnjs não carregue -->
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
         <!-- Chart.js será carregado sob demanda apenas nas telas com gráficos -->
         <!-- Pako (Compressão Gzip para arquivos grandes) -->
         <script src="https://cdnjs.cloudflare.com/ajax/libs/pako/2.1.0/pako.min.js"></script>
@@ -22170,5 +22172,33 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-motion:reduce){
  #app main .dashboard-shell .dashboard-kpi-grid>article,
  #app main .dashboard-shell>section:has(.fa-brain) button{transition:none!important}
+}
+</style>
+
+
+<!-- Etapa 40 — recuperação e contraste dos ícones dos módulos -->
+<style id="bravo-icones-modulos-etapa-40">
+/* Garante área, tamanho e contraste dos ícones da navegação lateral */
+#sidebar-menu nav button>i,
+#sidebar-menu nav a>i{
+ display:inline-flex!important;align-items:center!important;justify-content:center!important;
+ width:22px!important;min-width:22px!important;flex:0 0 22px!important;
+ height:22px!important;font-size:15px!important;line-height:1!important;
+ opacity:1!important;visibility:visible!important;
+ color:#666!important;-webkit-text-fill-color:currentColor!important
+}
+#sidebar-menu nav button:hover>i,
+#sidebar-menu nav a:hover>i{color:#292929!important}
+#sidebar-menu nav button[aria-current="page"]>i,
+#sidebar-menu nav button[class*="bg-"]>i{color:#fff!important}
+#sidebar-menu nav button{gap:12px!important}
+#sidebar-menu nav button>span,
+#sidebar-menu nav button{overflow:visible!important}
+#app main .fa-solid,#app main .fa-regular,#app main .fa-brands,
+#sidebar-menu .fa-solid,#sidebar-menu .fa-regular,#sidebar-menu .fa-brands{
+ font-style:normal!important;opacity:1!important;visibility:visible!important
+}
+#app main :is(i.fa-solid,i.fa-regular,i.fa-brands){
+ display:inline-flex;align-items:center;justify-content:center;line-height:1
 }
 </style>
