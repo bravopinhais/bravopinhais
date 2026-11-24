@@ -20443,3 +20443,74 @@ html,body,#app{background:#fff!important;color:#171717!important}
  #sidebar-menu nav{padding:14px 12px!important}
 }
 </style>
+
+
+<style id="bravo-componentes-interface-etapa-14">
+/* Etapa 14 — padronização de tabelas, formulários e ações em branco, preto e cinza. */
+#app main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea){
+ min-height:40px!important;border:1px solid #dedede!important;border-radius:9px!important;
+ background:#fff!important;color:#222!important;box-shadow:none!important;
+ padding:10px 12px!important;font-size:13px!important;transition:border-color .15s ease,background .15s ease!important
+}
+#app main textarea{min-height:88px!important;line-height:1.5!important}
+#app main :is(input,select,textarea)::placeholder{color:#a1a1aa!important;opacity:1}
+#app main :is(input,select,textarea):hover{border-color:#bdbdbd!important}
+#app main :is(input,select,textarea):focus{
+ outline:2px solid rgba(23,23,23,.08)!important;outline-offset:1px!important;border-color:#777!important
+}
+#app main :is(input[type="checkbox"],input[type="radio"]){accent-color:#171717}
+#app main label{color:#555}
+#app main button{
+ box-shadow:none!important;text-shadow:none!important;
+ transition:background-color .15s ease,border-color .15s ease,color .15s ease!important
+}
+#app main button[class*="bg-teal-"],
+#app main button[class*="bg-emerald-"],
+#app main button[class*="bg-indigo-"],
+#app main button[class*="bg-blue-"]{
+ background:#171717!important;color:#fff!important;border-color:#171717!important
+}
+#app main button[class*="bg-teal-"]:hover,
+#app main button[class*="bg-emerald-"]:hover,
+#app main button[class*="bg-indigo-"]:hover,
+#app main button[class*="bg-blue-"]:hover{background:#383838!important;border-color:#383838!important}
+#app main button[class*="bg-slate-"],
+#app main button[class*="bg-gray-"]{
+ box-shadow:none!important
+}
+#app main button:focus-visible{outline:2px solid #a3a3a3!important;outline-offset:2px}
+#app main :is(.overflow-x-auto,.overflow-auto){
+ scrollbar-width:thin;scrollbar-color:#c9c9c9 #f5f5f5
+}
+#app main table{
+ border-collapse:separate!important;border-spacing:0!important;
+ color:#333!important;font-size:12px
+}
+#app main table thead{background:#f5f5f5!important}
+#app main table thead th{
+ padding:12px 13px!important;color:#666!important;font-size:9px!important;
+ font-weight:800!important;letter-spacing:.075em!important;text-transform:uppercase!important;
+ border-bottom:1px solid #e7e7e7!important;white-space:nowrap
+}
+#app main table tbody td{
+ padding:12px 13px!important;border-bottom:1px solid #ededed!important;
+ color:#444!important;vertical-align:middle
+}
+#app main table tbody tr:last-child td{border-bottom:0!important}
+#app main table tbody tr:hover{background:#fafafa!important}
+#app main :is(.card-modern,.bg-white.rounded-xl,.bg-white.rounded-2xl){
+ box-shadow:none!important
+}
+#app main hr{border-color:#ededed!important;opacity:1}
+#app main :is(.rounded-2xl.border,.rounded-xl.border){border-color:#e7e7e7!important}
+@media(max-width:640px){
+ #app main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea){
+  min-height:42px!important;font-size:16px!important
+ }
+ #app main table{font-size:11px!important}
+ #app main table thead th,#app main table tbody td{padding:10px 9px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #app main :is(input,select,textarea,button){transition:none!important}
+}
+</style>
