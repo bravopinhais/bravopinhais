@@ -23373,3 +23373,56 @@ body.bravo-renderizando-modulo::before{
  --tw-ring-shadow:0 0 0 3px rgba(0,0,0,.055)!important;
 }
 </style>
+
+
+<!-- Bravo Pinhais — avisos, confirmações e estados vazios | etapa 62 -->
+<style id="bravo-avisos-confirmacoes-etapa-62">
+/* Aviso de rascunho e notificações flutuantes em superfície clara. */
+#bravo-aviso-rascunho{
+ background:#f5f5f5!important;
+ color:#262626!important;
+ border:1px solid #dedede!important;
+ box-shadow:0 8px 24px rgba(0,0,0,.10)!important;
+}
+/* Alertas e mensagens de estado dentro do conteúdo e dos modais. */
+#app main [role="alert"],
+#app main [role="status"],
+#modal-container [role="alert"],
+#modal-container [role="status"]{
+ border-color:#dedede!important;
+ box-shadow:none!important;
+}
+#app main [role="alert"] :is(i,svg),
+#app main [role="status"] :is(i,svg),
+#modal-container [role="alert"] :is(i,svg),
+#modal-container [role="status"] :is(i,svg){
+ color:#666!important;
+}
+/* Painéis de confirmação e estados vazios com contraste sereno. */
+#app main :is(.empty-state,.empty-state-container,[class*="empty-state"]){
+ background:#fafafa!important;
+ border:1px dashed #d5d5d5!important;
+ color:#626262!important;
+ box-shadow:none!important;
+}
+#app main :is(.empty-state,.empty-state-container,[class*="empty-state"]) :is(h2,h3,strong){
+ color:#333!important;
+}
+#app main :is(.empty-state,.empty-state-container,[class*="empty-state"]) :is(p,small){
+ color:#777!important;
+}
+#modal-container :is(.bg-rose-50,.bg-amber-50,.bg-yellow-50,.bg-emerald-50,.bg-green-50){
+ background:#f6f6f6!important;
+ border-color:#dedede!important;
+}
+#modal-container :is(.text-rose-700,.text-rose-800,.text-amber-700,.text-amber-800,.text-emerald-700,.text-green-700){
+ color:#555!important;
+}
+@media(max-width:640px){
+ #bravo-aviso-rascunho{
+  bottom:calc(68px + env(safe-area-inset-bottom,0px))!important;
+  width:min(calc(100% - 24px),380px)!important;
+  border-radius:11px!important;
+ }
+}
+</style>
