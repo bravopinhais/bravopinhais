@@ -23191,3 +23191,63 @@ body.bravo-renderizando-modulo::before{
  #app main.flex-1.overflow-y-auto *{scroll-behavior:auto!important}
 }
 </style>
+
+
+<!-- Bravo Pinhais — botões de ação dos módulos em preto e branco | etapa 59 -->
+<style id="bravo-botoes-header-modulos-etapa-59">
+/* Ações do cabeçalho: aparência consistente, preservando os onclicks e fluxos originais. */
+#app main #cabecalho-modulo-global .no-print > button,
+#app main #cabecalho-modulo-global .no-print > label{
+ background:#fff!important;
+ background-image:none!important;
+ color:#292929!important;
+ border:1px solid #dcdcdc!important;
+ border-radius:10px!important;
+ box-shadow:none!important;
+ text-shadow:none!important;
+ font-weight:700!important;
+ transition:background-color .15s ease,border-color .15s ease,color .15s ease!important;
+}
+#app main #cabecalho-modulo-global .no-print > button:hover,
+#app main #cabecalho-modulo-global .no-print > label:hover{
+ background:#f1f1f1!important;
+ border-color:#bdbdbd!important;
+ color:#111!important;
+ box-shadow:none!important;
+}
+#app main #cabecalho-modulo-global .no-print > :is(button,label) :is(i,svg){
+ color:#555!important;
+}
+#app main #cabecalho-modulo-global .no-print > button:active,
+#app main #cabecalho-modulo-global .no-print > label:active{
+ background:#e9e9e9!important;
+ transform:translateY(0)!important;
+}
+#app main #cabecalho-modulo-global .no-print > :is(button,label):focus-visible{
+ outline:2px solid #777!important;
+ outline-offset:2px!important;
+}
+#app main #cabecalho-modulo-global .no-print > label input[type="file"]{
+ display:none!important;
+}
+@media(max-width:640px){
+ #app main #cabecalho-modulo-global .no-print{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  width:100%;
+  gap:8px!important;
+ }
+ #app main #cabecalho-modulo-global .no-print > :is(button,label){
+  min-width:0!important;
+  min-height:42px!important;
+  justify-content:center!important;
+  padding:10px 9px!important;
+  white-space:normal!important;
+  text-align:center!important;
+  font-size:11px!important;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ #app main #cabecalho-modulo-global .no-print > :is(button,label){transition:none!important}
+}
+</style>
