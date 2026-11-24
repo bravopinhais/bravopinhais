@@ -20213,3 +20213,100 @@ body.bg-slate-100{background:#fff!important;color:#222!important}
   #app header.md\\:hidden span{font-size:13px!important}
 }
 </style>
+
+<style id="bravo-dashboard-movimentacoes-mobile-compacto-2026">
+/* Dashboard mobile: transforma cada lançamento em uma leitura compacta, sem rolagem lateral. */
+#app main .dashboard-operations-grid>div:last-child{
+ min-width:0!important;overflow:hidden!important;border-color:#e7e7e7!important;
+ box-shadow:none!important;
+}
+#app main .dashboard-operations-grid>div:last-child>div:first-child{
+ padding:17px 18px!important;gap:12px!important;
+}
+#app main .dashboard-operations-grid>div:last-child>div:first-child h3{
+ font-size:17px!important;line-height:1.25!important;color:#171717!important;
+}
+#app main .dashboard-operations-grid>div:last-child>div:first-child p{
+ line-height:1.45!important;
+}
+#app main .dashboard-operations-grid>div:last-child>div:first-child button{
+ flex:0 0 auto;white-space:nowrap;border-color:#e5e5e5!important;
+ color:#292929!important;background:#fff!important;
+}
+#app main .dashboard-operations-grid>div:last-child>.overflow-x-auto{
+ width:100%!important;max-width:100%!important;overflow-x:auto!important;
+ border:0!important;border-radius:0!important;box-shadow:none!important;
+}
+#app main .dashboard-operations-grid>div:last-child table{
+ width:100%!important;min-width:0!important;table-layout:fixed!important;
+}
+#app main .dashboard-operations-grid>div:last-child table th,
+#app main .dashboard-operations-grid>div:last-child table td{
+ overflow-wrap:anywhere;
+}
+#app main .dashboard-operations-grid>div:last-child table thead th{
+ padding:11px 10px!important;font-size:9px!important;
+}
+#app main .dashboard-operations-grid>div:last-child table tbody td{
+ padding:12px 10px!important;font-size:11px!important;
+}
+#app main .dashboard-operations-grid>div:last-child table tbody td:nth-child(3){
+ white-space:normal!important;
+}
+#app main .dashboard-operations-grid>div:last-child table tbody td[colspan]{
+ display:block!important;width:100%!important;padding:25px 14px!important;
+}
+#app main .dashboard-operations-grid>div:last-child table tbody td[colspan] p{
+ margin-left:auto;margin-right:auto;max-width:260px;
+}
+#app main .dashboard-operations-grid>div:last-child table tbody td[colspan] button{
+ background:#222!important;color:#fff!important;border-radius:9px!important;
+ padding:10px 14px!important;text-decoration:none!important;
+}
+@media(max-width:640px){
+ #app main .dashboard-operations-grid{gap:14px!important}
+ #app main .dashboard-operations-grid>div:first-child,
+ #app main .dashboard-operations-grid>div:last-child{
+  border-radius:15px!important;
+ }
+ #app main .dashboard-operations-grid>div:first-child{padding:16px!important}
+ #app main .dashboard-operations-grid>div:last-child>div:first-child{
+  padding:16px!important;align-items:flex-start!important;
+ }
+ #app main .dashboard-operations-grid>div:last-child>div:first-child>div{
+  min-width:0;flex:1 1 170px;
+ }
+ #app main .dashboard-operations-grid>div:last-child table thead{display:none!important}
+ #app main .dashboard-operations-grid>div:last-child table tbody tr:not(:has(td[colspan])){
+  display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;
+  gap:0!important;padding:7px 10px!important;
+  border-bottom:1px solid #ededed!important;background:#fff!important;
+ }
+ #app main .dashboard-operations-grid>div:last-child table tbody tr:not(:has(td[colspan])) td{
+  display:flex!important;flex-direction:column!important;justify-content:center!important;
+  min-width:0!important;padding:9px 7px!important;border:0!important;
+  text-align:left!important;white-space:normal!important;
+  font-size:11px!important;line-height:1.4!important;
+ }
+ #app main .dashboard-operations-grid>div:last-child table tbody tr:not(:has(td[colspan])) td:before{
+  display:block;content:"";margin-bottom:4px;color:#888;
+  font-size:8px;font-weight:800;letter-spacing:.07em;text-transform:uppercase;
+ }
+ #app main .dashboard-operations-grid>div:last-child table tbody tr:not(:has(td[colspan])) td:nth-child(1):before{content:"Tipo"}
+ #app main .dashboard-operations-grid>div:last-child table tbody tr:not(:has(td[colspan])) td:nth-child(2):before{content:"Conta gerencial"}
+ #app main .dashboard-operations-grid>div:last-child table tbody tr:not(:has(td[colspan])) td:nth-child(3){
+  grid-column:1/-1;max-width:none!important;
+ }
+ #app main .dashboard-operations-grid>div:last-child table tbody tr:not(:has(td[colspan])) td:nth-child(3):before{content:"Histórico"}
+ #app main .dashboard-operations-grid>div:last-child table tbody tr:not(:has(td[colspan])) td:nth-child(4){
+  grid-column:1/-1;align-items:flex-start!important;
+ }
+ #app main .dashboard-operations-grid>div:last-child table tbody tr:not(:has(td[colspan])) td:nth-child(4):before{content:"Valor"}
+ #app main .dashboard-operations-grid>div:last-child table tbody td[colspan]{
+  display:block!important;text-align:center!important;padding:24px 12px!important;
+ }
+ #app main .dashboard-operations-grid>div:last-child table tbody td[colspan] .mx-auto{
+  margin-left:auto!important;margin-right:auto!important;
+ }
+}
+</style>
