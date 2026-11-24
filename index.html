@@ -22058,3 +22058,117 @@ body.bravo-renderizando-modulo::before{
  #app main .dashboard-shell .dashboard-quick-grid{grid-template-columns:1fr!important}
 }
 </style>
+
+
+<!-- Etapa 39 — indicadores e painéis do dashboard em acabamento monocromático -->
+<style id="bravo-dashboard-indicadores-paineis-etapa-39">
+/* Indicadores: hierarquia uniforme, sem acentos coloridos herdados */
+#app main .dashboard-shell .dashboard-kpi-grid>article{
+ position:relative;display:flex;flex-direction:column;justify-content:space-between;
+ min-height:150px!important;padding:18px!important;
+ border:1px solid #e4e4e4!important;border-radius:17px!important;
+ background:#fff!important;box-shadow:0 2px 9px rgba(0,0,0,.025)!important;
+}
+#app main .dashboard-shell .dashboard-kpi-grid>article:before{
+ content:"";position:absolute;inset:0 14px auto;height:2px;
+ background:#d4d4d4;border-radius:0 0 3px 3px;opacity:.9
+}
+#app main .dashboard-shell .dashboard-kpi-grid>article:hover{
+ border-color:#c9c9c9!important;background:#fff!important;
+ box-shadow:0 7px 18px rgba(0,0,0,.045)!important
+}
+#app main .dashboard-shell .dashboard-kpi-grid>article :is(.bg-emerald-50,.bg-rose-50,.bg-teal-50,.bg-amber-50,.bg-sky-50,.bg-green-50){
+ background:#f1f1f1!important;border:1px solid #e7e7e7!important
+}
+#app main .dashboard-shell .dashboard-kpi-grid>article :is(.text-emerald-700,.text-rose-700,.text-teal-700,.text-amber-700,.text-sky-700,.text-green-700){
+ color:#454545!important
+}
+#app main .dashboard-shell .dashboard-kpi-grid>article :is(button, a){
+ color:#333!important;text-decoration:none!important
+}
+#app main .dashboard-shell .dashboard-kpi-grid>article>div:last-child{
+ border-color:#ededed!important
+}
+#app main .dashboard-shell .dashboard-kpi-grid>article p:first-child{
+ letter-spacing:.12em!important;color:#777!important
+}
+/* Remove o marcador teal herdado do título de seção */
+#app main .dashboard-shell>.dashboard-section-title:before{
+ background:#292929!important
+}
+#app main .dashboard-shell>.dashboard-section-title :is(.text-teal-700,.text-teal-600){
+ color:#666!important
+}
+/* Inteligência: cabeçalho claro, ações discretas e todos os estados neutros */
+#app main .dashboard-shell>section:has(.fa-brain){
+ border:1px solid #e2e2e2!important;border-radius:18px!important;
+ background:#fff!important;box-shadow:0 2px 10px rgba(0,0,0,.025)!important
+}
+#app main .dashboard-shell>section:has(.fa-brain)>div:first-child{
+ background:#f3f3f3!important;background-image:none!important;
+ border-bottom:1px solid #e5e5e5!important
+}
+#app main .dashboard-shell>section:has(.fa-brain)>div:first-child :is(h3,p,span,i){
+ color:#333!important
+}
+#app main .dashboard-shell>section:has(.fa-brain)>div:first-child .fa-brain{
+ color:#333!important
+}
+#app main .dashboard-shell>section:has(.fa-brain)>div:first-child :is(.bg-white\/10,.ring-white\/15){
+ background:#e6e6e6!important;border-color:#d8d8d8!important;box-shadow:none!important
+}
+#app main .dashboard-shell>section:has(.fa-brain)>div:nth-child(2){
+ background:#fafafa!important
+}
+#app main .dashboard-shell>section:has(.fa-brain) button{
+ display:flex;flex-direction:column;align-items:flex-start;
+ min-height:155px;padding:16px!important;
+ border:1px solid #e5e5e5!important;border-radius:14px!important;
+ background:#fff!important;box-shadow:none!important
+}
+#app main .dashboard-shell>section:has(.fa-brain) button:hover{
+ transform:translateY(-1px);border-color:#bdbdbd!important;background:#fdfdfd!important;
+ box-shadow:0 5px 14px rgba(0,0,0,.035)!important
+}
+#app main .dashboard-shell>section:has(.fa-brain) button :is(span,i){
+ color:#444!important
+}
+#app main .dashboard-shell>section:has(.fa-brain) button>span:first-child{
+ display:grid;place-items:center;background:#f0f0f0!important;
+ border:1px solid #e6e6e6;border-radius:11px
+}
+#app main .dashboard-shell>section:has(.fa-brain) button>span:nth-child(2){
+ margin-top:12px!important;color:#222!important
+}
+#app main .dashboard-shell>section:has(.fa-brain) button>span:nth-child(3){
+ color:#777!important;line-height:1.5!important
+}
+#app main .dashboard-shell>section:has(.fa-brain) button>span:last-child{
+ margin-top:auto!important;padding-top:12px;color:#444!important
+}
+/* Resumo dos gráficos e títulos dos painéis */
+#app main .dashboard-shell .dashboard-analytics-disclosure>summary:before{
+ display:none!important
+}
+#app main .dashboard-shell .dashboard-analytics-disclosure>summary :is(.text-teal-700,.text-teal-800,.text-teal-600){
+ color:#666!important
+}
+#app main .dashboard-shell .dashboard-analytics-grid>div :is(.text-emerald-800,.text-rose-800,.text-teal-800,.text-sky-800,.text-amber-800){
+ color:#444!important
+}
+#app main .dashboard-shell .dashboard-analytics-grid>div :is(.bg-emerald-50,.bg-rose-50,.bg-teal-50,.bg-sky-50,.bg-amber-50){
+ background:#f1f1f1!important;border:1px solid #e7e7e7!important
+}
+#app main .dashboard-shell .dashboard-operations-grid>div{
+ border-color:#e4e4e4!important;background:#fff!important
+}
+@media(max-width:640px){
+ #app main .dashboard-shell .dashboard-kpi-grid>article{min-height:136px!important;padding:14px!important}
+ #app main .dashboard-shell>section:has(.fa-brain)>div:first-child{padding:15px!important}
+ #app main .dashboard-shell>section:has(.fa-brain) button{min-height:140px;padding:12px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #app main .dashboard-shell .dashboard-kpi-grid>article,
+ #app main .dashboard-shell>section:has(.fa-brain) button{transition:none!important}
+}
+</style>
