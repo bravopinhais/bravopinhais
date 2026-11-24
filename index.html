@@ -20335,3 +20335,54 @@ html,body,#app{background:#fff!important;color:#171717!important}
 #app main :is(.bg-gradient-to-r,.bg-gradient-to-br,.bg-gradient-to-tr){background-image:none!important}
 @media(max-width:768px){#app main .dashboard-shell{padding:12px!important;gap:14px!important}#app main .dashboard-shell .dashboard-analytics-grid,#app main .dashboard-shell .dashboard-operations-grid{gap:12px!important}}
 </style>
+
+
+<style id="bravo-dashboard-refino-visual-etapa-12">
+/* Etapa 12 — hierarquia visual leve e análise por demanda. */
+#app main .dashboard-shell{max-width:1440px;margin-inline:auto;gap:18px!important}
+#app main .dashboard-section-title{padding-inline:2px}
+#app main .dashboard-section-title h3{font-size:16px!important;letter-spacing:-.025em;font-weight:750!important}
+#app main .dashboard-section-title p{color:#777!important}
+#app main .dashboard-analytics-disclosure{border:0!important;background:transparent!important}
+#app main .dashboard-analytics-disclosure>summary{
+  display:flex;align-items:center;justify-content:space-between;gap:14px;
+  background:#fff!important;border:1px solid #e5e5e5!important;border-radius:13px!important;
+  padding:15px 17px!important;box-shadow:none!important;transition:border-color .18s ease,background .18s ease;
+}
+#app main .dashboard-analytics-disclosure>summary:hover{background:#fafafa!important;border-color:#cfcfcf!important}
+#app main .dashboard-analytics-disclosure>summary::-webkit-details-marker{display:none}
+#app main .dashboard-analytics-disclosure .dashboard-disclosure-label{color:#222!important}
+#app main .dashboard-analytics-disclosure .dashboard-disclosure-chevron{color:#555!important;transition:transform .2s ease}
+#app main .dashboard-analytics-disclosure[open] .dashboard-disclosure-chevron{transform:rotate(180deg)}
+#app main .dashboard-analytics-disclosure>summary>span{
+  background:#f3f3f3!important;color:#222!important;border:1px solid #e6e6e6!important;
+  border-radius:9px!important;white-space:nowrap
+}
+#app main .dashboard-analytics-grid{margin-top:12px!important;gap:14px!important}
+#app main .dashboard-analytics-grid>div{
+  border:1px solid #e7e7e7!important;border-radius:14px!important;
+  background:#fff!important;padding:18px!important;box-shadow:none!important
+}
+#app main .dashboard-analytics-grid h3{font-size:15px!important;font-weight:750!important;letter-spacing:-.02em}
+#app main .dashboard-analytics-grid p{line-height:1.55}
+#app main .dashboard-operations-grid{gap:14px!important}
+#app main .dashboard-operations-grid>div{
+  border:1px solid #e7e7e7!important;border-radius:14px!important;
+  box-shadow:none!important;background:#fff!important
+}
+#app main .dashboard-operations-grid button{box-shadow:none!important}
+#app main .dashboard-operations-grid button:hover{transform:none!important;background:#f7f7f7!important}
+#app main .dashboard-shell .dashboard-kpi-grid{display:none!important}
+#app main .dashboard-shell>section{min-width:0}
+@media(max-width:640px){
+ #app main .dashboard-shell{padding:10px!important;gap:14px!important}
+ #app main .dashboard-analytics-disclosure>summary{align-items:flex-start!important;flex-direction:column!important;padding:13px!important}
+ #app main .dashboard-analytics-grid>div{padding:14px!important;border-radius:12px!important}
+ #app main .dashboard-analytics-grid .relative{max-width:100%;overflow:hidden}
+ #app main .dashboard-operations-grid>div{padding:14px!important;border-radius:12px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #app main .dashboard-analytics-disclosure>summary,
+ #app main .dashboard-analytics-disclosure .dashboard-disclosure-chevron{transition:none!important}
+}
+</style>
