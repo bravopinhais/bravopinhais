@@ -11248,6 +11248,41 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
 
 
 
+
+<style id="bravo-acabamento-global-monocromatico-2026">
+
+/* Identidade global: branco, preto e cinzas. Preserva estados e funcionalidades. */
+:root{color-scheme:light;--bravo-ink:#171717;--bravo-muted:#737373;--bravo-line:#e7e7e7;--bravo-surface:#fff;--bravo-soft:#f6f6f6}
+html,body,#app{background:#fff!important;color:var(--bravo-ink)}
+#app :is(header,nav,aside,[role="navigation"]){scrollbar-color:#c8c8c8 transparent}
+#app :is(main,section,.main-content){color:var(--bravo-ink)}
+#app main :is(.card,.card-modern,.bg-white,.bg-slate-50,.bg-gray-50){box-shadow:none!important}
+#app main :is(.card,.card-modern){border-color:var(--bravo-line)!important;border-radius:14px!important}
+#app main :is(h1,h2,h3,h4){color:#171717;letter-spacing:-.025em}
+#app main :is(p,label,small,.text-muted){color:inherit}
+#app main :is(input,select,textarea){border-color:#dedede!important;background:#fff!important;color:#171717!important;box-shadow:none!important}
+#app main :is(input,select,textarea):focus{border-color:#777!important;outline:2px solid #171717!important;outline-offset:1px}
+#app main button,#app main [role="button"]{box-shadow:none!important}
+#app main :is(.bg-green-50,.bg-green-100,.bg-emerald-50,.bg-emerald-100,.bg-teal-50,.bg-teal-100,.bg-lime-50,.bg-lime-100,.bg-cyan-50,.bg-cyan-100){background:#f3f3f3!important;border-color:#e6e6e6!important}
+#app main :is(.text-green-500,.text-green-600,.text-green-700,.text-emerald-500,.text-emerald-600,.text-emerald-700,.text-teal-500,.text-teal-600,.text-teal-700,.text-lime-500,.text-lime-600,.text-cyan-500,.text-cyan-600){color:#333!important}
+#app main :is(.border-green-200,.border-green-300,.border-emerald-200,.border-teal-200){border-color:#e5e5e5!important}
+#app main :is(.bg-green-600,.bg-green-700,.bg-emerald-600,.bg-emerald-700,.bg-teal-600,.bg-teal-700){background:#222!important;color:#fff!important}
+#app main :is(.hover\\:bg-green-700:hover,.hover\\:bg-emerald-700:hover,.hover\\:bg-teal-700:hover){background:#000!important}
+#app :is(.sidebar,.sidebar-nav,aside nav) :is(.active,.is-active,[aria-current="page"]){background:#ededed!important;color:#171717!important;border-color:#dedede!important;box-shadow:none!important}
+#app main table{border-color:#e8e8e8!important}
+#app main :is(th,thead){color:#555!important}
+#app main tbody tr{border-color:#ededed!important}
+#app main tbody tr:hover{background:#f8f8f8!important}
+#app main :is(.badge,.chip,.status-badge){box-shadow:none!important}
+@media(max-width:768px){
+ #app main{min-width:0}
+ #app main :is(.card,.card-modern){border-radius:12px!important}
+ #app main :is(.overflow-x-auto,table){max-width:100%}
+ #app main button{min-height:40px}
+}
+@media(prefers-reduced-motion:reduce){#app *{scroll-behavior:auto!important;transition:none!important;animation:none!important}}
+</style>
+
 </body></html>`;
                 win.document.open();
                 win.document.write(doc);
