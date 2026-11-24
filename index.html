@@ -22439,3 +22439,35 @@ body.bravo-renderizando-modulo::before{
  }
 }
 </style>
+
+
+<!-- Etapa 46 — correção definitiva do contraste dos ícones do menu -->
+<style id="bravo-correcao-contraste-icones-etapa-46">
+/* O seletor antigo [class*="bg-"] também atingia botões inativos por causa de hover:bg-*.
+   Agora somente o item realmente ativo recebe ícone branco. */
+#sidebar-menu nav button:not([class*="from-teal-"]):not([class*="bg-teal-"]):not([aria-current="page"])>i[class*="fa-"],
+#sidebar-menu nav a>i[class*="fa-"]{
+  color:#555!important;
+  -webkit-text-fill-color:#555!important;
+  opacity:1!important;visibility:visible!important;
+  display:inline-flex!important;
+}
+#sidebar-menu nav button:not([class*="from-teal-"]):not([class*="bg-teal-"]):not([aria-current="page"])>i[class*="fa-"]::before,
+#sidebar-menu nav a>i[class*="fa-"]::before{
+  color:#555!important;-webkit-text-fill-color:#555!important;opacity:1!important;
+}
+#sidebar-menu nav button[class*="from-teal-"]>i[class*="fa-"],
+#sidebar-menu nav button[class*="bg-teal-"]>i[class*="fa-"],
+#sidebar-menu nav button[aria-current="page"]>i[class*="fa-"]{
+  color:#fff!important;-webkit-text-fill-color:#fff!important;opacity:1!important
+}
+#sidebar-menu nav button[class*="from-teal-"]>i[class*="fa-"]::before,
+#sidebar-menu nav button[class*="bg-teal-"]>i[class*="fa-"]::before,
+#sidebar-menu nav button[aria-current="page"]>i[class*="fa-"]::before{
+  color:#fff!important;-webkit-text-fill-color:#fff!important
+}
+#sidebar-menu nav button:not([class*="from-teal-"]):not([class*="bg-teal-"]):not([aria-current="page"]):hover>i[class*="fa-"],
+#sidebar-menu nav button:not([class*="from-teal-"]):not([class*="bg-teal-"]):not([aria-current="page"]):hover>i[class*="fa-"]::before{
+  color:#222!important;-webkit-text-fill-color:#222!important
+}
+</style>
