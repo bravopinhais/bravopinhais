@@ -25408,3 +25408,76 @@ body.bravo-renderizando-modulo::before{
  #modal-container form :is(input,select,textarea){background:#fff!important}
 }
 </style>
+
+
+<!-- Bravo Pinhais — leitura e navegação das listagens | etapa 81 -->
+<style id="bravo-listagens-leitura-etapa-81">
+/* Refinamento das listagens sem alterar colunas, filtros ou ações existentes. */
+#app main :is(table,[role="table"]){
+ max-width:100%;
+}
+#app main table thead th{
+ white-space:nowrap;
+ vertical-align:middle!important;
+}
+#app main table tbody td{
+ vertical-align:middle!important;
+ overflow-wrap:anywhere;
+}
+#app main table tbody tr{
+ transition:background-color .16s ease,border-color .16s ease;
+}
+#app main table tbody tr:focus-within{
+ background:#f2f2f2!important;
+}
+#app main table tbody td :is(button,a){
+ vertical-align:middle;
+}
+#app main table tbody td :is(.rounded-full,.rounded-lg)[class*="bg-"]{
+ box-shadow:inset 0 0 0 1px rgba(0,0,0,.045);
+}
+#app main :is(.overflow-x-auto,.overflow-auto) table{
+ margin-bottom:1px;
+}
+#app main :is(.overflow-x-auto,.overflow-auto) table thead th:first-child{
+ border-top-left-radius:7px;
+}
+#app main :is(.overflow-x-auto,.overflow-auto) table thead th:last-child{
+ border-top-right-radius:7px;
+}
+#app main :is(input[type="search"],input[placeholder*="Buscar"],input[placeholder*="buscar"],input[placeholder*="Pesquisar"],input[placeholder*="pesquisar"]){
+ min-width:0;
+}
+#app main :is(nav[aria-label*="pagination"],nav[aria-label*="paginação"],.pagination){
+ display:flex;flex-wrap:wrap;align-items:center;gap:6px;
+}
+#app main :is(nav[aria-label*="pagination"],nav[aria-label*="paginação"],.pagination) button{
+ min-width:36px;min-height:36px;border-radius:9px!important;
+}
+@media(max-width:767px){
+ #app main :is(.overflow-x-auto,.overflow-auto){
+  max-width:100%;overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
+ }
+ #app main :is(.overflow-x-auto,.overflow-auto) table{
+  width:max-content;min-width:100%;
+ }
+ #app main table tbody td{
+  line-height:1.45;
+ }
+ #app main table tbody td :is(button,a){
+  min-height:36px;
+ }
+ #app main :is(input[type="search"],input[placeholder*="Buscar"],input[placeholder*="buscar"],input[placeholder*="Pesquisar"],input[placeholder*="pesquisar"]){
+  width:100%;max-width:100%;font-size:16px!important;
+ }
+}
+@media(max-width:420px){
+ #app main :is(nav[aria-label*="pagination"],nav[aria-label*="paginação"],.pagination){
+  justify-content:center;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ #app main table tbody tr{transition:none!important}
+}
+</style>
