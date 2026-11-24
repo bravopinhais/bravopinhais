@@ -7941,7 +7941,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     btnExportHtml = '';
 
                 const headerGlobal = `
-                <div id="cabecalho-modulo-global" class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
+                <div id="cabecalho-modulo-global" class="module-page-heading flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
                     <div class="min-w-0">
                         <h2 class="text-2xl md:text-3xl font-black text-slate-900 tracking-tight">${MODULE_NAMES[moduloId]}</h2>
                         <p class="text-xs font-semibold text-slate-500 mt-0.5">Gestão em nuvem atualizada em tempo real</p>
@@ -21324,6 +21324,138 @@ html,body,#app{background:#fff!important;color:#171717!important}
                 #sidebar-menu { width: min(82vw, 300px) !important; }
                 #app main { padding: 14px !important; }
                 .dashboard-shell { gap: 16px !important; }
-                .dashboard-shell .dashboard-quick-grid { gap: 8px !important; }
+                .dashboard-shell .dashboard-quick-grid { gap: 8px !importa
+            /* ===== Tipografia, ritmo e componentes consistentes em todos os módulos ===== */
+            #app {
+                font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif !important;
+                letter-spacing: -0.01em;
+                -webkit-font-smoothing: antialiased;
+                text-rendering: optimizeLegibility;
+            }
+            #app main {
+                padding: clamp(14px, 2.2vw, 30px) !important;
+            }
+            .module-page-heading {
+                align-items: flex-end !important;
+                gap: 14px !important;
+                margin-bottom: 24px !important;
+                padding: 2px 1px 18px !important;
+                border-bottom: 1px solid #ededed;
+            }
+            .module-page-heading h2 {
+                font-size: clamp(23px, 2.4vw, 30px) !important;
+                line-height: 1.15 !important;
+                font-weight: 800 !important;
+                letter-spacing: -0.045em !important;
+                color: #171717 !important;
+            }
+            .module-page-heading p {
+                margin-top: 6px !important;
+                font-size: 12px !important;
+                line-height: 1.5 !important;
+                font-weight: 500 !important;
+                color: #737373 !important;
+            }
+            #app main h1, #app main h2, #app main h3, #app main h4 {
+                letter-spacing: -0.025em;
+            }
+            #app main h3 { font-weight: 750; }
+            #app main section,
+            #app main article,
+            #app main .card-modern {
+                scroll-margin-top: 18px;
+            }
+            #app main [class*="rounded-3xl"] {
+                border-radius: 18px !important;
+            }
+            #app main [class*="rounded-2xl"] {
+                border-radius: 14px !important;
+            }
+            #app main button {
+                min-height: 40px;
+                font-weight: 650;
+                letter-spacing: -0.01em;
+                transition: background-color .16s ease, border-color .16s ease, color .16s ease, transform .16s ease;
+            }
+            #app main button[class*="bg-slate-950"],
+            #app main button[class*="bg-slate-900"],
+            #app main button[class*="bg-gray-950"],
+            #app main button[class*="bg-gray-900"] {
+                background: #171717 !important;
+                color: #ffffff !important;
+                border: 1px solid #171717 !important;
+                box-shadow: none !important;
+            }
+            #app main button[class*="bg-slate-950"]:hover,
+            #app main button[class*="bg-slate-900"]:hover,
+            #app main button[class*="bg-gray-950"]:hover,
+            #app main button[class*="bg-gray-900"]:hover {
+                background: #333333 !important;
+            }
+            #app main input, #app main select, #app main textarea {
+                min-height: 40px;
+                border-radius: 10px !important;
+                border-color: #dedede !important;
+                background-color: #ffffff !important;
+                color: #171717 !important;
+                font-size: 14px !important;
+                box-shadow: none;
+            }
+            #app main input::placeholder,
+            #app main textarea::placeholder {
+                color: #a3a3a3 !important;
+            }
+            #app main table {
+                border-collapse: separate;
+                border-spacing: 0;
+                width: 100%;
+            }
+            #app main table thead th {
+                background: #f7f7f7 !important;
+                color: #525252 !important;
+                font-size: 10px !important;
+                font-weight: 750 !important;
+                letter-spacing: .07em !important;
+                text-transform: uppercase;
+                border-bottom: 1px solid #e5e5e5 !important;
+            }
+            #app main table tbody td {
+                color: #404040;
+                border-bottom: 1px solid #f0f0f0;
+                font-size: 13px;
+                vertical-align: middle;
+            }
+            #app main table tbody tr:last-child td { border-bottom: 0; }
+            #app main .text-xs { line-height: 1.5; }
+            #app main .text-slate-400,
+            #app main .text-slate-500,
+            #app main .text-gray-400,
+            #app main .text-gray-500 {
+                color: #737373 !important;
+            }
+            #app main .shadow-lg,
+            #app main .shadow-xl,
+            #app main .shadow-2xl {
+                box-shadow: 0 5px 18px rgba(0,0,0,.055) !important;
+            }
+            @media (max-width: 767px) {
+                .module-page-heading {
+                    align-items: flex-start !important;
+                    margin-bottom: 18px !important;
+                    padding-bottom: 14px !important;
+                }
+                .module-page-heading > div:last-child {
+                    width: 100%;
+                }
+                .module-page-heading > div:last-child button {
+                    flex: 1 1 auto;
+                }
+                #app main table { min-width: 640px; }
+                #app main .overflow-x-auto { -webkit-overflow-scrolling: touch; }
+            }
+            @media (prefers-reduced-motion: reduce) {
+                #app main button { transition: none !important; }
+            }
+nt; }
             }
 </style>
