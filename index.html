@@ -23032,3 +23032,31 @@ body.bravo-renderizando-modulo::before{
  #app main form :is(input,select,textarea),#modal-container form :is(input,select,textarea){transition:none!important}
 }
 </style>
+
+
+<!-- Bravo Pinhais — barra de abas compacta e sem identificação superior | etapa 55 -->
+<style id="bravo-topbar-tabs-hamburger-etapa-55">
+/* Remove a tarja de status visual; a sincronização e seus eventos internos continuam ativos. */
+#status-nuvem{display:none!important}
+/* No mobile, elimina a faixa de marca e posiciona o menu na mesma linha das abas. */
+@media(max-width:767px){
+  #app .flex-1.flex.flex-col.min-h-screen.overflow-hidden.w-full{position:relative!important}
+  #app .flex-1.flex.flex-col.min-h-screen.overflow-hidden.w-full > header.bg-slate-950.md\\:hidden,
+  #app .flex-1.flex.flex-col.min-h-screen.overflow-hidden.w-full > header[class*="md:hidden"]{display:contents!important}
+  #app .flex-1.flex.flex-col.min-h-screen.overflow-hidden.w-full > header > div{display:none!important}
+  #app .flex-1.flex.flex-col.min-h-screen.overflow-hidden.w-full > header > button[onclick="toggleMenuMobile()"]{
+    position:absolute!important;top:7px!important;left:10px!important;z-index:125!important;
+    display:flex!important;align-items:center!important;justify-content:center!important;
+    width:38px!important;height:38px!important;min-height:38px!important;padding:0!important;
+    border:1px solid #dedede!important;border-radius:10px!important;
+    background:#fff!important;color:#262626!important;box-shadow:none!important
+  }
+  #app .flex-1.flex.flex-col.min-h-screen.overflow-hidden.w-full > header > button[onclick="toggleMenuMobile()"] i{color:#262626!important}
+  #app .flex-1.flex.flex-col.min-h-screen.overflow-hidden.w-full > div.bg-slate-200\\/80,
+  #app .flex-1.flex.flex-col.min-h-screen.overflow-hidden.w-full > div[class*="border-b"][class*="overflow-x-auto"]{
+    position:relative!important;min-height:53px!important;padding-left:58px!important;
+    padding-top:7px!important;padding-bottom:0!important;
+    background:#fff!important;border-color:#e5e5e5!important;box-shadow:none!important
+  }
+}
+</style>
