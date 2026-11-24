@@ -23075,3 +23075,69 @@ body.bravo-renderizando-modulo::before{
  }
 }
 </style>
+
+
+<!-- Bravo Pinhais — acabamento monocromático da navegação por abas | etapa 57 -->
+<style id="bravo-abas-monocromaticas-etapa-57">
+/* Abas com hierarquia visual clara, sem cores herdadas da identidade anterior. */
+#app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto{
+ background:#fff!important;
+ background-image:none!important;
+ border-bottom:1px solid #e5e5e5!important;
+ box-shadow:none!important;
+}
+#app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto > div{
+ flex:0 0 auto;
+ min-height:40px;
+ margin:0!important;
+ border:1px solid transparent!important;
+ border-bottom:0!important;
+ border-radius:10px 10px 0 0!important;
+ font-size:12px!important;
+ font-weight:600!important;
+ transition:background-color .15s ease,color .15s ease,border-color .15s ease!important;
+}
+#app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto > div:not(.tab-active){
+ background:#f5f5f5!important;
+ color:#666!important;
+}
+#app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto > div:not(.tab-active):hover{
+ background:#ebebeb!important;
+ color:#222!important;
+}
+#app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto > div.tab-active{
+ background:#fff!important;
+ color:#171717!important;
+ border-color:#dedede!important;
+ box-shadow:inset 0 -2px 0 #222!important;
+}
+#app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto > div button{
+ min-width:24px!important;
+ min-height:24px!important;
+ border-radius:7px!important;
+ color:#888!important;
+ background:transparent!important;
+}
+#app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto > div button:hover{
+ color:#222!important;
+ background:#eaeaea!important;
+}
+@media(max-width:767px){
+ #app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto{
+  gap:6px!important;
+  padding-right:10px!important;
+  padding-bottom:0!important;
+  scrollbar-width:none;
+ }
+ #app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto::-webkit-scrollbar{display:none}
+ #app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto > div{
+  min-height:39px!important;
+  padding:9px 12px!important;
+  border-radius:9px 9px 0 0!important;
+  font-size:11px!important;
+ }
+}
+@media(prefers-reduced-motion:reduce){
+ #app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto > div{transition:none!important}
+}
+</style>
