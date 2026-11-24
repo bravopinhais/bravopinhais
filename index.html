@@ -19956,3 +19956,105 @@ body.bg-slate-100{background:#fff!important;color:#222!important}
   #app main [id^="menu-filtro-"] button{transition:none!important}
 }
 </style>
+
+
+<style id="bravo-botoes-acoes-interacoes-polish-2026">
+/* Nona etapa: botões e microinterações consistentes, sem alterar ações ou eventos. */
+#app main button,#modal-container button{
+  -webkit-tap-highlight-color:transparent;
+  transition:background-color .16s ease,color .16s ease,border-color .16s ease,opacity .16s ease,transform .16s ease!important;
+}
+#app main button:not(:disabled):active,#modal-container button:not(:disabled):active{
+  transform:translateY(1px)!important;
+}
+#app main button:disabled,#modal-container button:disabled{
+  cursor:not-allowed!important;opacity:.48!important;filter:grayscale(1)!important;
+  box-shadow:none!important;
+}
+#app main button:focus-visible,#modal-container button:focus-visible{
+  outline:2px solid #777!important;outline-offset:2px!important;
+}
+/* Ações principais */
+#app main button[class*="bg-teal-"],
+#app main button[class*="bg-emerald-"],
+#app main button[class*="bg-green-"],
+#app main button[class*="bg-gradient"],
+#modal-container button[class*="bg-teal-"],
+#modal-container button[class*="bg-emerald-"],
+#modal-container button[class*="bg-green-"],
+#modal-container button[class*="bg-gradient"]{
+  background:#171717!important;color:#fff!important;
+  border:1px solid #171717!important;box-shadow:none!important;
+}
+#app main button[class*="bg-teal-"]:hover:not(:disabled),
+#app main button[class*="bg-emerald-"]:hover:not(:disabled),
+#app main button[class*="bg-green-"]:hover:not(:disabled),
+#app main button[class*="bg-gradient"]:hover:not(:disabled),
+#modal-container button[class*="bg-teal-"]:hover:not(:disabled),
+#modal-container button[class*="bg-emerald-"]:hover:not(:disabled),
+#modal-container button[class*="bg-green-"]:hover:not(:disabled),
+#modal-container button[class*="bg-gradient"]:hover:not(:disabled){
+  background:#353535!important;border-color:#353535!important;opacity:1!important;
+}
+/* Ações secundárias e neutras */
+#app main button[class*="bg-slate-"],
+#app main button[class*="bg-gray-"],
+#app main button[class*="bg-white"],
+#modal-container button[class*="bg-slate-"],
+#modal-container button[class*="bg-gray-"],
+#modal-container button[class*="bg-white"]{
+  box-shadow:none!important;
+}
+#app main button[class*="bg-slate-100"],
+#app main button[class*="bg-slate-200"],
+#app main button[class*="bg-gray-100"],
+#app main button[class*="bg-gray-200"],
+#modal-container button[class*="bg-slate-100"],
+#modal-container button[class*="bg-slate-200"],
+#modal-container button[class*="bg-gray-100"],
+#modal-container button[class*="bg-gray-200"]{
+  background:#f2f2f2!important;color:#333!important;border-color:#e5e5e5!important;
+}
+#app main button[class*="bg-slate-100"]:hover:not(:disabled),
+#app main button[class*="bg-slate-200"]:hover:not(:disabled),
+#app main button[class*="bg-gray-100"]:hover:not(:disabled),
+#app main button[class*="bg-gray-200"]:hover:not(:disabled),
+#modal-container button[class*="bg-slate-100"]:hover:not(:disabled),
+#modal-container button[class*="bg-slate-200"]:hover:not(:disabled),
+#modal-container button[class*="bg-gray-100"]:hover:not(:disabled),
+#modal-container button[class*="bg-gray-200"]:hover:not(:disabled){
+  background:#e7e7e7!important;color:#171717!important;border-color:#d8d8d8!important;
+}
+/* Ações de exclusão permanecem identificáveis pelo texto/ícone, sem vermelho vivo. */
+#app main button[class*="bg-rose-"],
+#app main button[class*="bg-red-"],
+#modal-container button[class*="bg-rose-"],
+#modal-container button[class*="bg-red-"]{
+  background:#f4f4f4!important;color:#444!important;border:1px solid #e5e5e5!important;
+  box-shadow:none!important;
+}
+#app main button[class*="bg-rose-"]:hover:not(:disabled),
+#app main button[class*="bg-red-"]:hover:not(:disabled),
+#modal-container button[class*="bg-rose-"]:hover:not(:disabled),
+#modal-container button[class*="bg-red-"]:hover:not(:disabled){
+  background:#e9e9e9!important;color:#111!important;border-color:#cfcfcf!important;
+}
+/* Ícones isolados: alvos de toque uniformes e sem caixas coloridas. */
+#app main button:has(>i:only-child),
+#modal-container button:has(>i:only-child){
+  box-shadow:none!important;
+}
+#app main a:focus-visible,#modal-container a:focus-visible{
+  outline:2px solid #777!important;outline-offset:3px!important;border-radius:4px;
+}
+@media(max-width:640px){
+  #app main button,#modal-container button{touch-action:manipulation}
+  #app main button:has(>i:only-child),#modal-container button:has(>i:only-child){
+    min-width:36px;min-height:36px;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  #app main button,#modal-container button{transition:none!important}
+  #app main button:not(:disabled):active,#modal-container button:not(:disabled):active{transform:none!important}
+}
+</style>
