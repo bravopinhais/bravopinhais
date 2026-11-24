@@ -20643,3 +20643,80 @@ html,body,#app{background:#fff!important;color:#171717!important}
  }
 }
 </style>
+
+
+<style id="bravo-listagens-filtros-acoes-etapa-17">
+/* Etapa 17 — acabamento das listagens, pesquisa, filtros e ações de linha. */
+#app main input[type="search"],
+#app main input[placeholder*="Buscar"],
+#app main input[placeholder*="buscar"],
+#app main input[placeholder*="Pesquisar"],
+#app main input[placeholder*="pesquisar"]{
+ min-height:42px!important;border:1px solid #e1e1e1!important;
+ border-radius:10px!important;background:#fff!important;color:#222!important;
+ padding:11px 13px!important;font-size:12px!important;box-shadow:none!important
+}
+#app main input[type="search"]:focus,
+#app main input[placeholder*="Buscar"]:focus,
+#app main input[placeholder*="buscar"]:focus,
+#app main input[placeholder*="Pesquisar"]:focus{
+ border-color:#888!important;outline:2px solid rgba(0,0,0,.055)!important;outline-offset:1px!important
+}
+#app main input[type="search"]::-webkit-search-cancel-button{cursor:pointer}
+#app main :is(#pesquisaRapidaEstoque,[id*="pesquisa"],[id*="busca"]){max-width:100%}
+#app main .bg-teal-50.border-teal-200,
+#app main .bg-emerald-50.border-emerald-200{
+ background:#f5f5f5!important;border-color:#e5e5e5!important;color:#333!important;
+ box-shadow:none!important
+}
+#app main button[class*="bg-teal-600"],
+#app main button[class*="bg-teal-700"]{
+ background:#171717!important;color:#fff!important;border-color:#171717!important
+}
+#app main button[class*="bg-teal-600"]:hover,
+#app main button[class*="bg-teal-700"]:hover{background:#3a3a3a!important}
+#app main table td button{
+ min-width:32px;min-height:32px;border-radius:8px!important;
+ display:inline-flex;align-items:center;justify-content:center;
+ border:1px solid #e8e8e8!important;background:#f7f7f7!important;color:#444!important;
+ box-shadow:none!important
+}
+#app main table td button:hover{
+ background:#eaeaea!important;color:#111!important;border-color:#d7d7d7!important
+}
+#app main table td button i{font-size:11px}
+#app main table td button[onclick*="excluir"],
+#app main table td button[aria-label*="Excluir"],
+#app main table td button[title*="Excluir"]{
+ background:#fff!important;color:#666!important;border-color:#e5e5e5!important
+}
+#app main table td button[onclick*="excluir"]:hover{
+ background:#f1f1f1!important;color:#111!important
+}
+#app main table :is(.bg-emerald-50,.bg-rose-50,.bg-amber-50,.bg-teal-50,.bg-red-50,.bg-green-50){
+ background:#f2f2f2!important;color:#444!important;border:1px solid #e8e8e8!important
+}
+#app main table :is(.text-emerald-700,.text-emerald-600,.text-rose-700,.text-rose-600,.text-teal-700,.text-teal-600){
+ color:#444!important
+}
+#app main [id^="menu-filtro-"]{
+ border:1px solid #e5e5e5!important;border-radius:12px!important;
+ background:#fff!important;box-shadow:0 12px 32px rgba(0,0,0,.10)!important;
+ padding:12px!important
+}
+#app main [id^="menu-filtro-"] button{
+ min-height:34px!important;border-radius:7px!important;font-size:11px!important;
+ background:transparent!important;color:#444!important;box-shadow:none!important
+}
+#app main [id^="menu-filtro-"] button:hover,
+#app main [id^="menu-filtro-"] button[class*="bg-teal-"]{
+ background:#f0f0f0!important;color:#171717!important
+}
+#app main [id^="menu-filtro-"] p{
+ color:#888!important;letter-spacing:.08em!important
+}
+@media(max-width:640px){
+ #app main table td button{min-width:34px;min-height:34px}
+ #app main [id^="menu-filtro-"]{max-width:min(86vw,300px)!important}
+}
+</style>
