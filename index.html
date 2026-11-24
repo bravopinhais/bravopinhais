@@ -22560,3 +22560,91 @@ body.bravo-renderizando-modulo::before{
  #app main table thead th{white-space:nowrap}
 }
 </style>
+
+
+<!-- Etapa 48 — acabamento dos botões, ações e janelas de cadastro -->
+<style id="bravo-acoes-modais-etapa-48">
+/* Botões de ação dos módulos: padrão branco, preto e cinza. */
+#app main button:not(#sidebar-menu button),
+#modal-container button{
+ border-radius:10px!important;
+ box-shadow:none!important;text-shadow:none!important;
+ transition:background-color .16s ease,border-color .16s ease,color .16s ease!important;
+}
+#app main button:not(#sidebar-menu button)[class*="bg-"],
+#modal-container button[class*="bg-"]{
+ background-image:none!important;
+}
+#app main button:not(#sidebar-menu button)[class*="bg-teal-"],
+#app main button:not(#sidebar-menu button)[class*="bg-emerald-"],
+#app main button:not(#sidebar-menu button)[class*="bg-sky-"],
+#app main button:not(#sidebar-menu button)[class*="bg-indigo-"],
+#app main button:not(#sidebar-menu button)[class*="bg-blue-"],
+#app main button:not(#sidebar-menu button)[class*="bg-violet-"],
+#app main button:not(#sidebar-menu button)[class*="bg-cyan-"],
+#modal-container button[class*="bg-teal-"],
+#modal-container button[class*="bg-emerald-"],
+#modal-container button[class*="bg-sky-"],
+#modal-container button[class*="bg-indigo-"],
+#modal-container button[class*="bg-blue-"],
+#modal-container button[class*="bg-violet-"],
+#modal-container button[class*="bg-cyan-"]{
+ background:#fff!important;color:#333!important;
+ border:1px solid #dedede!important;
+}
+#app main button:not(#sidebar-menu button)[class*="bg-slate-9"],
+#app main button:not(#sidebar-menu button)[class*="bg-gray-9"],
+#modal-container button[class*="bg-slate-9"],
+#modal-container button[class*="bg-gray-9"]{
+ background:#222!important;color:#fff!important;
+ border:1px solid #222!important;
+}
+#app main button:not(#sidebar-menu button):hover,
+#modal-container button:hover{
+ box-shadow:none!important;transform:none!important;
+}
+#app main button:not(#sidebar-menu button)[class*="hover:bg-"]:hover,
+#modal-container button[class*="hover:bg-"]:hover{
+ background:#f1f1f1!important;color:#222!important;
+ border-color:#c9c9c9!important
+}
+#app main button i,#modal-container button i{filter:none!important}
+#app main button:focus-visible,#modal-container button:focus-visible{
+ outline:2px solid #777!important;outline-offset:2px!important
+}
+/* Cartões e janelas: bordas leves, fundo branco e sombra controlada. */
+#modal-container{background:rgba(20,20,20,.48)!important;backdrop-filter:blur(3px)!important}
+#modal-container>div{padding:16px!important}
+#modal-container>div>div{
+ background:#fff!important;color:#292929!important;
+ border:1px solid #e3e3e3!important;border-radius:18px!important;
+ box-shadow:0 22px 65px rgba(0,0,0,.18)!important;
+}
+#modal-container :is(h1,h2,h3,h4){color:#202020!important}
+#modal-container :is(p,small,label){color:inherit}
+#modal-container [class*="bg-slate-950"],
+#modal-container [class*="bg-slate-900"],
+#modal-container [class*="bg-gray-900"]{
+ background:#f5f5f5!important;color:#292929!important;
+ border-color:#e5e5e5!important
+}
+#modal-container [class*="bg-slate-950"] :is(h1,h2,h3,h4,p,span,i),
+#modal-container [class*="bg-slate-900"] :is(h1,h2,h3,h4,p,span,i),
+#modal-container [class*="bg-gray-900"] :is(h1,h2,h3,h4,p,span,i){color:#333!important}
+#modal-container [class*="text-teal-"],
+#modal-container [class*="text-emerald-"],
+#modal-container [class*="text-sky-"],
+#modal-container [class*="text-indigo-"]{color:#555!important}
+#modal-container [class*="border-teal-"],
+#modal-container [class*="border-emerald-"],
+#modal-container [class*="border-sky-"],
+#modal-container [class*="border-indigo-"]{border-color:#dedede!important}
+@media(max-width:640px){
+ #modal-container>div{padding:10px!important;align-items:flex-end!important}
+ #modal-container>div>div{
+  width:100%!important;max-width:100%!important;
+  max-height:88dvh!important;border-radius:18px 18px 12px 12px!important
+ }
+ #app main button:not(#sidebar-menu button){min-height:38px}
+}
+</style>
