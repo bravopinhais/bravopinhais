@@ -18148,5 +18148,33 @@ body{font-family:Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,
 @media(prefers-reduced-transparency:reduce){#status-nuvem{backdrop-filter:none!important;-webkit-backdrop-filter:none!important;}}
 </style>
 
+
+<style id="bravo-status-nuvem-acabamento-2026">
+/* Barra de conexão: acabamento discreto e leitura rápida dos estados da nuvem. */
+#status-nuvem{
+ min-height:36px;padding-top:8px!important;padding-bottom:8px!important;
+ letter-spacing:.025em;line-height:1.35;border-bottom-width:1px!important;
+ box-shadow:0 3px 12px rgba(15,35,48,.07)!important;
+ transition:background-color .22s ease,color .22s ease,border-color .22s ease,box-shadow .22s ease;
+}
+#status-nuvem>i,#status-nuvem>svg{flex:0 0 auto;font-size:12px;}
+#status-nuvem[class*="bg-slate-900"]{
+ background:linear-gradient(90deg,#102b3b,#102b2d)!important;
+ border-bottom-color:rgba(94,234,212,.18)!important;
+}
+#status-nuvem[class*="bg-amber-"]{
+ background:linear-gradient(90deg,#422006,#3b2b12)!important;
+ border-bottom-color:rgba(251,191,36,.28)!important;
+}
+#status-nuvem[class*="bg-red-"],#status-nuvem[class*="bg-rose-"]{
+ background:linear-gradient(90deg,#451a24,#3f1720)!important;
+ border-bottom-color:rgba(251,113,133,.28)!important;
+}
+@media(max-width:640px){
+ #status-nuvem{min-height:38px;padding-inline:12px!important;font-size:10px!important;line-height:1.4;text-wrap:balance;}
+}
+@media(prefers-reduced-motion:reduce){#status-nuvem{transition:none!important;}}
+</style>
+
 </body>
 </html>
