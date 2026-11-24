@@ -25889,3 +25889,139 @@ body.bravo-renderizando-modulo::before{
  #app main.flex-1.overflow-y-auto::-webkit-scrollbar{width:7px!important}
 }
 </style>
+
+
+<!-- Bravo Pinhais Dark Edition — identidade visual global | etapa 89 -->
+<style id="bravo-dark-edition-base-etapa-89">
+:root{
+ color-scheme:dark;
+ --bravo-bg:#101114;
+ --bravo-surface:#191b20;
+ --bravo-card:#202329;
+ --bravo-raised:#252830;
+ --bravo-field:#292c33;
+ --bravo-border:#343841;
+ --bravo-text:#f4f4f5;
+ --bravo-muted:#a1a1aa;
+ --bravo-subtle:#777d88;
+ --bravo-white:#fff;
+}
+html,body{
+ background:var(--bravo-bg)!important;
+ color:var(--bravo-text)!important;
+ color-scheme:dark;
+}
+body{scrollbar-color:#656a73 #191b20!important}
+#app{
+ background:var(--bravo-bg)!important;
+ color:var(--bravo-text)!important;
+}
+#app .bg-slate-100,#app .bg-slate-100\/90,
+#app .bg-gray-100,#app .bg-neutral-100,
+#app .bg-slate-50,#app .bg-gray-50,#app .bg-neutral-50{
+ background:var(--bravo-bg)!important;
+}
+#app .bg-white,#modal-container .bg-white{
+ background:var(--bravo-card)!important;
+ color:var(--bravo-text)!important;
+}
+#app .bg-slate-50\/50,#app .bg-white\/80,#app .bg-white\/90,
+#app .bg-white\/95{
+ background:rgba(32,35,41,.94)!important;
+}
+#app [class~="bg-slate-200"],#app [class~="bg-gray-200"],
+#app [class~="bg-neutral-200"]{
+ background:#30343c!important;
+}
+#app [class~="text-slate-900"],#app [class~="text-slate-800"],
+#app [class~="text-gray-900"],#app [class~="text-gray-800"],
+#app [class~="text-neutral-900"],#app [class~="text-neutral-800"],
+#modal-container [class~="text-slate-900"],#modal-container [class~="text-gray-900"]{
+ color:var(--bravo-text)!important;
+}
+#app [class~="text-slate-700"],#app [class~="text-slate-600"],
+#app [class~="text-gray-700"],#app [class~="text-gray-600"],
+#app [class~="text-neutral-700"],#app [class~="text-neutral-600"]{
+ color:#d0d2d7!important;
+}
+#app [class~="text-slate-500"],#app [class~="text-slate-400"],
+#app [class~="text-gray-500"],#app [class~="text-gray-400"],
+#app [class~="text-neutral-500"],#app [class~="text-neutral-400"],
+#modal-container [class~="text-slate-500"],#modal-container [class~="text-gray-500"]{
+ color:var(--bravo-muted)!important;
+}
+#app [class~="border-slate-100"],#app [class~="border-slate-200"],
+#app [class~="border-gray-100"],#app [class~="border-gray-200"],
+#app [class~="border-neutral-100"],#app [class~="border-neutral-200"],
+#modal-container [class~="border-slate-100"],#modal-container [class~="border-slate-200"]{
+ border-color:var(--bravo-border)!important;
+}
+#app [class~="divide-slate-100"] > :not([hidden]) ~ :not([hidden]),
+#app [class~="divide-slate-200"] > :not([hidden]) ~ :not([hidden]){
+ border-color:var(--bravo-border)!important;
+}
+#app input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+#app select,#app textarea,
+#modal-container input:not([type="checkbox"]):not([type="radio"]),
+#modal-container select,#modal-container textarea{
+ background:var(--bravo-field)!important;
+ color:var(--bravo-text)!important;
+ border-color:#414650!important;
+ caret-color:#fff;
+}
+#app input::placeholder,#app textarea::placeholder,
+#modal-container input::placeholder,#modal-container textarea::placeholder{
+ color:#858b96!important;opacity:1;
+}
+#app input:focus,#app select:focus,#app textarea:focus,
+#modal-container input:focus,#modal-container select:focus,
+#modal-container textarea:focus{
+ border-color:#9298a3!important;
+ box-shadow:0 0 0 3px rgba(180,185,195,.12)!important;
+ outline:none!important;
+}
+#app table,#app thead,#app tbody,#app tr,
+#app [role="table"],#app [role="row"]{
+ border-color:var(--bravo-border)!important;
+}
+#app th{background:#252830!important;color:#e8e9ec!important}
+#app td{color:#d1d3d8!important}
+#app tr:hover td{background:rgba(255,255,255,.035)!important}
+#app main.flex-1.overflow-y-auto{
+ background:var(--bravo-bg)!important;
+ scrollbar-color:#737985 #191b20!important;
+}
+#app main.flex-1.overflow-y-auto::-webkit-scrollbar-track{background:#191b20!important}
+#app main.flex-1.overflow-y-auto::-webkit-scrollbar-thumb{
+ background:#737985!important;border-color:#191b20!important;
+}
+#app aside,#app .sidebar-full{
+ background:#14161a!important;
+ border-color:#2d3139!important;
+ color:#e7e8eb!important;
+}
+#app header,#app nav{
+ border-color:var(--bravo-border)!important;
+}
+#app button:not([class*="bg-rose-"]):not([class*="bg-red-"]):not([class*="bg-amber-"]):not([class*="bg-yellow-"]),
+#app a[role="button"]{
+ border-color:var(--bravo-border);
+}
+#app button[class*="bg-slate-100"],#app button[class*="bg-gray-100"],
+#app button[class*="bg-neutral-100"]{
+ background:#30343c!important;color:#f4f4f5!important;
+}
+#app button[class*="bg-slate-100"]:hover,#app button[class*="bg-gray-100"]:hover{
+ background:#3a3f49!important;
+}
+#app .shadow-sm,#app .shadow-md,#app .shadow-lg,#app .shadow-xl{
+ box-shadow:0 8px 26px rgba(0,0,0,.22)!important;
+}
+#app ::selection{background:#e5e7eb;color:#111}
+#app :focus-visible,#modal-container :focus-visible{
+ outline:2px solid #aeb4bf!important;outline-offset:2px!important;
+}
+@media(prefers-reduced-motion:reduce){
+ #app *,#modal-container *{transition:none!important;animation:none!important}
+}
+</style>
