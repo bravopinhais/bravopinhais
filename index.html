@@ -33766,5 +33766,75 @@ html:root:root:root #app#app main :is(.dashboard-analytics-disclosure,.estoque-a
  html:root:root:root #app#app main .dashboard-kpi-grid {grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 </style>
+
+<style id="bravo-acabamento-modulos-estoque-financeiro-etapa-190">
+/* Etapa 190 — acabamento específico de Estoque e Financeiro. */
+html:root:root:root #app#app main .estoque-page {color:#e8e8e8!important}
+html:root:root:root #app#app main .estoque-page :is(.bg-white,.bg-slate-50,.bg-gray-50,.bg-teal-50,.bg-sky-50,.bg-emerald-50,.bg-rose-50,.bg-amber-50) {
+ background:#1d1d1d!important;background-image:none!important;color:#e5e5e5!important;
+}
+html:root:root:root #app#app main .estoque-page :is([class*="border-slate-"],[class*="border-gray-"],[class*="border-teal-"],[class*="border-sky-"],[class*="border-emerald-"],[class*="border-rose-"],[class*="border-amber-"]) {border-color:#414141!important}
+html:root:root:root #app#app main .estoque-page :is(h1,h2,h3,h4,strong,b) {color:#ededed!important}
+html:root:root:root #app#app main .estoque-page :is(p,small,label,.text-slate-400,.text-slate-500,.text-slate-600) {color:#bcbcbc!important}
+html:root:root:root #app#app main .estoque-page :is([class*="text-teal-"],[class*="text-sky-"],[class*="text-emerald-"],[class*="text-rose-"],[class*="text-amber-"],[class*="text-blue-"],[class*="text-green-"]) {color:#d0d0d0!important}
+html:root:root:root #app#app main .estoque-page :is([class*="bg-teal-"],[class*="bg-sky-"],[class*="bg-emerald-"],[class*="bg-rose-"],[class*="bg-amber-"],[class*="bg-blue-"],[class*="bg-green-"]) {background:#292929!important}
+html:root:root:root #app#app main .estoque-page > div:first-child {background:#1b1b1b!important;border-color:#414141!important}
+html:root:root:root #app#app main .estoque-page > div:first-child > div:first-child {background:#242424!important}
+html:root:root:root #app#app main .estoque-page button.group {
+ background:#1e1e1e!important;color:#e5e5e5!important;border-color:#414141!important;
+ box-shadow:none!important;transform:none!important;
+}
+html:root:root:root #app#app main .estoque-page button.group:hover {background:#292929!important;border-color:#666!important}
+html:root:root:root #app#app main .estoque-page button.group :is(h1,h2,h3,h4,strong,b) {color:#ededed!important}
+html:root:root:root #app#app main .estoque-page button.group :is(p,small,span) {color:#bdbdbd!important}
+html:root:root:root #app#app main .estoque-page :is(table,thead,tbody,tr,th,td) {border-color:#3d3d3d!important}
+html:root:root:root #app#app main .estoque-page thead th {background:#252525!important;color:#dedede!important}
+html:root:root:root #app#app main .estoque-page tbody tr {background:transparent!important}
+html:root:root:root #app#app main .estoque-page tbody tr:hover {background:#292929!important}
+html:root:root:root #app#app main .estoque-page :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea) {background:#202020!important;color:#ededed!important;border-color:#484848!important}
+html:root:root:root #app#app main .estoque-page :is(input,select,textarea)::placeholder {color:#969696!important}
+html:root:root:root #app#app main .estoque-page .overflow-x-auto {overflow-x:auto!important;overflow-y:hidden!important;max-width:100%!important}
+html:root:root:root #app#app main .estoque-page :is(.bg-gradient-to-r,.bg-gradient-to-br,.bg-gradient-to-l) {background-image:linear-gradient(135deg,#252525,#1b1b1b)!important}
+html:root:root:root #app#app main .estoque-page :is(button,a):focus-visible {outline:2px solid #aaa!important;outline-offset:2px!important}
+
+/* Financeiro: tabela de lançamentos, ações e formulários modais locais. */
+html:root:root:root #app#app main .card-modern:has(table) {
+ background:#1b1b1b!important;color:#e8e8e8!important;border:1px solid #3d3d3d!important;box-shadow:none!important;
+}
+html:root:root:root #app#app main .card-modern:has(table) table {background:transparent!important;color:#dedede!important}
+html:root:root:root #app#app main .card-modern:has(table) thead {background:#252525!important}
+html:root:root:root #app#app main .card-modern:has(table) thead th {background:#252525!important;color:#d8d8d8!important;border-color:#414141!important}
+html:root:root:root #app#app main .card-modern:has(table) tbody tr {background:transparent!important;border-color:#3c3c3c!important}
+html:root:root:root #app#app main .card-modern:has(table) tbody tr:hover {background:#292929!important}
+html:root:root:root #app#app main .card-modern:has(table) tbody td {color:#c9c9c9!important;border-color:#3c3c3c!important}
+html:root:root:root #app#app main .card-modern:has(table) tbody td :is(.text-slate-800,.text-slate-900,.text-teal-700,.text-emerald-600,.text-rose-600) {color:#e0e0e0!important}
+html:root:root:root #app#app main .card-modern:has(table) tbody td :is(.bg-emerald-50,.bg-rose-50,.bg-slate-100,.bg-rose-100) {
+ background:#2b2b2b!important;color:#dedede!important;border-color:#484848!important;
+}
+html:root:root:root #app#app main .card-modern:has(table) tbody td button {background:#292929!important;color:#dedede!important;border:1px solid #484848!important}
+html:root:root:root #app#app main .card-modern:has(table) tbody td button:hover {background:#353535!important}
+html:root:root:root #app#app main .card-modern:has(table) .text-slate-400 {color:#a8a8a8!important}
+
+/* Modais declarados diretamente na tela Financeiro, sem #modal-container. */
+html:root:root:root #app#app main > div.fixed.inset-0.z-50 > div.bg-white,
+html:root:root:root #app#app main div.fixed.inset-0.z-50 > div.bg-white {
+ background:#1d1d1d!important;color:#e8e8e8!important;border:1px solid #444!important;
+ box-shadow:0 24px 70px rgba(0,0,0,.55)!important;
+}
+html:root:root:root #app#app main div.fixed.inset-0.z-50 > div.bg-white :is(h1,h2,h3,h4,strong,label) {color:#ededed!important}
+html:root:root:root #app#app main div.fixed.inset-0.z-50 > div.bg-white :is(p,small,span) {color:#bdbdbd}
+html:root:root:root #app#app main div.fixed.inset-0.z-50 > div.bg-white :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea) {
+ background:#202020!important;color:#ededed!important;border-color:#484848!important;color-scheme:dark;
+}
+html:root:root:root #app#app main div.fixed.inset-0.z-50 > div.bg-white :is(.bg-slate-50,.bg-slate-100,.bg-slate-200) {
+ background:#292929!important;color:#dedede!important;border-color:#484848!important;
+}
+html:root:root:root #app#app main div.fixed.inset-0.z-50 > div.bg-white :is(button.bg-teal-600,button.bg-teal-700) {
+ background:#454545!important;color:#fff!important;border:1px solid #666!important;
+}
+html:root:root:root #app#app main div.fixed.inset-0.z-50 > div.bg-white button[class*="bg-rose-"] {
+ background:#292929!important;color:#d0d0d0!important;border-color:#484848!important;
+}
+</style>
 </body>
 </html>
