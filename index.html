@@ -11759,6 +11759,56 @@ html,body{min-height:100%;background:#080e18!important;color:#e7edf5!important;c
 #app :is(.placeholder-slate-400)::placeholder{color:#8993a2!important}
 </style>
 
+
+<style id="bravo-neutralizacao-global-grafite-etapa-179">
+/* Etapa 179 — remove resíduos cromáticos legados em toda a interface, inclusive cabeçalho, atalhos e Configurações. */
+:root{color-scheme:dark!important}
+#app,#sidebar-menu,#status-nuvem,#gb-notifications-panel,#modal-container{
+  color-scheme:dark!important;
+}
+/* Fundos coloridos antigos passam a superfícies grafite neutras. */
+#app :is([class*="bg-green-"],[class*="bg-emerald-"],[class*="bg-teal-"],[class*="bg-lime-"],[class*="bg-cyan-"]),
+#sidebar-menu :is([class*="bg-green-"],[class*="bg-emerald-"],[class*="bg-teal-"],[class*="bg-lime-"],[class*="bg-cyan-"]),
+#status-nuvem:is([class*="bg-green-"],[class*="bg-emerald-"],[class*="bg-teal-"]),
+#app :is(.quick-green,.quick-blue,.quick-amber,.quick-violet){
+  background-color:#292e36!important;
+  background-image:none!important;
+  border-color:#454c57!important;
+}
+/* Tipografia colorida legada fica em tons de branco/cinza. */
+#app :is([class*="text-green-"],[class*="text-emerald-"],[class*="text-teal-"],[class*="text-lime-"],[class*="text-cyan-"]),
+#sidebar-menu :is([class*="text-green-"],[class*="text-emerald-"],[class*="text-teal-"],[class*="text-lime-"],[class*="text-cyan-"]),
+#status-nuvem:is([class*="text-green-"],[class*="text-emerald-"],[class*="text-teal-"]){
+  color:#d1d5db!important;
+}
+/* Bordas, anéis e sombras não podem reintroduzir a antiga identidade verde. */
+#app :is([class*="border-green-"],[class*="border-emerald-"],[class*="border-teal-"],[class*="border-lime-"],[class*="border-cyan-"]),
+#sidebar-menu :is([class*="border-green-"],[class*="border-emerald-"],[class*="border-teal-"]){
+  border-color:#454c57!important;
+}
+#app :is([class*="ring-green-"],[class*="ring-emerald-"],[class*="ring-teal-"],[class*="shadow-green-"],[class*="shadow-emerald-"],[class*="shadow-teal-"]){
+  --tw-ring-color:#737b87!important;
+  --tw-shadow-color:rgba(0,0,0,.28)!important;
+}
+/* Gradientes e estados de navegação: neutros mesmo quando gerados dinamicamente. */
+#app [class*="from-green-"],#app [class*="from-emerald-"],#app [class*="from-teal-"],
+#app [class*="to-green-"],#app [class*="to-emerald-"],#app [class*="to-teal-"],
+#sidebar-menu [class*="from-green-"],#sidebar-menu [class*="from-emerald-"],#sidebar-menu [class*="from-teal-"],
+#sidebar-menu [class*="to-green-"],#sidebar-menu [class*="to-emerald-"],#sidebar-menu [class*="to-teal-"]{
+  background-image:none!important;
+  background-color:#292e36!important;
+}
+#app :is(.dashboard-quick-icon,.dashboard-quick-grid>button:hover),
+#app main .dashboard-shell .dashboard-quick-grid>button:hover{
+  color:#e5e7eb!important;
+  border-color:#59616e!important;
+}
+#app :is(button,a,[role="button"]):focus-visible,
+#sidebar-menu :is(button,a,[role="button"]):focus-visible{
+  outline-color:#aeb6c2!important;
+}
+</style>
+
 </body></html>`;
                 win.document.open();
                 win.document.write(doc);
