@@ -28740,5 +28740,79 @@ html,body{background:var(--bravo-bg);color:var(--bravo-text)}
 }
 </style>
 
+
+<style id="bravo-estados-vazios-feedback-dark-etapa-118">
+/* Etapa 118 — estados vazios, alertas e feedback visual no tema noturno. */
+#app main :is(.empty-state,.empty-state-container,[data-empty-state="true"],[class*="empty-state"]){
+  color:#b8c5d3!important;
+  background:linear-gradient(145deg,rgba(30,41,59,.58),rgba(15,23,42,.72))!important;
+  border:1px dashed rgba(148,163,184,.28)!important;
+  border-radius:14px!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.025)!important;
+}
+#app main :is(.empty-state,.empty-state-container,[data-empty-state="true"],[class*="empty-state"]) :is(h2,h3,h4,strong){
+  color:#e2e8f0!important;
+}
+#app main :is(.empty-state,.empty-state-container,[data-empty-state="true"],[class*="empty-state"]) :is(i,svg){
+  color:#7dd3c7!important;
+}
+#app main :is(.empty-state,.empty-state-container,[data-empty-state="true"],[class*="empty-state"]) :is(button,a){
+  color:#99f6e4;
+}
+#app main :is([role="status"],[role="alert"],[aria-live="polite"],[aria-live="assertive"]),
+#modal-container :is([role="status"],[role="alert"],[aria-live="polite"],[aria-live="assertive"]){
+  overflow-wrap:anywhere;
+}
+#app main :is([role="status"],[role="alert"]),
+#modal-container :is([role="status"],[role="alert"]){
+  color:#e2e8f0!important;
+  background-color:#202936!important;
+  border:1px solid rgba(148,163,184,.24)!important;
+  border-radius:12px!important;
+  box-shadow:0 10px 28px rgba(0,0,0,.2)!important;
+}
+#app main :is([role="status"],[role="alert"]) :is(p,span,strong,small),
+#modal-container :is([role="status"],[role="alert"]) :is(p,span,strong,small){
+  color:inherit;
+}
+#app :is([class*="toast"],[class*="notification"],[class*="notificacao"]){
+  color:#e5e7eb!important;
+  background:#202936!important;
+  border:1px solid rgba(148,163,184,.25)!important;
+  box-shadow:0 14px 38px rgba(0,0,0,.36)!important;
+  overflow-wrap:anywhere;
+}
+#app :is([class*="toast"],[class*="notification"],[class*="notificacao"]) :is(p,span,strong,small){
+  color:inherit;
+}
+#bravo-card-dados-gravados{
+  color:#f1f5f9!important;
+  background:rgba(22,29,40,.94)!important;
+  border:1px solid rgba(148,163,184,.26)!important;
+  box-shadow:0 16px 42px rgba(0,0,0,.42)!important;
+}
+#bravo-card-dados-gravados :is(strong,small,span){
+  color:inherit;
+}
+#gb-notifications-anchor :is([role="menu"],[role="dialog"],[role="list"]){
+  color:#e2e8f0!important;
+  background:#1b2430!important;
+  border-color:rgba(148,163,184,.25)!important;
+  box-shadow:0 18px 48px rgba(0,0,0,.42)!important;
+}
+#gb-notifications-anchor :is([role="menu"],[role="dialog"],[role="list"]) :is(p,span,strong,small){
+  color:inherit;
+}
+@media(max-width:640px){
+  #app main :is(.empty-state,.empty-state-container,[data-empty-state="true"],[class*="empty-state"]){
+    border-radius:12px!important;
+    padding:16px!important;
+  }
+  #app :is([class*="toast"],[class*="notification"],[class*="notificacao"]){
+    max-width:calc(100vw - 24px)!important;
+  }
+}
+</style>
+
 </body>
 </html>
