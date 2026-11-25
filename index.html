@@ -31368,5 +31368,153 @@ html,body {
   overflow-y:auto!important;
 }
 </style>
+
+<style id="bravo-dashboard-acabamento-charcoal-etapa-168">
+/* Etapa 168 — uniformiza o Dashboard com o tema noturno carvão, sem alterar dados ou regras. */
+#app main .dashboard-shell{
+  --dashboard-panel:#1b1e24;
+  --dashboard-panel-raised:#22262e;
+  --dashboard-border:#343a45;
+  color:#e8ebf0!important;
+  color-scheme:dark;
+  width:100%;
+  max-width:1480px;
+  margin-inline:auto;
+  gap:20px!important;
+}
+#app main .dashboard-shell > section:first-child{
+  background:linear-gradient(135deg,#242830 0%,#171a20 100%)!important;
+  border:1px solid #3a414d!important;
+  border-radius:18px!important;
+  box-shadow:0 12px 30px rgba(0,0,0,.22)!important;
+}
+#app main .dashboard-shell > section:first-child :is(h1,h2,h3,h4,strong){
+  color:#f3f4f6!important;
+}
+#app main .dashboard-shell > section:first-child :is(p,small){
+  color:#aab2bf!important;
+}
+#app main .dashboard-shell :is(.dashboard-kpi-grid>article,.dashboard-analytics-grid>div,.dashboard-operations-grid>div){
+  min-width:0;
+  color:#e6e9ee!important;
+  background:var(--dashboard-panel)!important;
+  border:1px solid var(--dashboard-border)!important;
+  border-radius:16px!important;
+  box-shadow:0 6px 18px rgba(0,0,0,.16)!important;
+}
+#app main .dashboard-shell .dashboard-kpi-grid>article :is(h3,h4,strong){
+  color:#f1f3f6!important;
+}
+#app main .dashboard-shell .dashboard-kpi-grid>article :is(p,small){
+  color:#aab2bf!important;
+}
+#app main .dashboard-shell .dashboard-kpi-grid>article>div:first-child>div:last-child{
+  background:#292e37!important;
+  border:1px solid #3b424e!important;
+  box-shadow:none!important;
+}
+#app main .dashboard-shell :is(.dashboard-section-title,h2,h3,h4){
+  color:#edf0f4!important;
+}
+#app main .dashboard-shell .dashboard-section-title :is(p,small){
+  color:#9da6b3!important;
+}
+#app main .dashboard-shell .dashboard-quick-access{
+  background:#191c22!important;
+  border:1px solid #343a45!important;
+  border-radius:16px!important;
+  box-shadow:none!important;
+}
+#app main .dashboard-shell .dashboard-quick-access-heading h3{
+  color:#f1f3f6!important;
+}
+#app main .dashboard-shell .dashboard-quick-access-heading p,
+#app main .dashboard-shell .dashboard-quick-eyebrow{
+  color:#a4adba!important;
+}
+#app main .dashboard-shell .dashboard-quick-hint{
+  color:#d4d8df!important;
+  background:#292e37!important;
+  border:1px solid #3b424e!important;
+}
+#app main .dashboard-shell .dashboard-quick-grid>button{
+  min-width:0;
+  background:#22262e!important;
+  color:#edf0f4!important;
+  border:1px solid #3a414d!important;
+  border-radius:12px!important;
+  box-shadow:none!important;
+}
+#app main .dashboard-shell .dashboard-quick-grid>button:hover{
+  background:#2a303a!important;
+  border-color:#596474!important;
+  transform:translateY(-1px);
+}
+#app main .dashboard-shell .dashboard-quick-grid>button strong{color:#f2f4f7!important}
+#app main .dashboard-shell .dashboard-quick-grid>button small{color:#aab2bf!important}
+#app main .dashboard-shell .dashboard-quick-icon,
+#app main .dashboard-shell :is(.quick-blue,.quick-green,.quick-amber,.quick-violet){
+  color:#e4e8ee!important;
+  background:#303641!important;
+  border:1px solid #424a57!important;
+  box-shadow:none!important;
+}
+#app main .dashboard-shell .dashboard-analytics-disclosure{
+  color:#e8ebf0!important;
+  background:#191c22!important;
+  border:1px solid #343a45!important;
+  border-radius:14px!important;
+}
+#app main .dashboard-shell .dashboard-analytics-disclosure>summary{
+  color:#edf0f4!important;
+  background:#20242b!important;
+  border-color:#3a414d!important;
+}
+#app main .dashboard-shell .dashboard-analytics-disclosure>summary :is(h3,strong,span){
+  color:inherit;
+}
+#app main .dashboard-shell .dashboard-analytics-grid>div,
+#app main .dashboard-shell .dashboard-operations-grid>div{
+  background:#1b1e24!important;
+  border-color:#343a45!important;
+}
+#app main .dashboard-shell .dashboard-analytics-grid :is(p,small,.text-slate-400,.text-slate-500),
+#app main .dashboard-shell .dashboard-operations-grid :is(p,small,.text-slate-400,.text-slate-500){
+  color:#aab2bf!important;
+}
+#app main .dashboard-shell .dashboard-operations-grid table{
+  color:#e1e5eb!important;
+  background:#1b1e24!important;
+}
+#app main .dashboard-shell .dashboard-operations-grid thead{
+  color:#cbd1da!important;
+  background:#252a32!important;
+}
+#app main .dashboard-shell .dashboard-operations-grid tbody tr{
+  background:#1b1e24!important;
+  border-color:#343a45!important;
+}
+#app main .dashboard-shell .dashboard-operations-grid tbody tr:hover{
+  background:#252a32!important;
+}
+#app main .dashboard-shell .dashboard-operations-grid tbody td{
+  color:#d6dbe3!important;
+  border-color:#343a45!important;
+}
+#app main .dashboard-shell :is(button,a):focus-visible,
+#app main .dashboard-shell summary:focus-visible{
+  outline:2px solid #aeb8c6!important;
+  outline-offset:3px!important;
+}
+@media(max-width:768px){
+  #app main .dashboard-shell{gap:14px!important}
+  #app main .dashboard-shell :is(.dashboard-kpi-grid>article,.dashboard-analytics-grid>div,.dashboard-operations-grid>div){
+    border-radius:14px!important;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  #app main .dashboard-shell *{scroll-behavior:auto!important;transition:none!important}
+}
+</style>
 </body>
 </html>
