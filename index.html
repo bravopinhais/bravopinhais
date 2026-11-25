@@ -4532,6 +4532,37 @@ tbody tr:hover{background-color:#272727!important}
         border-color: #484848 !important;
       }
     </style>
+    <style id="bravo-dashboard-unificacao-monocromatica-etapa-186">
+      /* Etapa 186 — neutraliza acentos antigos nos indicadores e atalhos do Dashboard. */
+      #app#app main .dashboard-shell :is(.dashboard-kpi-grid>article,.dashboard-analytics-grid>div,.dashboard-operations-grid>div) {
+        background-color:#1b1b1b!important;
+        background-image:none!important;
+        border-color:#3b3b3b!important;
+        color:#ededed!important;
+      }
+      #app#app main .dashboard-shell .dashboard-kpi-grid>article :is([class*="bg-emerald-"],[class*="bg-green-"],[class*="bg-teal-"],[class*="bg-sky-"],[class*="bg-blue-"],[class*="bg-rose-"],[class*="bg-amber-"],[class*="bg-violet-"]) {
+        background:#303030!important;color:#dedede!important;border-color:#484848!important;
+      }
+      #app#app main .dashboard-shell :is(.dashboard-kpi-grid,.dashboard-analytics-grid,.dashboard-operations-grid) :is([class*="text-emerald-"],[class*="text-green-"],[class*="text-teal-"],[class*="text-sky-"],[class*="text-blue-"],[class*="text-rose-"],[class*="text-amber-"],[class*="text-violet-"]) {
+        color:#c8c8c8!important;
+      }
+      #app#app main .dashboard-shell .dashboard-analytics-disclosure :is([class*="bg-"],[class*="text-"],[class*="border-"]) {
+        border-color:#444!important;
+      }
+      #app#app main .dashboard-shell .dashboard-analytics-disclosure :is([class*="bg-teal-"],[class*="bg-emerald-"],[class*="bg-rose-"],[class*="bg-amber-"],[class*="bg-sky-"],[class*="bg-blue-"]) {
+        background:#303030!important;background-image:none!important;color:#dedede!important;
+      }
+      #app#app main .dashboard-shell .dashboard-analytics-disclosure :is([class*="text-teal-"],[class*="text-emerald-"],[class*="text-rose-"],[class*="text-amber-"],[class*="text-sky-"],[class*="text-blue-"]) {
+        color:#c8c8c8!important;
+      }
+      #app#app main .dashboard-shell .dashboard-analytics-disclosure :is(h1,h2,h3,h4,strong,b) {color:#ededed!important}
+      #app#app main .dashboard-shell .dashboard-analytics-disclosure :is(p,small,td,th,span) {text-shadow:none}
+      #app#app main .dashboard-shell .dashboard-analytics-disclosure > summary:hover {background:#292929!important}
+      #app#app main .dashboard-shell .dashboard-analytics-disclosure .dashboard-analytics-grid canvas {filter:none}
+      @media (prefers-reduced-motion:reduce) {
+        #app#app main .dashboard-shell :is(.dashboard-kpi-grid>article,.dashboard-analytics-grid>div,.dashboard-operations-grid>div) {transition:none!important}
+      }
+    </style>
 </head>
     <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
         <!-- Indicador de Status da Nuvem -->
