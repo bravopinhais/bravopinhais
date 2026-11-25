@@ -26970,3 +26970,169 @@ body{scrollbar-color:#656a73 #191b20!important}
     #app .dashboard-kpi-grid > article { transition: none !important; }
   }
 </style>
+
+
+<!-- BRAVO PINHAIS DARK EDITION — ETAPA 102: HIERARQUIA DOS INDICADORES E GRÁFICOS -->
+<style id="bravo-dark-dashboard-metrics-etapa-102">
+  /* Indicadores: cartões com hierarquia e detalhe superior discreto */
+  #app main .dashboard-shell .dashboard-kpi-grid > article {
+    position: relative;
+    overflow: hidden;
+    min-height: 166px !important;
+    padding: 1.2rem 1.25rem 1rem !important;
+    background: linear-gradient(145deg,#242830 0%,#1c1f25 100%) !important;
+    border: 1px solid #3c424d !important;
+    border-radius: 20px !important;
+    box-shadow: 0 12px 28px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.025) !important;
+  }
+  #app main .dashboard-shell .dashboard-kpi-grid > article::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 2px;
+    background: linear-gradient(90deg,#737b88,rgba(115,123,136,0));
+    opacity: .8;
+  }
+  #app main .dashboard-shell .dashboard-kpi-grid > article:hover {
+    transform: translateY(-3px);
+    border-color: #59616e !important;
+    box-shadow: 0 18px 34px rgba(0,0,0,.28) !important;
+  }
+  #app main .dashboard-shell .dashboard-kpi-grid > article > div:first-child p:first-child {
+    color: #aeb4be !important;
+    font-size: 9px !important;
+    letter-spacing: .14em !important;
+    line-height: 1.5;
+  }
+  #app main .dashboard-shell .dashboard-kpi-grid > article > div:first-child p:is(.text-2xl,.text-3xl) {
+    color: #fafafa !important;
+    font-variant-numeric: tabular-nums;
+    font-size: clamp(1.45rem,2.2vw,1.85rem) !important;
+    line-height: 1.2;
+    letter-spacing: -.045em;
+  }
+  #app main .dashboard-shell .dashboard-kpi-grid > article > div:first-child > div:last-child {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px !important;
+    background: #303641 !important;
+    border: 1px solid #4b5360 !important;
+    color: #e5e7eb !important;
+    box-shadow: 0 5px 14px rgba(0,0,0,.16);
+  }
+  #app main .dashboard-shell .dashboard-kpi-grid > article > div:first-child > div:last-child i {
+    filter: grayscale(1);
+    opacity: .9;
+  }
+  #app main .dashboard-shell .dashboard-kpi-grid > article > div:last-child {
+    margin-top: 1.1rem !important;
+    padding-top: .8rem !important;
+    border-top: 1px solid #3b414b !important;
+  }
+  #app main .dashboard-shell .dashboard-kpi-grid > article > div:last-child span {
+    color: #aeb4be !important;
+    font-size: 10px !important;
+  }
+  #app main .dashboard-shell .dashboard-kpi-grid > article > div:last-child button {
+    color: #e1e4e9 !important;
+    font-size: 10px !important;
+    font-weight: 800;
+    text-decoration: none;
+  }
+  #app main .dashboard-shell .dashboard-kpi-grid > article > div:last-child button:hover {
+    color: #fff !important;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  /* Data da atualização com aparência de metadado, não de botão */
+  #app main .dashboard-shell > .dashboard-section-title > span {
+    background: #20242b !important;
+    border: 1px solid #3a414c !important;
+    color: #c4c9d1 !important;
+    border-radius: 999px !important;
+  }
+  #app main .dashboard-shell > .dashboard-section-title > span i {
+    color: #aeb4be !important;
+  }
+  /* Cartões analíticos: cabeçalhos e resumo inferior */
+  #app main .dashboard-shell .dashboard-analytics-grid > div {
+    padding: 1.25rem !important;
+    background: linear-gradient(150deg,#22262d,#1b1e24) !important;
+    border: 1px solid #3b414c !important;
+    border-radius: 20px !important;
+  }
+  #app main .dashboard-shell .dashboard-analytics-grid > div > div:first-child p:first-child {
+    color: #aeb4be !important;
+    letter-spacing: .13em;
+  }
+  #app main .dashboard-shell .dashboard-analytics-grid > div > div:first-child h3 {
+    color: #f4f4f5 !important;
+    letter-spacing: -.025em;
+  }
+  #app main .dashboard-shell .dashboard-analytics-grid > div > div:first-child p:not(:first-child) {
+    color: #a1a1aa !important;
+  }
+  #app main .dashboard-shell .dashboard-analytics-grid > div .mt-3.flex.flex-wrap.gap-2 > span {
+    background: #2a2f37 !important;
+    color: #d4d4d8 !important;
+    border: 1px solid #414854 !important;
+    border-radius: 10px !important;
+    font-size: 10px !important;
+  }
+  #app main .dashboard-shell .dashboard-analytics-grid > div .mt-3.grid.grid-cols-3 {
+    border-color: #3b414c !important;
+  }
+  #app main .dashboard-shell .dashboard-analytics-grid > div .mt-3.grid.grid-cols-3 p:first-child {
+    color: #a1a1aa !important;
+  }
+  #app main .dashboard-shell .dashboard-analytics-grid > div .mt-3.grid.grid-cols-3 p:last-child {
+    color: #f4f4f5 !important;
+    font-variant-numeric: tabular-nums;
+    font-size: 1.35rem !important;
+  }
+  #app main .dashboard-shell .dashboard-analytics-grid canvas {
+    max-width: 100%;
+  }
+  #app main .dashboard-shell .dashboard-analytics-disclosure > summary {
+    padding: 1rem 1.15rem !important;
+    border: 1px solid #3c424d !important;
+    background: linear-gradient(110deg,#22262d,#1b1e24) !important;
+    box-shadow: 0 8px 20px rgba(0,0,0,.14) !important;
+  }
+  #app main .dashboard-shell .dashboard-analytics-disclosure > summary h3 {
+    color: #f4f4f5 !important;
+    letter-spacing: -.025em;
+  }
+  #app main .dashboard-shell .dashboard-analytics-disclosure > summary p {
+    color: #a1a1aa !important;
+  }
+  #app main .dashboard-shell .dashboard-analytics-disclosure > summary > span {
+    background: #303641 !important;
+    color: #e4e4e7 !important;
+    border: 1px solid #4a515e;
+  }
+  @media (max-width: 640px) {
+    #app main .dashboard-shell .dashboard-kpi-grid > article {
+      min-height: 145px !important;
+      padding: .95rem !important;
+      border-radius: 16px !important;
+    }
+    #app main .dashboard-shell .dashboard-kpi-grid > article > div:first-child > div:last-child {
+      width: 36px; height: 36px; border-radius: 11px !important;
+    }
+    #app main .dashboard-shell .dashboard-kpi-grid > article > div:last-child {
+      margin-top: .8rem !important;
+      padding-top: .65rem !important;
+      gap: .35rem;
+    }
+    #app main .dashboard-shell .dashboard-kpi-grid > article > div:last-child button {
+      white-space: nowrap;
+    }
+    #app main .dashboard-shell .dashboard-analytics-grid > div {
+      padding: 1rem !important;
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #app main .dashboard-shell .dashboard-kpi-grid > article { transition: none !important; }
+  }
+</style>
