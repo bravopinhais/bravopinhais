@@ -15875,7 +15875,7 @@ persistido no banco ou no gateway.
                                 }
                             }
                             if (structural) {
-                                row.hidden = false;
+                                if (row.hidden) row.hidden = false;
                                 structuralRows.push(row);
                                 continue;
                             }
@@ -15890,7 +15890,8 @@ persistido no banco ou no gateway.
                                     break;
                                 }
                             }
-                            row.hidden = !keep;
+                            const shouldHide = !keep;
+                            if (row.hidden !== shouldHide) row.hidden = shouldHide;
                             if (keep) {
                                 visibleCount++;
                                 matchingRows.push(row);
@@ -19522,8 +19523,13 @@ html,body,#app,#app header.bg-slate-950.no-print,#app header.md\\:hidden{backgro
     state.page=Math.max(1,Math.min(state.page,pages));
     var start=(state.page-1)*state.pageSize;
     var end=Math.min(start+state.pageSize,result.matches.length);
-    result.special.forEach(function(row){row.hidden=false;});
-    result.matches.forEach(function(row,index){row.hidden=index<start || index>=end;});
+    for(var si=0;si<result.special.length;si++){
+      if(result.special[si].hidden) result.special[si].hidden=false;
+    }
+    for(var ri=0;ri<result.matches.length;ri++){
+      var shouldHide=ri<start || ri>=end;
+      if(result.matches[ri].hidden!==shouldHide) result.matches[ri].hidden=shouldHide;
+    }
     ensureControls(table,state);
     var nav=state.nav;
     if(!nav) return;
