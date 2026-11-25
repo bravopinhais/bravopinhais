@@ -31312,7 +31312,7 @@ body>.grid-actions-popover :is(button,a,[role="menuitem"]):hover{
    const main=document.querySelector('#app main')||document.body;
    observer.observe(main,{childList:true,subtree:true});
   }
-  window.addEventListener('scroll',atualizar,{passive:true});
+  document.addEventListener('scroll',atualizar,{passive:true,capture:true});
   window.addEventListener('resize',atualizar,{passive:true});
   if(window.visualViewport)window.visualViewport.addEventListener('resize',atualizar,{passive:true});
  }
