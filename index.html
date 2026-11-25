@@ -10157,42 +10157,49 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 });
                 const list = filtroStatusEstoque === 'inativos' ? itensInativos : itensAtivos;
 
-                let listFiltrada = list;
-                if (filtroStatusEstoque !== 'inativos' && filtroAtivoEstoque === 'adequado') {
-                    listFiltrada = list.filter(st => {
-                        const atual = dashboardNumero(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
-                        const minimo = dashboardNumero(st.minimo || 0);
-                        const maximo = dashboardNumero(st.maximo || 0);
-                        return atual > minimo && !(maximo > 0 && atual > maximo);
+                // Combina situação, classificação, setor e busca em uma única passagem.
+                // Evita criar arrays intermediários e recalcular setor/quantidades em filtros encadeados.
+                const listFiltrada = [];
+                const filtrarClassificacao = filtroStatusEstoque !== 'inativos' &&
+                    ['adequado', 'critico', 'excedente'].includes(filtroAtivoEstoque);
+                const termoBusca = pesquisaRapidaEstoque.trim()
+                    .toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                const filtrarBusca = !!termoBusca;
+                const filtrarSetor = filtroSetorEstoque !== 'todos';
+
+                for (let indice = 0; indice < list.length; indice++) {
+                    const st = list[indice];
+                    const atual = filtrarClassificacao
+                        ? dashboardNumero(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0))
+                        : 0;
+                    const minimo = filtrarClassificacao ? dashboardNumero(st.minimo || 0) : 0;
+                    const maximo = filtrarClassificacao ? dashboardNumero(st.maximo || 0) : 0;
+
+                    if (filtrarClassificacao) {
+                        const adequado = atual > minimo && !(maximo > 0 && atual > maximo);
+                        const critico = atual <= minimo;
+                        const excedente = maximo > 0 && atual > maximo;
+                        if (filtroAtivoEstoque === 'adequado' && !adequado) continue;
+                        if (filtroAtivoEstoque === 'critico' && !critico) continue;
+                        if (filtroAtivoEstoque === 'excedente' && !excedente) continue;
                     }
-                    );
-                } else if (filtroStatusEstoque !== 'inativos' && filtroAtivoEstoque === 'critico') {
-                    listFiltrada = list.filter(st => dashboardNumero(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0)) <= dashboardNumero(st.minimo || 0));
-                } else if (filtroStatusEstoque !== 'inativos' && filtroAtivoEstoque === 'excedente') {
-                    listFiltrada = list.filter(st => {
-                        const atual = dashboardNumero(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
-                        const maximo = dashboardNumero(st.maximo || 0);
-                        return maximo > 0 && atual > maximo;
-                    }
-                    );
-                }
-                if (filtroSetorEstoque !== 'todos') {
-                    listFiltrada = listFiltrada.filter(st => setorEstoque(st) === filtroSetorEstoque);
-                }
-                if (pesquisaRapidaEstoque.trim()) {
-                    const termoBusca = pesquisaRapidaEstoque.trim().toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-                    listFiltrada = listFiltrada.filter(st => {
+
+                    const setor = (filtrarSetor || filtrarBusca) ? setorEstoque(st) : '';
+                    if (filtrarSetor && setor !== filtroSetorEstoque) continue;
+
+                    if (filtrarBusca) {
                         const camposBusca = [
                             st.item, st.descricao, st.etiqueta, st.codigo, st.id,
-                            setorEstoque(st), st.marca, st.brand, st.linha, st.line,
+                            setor, st.marca, st.brand, st.linha, st.line,
                             st.fabricante, st.manufacturer, st.cor, st.color,
                             st.unidade, st.unidadeMedida, st.senhaCadeado, st.senha_cadeado,
                             st.dataCadastro, st.data_cadastro, st.dataRegistro, st.createdAt
                         ];
                         const textoBusca = camposBusca.filter(v => v !== null && v !== undefined)
                             .join(' ').toLocaleLowerCase('pt-BR').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-                        return textoBusca.includes(termoBusca);
-                    });
+                        if (!textoBusca.includes(termoBusca)) continue;
+                    }
+                    listFiltrada.push(st);
                 }
                 const setoresDisponiveisEstoque = obterSetoresEstoque(todosItens);
                 const filtrosAtivosTexto = [filtroStatusEstoque === 'inativos' ? 'Inativos' : 'Ativos', filtroAtivoEstoque !== 'todos' ? ({
