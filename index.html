@@ -29326,5 +29326,96 @@ html,body{background:#080e18!important;color:var(--bravo-text)}
 @media(prefers-reduced-motion:reduce){#app main table tbody tr{transition:none!important}}
 </style>
 
+
+<style id="bravo-modais-formularios-polish-etapa-127">
+/* Etapa 127 — consistência de formulários e janelas de diálogo. */
+#modal-container{isolation:isolate}
+#modal-container>div>div,
+#modal-container [role="dialog"],
+#modal-container [aria-modal="true"]{
+  max-height:min(92dvh,900px);
+  overflow:auto;
+  overscroll-behavior:contain;
+}
+#modal-container :is(h1,h2,h3)[class*="text-"]{
+  letter-spacing:-.025em;
+}
+#modal-container form,
+#app main form{color:#dbe5ef}
+#modal-container form>div+div,
+#app main form>div+div{margin-top:.7rem}
+#modal-container form label,
+#app main form label{
+  display:block;
+  margin-bottom:.35rem;
+  color:#b9c8d8!important;
+  font-size:11px;
+  font-weight:750;
+  letter-spacing:.015em;
+}
+#modal-container form :is(input,select,textarea),
+#app main form :is(input,select,textarea){
+  width:100%;
+  min-width:0;
+}
+#modal-container form textarea,
+#app main form textarea{min-height:88px;resize:vertical;line-height:1.5}
+#modal-container form :is(input,select,textarea):disabled,
+#app main form :is(input,select,textarea):disabled{
+  opacity:.55;cursor:not-allowed;background:#182333!important
+}
+#modal-container form :is(input,select,textarea)[aria-invalid="true"],
+#app main form :is(input,select,textarea)[aria-invalid="true"]{
+  border-color:#fb7185!important;
+  box-shadow:0 0 0 3px rgba(251,113,133,.1)!important;
+}
+#modal-container form :is(.grid,.flex){min-width:0}
+#modal-container form fieldset{
+  min-width:0;padding:1rem!important;
+  border:1px solid rgba(148,163,184,.2)!important;
+  border-radius:13px!important;
+  background:rgba(15,23,42,.28)!important;
+}
+#modal-container form legend{
+  padding:0 .4rem;color:#d7e2ee!important;
+  font-size:11px;font-weight:800;letter-spacing:.035em
+}
+#modal-container form hr{margin:1rem 0!important}
+#modal-container :is(button[type="submit"],button[onclick*="Salvar"],button[onclick*="salvar"]){
+  min-height:42px;
+}
+#modal-container :is(button,a):disabled{opacity:.45;cursor:not-allowed}
+#modal-container [class*="sticky"]{
+  background:rgba(23,29,39,.96)!important;
+  backdrop-filter:blur(12px);
+}
+#modal-container :is(.overflow-y-auto,.overflow-auto){
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+  scrollbar-color:#52647b #171d27;
+}
+#modal-container :is(.overflow-y-auto,.overflow-auto)::-webkit-scrollbar{width:7px}
+#modal-container :is(.overflow-y-auto,.overflow-auto)::-webkit-scrollbar-thumb{background:#52647b;border:2px solid #171d27;border-radius:99px}
+#modal-container :is(.text-red-500,.text-red-600,.text-rose-500,.text-rose-600){color:#fda4af!important}
+#modal-container :is(.text-green-500,.text-green-600,.text-emerald-500,.text-emerald-600){color:#6ee7b7!important}
+#modal-container :is(.text-amber-500,.text-amber-600,.text-yellow-600){color:#fcd34d!important}
+@media(max-width:640px){
+  #modal-container>div>div,
+  #modal-container [role="dialog"],
+  #modal-container [aria-modal="true"]{
+    overflow-x:hidden;
+    overflow-y:auto;
+    -webkit-overflow-scrolling:touch;
+  }
+  #modal-container form>div+div,
+  #app main form>div+div{margin-top:.55rem}
+  #modal-container form fieldset{padding:.8rem!important}
+  #modal-container form :is(input,select,textarea){font-size:16px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #modal-container *{scroll-behavior:auto!important;transition:none!important}
+}
+</style>
+
 </body>
 </html>
