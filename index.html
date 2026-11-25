@@ -19524,19 +19524,40 @@ html,body,#app,#app header.bg-slate-950.no-print,#app header.md\\:hidden{backgro
     if(!eligible(table)) return;
     if(reset) state.page=1;
     var result=readRows(table);
+    var previousMatches=state.lastMatches;
+    var previousStart=state.lastStart;
+    var previousEnd=state.lastEnd;
+    var sameResult=previousMatches===result.matches && Number.isInteger(previousStart) && Number.isInteger(previousEnd);
     state.matches=result.matches;
     state.special=result.special;
     var pages=Math.max(1,Math.ceil(result.matches.length/state.pageSize));
     state.page=Math.max(1,Math.min(state.page,pages));
     var start=(state.page-1)*state.pageSize;
     var end=Math.min(start+state.pageSize,result.matches.length);
-    for(var si=0;si<result.special.length;si++){
-      if(result.special[si].hidden) result.special[si].hidden=false;
+
+    if(sameResult){
+      // Ao trocar apenas de página, atualiza somente as duas faixas envolvidas.
+      // As demais linhas já permanecem ocultas desde a aplicação anterior.
+      for(var oi=previousStart;oi<previousEnd;oi++){
+        var oldRow=previousMatches[oi];
+        if(oldRow && !oldRow.hidden) oldRow.hidden=true;
+      }
+      for(var ni=start;ni<end;ni++){
+        var newRow=result.matches[ni];
+        if(newRow && newRow.hidden) newRow.hidden=false;
+      }
+    }else{
+      for(var si=0;si<result.special.length;si++){
+        if(result.special[si].hidden) result.special[si].hidden=false;
+      }
+      for(var ri=0;ri<result.matches.length;ri++){
+        var shouldHide=ri<start || ri>=end;
+        if(result.matches[ri].hidden!==shouldHide) result.matches[ri].hidden=shouldHide;
+      }
     }
-    for(var ri=0;ri<result.matches.length;ri++){
-      var shouldHide=ri<start || ri>=end;
-      if(result.matches[ri].hidden!==shouldHide) result.matches[ri].hidden=shouldHide;
-    }
+    state.lastMatches=result.matches;
+    state.lastStart=start;
+    state.lastEnd=end;
     ensureControls(table,state);
     var nav=state.nav;
     if(!nav) return;
