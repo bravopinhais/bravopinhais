@@ -27679,3 +27679,113 @@ body{scrollbar-color:#656a73 #191b20!important}
     }
   }
 </style>
+
+
+<!-- BRAVO PINHAIS DARK EDITION — ETAPA 108: INDICADORES PRINCIPAIS -->
+<style id="bravo-dark-dashboard-kpi-finish-etapa-108">
+  #app .dashboard-shell > .dashboard-section-title {
+    align-items: flex-end;
+    gap: .8rem;
+  }
+  #app .dashboard-shell > .dashboard-section-title h3 {
+    color: #f4f4f5 !important;
+    font-size: clamp(1.05rem,1.5vw,1.2rem);
+    letter-spacing: -.035em;
+  }
+  #app .dashboard-shell > .dashboard-section-title p {
+    color: #a1a1aa !important;
+    line-height: 1.55;
+  }
+  #app .dashboard-shell > .dashboard-section-title > span {
+    border-color: #3b424e !important;
+    background: #252a32 !important;
+    color: #b8bec8 !important;
+    white-space: nowrap;
+  }
+  #app .dashboard-shell .dashboard-kpi-grid > article {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+    min-height: 150px;
+    border: 1px solid #3b424e !important;
+    border-radius: 19px !important;
+    background: linear-gradient(145deg,#252a32 0%,#1d2026 100%) !important;
+    box-shadow: 0 9px 24px rgba(0,0,0,.16) !important;
+    transition: transform .2s ease,border-color .2s ease,box-shadow .2s ease;
+  }
+  #app .dashboard-shell .dashboard-kpi-grid > article::before {
+    position: absolute;
+    z-index: -1;
+    inset: 0 0 auto;
+    height: 2px;
+    background: linear-gradient(90deg,#64748b,transparent 82%);
+    content: "";
+    opacity: .8;
+  }
+  #app .dashboard-shell .dashboard-kpi-grid > article:nth-child(1)::before {
+    background: linear-gradient(90deg,#5b9b87,transparent 82%);
+  }
+  #app .dashboard-shell .dashboard-kpi-grid > article:nth-child(2)::before {
+    background: linear-gradient(90deg,#d66b7b,transparent 82%);
+  }
+  #app .dashboard-shell .dashboard-kpi-grid > article:nth-child(3)::before {
+    background: linear-gradient(90deg,#6b9ec8,transparent 82%);
+  }
+  #app .dashboard-shell .dashboard-kpi-grid > article:nth-child(4)::before {
+    background: linear-gradient(90deg,#c99a52,transparent 82%);
+  }
+  #app .dashboard-shell .dashboard-kpi-grid > article:hover {
+    transform: translateY(-2px);
+    border-color: #535c69 !important;
+    box-shadow: 0 14px 30px rgba(0,0,0,.23) !important;
+  }
+  #app .dashboard-shell .dashboard-kpi-grid > article p {
+    color: #aeb5c0 !important;
+  }
+  #app .dashboard-shell .dashboard-kpi-grid > article p.text-2xl,
+  #app .dashboard-shell .dashboard-kpi-grid > article p.text-3xl {
+    color: #f4f4f5 !important;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -.045em;
+    line-height: 1.2;
+  }
+  #app .dashboard-shell .dashboard-kpi-grid > article > div:last-child {
+    border-color: #3a404b !important;
+  }
+  #app .dashboard-shell .dashboard-kpi-grid > article > div:last-child > span {
+    color: #9ca3af !important;
+  }
+  #app .dashboard-shell .dashboard-kpi-grid > article > div:first-child > div:last-child {
+    border: 1px solid #454d59;
+    background: #303641 !important;
+    color: #d4d4d8 !important;
+    box-shadow: inset 0 1px rgba(255,255,255,.035);
+  }
+  #app .dashboard-shell .dashboard-kpi-grid > article > div:last-child button {
+    color: #d1d5db !important;
+    text-decoration: none;
+  }
+  #app .dashboard-shell .dashboard-kpi-grid > article > div:last-child button:hover {
+    color: #fff !important;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+  @media(max-width:640px) {
+    #app .dashboard-shell .dashboard-kpi-grid {
+      gap: .75rem !important;
+    }
+    #app .dashboard-shell .dashboard-kpi-grid > article {
+      min-height: 136px;
+      padding: 1rem !important;
+      border-radius: 16px !important;
+    }
+    #app .dashboard-shell > .dashboard-section-title > span {
+      font-size: 9px;
+    }
+  }
+  @media(prefers-reduced-motion:reduce) {
+    #app .dashboard-shell .dashboard-kpi-grid > article {
+      transition: none;
+    }
+  }
+</style>
