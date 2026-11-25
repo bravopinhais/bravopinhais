@@ -29330,6 +29330,40 @@ html,body{background:#080e18!important;color:var(--bravo-text)}
 #sidebar-menu button:hover{background:rgba(71,85,105,.28)!important;color:#f8fafc!important}
 #sidebar-menu button[aria-current=page],#sidebar-menu button.active{background:rgba(45,212,191,.13)!important;color:#99f6e4!important;border-color:rgba(45,212,191,.22)!important}
 @media(max-width:640px){#app .dashboard-quick-access{padding:.9rem!important}#app .dashboard-quick-grid{gap:.55rem!important}#app .dashboard-quick-grid>button{min-height:68px}}
+
+/* Assistente flutuante: superfícies e mensagens alinhadas ao tema noturno global. */
+#assistente-ia #ai-painel{
+  color:#e7edf5!important;
+  background:linear-gradient(155deg,#172638 0%,#101b2b 100%)!important;
+  border:1px solid rgba(148,163,184,.24)!important;
+  box-shadow:0 24px 64px rgba(0,0,0,.48),inset 0 1px 0 rgba(255,255,255,.035)!important;
+}
+#assistente-ia #ai-msgs{background:#0d1726!important;color:#e7edf5!important}
+#assistente-ia .ai-msg.bot{
+  color:#e5edf6!important;background:#1b2b40!important;
+  border:1px solid rgba(148,163,184,.2)!important;
+}
+#assistente-ia .ai-msg.eu{color:#f0fdfa!important;background:#0f766e!important}
+#assistente-ia #ai-chips,#assistente-ia #ai-form{background:#142236!important}
+#assistente-ia #ai-chips button{
+  color:#99f6e4!important;background:#173344!important;
+  border-color:rgba(45,212,191,.28)!important;
+}
+#assistente-ia #ai-input{
+  color:#e7edf5!important;background:#0d1726!important;
+  border:1px solid rgba(148,163,184,.28)!important;
+}
+#assistente-ia #ai-input::placeholder{color:#8293a8!important}
+#assistente-ia #ai-input:focus-visible,
+#assistente-ia :is(button):focus-visible{
+  outline:2px solid #5eead4!important;outline-offset:2px!important;
+}
+#assistente-ia #ai-balao{
+  color:#e7edf5!important;background:#172638!important;
+  border:1px solid rgba(148,163,184,.22)!important;
+  box-shadow:0 12px 30px rgba(0,0,0,.38)!important;
+}
+#assistente-ia #ai-balao::after{background:#172638!important}
 </style>
 
 
