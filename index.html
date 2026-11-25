@@ -16219,7 +16219,7 @@ persistido no banco ou no gateway.
                     for (let i = 0; i < headerRow.cells.length; i++) {
                         const th = headerRow.cells[i];
                         const label = norm(th.innerText || th.textContent);
-                        if (/\\b(acoes|opcoes)\\b/.test(label) || label.includes('acoes / senha'))
+                        if (/\b(acoes|opcoes)\b/.test(label) || label.includes('acoes / senha'))
                             actionIndexes.push(i);
                     }
                     if (!actionIndexes.length) return;
