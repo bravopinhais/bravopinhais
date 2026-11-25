@@ -28814,5 +28814,61 @@ html,body{background:var(--bravo-bg);color:var(--bravo-text)}
 }
 </style>
 
+
+<style id="bravo-paineis-cartoes-dark-etapa-119">
+/* Etapa 119 — cartões e painéis internos alinhados ao tema noturno. */
+#app main :is(.card-modern,.gb-card,.gb-panel,.gb-section-panel){
+  color:#e2e8f0!important;
+  background:linear-gradient(145deg,rgba(30,41,59,.94),rgba(15,23,42,.96))!important;
+  border:1px solid rgba(148,163,184,.19)!important;
+  border-radius:16px!important;
+  box-shadow:0 10px 28px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.025)!important;
+}
+#app main :is(.card-modern,.gb-card,.gb-panel,.gb-section-panel) :is(h1,h2,h3,h4,h5,strong){
+  color:#f1f5f9;
+}
+#app main :is(.card-modern,.gb-card,.gb-panel,.gb-section-panel) :is(p,small,.text-slate-500,.text-slate-600,.text-gray-500,.text-gray-600){
+  color:#aebdca;
+}
+#app main :is(.card-modern,.gb-card,.gb-panel,.gb-section-panel) :is(header,.card-header,.panel-header){
+  color:#e2e8f0!important;
+  background:rgba(36,47,63,.72)!important;
+  border-color:rgba(148,163,184,.18)!important;
+}
+#app main :is(.card-modern,.gb-card,.gb-panel,.gb-section-panel) :is(hr,.border-t,.border-b){
+  border-color:rgba(148,163,184,.17)!important;
+}
+#app main :is(.card-modern,.gb-card,.gb-panel,.gb-section-panel) :is(.bg-white,.bg-slate-50,.bg-gray-50,.bg-slate-100,.bg-gray-100){
+  background-color:rgba(15,23,42,.58)!important;
+}
+#app main :is(.card-modern,.gb-card,.gb-panel,.gb-section-panel) :is(.text-slate-900,.text-slate-800,.text-slate-700,.text-gray-900,.text-gray-800,.text-gray-700){
+  color:#e2e8f0!important;
+}
+#app main :is(.card-modern,.gb-card,.gb-panel,.gb-section-panel) :is(.border-slate-100,.border-slate-200,.border-gray-100,.border-gray-200){
+  border-color:rgba(148,163,184,.18)!important;
+}
+#app main :is(.card-modern,.gb-card,.gb-panel,.gb-section-panel) :is(a,button):focus-visible{
+  outline:2px solid #5eead4!important;
+  outline-offset:2px;
+}
+@media(hover:hover) and (pointer:fine){
+  #app main :is(.card-modern,.gb-card,.gb-panel,.gb-section-panel){
+    transition:border-color .18s ease,box-shadow .18s ease,transform .18s ease;
+  }
+  #app main :is(.card-modern,.gb-card,.gb-panel,.gb-section-panel):hover{
+    border-color:rgba(94,234,212,.25)!important;
+    box-shadow:0 14px 34px rgba(0,0,0,.25),inset 0 1px 0 rgba(255,255,255,.035)!important;
+  }
+}
+@media(max-width:640px){
+  #app main :is(.card-modern,.gb-card,.gb-panel,.gb-section-panel){
+    border-radius:14px!important;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  #app main :is(.card-modern,.gb-card,.gb-panel,.gb-section-panel){transition:none!important}
+}
+</style>
+
 </body>
 </html>
