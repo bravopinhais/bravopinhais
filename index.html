@@ -53,16 +53,16 @@
                         colors: {
                             brand: {
                                 50: '#f0fdfa',
-                                100: '#ccfbf1',
-                                200: '#99f6e4',
-                                300: '#5eead4',
-                                400: '#2dd4bf',
-                                500: '#14b8a6',
-                                600: '#0d9488',
-                                700: '#0f766e',
-                                800: '#115e59',
-                                900: '#134e4a',
-                                950: '#042f2e'
+                                100: '#f0f0f0',
+                                200: '#e1e1e1',
+                                300: '#cbcbcb',
+                                400: '#afafaf',
+                                500: '#949494',
+                                600: '#767676',
+                                700: '#606060',
+                                800: '#4d4d4d',
+                                900: '#414141',
+                                950: '#262626'
                             }
                         }
                     }
@@ -4557,7 +4557,7 @@ tbody tr:hover{background-color:#272727!important}
                         '<': '&lt;',
                         '>': '&gt;',
                         '"': '&quot;',
-                        "'": '&#039;'
+                        "'": '&#303030;'
                     }[m];
                 });
             }
@@ -6105,20 +6105,20 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                         card.id = 'bravo-card-dados-gravados';
                         card.setAttribute('role', 'status');
                         card.setAttribute('aria-live', 'polite');
-                        card.style.cssText = 'position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%) translateY(12px);z-index:99999;width:min( calc(100% - 28px), 360px );padding:14px 16px;border-radius:14px;background:#102b22;color:#ecfdf5;box-shadow:0 12px 35px rgba(0,0,0,.28);display:flex;align-items:center;gap:12px;font:600 14px/1.35 system-ui,-apple-system,sans-serif;opacity:0;transition:opacity .2s ease,transform .2s ease;pointer-events:none;';
+                        card.style.cssText = 'position:fixed;left:50%;bottom:calc(22px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%) translateY(12px);z-index:99999;width:min( calc(100% - 28px), 360px );padding:14px 16px;border-radius:14px;background:#252525;color:#ecfdf5;box-shadow:0 12px 35px rgba(0,0,0,.28);display:flex;align-items:center;gap:12px;font:600 14px/1.35 system-ui,-apple-system,sans-serif;opacity:0;transition:opacity .2s ease,transform .2s ease;pointer-events:none;';
                         document.body.appendChild(card);
                     }
                     const offline = modo === 'offline';
                     const salvando = modo === 'salvando';
                     const erro = modo === 'erro';
-                    card.style.background = salvando ? '#1e293b' : erro ? '#451a1a' : offline ? '#422006' : '#102b22';
+                    card.style.background = salvando ? '#282828' : erro ? '#232323' : offline ? '#252525' : '#252525';
                     card.innerHTML = salvando
-                        ? '<span style="font-size:22px;color:#93c5fd"><i class="fa-solid fa-rotate fa-spin"></i></span><span><strong style="display:block">Salvando dados...</strong><small style="display:block;margin-top:3px;font-weight:400;color:#cbd5e1">Aguarde a confirmação para fechar ou sair</small></span>'
+                        ? '<span style="font-size:22px;color:#bebebe"><i class="fa-solid fa-rotate fa-spin"></i></span><span><strong style="display:block">Salvando dados...</strong><small style="display:block;margin-top:3px;font-weight:400;color:#d4d4d4">Aguarde a confirmação para fechar ou sair</small></span>'
                         : erro
-                            ? '<span style="font-size:22px;color:#fca5a5"><i class="fa-solid fa-circle-exclamation"></i></span><span><strong style="display:block">Não foi possível salvar</strong><small style="display:block;margin-top:3px;font-weight:400;color:#fecaca">Verifique sua conexão e tente novamente. Seus dados podem não ter sido gravados.</small></span>'
+                            ? '<span style="font-size:22px;color:#b7b7b7"><i class="fa-solid fa-circle-exclamation"></i></span><span><strong style="display:block">Não foi possível salvar</strong><small style="display:block;margin-top:3px;font-weight:400;color:#d5d5d5">Verifique sua conexão e tente novamente. Seus dados podem não ter sido gravados.</small></span>'
                             : offline
-                                ? '<span style="font-size:22px;color:#fbbf24"><i class="fa-solid fa-floppy-disk"></i></span><span><strong style="display:block">Dados guardados neste dispositivo</strong><small style="display:block;margin-top:3px;font-weight:400;color:#fde68a">Aguardando sincronização com a nuvem</small></span>'
-                                : '<span style="font-size:22px;color:#6ee7b7"><i class="fa-solid fa-circle-check"></i></span><span><strong style="display:block">Dados gravados</strong><small style="display:block;margin-top:3px;font-weight:400;color:#bbf7d0">Cadastro salvo e sincronizado</small></span>';
+                                ? '<span style="font-size:22px;color:#c1c1c1"><i class="fa-solid fa-floppy-disk"></i></span><span><strong style="display:block">Dados guardados neste dispositivo</strong><small style="display:block;margin-top:3px;font-weight:400;color:#e4e4e4">Aguardando sincronização com a nuvem</small></span>'
+                                : '<span style="font-size:22px;color:#cacaca"><i class="fa-solid fa-circle-check"></i></span><span><strong style="display:block">Dados gravados</strong><small style="display:block;margin-top:3px;font-weight:400;color:#e7e7e7">Cadastro salvo e sincronizado</small></span>';
                     card.style.opacity = '1';
                     card.style.transform = 'translateX(-50%) translateY(0)';
                     clearTimeout(_timerCardDadosGravados);
@@ -7492,40 +7492,40 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 return `
             <svg viewBox="0 0 230 300" role="img" aria-label="Cachorro mascote do Guardiões do Bravo, de corpo inteiro" xmlns="http://www.w3.org/2000/svg">
               <defs>
-                <linearGradient id="loginDogFur" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6c47d"/><stop offset=".48" stop-color="#d99443"/><stop offset="1" stop-color="#99551f"/></linearGradient>
-                <linearGradient id="loginDogVest" x1="0" y1="0" x2="0.9" y2="1"><stop offset="0" stop-color="#233e62"/><stop offset="1" stop-color="#091b35"/></linearGradient>
-                <radialGradient id="loginDogMuzzle" cx=".35" cy=".25" r=".8"><stop offset="0" stop-color="#fff7e9"/><stop offset="1" stop-color="#e7cda6"/></radialGradient>
+                <linearGradient id="loginDogFur" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#cacaca"/><stop offset=".48" stop-color="#9d9d9d"/><stop offset="1" stop-color="#606060"/></linearGradient>
+                <linearGradient id="loginDogVest" x1="0" y1="0" x2="0.9" y2="1"><stop offset="0" stop-color="#3b3b3b"/><stop offset="1" stop-color="#191919"/></linearGradient>
+                <radialGradient id="loginDogMuzzle" cx=".35" cy=".25" r=".8"><stop offset="0" stop-color="#f8f8f8"/><stop offset="1" stop-color="#d0d0d0"/></radialGradient>
               </defs>
-              <ellipse cx="111" cy="283" rx="75" ry="11" fill="#020617" opacity=".46"/>
-              <g class="login-dog-tail"><path d="M163 210 C190 211 209 192 207 173 C206 160 196 157 193 170" fill="none" stroke="#a96830" stroke-width="19" stroke-linecap="round"/><path d="M163 207 C189 207 204 191 202 175" fill="none" stroke="#f0b568" stroke-width="8" stroke-linecap="round" opacity=".7"/></g>
+              <ellipse cx="111" cy="283" rx="75" ry="11" fill="#060606" opacity=".46"/>
+              <g class="login-dog-tail"><path d="M163 210 C190 211 209 192 207 173 C206 160 196 157 193 170" fill="none" stroke="#727272" stroke-width="19" stroke-linecap="round"/><path d="M163 207 C189 207 204 191 202 175" fill="none" stroke="#bcbcbc" stroke-width="8" stroke-linecap="round" opacity=".7"/></g>
               <g class="login-dog-body">
                 <path d="M67 190 C49 205 48 240 54 265 Q58 278 76 276 L92 271 L91 224 Z" fill="url(#loginDogFur)"/>
                 <path d="M135 194 C153 206 165 235 162 264 Q160 278 143 276 L126 269 L118 222 Z" fill="url(#loginDogFur)"/>
                 <ellipse cx="101" cy="194" rx="58" ry="70" fill="url(#loginDogFur)"/>
-                <path d="M68 157 Q101 139 137 157 L159 226 Q114 249 57 228 Z" fill="url(#loginDogVest)" stroke="#426185" stroke-width="2"/>
-                <path d="M78 159 L86 231 M132 158 L126 233" stroke="#58799e" stroke-width="4" stroke-linecap="round" opacity=".8"/>
-                <path d="M87 176 Q104 166 123 176 L127 209 Q105 219 83 209 Z" fill="#112b4d" stroke="#7894b6" stroke-width="1.5"/>
+                <path d="M68 157 Q101 139 137 157 L159 226 Q114 249 57 228 Z" fill="url(#loginDogVest)" stroke="#5d5d5d" stroke-width="2"/>
+                <path d="M78 159 L86 231 M132 158 L126 233" stroke="#757575" stroke-width="4" stroke-linecap="round" opacity=".8"/>
+                <path d="M87 176 Q104 166 123 176 L127 209 Q105 219 83 209 Z" fill="#282828" stroke="#919191" stroke-width="1.5"/>
                 <text x="105" y="190" font-size="10" font-family="Arial,sans-serif" font-weight="900" text-anchor="middle" fill="#f8fbff" letter-spacing=".7">BRAVO</text>
                 <path d="M105 195 L115 199 L115 207 Q110 214 105 216 Q100 213 96 207 L96 199 Z" fill="#f1f7ff"/>
-                <path d="M105 200 C102 196 99 200 102 203 L105 207 L108 203 C111 200 108 196 105 200Z" fill="#19395f"/>
-                <path d="M65 170 C56 188 59 220 68 244" fill="none" stroke="#efb66b" stroke-width="16" stroke-linecap="round"/>
-                <path d="M143 170 C151 188 153 220 147 244" fill="none" stroke="#d89548" stroke-width="16" stroke-linecap="round"/>
-                <ellipse cx="70" cy="260" rx="23" ry="14" fill="#f2d4ad"/><ellipse cx="145" cy="260" rx="23" ry="14" fill="#e7bd88"/>
-                <path d="M58 259 Q69 254 80 260 M133 260 Q145 254 157 260" stroke="#b77b43" stroke-width="1.7" fill="none" stroke-linecap="round"/>
+                <path d="M105 200 C102 196 99 200 102 203 L105 207 L108 203 C111 200 108 196 105 200Z" fill="#353535"/>
+                <path d="M65 170 C56 188 59 220 68 244" fill="none" stroke="#bdbdbd" stroke-width="16" stroke-linecap="round"/>
+                <path d="M143 170 C151 188 153 220 147 244" fill="none" stroke="#9e9e9e" stroke-width="16" stroke-linecap="round"/>
+                <ellipse cx="70" cy="260" rx="23" ry="14" fill="#d8d8d8"/><ellipse cx="145" cy="260" rx="23" ry="14" fill="#c2c2c2"/>
+                <path d="M58 259 Q69 254 80 260 M133 260 Q145 254 157 260" stroke="#848484" stroke-width="1.7" fill="none" stroke-linecap="round"/>
               </g>
               <g class="login-dog-head">
-                <g class="login-dog-ear-left"><path d="M65 47 C43 43 33 63 40 91 Q44 111 62 104 L76 69 Z" fill="#8f4b1d"/><path d="M59 57 C48 59 46 77 52 91" fill="none" stroke="#c17a39" stroke-width="5" stroke-linecap="round"/></g>
-                <g class="login-dog-ear-right"><path d="M148 46 C173 41 184 62 176 91 Q171 109 154 102 L139 67 Z" fill="#8f4b1d"/><path d="M157 56 C169 61 169 78 163 91" fill="none" stroke="#c17a39" stroke-width="5" stroke-linecap="round"/></g>
+                <g class="login-dog-ear-left"><path d="M65 47 C43 43 33 63 40 91 Q44 111 62 104 L76 69 Z" fill="#565656"/><path d="M59 57 C48 59 46 77 52 91" fill="none" stroke="#848484" stroke-width="5" stroke-linecap="round"/></g>
+                <g class="login-dog-ear-right"><path d="M148 46 C173 41 184 62 176 91 Q171 109 154 102 L139 67 Z" fill="#565656"/><path d="M157 56 C169 61 169 78 163 91" fill="none" stroke="#848484" stroke-width="5" stroke-linecap="round"/></g>
                 <ellipse cx="108" cy="73" rx="59" ry="55" fill="url(#loginDogFur)"/>
-                <ellipse cx="87" cy="53" rx="20" ry="10" fill="#fff6e6" opacity=".23" transform="rotate(-25 87 53)"/>
+                <ellipse cx="87" cy="53" rx="20" ry="10" fill="#f7f7f7" opacity=".23" transform="rotate(-25 87 53)"/>
                 <ellipse cx="78" cy="73" rx="6.7" ry="8" fill="#fff" opacity=".98"/><g class="login-pet-blink"><ellipse cx="78" cy="73" rx="4.4" ry="6" fill="#20170f"/><circle cx="76.5" cy="70.5" r="1.8" fill="#fff"/></g>
                 <ellipse cx="138" cy="73" rx="6.7" ry="8" fill="#fff" opacity=".98"/><g class="login-pet-blink delay"><ellipse cx="138" cy="73" rx="4.4" ry="6" fill="#20170f"/><circle cx="136.5" cy="70.5" r="1.8" fill="#fff"/></g>
                 <ellipse cx="108" cy="97" rx="37" ry="27" fill="url(#loginDogMuzzle)"/>
-                <path d="M96 87 Q108 80 120 87 Q118 97 108 99 Q98 97 96 87Z" fill="#101827"/><ellipse cx="104" cy="85.7" rx="4" ry="2" fill="#fff" opacity=".7"/>
-                <path d="M108 99 L108 108 Q100 117 91 108 M108 108 Q116 117 125 108" fill="none" stroke="#663b22" stroke-width="2.3" stroke-linecap="round"/>
-                <path class="login-dog-tongue" d="M99 111 Q108 108 117 111 L114 124 Q108 132 102 124 Z" fill="#f8798b" stroke="#d7556c" stroke-width="1"/>
-                <path d="M105 115 L106 125" stroke="#d7556c" stroke-width="1.2" stroke-linecap="round"/>
-                <path d="M77 94 Q86 99 92 94 M124 94 Q131 99 139 94" stroke="#b87a3d" stroke-width="2" stroke-linecap="round" fill="none" opacity=".7"/>
+                <path d="M96 87 Q108 80 120 87 Q118 97 108 99 Q98 97 96 87Z" fill="#171717"/><ellipse cx="104" cy="85.7" rx="4" ry="2" fill="#fff" opacity=".7"/>
+                <path d="M108 99 L108 108 Q100 117 91 108 M108 108 Q116 117 125 108" fill="none" stroke="#424242" stroke-width="2.3" stroke-linecap="round"/>
+                <path class="login-dog-tongue" d="M99 111 Q108 108 117 111 L114 124 Q108 132 102 124 Z" fill="#959595" stroke="#727272" stroke-width="1"/>
+                <path d="M105 115 L106 125" stroke="#727272" stroke-width="1.2" stroke-linecap="round"/>
+                <path d="M77 94 Q86 99 92 94 M124 94 Q131 99 139 94" stroke="#838383" stroke-width="2" stroke-linecap="round" fill="none" opacity=".7"/>
               </g>
             </svg>`;
             }
@@ -7534,37 +7534,37 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 return `
             <svg viewBox="0 0 210 280" role="img" aria-label="Gato mascote do Guardiões do Bravo, de corpo inteiro" xmlns="http://www.w3.org/2000/svg">
               <defs>
-                <linearGradient id="loginCatFur" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#dfe6ec"/><stop offset=".48" stop-color="#929eac"/><stop offset="1" stop-color="#596675"/></linearGradient>
-                <linearGradient id="loginCatVest" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#26486e"/><stop offset="1" stop-color="#0a1c36"/></linearGradient>
+                <linearGradient id="loginCatFur" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#dfe6ec"/><stop offset=".48" stop-color="#9c9c9c"/><stop offset="1" stop-color="#646464"/></linearGradient>
+                <linearGradient id="loginCatVest" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#444444"/><stop offset="1" stop-color="#1a1a1a"/></linearGradient>
               </defs>
-              <ellipse cx="101" cy="264" rx="63" ry="10" fill="#020617" opacity=".42"/>
-              <g class="login-cat-tail"><path d="M138 215 C164 228 187 209 188 184 C189 163 176 155 167 171" fill="none" stroke="#727f8d" stroke-width="15" stroke-linecap="round"/><path d="M139 214 C163 223 180 208 181 187" fill="none" stroke="#d2d9df" stroke-width="5" stroke-linecap="round" opacity=".8"/><path d="M172 164 L182 174 M176 181 L187 186 M169 198 L181 201" stroke="#394656" stroke-width="4" stroke-linecap="round"/></g>
+              <ellipse cx="101" cy="264" rx="63" ry="10" fill="#060606" opacity=".42"/>
+              <g class="login-cat-tail"><path d="M138 215 C164 228 187 209 188 184 C189 163 176 155 167 171" fill="none" stroke="#7d7d7d" stroke-width="15" stroke-linecap="round"/><path d="M139 214 C163 223 180 208 181 187" fill="none" stroke="#d2d9df" stroke-width="5" stroke-linecap="round" opacity=".8"/><path d="M172 164 L182 174 M176 181 L187 186 M169 198 L181 201" stroke="#444444" stroke-width="4" stroke-linecap="round"/></g>
               <g class="login-cat-body">
                 <ellipse cx="103" cy="196" rx="47" ry="61" fill="url(#loginCatFur)"/>
-                <path d="M69 167 Q80 187 72 218 M82 154 Q91 176 84 201 M126 153 Q118 177 128 201 M140 170 Q130 190 139 216" stroke="#4b5665" stroke-width="6" fill="none" stroke-linecap="round" opacity=".78"/>
-                <path d="M75 151 Q102 137 130 151 L147 218 Q104 236 60 218 Z" fill="url(#loginCatVest)" stroke="#56799a" stroke-width="1.8"/>
-                <path d="M80 154 L87 221 M126 153 L120 221" stroke="#7090b0" stroke-width="3.3" stroke-linecap="round" opacity=".8"/>
-                <path d="M87 169 Q103 161 120 169 L123 199 Q103 207 84 199 Z" fill="#102847" stroke="#9fb8d2" stroke-width="1.3"/>
+                <path d="M69 167 Q80 187 72 218 M82 154 Q91 176 84 201 M126 153 Q118 177 128 201 M140 170 Q130 190 139 216" stroke="#555555" stroke-width="6" fill="none" stroke-linecap="round" opacity=".78"/>
+                <path d="M75 151 Q102 137 130 151 L147 218 Q104 236 60 218 Z" fill="url(#loginCatVest)" stroke="#747474" stroke-width="1.8"/>
+                <path d="M80 154 L87 221 M126 153 L120 221" stroke="#8c8c8c" stroke-width="3.3" stroke-linecap="round" opacity=".8"/>
+                <path d="M87 169 Q103 161 120 169 L123 199 Q103 207 84 199 Z" fill="#252525" stroke="#b5b5b5" stroke-width="1.3"/>
                 <text x="103" y="181" font-size="8.5" font-family="Arial,sans-serif" font-weight="900" text-anchor="middle" fill="#fff" letter-spacing=".55">BRAVO</text>
                 <path d="M103 185 L111 189 L111 196 Q107 202 103 204 Q98 201 95 196 L95 189 Z" fill="#f1f7ff"/>
-                <path d="M103 190 C100 187 98 190 101 193 L103 195 L106 193 C109 190 106 187 103 190Z" fill="#19395f"/>
+                <path d="M103 190 C100 187 98 190 101 193 L103 195 L106 193 C109 190 106 187 103 190Z" fill="#353535"/>
                 <path d="M74 219 C68 235 66 245 68 255 Q74 261 85 257 L91 229" fill="url(#loginCatFur)"/>
                 <path d="M122 229 L130 254 Q138 260 146 254 Q146 236 136 219" fill="url(#loginCatFur)"/>
                 <ellipse cx="77" cy="254" rx="21" ry="11" fill="#dce2e7"/><ellipse cx="133" cy="254" rx="20" ry="11" fill="#c6ced6"/>
-                <path d="M66 254 Q77 249 87 254 M123 254 Q133 249 143 254" fill="none" stroke="#7a8794" stroke-width="1.4" stroke-linecap="round"/>
+                <path d="M66 254 Q77 249 87 254 M123 254 Q133 249 143 254" fill="none" stroke="#858585" stroke-width="1.4" stroke-linecap="round"/>
               </g>
               <g class="login-cat-head">
-                <path d="M54 66 L53 19 Q54 9 64 17 L91 42 Z" fill="#758190" stroke="#566170" stroke-width="1.5"/><path d="M61 37 L60 23 L79 42 Z" fill="#d88f9b"/>
-                <path d="M119 42 L146 17 Q156 10 156 22 L154 68 Z" fill="#758190" stroke="#566170" stroke-width="1.5"/><path d="M133 41 L151 23 L149 39 Z" fill="#d88f9b"/>
+                <path d="M54 66 L53 19 Q54 9 64 17 L91 42 Z" fill="#808080" stroke="#606060" stroke-width="1.5"/><path d="M61 37 L60 23 L79 42 Z" fill="#9f9f9f"/>
+                <path d="M119 42 L146 17 Q156 10 156 22 L154 68 Z" fill="#808080" stroke="#606060" stroke-width="1.5"/><path d="M133 41 L151 23 L149 39 Z" fill="#9f9f9f"/>
                 <ellipse cx="104" cy="69" rx="52" ry="48" fill="url(#loginCatFur)"/>
-                <path d="M84 29 L90 45 M104 22 L104 43 M122 29 L117 45" stroke="#596574" stroke-width="5" stroke-linecap="round"/>
-                <g class="login-pet-blink"><ellipse cx="84" cy="66" rx="8" ry="10" fill="#a4dc72"/><ellipse cx="84" cy="66" rx="2.5" ry="7.5" fill="#111827"/><circle cx="81.7" cy="62.5" r="2" fill="#fff"/></g>
-                <g class="login-pet-blink delay"><ellipse cx="124" cy="66" rx="8" ry="10" fill="#a4dc72"/><ellipse cx="124" cy="66" rx="2.5" ry="7.5" fill="#111827"/><circle cx="121.7" cy="62.5" r="2" fill="#fff"/></g>
+                <path d="M84 29 L90 45 M104 22 L104 43 M122 29 L117 45" stroke="#646464" stroke-width="5" stroke-linecap="round"/>
+                <g class="login-pet-blink"><ellipse cx="84" cy="66" rx="8" ry="10" fill="#c8c8c8"/><ellipse cx="84" cy="66" rx="2.5" ry="7.5" fill="#181818"/><circle cx="81.7" cy="62.5" r="2" fill="#fff"/></g>
+                <g class="login-pet-blink delay"><ellipse cx="124" cy="66" rx="8" ry="10" fill="#c8c8c8"/><ellipse cx="124" cy="66" rx="2.5" ry="7.5" fill="#181818"/><circle cx="121.7" cy="62.5" r="2" fill="#fff"/></g>
                 <ellipse cx="104" cy="86" rx="27" ry="19" fill="#eef0ee"/>
-                <path d="M98 80 Q104 75 110 80 Q108 86 104 87 Q100 86 98 80Z" fill="#e58b9c"/>
+                <path d="M98 80 Q104 75 110 80 Q108 86 104 87 Q100 86 98 80Z" fill="#9f9f9f"/>
                 <path d="M104 87 L104 94 Q98 100 92 94 M104 94 Q110 100 116 94" fill="none" stroke="#454d57" stroke-width="1.8" stroke-linecap="round"/>
                 <path d="M80 85 L55 80 M80 91 L55 94 M128 85 L153 80 M128 91 L153 94" stroke="#eef2f4" stroke-width="1.6" stroke-linecap="round"/>
-                <path d="M77 82 L67 79 M132 82 L142 79" stroke="#576473" stroke-width="2.5" stroke-linecap="round"/>
+                <path d="M77 82 L67 79 M132 82 L142 79" stroke="#626262" stroke-width="2.5" stroke-linecap="round"/>
               </g>
             </svg>`;
             }
@@ -7575,7 +7575,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 <div class="login-photo-page login-composite-page" aria-label="Tela de acesso Guardiões do Bravo">
                     <img id="login-composite-background" class="login-composite-background" src="${arteLoginCompleta}" alt="Notebook em um ambiente moderno, exibindo a tela de acesso do Guardiões do Bravo com apenas o botão Continuar com Google" onload="posicionarBotaoLoginGoogle()">
                     <button id="btn-google-login" type="button" onclick="entrarComGoogle()" class="login-composite-google-button" aria-label="Continuar com Google" title="Continuar com Google">
-                        <svg class="login-composite-google-icon" width="24" height="24" viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.76 7.18l7.73 6C44.42 37.99 46.98 31.8 46.98 24.55z"/><path fill="#FBBC05" d="M10.53 28.59a14.4 14.4 0 0 1 0-9.18l-7.98-6.19a24 24 0 0 0 0 21.56l7.98-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.91-5.8l-7.73-6c-2.15 1.45-4.9 2.3-8.18 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+                        <svg class="login-composite-google-icon" width="24" height="24" viewBox="0 0 48 48" aria-hidden="true"><path fill="#656565" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#7f7f7f" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.76 7.18l7.73 6C44.42 37.99 46.98 31.8 46.98 24.55z"/><path fill="#bcbcbc" d="M10.53 28.59a14.4 14.4 0 0 1 0-9.18l-7.98-6.19a24 24 0 0 0 0 21.56l7.98-6.19z"/><path fill="#898989" d="M24 48c6.48 0 11.93-2.13 15.91-5.8l-7.73-6c-2.15 1.45-4.9 2.3-8.18 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
                         <span class="login-composite-google-label">Continuar com Google</span>
                         <span class="login-composite-screenreader">Continuar com Google</span>
                     </button>
@@ -8087,7 +8087,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     aviso = document.createElement('div');
                     aviso.id = 'bravo-aviso-rascunho';
                     aviso.setAttribute('role', 'status');
-                    aviso.style.cssText = 'position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%);z-index:99998;width:min(calc(100% - 28px),380px);padding:11px 14px;border-radius:12px;background:#16352d;color:#ecfdf5;box-shadow:0 8px 24px rgba(0,0,0,.2);font:600 13px/1.4 system-ui;text-align:center;pointer-events:none;';
+                    aviso.style.cssText = 'position:fixed;left:50%;bottom:calc(76px + env(safe-area-inset-bottom, 0px));transform:translateX(-50%);z-index:99998;width:min(calc(100% - 28px),380px);padding:11px 14px;border-radius:12px;background:#2e2e2e;color:#ecfdf5;box-shadow:0 8px 24px rgba(0,0,0,.2);font:600 13px/1.4 system-ui;text-align:center;pointer-events:none;';
                     document.body.appendChild(aviso);
                 }
                 aviso.textContent = mensagem;
@@ -8650,7 +8650,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                 label: 'Valores registrados',
                                 data: [totalReceber, totalPagar, totalReceber - totalPagar],
                                 backgroundColor: ['rgba(96,165,250,.82)', 'rgba(251,113,133,.78)', 'rgba(148,163,184,.72)'],
-                                borderColor: ['#60a5fa', '#fb7185', '#94a3b8'],
+                                borderColor: ['#9c9c9c', '#909090', '#a1a1a1'],
                                 borderWidth: 1,
                                 borderRadius: 10,
                                 maxBarThickness: 46
@@ -8669,7 +8669,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                 },
                                 tooltip: {
                                     backgroundColor: '#11151b', titleColor: '#f4f4f5', bodyColor: '#e4e4e7',
-                                    borderColor: '#454c58', borderWidth: 1, padding: 12, displayColors: true,
+                                    borderColor: '#4b4b4b', borderWidth: 1, padding: 12, displayColors: true,
                                     callbacks: {
                                         label: context => `${context.dataset.label}: ${dashboardMoeda(context.parsed.y)}`
                                     }
@@ -8758,7 +8758,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                         labels: ['Adequado', 'Insuficiente (Crítico)', 'Excedente'],
                         datasets: [{
                             data: [qtdAdequado, qtdCritico, qtdExcedente],
-                            backgroundColor: ['#5b9b87', '#d66b7b', '#c99a52'],
+                            backgroundColor: ['#8c8c8c', '#838383', '#9f9f9f'],
                             borderWidth: 3,
                             borderColor: '#242932'
                         }]
@@ -10449,7 +10449,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                         labels: ['Estoque Adequado', 'Insuficiente (Crítico)', 'Excedente / Antigo'],
                         datasets: [{
                             data: [qtdAdequado, qtdCritico, qtdExcedente],
-                            backgroundColor: ['#0d9488', '#f43f5e', '#f59e0b'],
+                            backgroundColor: ['#767676', '#686868', '#a6a6a6'],
                             borderWidth: 3,
                             borderColor: '#ffffff'
                         }]
@@ -13064,12 +13064,12 @@ html,body{min-height:100%;background:#080e18!important;color:#e7edf5!important;c
             // ---------- 2) Ilustrações: gato 3D e cão (SVG com gradientes e brilhos) ----------
             document.body.insertAdjacentHTML('beforeend', `
 <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
-  <radialGradient id="gatoCorpo" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#ffd29a"/><stop offset=".55" stop-color="#f39a3a"/><stop offset="1" stop-color="#b9560f"/></radialGradient>
-  <radialGradient id="gatoOrelha" cx=".5" cy=".4" r=".7"><stop offset="0" stop-color="#ffc9d3"/><stop offset="1" stop-color="#e0788f"/></radialGradient>
-  <radialGradient id="gatoOlho" cx=".4" cy=".35" r=".75"><stop offset="0" stop-color="#eaff9f"/><stop offset=".6" stop-color="#6cc04a"/><stop offset="1" stop-color="#2e7d32"/></radialGradient>
-  <radialGradient id="caoCorpo" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#e3b27a"/><stop offset=".55" stop-color="#a8672f"/><stop offset="1" stop-color="#6b3d17"/></radialGradient>
-  <linearGradient id="caoOrelha" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#85501f"/><stop offset="1" stop-color="#42240d"/></linearGradient>
-  <radialGradient id="caoFocinho" cx=".4" cy=".3" r=".8"><stop offset="0" stop-color="#fff3e2"/><stop offset="1" stop-color="#e2bf92"/></radialGradient>
+  <radialGradient id="gatoCorpo" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#d8d8d8"/><stop offset=".55" stop-color="#a6a6a6"/><stop offset="1" stop-color="#666666"/></radialGradient>
+  <radialGradient id="gatoOrelha" cx=".5" cy=".4" r=".7"><stop offset="0" stop-color="#d5d5d5"/><stop offset="1" stop-color="#909090"/></radialGradient>
+  <radialGradient id="gatoOlho" cx=".4" cy=".35" r=".75"><stop offset="0" stop-color="#f4f4f4"/><stop offset=".6" stop-color="#a6a6a6"/><stop offset="1" stop-color="#676767"/></radialGradient>
+  <radialGradient id="caoCorpo" cx=".35" cy=".3" r=".8"><stop offset="0" stop-color="#b8b8b8"/><stop offset=".55" stop-color="#717171"/><stop offset="1" stop-color="#444444"/></radialGradient>
+  <linearGradient id="caoOrelha" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#585858"/><stop offset="1" stop-color="#292929"/></linearGradient>
+  <radialGradient id="caoFocinho" cx=".4" cy=".3" r=".8"><stop offset="0" stop-color="#f4f4f4"/><stop offset="1" stop-color="#c3c3c3"/></radialGradient>
 </defs></svg>`);
 
             function gatoSVG(tam=32, classe='gato-ia') {
@@ -13079,13 +13079,13 @@ html,body{min-height:100%;background:#080e18!important;color:#e7edf5!important;c
       <path d="M54 30 L52 6 L35 18 Z" fill="url(#gatoCorpo)"/><path d="M50 23 L49 11 L39 18 Z" fill="url(#gatoOrelha)"/>
       <ellipse cx="32" cy="36" rx="24" ry="21" fill="url(#gatoCorpo)"/>
       <ellipse cx="24" cy="25" rx="10" ry="5" fill="#fff" opacity=".28" transform="rotate(-20 24 25)"/>
-      <path d="M32 17 L32 23 M26 18.5 L27.5 23.5 M38 18.5 L36.5 23.5" stroke="#b4560f" stroke-width="1.6" stroke-linecap="round" fill="none"/>
+      <path d="M32 17 L32 23 M26 18.5 L27.5 23.5 M38 18.5 L36.5 23.5" stroke="#656565" stroke-width="1.6" stroke-linecap="round" fill="none"/>
       <g class="pet-olho"><ellipse cx="22" cy="34" rx="4.4" ry="5.2" fill="url(#gatoOlho)"/><ellipse cx="22" cy="34.2" rx="1.6" ry="3.7" fill="#1a1208"/><circle cx="20.7" cy="32" r="1.3" fill="#fff"/></g>
       <g class="pet-olho"><ellipse cx="42" cy="34" rx="4.4" ry="5.2" fill="url(#gatoOlho)"/><ellipse cx="42" cy="34.2" rx="1.6" ry="3.7" fill="#1a1208"/><circle cx="40.7" cy="32" r="1.3" fill="#fff"/></g>
-      <ellipse cx="32" cy="46" rx="9.5" ry="6" fill="#ffe8cc" opacity=".92"/>
-      <path d="M29 41 Q32 39.8 35 41 Q33.5 44.6 32 45.2 Q30.5 44.6 29 41Z" fill="#ff8fa3"/>
+      <ellipse cx="32" cy="46" rx="9.5" ry="6" fill="#ebebeb" opacity=".92"/>
+      <path d="M29 41 Q32 39.8 35 41 Q33.5 44.6 32 45.2 Q30.5 44.6 29 41Z" fill="#a8a8a8"/>
       <ellipse cx="31" cy="41.2" rx="1.1" ry=".6" fill="#fff" opacity=".7"/>
-      <path d="M32 45 Q32 48.4 28.5 49 M32 45 Q32 48.4 35.5 49" stroke="#7a3b12" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+      <path d="M32 45 Q32 48.4 28.5 49 M32 45 Q32 48.4 35.5 49" stroke="#454545" stroke-width="1.2" stroke-linecap="round" fill="none"/>
       <path d="M20 44 L6 41 M20 46.5 L6 48.5 M44 44 L58 41 M44 46.5 L58 48.5" stroke="#fff" stroke-opacity=".85" stroke-width=".9" stroke-linecap="round"/>
     </svg>`;
             }
@@ -13100,10 +13100,10 @@ html,body{min-height:100%;background:#080e18!important;color:#e7edf5!important;c
       <ellipse cx="32" cy="45" rx="11.5" ry="8.5" fill="url(#caoFocinho)"/>
       <g class="pet-olho"><circle cx="23" cy="32" r="3.7" fill="#1b120a"/><circle cx="21.9" cy="30.7" r="1.3" fill="#fff"/></g>
       <g class="pet-olho"><circle cx="41" cy="32" r="3.7" fill="#1b120a"/><circle cx="39.9" cy="30.7" r="1.3" fill="#fff"/></g>
-      <path d="M30 48.6 Q32 56 34 48.6 Z" fill="#ff7f93"/>
+      <path d="M30 48.6 Q32 56 34 48.6 Z" fill="#9c9c9c"/>
       <ellipse cx="32" cy="40.5" rx="4.6" ry="3.1" fill="#1b120a"/>
       <ellipse cx="30.7" cy="39.4" rx="1.4" ry=".7" fill="#fff" opacity=".6"/>
-      <path d="M32 43.5 L32 47.2 M32 47.2 Q28 50.4 26 47 M32 47.2 Q36 50.4 38 47" stroke="#5a3414" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+      <path d="M32 43.5 L32 47.2 M32 47.2 Q28 50.4 26 47 M32 47.2 Q36 50.4 38 47" stroke="#3a3a3a" stroke-width="1.2" stroke-linecap="round" fill="none"/>
     </svg>`;
             }
 
@@ -17404,7 +17404,7 @@ persistido no banco ou no gateway.
                 el.id = 'gb-aviso-conexao';
                 el.setAttribute('role', 'status');
                 el.setAttribute('aria-live', 'polite');
-                el.style.cssText = 'position:fixed;top:calc(42px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%) translateY(-8px);z-index:10080;width:min( calc(100% - 24px), 440px );display:none;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:14px;background:#422006;color:#fff7ed;border:1px solid #92400e;box-shadow:0 10px 28px rgba(15,23,42,.22);font:600 12px/1.45 system-ui,-apple-system,sans-serif;';
+                el.style.cssText = 'position:fixed;top:calc(42px + env(safe-area-inset-top,0px));left:50%;transform:translateX(-50%) translateY(-8px);z-index:10080;width:min( calc(100% - 24px), 440px );display:none;align-items:flex-start;gap:10px;padding:12px 14px;border-radius:14px;background:#252525;color:#fff7ed;border:1px solid #4e4e4e;box-shadow:0 10px 28px rgba(15,23,42,.22);font:600 12px/1.45 system-ui,-apple-system,sans-serif;';
                 document.body.appendChild(el);
                 return el;
             }
@@ -17413,8 +17413,8 @@ persistido no banco ou no gateway.
                 const chave = tipo + '|' + titulo + '|' + detalhe;
                 if (ultimoEstado === chave && el.style.display !== 'none') return;
                 ultimoEstado = chave;
-                el.style.background = tipo === 'erro' ? '#450a0a' : tipo === 'ok' ? '#064e3b' : '#422006';
-                el.style.borderColor = tipo === 'erro' ? '#991b1b' : tipo === 'ok' ? '#047857' : '#92400e';
+                el.style.background = tipo === 'erro' ? '#171717' : tipo === 'ok' ? '#3d3d3d' : '#252525';
+                el.style.borderColor = tipo === 'erro' ? '#363636' : tipo === 'ok' ? '#5d5d5d' : '#4e4e4e';
                 const icone = tipo === 'erro' ? 'fa-triangle-exclamation' : tipo === 'ok' ? 'fa-circle-check' : 'fa-wifi';
                 el.innerHTML = '<i class="fa-solid ' + icone + '" aria-hidden="true" style="font-size:17px;margin-top:1px"></i><span style="flex:1;min-width:0"><strong style="display:block;font-size:13px">' + titulo + '</strong><span style="display:block;font-weight:400;opacity:.92">' + detalhe + '</span></span><button type="button" aria-label="Fechar aviso" style="border:0;background:transparent;color:inherit;font-size:19px;line-height:1;padding:0 2px;min-height:24px">×</button>';
                 el.querySelector('button').addEventListener('click', () => { el.style.display = 'none'; ultimoEstado = ''; });
@@ -33443,7 +33443,7 @@ html:root:root:root option,html:root:root:root optgroup{background:#1b1b1b;color
 <script id="bravo-noturno-guarda-contraste">
 (function(){
   if(window.__bravoDarkGuard) return; window.__bravoDarkGuard=true;
-  var PAGE=[11,18,32], SURF='#142034';
+  var PAGE=[11,18,32], SURF='#1f1f1f';
   var SKIP={IMG:1,CANVAS:1,VIDEO:1,SCRIPT:1,STYLE:1,LINK:1,META:1,NOSCRIPT:1,IFRAME:1,PICTURE:1,SOURCE:1,BR:1,HR:1,OPTION:1,OPTGROUP:1,PATH:1,G:1,CIRCLE:1,RECT:1,LINE:1,POLYLINE:1,POLYGON:1,ELLIPSE:1,DEFS:1,USE:1,TITLE:1,TEXT:0};
   function parse(c){var m=c&&c.match(/rgba?\(([^)]+)\)/);if(!m)return null;var p=m[1].split(/[ ,\/]+/).filter(Boolean).map(parseFloat);return [p[0],p[1],p[2],p.length>3?p[3]:1];}
   function lin(v){v/=255;return v<=.03928?v/12.92:Math.pow((v+.055)/1.055,2.4);}
@@ -33471,7 +33471,7 @@ html:root:root:root option,html:root:root:root optgroup{background:#1b1b1b;color
   function fixColor(tc,bg,strong){
     var hsl=rgb2hsl(tc[0],tc[1],tc[2]);
     var neutral=hsl[1]<.25||(hsl[0]>=200&&hsl[0]<=235&&hsl[1]<.5);
-    if(neutral){return strong?'#e7edf5':'#aab8c8';}
+    if(neutral){return strong?'#e7edf5':'#b6b6b6';}
     var l=hsl[2],out=null;
     for(var i=0;i<24;i++){l=Math.min(.92,l+.04);var hex=hsl2hex(hsl[0],Math.min(hsl[1],.85),l);var m=hex.match(/#(..)(..)(..)/);var c=[parseInt(m[1],16),parseInt(m[2],16),parseInt(m[3],16)];out=hex;if(ratio(c,bg)>=4.5)break;}
     return out;
@@ -33537,7 +33537,7 @@ html:root:root:root option,html:root:root:root optgroup{background:#1b1b1b;color
     window.addEventListener('load',function(){setTimeout(fullPass,300);setTimeout(fullPass,1500);});
     window.addEventListener('resize',function(){clearTimeout(full);full=setTimeout(fullPass,400);});
     fullPass();
-    var tries=0,t=setInterval(function(){tries++;if(window.Chart&&Chart.defaults){try{Chart.defaults.color='#aab8c8';Chart.defaults.borderColor='rgba(148,163,184,.18)';}catch(e){}clearInterval(t);}if(tries>80)clearInterval(t);},800);
+    var tries=0,t=setInterval(function(){tries++;if(window.Chart&&Chart.defaults){try{Chart.defaults.color='#b6b6b6';Chart.defaults.borderColor='rgba(148,163,184,.18)';}catch(e){}clearInterval(t);}if(tries>80)clearInterval(t);},800);
   }
   if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start);else start();
   window.bravoDarkGuardRun=fullPass;
