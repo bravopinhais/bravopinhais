@@ -19363,7 +19363,7 @@ html,body,#app,#app header.bg-slate-950.no-print,#app header.md\\:hidden{backgro
     var filterRow=table.tHead.querySelector('tr[data-grid-filter-row="1"]');
     var filters=[];
     if(filterRow){
-      var inputs=filterRow.querySelectorAll('input[data-grid-filter-key]');
+      var inputs=filterRow.querySelectorAll('input[data-grid-filter-key],select[data-grid-filter-key],textarea[data-grid-filter-key]');
       for(var fi=0;fi<inputs.length;fi++){
         var value=norm(inputs[fi].value);
         if(!value) continue;
@@ -19434,16 +19434,16 @@ html,body,#app,#app header.bg-slate-950.no-print,#app header.md\\:hidden{backgro
     if(prev) prev.disabled=state.page<=1;
     if(next) next.disabled=state.page>=pages;
   }
-  function setup(table){
+  function setup(table,reset){
     if(!eligible(table)) return;
     var state=states.get(table);
     if(!state){
       state={page:1,pageSize:PAGE_SIZE,matches:[],special:[],nav:null,timer:null};
       states.set(table,state);
     }
-    applyPage(table,state,false);
+    applyPage(table,state,!!reset);
   }
-  function schedule(table,delay){
+  function schedule(table,delay,reset){
     if(!table) return;
     var state=states.get(table);
     if(!state){
@@ -19451,8 +19451,11 @@ html,body,#app,#app header.bg-slate-950.no-print,#app header.md\\:hidden{backgro
       states.set(table,state);
     }
     clearTimeout(state.timer);
+    state.resetPending=state.resetPending || !!reset;
     state.timer=setTimeout(function(){
-      if(table.isConnected && table.dataset.gridEnhanced==='1') setup(table);
+      var shouldReset=!!state.resetPending;
+      state.resetPending=false;
+      if(table.isConnected && table.dataset.gridEnhanced==='1') setup(table,shouldReset);
     },delay || 170);
   }
   function scan(root){
@@ -19478,16 +19481,16 @@ html,body,#app,#app header.bg-slate-950.no-print,#app header.md\\:hidden{backgro
     app.querySelectorAll('table').forEach(function(table){schedule(table,220);});
   }
   document.addEventListener('input',function(event){
-    var input=event.target && event.target.closest ? event.target.closest('input[data-grid-filter-key]') : null;
+    var input=event.target && event.target.closest ? event.target.closest('input[data-grid-filter-key],select[data-grid-filter-key],textarea[data-grid-filter-key]') : null;
     if(!input) return;
     var table=input.closest('table');
-    if(table) schedule(table,170);
+    if(table) schedule(table,170,true);
   },true);
   document.addEventListener('change',function(event){
-    var input=event.target && event.target.closest ? event.target.closest('input[data-grid-filter-key]') : null;
+    var input=event.target && event.target.closest ? event.target.closest('input[data-grid-filter-key],select[data-grid-filter-key],textarea[data-grid-filter-key]') : null;
     if(input){
       var table=input.closest('table');
-      if(table) schedule(table,170);
+      if(table) schedule(table,170,true);
     }
   },true);
 
