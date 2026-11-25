@@ -28329,6 +28329,108 @@ html,body,#app{background:var(--bravo-bg)!important;color:var(--bravo-text)!impo
   #app main .gb-pagination-current{min-width:72px}
   #app main .gb-pagination-button{padding:6px 9px!important}
 }
+
+/* ETAPA 114 — consistência visual transversal e acabamento responsivo */
+:root{
+  color-scheme:dark;
+  --bravo-bg:#101114;
+  --bravo-surface:#191c22;
+  --bravo-card:#20242b;
+  --bravo-raised:#272d36;
+  --bravo-field:#292f38;
+  --bravo-border:#3a424e;
+  --bravo-text:#f3f4f6;
+  --bravo-muted:#a5acb8;
+}
+html,body{background:var(--bravo-bg);color:var(--bravo-text)}
+#app main :is(.card,.card-modern,.gb-card,.gb-panel,.gb-section-panel,.form-section){
+  background:var(--bravo-card)!important;
+  color:var(--bravo-text)!important;
+  border:1px solid var(--bravo-border)!important;
+  box-shadow:0 7px 22px rgba(0,0,0,.16)!important;
+}
+#app main :is(.card-header,.panel-header,[class*="section-header"]){
+  color:#eef1f5!important;
+  border-color:var(--bravo-border)!important;
+}
+#app main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),select,textarea),
+#modal-container :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),select,textarea){
+  color:#f1f3f6!important;
+  background:var(--bravo-field)!important;
+  border:1px solid #424b59!important;
+  border-radius:9px!important;
+  box-shadow:none!important;
+}
+#app main select option,#modal-container select option{
+  color:#f1f3f6;background:#20242b;
+}
+#app main :is(input,select,textarea):focus-visible,
+#modal-container :is(input,select,textarea):focus-visible{
+  outline:2px solid #aeb9c8!important;
+  outline-offset:2px!important;
+  border-color:#8491a3!important;
+}
+#app main :is(.overflow-x-auto,.table-responsive){
+  max-width:100%!important;
+  overflow-x:auto!important;
+  overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;
+  scrollbar-color:#596575 #1a1f26;
+}
+#app main table{max-width:100%;border-color:var(--bravo-border)!important}
+#app main table :is(th,td){border-color:#343c47!important}
+#app main table thead th{
+  background:#272d36!important;color:#cbd2dc!important;
+}
+#app main table tbody tr{background:#1d2229!important}
+#app main table tbody tr:nth-child(even){background:#21262e!important}
+#app main table tbody tr:hover{background:#2a313b!important}
+#app main table tbody tr[hidden]{display:none!important}
+#app main .gb-pagination{
+  box-sizing:border-box;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:10px;flex-wrap:wrap;width:100%;max-width:100%;
+  background:#1a1f26!important;color:#b8c0cc!important;
+  border:1px solid #343c47!important;border-top:0!important;
+  border-radius:0 0 13px 13px!important;
+}
+#app main .gb-pagination-controls{
+  display:flex;align-items:center;justify-content:flex-end;
+  gap:7px;flex-wrap:wrap;min-width:0;
+}
+#app main .gb-pagination-size{max-width:88px}
+#app main .gb-pagination-button{
+  min-height:36px!important;
+  background:#2b323d!important;color:#e1e6ed!important;
+  border:1px solid #46505e!important;
+}
+#app main .gb-pagination-button:hover:not(:disabled){
+  background:#394453!important;border-color:#68778a!important;color:#fff!important;
+}
+#app main .gb-pagination-button:disabled{opacity:.42!important}
+#app main :is(button,a,[role="button"]):focus-visible,
+#sidebar-menu :is(button,a):focus-visible{
+  outline:2px solid #aeb9c8!important;outline-offset:2px!important;
+}
+#app main :is(.text-slate-900,.text-slate-800,.text-gray-900,.text-gray-800,.text-zinc-900){
+  color:#e8ebef!important;
+}
+#app main :is(.text-slate-500,.text-slate-600,.text-gray-500,.text-gray-600){
+  color:#a5acb8!important;
+}
+@media(max-width:640px){
+  #app main .gb-pagination{align-items:flex-start;padding:11px 10px!important}
+  #app main .gb-pagination-controls{width:100%;justify-content:space-between}
+  #app main .gb-pagination-button{min-height:40px!important}
+  #app main :is(.card,.card-modern,.gb-card,.gb-panel,.gb-section-panel,.form-section){
+    border-radius:14px!important;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  #app main *,#modal-container *{scroll-behavior:auto!important;transition:none!important;animation:none!important}
+}
+
 </style>
 </body>
 </html>
