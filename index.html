@@ -8263,7 +8263,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                         <div class="space-y-4 text-xs text-slate-700 leading-relaxed bg-slate-50/80 p-5 rounded-2xl border border-slate-200/80">
                             <div class="border-b pb-3">
                                 <h4 class="font-black text-slate-900 uppercase text-[11px] tracking-wider mb-1 flex items-center gap-2"><i class="fa-solid fa-chart-line text-teal-600"></i> 1. Panorama Financeiro & Caixa</h4>
-                                <p>O saldo consolidado aponta para <b>R$ ${saldoCaixa.toFixed(2)}</b> (Receitas: R$ ${totalReceber.toFixed(2)} x Despesas: R$ ${totalPagar.toFixed(2)}). ${saldoCaixa >= 0 ? 'O condomínio mantém estabilidade orçamentária para as despesas vigentes.' : 'Recomenda-se atenção ao fluxo de caixa para cobrir os títulos previstos.'}</p>
+                                <p>O saldo consolidado aponta para <b>${dashboardMoeda(saldoCaixa)}</b> (Receitas: ${dashboardMoeda(totalReceber)} x Despesas: ${dashboardMoeda(totalPagar)}). ${saldoCaixa >= 0 ? 'O condomínio mantém estabilidade orçamentária para as despesas vigentes.' : 'Recomenda-se atenção ao fluxo de caixa para cobrir os títulos previstos.'}</p>
                             </div>
                             <div class="border-b pb-3">
                                 <h4 class="font-black text-slate-900 uppercase text-[11px] tracking-wider mb-1 flex items-center gap-2"><i class="fa-solid fa-boxes-stacked text-teal-600"></i> 2. Gestão de Inventário</h4>
