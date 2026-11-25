@@ -30468,5 +30468,49 @@ body>.grid-actions-popover :is(button,a,[role="menuitem"]):hover{
 }
 </style>
 
+<style id="bravo-noturno-modais-superficies-internas-etapa-153">
+/* Etapa 153 — uniformiza cartões e controles neutros dentro de modais aninhados. */
+#modal-container :is(.bg-white,.bg-gray-50,.bg-gray-100,.bg-slate-50,.bg-slate-100,.bg-zinc-50,.bg-neutral-50){
+  background-color:#172438!important;
+  background-image:none!important;
+  color:#e5edf6!important;
+  border-color:#34465d!important;
+}
+#modal-container :is(.text-black,.text-gray-950,.text-gray-900,.text-gray-800,.text-gray-700,.text-slate-950,.text-slate-900,.text-slate-800,.text-slate-700,.text-neutral-900){
+  color:#e5edf6!important;
+}
+#modal-container :is(.text-gray-600,.text-gray-500,.text-slate-600,.text-slate-500,.text-neutral-600){
+  color:#a8b8ca!important;
+}
+#modal-container :is(.border-gray-100,.border-gray-200,.border-slate-100,.border-slate-200,.border-neutral-100,.border-neutral-200){
+  border-color:#34465d!important;
+}
+#modal-container :is(input,select,textarea,[contenteditable="true"]){
+  color:#f1f5f9!important;
+  background:#0d1726!important;
+  border:1px solid #40536b!important;
+  color-scheme:dark;
+}
+#modal-container :is(input,textarea)::placeholder{
+  color:#8295aa!important;
+  opacity:1;
+}
+#modal-container :is(input,select,textarea):focus-visible{
+  outline:2px solid #5eead4!important;
+  outline-offset:2px;
+}
+#modal-container :is(button.bg-slate-100,button.bg-slate-200,button.bg-gray-100,button.bg-gray-200){
+  color:#e5edf6!important;
+  background:#26364b!important;
+  border:1px solid #40536b!important;
+}
+#modal-container :is(button.bg-slate-100,button.bg-slate-200,button.bg-gray-100,button.bg-gray-200):hover{
+  background:#31445d!important;
+}
+@media(prefers-reduced-motion:reduce){
+  #modal-container *{scroll-behavior:auto!important}
+}
+</style>
+
 </body>
 </html>
