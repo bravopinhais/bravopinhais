@@ -15855,6 +15855,9 @@ persistido no banco ou no gateway.
                         }))
                         .filter(item => item.value && item.index >= 0);
                     let visibleCount = 0;
+                    const matchingRows = [];
+                    const structuralRows = [];
+                    let totalRows = 0;
 
                     for (let bodyIndex = 0; bodyIndex < table.tBodies.length; bodyIndex++) {
                         const rows = table.tBodies[bodyIndex].rows;
@@ -15873,8 +15876,10 @@ persistido no banco ou no gateway.
                             }
                             if (structural) {
                                 row.hidden = false;
+                                structuralRows.push(row);
                                 continue;
                             }
+                            totalRows++;
                             let keep = true;
                             for (let filterIndex = 0; filterIndex < filters.length; filterIndex++) {
                                 const filter = filters[filterIndex];
@@ -15886,9 +15891,22 @@ persistido no banco ou no gateway.
                                 }
                             }
                             row.hidden = !keep;
-                            if (keep) visibleCount++;
+                            if (keep) {
+                                visibleCount++;
+                                matchingRows.push(row);
+                            }
                         }
                     }
+                    // Compartilha o resultado do filtro com o paginador, evitando
+                    // uma segunda leitura e normalização do texto de todas as células.
+                    table._gridFilterCache = {
+                        header: headerRow,
+                        filterRow,
+                        matches: matchingRows,
+                        special: structuralRows,
+                        total: totalRows
+                    };
+                    table._gridFilterCacheDirty = false;
 
                     let status = table.parentElement && table.parentElement.querySelector(':scope > .grid-filter-status');
                     if (!status && table.parentElement) {
@@ -19443,6 +19461,11 @@ html,body,#app,#app header.bg-slate-950.no-print,#app header.md\\:hidden{backgro
     if(!header) return {matches:[],special:[],total:0};
     var headers=header.cells;
     var filterRow=table.tHead.querySelector('tr[data-grid-filter-row="1"]');
+    var cached=table._gridFilterCache;
+    var extraControls=filterRow && filterRow.querySelector('select[data-grid-filter-key],textarea[data-grid-filter-key]');
+    if(cached && !table._gridFilterCacheDirty && cached.header===header && cached.filterRow===filterRow && !extraControls){
+      return {matches:cached.matches,special:cached.special,total:cached.total};
+    }
     var filters=[];
     if(filterRow){
       var inputs=filterRow.querySelectorAll('input[data-grid-filter-key],select[data-grid-filter-key],textarea[data-grid-filter-key]');
@@ -19485,6 +19508,8 @@ html,body,#app,#app header.bg-slate-950.no-print,#app header.md\\:hidden{backgro
         total++;
       }
     }
+    table._gridFilterCache={header:header,filterRow:filterRow,matches:matches,special:special,total:total};
+    table._gridFilterCacheDirty=false;
     return {matches:matches,special:special,total:total};
   }
   function applyPage(table,state,reset){
@@ -19558,7 +19583,10 @@ html,body,#app,#app header.bg-slate-950.no-print,#app header.md\\:hidden{backgro
            Observar apenas addedNodes deixava contagens e páginas desatualizadas. */
         var target=record.target;
         var ownerTable=target && target.closest ? target.closest('table') : null;
-        if(ownerTable) schedule(ownerTable,180,false);
+        if(ownerTable){
+          ownerTable._gridFilterCacheDirty=true;
+          schedule(ownerTable,180,false);
+        }
         record.addedNodes.forEach(function(node){
           if(node.nodeType===1) scan(node);
         });
