@@ -15634,38 +15634,40 @@ persistido no banco ou no gateway.
                 function applyFilters(table) {
                     const headerRow = table.tHead && table.tHead.rows[0];
                     const filterRow = table.tHead && table.tHead.querySelector('tr[data-grid-filter-row="1"]');
-                    if (!headerRow || !filterRow)
-                        return;
-                    const filters = Array.from(filterRow.querySelectorAll('input[data-grid-filter-key]')).map(input => ({
-                        key: input.dataset.gridFilterKey,
-                        value: norm(input.value)
-                    })).filter(item => item.value);
-                    const headerCells = Array.from(headerRow.cells);
+                    if (!headerRow || !filterRow) return;
+                    const headerCells = headerRow.cells;
+                    const filters = Array.from(filterRow.querySelectorAll('input[data-grid-filter-key]'))
+                        .map(input => ({
+                            index: Array.from(headerCells).findIndex(th => th.dataset.gridColKey === input.dataset.gridFilterKey),
+                            value: norm(input.value)
+                        }))
+                        .filter(item => item.value && item.index >= 0);
                     let visibleCount = 0;
 
-                    Array.from(table.tBodies).forEach(tbody => {
-                        Array.from(tbody.rows).forEach(row => {
-                            if (row.dataset.gridFilterRow === '1')
-                                return;
-                            const cells = Array.from(row.cells);
-                            if (cells.length !== headerCells.length || cells.some(cell => (cell.colSpan || 1) !== 1)) {
+                    for (let bodyIndex = 0; bodyIndex < table.tBodies.length; bodyIndex++) {
+                        const rows = table.tBodies[bodyIndex].rows;
+                        for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+                            const row = rows[rowIndex];
+                            if (row.dataset.gridFilterRow === '1') continue;
+                            const cells = row.cells;
+                            if (cells.length !== headerCells.length || Array.from(cells).some(cell => (cell.colSpan || 1) !== 1)) {
                                 row.hidden = false;
-                                return;
+                                continue;
                             }
-                            const keep = filters.every(filter => {
-                                const index = headerCells.findIndex(th => th.dataset.gridColKey === filter.key);
-                                if (index < 0 || !cells[index])
-                                    return true;
-                                return norm(cells[index].innerText || cells[index].textContent).includes(filter.value);
+                            let keep = true;
+                            for (let filterIndex = 0; filterIndex < filters.length; filterIndex++) {
+                                const filter = filters[filterIndex];
+                                const cell = cells[filter.index];
+                                const cellText = cell ? (cell.textContent || cell.innerText || '') : '';
+                                if (!norm(cellText).includes(filter.value)) {
+                                    keep = false;
+                                    break;
+                                }
                             }
-                            );
                             row.hidden = !keep;
-                            if (keep)
-                                visibleCount++;
+                            if (keep) visibleCount++;
                         }
-                        );
                     }
-                    );
 
                     let status = table.parentElement && table.parentElement.querySelector(':scope > .grid-filter-status');
                     if (!status && table.parentElement) {
@@ -15675,7 +15677,9 @@ persistido no banco ou no gateway.
                         table.parentElement.insertBefore(status, table);
                     }
                     if (status) {
-                        status.textContent = filters.length ? `${visibleCount} linha(s) correspondem aos filtros. Limpe os campos para mostrar tudo.` : `${visibleCount} linha(s) na tabela. Digite nos filtros para localizar registros.`;
+                        status.textContent = filters.length
+                            ? `${visibleCount} linha(s) correspondem aos filtros. Limpe os campos para mostrar tudo.`
+                            : `${visibleCount} linha(s) na tabela. Digite nos filtros para localizar registros.`;
                     }
                 }
 
@@ -19205,35 +19209,52 @@ html,body,#app,#app header.bg-slate-950.no-print,#app header.md\\:hidden{backgro
       state.page=1;
       applyPage(table,state,false);
     });
-    table.insertAdjacentElement('afterend',nav);
+    var scrollHost=table.closest('.overflow-x-auto,.table-responsive');
+    var paginationAnchor=scrollHost || table;
+    paginationAnchor.insertAdjacentElement('afterend',nav);
     state.nav=nav;
   }
   function readRows(table){
     var header=table.tHead && table.tHead.rows[0];
     if(!header) return {matches:[],special:[],total:0};
-    var headers=Array.from(header.cells);
+    var headers=header.cells;
     var filterRow=table.tHead.querySelector('tr[data-grid-filter-row="1"]');
-    var filters=filterRow ? Array.from(filterRow.querySelectorAll('input[data-grid-filter-key]'))
-      .map(function(input){return {key:input.dataset.gridFilterKey,value:norm(input.value)};})
-      .filter(function(item){return item.value;}) : [];
-    var matches=[],special=[],total=0;
-    Array.from(table.tBodies).forEach(function(body){
-      Array.from(body.rows).forEach(function(row){
-        if(row.dataset.gridFilterRow==='1') return;
-        var cells=Array.from(row.cells);
-        if(cells.length!==headers.length || cells.some(function(cell){return (cell.colSpan||1)!==1;})){
-          special.push(row);
-          return;
+    var filters=[];
+    if(filterRow){
+      var inputs=filterRow.querySelectorAll('input[data-grid-filter-key]');
+      for(var fi=0;fi<inputs.length;fi++){
+        var value=norm(inputs[fi].value);
+        if(!value) continue;
+        var index=-1;
+        for(var hi=0;hi<headers.length;hi++){
+          if(headers[hi].dataset.gridColKey===inputs[fi].dataset.gridFilterKey){index=hi;break;}
         }
-        var keep=filters.every(function(filter){
-          var index=headers.findIndex(function(th){return th.dataset.gridColKey===filter.key;});
-          if(index<0 || !cells[index]) return true;
-          return norm(cells[index].innerText || cells[index].textContent).includes(filter.value);
-        });
+        if(index>=0) filters.push({index:index,value:value});
+      }
+    }
+    var matches=[],special=[],total=0;
+    for(var bi=0;bi<table.tBodies.length;bi++){
+      var rows=table.tBodies[bi].rows;
+      for(var ri=0;ri<rows.length;ri++){
+        var row=rows[ri];
+        if(row.dataset.gridFilterRow==='1') continue;
+        var cells=row.cells;
+        if(cells.length!==headers.length){
+          special.push(row);
+          continue;
+        }
+        var keep=true;
+        for(var fi2=0;fi2<filters.length;fi2++){
+          var filter=filters[fi2];
+          var cell=cells[filter.index];
+          if(!cell || (cell.colSpan||1)!==1) continue;
+          var cellText=cell.textContent || cell.innerText || '';
+          if(!norm(cellText).includes(filter.value)){keep=false;break;}
+        }
         if(keep) matches.push(row);
         total++;
-      });
-    });
+      }
+    }
     return {matches:matches,special:special,total:total};
   }
   function applyPage(table,state,reset){
@@ -19341,10 +19362,10 @@ html,body,#app,#app header.bg-slate-950.no-print,#app header.md\\:hidden{backgro
 })();
 </script>
 
-</body>
-</html>
 
-<style id="bravo-responsividade-acabamento-final-2026">
+<!-- BRAVO PINHAIS — CONSOLIDAÇÃO E PATCH FINO GLOBAL | ETAPA 112 -->
+<style id="bravo-ui-consolidated-etapa-112">
+
 /* Ajustes de leitura e toque em telas pequenas, sem alterar lógica dos módulos. */
 #app, #app main, #app main *{min-width:0}
 #app main :is(.overflow-x-auto,.table-responsive){max-width:100%;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
@@ -19365,10 +19386,9 @@ html,body,#app,#app header.bg-slate-950.no-print,#app header.md\\:hidden{backgro
  #app main :is(.grid,.dashboard-kpi-grid){grid-template-columns:minmax(0,1fr)}
  #app main{padding-left:11px!important;padding-right:11px!important}
 }
-</style>
 
 
-<style id="bravo-identidade-monocromatica-global-2026">
+
 /* Identidade visual monocromática: branco, preto e cinzas. Sem alterar a lógica dos módulos. */
 :root{color-scheme:light}
 body.bg-slate-100{background:#fff!important;color:#222!important}
@@ -19423,10 +19443,9 @@ body.bg-slate-100{background:#fff!important;color:#222!important}
 @media(prefers-reduced-motion:reduce){
  #app *{scroll-behavior:auto!important;transition:none!important}
 }
-</style>
 
 
-<style id="bravo-acabamento-interface-monocromatica-2026">
+
 /* Segunda etapa: consistência entre navegação, filtros, formulários e listagens. */
 #sidebar-menu{
  background:#fff!important;color:#222!important;border-right:1px solid #e9e9e9!important;
@@ -19510,10 +19529,9 @@ body.bg-slate-100{background:#fff!important;color:#222!important}
 @media(prefers-reduced-motion:reduce){
  #app main button,#sidebar-menu nav button{transition:none!important}
 }
-</style>
 
 
-<style id="bravo-dashboard-home-experiencia-2026">
+
 /* Terceira etapa: hierarquia da página inicial e consistência dos módulos. */
 #app main #cabecalho-modulo-global{
  align-items:center!important;gap:16px!important;margin-bottom:26px!important;
@@ -19627,10 +19645,9 @@ body.bg-slate-100{background:#fff!important;color:#222!important}
 @media(prefers-reduced-motion:reduce){
  #app main .dashboard-kpi-grid>article{transition:none!important}
 }
-</style>
 
 
-<style id="bravo-modulos-tabelas-listas-2026">
+
 /* Quarta etapa: acabamento uniforme das listas e tabelas dos módulos. */
 #app main :is(.card-modern, .overflow-x-auto):has(>table){
  border:1px solid #e8e8e8!important;border-radius:13px!important;
@@ -19703,10 +19720,9 @@ body.bg-slate-100{background:#fff!important;color:#222!important}
 @media(prefers-reduced-motion:reduce){
  #app main table button{transition:none!important}
 }
-</style>
 
 
-<style id="bravo-formularios-modais-monocromaticos-2026">
+
 /* Quinta etapa: formulários, cadastros e janelas no padrão branco/preto. */
 #app main form label,#modal-container form label{
  color:#555!important;font-size:11px!important;font-weight:700!important;
@@ -19799,10 +19815,9 @@ body.bg-slate-100{background:#fff!important;color:#222!important}
 @media(prefers-reduced-motion:reduce){
  #modal-container *,#app main form *{scroll-behavior:auto!important;transition:none!important}
 }
-</style>
 
 
-<style id="bravo-navegacao-monocromatica-final-2026">
+
 /* Sexta etapa: sidebar e navegação mobile alinhadas à identidade branca/preta. */
 #sidebar-menu{
  background:#fff!important;color:#333!important;
@@ -19887,9 +19902,9 @@ body.bg-slate-100{background:#fff!important;color:#222!important}
 @media(prefers-reduced-motion:reduce){
  #sidebar-menu nav button,#sidebar-menu nav button i{transition:none!important}
 }
-</style>
 
-<style id="bravo-navegacao-identidade-final-2026">
+
+
 /* Sexta etapa: acabamento da marca, grupos e ícones da navegação lateral. */
 #sidebar-menu{
  background:#fff!important;color:#292929!important;
@@ -19987,9 +20002,9 @@ body.bg-slate-100{background:#fff!important;color:#222!important}
 @media(prefers-reduced-motion:reduce){
  #sidebar-menu nav button,#sidebar-menu nav button>i{transition:none!important}
 }
-</style>
 
-<style id="bravo-area-principal-modulos-polish-2026">
+
+
 /* Sétima etapa: área de trabalho, cabeçalhos e abas com hierarquia mais leve. */
 #app main{
  background:#fff!important;color:#262626!important;
@@ -20078,10 +20093,9 @@ body.bg-slate-100{background:#fff!important;color:#222!important}
  #app main #cabecalho-modulo-global button,
  #app main #cabecalho-modulo-global label{transition:none!important}
 }
-</style>
 
 
-<style id="bravo-abas-filtros-navegacao-interna-2026">
+
 /* Abas: trilho discreto, contraste claro e seleção monocromática. */
 #app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto{
   background:#f7f7f7!important;border-color:#e5e5e5!important;
@@ -20157,10 +20171,9 @@ body.bg-slate-100{background:#fff!important;color:#222!important}
   #app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto>div,
   #app main [id^="menu-filtro-"] button{transition:none!important}
 }
-</style>
 
 
-<style id="bravo-botoes-acoes-interacoes-polish-2026">
+
 /* Nona etapa: botões e microinterações consistentes, sem alterar ações ou eventos. */
 #app main button,#modal-container button{
   -webkit-tap-highlight-color:transparent;
@@ -20259,10 +20272,9 @@ body.bg-slate-100{background:#fff!important;color:#222!important}
   #app main button,#modal-container button{transition:none!important}
   #app main button:not(:disabled):active,#modal-container button:not(:disabled):active{transform:none!important}
 }
-</style>
 
 
-<style id="bravo-status-avisos-etiquetas-monocromatico-2026">
+
 /* Décima etapa: estados, etiquetas, avisos e notificações em escala neutra. */
 /* Mantém a informação semântica pelo texto e ícones; remove apenas o excesso cromático. */
 #app main :is(.bg-emerald-50,.bg-green-50,.bg-teal-50,.bg-sky-50,.bg-blue-50,.bg-amber-50,.bg-yellow-50,.bg-rose-50,.bg-red-50,.bg-orange-50){
@@ -20329,9 +20341,9 @@ body.bg-slate-100{background:#fff!important;color:#222!important}
 @media(prefers-reduced-motion:reduce){
  #gb-notifications-toggle,#gb-notifications-toggle .gb-bell-icon{animation:none!important;transition:none!important}
 }
-</style>
 
-<style id="bravo-mobile-cabecalho-status-atalho-monocromatico-2026">
+
+
 /* Ajuste guiado pela visualização mobile: unifica cabeçalho, sincronização e atalho flutuante. */
 #status-nuvem{
   background:#fff!important;
@@ -20414,9 +20426,9 @@ body.bg-slate-100{background:#fff!important;color:#222!important}
   #app header.md\\:hidden{min-height:66px!important;padding:10px 14px!important}
   #app header.md\\:hidden span{font-size:13px!important}
 }
-</style>
 
-<style id="bravo-dashboard-movimentacoes-mobile-compacto-2026">
+
+
 /* Dashboard mobile: transforma cada lançamento em uma leitura compacta, sem rolagem lateral. */
 #app main .dashboard-operations-grid>div:last-child{
  min-width:0!important;overflow:hidden!important;border-color:#e7e7e7!important;
@@ -20511,10 +20523,9 @@ body.bg-slate-100{background:#fff!important;color:#222!important}
   margin-left:auto!important;margin-right:auto!important;
  }
 }
-</style>
 
 
-<style id="bravo-identidade-branca-preta-etapa-11-2026">
+
 /* Etapa 11 — identidade visual branca, preta e cinza; sem interferir na lógica dos módulos. */
 :root{color-scheme:light;--gb-accent:#171717;--gb-accent-dark:#333;--gb-border:#e5e5e5;--gb-shadow:none;--gb-shadow-hover:0 8px 22px rgba(0,0,0,.055)}
 html,body,#app{background:#fff!important;color:#171717!important}
@@ -20536,10 +20547,9 @@ html,body,#app{background:#fff!important;color:#171717!important}
 #app main tbody tr:hover{background:#f7f7f7!important}
 #app main :is(.bg-gradient-to-r,.bg-gradient-to-br,.bg-gradient-to-tr){background-image:none!important}
 @media(max-width:768px){#app main .dashboard-shell{padding:12px!important;gap:14px!important}#app main .dashboard-shell .dashboard-analytics-grid,#app main .dashboard-shell .dashboard-operations-grid{gap:12px!important}}
-</style>
 
 
-<style id="bravo-dashboard-refino-visual-etapa-12">
+
 /* Etapa 12 — hierarquia visual leve e análise por demanda. */
 #app main .dashboard-shell{max-width:1440px;margin-inline:auto;gap:18px!important}
 #app main .dashboard-section-title{padding-inline:2px}
@@ -20587,10 +20597,9 @@ html,body,#app{background:#fff!important;color:#171717!important}
  #app main .dashboard-analytics-disclosure>summary,
  #app main .dashboard-analytics-disclosure .dashboard-disclosure-chevron{transition:none!important}
 }
-</style>
 
 
-<style id="bravo-sidebar-monocromatica-etapa-13">
+
 /* Etapa 13 — navegação lateral refinada, monocromática e responsiva. */
 #sidebar-menu{
  width:264px!important;max-width:86vw;background:#fff!important;color:#262626!important;
@@ -20644,10 +20653,9 @@ html,body,#app{background:#fff!important;color:#171717!important}
  #sidebar-menu{width:min(292px,86vw)!important;height:100dvh!important}
  #sidebar-menu nav{padding:14px 12px!important}
 }
-</style>
 
 
-<style id="bravo-componentes-interface-etapa-14">
+
 /* Etapa 14 — padronização de tabelas, formulários e ações em branco, preto e cinza. */
 #app main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea){
  min-height:40px!important;border:1px solid #dedede!important;border-radius:9px!important;
@@ -20715,10 +20723,9 @@ html,body,#app{background:#fff!important;color:#171717!important}
 @media(prefers-reduced-motion:reduce){
  #app main :is(input,select,textarea,button){transition:none!important}
 }
-</style>
 
 
-<style id="bravo-modais-experiencia-monocromatica-etapa-15">
+
 /* Etapa 15 — acabamento visual dos modais, sem alterar abertura, fechamento ou formulários. */
 #modal-container:not(:empty){isolation:isolate}
 #modal-container>div{
@@ -20771,10 +20778,9 @@ html,body,#app{background:#fff!important;color:#171717!important}
 @media(prefers-reduced-motion:reduce){
  #modal-container>div,#modal-container>div>div{transition:none!important;animation:none!important}
 }
-</style>
 
 
-<style id="bravo-cabecalhos-modulos-etapa-16">
+
 /* Etapa 16 — cabeçalho global e faixa de módulos com hierarquia visual uniforme. */
 #app>div>div>div.flex-1.flex.flex-col.min-h-screen{background:#fff!important}
 #app main{
@@ -20844,10 +20850,9 @@ html,body,#app{background:#fff!important;color:#171717!important}
   padding-left:9px!important;padding-right:9px!important
  }
 }
-</style>
 
 
-<style id="bravo-listagens-filtros-acoes-etapa-17">
+
 /* Etapa 17 — acabamento das listagens, pesquisa, filtros e ações de linha. */
 #app main input[type="search"],
 #app main input[placeholder*="Buscar"],
@@ -20921,10 +20926,9 @@ html,body,#app{background:#fff!important;color:#171717!important}
  #app main table td button{min-width:34px;min-height:34px}
  #app main [id^="menu-filtro-"]{max-width:min(86vw,300px)!important}
 }
-</style>
 
 
-<style id="bravo-estoque-monocromatico-etapa-18">
+
 /* Etapa 18 — inventário com hierarquia visual monocromática. */
 #app main .estoque-page{color:#242424}
 #app main .estoque-page>section,
@@ -20967,10 +20971,9 @@ html,body,#app{background:#fff!important;color:#171717!important}
 #app main .estoque-page #tabelaEstoquePrincipal tbody td button{padding:7px 9px!important}
 }
 @media(prefers-reduced-motion:reduce){#app main .estoque-page button{transition:none!important}}
-</style>
 
 
-<style id="bravo-formulario-estoque-etapa-19">
+
 /* Etapa 19 — formulário de produto com layout mais amplo e neutro. */
 #modal-container>div:has(form[onsubmit*="salvarModalEstoque"]){
  padding:clamp(10px,3vw,24px)!important;
@@ -21061,10 +21064,9 @@ html,body,#app{background:#fff!important;color:#171717!important}
  }
  #modal-container>div:has(form[onsubmit*="salvarModalEstoque"]) form>div:last-child button{flex:1}
 }
-</style>
 
 
-<style id="bravo-form-estoque-monocromatico-etapa-19">
+
 /* Etapa 19 — formulário de produto: hierarquia, leitura e uso móvel. */
 #modal-container .fixed.inset-0.z-50>div.bg-white.rounded-3xl{
  width:min(100%,760px)!important;max-width:760px!important;max-height:92dvh!important;
@@ -21154,11 +21156,9 @@ html,body,#app{background:#fff!important;color:#171717!important}
 @media(prefers-reduced-motion:reduce){
  #modal-container .fixed.inset-0.z-50>div.bg-white.rounded-3xl *{transition:none!important}
 }
-</style>
 
 
 
-<style id="bravo-limpeza-global-cabecalhos-cards-etapa-20">
 /* Etapa 20 — remoção dos últimos resíduos cromáticos e visuais em cabeçalhos e cards. */
 :root{
  --bravo-ink:#171717;
@@ -21243,12 +21243,9 @@ html,body,#app,#app main{background:#fff!important;color:var(--bravo-ink)!import
   border-radius:12px!important;
  }
 }
-</style>
 
 
 
-<!-- Bravo Pinhais — neutralização definitiva das tarjas verdes -->
-<style id="bravo-neutralizacao-tarjas-verdes-etapa-21">
 /* Cabeçalho superior, inclusive a versão compacta/mobile */
 #app header,
 #app header.md\\:hidden,
@@ -21292,11 +21289,9 @@ html,body,#app,#app main{background:#fff!important;color:var(--bravo-ink)!import
   box-shadow:none!important;
 }
 #app main .relatorios-dre-result *{color:#262626!important}
-</style>
 
 
-<!-- Bravo Pinhais — correção dos resíduos de identidade verde, etapa 22 -->
-<style id="bravo-neutralizacao-residuos-verdes-etapa-22">
+
 :root{
  --app-primary:#171717!important;
  --bravo-primary:#171717!important;
@@ -21353,10 +21348,9 @@ html,body,#app,#app main{background:#fff!important;color:var(--bravo-ink)!import
 #app :is([class*="text-teal-"],[class*="text-emerald-"],[class*="text-green-"],[class*="text-lime-"],[class*="text-mint-"]){color:#525252!important}
 #app :is([class*="border-teal-"],[class*="border-emerald-"],[class*="border-green-"],[class*="border-lime-"],[class*="border-mint-"]){border-color:#e5e5e5!important}
 #app :is([class*="from-teal-"],[class*="to-teal-"],[class*="via-teal-"],[class*="from-emerald-"],[class*="to-emerald-"],[class*="via-emerald-"],[class*="from-green-"],[class*="to-green-"],[class*="via-green-"],[class*="from-lime-"],[class*="to-lime-"],[class*="via-lime-"]){background-image:none!important}
-</style>
 
-<!-- Bravo Pinhais — acabamento específico dos acessos rápidos e das duas tarjas superiores -->
-<style id="bravo-ajuste-tarjas-acessos-rapidos-etapa-23">
+
+
 #status-nuvem{background:#fff!important;background-image:none!important;color:#525252!important;border:0!important;border-bottom:1px solid #e5e5e5!important;box-shadow:none!important;text-shadow:none!important}
 #status-nuvem i,#status-nuvem [class*="text-"]{color:#525252!important}
 #sidebar-menu>div:first-child{background:#fff!important;background-image:none!important;color:#171717!important;border-bottom:1px solid #e5e5e5!important;box-shadow:none!important}
@@ -21370,10 +21364,9 @@ html,body,#app,#app main{background:#fff!important;color:var(--bravo-ink)!import
 #app main .dashboard-quick-access .dashboard-quick-grid>button :is(strong,small,i){color:#525252!important}
 #app main .dashboard-quick-access .dashboard-quick-icon{background:#f3f3f3!important;color:#404040!important;border:1px solid #e5e5e5!important}
 #app main .dashboard-quick-access .dashboard-quick-arrow{color:#a3a3a3!important}
-</style>
 
-<!-- Etapa 24 — neutralização dos elementos internos das tarjas superiores -->
-<style id="bravo-neutralizacao-miolo-tarjas-etapa-24">
+
+
 /* Marca no cabeçalho do menu: retirar o gradiente teal/verde do símbolo */
 #sidebar-menu>div:first-child .bg-gradient-to-tr,
 #sidebar-menu>div:first-child [class*="from-teal-"],
@@ -21410,10 +21403,9 @@ html,body,#app,#app main{background:#fff!important;color:var(--bravo-ink)!import
  background:#f7f7f7!important;border-color:#d4d4d4!important;
  transform:translateY(-1px);
 }
-</style>
 
-<!-- Etapa 25 — identidade monocromática do menu, cabeçalho e carregamento -->
-<style id="bravo-identidade-monocromatica-global-etapa-25">
+
+
 /* Menu lateral claro e limpo */
 #sidebar-menu{
  background:#fff!important;background-image:none!important;color:#404040!important;
@@ -21481,11 +21473,9 @@ body.bravo-renderizando-modulo::before{
 #app main .dashboard-quick-access .dashboard-quick-grid>button:hover{
  background:#f5f5f5!important;border-color:#d4d4d4!important;transform:none!important;
 }
-</style>
 
 
-<!-- Etapa 26 — padronização de formulários, filtros e tabelas -->
-<style id="bravo-padroes-formularios-filtros-tabelas-etapa-26">
+
 #app main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea){background-color:#fff!important;background-image:none!important;color:#262626!important;border:1px solid #dcdcdc!important;border-radius:9px!important;box-shadow:none!important}
 #app main :is(input,select,textarea)::placeholder{color:#a3a3a3!important;opacity:1!important}
 #app main :is(input,select,textarea):hover{border-color:#b8b8b8!important}
@@ -21504,9 +21494,9 @@ body.bravo-renderizando-modulo::before{
 #app main button:not([class*="bg-red-"]):not([class*="bg-rose-"]):not([class*="bg-amber-"]):not([class*="bg-yellow-"]){box-shadow:none!important}
 #app main button:focus-visible,#app main a:focus-visible{outline:2px solid #a3a3a3!important;outline-offset:2px!important}
 #app main :is(button,a)[disabled],#app main :is(button,a)[aria-disabled="true"]{opacity:.55!important;cursor:not-allowed!important}
-</style>
-<!-- Etapa 27 — acabamento de diálogos, notificações e ações -->
-<style id="bravo-acabamento-dialogos-notificacoes-etapa-27">
+
+
+
 #app :is([role="dialog"],[aria-modal="true"],.modal,.modal-content){background:#fff!important;background-image:none!important;color:#262626!important;border:1px solid #e5e5e5!important;box-shadow:0 16px 48px rgba(0,0,0,.12)!important}
 #app :is([role="dialog"],[aria-modal="true"],.modal,.modal-content) :is(h1,h2,h3,h4,strong){color:#171717!important}
 #app :is([role="dialog"],[aria-modal="true"],.modal,.modal-content) :is(p,small,label){color:#525252!important}
@@ -21517,11 +21507,9 @@ body.bravo-renderizando-modulo::before{
 #app main :is(button,a)[class*="bg-slate-100"],#app main :is(button,a)[class*="bg-gray-100"],#app main :is(button,a)[class*="bg-neutral-100"]{background:#f5f5f5!important;color:#404040!important;border-color:#e5e5e5!important}
 #app main :is(button,a):hover{filter:brightness(.97)}
 #app main :is(button,a):active{transform:translateY(0)!important}
-</style>
 
 
-<!-- Etapa 28 — consistência visual dos módulos e navegação -->
-<style id="bravo-consistencia-modulos-navegacao-etapa-28">
+
 /* Barra de abas abertas */
 #app main>div:has(>.tab-active),
 #app main .tab-active,
@@ -21560,11 +21548,9 @@ body.bravo-renderizando-modulo::before{
  #app main table th,#app main table td{white-space:nowrap}
  #app main .card-modern{border-radius:13px!important}
 }
-</style>
 
 
-<!-- Etapa 29 — acabamento monocromático dos módulos operacionais -->
-<style id="bravo-acabamento-modulos-operacionais-etapa-29">
+
 /* Estoque: cabeçalho, filtros, indicadores e ações */
 #app main .estoque-page [class*="from-teal-"],
 #app main .estoque-page [class*="to-teal-"],
@@ -21609,11 +21595,9 @@ body.bravo-renderizando-modulo::before{
 #modal-container button[class*="bg-emerald-"]{background:#171717!important;color:#fff!important;border-color:#171717!important}
 #modal-container button[class*="bg-teal-"]:hover,
 #modal-container button[class*="bg-emerald-"]:hover{background:#333!important}
-</style>
 
 
-<!-- Etapa 30 — acabamento de formulários, modais e controles -->
-<style id="bravo-acabamento-formularios-modais-etapa-30">
+
 /* Camada de modal: fundo neutro, superfície branca e sem excesso de sombra */
 #modal-container>div[class*="fixed"]{background:rgba(15,15,15,.62)!important;backdrop-filter:blur(5px)!important}
 #modal-container>div[class*="fixed"]>div,
@@ -21668,11 +21652,9 @@ body.bravo-renderizando-modulo::before{
  #modal-container>div[class*="fixed"]{align-items:flex-end!important;padding:10px!important}
  #modal-container>div[class*="fixed"]>div{max-height:92dvh!important;overflow-y:auto!important;border-radius:20px 20px 12px 12px!important}
 }
-</style>
 
 
-<!-- Etapa 31 — dashboard monocromático e gráficos sob demanda -->
-<style id="bravo-dashboard-monocromatico-etapa-31">
+
 /* Cabeçalho e atalhos do painel */
 #app main .dashboard-shell .dashboard-quick-access,
 #app main .dashboard-shell .dashboard-quick-access button,
@@ -21746,11 +21728,9 @@ body.bravo-renderizando-modulo::before{
  #app main .dashboard-shell .dashboard-kpi-grid article{padding:16px!important;border-radius:15px!important}
  #app main .dashboard-shell .dashboard-quick-grid{gap:8px!important}
 }
-</style>
 
 
-<!-- Etapa 32 — navegação, tabelas e ações consistentes -->
-<style id="bravo-navegacao-tabelas-acoes-etapa-32">
+
 /* Menu lateral e navegação: superfícies claras e tipografia uniforme */
 #sidebar-menu{
  background:#fff!important;color:#404040!important;border-color:#e5e5e5!important;
@@ -21839,11 +21819,9 @@ body.bravo-renderizando-modulo::before{
  #app main table{font-size:12px}
  #app main table thead th{white-space:nowrap;padding-top:11px!important;padding-bottom:11px!important}
 }
-</style>
 
 
-<!-- Etapa 33 — acabamento de ícones, etiquetas e sincronização -->
-<style id="bravo-acabamento-icones-status-etapa-33">
+
 /* Barra de sincronização e mensagens de estado */
 #status-nuvem{
  background:#fff!important;background-image:none!important;color:#525252!important;
@@ -21981,11 +21959,9 @@ body.bravo-renderizando-modulo::before{
  #app main .dashboard-operations-grid table td{padding:12px!important}
 }
 
-</style>
 
 
-<!-- Etapa 36 — dashboard: refinamento de composição e leitura -->
-<style id="bravo-dashboard-composicao-etapa-36">
+
 #app main:has(.dashboard-shell){background:#f5f5f5!important;background-image:none!important}
 #app main .dashboard-shell{display:flex;flex-direction:column;gap:20px!important}
 #app main .dashboard-shell .dashboard-section-title{margin-bottom:12px!important}
@@ -22051,11 +22027,9 @@ body.bravo-renderizando-modulo::before{
  #app main .dashboard-shell .dashboard-analytics-grid>div{padding:13px!important}
 }
 @media(prefers-reduced-motion:reduce){#app main .dashboard-shell *{transition:none!important}}
-</style>
 
 
-<!-- Etapa 37 — dashboard: gráficos, tabelas e leitura responsiva -->
-<style id="bravo-dashboard-graficos-tabelas-etapa-37">
+
 #app main .dashboard-shell .dashboard-analytics-grid{
  align-items:stretch!important;gap:14px!important
 }
@@ -22134,11 +22108,9 @@ body.bravo-renderizando-modulo::before{
  #app main .dashboard-shell .dashboard-operations-grid table thead th{padding:10px!important}
  #app main .dashboard-shell .dashboard-operations-grid table tbody td{padding:11px 10px!important}
 }
-</style>
 
 
-<!-- Etapa 38 — acessos rápidos e contornos do dashboard -->
-<style id="bravo-dashboard-acessos-contornos-etapa-38">
+
 /* Bloco de acessos rápidos: painel mais definido e alinhado */
 #app main .dashboard-shell .dashboard-quick-access{
  position:relative;isolation:isolate;
@@ -22259,11 +22231,9 @@ body.bravo-renderizando-modulo::before{
 @media(max-width:370px){
  #app main .dashboard-shell .dashboard-quick-grid{grid-template-columns:1fr!important}
 }
-</style>
 
 
-<!-- Etapa 39 — indicadores e painéis do dashboard em acabamento monocromático -->
-<style id="bravo-dashboard-indicadores-paineis-etapa-39">
+
 /* Indicadores: hierarquia uniforme, sem acentos coloridos herdados */
 #app main .dashboard-shell .dashboard-kpi-grid>article{
  position:relative;display:flex;flex-direction:column;justify-content:space-between;
@@ -22373,11 +22343,9 @@ body.bravo-renderizando-modulo::before{
  #app main .dashboard-shell .dashboard-kpi-grid>article,
  #app main .dashboard-shell>section:has(.fa-brain) button{transition:none!important}
 }
-</style>
 
 
-<!-- Etapa 40 — recuperação e contraste dos ícones dos módulos -->
-<style id="bravo-icones-modulos-etapa-40">
+
 /* Garante área, tamanho e contraste dos ícones da navegação lateral */
 #sidebar-menu nav button>i,
 #sidebar-menu nav a>i{
@@ -22401,11 +22369,9 @@ body.bravo-renderizando-modulo::before{
 #app main :is(i.fa-solid,i.fa-regular,i.fa-brands){
  display:inline-flex;align-items:center;justify-content:center;line-height:1
 }
-</style>
 
 
-<!-- Etapa 41 — força a fonte e o estado padrão dos ícones -->
-<style id="bravo-icones-menu-etapa-41">
+
 #sidebar-menu nav button>i.fa-solid,
 #sidebar-menu nav button>i.fa-regular,
 #sidebar-menu nav button>i.fa-brands,
@@ -22433,11 +22399,9 @@ body.bravo-renderizando-modulo::before{
 #sidebar-menu nav button[class*="bg-"]>i{
  color:#fff!important;-webkit-text-fill-color:#fff!important
 }
-</style>
 
 
-<!-- Etapa 42 — refinamento de espaçamento e hierarquia do dashboard -->
-<style id="bravo-dashboard-refino-etapa-42">
+
 #app main .dashboard-shell{
  width:100%!important;max-width:100%!important;
  display:flex!important;flex-direction:column!important;
@@ -22496,11 +22460,9 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-motion:reduce){
  #app main .dashboard-shell *{scroll-behavior:auto!important;transition-duration:.01ms!important}
 }
-</style>
 
 
-<!-- Etapa 43 — acabamento da barra superior mobile e identidade monocromática -->
-<style id="bravo-topbar-mobile-acabamento-etapa-43">
+
 @media(max-width:767px){
  header.bg-slate-950.no-print{
   min-height:62px!important;height:auto!important;
@@ -22535,11 +22497,9 @@ body.bravo-renderizando-modulo::before{
 @media(min-width:768px){
  header.bg-slate-950.no-print{background:#fff!important;color:#222!important}
 }
-</style>
 
 
-<!-- Etapa 44 — neutralização das barras de status e marca lateral -->
-<style id="bravo-barras-status-marca-etapa-44">
+
 #status-nuvem{
  background:#fff!important;background-image:none!important;
  color:#555!important;border:0!important;
@@ -22572,11 +22532,9 @@ body.bravo-renderizando-modulo::before{
  color:#555!important;background:transparent!important
 }
 #app main{background:#f7f7f7!important}
-</style>
 
 
-<!-- Etapa 45 — padronização dos cabeçalhos e ações dos módulos -->
-<style id="bravo-cabecalhos-acoes-modulos-etapa-45">
+
 #cabecalho-modulo-global{
  align-items:center!important;gap:16px!important;
  margin:0 0 22px!important;padding:0 0 17px!important;
@@ -22638,11 +22596,9 @@ body.bravo-renderizando-modulo::before{
   white-space:normal!important;text-align:center!important
  }
 }
-</style>
 
 
-<!-- Etapa 46 — correção definitiva do contraste dos ícones do menu -->
-<style id="bravo-correcao-contraste-icones-etapa-46">
+
 /* O seletor antigo [class*="bg-"] também atingia botões inativos por causa de hover:bg-*.
    Agora somente o item realmente ativo recebe ícone branco. */
 #sidebar-menu nav button:not([class*="from-teal-"]):not([class*="bg-teal-"]):not([aria-current="page"])>i[class*="fa-"],
@@ -22670,11 +22626,9 @@ body.bravo-renderizando-modulo::before{
 #sidebar-menu nav button:not([class*="from-teal-"]):not([class*="bg-teal-"]):not([aria-current="page"]):hover>i[class*="fa-"]::before{
   color:#222!important;-webkit-text-fill-color:#222!important
 }
-</style>
 
 
-<!-- Etapa 47 — acabamento monocromático de formulários, filtros e tabelas -->
-<style id="bravo-formularios-filtros-tabelas-etapa-47">
+
 /* Campos: superfície limpa, contraste consistente e foco acessível. */
 #app main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea),
 #modal-container :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea){
@@ -22759,11 +22713,9 @@ body.bravo-renderizando-modulo::before{
  #modal-container :is(input:not([type="checkbox"]):not([type="radio"]),select,textarea){font-size:16px!important}
  #app main table thead th{white-space:nowrap}
 }
-</style>
 
 
-<!-- Etapa 48 — acabamento dos botões, ações e janelas de cadastro -->
-<style id="bravo-acoes-modais-etapa-48">
+
 /* Botões de ação dos módulos: padrão branco, preto e cinza. */
 #app main button:not(#sidebar-menu button),
 #modal-container button{
@@ -22847,10 +22799,9 @@ body.bravo-renderizando-modulo::before{
  }
  #app main button:not(#sidebar-menu button){min-height:38px}
 }
-</style>
 
-<!-- bravo-residuos-identidade-monocromatica-etapa-49 -->
-<style id="bravo-residuos-identidade-monocromatica-etapa-49">
+
+
 /* Neutraliza as antigas cores de etiquetas, alertas, status e indicadores.
    Mantém conteúdo, ícones, estados e ações originais. */
 #app :is(
@@ -22907,10 +22858,9 @@ body.bravo-renderizando-modulo::before{
 #app :is(svg,[class*="icon"]) :is(path,circle,rect,line,polyline,polygon){
  stroke:currentColor;
 }
-</style>
 
-<!-- bravo-acabamento-navegacao-feedback-etapa-50 -->
-<style id="bravo-acabamento-navegacao-feedback-etapa-50">
+
+
 /* Navegação e notificações no mesmo padrão branco, preto e cinza. */
 #app .gb-tabs-scroller{scrollbar-width:thin;scrollbar-color:#c8c8c8 transparent}
 #app .gb-tabs-scroller :is(button,a){
@@ -22952,10 +22902,9 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-motion:reduce){
  #gb-notifications-toggle{transition:none!important}
 }
-</style>
 
-<!-- bravo-cabecalhos-modulos-etapa-51 -->
-<style id="bravo-cabecalhos-modulos-etapa-51">
+
+
 /* Cabeçalho global padronizado em todas as áreas internas. */
 #cabecalho-modulo-global{
  align-items:center!important;gap:16px!important;
@@ -23009,11 +22958,9 @@ body.bravo-renderizando-modulo::before{
  #cabecalho-modulo-global>div:last-child{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important}
  #cabecalho-modulo-global>div:last-child :is(button,label){justify-content:center!important;width:100%!important;white-space:normal!important;text-align:center!important}
 }
-</style>
 
 
-<!-- bravo-paineis-cartoes-modulos-etapa-52 -->
-<style id="bravo-paineis-cartoes-modulos-etapa-52">
+
 /* Superfícies internas dos módulos: branco, cinza e acabamento consistente. */
 #app main .card-modern{
  background:#fff!important;
@@ -23076,11 +23023,9 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-motion:reduce){
  #app main .card-modern{transition:none!important}
 }
-</style>
 
 
-<!-- bravo-listagens-tabelas-etapa-53 -->
-<style id="bravo-listagens-tabelas-etapa-53">
+
 /* Listagens e tabelas: leitura mais clara sem alterar dados ou ações. */
 #app main .overflow-x-auto{
  scrollbar-width:thin;
@@ -23152,11 +23097,9 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-motion:reduce){
  #app main table tbody tr{transition:none!important}
 }
-</style>
 
 
-<!-- bravo-formularios-campos-etapa-54 -->
-<style id="bravo-formularios-campos-etapa-54">
+
 /* Campos de cadastro e edição com hierarquia limpa e neutra. */
 #app main form :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea),
 #modal-container form :is(input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea),
@@ -23231,11 +23174,9 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-motion:reduce){
  #app main form :is(input,select,textarea),#modal-container form :is(input,select,textarea){transition:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — barra de abas compacta e sem identificação superior | etapa 55 -->
-<style id="bravo-topbar-tabs-hamburger-etapa-55">
+
 /* Remove a tarja de status visual; a sincronização e seus eventos internos continuam ativos. */
 #status-nuvem{display:none!important}
 /* No mobile, elimina a faixa de marca e posiciona o menu na mesma linha das abas. */
@@ -23259,11 +23200,9 @@ body.bravo-renderizando-modulo::before{
     background:#fff!important;border-color:#e5e5e5!important;box-shadow:none!important
   }
 }
-</style>
 
 
-<!-- Bravo Pinhais — tarja do menu mobile branca | etapa 56 -->
-<style id="bravo-tarja-hamburger-branca-etapa-56">
+
 @media(max-width:767px){
  #app .flex-1.flex.flex-col.min-h-screen.overflow-hidden.w-full > div[class*="border-b"][class*="overflow-x-auto"]{
    background:#fff!important;background-color:#fff!important;background-image:none!important;
@@ -23274,11 +23213,9 @@ body.bravo-renderizando-modulo::before{
    border:1px solid #dedede!important;
  }
 }
-</style>
 
 
-<!-- Bravo Pinhais — acabamento monocromático da navegação por abas | etapa 57 -->
-<style id="bravo-abas-monocromaticas-etapa-57">
+
 /* Abas com hierarquia visual clara, sem cores herdadas da identidade anterior. */
 #app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto{
  background:#fff!important;
@@ -23340,11 +23277,9 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-motion:reduce){
  #app .bg-slate-200\\/80.border-b.flex.items-center.overflow-x-auto > div{transition:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — acabamento da área de conteúdo dos módulos | etapa 58 -->
-<style id="bravo-area-conteudo-modulos-etapa-58">
+
 /* Fundo de trabalho neutro e melhor separação entre conteúdo e navegação. */
 #app main.flex-1.overflow-y-auto{
  background:#f6f6f6!important;
@@ -23390,11 +23325,9 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-motion:reduce){
  #app main.flex-1.overflow-y-auto *{scroll-behavior:auto!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — botões de ação dos módulos em preto e branco | etapa 59 -->
-<style id="bravo-botoes-header-modulos-etapa-59">
+
 /* Ações do cabeçalho: aparência consistente, preservando os onclicks e fluxos originais. */
 #app main #cabecalho-modulo-global .no-print > button,
 #app main #cabecalho-modulo-global .no-print > label{
@@ -23450,11 +23383,9 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-motion:reduce){
  #app main #cabecalho-modulo-global .no-print > :is(button,label){transition:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — filtros, seleções e indicadores compactos | etapa 60 -->
-<style id="bravo-filtros-indicadores-etapa-60">
+
 /* Estados de filtro e seleção: preto/cinza no lugar dos destaques coloridos antigos. */
 #app main :is(button,[role="button"],a)[class*="bg-teal-"],
 #app main :is(button,[role="button"],a)[class*="from-teal-"]{
@@ -23504,11 +23435,9 @@ body.bravo-renderizando-modulo::before{
   min-height:40px!important;
  }
 }
-</style>
 
 
-<!-- Bravo Pinhais — controles de seleção e campos nativos neutros | etapa 61 -->
-<style id="bravo-controles-selecao-etapa-61">
+
 /* Selects e listas suspensas: fundo branco e foco neutro. */
 #app main :is(select,input,textarea),
 #modal-container :is(select,input,textarea){
@@ -23572,11 +23501,9 @@ body.bravo-renderizando-modulo::before{
  --tw-ring-offset-shadow:0 0 #0000!important;
  --tw-ring-shadow:0 0 0 3px rgba(0,0,0,.055)!important;
 }
-</style>
 
 
-<!-- Bravo Pinhais — avisos, confirmações e estados vazios | etapa 62 -->
-<style id="bravo-avisos-confirmacoes-etapa-62">
+
 /* Aviso de rascunho e notificações flutuantes em superfície clara. */
 #bravo-aviso-rascunho{
  background:#f5f5f5!important;
@@ -23625,12 +23552,9 @@ body.bravo-renderizando-modulo::before{
   border-radius:11px!important;
  }
 }
-</style>
 
 
 
-<!-- Bravo Pinhais — vidro fumê e superfícies glass | etapa 63 -->
-<style id="bravo-vidro-fume-glass-etapa-63">
 :root{
  --bravo-glass-white:rgba(255,255,255,.82);
  --bravo-glass-white-strong:rgba(255,255,255,.92);
@@ -23701,11 +23625,9 @@ body.bravo-renderizando-modulo::before{
  #app [class*="overflow-x-auto"][class*="border-b"]{background:#fff!important}
  #app main :is(.bg-white,[class~="bg-white"],.card){background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — refinamento do vidro fumê na navegação | etapa 64 -->
-<style id="bravo-vidro-navegacao-refino-etapa-64">
+
 /* Cabeçalho interno do menu integrado ao vidro fumê. */
 #sidebar-menu > div:first-child{
  background:linear-gradient(135deg,rgba(30,30,30,.82),rgba(8,8,8,.72))!important;
@@ -23774,11 +23696,9 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-motion:reduce){
  #sidebar-menu nav button{transition:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — cartões e indicadores em vidro premium | etapa 65 -->
-<style id="bravo-dashboard-cartoes-vidro-etapa-65">
+
 /* Indicadores principais: vidro branco com contorno e profundidade discretos. */
 #app main .dashboard-kpi-grid>article{
  position:relative!important;
@@ -23850,11 +23770,9 @@ body.bravo-renderizando-modulo::before{
  #app main .dashboard-kpi-grid>article{background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
  #app main .dashboard-section-title>span{background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — painéis analíticos e gráficos em vidro | etapa 66 -->
-<style id="bravo-paineis-graficos-vidro-etapa-66">
+
 /* Painéis recolhíveis do dashboard e estoque: superfície de vidro consistente. */
 #app main .dashboard-analytics-disclosure,
 #app main .estoque-analytics-disclosure{
@@ -23958,11 +23876,9 @@ body.bravo-renderizando-modulo::before{
  #app main .dashboard-analytics-disclosure .relative:has(>canvas),
  #app main .estoque-analytics-disclosure .relative:has(>canvas){background:#fafafa!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — componentes internos dos módulos em vidro | etapa 67 -->
-<style id="bravo-componentes-internos-vidro-etapa-67">
+
 /* Cartões de conteúdo dos módulos: acabamento premium uniforme. */
 #app main :is(.bg-white.rounded-2xl,.bg-white.rounded-3xl,.bg-white.rounded-xl):not(.dashboard-kpi-grid>article){
  background:linear-gradient(145deg,rgba(255,255,255,.95),rgba(247,247,247,.84))!important;
@@ -24032,11 +23948,9 @@ body.bravo-renderizando-modulo::before{
   backdrop-filter:none!important;
  }
 }
-</style>
 
 
-<!-- Bravo Pinhais — menus internos e filtros avançados em vidro | etapa 68 -->
-<style id="bravo-menus-filtros-vidro-etapa-68">
+
 /* Menus de ações das listagens: vidro claro e contraste monocromático. */
 #app main .grid-actions-popover{
  background:rgba(250,250,250,.96)!important;
@@ -24152,11 +24066,9 @@ body.bravo-renderizando-modulo::before{
  #app main .grid-actions-popover,
  #app main [id^="menu-filtro-"]{background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — consulta, paginação e ordenação em vidro | etapa 69 -->
-<style id="bravo-consulta-paginacao-ordenacao-etapa-69">
+
 /* Linha de filtros por coluna com aparência limpa e vidro suave. */
 #app main table thead tr.grid-filter-row th{
  background:rgba(245,245,245,.88)!important;
@@ -24242,11 +24154,9 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-motion:reduce){
  #app main table thead th.grid-draggable-header{transition:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — acabamento de diálogos e notificações | etapa 70 -->
-<style id="bravo-dialogos-notificacoes-vidro-etapa-70">
+
 /* Superfícies e hierarquia dos modais do sistema. */
 #modal-container > div > div{
  background:rgba(255,255,255,.97)!important;
@@ -24352,11 +24262,9 @@ body.bravo-renderizando-modulo::before{
   background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important
  }
 }
-</style>
 
 
-<!-- Bravo Pinhais — ícones, microinterações e acessibilidade | etapa 71 -->
-<style id="bravo-icones-microinteracoes-etapa-71">
+
 /* Ícones de títulos e cartões: monocromáticos, sem perder legibilidade. */
 #app main :is(.card-modern h3,.card-modern h4,.dashboard-kpi-grid article h3,.dashboard-kpi-grid article h4) :is(i,.fa-solid,.fa-regular,svg){
  color:#555!important;
@@ -24404,11 +24312,9 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-motion:reduce){
  #app main :is(i,svg,button,a){transition:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — dashboard premium, acessos rápidos e indicadores | etapa 72 -->
-<style id="bravo-dashboard-premium-etapa-72">
+
 /* Acessos rápidos como painel principal de navegação. */
 #app main .dashboard-shell .dashboard-quick-access{
  position:relative!important;overflow:hidden!important;
@@ -24535,11 +24441,9 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-motion:reduce){
  #app main .dashboard-shell .dashboard-quick-grid>button{transition:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — dashboard premium em vidro fumê | etapa 72 -->
-<style id="bravo-dashboard-premium-vidro-etapa-72">
+
 /* Cabeçalhos e hierarquia da visão executiva. */
 #app main .dashboard-section-title{
  color:#262626!important;
@@ -24667,11 +24571,9 @@ body.bravo-renderizando-modulo::before{
  #app main .dashboard-quick-grid>button,
  #app main .dashboard-kpi-grid>article{background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — painéis analíticos e indicadores em vidro | etapa 73 -->
-<style id="bravo-analiticos-indicadores-vidro-etapa-73">
+
 /* Cabeçalho expansível dos gráficos. */
 #app main .dashboard-analytics-disclosure>summary{
  background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(242,242,242,.88))!important;
@@ -24773,11 +24675,9 @@ body.bravo-renderizando-modulo::before{
  #app main .dashboard-analytics-grid>div,
  #app main .estoque-analytics-disclosure{background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — gráficos analíticos monocromáticos | etapa 73 -->
-<style id="bravo-graficos-analiticos-monocromaticos-etapa-73">
+
 /* Painel expansível: vidro branco, contorno suave e hierarquia clara. */
 #app main .dashboard-analytics-disclosure,
 #app main .estoque-analytics-disclosure{
@@ -24885,11 +24785,9 @@ body.bravo-renderizando-modulo::before{
  #app main .dashboard-analytics-disclosure>summary,
  #app main .estoque-analytics-disclosure>summary{transition:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — alertas e movimentações em vidro | etapa 74 -->
-<style id="bravo-alertas-movimentacoes-vidro-etapa-74">
+
 /* Seção operacional: hierarquia visual consistente com o dashboard em vidro. */
 #app main .dashboard-section-title{
  margin-top:28px!important;
@@ -25028,11 +24926,9 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-motion:reduce){
  #app main .dashboard-operations-grid *{transition:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — alertas e movimentações operacionais | etapa 74 -->
-<style id="bravo-alertas-movimentacoes-etapa-74">
+
 #app main .dashboard-operations-grid>div{
  min-width:0!important;background:linear-gradient(145deg,rgba(255,255,255,.97),rgba(247,247,247,.90))!important;
  border:1px solid rgba(0,0,0,.10)!important;border-radius:22px!important;
@@ -25088,11 +24984,9 @@ body.bravo-renderizando-modulo::before{
 }
 @media(prefers-reduced-transparency:reduce){#app main .dashboard-operations-grid>div{background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}}
 @media(prefers-reduced-motion:reduce){#app main .dashboard-operations-grid>div:first-child .mt-4.space-y-3>button{transition:none!important}}
-</style>
 
 
-<!-- Bravo Pinhais — histórico e detalhes operacionais em vidro | etapa 75 -->
-<style id="bravo-historico-detalhes-operacionais-etapa-75">
+
 /* Listas de histórico: eventos de sincronização e ocorrências locais. */
 #app :is(#saude-historico-sync,#saude-falhas-lista){
  display:flex!important;
@@ -25183,11 +25077,9 @@ body.bravo-renderizando-modulo::before{
  #app :is(#saude-historico-sync,#saude-falhas-lista)>li,
  #modal-container>div>div{background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — cadastro e edição: acabamento premium | etapa 76 -->
-<style id="bravo-cadastro-edicao-acabamento-etapa-76">
+
 /* Formulários de cadastro/edição: hierarquia, agrupamento e leitura. */
 #modal-container form{
  display:flex!important;
@@ -25318,11 +25210,9 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-motion:reduce){
  #modal-container form *{transition:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — tabelas e ações de registros | etapa 77 -->
-<style id="bravo-tabelas-acoes-registros-etapa-77">
+
 /* Listagens: hierarquia visual neutra sem alterar dados, filtros ou eventos. */
 #app main table{
  width:100%;
@@ -25417,11 +25307,9 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-motion:reduce){
  #app main table *{transition:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — acabamento global de interação e acessibilidade | etapa 78 -->
-<style id="bravo-acabamento-global-interacoes-etapa-78">
+
 /* Acabamento neutro dos estados globais, sem alterar fluxos ou componentes funcionais. */
 #app :is(button,a,[role="button"],input,select,textarea,[tabindex]):focus-visible,
 #modal-container :is(button,a,[role="button"],input,select,textarea,[tabindex]):focus-visible{
@@ -25475,11 +25363,9 @@ body.bravo-renderizando-modulo::before{
   transition-duration:.01ms!important;
  }
 }
-</style>
 
 
-<!-- Bravo Pinhais — refinamento responsivo do dashboard | etapa 79 -->
-<style id="bravo-dashboard-mobile-refino-etapa-79">
+
 /* Leitura e toque mais confortáveis em telas compactas. */
 #app main .dashboard-shell{min-width:0}
 #app main .dashboard-shell :is(.dashboard-quick-access,.dashboard-analytics-disclosure,.dashboard-analytics-grid){min-width:0}
@@ -25537,11 +25423,9 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-transparency:reduce){
  #app main .dashboard-analytics-disclosure>summary{background:#fff!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — consistência visual de formulários | etapa 80 -->
-<style id="bravo-formularios-consistencia-etapa-80">
+
 /* Campos e rótulos: leitura clara, estados previsíveis e contraste monocromático. */
 #app main form :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea),
 #modal-container form :is(input:not([type=checkbox]):not([type=radio]):not([type=file]),select,textarea){
@@ -25607,11 +25491,9 @@ body.bravo-renderizando-modulo::before{
  #app main form :is(input,select,textarea),
  #modal-container form :is(input,select,textarea){background:#fff!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — leitura e navegação das listagens | etapa 81 -->
-<style id="bravo-listagens-leitura-etapa-81">
+
 /* Refinamento das listagens sem alterar colunas, filtros ou ações existentes. */
 #app main :is(table,[role="table"]){
  max-width:100%;
@@ -25680,11 +25562,9 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-motion:reduce){
  #app main table tbody tr{transition:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — refinamento da navegação e menus | etapa 82 -->
-<style id="bravo-navegacao-menu-etapa-82">
+
 /* Navegação fumê: hierarquia visual consistente e interação mais clara. */
 #sidebar-menu{
  background:rgba(17,17,17,.97)!important;
@@ -25775,11 +25655,9 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-motion:reduce){
  #sidebar-menu nav button,#sidebar-menu nav a{transition:none!important;transform:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — acabamento responsivo de diálogos e avisos | etapa 83 -->
-<style id="bravo-dialogos-responsivos-etapa-83">
+
 /* Superfícies de diálogo: leitura confortável, contraste neutro e rolagem segura. */
 #app :is([role="dialog"],[aria-modal="true"],.modal,.modal-content){
   color:#262626;
@@ -25838,11 +25716,9 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-motion:reduce){
   #gb-notifications-panel{backdrop-filter:none;-webkit-backdrop-filter:none}
 }
-</style>
 
 
-<!-- Bravo Pinhais — estados de carregamento, vazio e retorno | etapa 84 -->
-<style id="bravo-estados-carregamento-vazios-etapa-84">
+
 /* Estados de espera: mantém o conteúdo legível enquanto módulos atualizam. */
 #app [aria-busy="true"]{cursor:progress}
 #app [aria-busy="true"] :is(button,a){cursor:progress}
@@ -25900,11 +25776,9 @@ body.bravo-renderizando-modulo::before{
     animation:none!important;transition:none!important;
   }
 }
-</style>
 
 
-<!-- Bravo Pinhais — hierarquia tipográfica e rótulos | etapa 85 -->
-<style id="bravo-tipografia-hierarquia-etapa-85">
+
 /* Hierarquia consistente sem alterar conteúdo, estrutura ou regras dos módulos. */
 #app main :is(h1,h2,h3,h4){
   color:#202020;
@@ -25947,11 +25821,9 @@ body.bravo-renderizando-modulo::before{
   #app main :is(h2,h3){line-height:1.25}
   #app main :is(label){line-height:1.35}
 }
-</style>
 
 
-<!-- Bravo Pinhais — cartões internos dos módulos | etapa 86 -->
-<style id="bravo-cartoes-internos-etapa-86">
+
 /* Cartões de conteúdo: superfícies neutras, bordas suaves e hierarquia uniforme. */
 #app main :is(.card,.gb-card,[class*="rounded-xl"][class*="border"],[class*="rounded-2xl"][class*="border"]){
   border-color:rgba(0,0,0,.09)!important;
@@ -26002,11 +25874,9 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-motion:reduce){
  #app main :is(.card,.gb-card){transition:none!important;transform:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — ações e botões monocromáticos | etapa 87 -->
-<style id="bravo-acoes-monocromaticas-etapa-87">
+
 /* Uniformiza botões coloridos antigos sem alterar handlers ou regras de negócio. */
 #app button[class*="bg-teal-"],
 #app button[class*="bg-emerald-"],
@@ -26049,11 +25919,9 @@ body.bravo-renderizando-modulo::before{
 @media(prefers-reduced-motion:reduce){
  #app button{transition:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais — barra de rolagem vertical visível | etapa 88 -->
-<style id="bravo-rolagem-vertical-visivel-etapa-88">
+
 /* O painel central é o contêiner vertical principal do sistema. */
 #app main.flex-1.overflow-y-auto{
   min-height:0!important;
@@ -26088,11 +25956,9 @@ body.bravo-renderizando-modulo::before{
  }
  #app main.flex-1.overflow-y-auto::-webkit-scrollbar{width:7px!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais Dark Edition — identidade visual global | etapa 89 -->
-<style id="bravo-dark-edition-base-etapa-89">
+
 :root{
  color-scheme:dark;
  --bravo-bg:#101114;
@@ -26224,11 +26090,9 @@ body{scrollbar-color:#656a73 #191b20!important}
 @media(prefers-reduced-motion:reduce){
  #app *,#modal-container *{transition:none!important;animation:none!important}
 }
-</style>
 
 
-<!-- Bravo Pinhais Dark Edition — dashboard | etapa 90 -->
-<style id="bravo-dashboard-dark-edition-etapa-90">
+
 #app main .dashboard-shell{color:#f1f2f4!important}
 #app main .dashboard-section-title,
 #app main .dashboard-section-title h3,
@@ -26299,11 +26163,9 @@ body{scrollbar-color:#656a73 #191b20!important}
  #app main .dashboard-shell .dashboard-kpi-grid>article{min-height:132px!important}
  #app main .dashboard-shell .dashboard-quick-grid>button{min-height:66px!important}
 }
-</style>
 
 
-    <!-- BRAVO PINHAIS DARK EDITION — ETAPA 91 -->
-    <style id="bravo-navigation-dark-edition-etapa-91">
+
       /* Menu lateral: grafite profundo, contraste consistente e divisórias discretas */
       #sidebar-menu,
       #sidebar-menu > div:first-child {
@@ -26400,11 +26262,9 @@ body{scrollbar-color:#656a73 #191b20!important}
         }
         #app .bg-slate-200\/80.border-b { padding-top: 9px !important; }
       }
-    </style>
+    
 
 
-<!-- BRAVO PINHAIS DARK EDITION — ETAPA 92: FORMULÁRIOS E TABELAS -->
-<style id="bravo-dark-forms-tables-etapa-92">
   #app input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
   #app select, #app textarea,
   #app .form-control, #app .form-select {
@@ -26463,11 +26323,9 @@ body{scrollbar-color:#656a73 #191b20!important}
     #app select, #app textarea { max-width: 100%; }
     #app table { font-size: .875rem; }
   }
-</style>
 
 
-<!-- BRAVO PINHAIS DARK EDITION — ETAPA 93: MODAIS E NOTIFICAÇÕES -->
-<style id="bravo-dark-modals-notifications-etapa-93">
+
   #app .fixed.inset-0 > div,
   #app [role="dialog"],
   #app [aria-modal="true"],
@@ -26525,11 +26383,9 @@ body{scrollbar-color:#656a73 #191b20!important}
       border-radius: 18px !important;
     }
   }
-</style>
 
 
-<!-- BRAVO PINHAIS DARK EDITION — ETAPA 94: AÇÕES, CARREGAMENTO E ESTADOS VAZIOS -->
-<style id="bravo-dark-actions-loading-etapa-94">
+
   #app button:not([class*="bg-"]),
   #app input[type="button"], #app input[type="submit"] {
     color: #e4e4e7;
@@ -26590,11 +26446,9 @@ body{scrollbar-color:#656a73 #191b20!important}
       animation: none !important;
     }
   }
-</style>
 
 
-<!-- BRAVO PINHAIS DARK EDITION — ETAPA 95: AUDITORIA DE RESÍDUOS CLAROS -->
-<style id="bravo-dark-residual-audit-etapa-95">
+
   /* Neutraliza superfícies claras remanescentes sem alterar a estrutura dos módulos. */
   #app :is(.bg-white,.bg-gray-50,.bg-gray-100,.bg-slate-50,.bg-slate-100,
            .bg-zinc-50,.bg-neutral-50) {
@@ -26639,11 +26493,9 @@ body{scrollbar-color:#656a73 #191b20!important}
       color: #c4c7ce !important;
     }
   }
-</style>
 
 
-<!-- BRAVO PINHAIS DARK EDITION — ETAPA 96: CONSISTÊNCIA DOS MÓDULOS -->
-<style id="bravo-dark-module-consistency-etapa-96">
+
   #app main {
     background: #101114 !important;
     color: #e4e4e7 !important;
@@ -26685,11 +26537,9 @@ body{scrollbar-color:#656a73 #191b20!important}
     #app main { padding-left: 12px !important; padding-right: 12px !important; }
     #app main :is(.rounded-3xl,.rounded-2xl) { border-radius: 16px !important; }
   }
-</style>
 
 
-<!-- BRAVO PINHAIS DARK EDITION — ETAPA 97: ACESSIBILIDADE E ACABAMENTO -->
-<style id="bravo-dark-accessibility-etapa-97">
+
   /* Foco visível consistente para navegação por teclado */
   #app :where(a,button,[role="button"],input,select,textarea,[tabindex]):focus-visible,
   #modal-container :where(a,button,[role="button"],input,select,textarea,[tabindex]):focus-visible {
@@ -26730,11 +26580,9 @@ body{scrollbar-color:#656a73 #191b20!important}
       transition-duration: .01ms !important;
     }
   }
-</style>
 
 
-<!-- BRAVO PINHAIS DARK EDITION — ETAPA 98: ESTADOS DE NAVEGAÇÃO -->
-<style id="bravo-dark-navigation-states-etapa-98">
+
   /* Abas abertas: ativo e inativo com contraste claro, sem cores antigas */
   #app .gb-tabs-scroller > div,
   #app .bg-slate-200\/80.border-b > div {
@@ -26797,11 +26645,9 @@ body{scrollbar-color:#656a73 #191b20!important}
       padding-right: 12px !important;
     }
   }
-</style>
 
 
-<!-- BRAVO PINHAIS DARK EDITION — ETAPA 99: DASHBOARD E INDICADORES -->
-<style id="bravo-dark-dashboard-finish-etapa-99">
+
   #app .dashboard-shell { color: #e4e4e7 !important; }
   #app .dashboard-shell .dashboard-section-title {
     color: #f4f4f5 !important;
@@ -26856,11 +26702,9 @@ body{scrollbar-color:#656a73 #191b20!important}
       padding: 14px !important;
     }
   }
-</style>
 
 
-<!-- BRAVO PINHAIS DARK EDITION — ETAPA 100: POLIMENTO DE TABELAS E FORMULÁRIOS -->
-<style id="bravo-dark-tables-forms-etapa-100">
+
   /* Tabelas dos módulos: leitura uniforme e rolagem segura */
   #app main table {
     width: 100%;
@@ -26935,11 +26779,9 @@ body{scrollbar-color:#656a73 #191b20!important}
       white-space: nowrap;
     }
   }
-</style>
 
 
-<!-- BRAVO PINHAIS DARK EDITION — ETAPA 101: REDESIGN DO DASHBOARD -->
-<style id="bravo-dark-dashboard-redesign-etapa-101">
+
   /* Cabeçalho do módulo: transforma o título em uma abertura mais limpa */
   #app main:has(.dashboard-shell) #cabecalho-modulo-global {
     margin-bottom: 1.35rem !important;
@@ -27169,11 +27011,9 @@ body{scrollbar-color:#656a73 #191b20!important}
     #app .dashboard-quick-grid > button,
     #app .dashboard-kpi-grid > article { transition: none !important; }
   }
-</style>
 
 
-<!-- BRAVO PINHAIS DARK EDITION — ETAPA 102: HIERARQUIA DOS INDICADORES E GRÁFICOS -->
-<style id="bravo-dark-dashboard-metrics-etapa-102">
+
   /* Indicadores: cartões com hierarquia e detalhe superior discreto */
   #app main .dashboard-shell .dashboard-kpi-grid > article {
     position: relative;
@@ -27335,11 +27175,9 @@ body{scrollbar-color:#656a73 #191b20!important}
   @media (prefers-reduced-motion: reduce) {
     #app main .dashboard-shell .dashboard-kpi-grid > article { transition: none !important; }
   }
-</style>
 
 
-<!-- BRAVO PINHAIS DARK EDITION — ETAPA 103: ALERTAS E MOVIMENTAÇÕES -->
-<style id="bravo-dark-dashboard-activity-etapa-103">
+
   /* Área operacional: alertas e atividades com leitura clara no tema grafite. */
   #app main .dashboard-shell .dashboard-operations-grid {
     align-items: stretch;
@@ -27431,11 +27269,9 @@ body{scrollbar-color:#656a73 #191b20!important}
   @media(prefers-reduced-motion:reduce) {
     #app main .dashboard-shell .dashboard-operations-grid button { transition: none !important; }
   }
-</style>
 
 
-<!-- BRAVO PINHAIS DARK EDITION — ETAPA 104: COMPOSIÇÃO EXECUTIVA DO DASHBOARD -->
-<style id="bravo-dark-dashboard-composition-etapa-104">
+
   #app main .dashboard-shell {
     display: flex;
     flex-direction: column;
@@ -27611,11 +27447,9 @@ body{scrollbar-color:#656a73 #191b20!important}
     #app main .dashboard-shell .dashboard-quick-grid > button,
     #app main .dashboard-shell .dashboard-quick-grid > button * { transition: none !important; }
   }
-</style>
 
 
-<!-- BRAVO PINHAIS DARK EDITION — ETAPA 105: GRÁFICOS E RESUMOS ANALÍTICOS -->
-<style id="bravo-dark-dashboard-charts-etapa-105">
+
   #app main .dashboard-shell .dashboard-analytics-disclosure {
     overflow: hidden;
     border: 1px solid #383e49 !important;
@@ -27725,10 +27559,9 @@ body{scrollbar-color:#656a73 #191b20!important}
       border-radius: 15px !important;
     }
   }
-</style>
 
-<!-- BRAVO PINHAIS DARK EDITION — ETAPA 106: CONTRASTE E IDENTIDADE DOS GRÁFICOS -->
-<style id="bravo-dark-dashboard-chartjs-etapa-106">
+
+
   #app .dashboard-analytics-grid canvas {
     filter: drop-shadow(0 3px 8px rgba(0,0,0,.12));
   }
@@ -27737,11 +27570,9 @@ body{scrollbar-color:#656a73 #191b20!important}
   @media(max-width:640px) {
     #app .dashboard-analytics-grid canvas { touch-action: pan-y; }
   }
-</style>
 
 
-<!-- BRAVO PINHAIS DARK EDITION — ETAPA 107: ALERTAS E MOVIMENTAÇÕES -->
-<style id="bravo-dark-dashboard-activity-finish-etapa-107">
+
   #app .dashboard-shell .dashboard-operations-grid {
     align-items: stretch;
   }
@@ -27872,11 +27703,9 @@ body{scrollbar-color:#656a73 #191b20!important}
       padding-bottom: .85rem;
     }
   }
-</style>
 
 
-<!-- BRAVO PINHAIS DARK EDITION — ETAPA 108: INDICADORES PRINCIPAIS -->
-<style id="bravo-dark-dashboard-kpi-finish-etapa-108">
+
   #app .dashboard-shell > .dashboard-section-title {
     align-items: flex-end;
     gap: .8rem;
@@ -27982,11 +27811,9 @@ body{scrollbar-color:#656a73 #191b20!important}
       transition: none;
     }
   }
-</style>
 
 
-<!-- BRAVO PINHAIS DARK EDITION — ETAPA 109: CABEÇALHOS E PAINEL ANALÍTICO -->
-<style id="bravo-dark-dashboard-analytics-heading-etapa-109">
+
   #app .dashboard-shell > .dashboard-section-title {
     position: relative;
     padding: .2rem .35rem .2rem .85rem;
@@ -28080,11 +27907,9 @@ body{scrollbar-color:#656a73 #191b20!important}
       transition: none;
     }
   }
-</style>
 
 
-<!-- BRAVO PINHAIS DARK EDITION — ETAPA 110: ACABAMENTO DE ALERTAS E MOVIMENTAÇÕES -->
-<style id="bravo-dark-dashboard-operations-final-etapa-110">
+
   #app .dashboard-shell .dashboard-operations-grid > div {
     border-color: #3b424e !important;
     border-radius: 19px !important;
@@ -28187,10 +28012,9 @@ body{scrollbar-color:#656a73 #191b20!important}
       transition: none;
     }
   }
-</style>
 
-<!-- BRAVO PINHAIS — PATCH FINO GLOBAL | ETAPA 111 -->
-<style id="bravo-revisao-global-fino-etapa-111">
+
+
 :root{
   --bravo-bg:#101114;
   --bravo-surface:#191c22;
@@ -28402,4 +28226,83 @@ html,body,#app{background:var(--bravo-bg)!important;color:var(--bravo-text)!impo
 @media(prefers-reduced-motion:reduce){
   #app main *,#modal-container *{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
+
+
+/* ETAPA 112 — acabamento transversal, mantendo estados semânticos */
+:root{color-scheme:dark}
+#app main{color:#e8ebf0;background:#101114}
+#app main :is(img,svg,canvas,video){max-width:100%}
+#app main :is(.card-modern,.gb-card,.gb-panel,.gb-section-panel,.form-section,.filter-bar){
+  background:#1d2229!important;border:1px solid #343c47!important;
+  border-radius:16px!important;box-shadow:0 8px 24px rgba(0,0,0,.16)!important;
+}
+#app main :is(.card-header,.panel-header){
+  background:#242a33!important;border-color:#3a424e!important;color:#eef1f5!important;
+}
+#app main :is(h1,h2,h3,h4,h5){color:#f1f3f6!important;letter-spacing:-.02em}
+#app main :is(p,small,.text-slate-500,.text-slate-600,.text-gray-500,.text-gray-600){color:#a5adba!important}
+#app main :is(input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=file]),select,textarea){
+  min-width:0;max-width:100%;background:#252b34!important;color:#eef1f5!important;
+  border:1px solid #414b59!important;border-radius:10px!important;box-shadow:none!important;
+}
+#app main :is(input,select,textarea)::placeholder{color:#8792a1!important;opacity:1}
+#app main :is(input,select,textarea):focus{border-color:#8795a8!important;outline:2px solid rgba(148,163,184,.16)!important}
+#app main :is(.overflow-x-auto,.table-responsive){
+  max-width:100%;overflow-x:auto;overscroll-behavior-x:contain;
+  -webkit-overflow-scrolling:touch;scrollbar-width:thin;
+  scrollbar-color:#596575 #1a1f26;
+}
+#app main table{width:100%;border-collapse:separate!important;border-spacing:0!important}
+#app main table thead th{background:#272e38!important;color:#cbd3de!important;border-color:#3a424e!important}
+#app main table thead tr.grid-filter-row th{background:#20252d!important}
+#app main table tbody tr{background:#1c2128!important}
+#app main table tbody tr:nth-child(even){background:#20262e!important}
+#app main table tbody tr:hover{background:#2a323d!important}
+#app main table tbody td{color:#cbd2dc!important;border-color:#343c47!important}
+#app main .gb-pagination{
+  box-sizing:border-box;display:flex;align-items:center;justify-content:space-between;
+  gap:12px;flex-wrap:wrap;width:100%;max-width:100%;margin:0 0 1rem;padding:12px 14px;
+  background:#1b2027;border:1px solid #343c47;border-top:0;border-radius:0 0 14px 14px;
+  color:#aeb7c3;font-size:11px;
+}
+#app main .gb-pagination[hidden]{display:none!important}
+#app main .gb-pagination-summary{color:#aeb7c3;font-weight:650}
+#app main .gb-pagination-controls{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap}
+#app main .gb-pagination-size-label{display:flex;align-items:center;gap:7px;color:#aeb7c3;font-size:10px;font-weight:700}
+#app main .gb-pagination-size{min-height:34px!important;min-width:66px;padding:5px 8px!important}
+#app main .gb-pagination-button{
+  display:inline-flex;align-items:center;justify-content:center;min-height:34px!important;
+  padding:6px 12px!important;border:1px solid #46505e!important;border-radius:9px!important;
+  background:#2b323d!important;color:#e1e6ed!important;font-size:10px!important;font-weight:750!important;
+  box-shadow:none!important;transition:background .16s ease,border-color .16s ease;
+}
+#app main .gb-pagination-button:hover:not(:disabled){background:#394453!important;border-color:#68778a!important;color:#fff!important}
+#app main .gb-pagination-button:disabled{opacity:.4!important;cursor:not-allowed!important}
+#app main .gb-pagination-current{min-width:82px;text-align:center;color:#c7ced8;font-size:10px;font-weight:750}
+#app main :is(button,a,[role=button],input,select,textarea):focus-visible,
+#modal-container :is(button,a,[role=button],input,select,textarea):focus-visible{
+  outline:2px solid #aeb9c8!important;outline-offset:2px!important;
+}
+#app main button:disabled{opacity:.48;cursor:not-allowed}
+#app main :is(.bg-emerald-50,.bg-green-50,.bg-teal-50){background:#1c3029!important;color:#b9dfce!important;border-color:#34594a!important}
+#app main :is(.text-emerald-700,.text-green-700,.text-teal-700){color:#8ec6ad!important}
+#app main :is(.bg-rose-50,.bg-red-50){background:#352329!important;color:#efc2ca!important;border-color:#62404a!important}
+#app main :is(.text-rose-700,.text-red-700,.text-rose-600,.text-red-600){color:#e7a3ae!important}
+#app main :is(.bg-amber-50,.bg-yellow-50){background:#352d20!important;color:#ead1a2!important;border-color:#665335!important}
+#app main :is(.text-amber-700,.text-yellow-700,.text-amber-600){color:#dfbd7f!important}
+#app main :is(.bg-sky-50,.bg-blue-50){background:#202d3b!important;color:#c1d7ed!important;border-color:#3b536d!important}
+#app main :is(.text-sky-700,.text-blue-700,.text-sky-600,.text-blue-600){color:#9fc2e4!important}
+@media(max-width:640px){
+  #app main .gb-pagination{align-items:flex-start;padding:11px 10px}
+  #app main .gb-pagination-controls{width:100%;justify-content:space-between}
+  #app main .gb-pagination-size-label{margin-right:auto}
+  #app main .gb-pagination-button{min-height:38px!important}
+  #app main :is(.card-modern,.gb-card,.gb-panel,.gb-section-panel,.form-section){border-radius:14px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #app main *,#modal-container *{scroll-behavior:auto!important;transition:none!important;animation:none!important}
+}
+
 </style>
+</body>
+</html>
