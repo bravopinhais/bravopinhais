@@ -19554,6 +19554,11 @@ html,body,#app,#app header.bg-slate-950.no-print,#app header.md\\:hidden{backgro
   if(app){
     var observer=new MutationObserver(function(records){
       records.forEach(function(record){
+        /* Recalcula a paginação também quando linhas são removidas ou substituídas.
+           Observar apenas addedNodes deixava contagens e páginas desatualizadas. */
+        var target=record.target;
+        var ownerTable=target && target.closest ? target.closest('table') : null;
+        if(ownerTable) schedule(ownerTable,180,false);
         record.addedNodes.forEach(function(node){
           if(node.nodeType===1) scan(node);
         });
