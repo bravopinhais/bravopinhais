@@ -29417,5 +29417,98 @@ html,body{background:#080e18!important;color:var(--bravo-text)}
 }
 </style>
 
+
+<style id="bravo-navegacao-sidebar-polish-etapa-128">
+/* Etapa 128 — navegação lateral, estados ativos e rolagem global. */
+:root{color-scheme:dark;--bravo-nav-bg:#0b1421;--bravo-nav-panel:#101d2d;--bravo-nav-line:rgba(148,163,184,.15)}
+html,body{scrollbar-color:#43546a #0b1421;scrollbar-width:thin}
+::-webkit-scrollbar{width:8px;height:8px}
+::-webkit-scrollbar-track{background:#0b1421}
+::-webkit-scrollbar-thumb{background:#40536a;border:2px solid #0b1421;border-radius:99px}
+::-webkit-scrollbar-thumb:hover{background:#60758d}
+#status-nuvem{display:none!important}
+#sidebar-menu{
+  width:264px!important;
+  background:linear-gradient(180deg,#0d1725 0%,#0a1320 100%)!important;
+  border-right:1px solid rgba(148,163,184,.16)!important;
+  box-shadow:16px 0 44px rgba(0,0,0,.24)!important;
+  color:#cbd5e1!important;
+}
+#sidebar-menu>div:first-child{
+  min-height:78px;
+  padding:1rem 1.15rem!important;
+  background:linear-gradient(135deg,rgba(25,43,63,.98),rgba(12,22,36,.98))!important;
+  border-bottom:1px solid rgba(148,163,184,.17)!important;
+}
+#sidebar-menu>div:first-child>div>div:first-child{
+  width:42px;height:42px;border-radius:13px!important;
+  background:linear-gradient(145deg,#0f766e,#164e63)!important;
+  box-shadow:0 8px 22px rgba(13,148,136,.2)!important;
+}
+#sidebar-menu>div:first-child h1{font-size:15px!important;letter-spacing:-.035em!important}
+#sidebar-menu>div:first-child p{color:#67e8d4!important;letter-spacing:.17em!important}
+#sidebar-menu nav{
+  padding:1rem .8rem!important;
+  scrollbar-width:thin;scrollbar-color:#33465d transparent;
+}
+#sidebar-menu nav>div{padding-bottom:.9rem;margin-bottom:.25rem;border-bottom:1px solid rgba(148,163,184,.09)}
+#sidebar-menu nav>div:last-child{padding-bottom:.3rem;border-bottom:0}
+#sidebar-menu nav>div>p{
+  padding:.25rem .75rem .55rem!important;
+  color:#71849a!important;font-size:9px!important;
+  letter-spacing:.16em!important;font-weight:850!important;
+}
+#sidebar-menu nav>div>div{gap:3px!important}
+#sidebar-menu nav button{
+  position:relative;min-height:42px!important;
+  padding:.68rem .8rem!important;
+  border:1px solid transparent!important;
+  border-radius:11px!important;
+  color:#aab9ca!important;
+  font-size:11px!important;font-weight:650!important;
+  letter-spacing:.005em;
+  transition:background .18s ease,border-color .18s ease,color .18s ease,transform .18s ease!important;
+}
+#sidebar-menu nav button i{
+  flex:0 0 20px;width:20px!important;
+  color:#8296ac!important;font-size:13px!important;
+  transition:color .18s ease;
+}
+#sidebar-menu nav button:hover{
+  transform:translateX(2px)!important;
+  color:#f1f5f9!important;
+  background:rgba(148,163,184,.09)!important;
+  border-color:rgba(148,163,184,.11)!important;
+}
+#sidebar-menu nav button:hover i{color:#8ce8dc!important}
+#sidebar-menu nav button[class*="from-teal-"]{
+  color:#f0fdfa!important;
+  background:linear-gradient(105deg,rgba(13,148,136,.3),rgba(15,118,110,.17))!important;
+  border-color:rgba(45,212,191,.26)!important;
+  box-shadow:inset 3px 0 0 #2dd4bf,0 7px 18px rgba(0,0,0,.12)!important;
+  font-weight:800!important;
+}
+#sidebar-menu nav button[class*="from-teal-"] i{color:#5eead4!important}
+#sidebar-menu nav button[class*="rose"]{
+  color:#fda4af!important;background:rgba(159,18,57,.09)!important;
+  border-color:rgba(244,63,94,.14)!important
+}
+#sidebar-menu nav button:focus-visible{
+  outline:2px solid #5eead4!important;outline-offset:2px!important;
+  background:rgba(45,212,191,.1)!important
+}
+#sidebar-menu nav button:active{transform:scale(.985)!important}
+#sidebar-menu .text-slate-500{color:#71849a!important}
+@media(max-width:767px){
+  #sidebar-menu{width:min(84vw,300px)!important;max-width:calc(100vw - 44px)!important}
+  #sidebar-menu>div:first-child{min-height:72px}
+  #sidebar-menu nav{padding:.8rem .7rem!important}
+  #sidebar-menu nav button{min-height:44px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #sidebar-menu nav button{transition:none!important}
+}
+</style>
+
 </body>
 </html>
