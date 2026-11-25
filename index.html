@@ -29777,5 +29777,107 @@ html,body{scrollbar-color:#43546a #0b1421;scrollbar-width:thin}
 }
 </style>
 
+
+<style id="bravo-tabelas-leitura-dados-etapa-132">
+/* Etapa 132 — leitura de tabelas e listas de dados no tema noturno. */
+#app main :is(.overflow-x-auto,.table-responsive){
+  max-width:100%;overscroll-behavior-x:contain;
+  scrollbar-width:thin;scrollbar-color:rgba(100,116,139,.55) rgba(15,23,42,.35);
+  border-radius:12px;
+}
+#app main :is(.overflow-x-auto,.table-responsive)::-webkit-scrollbar{height:8px}
+#app main :is(.overflow-x-auto,.table-responsive)::-webkit-scrollbar-track{background:rgba(15,23,42,.45);border-radius:20px}
+#app main :is(.overflow-x-auto,.table-responsive)::-webkit-scrollbar-thumb{background:rgba(100,116,139,.6);border:2px solid rgba(15,23,42,.45);border-radius:20px}
+#app main table:not([data-grid-no-pagination]){
+  border-collapse:separate!important;border-spacing:0!important;
+  color:#dbe5f0;
+}
+#app main table:not([data-grid-no-pagination]) thead th{
+  position:relative;
+  background:#172337!important;color:#aebfd2!important;
+  border-top:1px solid rgba(148,163,184,.13)!important;
+  border-bottom:1px solid rgba(148,163,184,.2)!important;
+  font-size:10px!important;font-weight:800!important;
+  letter-spacing:.065em!important;text-transform:uppercase;
+  line-height:1.4;padding-top:.8rem!important;padding-bottom:.8rem!important;
+  white-space:nowrap;
+}
+#app main table:not([data-grid-no-pagination]) thead th:first-child{border-top-left-radius:8px}
+#app main table:not([data-grid-no-pagination]) thead th:last-child{border-top-right-radius:8px}
+#app main table:not([data-grid-no-pagination]) tbody tr{
+  background:rgba(15,23,42,.28)!important;
+  transition:background-color .15s ease;
+}
+#app main table:not([data-grid-no-pagination]) tbody tr:nth-child(even){
+  background:rgba(30,41,59,.34)!important;
+}
+#app main table:not([data-grid-no-pagination]) tbody td{
+  color:#cbd5e1!important;
+  border-bottom:1px solid rgba(148,163,184,.105)!important;
+  padding-top:.72rem!important;padding-bottom:.72rem!important;
+  line-height:1.45;vertical-align:middle;
+}
+#app main table:not([data-grid-no-pagination]) tbody tr:last-child td{border-bottom-color:rgba(148,163,184,.18)!important}
+#app main table:not([data-grid-no-pagination]) tbody tr:hover{
+  background:rgba(45,212,191,.075)!important;
+}
+#app main table:not([data-grid-no-pagination]) tbody td :is(strong,b){color:#edf5fc}
+#app main table:not([data-grid-no-pagination]) tbody td :is(a,button){white-space:nowrap}
+#app main table:not([data-grid-no-pagination]) tbody td :is(input,select){
+  min-height:34px;border-radius:8px!important;
+}
+#app main table:not([data-grid-no-pagination]) tbody td .text-slate-900,
+#app main table:not([data-grid-no-pagination]) tbody td .text-slate-800,
+#app main table:not([data-grid-no-pagination]) tbody td .text-slate-700{
+  color:#e2eaf3!important;
+}
+#app main table:not([data-grid-no-pagination]) tbody td .text-slate-600,
+#app main table:not([data-grid-no-pagination]) tbody td .text-slate-500{
+  color:#9aadc2!important;
+}
+#app main table:not([data-grid-no-pagination]) tfoot td{
+  background:#172337!important;color:#e2eaf3!important;
+  border-top:1px solid rgba(148,163,184,.2)!important;
+  font-weight:750;
+}
+#app main table:not([data-grid-no-pagination]) caption{
+  padding:.65rem .2rem;color:#91a4b9;text-align:left;
+  font-size:11px;font-weight:650;
+}
+#app main .gb-pagination{
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  gap:.75rem;margin:.8rem 0 1.1rem;padding:.7rem .85rem;
+  border:1px solid rgba(148,163,184,.16);border-radius:12px;
+  background:linear-gradient(120deg,rgba(30,41,59,.72),rgba(15,23,42,.78));
+  color:#b9c8d8;font-size:11px;
+}
+#app main .gb-pagination-controls{display:flex;flex-wrap:wrap;align-items:center;gap:.45rem}
+#app main .gb-pagination-size-label{display:inline-flex;align-items:center;gap:.4rem;color:#9fb0c2;font-weight:650}
+#app main .gb-pagination-size{
+  min-height:32px;padding:.3rem 1.6rem .3rem .55rem;
+  border:1px solid rgba(148,163,184,.22);border-radius:8px;
+  background:#111d2e;color:#e2e8f0;font-size:11px;
+}
+#app main .gb-pagination-button{
+  min-height:32px;padding:.35rem .7rem;border:1px solid rgba(148,163,184,.2);
+  border-radius:8px;background:#1e293b;color:#dbeafe;
+  font-size:11px;font-weight:750;transition:background .15s ease,border-color .15s ease;
+}
+#app main .gb-pagination-button:not(:disabled):hover{
+  background:#164e63;border-color:rgba(45,212,191,.4);
+}
+#app main .gb-pagination-button:disabled{opacity:.35;cursor:not-allowed}
+#app main .gb-pagination-current{min-width:65px;text-align:center;color:#e2e8f0;font-weight:800;font-variant-numeric:tabular-nums}
+#app main .gb-pagination-summary{color:#91a4b9;font-weight:650}
+@media(max-width:640px){
+  #app main .gb-pagination{align-items:stretch;flex-direction:column}
+  #app main .gb-pagination-controls{justify-content:space-between}
+  #app main table:not([data-grid-no-pagination]) tbody td{padding-left:.65rem!important;padding-right:.65rem!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #app main table:not([data-grid-no-pagination]) tbody tr{transition:none}
+}
+</style>
+
 </body>
 </html>
