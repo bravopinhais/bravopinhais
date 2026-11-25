@@ -26486,3 +26486,48 @@ body{scrollbar-color:#656a73 #191b20!important}
     #app main :is(.rounded-3xl,.rounded-2xl) { border-radius: 16px !important; }
   }
 </style>
+
+
+<!-- BRAVO PINHAIS DARK EDITION — ETAPA 97: ACESSIBILIDADE E ACABAMENTO -->
+<style id="bravo-dark-accessibility-etapa-97">
+  /* Foco visível consistente para navegação por teclado */
+  #app :where(a,button,[role="button"],input,select,textarea,[tabindex]):focus-visible,
+  #modal-container :where(a,button,[role="button"],input,select,textarea,[tabindex]):focus-visible {
+    outline: 2px solid #a1a1aa !important;
+    outline-offset: 3px !important;
+    box-shadow: 0 0 0 3px rgba(161,161,170,.18) !important;
+  }
+  #app :where(button,a,[role="button"]) { -webkit-tap-highlight-color: transparent; }
+  #app :where(button,[role="button"]) { min-height: 36px; }
+  #app :where(input,select,textarea) { color-scheme: dark; }
+  #app :where(input,textarea)::placeholder { color: #858b96 !important; opacity: 1; }
+  #app :where(.text-xs,.text-sm) { text-rendering: optimizeLegibility; }
+  #app :where(.text-slate-400,.text-gray-400,.text-zinc-400) {
+    color: #a1a1aa !important;
+  }
+  #app :where(.border-slate-100,.border-slate-200,.border-gray-100,.border-gray-200) {
+    border-color: #343841 !important;
+  }
+  #app :where(button:disabled,[aria-disabled="true"]) {
+    cursor: not-allowed !important;
+    opacity: .58;
+  }
+  #app :where(table) { border-collapse: separate; border-spacing: 0; }
+  #app :where(th) { color: #d4d4d8; }
+  #app :where(td) { color: #e4e4e7; }
+  #app :where(img,svg) { max-width: 100%; }
+  @media (max-width: 640px) {
+    #app :where(button,a,[role="button"]) { touch-action: manipulation; }
+    #app :where(input,select,textarea) { font-size: 16px; }
+    #app :where(table) { max-width: 100%; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    #app *, #app *::before, #app *::after,
+    #modal-container *, #modal-container *::before, #modal-container *::after {
+      scroll-behavior: auto !important;
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: .01ms !important;
+    }
+  }
+</style>
