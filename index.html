@@ -32165,5 +32165,55 @@ body.bg-slate-100{background:#111318!important;color:#e5e7eb!important}
 #app main .dashboard-shell :is(.bg-gradient-to-r,.bg-gradient-to-l,.bg-gradient-to-br,.bg-gradient-to-tr){background-image:linear-gradient(135deg,#242830,#191c22)!important}
 </style>
 
+
+<!-- BRAVO ETAPA 184: padronização monocromática dos módulos operacionais -->
+<style id="bravo-modulos-monocromaticos-etapa-184">
+/* Aplica o mesmo tema noturno grafite a todos os módulos, não apenas ao Dashboard. */
+#app main{
+ --bravo-surface:#191c22;--bravo-raised:#22262e;--bravo-soft:#2b3039;
+ --bravo-line:#3b424e;--bravo-text:#e7ebf1;--bravo-muted:#aab2bf;
+ color:var(--bravo-text);
+}
+#app main [class*="bg-white"],#app main [class*="bg-slate-50"],#app main [class*="bg-gray-50"],
+#app main [class*="bg-zinc-50"],#app main [class*="bg-neutral-50"],
+#app main [class*="bg-slate-100"],#app main [class*="bg-gray-100"],
+#app main [class*="bg-zinc-100"],#app main [class*="bg-neutral-100"]{
+ background-color:var(--bravo-surface)!important;background-image:none!important;color:var(--bravo-text)!important;
+}
+#app main [class*="bg-emerald-"],#app main [class*="bg-green-"],#app main [class*="bg-teal-"],
+#app main [class*="bg-cyan-"],#app main [class*="bg-sky-"],#app main [class*="bg-blue-"],
+#app main [class*="bg-indigo-"],#app main [class*="bg-violet-"],#app main [class*="bg-purple-"],
+#app main [class*="bg-fuchsia-"],#app main [class*="bg-pink-"],#app main [class*="bg-rose-"],
+#app main [class*="bg-red-"],#app main [class*="bg-orange-"],#app main [class*="bg-amber-"],
+#app main [class*="bg-yellow-"],#app main [class*="bg-lime-"]{
+ background-color:var(--bravo-raised)!important;background-image:none!important;
+}
+#app main [class*="text-emerald-"],#app main [class*="text-green-"],#app main [class*="text-teal-"],
+#app main [class*="text-cyan-"],#app main [class*="text-sky-"],#app main [class*="text-blue-"],
+#app main [class*="text-indigo-"],#app main [class*="text-violet-"],#app main [class*="text-purple-"],
+#app main [class*="text-fuchsia-"],#app main [class*="text-pink-"],#app main [class*="text-rose-"],
+#app main [class*="text-red-"],#app main [class*="text-orange-"],#app main [class*="text-amber-"],
+#app main [class*="text-yellow-"],#app main [class*="text-lime-"]{
+ color:var(--bravo-muted)!important;
+}
+#app main [class*="border-emerald-"],#app main [class*="border-green-"],#app main [class*="border-teal-"],
+#app main [class*="border-cyan-"],#app main [class*="border-sky-"],#app main [class*="border-blue-"],
+#app main [class*="border-indigo-"],#app main [class*="border-violet-"],#app main [class*="border-purple-"],
+#app main [class*="border-pink-"],#app main [class*="border-rose-"],#app main [class*="border-red-"],
+#app main [class*="border-orange-"],#app main [class*="border-amber-"],#app main [class*="border-yellow-"],
+#app main [class*="border-lime-"]{border-color:var(--bravo-line)!important}
+#app main :is(.card,.panel,.stat-card,.module-card,.table-container,.modal-content){
+ background-color:var(--bravo-surface)!important;border-color:var(--bravo-line)!important;color:var(--bravo-text)!important;
+}
+#app main :is(input,select,textarea){
+ color:var(--bravo-text)!important;background-color:#20242b!important;border-color:#414956!important;
+ color-scheme:dark;
+}
+#app main :is(input,select,textarea)::placeholder{color:#8993a1!important}
+#app main :is(button,a):focus-visible{outline-color:#aeb7c3!important}
+#app main [class*="bg-gradient-"]{background-image:linear-gradient(135deg,#252a33,#191c22)!important}
+#app main [class*="shadow-"]{box-shadow:0 5px 16px rgba(0,0,0,.2)!important}
+</style>
+
 </body>
 </html>
