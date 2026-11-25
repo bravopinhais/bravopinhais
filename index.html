@@ -11809,6 +11809,94 @@ html,body{min-height:100%;background:#080e18!important;color:#e7edf5!important;c
 }
 </style>
 
+
+<style id="bravo-configuracoes-dashboard-unificacao-cinza-etapa-180">
+/* Etapa 180 — acabamento específico de Configurações e Dashboard: somente carvão, branco e cinza. */
+#app main .bravo-configuracoes-shell{
+  --cfg-bg:#171a20;--cfg-panel:#1e2229;--cfg-panel-raised:#272c34;
+  --cfg-line:#414853;--cfg-text:#edf0f4;--cfg-muted:#aeb6c2;
+  color:var(--cfg-text)!important;
+}
+#app main .bravo-configuracoes-shell :is(
+  [class*="bg-green-"],[class*="bg-emerald-"],[class*="bg-teal-"],
+  [class*="bg-lime-"],[class*="bg-cyan-"],[class*="bg-blue-"],
+  [class*="bg-sky-"],[class*="bg-indigo-"],[class*="bg-violet-"],
+  [class*="bg-purple-"],[class*="bg-amber-"],[class*="bg-yellow-"],
+  [class*="bg-orange-"],[class*="bg-rose-"],[class*="bg-red-"]
+){
+  background-color:var(--cfg-panel-raised)!important;
+  background-image:none!important;
+  color:var(--cfg-text)!important;
+  border-color:var(--cfg-line)!important;
+}
+#app main .bravo-configuracoes-shell :is(
+  [class*="text-green-"],[class*="text-emerald-"],[class*="text-teal-"],
+  [class*="text-lime-"],[class*="text-cyan-"],[class*="text-blue-"],
+  [class*="text-sky-"],[class*="text-indigo-"],[class*="text-violet-"],
+  [class*="text-purple-"],[class*="text-amber-"],[class*="text-yellow-"],
+  [class*="text-orange-"],[class*="text-rose-"],[class*="text-red-"]
+){color:#d5dae2!important}
+#app main .bravo-configuracoes-shell :is(
+  [class*="border-green-"],[class*="border-emerald-"],[class*="border-teal-"],
+  [class*="border-lime-"],[class*="border-cyan-"],[class*="border-blue-"],
+  [class*="border-sky-"],[class*="border-indigo-"],[class*="border-violet-"],
+  [class*="border-purple-"],[class*="border-amber-"],[class*="border-yellow-"],
+  [class*="border-orange-"],[class*="border-rose-"],[class*="border-red-"]
+){border-color:var(--cfg-line)!important}
+#app main .bravo-configuracoes-shell :is(button,a,[role="button"]):is(:hover,:focus-visible){
+  --tw-ring-color:#8b95a3!important;
+}
+#app main .bravo-configuracoes-shell :is(button,a,[role="button"])[class*="hover:bg-"]:hover{
+  background:#343a44!important;color:#fff!important;border-color:#626c7a!important;
+}
+#app main .bravo-configuracoes-shell input[type="checkbox"],
+#app main .bravo-configuracoes-shell input[type="radio"]{accent-color:#aeb6c2!important}
+#app main .bravo-configuracoes-shell :is(input,select,textarea):focus{
+  border-color:#929dab!important;--tw-ring-color:rgba(174,182,194,.22)!important;
+}
+/* Dashboard: neutraliza classes de cor nos elementos internos, inclusive cards e atalhos. */
+#app main .dashboard-shell :is(
+  [class*="bg-green-"],[class*="bg-emerald-"],[class*="bg-teal-"],
+  [class*="bg-lime-"],[class*="bg-cyan-"],[class*="bg-blue-"],
+  [class*="bg-sky-"],[class*="bg-indigo-"],[class*="bg-violet-"],
+  [class*="bg-purple-"],[class*="bg-amber-"],[class*="bg-yellow-"],
+  [class*="bg-orange-"],[class*="bg-rose-"],[class*="bg-red-"]
+){
+  background-color:#292e36!important;background-image:none!important;
+  border-color:#454c57!important;
+}
+#app main .dashboard-shell :is(
+  [class*="text-green-"],[class*="text-emerald-"],[class*="text-teal-"],
+  [class*="text-lime-"],[class*="text-cyan-"],[class*="text-blue-"],
+  [class*="text-sky-"],[class*="text-indigo-"],[class*="text-violet-"],
+  [class*="text-purple-"],[class*="text-amber-"],[class*="text-yellow-"],
+  [class*="text-orange-"],[class*="text-rose-"],[class*="text-red-"]
+){color:#d5dae2!important}
+#app main .dashboard-shell :is(
+  [class*="border-green-"],[class*="border-emerald-"],[class*="border-teal-"],
+  [class*="border-lime-"],[class*="border-cyan-"],[class*="border-blue-"],
+  [class*="border-sky-"],[class*="border-indigo-"],[class*="border-violet-"],
+  [class*="border-purple-"],[class*="border-amber-"],[class*="border-yellow-"],
+  [class*="border-orange-"],[class*="border-rose-"],[class*="border-red-"]
+){border-color:#454c57!important}
+#app main .dashboard-shell :is(.dashboard-quick-grid>button,.dashboard-quick-access){
+  background:#1b1e24!important;border-color:#3c434e!important;color:#e5e7eb!important;
+}
+/* Faixa de abas, cabeçalho móvel e estado ativo no mesmo tema noturno. */
+#app [class*="bg-slate-200/80"]{
+  background:#191c22!important;color:#d9dee7!important;border-color:#343a45!important;
+}
+#app [class*="bg-slate-300/60"]{
+  background:#252a32!important;color:#cbd2dc!important;
+}
+#app [class*="bg-slate-300"]:hover{background:#303640!important;color:#f3f4f6!important}
+#app .tab-active{
+  background:#292e36!important;color:#f3f4f6!important;
+  border-color:#454c57!important;
+}
+#app header.bg-slate-950{background:#111318!important;border-color:#343a45!important}
+</style>
+
 </body></html>`;
                 win.document.open();
                 win.document.write(doc);
