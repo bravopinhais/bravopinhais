@@ -8662,10 +8662,10 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                             weight: '600',
                                             family: 'Inter'
                                         },
-                                        callback: value => new Intl.NumberFormat('pt-BR',{
+                                        callback: value => `R$ ${new Intl.NumberFormat('pt-BR',{
                                             notation: 'compact',
                                             maximumFractionDigits: 1
-                                        }).format(value)
+                                        }).format(value)}`
                                     }
                                 },
                                 x: {
