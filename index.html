@@ -30571,5 +30571,77 @@ body>.grid-actions-popover :is(button,a,[role="menuitem"]):hover{
 }
 </style>
 
+
+<style id="bravo-noturno-tabelas-consistencia-etapa-155">
+/* Etapa 155 — consistência visual das listagens, sem alterar dados ou ações. */
+#app main :is(.overflow-x-auto,.table-responsive):has(>table){
+  background:#101c2c!important;
+  border:1px solid rgba(148,163,184,.18)!important;
+  border-radius:13px!important;
+  box-shadow:0 8px 24px rgba(0,0,0,.14)!important;
+}
+#app main table:not([data-grid-no-pagination]){
+  width:100%;
+  color:#dce6f1!important;
+  border-collapse:separate!important;
+  border-spacing:0!important;
+}
+#app main table:not([data-grid-no-pagination]) thead th{
+  background:#1a2a3e!important;
+  color:#c4d2e1!important;
+  border-bottom:1px solid rgba(148,163,184,.25)!important;
+  vertical-align:middle!important;
+}
+#app main table:not([data-grid-no-pagination]) tbody tr{
+  background:#111e2e!important;
+}
+#app main table:not([data-grid-no-pagination]) tbody tr:nth-child(even){
+  background:#152337!important;
+}
+#app main table:not([data-grid-no-pagination]) tbody tr:hover,
+#app main table:not([data-grid-no-pagination]) tbody tr:hover td{
+  background:#1a3545!important;
+}
+#app main table:not([data-grid-no-pagination]) tbody td{
+  color:#cbd7e5!important;
+  border-bottom:1px solid rgba(148,163,184,.12)!important;
+  vertical-align:middle!important;
+}
+#app main table:not([data-grid-no-pagination]) tbody td:first-child{
+  color:#e4edf6!important;
+}
+#app main table:not([data-grid-no-pagination]) tbody td[colspan]{
+  color:#9eafc2!important;
+  text-align:center!important;
+  padding:22px 14px!important;
+}
+#app main table:not([data-grid-no-pagination]) tfoot td{
+  background:#1a2a3e!important;
+  color:#e5edf6!important;
+  border-top:1px solid rgba(148,163,184,.24)!important;
+}
+#app main table:not([data-grid-no-pagination]) :is(th,td){
+  font-variant-numeric:tabular-nums;
+}
+#app main table:not([data-grid-no-pagination]) tbody td :is(a,button,[role="button"]){
+  touch-action:manipulation;
+}
+#app main table:not([data-grid-no-pagination]) tbody td :is(a,button,[role="button"]):focus-visible{
+  outline:2px solid #5eead4!important;
+  outline-offset:2px!important;
+}
+@media(max-width:640px){
+  #app main :is(.overflow-x-auto,.table-responsive):has(>table){
+    border-radius:10px!important;
+  }
+  #app main table:not([data-grid-no-pagination]) tbody td{
+    line-height:1.45;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  #app main table:not([data-grid-no-pagination]) tbody tr{transition:none!important}
+}
+</style>
+
 </body>
 </html>
