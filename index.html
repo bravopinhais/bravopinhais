@@ -11606,6 +11606,69 @@ html,body{min-height:100%;background:#080e18!important;color:#e7edf5!important;c
  #app main .dashboard-shell{gap:15px!important}
 }
 </style>
+
+<style id="bravo-dashboard-ajustes-semanticos-etapa-177">
+/* Etapa 177 — remove superfícies claras residuais sem apagar a leitura semântica. */
+#app main .dashboard-shell .dashboard-kpi-grid [class~="bg-emerald-50"],
+#app main .dashboard-shell .dashboard-kpi-grid [class~="bg-rose-50"],
+#app main .dashboard-shell .dashboard-kpi-grid [class~="bg-sky-50"],
+#app main .dashboard-shell .dashboard-kpi-grid [class~="bg-teal-50"]{
+  background:#292e37!important;border:1px solid #3b424e!important;
+}
+#app main .dashboard-shell .dashboard-kpi-grid [class~="text-emerald-700"]{color:#86efac!important}
+#app main .dashboard-shell .dashboard-kpi-grid [class~="text-rose-700"],
+#app main .dashboard-shell .dashboard-kpi-grid [class~="text-rose-600"]{color:#fda4af!important}
+#app main .dashboard-shell .dashboard-kpi-grid [class~="text-sky-700"]{color:#93c5fd!important}
+#app main .dashboard-shell .dashboard-kpi-grid [class~="text-teal-700"]{color:#5eead4!important}
+#app main .dashboard-shell .dashboard-operations-grid button[class~="bg-rose-50"]{
+  color:#fecdd3!important;background:rgba(244,63,94,.13)!important;border-color:rgba(251,113,133,.35)!important;
+}
+#app main .dashboard-shell .dashboard-operations-grid button[class~="bg-amber-50"]{
+  color:#fde68a!important;background:rgba(245,158,11,.13)!important;border-color:rgba(251,191,36,.35)!important;
+}
+#app main .dashboard-shell .dashboard-operations-grid button[class~="bg-emerald-50"]{
+  color:#a7f3d0!important;background:rgba(16,185,129,.13)!important;border-color:rgba(52,211,153,.32)!important;
+}
+#app main .dashboard-shell .dashboard-operations-grid button[class~="bg-sky-50"]{
+  color:#bae6fd!important;background:rgba(14,165,233,.13)!important;border-color:rgba(56,189,248,.32)!important;
+}
+#app main .dashboard-shell .dashboard-operations-grid button[class~="bg-white/80"]{
+  background:rgba(255,255,255,.07)!important;border:1px solid rgba(148,163,184,.18)!important;
+}
+#app main .dashboard-shell .dashboard-operations-grid [class~="bg-slate-100"]{
+  color:#cbd5e1!important;background:#292e37!important;
+}
+#app main .dashboard-shell .dashboard-operations-grid [class~="bg-emerald-50"]{background:rgba(16,185,129,.13)!important}
+#app main .dashboard-shell .dashboard-operations-grid [class~="bg-rose-50"]{background:rgba(244,63,94,.13)!important}
+#app main .dashboard-shell .dashboard-operations-grid [class~="text-emerald-700"]{color:#86efac!important}
+#app main .dashboard-shell .dashboard-operations-grid [class~="text-rose-700"]{color:#fda4af!important}
+#app main .dashboard-shell > section:has(.bg-gradient-to-r){
+  background:#191c22!important;border-color:#343a45!important;
+}
+#app main .dashboard-shell > section:has(.bg-gradient-to-r) > div:last-child{
+  background:#171a20!important;
+}
+#app main .dashboard-shell > section:has(.bg-gradient-to-r) button.group{
+  color:#e5e7eb!important;background:#22262e!important;border-color:#3a414d!important;
+}
+#app main .dashboard-shell > section:has(.bg-gradient-to-r) button.group [class~="text-slate-900"]{color:#f1f3f6!important}
+#app main .dashboard-shell > section:has(.bg-gradient-to-r) button.group [class~="text-slate-500"]{color:#aab2bf!important}
+#app main .dashboard-shell > section:has(.bg-gradient-to-r) button.group [class~="bg-teal-50"],
+#app main .dashboard-shell > section:has(.bg-gradient-to-r) button.group [class~="bg-rose-50"],
+#app main .dashboard-shell > section:has(.bg-gradient-to-r) button.group [class~="bg-amber-50"],
+#app main .dashboard-shell > section:has(.bg-gradient-to-r) button.group [class~="bg-sky-50"]{
+  background:#303641!important;color:#e4e8ee!important;border:1px solid #424a57!important;
+}
+#app main .dashboard-shell > section:has(.bg-gradient-to-r) button.group [class~="text-teal-700"],
+#app main .dashboard-shell > section:has(.bg-gradient-to-r) button.group [class~="text-rose-700"],
+#app main .dashboard-shell > section:has(.bg-gradient-to-r) button.group [class~="text-amber-700"],
+#app main .dashboard-shell > section:has(.bg-gradient-to-r) button.group [class~="text-sky-700"]{color:#cbd5e1!important}
+@media(max-width:640px){
+  #app main .dashboard-shell .dashboard-operations-grid button{min-height:58px}
+  #app main .dashboard-shell > section:has(.bg-gradient-to-r) button.group{padding:13px!important}
+}
+</style>
+
 </body></html>`;
                 win.document.open();
                 win.document.write(doc);
