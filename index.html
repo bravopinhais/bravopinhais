@@ -19147,6 +19147,200 @@ html,body,#app,#app header.bg-slate-950.no-print,#app header.md\\:hidden{backgro
 </style>
 </style>
 
+<script id="bravo-paginacao-renderizacao-fina-etapa-111">
+(function(){
+  'use strict';
+  if (window.__bravoFinePaginationInstalled) return;
+  window.__bravoFinePaginationInstalled = true;
+  var PAGE_SIZE = 25;
+  var states = new WeakMap();
+
+  function norm(value){
+    return String(value == null ? '' : value)
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .toLocaleLowerCase('pt-BR').replace(/\s+/g,' ').trim();
+  }
+  function eligible(table){
+    return !!(table && table.isConnected && table.dataset.gridEnhanced === '1' &&
+      table.tHead && table.tHead.rows.length && table.tBodies.length &&
+      !table.closest('#modal-container,[data-grid-no-pagination],.print-only'));
+  }
+  function createButton(label, action, disabled){
+    var button=document.createElement('button');
+    button.type='button';
+    button.className='gb-pagination-button';
+    button.textContent=label;
+    button.dataset.pageAction=action;
+    button.disabled=!!disabled;
+    return button;
+  }
+  function ensureControls(table,state){
+    if(state.nav && state.nav.isConnected) return;
+    var nav=document.createElement('nav');
+    nav.className='gb-pagination';
+    nav.setAttribute('aria-label','Paginação da tabela');
+    nav.innerHTML=
+      '<div class="gb-pagination-summary" aria-live="polite"></div>'+
+      '<div class="gb-pagination-controls">'+
+        '<label class="gb-pagination-size-label">Por página '+
+          '<select class="gb-pagination-size" aria-label="Quantidade de registros por página">'+
+            '<option value="25">25</option><option value="50">50</option><option value="100">100</option>'+
+          '</select>'+
+        '</label>'+
+        '<button type="button" class="gb-pagination-button" data-page-action="prev">Anterior</button>'+
+        '<span class="gb-pagination-current" aria-live="polite"></span>'+
+        '<button type="button" class="gb-pagination-button" data-page-action="next">Próxima</button>'+
+      '</div>';
+    var size=nav.querySelector('.gb-pagination-size');
+    size.value=String(state.pageSize);
+    nav.addEventListener('click',function(event){
+      var button=event.target.closest('button[data-page-action]');
+      if(!button || button.disabled) return;
+      if(button.dataset.pageAction==='prev') state.page--;
+      if(button.dataset.pageAction==='next') state.page++;
+      applyPage(table,state,false);
+    });
+    size.addEventListener('change',function(){
+      state.pageSize=Math.max(1,Number(size.value)||PAGE_SIZE);
+      state.page=1;
+      applyPage(table,state,false);
+    });
+    table.insertAdjacentElement('afterend',nav);
+    state.nav=nav;
+  }
+  function readRows(table){
+    var header=table.tHead && table.tHead.rows[0];
+    if(!header) return {matches:[],special:[],total:0};
+    var headers=Array.from(header.cells);
+    var filterRow=table.tHead.querySelector('tr[data-grid-filter-row="1"]');
+    var filters=filterRow ? Array.from(filterRow.querySelectorAll('input[data-grid-filter-key]'))
+      .map(function(input){return {key:input.dataset.gridFilterKey,value:norm(input.value)};})
+      .filter(function(item){return item.value;}) : [];
+    var matches=[],special=[],total=0;
+    Array.from(table.tBodies).forEach(function(body){
+      Array.from(body.rows).forEach(function(row){
+        if(row.dataset.gridFilterRow==='1') return;
+        var cells=Array.from(row.cells);
+        if(cells.length!==headers.length || cells.some(function(cell){return (cell.colSpan||1)!==1;})){
+          special.push(row);
+          return;
+        }
+        var keep=filters.every(function(filter){
+          var index=headers.findIndex(function(th){return th.dataset.gridColKey===filter.key;});
+          if(index<0 || !cells[index]) return true;
+          return norm(cells[index].innerText || cells[index].textContent).includes(filter.value);
+        });
+        if(keep) matches.push(row);
+        total++;
+      });
+    });
+    return {matches:matches,special:special,total:total};
+  }
+  function applyPage(table,state,reset){
+    if(!eligible(table)) return;
+    if(reset) state.page=1;
+    var result=readRows(table);
+    state.matches=result.matches;
+    state.special=result.special;
+    var pages=Math.max(1,Math.ceil(result.matches.length/state.pageSize));
+    state.page=Math.max(1,Math.min(state.page,pages));
+    var start=(state.page-1)*state.pageSize;
+    var end=Math.min(start+state.pageSize,result.matches.length);
+    result.special.forEach(function(row){row.hidden=false;});
+    result.matches.forEach(function(row,index){row.hidden=index<start || index>=end;});
+    ensureControls(table,state);
+    var nav=state.nav;
+    if(!nav) return;
+    nav.hidden=result.matches.length<=state.pageSize;
+    var summary=nav.querySelector('.gb-pagination-summary');
+    var current=nav.querySelector('.gb-pagination-current');
+    var prev=nav.querySelector('[data-page-action="prev"]');
+    var next=nav.querySelector('[data-page-action="next"]');
+    if(summary){
+      summary.textContent=result.matches.length
+        ? 'Exibindo '+(start+1)+'–'+end+' de '+result.matches.length+' registros'
+        : 'Nenhum registro encontrado';
+    }
+    if(current) current.textContent='Página '+state.page+' de '+pages;
+    if(prev) prev.disabled=state.page<=1;
+    if(next) next.disabled=state.page>=pages;
+  }
+  function setup(table){
+    if(!eligible(table)) return;
+    var state=states.get(table);
+    if(!state){
+      state={page:1,pageSize:PAGE_SIZE,matches:[],special:[],nav:null,timer:null};
+      states.set(table,state);
+    }
+    applyPage(table,state,false);
+  }
+  function schedule(table,delay){
+    if(!table) return;
+    var state=states.get(table);
+    if(!state){
+      state={page:1,pageSize:PAGE_SIZE,matches:[],special:[],nav:null,timer:null};
+      states.set(table,state);
+    }
+    clearTimeout(state.timer);
+    state.timer=setTimeout(function(){
+      if(table.isConnected && table.dataset.gridEnhanced==='1') setup(table);
+    },delay || 170);
+  }
+  function scan(root){
+    if(!root) return;
+    if(root.matches && root.matches('table')) schedule(root,180);
+    if(root.closest){
+      var parentTable=root.closest('table');
+      if(parentTable) schedule(parentTable,180);
+    }
+    if(root.querySelectorAll) root.querySelectorAll('table').forEach(function(table){schedule(table,180);});
+  }
+
+  var app=document.getElementById('app');
+  if(app){
+    var observer=new MutationObserver(function(records){
+      records.forEach(function(record){
+        record.addedNodes.forEach(function(node){
+          if(node.nodeType===1) scan(node);
+        });
+      });
+    });
+    observer.observe(app,{childList:true,subtree:true});
+    app.querySelectorAll('table').forEach(function(table){schedule(table,220);});
+  }
+  document.addEventListener('input',function(event){
+    var input=event.target && event.target.closest ? event.target.closest('input[data-grid-filter-key]') : null;
+    if(!input) return;
+    var table=input.closest('table');
+    if(table) schedule(table,170);
+  },true);
+  document.addEventListener('change',function(event){
+    var input=event.target && event.target.closest ? event.target.closest('input[data-grid-filter-key]') : null;
+    if(input){
+      var table=input.closest('table');
+      if(table) schedule(table,170);
+    }
+  },true);
+
+  // Preserva a posição de leitura quando um módulo atualiza somente o conteúdo central.
+  if(typeof window.renderMainOnly==='function' && !window.renderMainOnly.__bravoFinePatch){
+    var originalRenderMain=window.renderMainOnly;
+    var wrappedRenderMain=function(){
+      var main=document.querySelector('#app main');
+      var scrollTop=main ? main.scrollTop : 0;
+      var result=originalRenderMain.apply(this,arguments);
+      requestAnimationFrame(function(){
+        var updated=document.querySelector('#app main');
+        if(updated) updated.scrollTop=scrollTop;
+      });
+      return result;
+    };
+    wrappedRenderMain.__bravoFinePatch=true;
+    window.renderMainOnly=wrappedRenderMain;
+  }
+})();
+</script>
+
 </body>
 </html>
 
@@ -27993,4 +28187,219 @@ body{scrollbar-color:#656a73 #191b20!important}
       transition: none;
     }
   }
+</style>
+
+<!-- BRAVO PINHAIS — PATCH FINO GLOBAL | ETAPA 111 -->
+<style id="bravo-revisao-global-fino-etapa-111">
+:root{
+  --bravo-bg:#101114;
+  --bravo-surface:#191c22;
+  --bravo-card:#20242b;
+  --bravo-raised:#272d36;
+  --bravo-field:#292f38;
+  --bravo-border:#3a424e;
+  --bravo-border-soft:#303741;
+  --bravo-text:#f3f4f6;
+  --bravo-muted:#a5acb8;
+  --bravo-subtle:#818a98;
+}
+html,body,#app{background:var(--bravo-bg)!important;color:var(--bravo-text)!important}
+#app{min-width:0;max-width:100%;isolation:isolate}
+#app main{
+  min-width:0!important;min-height:0;
+  background:var(--bravo-bg)!important;color:var(--bravo-text)!important;
+  scrollbar-color:#626b78 #191c22!important;
+  overscroll-behavior-y:contain;
+}
+#app main::-webkit-scrollbar-track{background:#191c22!important}
+#app main::-webkit-scrollbar-thumb{background:#626b78!important;border:1px solid #191c22!important}
+#app main :is(.card-modern,.gb-card,.gb-panel,.gb-section-panel,.form-section,.table-responsive,.filter-bar){
+  background:var(--bravo-card)!important;color:var(--bravo-text)!important;
+  border-color:var(--bravo-border)!important;
+  box-shadow:0 8px 22px rgba(0,0,0,.16)!important;
+}
+#app main :is(.card-header,.panel-header){
+  background:#242a33!important;color:#eef0f3!important;
+  border-color:var(--bravo-border)!important;
+}
+#app main :is(h1,h2,h3,h4,h5){
+  color:#f1f3f6!important;text-wrap:balance;
+}
+#app main :is(p,small,.text-slate-500,.text-slate-600,.text-gray-500,.text-gray-600){
+  color:var(--bravo-muted)!important;
+}
+#app main :is(.text-slate-900,.text-slate-800,.text-gray-900,.text-gray-800,.text-zinc-900){
+  color:#e8ebef!important;
+}
+#app main :is(.border-slate-100,.border-slate-200,.border-gray-100,.border-gray-200,.border-zinc-100,.border-zinc-200){
+  border-color:var(--bravo-border)!important;
+}
+#app main :is(.bg-white,.bg-gray-50,.bg-gray-100,.bg-slate-50,.bg-slate-100,.bg-zinc-50,.bg-neutral-50){
+  background:var(--bravo-card)!important;color:var(--bravo-text)!important;
+}
+#app main :is(.bg-slate-200,.bg-gray-200,.bg-neutral-200){
+  background:#303741!important;color:#e5e7eb!important;
+}
+/* Navegação e faixa de abas */
+#sidebar-menu{background:#15181e!important;border-color:#303741!important}
+#sidebar-menu nav{background:transparent!important}
+#sidebar-menu nav button{border:1px solid transparent!important;border-radius:11px!important}
+#sidebar-menu nav button:hover{background:#252b34!important;color:#f4f5f7!important}
+#sidebar-menu nav button[aria-current="page"],
+#sidebar-menu nav button[aria-pressed="true"],
+#sidebar-menu nav button.active{
+  background:#303844!important;border-color:#4a5564!important;color:#fff!important;
+  box-shadow:inset 3px 0 #cbd1da!important;
+}
+#app .gb-tabs-scroller{background:#171a20!important;border-color:#303741!important}
+#app .gb-tabs-scroller>div{border-color:#39414d!important}
+#app .gb-tabs-scroller>div.tab-active{background:#303844!important;color:#fff!important}
+#app .gb-tabs-scroller>div:not(.tab-active){background:#20252d!important;color:#b6bdc8!important}
+#app .gb-tabs-scroller>div:not(.tab-active):hover{background:#2b323d!important;color:#fff!important}
+/* Campos, filtros e controles de busca */
+#app main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),select,textarea),
+#modal-container :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),select,textarea){
+  background:#292f38!important;color:#f1f3f6!important;
+  border:1px solid #424b59!important;border-radius:10px!important;
+  box-shadow:none!important;caret-color:#fff;
+}
+#app main :is(input,textarea,select)::placeholder,#modal-container :is(input,textarea,select)::placeholder{
+  color:#858f9d!important;opacity:1!important;
+}
+#app main :is(input,select,textarea):focus,#modal-container :is(input,select,textarea):focus{
+  border-color:#8491a3!important;outline:2px solid rgba(148,163,184,.14)!important;
+  outline-offset:0!important;box-shadow:none!important;
+}
+#app main :is(input[type="checkbox"],input[type="radio"]),#modal-container :is(input[type="checkbox"],input[type="radio"]){
+  accent-color:#cbd5e1;
+}
+#app main label,#modal-container label{color:#c2c8d1!important}
+#app main .grid-column-filter,
+#app main table thead tr.grid-filter-row th .grid-column-filter{
+  min-height:34px!important;background:#292f38!important;color:#edf0f4!important;
+  border:1px solid #424b59!important;border-radius:8px!important;
+}
+#app main .grid-column-filter::placeholder{color:#8993a1!important}
+#app main .grid-filter-status{
+  background:#20252d!important;color:#aeb6c2!important;
+  border-color:#39414d!important;border-radius:10px 10px 0 0!important;
+}
+#app main .grid-filter-muted{color:#707b8a!important}
+#app main .grid-actions-trigger,#app main .filter-chip,#app main .filtro-chip{
+  background:#292f38!important;color:#dce1e8!important;
+  border:1px solid #414a57!important;box-shadow:none!important;
+}
+#app main .grid-actions-trigger:hover,#app main .filter-chip:hover,#app main .filtro-chip:hover{
+  background:#343c48!important;border-color:#596575!important;color:#fff!important;
+}
+#app main .grid-actions-popover,#app main [id^="menu-filtro-"]{
+  background:rgba(31,36,44,.98)!important;color:#e7eaf0!important;
+  border:1px solid #46505e!important;border-radius:14px!important;
+  box-shadow:0 18px 44px rgba(0,0,0,.42)!important;
+  -webkit-backdrop-filter:blur(16px) saturate(120%);
+  backdrop-filter:blur(16px) saturate(120%);
+}
+#app main .grid-actions-popover :is(button,p,label),
+#app main [id^="menu-filtro-"] :is(button,p,label){color:#d8dde5!important}
+#app main .grid-actions-popover button,#app main [id^="menu-filtro-"] button{
+  background:#292f38!important;border:1px solid #414a57!important;color:#e7eaf0!important;
+}
+/* Tabelas de todos os módulos */
+#app main .overflow-x-auto{
+  max-width:100%;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;
+  scrollbar-width:thin;scrollbar-color:#5d6877 #1a1e25;
+}
+#app main table{
+  width:100%;border-collapse:separate!important;border-spacing:0!important;
+  color:#dce1e8!important;
+}
+#app main table thead th{
+  background:#272d36!important;color:#cbd2dc!important;
+  border-color:#3a424e!important;border-bottom:1px solid #46505e!important;
+  font-size:10px!important;font-weight:800!important;letter-spacing:.055em;
+  white-space:nowrap;
+}
+#app main table thead tr.grid-filter-row th{background:#20252d!important}
+#app main table tbody tr{background:#1d2229!important}
+#app main table tbody tr:nth-child(even){background:#21262e!important}
+#app main table tbody tr:hover{background:#2a313b!important}
+#app main table tbody td{
+  color:#cbd2dc!important;border-color:#343c47!important;vertical-align:middle;
+}
+#app main table tbody td :is(button,a){box-shadow:none!important}
+#app main table tbody td :is(.text-slate-900,.text-slate-800,.text-gray-900,.text-gray-800){
+  color:#e7eaf0!important;
+}
+#app main table tbody td :is(.text-slate-500,.text-gray-500,.text-slate-600,.text-gray-600){
+  color:#a5adba!important;
+}
+/* Botões neutros padronizados; estados de perigo e alertas semânticos são preservados */
+#app main button[class*="bg-white"],#app main button[class*="bg-slate-100"],
+#app main button[class*="bg-gray-100"],#app main button[class*="bg-neutral-100"],
+#app main button[class*="bg-slate-200"],#app main button[class*="bg-gray-200"]{
+  background:#303741!important;color:#e7eaf0!important;border:1px solid #46505e!important;
+  box-shadow:none!important;
+}
+#app main button[class*="from-teal-"],#app main button[class*="from-emerald-"],
+#app main button[class*="bg-teal-700"],#app main button[class*="bg-emerald-700"]{
+  background:#39424e!important;background-image:none!important;color:#f7f8fa!important;
+  border:1px solid #566273!important;box-shadow:none!important;
+}
+#app main button[class*="from-teal-"]:hover,#app main button[class*="from-emerald-"]:hover,
+#app main button[class*="bg-teal-700"]:hover,#app main button[class*="bg-emerald-700"]:hover{
+  background:#465261!important;border-color:#6b7788!important;
+}
+#app main :is(button,a,[role="button"],input,select,textarea):focus-visible,
+#modal-container :is(button,a,[role="button"],input,select,textarea):focus-visible{
+  outline:2px solid #aeb8c6!important;outline-offset:2px!important;
+}
+#app main button:disabled,#app main [aria-disabled="true"]{opacity:.48!important;cursor:not-allowed!important}
+#app main :is(.modal-content,[role="dialog"],.gb-modal,.modal){
+  background:#20242b!important;color:#eef0f4!important;border:1px solid #424b58!important;
+}
+#modal-container{color:#eef0f4!important}
+#modal-container > div > div{
+  background:#20242b!important;color:#eef0f4!important;
+  border:1px solid #424b58!important;box-shadow:0 24px 70px rgba(0,0,0,.48)!important;
+}
+#modal-container :is(.bg-white,.bg-slate-50,.bg-gray-50){background:#272d36!important;color:#eef0f4!important}
+#modal-container :is(.text-slate-900,.text-gray-900,.text-slate-800,.text-gray-800){color:#eef0f4!important}
+#modal-container :is(.text-slate-500,.text-gray-500,.text-slate-600,.text-gray-600){color:#aab3c0!important}
+#modal-container :is(.border-slate-100,.border-slate-200,.border-gray-100,.border-gray-200){border-color:#3a424e!important}
+/* Paginação adicionada às listagens longas */
+#app main .gb-pagination{
+  display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  width:100%;padding:12px 14px;margin-top:0;
+  background:#1a1f26;border-top:1px solid #343c47;border-radius:0 0 14px 14px;
+  color:#aeb6c2;font-size:11px;
+}
+#app main .gb-pagination[hidden]{display:none!important}
+#app main .gb-pagination-summary{font-size:11px;color:#aeb6c2;font-weight:650}
+#app main .gb-pagination-controls{display:flex;align-items:center;justify-content:flex-end;gap:7px;flex-wrap:wrap}
+#app main .gb-pagination-size-label{display:flex;align-items:center;gap:6px;color:#9da7b5;font-size:10px;font-weight:700}
+#app main .gb-pagination-size{
+  min-height:32px!important;width:auto;min-width:64px;padding:5px 8px!important;
+  background:#292f38!important;color:#e7eaf0!important;border:1px solid #424b59!important;
+}
+#app main .gb-pagination-button{
+  display:inline-flex;align-items:center;justify-content:center;min-height:32px!important;
+  padding:6px 11px!important;border-radius:9px!important;
+  border:1px solid #424b59!important;background:#292f38!important;color:#dce2ea!important;
+  font-size:10px!important;font-weight:750!important;box-shadow:none!important;
+}
+#app main .gb-pagination-button:hover:not(:disabled){background:#39424e!important;border-color:#647184!important;color:#fff!important}
+#app main .gb-pagination-button:disabled{opacity:.38!important;cursor:not-allowed!important}
+#app main .gb-pagination-current{min-width:78px;text-align:center;color:#c5ccd6;font-size:10px;font-weight:750}
+@media(max-width:640px){
+  #app main{padding-left:12px!important;padding-right:12px!important}
+  #app main :is(.card-modern,.gb-card,.gb-panel,.gb-section-panel,.form-section){border-radius:15px!important}
+  #app main table{min-width:560px}
+  #app main .gb-pagination{align-items:flex-start;padding:11px 10px}
+  #app main .gb-pagination-controls{width:100%;justify-content:space-between}
+  #app main .gb-pagination-size-label{margin-right:auto}
+  #app main .gb-pagination-button{min-height:36px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #app main *,#modal-container *{scroll-behavior:auto!important;transition:none!important;animation:none!important}
+}
 </style>
