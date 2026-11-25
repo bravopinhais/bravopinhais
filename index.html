@@ -11452,6 +11452,49 @@ html,body{min-height:100%;background:#080e18!important;color:#e7edf5!important;c
 }
 </style>
 
+<style id="bravo-noturno-neutralizacao-acento-verde-etapa-162">
+/* Etapa 162 — neutraliza faixas e destaques verdes herdados na identidade visual.
+   Cores de situação (sucesso, alerta e erro) permanecem semânticas. */
+.glass-header{
+  background:rgba(10,16,28,.96)!important;
+  color:#e5edf7!important;
+  border-color:#29384d!important;
+}
+.glass-header :is(.text-teal-400,.text-teal-500,.text-emerald-400,.text-emerald-500){
+  color:#a9bdd5!important;
+}
+#app main .dashboard-quick-grid>button{
+  background:#142238!important;
+  color:#e5edf7!important;
+  border:1px solid #2b3d55!important;
+  box-shadow:0 8px 22px rgba(0,0,0,.16)!important;
+}
+#app main .dashboard-quick-grid>button :is(.quick-green,.quick-blue,.quick-amber,.quick-violet){
+  background:#20334c!important;
+  color:#b9cbe0!important;
+}
+#app main .dashboard-quick-grid>button :is(.text-teal-600,.text-teal-700,.text-emerald-600,.text-emerald-700){
+  color:#b9cbe0!important;
+}
+#app main #cabecalho-modulo-global{
+  background:#111d30!important;
+  color:#e5edf7!important;
+  border:1px solid #2a3b52!important;
+}
+#app main #cabecalho-modulo-global :is(.text-teal-400,.text-teal-500,.text-emerald-400,.text-emerald-500){
+  color:#b9cbe0!important;
+}
+#app main :is(.dashboard-shell,.dashboard-shell *){
+  scrollbar-color:#52647a #111c2c;
+}
+@media(max-width:640px){
+  #app main .dashboard-quick-grid>button{
+    min-width:0!important;
+    overflow-wrap:break-word;
+  }
+}
+</style>
+
 </body></html>`;
                 win.document.open();
                 win.document.write(doc);
