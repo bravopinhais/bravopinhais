@@ -27232,3 +27232,183 @@ body{scrollbar-color:#656a73 #191b20!important}
     #app main .dashboard-shell .dashboard-operations-grid button { transition: none !important; }
   }
 </style>
+
+
+<!-- BRAVO PINHAIS DARK EDITION — ETAPA 104: COMPOSIÇÃO EXECUTIVA DO DASHBOARD -->
+<style id="bravo-dark-dashboard-composition-etapa-104">
+  #app main .dashboard-shell {
+    display: flex;
+    flex-direction: column;
+    gap: 1.35rem !important;
+    max-width: 100%;
+  }
+  #app main .dashboard-shell .dashboard-quick-access {
+    position: relative;
+    overflow: hidden;
+    padding: clamp(1rem,2vw,1.5rem) !important;
+    border-radius: 22px !important;
+    background: linear-gradient(135deg,#22262e 0%,#1b1e24 58%,#191b20 100%) !important;
+    border: 1px solid #3b414c !important;
+    box-shadow: 0 16px 36px rgba(0,0,0,.22) !important;
+  }
+  #app main .dashboard-shell .dashboard-quick-access:before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 1px;
+    background: linear-gradient(90deg,transparent,rgba(255,255,255,.22),transparent);
+    pointer-events: none;
+  }
+  #app main .dashboard-shell .dashboard-quick-access-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  #app main .dashboard-shell .dashboard-quick-eyebrow {
+    color: #aeb4bf !important;
+    font-size: .64rem !important;
+    font-weight: 800 !important;
+    letter-spacing: .16em !important;
+    text-transform: uppercase;
+  }
+  #app main .dashboard-shell .dashboard-quick-access-heading h3 {
+    margin-top: .2rem;
+    color: #fafafa !important;
+    font-size: clamp(1.05rem,2vw,1.25rem) !important;
+    font-weight: 800 !important;
+    letter-spacing: -.035em !important;
+  }
+  #app main .dashboard-shell .dashboard-quick-access-heading p:not(.dashboard-quick-eyebrow) {
+    margin-top: .25rem;
+    color: #a1a1aa !important;
+    font-size: .78rem !important;
+  }
+  #app main .dashboard-shell .dashboard-quick-hint {
+    flex: 0 0 auto;
+    padding: .45rem .7rem;
+    border: 1px solid #454c58;
+    border-radius: 999px;
+    background: rgba(255,255,255,.035);
+    color: #c8cbd2 !important;
+    font-size: .68rem;
+    font-weight: 750;
+  }
+  #app main .dashboard-shell .dashboard-quick-grid {
+    gap: .7rem !important;
+  }
+  #app main .dashboard-shell .dashboard-quick-grid > button {
+    min-width: 0;
+    min-height: 72px;
+    padding: .85rem .9rem !important;
+    border: 1px solid #3b414c !important;
+    border-radius: 15px !important;
+    background: linear-gradient(145deg,#292e37,#232730) !important;
+    box-shadow: inset 0 1px rgba(255,255,255,.025) !important;
+  }
+  #app main .dashboard-shell .dashboard-quick-grid > button > span:nth-child(2) {
+    min-width: 0;
+    text-align: left;
+  }
+  #app main .dashboard-shell .dashboard-quick-grid > button strong {
+    display: block;
+    color: #f4f4f5 !important;
+    font-size: .82rem;
+    font-weight: 800;
+  }
+  #app main .dashboard-shell .dashboard-quick-grid > button small {
+    display: block;
+    margin-top: .18rem;
+    color: #a1a1aa !important;
+    font-size: .66rem;
+    line-height: 1.35;
+  }
+  #app main .dashboard-shell .dashboard-quick-grid > button .dashboard-quick-arrow {
+    color: #858c98 !important;
+    opacity: .75;
+    transition: transform .18s ease,opacity .18s ease;
+  }
+  #app main .dashboard-shell .dashboard-quick-grid > button:hover .dashboard-quick-arrow {
+    transform: translateX(3px);
+    opacity: 1;
+  }
+  #app main .dashboard-shell .dashboard-section-title {
+    padding: .15rem .2rem .2rem !important;
+    border-bottom: 1px solid #303640;
+  }
+  #app main .dashboard-shell .dashboard-section-title h3 {
+    color: #f4f4f5 !important;
+    font-size: clamp(1.08rem,2vw,1.3rem) !important;
+    letter-spacing: -.035em !important;
+  }
+  #app main .dashboard-shell .dashboard-section-title p {
+    color: #a1a1aa !important;
+    line-height: 1.5;
+  }
+  #app main .dashboard-shell .dashboard-section-title > span {
+    border-color: #414752 !important;
+    background: #202329 !important;
+    color: #bfc4ce !important;
+  }
+  #app main .dashboard-shell .dashboard-kpi-grid {
+    gap: .85rem !important;
+  }
+  #app main .dashboard-shell .dashboard-kpi-grid > article {
+    position: relative;
+    overflow: hidden;
+    min-width: 0;
+    min-height: 148px;
+    padding: 1.15rem !important;
+    border: 1px solid #3a404b !important;
+    border-radius: 19px !important;
+    background: linear-gradient(145deg,#252a32,#1d2026) !important;
+    box-shadow: 0 10px 26px rgba(0,0,0,.18) !important;
+  }
+  #app main .dashboard-shell .dashboard-kpi-grid > article:before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto;
+    height: 2px;
+    background: linear-gradient(90deg,#626b79,rgba(98,107,121,0));
+    opacity: .65;
+  }
+  #app main .dashboard-shell .dashboard-kpi-grid > article > div:first-child > div:last-child {
+    background: #343a44 !important;
+    color: #e4e4e7 !important;
+    border: 1px solid #454c58;
+  }
+  #app main .dashboard-shell .dashboard-kpi-grid > article p.text-2xl,
+  #app main .dashboard-shell .dashboard-kpi-grid > article p.text-3xl {
+    color: #fff !important;
+    font-variant-numeric: tabular-nums;
+    letter-spacing: -.045em;
+  }
+  #app main .dashboard-shell .dashboard-kpi-grid > article > div:last-child {
+    border-color: #373d47 !important;
+  }
+  #app main .dashboard-shell .dashboard-analytics-grid,
+  #app main .dashboard-shell .dashboard-operations-grid {
+    gap: 1rem !important;
+  }
+  #app main .dashboard-shell :is(.dashboard-analytics-grid,.dashboard-operations-grid) > div {
+    min-width: 0;
+    border-radius: 19px !important;
+  }
+  @media(max-width:767px) {
+    #app main .dashboard-shell { gap: 1rem !important; }
+    #app main .dashboard-shell .dashboard-quick-access { padding: 1rem !important; border-radius: 18px !important; }
+    #app main .dashboard-shell .dashboard-quick-access-heading { align-items: flex-start; }
+    #app main .dashboard-shell .dashboard-quick-hint { font-size: .62rem; }
+    #app main .dashboard-shell .dashboard-quick-grid { gap: .55rem !important; }
+    #app main .dashboard-shell .dashboard-quick-grid > button { min-height: 68px; padding: .7rem !important; }
+    #app main .dashboard-shell .dashboard-kpi-grid { gap: .65rem !important; }
+    #app main .dashboard-shell .dashboard-kpi-grid > article { min-height: 132px; padding: .9rem !important; border-radius: 16px !important; }
+    #app main .dashboard-shell .dashboard-section-title { gap: .6rem; }
+  }
+  @media(prefers-reduced-motion:reduce) {
+    #app main .dashboard-shell * { scroll-behavior: auto !important; }
+    #app main .dashboard-shell .dashboard-quick-grid > button,
+    #app main .dashboard-shell .dashboard-quick-grid > button * { transition: none !important; }
+  }
+</style>
