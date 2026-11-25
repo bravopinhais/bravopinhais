@@ -30009,5 +30009,70 @@ html,body{scrollbar-color:#43546a #0b1421;scrollbar-width:thin}
 }
 </style>
 
+
+<style id="bravo-acabamento-tabelas-paginacao-etapa-134">
+/* Etapa 134 — leitura horizontal previsível e paginação confortável em telas pequenas. */
+#app main :is(.overflow-x-auto,.table-responsive):has(>table){
+  min-width:0;max-width:100%;overflow-x:auto;overflow-y:hidden;
+  overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch;
+}
+#app main :is(.overflow-x-auto,.table-responsive):has(>table)>table:not([data-grid-no-pagination]){
+  width:max-content!important;min-width:100%!important;table-layout:auto!important;
+}
+#app main table:not([data-grid-no-pagination]) :is(th,td){vertical-align:middle}
+#app main table:not([data-grid-no-pagination]) tbody td :is(button,a[role="button"]){
+  min-height:34px;white-space:nowrap;touch-action:manipulation;
+}
+#app main .gb-pagination{
+  width:100%;min-width:0;box-sizing:border-box;
+  align-items:center;gap:12px;
+  border-color:rgba(148,163,184,.2)!important;
+}
+#app main .gb-pagination-summary{
+  min-width:0;line-height:1.5;overflow-wrap:anywhere;
+}
+#app main .gb-pagination-controls{
+  min-width:0;align-items:center;gap:7px;
+}
+#app main .gb-pagination-size-label{min-width:0;white-space:nowrap}
+#app main .gb-pagination-size{min-width:64px;cursor:pointer}
+#app main .gb-pagination-button{
+  min-height:36px;min-width:72px;touch-action:manipulation;
+}
+#app main .gb-pagination :is(button,select):focus-visible{
+  outline:2px solid #5eead4!important;outline-offset:2px!important;
+}
+@media(max-width:640px){
+  #app main .gb-pagination{
+    display:flex!important;flex-direction:column!important;
+    align-items:stretch!important;padding:12px!important;gap:10px!important;
+  }
+  #app main .gb-pagination-summary{font-size:11px;white-space:normal}
+  #app main .gb-pagination-controls{
+    display:grid!important;
+    grid-template-columns:minmax(0,1fr) auto minmax(0,1fr)!important;
+    align-items:center!important;width:100%;
+  }
+  #app main .gb-pagination-size-label{
+    grid-column:1/-1;justify-content:flex-start;white-space:normal;
+  }
+  #app main .gb-pagination-size{min-height:38px}
+  #app main .gb-pagination-button{
+    width:100%;min-width:0!important;min-height:40px!important;
+    padding:.45rem .5rem!important;
+  }
+  #app main .gb-pagination-current{min-width:0;white-space:nowrap;padding:0 4px}
+  #app main :is(.overflow-x-auto,.table-responsive):has(>table){
+    border-radius:10px!important;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  #app main .gb-pagination-button{transition:none!important}
+}
+@media print{
+  #app main .gb-pagination{display:none!important}
+}
+</style>
+
 </body>
 </html>
