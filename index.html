@@ -15650,7 +15650,16 @@ persistido no banco ou no gateway.
                             const row = rows[rowIndex];
                             if (row.dataset.gridFilterRow === '1') continue;
                             const cells = row.cells;
-                            if (cells.length !== headerCells.length || Array.from(cells).some(cell => (cell.colSpan || 1) !== 1)) {
+                            let structural = cells.length !== headerCells.length;
+                            if (!structural) {
+                                for (let cellIndex = 0; cellIndex < cells.length; cellIndex++) {
+                                    if ((cells[cellIndex].colSpan || 1) !== 1) {
+                                        structural = true;
+                                        break;
+                                    }
+                                }
+                            }
+                            if (structural) {
                                 row.hidden = false;
                                 continue;
                             }
@@ -19239,7 +19248,13 @@ html,body,#app,#app header.bg-slate-950.no-print,#app header.md\\:hidden{backgro
         var row=rows[ri];
         if(row.dataset.gridFilterRow==='1') continue;
         var cells=row.cells;
-        if(cells.length!==headers.length){
+        var structural=cells.length!==headers.length;
+        if(!structural){
+          for(var ci=0;ci<cells.length;ci++){
+            if((cells[ci].colSpan||1)!==1){structural=true;break;}
+          }
+        }
+        if(structural){
           special.push(row);
           continue;
         }
@@ -28303,6 +28318,17 @@ html,body,#app{background:var(--bravo-bg)!important;color:var(--bravo-text)!impo
   #app main *,#modal-container *{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
 
+
+/* ETAPA 113 — integridade de linhas especiais e leitura de tabelas */
+#app main table tbody tr[hidden]{display:none!important}
+#app main .gb-pagination{position:relative;z-index:1}
+#app main .gb-pagination-controls{min-width:0}
+#app main .gb-pagination-size{max-width:84px}
+@media(max-width:420px){
+  #app main .gb-pagination-controls{gap:6px}
+  #app main .gb-pagination-current{min-width:72px}
+  #app main .gb-pagination-button{padding:6px 9px!important}
+}
 </style>
 </body>
 </html>
