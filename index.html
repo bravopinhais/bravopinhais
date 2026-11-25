@@ -8376,7 +8376,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 const moradores = Array.isArray(db.moradores) ? db.moradores : [];
                 const fornecedores = Array.isArray(db.fornecedores) ? db.fornecedores : [];
                 const documentos = Array.isArray(db.documentos) ? db.documentos : [];
-                const estoqueList = Array.isArray(db.estoque) ? db.estoque : [];
+                const estoqueList = (Array.isArray(db.estoque) ? db.estoque : []).filter(st => !estoqueItemEstaInativo(st));
                 const financeiroList = Array.isArray(db.financeiro) ? db.financeiro : [];
 
                 let totalCriticos = 0
