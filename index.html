@@ -26391,3 +26391,52 @@ body{scrollbar-color:#656a73 #191b20!important}
     }
   }
 </style>
+
+
+<!-- BRAVO PINHAIS DARK EDITION — ETAPA 95: AUDITORIA DE RESÍDUOS CLAROS -->
+<style id="bravo-dark-residual-audit-etapa-95">
+  /* Neutraliza superfícies claras remanescentes sem alterar a estrutura dos módulos. */
+  #app :is(.bg-white,.bg-gray-50,.bg-gray-100,.bg-slate-50,.bg-slate-100,
+           .bg-zinc-50,.bg-neutral-50) {
+    background-color: #202329 !important;
+  }
+  #app :is(.text-gray-900,.text-gray-800,.text-slate-900,.text-slate-800,
+           .text-zinc-900,.text-neutral-900) {
+    color: #e4e4e7 !important;
+  }
+  #app :is(.text-gray-700,.text-slate-700,.text-zinc-700,.text-neutral-700) {
+    color: #c4c7ce !important;
+  }
+  #app :is(.text-gray-600,.text-slate-600,.text-zinc-600,.text-neutral-600,
+           .text-gray-500,.text-slate-500) {
+    color: #a1a1aa !important;
+  }
+  #app :is(.border-gray-100,.border-gray-200,.border-slate-100,
+           .border-slate-200,.border-zinc-100,.border-zinc-200) {
+    border-color: #343841 !important;
+  }
+  #app :is(.divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+           .divide-gray-200 > :not([hidden]) ~ :not([hidden]),
+           .divide-slate-100 > :not([hidden]) ~ :not([hidden]),
+           .divide-slate-200 > :not([hidden]) ~ :not([hidden])) {
+    border-color: #343841 !important;
+  }
+  #app :is(.placeholder-gray-400,.placeholder-slate-400)::placeholder {
+    color: #858b96 !important;
+  }
+  #app :is(.ring-gray-200,.ring-slate-200) {
+    --tw-ring-color: #414650 !important;
+  }
+  #app :is(.shadow-sm,.shadow,.shadow-md) {
+    --tw-shadow-color: rgba(0,0,0,.28);
+  }
+  /* Preserva a leitura de conteúdo e ícones dentro de superfícies já escurecidas. */
+  #app :is(.bg-white,.bg-gray-50,.bg-gray-100,.bg-slate-50,.bg-slate-100) :is(svg) {
+    color: inherit;
+  }
+  @media (prefers-contrast: more) {
+    #app :is(.text-gray-500,.text-slate-500,.text-gray-600,.text-slate-600) {
+      color: #c4c7ce !important;
+    }
+  }
+</style>
