@@ -19684,40 +19684,50 @@ html,body,#app,#app header.bg-slate-950.no-print,#app header.md\\:hidden{backgro
     return button;
   }
   function ensureControls(table,state){
-    if(state.nav && state.nav.isConnected) return;
-    var nav=document.createElement('nav');
-    nav.className='gb-pagination';
-    nav.setAttribute('aria-label','Paginação da tabela');
-    nav.innerHTML=
-      '<div class="gb-pagination-summary" aria-live="polite"></div>'+
-      '<div class="gb-pagination-controls">'+
-        '<label class="gb-pagination-size-label">Por página '+
-          '<select class="gb-pagination-size" aria-label="Quantidade de registros por página">'+
-            '<option value="25">25</option><option value="50">50</option><option value="100">100</option>'+
-          '</select>'+
-        '</label>'+
-        '<button type="button" class="gb-pagination-button" data-page-action="prev">Anterior</button>'+
-        '<span class="gb-pagination-current" aria-live="polite"></span>'+
-        '<button type="button" class="gb-pagination-button" data-page-action="next">Próxima</button>'+
-      '</div>';
-    var size=nav.querySelector('.gb-pagination-size');
-    size.value=String(state.pageSize);
-    nav.addEventListener('click',function(event){
-      var button=event.target.closest('button[data-page-action]');
-      if(!button || button.disabled) return;
-      if(button.dataset.pageAction==='prev') state.page--;
-      if(button.dataset.pageAction==='next') state.page++;
-      applyPage(table,state,false);
-    });
-    size.addEventListener('change',function(){
-      state.pageSize=Math.max(1,Number(size.value)||PAGE_SIZE);
-      state.page=1;
-      applyPage(table,state,false);
-    });
-    var scrollHost=table.closest('.overflow-x-auto,.table-responsive');
-    var paginationAnchor=scrollHost || table;
-    paginationAnchor.insertAdjacentElement('afterend',nav);
-    state.nav=nav;
+    var nav=state.nav;
+    if(!nav || !nav.isConnected){
+      nav=document.createElement('nav');
+      nav.className='gb-pagination';
+      nav.setAttribute('aria-label','Paginação da tabela');
+      nav.innerHTML=
+        '<div class="gb-pagination-summary" aria-live="polite"></div>'+
+        '<div class="gb-pagination-controls">'+
+          '<label class="gb-pagination-size-label">Por página '+
+            '<select class="gb-pagination-size" aria-label="Quantidade de registros por página">'+
+              '<option value="25">25</option><option value="50">50</option><option value="100">100</option>'+
+            '</select>'+
+          '</label>'+
+          '<button type="button" class="gb-pagination-button" data-page-action="prev">Anterior</button>'+
+          '<span class="gb-pagination-current" aria-live="polite"></span>'+
+          '<button type="button" class="gb-pagination-button" data-page-action="next">Próxima</button>'+
+        '</div>';
+      var size=nav.querySelector('.gb-pagination-size');
+      size.value=String(state.pageSize);
+      nav.addEventListener('click',function(event){
+        var button=event.target.closest('button[data-page-action]');
+        if(!button || button.disabled) return;
+        if(button.dataset.pageAction==='prev') state.page--;
+        if(button.dataset.pageAction==='next') state.page++;
+        applyPage(table,state,false);
+      });
+      size.addEventListener('change',function(){
+        state.pageSize=Math.max(1,Number(size.value)||PAGE_SIZE);
+        state.page=1;
+        applyPage(table,state,false);
+      });
+      state.nav=nav;
+    }
+    /* A tabela pode ser recriada ou movida entre wrappers durante a troca de módulo.
+       Reancora a paginação junto ao wrapper atual, preservando a barra horizontal auxiliar. */
+    var scrollHost=table.closest('.overflow-x-auto,.table-responsive,[data-table-scroll]');
+    var anchor=scrollHost || table;
+    var auxiliaryBar=scrollHost && scrollHost.nextElementSibling &&
+      scrollHost.nextElementSibling.classList.contains('bravo-table-scrollbar-v1')
+        ? scrollHost.nextElementSibling : null;
+    var desiredAnchor=auxiliaryBar || anchor;
+    if(nav.previousElementSibling!==desiredAnchor){
+      desiredAnchor.insertAdjacentElement('afterend',nav);
+    }
   }
   function readRows(table){
     var header=table.tHead && table.tHead.rows[0];
