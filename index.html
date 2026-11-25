@@ -29688,5 +29688,94 @@ html,body{scrollbar-color:#43546a #0b1421;scrollbar-width:thin}
 }
 </style>
 
+
+<style id="bravo-cabecalho-modulos-acoes-etapa-131">
+/* Etapa 131 — hierarquia consistente dos cabeçalhos e ações dos módulos. */
+#app main #cabecalho-modulo-global{
+  position:relative;isolation:isolate;
+  align-items:flex-end!important;
+  gap:1rem!important;
+  margin:0 0 1.5rem!important;
+  padding:0 0 1.1rem!important;
+  border-bottom:1px solid rgba(148,163,184,.17);
+}
+#app main #cabecalho-modulo-global:after{
+  content:"";position:absolute;z-index:-1;left:0;bottom:-1px;
+  width:74px;height:2px;border-radius:2px;
+  background:linear-gradient(90deg,#2dd4bf,rgba(45,212,191,0));
+}
+#app main #cabecalho-modulo-global h2{
+  margin:0!important;color:#f1f5f9!important;
+  font-size:clamp(1.35rem,2.1vw,1.85rem)!important;
+  line-height:1.15!important;letter-spacing:-.045em!important;
+  font-weight:850!important;
+}
+#app main #cabecalho-modulo-global p{
+  margin-top:.45rem!important;color:#8fa3b8!important;
+  font-size:11px!important;font-weight:600!important;
+  letter-spacing:.025em;
+}
+#app main #cabecalho-modulo-global>div:last-child{
+  gap:.55rem!important;align-items:center!important;
+}
+#app main #cabecalho-modulo-global>div:last-child button,
+#app main #cabecalho-modulo-global>div:last-child label{
+  min-height:39px!important;padding:.65rem .9rem!important;
+  display:inline-flex;align-items:center;justify-content:center;
+  gap:.5rem!important;border-radius:11px!important;
+  border:1px solid rgba(148,163,184,.2)!important;
+  box-shadow:0 5px 14px rgba(0,0,0,.13)!important;
+  font-size:11px!important;font-weight:750!important;
+  letter-spacing:.005em;
+  transition:transform .18s ease,filter .18s ease,border-color .18s ease!important;
+}
+#app main #cabecalho-modulo-global>div:last-child button[class*="from-teal-"]{
+  color:#eafffb!important;
+  background:linear-gradient(135deg,#0f766e,#115e59)!important;
+  border-color:rgba(45,212,191,.3)!important;
+  box-shadow:0 6px 18px rgba(13,148,136,.16)!important;
+}
+#app main #cabecalho-modulo-global>div:last-child button[class*="bg-slate-800"]{
+  color:#e2e8f0!important;background:#1e293b!important;
+  border-color:rgba(148,163,184,.22)!important;
+}
+#app main #cabecalho-modulo-global>div:last-child button[class*="bg-emerald-"] ,
+#app main #cabecalho-modulo-global>div:last-child label[class*="bg-emerald-"]{
+  color:#d1fae5!important;background:linear-gradient(135deg,#065f46,#064e3b)!important;
+  border-color:rgba(52,211,153,.24)!important;
+  box-shadow:0 6px 18px rgba(6,95,70,.16)!important;
+}
+#app main #cabecalho-modulo-global>div:last-child :is(button,label):hover{
+  transform:translateY(-1px);
+  filter:brightness(1.12);
+  border-color:rgba(94,234,212,.38)!important;
+}
+#app main #cabecalho-modulo-global>div:last-child :is(button,label):active{
+  transform:translateY(0) scale(.985);
+}
+#app main #cabecalho-modulo-global>div:last-child button i,
+#app main #cabecalho-modulo-global>div:last-child label i{opacity:.9}
+#app main #cabecalho-modulo-global>div:last-child input[type="file"]{display:none}
+@media(max-width:767px){
+  #app main #cabecalho-modulo-global{
+    align-items:stretch!important;margin-bottom:1.1rem!important;
+    padding-bottom:.9rem!important;gap:.85rem!important;
+  }
+  #app main #cabecalho-modulo-global>div:last-child{
+    display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));
+    width:100%;
+  }
+  #app main #cabecalho-modulo-global>div:last-child>*{
+    min-width:0;width:100%;white-space:normal;text-align:center;
+  }
+}
+@media(max-width:380px){
+  #app main #cabecalho-modulo-global>div:last-child{grid-template-columns:1fr}
+}
+@media(prefers-reduced-motion:reduce){
+  #app main #cabecalho-modulo-global>div:last-child :is(button,label){transition:none!important}
+}
+</style>
+
 </body>
 </html>
