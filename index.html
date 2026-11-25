@@ -28870,5 +28870,21 @@ html,body{background:var(--bravo-bg);color:var(--bravo-text)}
 }
 </style>
 
+
+<style id="bravo-navegacao-dark-etapa-120">
+/* Etapa 120 — navegação, abas e estados ativos no tema noturno. */
+#app :is([role="tablist"],.nav-tabs,.tabs-container){color:#cbd5e1!important;background:rgba(15,23,42,.72)!important;border-color:rgba(148,163,184,.18)!important;border-radius:12px 12px 0 0}
+#app [role="tablist"] [role="tab"],#app :is(.nav-tabs,.tabs-container) :is(button,a){color:#aebdca!important;background:transparent!important;border-color:transparent!important;transition:color .16s ease,background-color .16s ease,border-color .16s ease}
+#app [role="tablist"] [role="tab"][aria-selected="true"],#app [role="tablist"] [role="tab"].active,#app :is(.nav-tabs,.tabs-container) :is(button,a).active{color:#f1f5f9!important;background:rgba(51,65,85,.72)!important;border-color:rgba(94,234,212,.38)!important;border-bottom:2px solid #5eead4!important}
+#app [role="tablist"] [role="tab"]:hover,#app :is(.nav-tabs,.tabs-container) :is(button,a):hover{color:#f8fafc!important;background:rgba(51,65,85,.48)!important}
+#sidebar-menu{background:linear-gradient(180deg,#111827 0%,#0b1220 100%)!important;border-right:1px solid rgba(148,163,184,.16)!important;box-shadow:12px 0 32px rgba(0,0,0,.28)!important}
+#sidebar-menu nav :is(button,a){color:#cbd5e1!important;border:1px solid transparent!important;border-radius:11px!important;transition:background-color .16s ease,color .16s ease,border-color .16s ease}
+#sidebar-menu nav :is(button,a):hover{color:#f8fafc!important;background:rgba(51,65,85,.58)!important;border-color:rgba(148,163,184,.14)!important}
+#sidebar-menu nav :is(button,a)[aria-current="page"],#sidebar-menu nav :is(button,a)[aria-pressed="true"],#sidebar-menu nav :is(button,a).active{color:#f8fafc!important;background:linear-gradient(100deg,rgba(45,212,191,.15),rgba(51,65,85,.66))!important;border-color:rgba(94,234,212,.28)!important;box-shadow:inset 3px 0 0 #5eead4!important}
+#app :is([role="tab"],#sidebar-menu nav button,#sidebar-menu nav a):focus-visible{outline:2px solid #5eead4!important;outline-offset:2px!important}
+@media(max-width:767px){#app [role="tablist"]{gap:4px;padding:5px;scrollbar-color:#475569 transparent}#app [role="tablist"] [role="tab"]{min-height:42px;padding-inline:12px!important}#sidebar-menu nav :is(button,a){min-height:46px}}
+@media(prefers-reduced-motion:reduce){#app :is([role="tab"],#sidebar-menu nav button,#sidebar-menu nav a){transition:none!important}}
+</style>
+
 </body>
 </html>
