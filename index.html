@@ -30420,3 +30420,53 @@ body>.grid-actions-popover :is(button,a,[role="menuitem"]):hover{
 </style>
 </body>
 </html>
+
+<style id="bravo-noturno-scanner-superficie-etapa-151">
+/* Etapa 151 — elimina o cartão branco legado do leitor de câmera. */
+#scanner-modal-overlay > div{
+  color:#e7eaf0!important;
+  background:linear-gradient(155deg,#202a39 0%,#111c2e 100%)!important;
+  border:1px solid #46566c!important;
+  border-radius:22px!important;
+  box-shadow:0 24px 65px rgba(0,0,0,.52)!important;
+}
+#scanner-modal-overlay > div :is(h1,h2,h3,h4,h5,strong,label,p,span){
+  color:inherit;
+}
+#scanner-modal-overlay > div h4{
+  color:#f8fafc!important;
+}
+#scanner-modal-overlay > div :is(input,select,textarea){
+  color:#f1f5f9!important;
+  background:#111c2e!important;
+  border:1px solid #46566c!important;
+  border-radius:10px!important;
+}
+#scanner-modal-overlay > div :is(input,select,textarea)::placeholder{
+  color:#94a3b8!important;
+}
+#scanner-modal-overlay > div :is(button,a){
+  color:#e7eaf0!important;
+}
+#scanner-modal-overlay > div button.bg-slate-200{
+  color:#e5e7eb!important;
+  background:#293548!important;
+  border:1px solid #46566c!important;
+}
+#scanner-modal-overlay > div button:focus-visible{
+  outline:2px solid #a5b4fc!important;
+  outline-offset:3px;
+}
+#scanner-modal-overlay video{
+  background:#080d16!important;
+  border:1px solid #46566c!important;
+  border-radius:14px!important;
+}
+@media(max-width:640px){
+  #scanner-modal-overlay > div{
+    max-height:calc(100dvh - 24px)!important;
+    overflow-y:auto!important;
+    padding:20px!important;
+  }
+}
+</style>
