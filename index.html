@@ -28432,5 +28432,88 @@ html,body{background:var(--bravo-bg);color:var(--bravo-text)}
 }
 
 </style>
+
+<style id="bravo-dashboard-dark-harmonizacao-etapa-115">
+/* Etapa 115 — harmonização do dashboard com o tema noturno fixo.
+   Escopo restrito ao dashboard; não altera componentes, dados ou interações. */
+#app main .dashboard-shell{
+  color:#e5e7eb;
+  color-scheme:dark;
+}
+#app main .dashboard-shell .dashboard-quick-access,
+#app main .dashboard-shell .dashboard-analytics-grid>div,
+#app main .dashboard-shell .dashboard-operations-grid>div,
+#app main .dashboard-shell .dashboard-kpi-grid>article,
+#app main .dashboard-shell>section:not(:first-child){
+  background:linear-gradient(145deg,rgba(30,41,59,.94),rgba(15,23,42,.97))!important;
+  border-color:rgba(148,163,184,.19)!important;
+  box-shadow:0 12px 30px rgba(0,0,0,.22),inset 0 1px 0 rgba(255,255,255,.035)!important;
+  color:#e5e7eb!important;
+}
+#app main .dashboard-shell .dashboard-quick-access::before{
+  background:linear-gradient(180deg,#5eead4,#0f766e)!important;
+}
+#app main .dashboard-shell .dashboard-quick-access-heading h3,
+#app main .dashboard-shell .dashboard-section-title,
+#app main .dashboard-shell .dashboard-section-title h3,
+#app main .dashboard-shell h2,
+#app main .dashboard-shell h3{
+  color:#f1f5f9!important;
+}
+#app main .dashboard-shell .dashboard-quick-access-heading p:last-child,
+#app main .dashboard-shell .dashboard-quick-eyebrow,
+#app main .dashboard-shell .dashboard-section-title p,
+#app main .dashboard-shell .dashboard-section-title small{
+  color:#aebdca!important;
+}
+#app main .dashboard-shell .dashboard-quick-hint,
+#app main .dashboard-shell .dashboard-quick-grid>button{
+  background:rgba(51,65,85,.58)!important;
+  border:1px solid rgba(148,163,184,.2)!important;
+  color:#e2e8f0!important;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.035)!important;
+}
+#app main .dashboard-shell .dashboard-quick-grid>button:hover{
+  background:rgba(71,85,105,.72)!important;
+  border-color:rgba(94,234,212,.38)!important;
+}
+#app main .dashboard-shell .dashboard-quick-grid strong,
+#app main .dashboard-shell .dashboard-quick-grid small{
+  color:#e2e8f0!important;
+}
+#app main .dashboard-shell :is(.bg-white,.bg-slate-50,.bg-gray-50,.bg-slate-100,.bg-gray-100){
+  background-color:rgba(30,41,59,.72)!important;
+}
+#app main .dashboard-shell :is(.text-slate-900,.text-slate-800,.text-gray-900,.text-gray-800,.text-slate-700,.text-gray-700){
+  color:#e2e8f0!important;
+}
+#app main .dashboard-shell :is(.text-slate-600,.text-slate-500,.text-gray-600,.text-gray-500){
+  color:#aebdca!important;
+}
+#app main .dashboard-shell :is(.border-slate-200,.border-gray-200,.border-slate-100,.border-gray-100){
+  border-color:rgba(148,163,184,.19)!important;
+}
+#app main .dashboard-shell .dashboard-analytics-disclosure>summary{
+  color:#e2e8f0;
+}
+#app main .dashboard-shell .dashboard-kpi-grid>article::after{
+  background:linear-gradient(90deg,transparent,rgba(94,234,212,.42),transparent)!important;
+}
+#app main .dashboard-shell :is(input,select,textarea){
+  background-color:#0f172a!important;
+  border-color:rgba(148,163,184,.28)!important;
+  color:#e5e7eb!important;
+}
+#app main .dashboard-shell :is(input,select,textarea)::placeholder{color:#94a3b8!important}
+@media(max-width:640px){
+  #app main .dashboard-shell .dashboard-quick-access,
+  #app main .dashboard-shell .dashboard-kpi-grid>article,
+  #app main .dashboard-shell .dashboard-analytics-grid>div,
+  #app main .dashboard-shell .dashboard-operations-grid>div{
+    border-radius:16px!important;
+  }
+}
+</style>
+
 </body>
 </html>
