@@ -12513,13 +12513,13 @@ html,body{min-height:100%;background:#080e18!important;color:#e7edf5!important;c
                         <span class="relatorios-dre-status">Plano de contas ativo</span>
                     </div>
 
-                    <div class="relatorios-dre-summary" aria-label="Resumo do demonstrativo"><div><span>Receitas registradas</span><strong>R$ ${totalReceitasDRE.toFixed(2)}</strong></div><div><span>Despesas registradas</span><strong>R$ ${totalDespesasDRE.toFixed(2)}</strong></div><div><span>Resultado líquido</span><strong>R$ ${resultadoLiquidoDRE.toFixed(2)}</strong></div></div>\n                    <div class="space-y-5 text-xs">
+                    <div class="relatorios-dre-summary" aria-label="Resumo do demonstrativo"><div><span>Receitas registradas</span><strong>${dashboardMoeda(totalReceitasDRE)}</strong></div><div><span>Despesas registradas</span><strong>${dashboardMoeda(totalDespesasDRE)}</strong></div><div><span>Resultado líquido</span><strong>${dashboardMoeda(resultadoLiquidoDRE)}</strong></div></div>\n                    <div class="space-y-5 text-xs">
                         <div class="space-y-2">
                             <p class="font-black text-slate-400 uppercase tracking-widest text-[10px]">Receitas Operacionais</p>
                             ${Object.values(itensPorConta).filter(i => i.tipo === 'Receita').map(i => `
                                 <div class="relatorios-dre-row flex justify-between p-4 bg-emerald-50/60 text-emerald-950 font-bold rounded-2xl border border-emerald-100/60">
                                     <span>(+) ${escapeHTML(i.codigo + ' - ' + i.nome)}</span>
-                                    <span class="font-mono font-black">R$ ${i.total.toFixed(2)}</span>
+                                    <span class="font-mono font-black">${dashboardMoeda(i.total)}</span>
                                 </div>
                             `).join('')}
                         </div>
@@ -12529,7 +12529,7 @@ html,body{min-height:100%;background:#080e18!important;color:#e7edf5!important;c
                             ${Object.values(itensPorConta).filter(i => i.tipo === 'Despesa').map(i => `
                                 <div class="relatorios-dre-row flex justify-between p-4 bg-rose-50/60 text-rose-950 font-bold rounded-2xl border border-rose-100/60">
                                     <span>(-) ${escapeHTML(i.codigo + ' - ' + i.nome)}</span>
-                                    <span class="font-mono font-black">R$ ${i.total.toFixed(2)}</span>
+                                    <span class="font-mono font-black">${dashboardMoeda(i.total)}</span>
                                 </div>
                             `).join('')}
                         </div>
@@ -12537,7 +12537,7 @@ html,body{min-height:100%;background:#080e18!important;color:#e7edf5!important;c
                         <div class="pt-4 border-t border-slate-100">
                             <div class="relatorios-dre-result flex justify-between p-5 bg-gradient-to-r from-teal-700 to-teal-800 text-white font-black text-sm rounded-2xl shadow-lg shadow-teal-700/20">
                                 <span>(=) RESULTADO LÍQUIDO DO EXERCÍCIO</span>
-                                <span class="font-mono text-base">R$ ${resultadoLiquidoDRE.toFixed(2)}</span>
+                                <span class="font-mono text-base">${dashboardMoeda(resultadoLiquidoDRE)}</span>
                             </div>
                         </div>
                     </div>
@@ -13031,7 +13031,7 @@ html,body{min-height:100%;background:#080e18!important;color:#e7edf5!important;c
                     },
                     lancamentos: (db.financeiro || []).slice(-60).map(f => ({
                         tipo: f.tipo,
-                        valor: Number(f.valor) || 0,
+                        valor: dashboardNumero(f.valor),
                         conta: ((db.plano_contas || []).find(p => p.id === f.planoContaId) || {}).nome
                     })),
                     estoque: (db.estoque || []).filter(s => !estoqueItemEstaInativo(s)).slice(0, 150).map(s => ({
