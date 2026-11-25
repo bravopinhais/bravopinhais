@@ -31301,7 +31301,7 @@ body>.grid-actions-popover :is(button,a,[role="menuitem"]):hover{
   bar=document.getElementById('bravo-estoque-scrollbar-visivel-v1');
   if(!bar){
    bar=document.createElement('div');bar.id='bravo-estoque-scrollbar-visivel-v1';
-   bar.setAttribute('role','scrollbar');bar.setAttribute('aria-label','Rolagem horizontal da listagem de produtos');
+   bar.setAttribute('role','region');bar.setAttribute('aria-label','Barra horizontal auxiliar da listagem de produtos');
    bar.setAttribute('aria-orientation','horizontal');bar.tabIndex=0;
    inner=document.createElement('div');bar.appendChild(inner);document.body.appendChild(bar);
    bar.addEventListener('scroll',onBarScroll,{passive:true});
