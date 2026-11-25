@@ -16232,11 +16232,14 @@ persistido no banco ou no gateway.
                             for (let actionIndex = 0; actionIndex < actionIndexes.length; actionIndex++) {
                                 const cell = row.cells[actionIndexes[actionIndex]];
                                 if (!cell || cell.dataset.gridActionsEnhanced === '1') continue;
-                                const buttons = cell.querySelectorAll('button, a[role="button"]');
-                                if (!buttons.length) continue;
+                                // Uma consulta simples basta para saber se a célula tem ação.
+                                // Evita criar um NodeList e percorrer todos os botões de cada linha.
+                                const firstAction = cell.querySelector('button, a[role="button"]');
+                                if (!firstAction) continue;
 
                                 // Evita converter novamente uma célula que já tenha um menu.
-                                if (cell.querySelector('.grid-actions-trigger')) {
+                                if (firstAction.classList.contains('grid-actions-trigger') ||
+                                    cell.querySelector('.grid-actions-trigger')) {
                                     cell.dataset.gridActionsEnhanced = '1';
                                     continue;
                                 }
