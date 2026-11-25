@@ -30269,5 +30269,48 @@ html,body{scrollbar-color:#43546a #0b1421;scrollbar-width:thin}
 }
 </style>
 
+
+<!-- BRAVO DARK EDITION: DASHBOARD RESPONSIVO ETAPA 139 -->
+<style id="bravo-dashboard-responsivo-etapa-139">
+/* Etapa 139 — distribuição responsiva e acabamento dos acessos rápidos.
+   Mantém os dados, os gráficos e as ações existentes sem alterar sua lógica. */
+#app main .dashboard-shell .dashboard-quick-grid{
+  grid-template-columns:repeat(4,minmax(0,1fr))!important;
+  align-items:stretch!important;
+}
+#app main .dashboard-shell .dashboard-quick-grid>button{
+  min-width:0!important;min-height:88px!important;justify-content:flex-start!important;overflow:hidden!important;
+}
+#app main .dashboard-shell .dashboard-quick-grid>button>span:nth-child(2){min-width:0!important;flex:1 1 auto!important}
+#app main .dashboard-shell .dashboard-quick-grid>button strong,
+#app main .dashboard-shell .dashboard-quick-grid>button small{overflow-wrap:anywhere!important}
+#app main .dashboard-shell .dashboard-quick-grid>button .dashboard-quick-arrow{opacity:.72;transition:transform .18s ease,opacity .18s ease!important}
+#app main .dashboard-shell .dashboard-quick-grid>button:hover .dashboard-quick-arrow{opacity:1;transform:translateX(3px)}
+#app main .dashboard-shell .dashboard-kpi-grid>article{display:flex!important;flex-direction:column!important;justify-content:space-between!important}
+#app main .dashboard-shell .dashboard-kpi-grid>article>div:first-child,
+#app main .dashboard-shell .dashboard-kpi-grid>article>div:first-child>div:first-child{min-width:0!important}
+#app main .dashboard-shell .dashboard-kpi-grid>article p{overflow-wrap:anywhere}
+#app main .dashboard-shell .dashboard-analytics-disclosure>summary{gap:12px!important}
+#app main .dashboard-shell .dashboard-analytics-disclosure>summary>div{min-width:0!important}
+@media(max-width:1100px){
+ #app main .dashboard-shell .dashboard-quick-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+}
+@media(max-width:640px){
+ #app main .dashboard-shell .dashboard-quick-grid>button{min-height:78px!important;padding:11px!important}
+ #app main .dashboard-shell .dashboard-quick-grid>button .dashboard-quick-arrow{display:none!important}
+ #app main .dashboard-shell .dashboard-analytics-disclosure>summary{align-items:flex-start!important}
+}
+@media(max-width:360px){
+ #app main .dashboard-shell .dashboard-quick-grid{grid-template-columns:1fr!important}
+}
+@media(hover:none){
+ #app main .dashboard-shell .dashboard-quick-grid>button:hover{transform:none!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #app main .dashboard-shell .dashboard-quick-grid>button,
+ #app main .dashboard-shell .dashboard-quick-grid>button .dashboard-quick-arrow{transition:none!important}
+}
+</style>
+
 </body>
 </html>
