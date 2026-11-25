@@ -30643,5 +30643,63 @@ body>.grid-actions-popover :is(button,a,[role="menuitem"]):hover{
 }
 </style>
 
+
+<style id="bravo-noturno-filtros-pesquisa-etapa-156">
+/* Etapa 156 — filtros e pesquisa alinhados ao tema noturno fixo. */
+#app main :is(input[type="search"],input[placeholder*="buscar" i],input[placeholder*="pesquisar" i]){
+  min-width:0;
+  color:#e5edf6!important;
+  background:#101c2c!important;
+  border:1px solid rgba(148,163,184,.25)!important;
+  border-radius:10px!important;
+}
+#app main :is(input[type="search"],input[placeholder*="buscar" i],input[placeholder*="pesquisar" i])::placeholder{
+  color:#8497ad!important;
+  opacity:1!important;
+}
+#app main :is(input[type="search"],input[placeholder*="buscar" i],input[placeholder*="pesquisar" i]):focus{
+  border-color:rgba(45,212,191,.78)!important;
+  box-shadow:0 0 0 3px rgba(45,212,191,.12)!important;
+  outline:none!important;
+}
+#app main :is(.card-modern,.bg-white,.bg-slate-50,.bg-gray-50):has(input[type="search"]),
+#app main :is(.card-modern,.bg-white,.bg-slate-50,.bg-gray-50):has(input[placeholder*="buscar" i]),
+#app main :is(.card-modern,.bg-white,.bg-slate-50,.bg-gray-50):has(input[placeholder*="pesquisar" i]){
+  color:#d7e2ee!important;
+  background:#142236!important;
+  border-color:rgba(148,163,184,.18)!important;
+}
+#app main :is(select,input[type="date"],input[type="month"],input[type="number"]){
+  color-scheme:dark!important;
+  max-width:100%;
+}
+#app main :is(select,input[type="date"],input[type="month"]):not(:disabled){
+  border-color:rgba(148,163,184,.25)!important;
+}
+#app main :is(select,input[type="date"],input[type="month"],input[type="number"]):focus-visible{
+  border-color:rgba(45,212,191,.78)!important;
+  box-shadow:0 0 0 3px rgba(45,212,191,.12)!important;
+  outline:none!important;
+}
+#app main :is(form,.flex,.grid):has(>input[type="search"]),
+#app main :is(form,.flex,.grid):has(>input[placeholder*="buscar" i]),
+#app main :is(form,.flex,.grid):has(>input[placeholder*="pesquisar" i]){
+  min-width:0;
+}
+#app main :is(button,a[role="button"]){
+  -webkit-tap-highlight-color:transparent;
+}
+@media(max-width:640px){
+  #app main :is(input[type="search"],input[placeholder*="buscar" i],input[placeholder*="pesquisar" i]){
+    width:100%;
+    min-height:40px;
+  }
+  #app main :is(select,input[type="date"],input[type="month"]){
+    min-height:38px;
+    min-width:0;
+  }
+}
+</style>
+
 </body>
 </html>
