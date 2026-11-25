@@ -8621,8 +8621,8 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                             datasets: [{
                                 label: 'Valores registrados',
                                 data: [totalReceber, totalPagar, totalReceber - totalPagar],
-                                backgroundColor: ['rgba(55,65,81,.92)', 'rgba(107,114,128,.82)', 'rgba(156,163,175,.78)'],
-                                borderColor: ['#374151', '#6b7280', '#9ca3af'],
+                                backgroundColor: ['rgba(96,165,250,.82)', 'rgba(251,113,133,.78)', 'rgba(148,163,184,.72)'],
+                                borderColor: ['#60a5fa', '#fb7185', '#94a3b8'],
                                 borderWidth: 1,
                                 borderRadius: 10,
                                 maxBarThickness: 46
@@ -8640,6 +8640,8 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                     display: false
                                 },
                                 tooltip: {
+                                    backgroundColor: '#11151b', titleColor: '#f4f4f5', bodyColor: '#e4e4e7',
+                                    borderColor: '#454c58', borderWidth: 1, padding: 12, displayColors: true,
                                     callbacks: {
                                         label: context => `${context.dataset.label}: ${dashboardMoeda(context.parsed.y)}`
                                     }
@@ -8649,12 +8651,13 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                 y: {
                                     beginAtZero: true,
                                     grid: {
-                                        color: 'rgba(148,163,184,.24)'
+                                        color: 'rgba(148,163,184,.14)'
                                     },
                                     border: {
                                         display: false
                                     },
                                     ticks: {
+                                        color: '#a1a1aa',
                                         font: {
                                             weight: '600',
                                             family: 'Inter'
@@ -8673,6 +8676,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                         display: false
                                     },
                                     ticks: {
+                                        color: '#c4c7ce',
                                         maxRotation: 0,
                                         minRotation: 0,
                                         font: {
@@ -8723,12 +8727,12 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 chartInstanceEstoqueDash = new Chart(ctx,{
                     type: 'doughnut',
                     data: {
-                        labels: ['Adequado', 'Insuficiente (Crítico)', 'Excedente (Antigo)'],
+                        labels: ['Adequado', 'Insuficiente (Crítico)', 'Excedente'],
                         datasets: [{
                             data: [qtdAdequado, qtdCritico, qtdExcedente],
-                            backgroundColor: ['#374151', '#6b7280', '#d1d5db'],
+                            backgroundColor: ['#5b9b87', '#d66b7b', '#c99a52'],
                             borderWidth: 3,
-                            borderColor: '#ffffff'
+                            borderColor: '#242932'
                         }]
                     },
                     options: {
@@ -8738,7 +8742,9 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                             legend: {
                                 position: 'bottom',
                                 labels: {
+                                    color: '#c4c7ce',
                                     boxWidth: 12,
+                                    padding: 16,
                                     font: {
                                         weight: 'bold',
                                         size: 10,
@@ -27524,5 +27530,17 @@ body{scrollbar-color:#656a73 #191b20!important}
     #app main .dashboard-shell .dashboard-analytics-grid > div {
       border-radius: 15px !important;
     }
+  }
+</style>
+
+<!-- BRAVO PINHAIS DARK EDITION — ETAPA 106: CONTRASTE E IDENTIDADE DOS GRÁFICOS -->
+<style id="bravo-dark-dashboard-chartjs-etapa-106">
+  #app .dashboard-analytics-grid canvas {
+    filter: drop-shadow(0 3px 8px rgba(0,0,0,.12));
+  }
+  #app .dashboard-analytics-grid > div { color: #e4e4e7; }
+  #app .dashboard-analytics-grid > div .text-xs { line-height: 1.55; }
+  @media(max-width:640px) {
+    #app .dashboard-analytics-grid canvas { touch-action: pan-y; }
   }
 </style>
