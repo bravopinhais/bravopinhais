@@ -19903,11 +19903,16 @@ html,body,#app,#app header.bg-slate-950.no-print,#app header.md\\:hidden{backgro
     var originalRenderMain=window.renderMainOnly;
     var wrappedRenderMain=function(){
       var main=document.querySelector('#app main');
-      var scrollTop=main ? main.scrollTop : 0;
+      /* A rolagem vertical é do documento (etapa 167), não do elemento main. */
+      var documentScrollTop=window.pageYOffset || document.documentElement.scrollTop || document.body.scrollTop || 0;
+      var mainScrollTop=main ? main.scrollTop : 0;
       var result=originalRenderMain.apply(this,arguments);
       requestAnimationFrame(function(){
         var updated=document.querySelector('#app main');
-        if(updated) updated.scrollTop=scrollTop;
+        if(updated && mainScrollTop) updated.scrollTop=mainScrollTop;
+        /* Reaplica após a renderização para impedir que atualizações de conteúdo
+           devolvam o usuário ao topo da página. O navegador limita se necessário. */
+        window.scrollTo(window.pageXOffset || 0,documentScrollTop);
       });
       return result;
     };
