@@ -31319,7 +31319,8 @@ body>.grid-actions-popover :is(button,a,[role="menuitem"]):hover{
 </style>
 
 <style id="bravo-scrollbar-tabelas-global-etapa-175">
-/* Etapa 175 — barra horizontal auxiliar padronizada para tabelas de todos os módulos. */
+/* Etapa 175 — área horizontal de tabelas e barra auxiliar em todos os módulos. */
+.bravo-table-scroll-host-v175{width:100%!important;max-width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;overscroll-behavior-x:contain;overscroll-behavior-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y;scrollbar-width:thin;scrollbar-color:#52647a #111c2c;}
 .bravo-table-scrollbar-v1{
   position:relative;display:block;width:100%;max-width:100%;box-sizing:border-box;
   margin:8px 0 14px;z-index:1;height:20px;padding:2px 0;
@@ -31355,6 +31356,7 @@ body>.grid-actions-popover :is(button,a,[role="menuitem"]):hover{
  function bindTable(table){
   const wrap=table.closest(wrappers);
   if(!wrap||!wrap.isConnected)return;
+  wrap.classList.add("bravo-table-scroll-host-v175");
   let entry=wrap.__bravoTableScrollbarV175;
   if(!entry){
    const bar=document.createElement('div');
