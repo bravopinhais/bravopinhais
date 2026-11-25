@@ -31549,5 +31549,84 @@ html,body {
   #app main .dashboard-shell *{scroll-behavior:auto!important;transition:none!important}
 }
 </style>
+
+<style id="bravo-tema-noturno-global-etapa-174">
+/* Etapa 174 — base noturna global, grafite e neutra, para todos os módulos. */
+:root{color-scheme:dark!important}
+html,body{
+  background:#111318!important;
+  color:#e5e7eb!important;
+  color-scheme:dark!important;
+}
+body.bg-slate-100{background:#111318!important;color:#e5e7eb!important}
+#app{
+  background:#111318!important;
+  color:#e5e7eb!important;
+  color-scheme:dark!important;
+}
+#app main{
+  background:#111318!important;
+  color:#e5e7eb!important;
+  color-scheme:dark!important;
+}
+/* Superfícies neutras: converte os fundos claros legados em carvão/grafite. */
+#app :is(.bg-white,.bg-slate-50,.bg-gray-50,.bg-slate-100,.bg-gray-100){
+  background-color:#1b1e24!important;
+  color:#e5e7eb!important;
+  border-color:#343a45!important;
+}
+#app :is(.card,.card-modern,[class*="rounded-"][class*="border"]){
+  border-color:#343a45!important;
+}
+#app :is(.text-slate-900,.text-slate-800,.text-slate-700,.text-gray-900,.text-gray-800,.text-gray-700){
+  color:#e5e7eb!important;
+}
+#app :is(.text-slate-600,.text-slate-500,.text-gray-600,.text-gray-500){
+  color:#aab2bf!important;
+}
+#app :is(.border-slate-100,.border-slate-200,.border-gray-100,.border-gray-200){
+  border-color:#343a45!important;
+}
+#app :is(input,select,textarea){
+  color:#e5e7eb!important;
+  background:#12151b!important;
+  border-color:#3a414d!important;
+  color-scheme:dark!important;
+}
+#app :is(input,select,textarea)::placeholder{color:#8993a2!important}
+#app :is(input,select,textarea):focus{
+  border-color:#8793a3!important;
+  outline-color:rgba(148,163,184,.22)!important;
+}
+#app :is(table,thead,tbody,tfoot){color:#d9dee7}
+#app :is(th,td){border-color:#343a45!important}
+#app :is(thead th,.grid-filter-row th){
+  color:#cbd2dc!important;
+  background:#22262e!important;
+}
+#app tbody tr{background-color:#1b1e24}
+#app tbody tr:hover{background-color:#242a33}
+#app :is(.grid-filter-status,.grid-pagination,.gb-pagination){
+  color:#aab2bf!important;
+  background:#191c22!important;
+  border-color:#343a45!important;
+}
+#app :is(.modal,.modal-content,[role="dialog"]){
+  color:#e5e7eb;
+}
+#app :is(.shadow,.shadow-md,.shadow-lg,.shadow-xl){--tw-shadow:0 8px 24px rgba(0,0,0,.22)!important;box-shadow:var(--tw-shadow)!important}
+#app :is(button,a,[role="button"]):focus-visible{
+  outline-color:#aeb8c6!important;
+}
+/* Mantém as cores semânticas de sucesso, alerta, erro e informação nos estados. */
+#app :is(.text-emerald-600,.text-emerald-700,.text-green-600,.text-green-700,
+.text-rose-600,.text-rose-700,.text-red-600,.text-red-700,
+.text-amber-600,.text-amber-700,.text-yellow-600,.text-yellow-700,
+.text-blue-600,.text-blue-700,.text-sky-600,.text-sky-700){color:inherit}
+@media(prefers-reduced-motion:reduce){
+  #app *,body *{scroll-behavior:auto!important;transition:none!important;animation:none!important}
+}
+</style>
+
 </body>
 </html>
