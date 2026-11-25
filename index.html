@@ -16021,6 +16021,9 @@ persistido no banco ou no gateway.
 
                         // Em telas táteis: mantenha pressionado o cabeçalho por 450 ms e arraste para reordenar.
                         th.addEventListener('pointerdown', event => {
+                            // Etapa 164: evita arraste por toque que disputa o gesto de rolagem vertical.
+                            // O arraste nativo com mouse permanece disponível.
+                            return;
                             if (event.pointerType === 'mouse')
                                 return;
                             if (pendingTouchDrag && pendingTouchDrag.timer)
@@ -31229,5 +31232,12 @@ body>.grid-actions-popover :is(button,a,[role="menuitem"]):hover{
 }
 </style>
 
+
+<style id="bravo-correcao-rolagem-estoque-etapa-164">
+/* Etapa 164 — mantém apenas o contêiner externo como área de rolagem horizontal. */
+#app main .estoque-page .overflow-x-auto{width:100%!important;max-width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;overscroll-behavior-x:contain;overscroll-behavior-y:auto;-webkit-overflow-scrolling:touch;touch-action:pan-x pan-y}
+#app main .estoque-page #tabelaEstoquePrincipal{display:table!important;width:max-content!important;min-width:1420px!important;max-width:none!important;overflow:visible!important;table-layout:auto}
+@media(max-width:768px){#app main .estoque-page .overflow-x-auto{scrollbar-width:thin}#app main .estoque-page #tabelaEstoquePrincipal{min-width:1420px!important}}
+</style>
 </body>
 </html>
