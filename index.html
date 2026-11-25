@@ -31318,107 +31318,114 @@ body>.grid-actions-popover :is(button,a,[role="menuitem"]):hover{
 @media(max-width:768px){#app main .estoque-page .overflow-x-auto{scrollbar-width:thin}#app main .estoque-page #tabelaEstoquePrincipal{min-width:1420px!important}}
 </style>
 
-<style id="bravo-scrollbar-produtos-fixa-etapa-165">
-/* A barra auxiliar pertence ao fluxo da listagem: não cobre o conteúdo nem fixa no viewport. */
-#bravo-estoque-scrollbar-visivel-v1{
- position:relative;display:block;width:100%;max-width:100%;box-sizing:border-box;
- margin:8px 0 14px;z-index:1;height:20px;padding:2px 0;
- overflow-x:auto;overflow-y:hidden;
- border:1px solid #414b5a;border-radius:10px;
- background:#191d24;
- box-shadow:0 3px 12px rgba(0,0,0,.22);
- scrollbar-width:thin;scrollbar-color:#a8b2c0 #252b34;
- -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
+<style id="bravo-scrollbar-tabelas-global-etapa-175">
+/* Etapa 175 — barra horizontal auxiliar padronizada para tabelas de todos os módulos. */
+.bravo-table-scrollbar-v1{
+  position:relative;display:block;width:100%;max-width:100%;box-sizing:border-box;
+  margin:8px 0 14px;z-index:1;height:20px;padding:2px 0;
+  overflow-x:auto;overflow-y:hidden;
+  border:1px solid #414b5a;border-radius:10px;background:#191d24;
+  box-shadow:0 3px 12px rgba(0,0,0,.22);
+  scrollbar-width:thin;scrollbar-color:#a8b2c0 #252b34;
+  -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
+  touch-action:pan-x pan-y;
 }
-#bravo-estoque-scrollbar-visivel-v1[hidden]{display:none!important}
-#bravo-estoque-scrollbar-visivel-v1::-webkit-scrollbar{height:10px}
-#bravo-estoque-scrollbar-visivel-v1::-webkit-scrollbar-track{background:#252b34;border-radius:10px}
-#bravo-estoque-scrollbar-visivel-v1::-webkit-scrollbar-thumb{background:#a8b2c0;border:2px solid #252b34;border-radius:10px}
-#bravo-estoque-scrollbar-visivel-v1>div{height:1px;pointer-events:none}
+.bravo-table-scrollbar-v1[hidden]{display:none!important}
+.bravo-table-scrollbar-v1::-webkit-scrollbar{height:10px}
+.bravo-table-scrollbar-v1::-webkit-scrollbar-track{background:#252b34;border-radius:10px}
+.bravo-table-scrollbar-v1::-webkit-scrollbar-thumb{background:#a8b2c0;border:2px solid #252b34;border-radius:10px}
+.bravo-table-scrollbar-v1>div{height:1px;pointer-events:none}
 @media(max-width:640px){
- #bravo-estoque-scrollbar-visivel-v1{height:22px;margin:8px 0 12px}
+  .bravo-table-scrollbar-v1{height:22px;margin:8px 0 12px}
 }
 </style>
-<script id="bravo-estoque-scrollbar-visivel-script-v1">
+<script id="bravo-scrollbar-tabelas-global-script-etapa-175">
 (function(){
  'use strict';
- if(window.__bravoEstoqueScrollBarV1)return;
- window.__bravoEstoqueScrollBarV1=true;
- let bar=null,inner=null,wrap=null,table=null,syncing=false,observer=null,resizeObserver=null,frame=0;
- function agendarAtualizacao(){
+ if(window.__bravoGlobalTableScrollbarsV175)return;
+ window.__bravoGlobalTableScrollbarsV175=true;
+ const selector='#app main table';
+ const wrappers='.overflow-x-auto,.table-responsive,[data-table-scroll]';
+ const entries=new Set();
+ let observer=null,resizeObserver=null,frame=0;
+ function schedule(){
   if(frame)return;
-  frame=requestAnimationFrame(function(){frame=0;atualizar();});
+  frame=requestAnimationFrame(function(){frame=0;refresh();});
  }
- function localizar(){
-  const nextTable=document.querySelector('#app main .estoque-page #tabelaEstoquePrincipal');
-  const nextWrap=nextTable&&nextTable.closest('.overflow-x-auto');
-  if(nextTable!==table||nextWrap!==wrap){
-   if(wrap)wrap.removeEventListener('scroll',onWrapScroll);
-   table=nextTable;wrap=nextWrap;
-   if(wrap)wrap.addEventListener('scroll',onWrapScroll,{passive:true});
-   if(resizeObserver){
-    resizeObserver.disconnect();
-    if(wrap)resizeObserver.observe(wrap);
-    if(table)resizeObserver.observe(table);
-   }
+ function bindTable(table){
+  const wrap=table.closest(wrappers);
+  if(!wrap||!wrap.isConnected)return;
+  let entry=wrap.__bravoTableScrollbarV175;
+  if(!entry){
+   const bar=document.createElement('div');
+   bar.className='bravo-table-scrollbar-v1';
+   bar.setAttribute('role','region');
+   bar.setAttribute('aria-label','Barra horizontal auxiliar da tabela');
+   bar.setAttribute('aria-orientation','horizontal');
+   bar.tabIndex=0;
+   const inner=document.createElement('div');
+   bar.appendChild(inner);
+   entry={wrap:wrap,table:table,bar:bar,inner:inner,syncing:false};
+   wrap.__bravoTableScrollbarV175=entry;
+   bar.addEventListener('scroll',function(){
+    if(entry.syncing)return;
+    entry.syncing=true;
+    entry.wrap.scrollLeft=bar.scrollLeft;
+    entry.syncing=false;
+   },{passive:true});
+   wrap.addEventListener('scroll',function(){
+    if(entry.syncing)return;
+    entry.syncing=true;
+    bar.scrollLeft=wrap.scrollLeft;
+    entry.syncing=false;
+   },{passive:true});
+   entries.add(entry);
+   if(resizeObserver){resizeObserver.observe(wrap);resizeObserver.observe(table);}
+  }else if(entry.table!==table){
+   if(resizeObserver)resizeObserver.unobserve(entry.table);
+   entry.table=table;
+   if(resizeObserver)resizeObserver.observe(table);
   }
-  /* Mantém a barra como irmã imediata do contêiner da tabela, no fim da listagem. */
-  if(bar&&wrap&&wrap.isConnected&&bar.previousElementSibling!==wrap){
-   wrap.insertAdjacentElement('afterend',bar);
-  }
-  agendarAtualizacao();
+  /* Mantém a barra imediatamente após a área horizontal e antes da paginação. */
+  if(entry.bar.previousElementSibling!==wrap)wrap.insertAdjacentElement('afterend',entry.bar);
  }
- function onWrapScroll(){
-  if(!bar||!wrap||syncing)return;
-  syncing=true;bar.scrollLeft=wrap.scrollLeft;syncing=false;
- }
- function onBarScroll(){
-  if(!bar||!wrap||syncing)return;
-  syncing=true;wrap.scrollLeft=bar.scrollLeft;syncing=false;
- }
- function atualizar(){
-  if(!bar||!inner)return;
-  if(!wrap||!table||!wrap.isConnected||!table.isConnected){bar.hidden=true;return;}
+ function update(entry){
+  const wrap=entry.wrap,table=entry.table,bar=entry.bar;
+  if(!wrap.isConnected||!table.isConnected){bar.hidden=true;return;}
+  if(bar.previousElementSibling!==wrap)wrap.insertAdjacentElement('afterend',bar);
   const rect=wrap.getBoundingClientRect();
-  const visivel=rect.bottom>0&&rect.top<window.innerHeight&&rect.width>0;
+  const inViewport=rect.bottom>0&&rect.top<window.innerHeight&&rect.width>0;
   const overflow=table.scrollWidth>wrap.clientWidth+2;
-  if(!visivel||!overflow){bar.hidden=true;return;}
-  const largura=Math.max(table.scrollWidth,wrap.clientWidth);
-  if(inner.style.width!==largura+'px')inner.style.width=largura+'px';
+  if(!inViewport||!overflow){bar.hidden=true;return;}
+  const width=Math.max(table.scrollWidth,wrap.clientWidth);
+  if(entry.inner.style.width!==width+'px')entry.inner.style.width=width+'px';
   bar.hidden=false;
   if(Math.abs(bar.scrollLeft-wrap.scrollLeft)>1){
-   syncing=true;bar.scrollLeft=wrap.scrollLeft;syncing=false;
+   entry.syncing=true;bar.scrollLeft=wrap.scrollLeft;entry.syncing=false;
   }
  }
- function iniciar(){
+ function refresh(){
+  document.querySelectorAll(selector).forEach(bindTable);
+  entries.forEach(function(entry){
+   if(!entry.wrap.isConnected){entries.delete(entry);return;}
+   update(entry);
+  });
+ }
+ function start(){
   if(!document.body)return;
-  bar=document.getElementById('bravo-estoque-scrollbar-visivel-v1');
-  if(!bar){
-   bar=document.createElement('div');bar.id='bravo-estoque-scrollbar-visivel-v1';
-   bar.setAttribute('role','region');bar.setAttribute('aria-label','Barra horizontal auxiliar da listagem de produtos');
-   bar.setAttribute('aria-orientation','horizontal');bar.tabIndex=0;
-   inner=document.createElement('div');bar.appendChild(inner);
-   bar.addEventListener('scroll',onBarScroll,{passive:true});
-  }else{
-   inner=bar.firstElementChild;
-   if(!inner){inner=document.createElement('div');bar.appendChild(inner);}
-  }
-  if(typeof ResizeObserver==='function'){
-   resizeObserver=new ResizeObserver(agendarAtualizacao);
-  }
-  localizar();
-  if(!observer){
-   observer=new MutationObserver(localizar);
-   observer.observe(document.getElementById('app')||document.body,{childList:true,subtree:true});
-  }
-  document.addEventListener('scroll',agendarAtualizacao,{passive:true,capture:true});
-  window.addEventListener('resize',agendarAtualizacao,{passive:true});
+  if(typeof ResizeObserver==='function')resizeObserver=new ResizeObserver(schedule);
+  refresh();
+  observer=new MutationObserver(schedule);
+  observer.observe(document.getElementById('app')||document.body,{childList:true,subtree:true});
+  document.addEventListener('scroll',schedule,{passive:true,capture:true});
+  window.addEventListener('resize',schedule,{passive:true});
   if(window.visualViewport){
-   window.visualViewport.addEventListener('resize',agendarAtualizacao,{passive:true});
-   window.visualViewport.addEventListener('scroll',agendarAtualizacao,{passive:true});
+   window.visualViewport.addEventListener('resize',schedule,{passive:true});
+   window.visualViewport.addEventListener('scroll',schedule,{passive:true});
   }
  }
- if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',iniciar,{once:true});else iniciar();
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',start,{once:true});
+ else start();
 })();
 </script>
 
