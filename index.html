@@ -26657,3 +26657,82 @@ body{scrollbar-color:#656a73 #191b20!important}
     }
   }
 </style>
+
+
+<!-- BRAVO PINHAIS DARK EDITION — ETAPA 100: POLIMENTO DE TABELAS E FORMULÁRIOS -->
+<style id="bravo-dark-tables-forms-etapa-100">
+  /* Tabelas dos módulos: leitura uniforme e rolagem segura */
+  #app main table {
+    width: 100%;
+    color: #e4e4e7;
+    background: #191b20;
+    border-color: #343841 !important;
+  }
+  #app main table thead {
+    background: #252830 !important;
+  }
+  #app main table thead th {
+    color: #d4d4d8 !important;
+    background: #252830 !important;
+    border-color: #3a3f49 !important;
+    font-weight: 700;
+  }
+  #app main table tbody tr {
+    background: #191b20;
+    transition: background-color .15s ease;
+  }
+  #app main table tbody tr:nth-child(even) {
+    background: #1d2026;
+  }
+  #app main table tbody tr:hover {
+    background: #292e36 !important;
+  }
+  #app main table :is(td,th) {
+    border-color: #343841 !important;
+  }
+  #app main table tbody td {
+    color: #d4d4d8;
+  }
+  #app main table tbody td :is(small,.text-xs) {
+    color: #a1a1aa;
+  }
+  /* Campos e filtros dos módulos */
+  #app main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),select,textarea) {
+    background-color: #202329 !important;
+    color: #f4f4f5 !important;
+    border-color: #414650 !important;
+    border-radius: 9px;
+  }
+  #app main :is(input,select,textarea):focus {
+    border-color: #8b929e !important;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(161,161,170,.14) !important;
+  }
+  #app main :is(input,select,textarea)::placeholder {
+    color: #858b96 !important;
+    opacity: 1;
+  }
+  #app main :is(input,select,textarea):disabled {
+    background: #191b20 !important;
+    color: #858b96 !important;
+    border-color: #343841 !important;
+  }
+  #app main label {
+    color: #c4c7ce;
+  }
+  #app main :is(.overflow-x-auto,[class*="overflow-x-scroll"]) {
+    max-width: 100%;
+    scrollbar-color: #555c68 #191b20;
+    scrollbar-width: thin;
+  }
+  #app main :is(.overflow-x-auto,[class*="overflow-x-scroll"]) table {
+    min-width: max-content;
+  }
+  @media (max-width: 640px) {
+    #app main table { font-size: 12px; }
+    #app main table :is(th,td) {
+      padding: 9px 10px !important;
+      white-space: nowrap;
+    }
+  }
+</style>
