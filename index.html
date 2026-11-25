@@ -8222,7 +8222,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 let totalReceber = 0;
                 let totalPagar = 0;
                 financeiroList.forEach(f => {
-                    const val = parseFloat(f.valor) || 0;
+                    const val = dashboardNumero(f.valor);
                     if (f.tipo === 'Receber')
                         totalReceber += val;
                     else if (f.tipo === 'Pagar')
@@ -8961,7 +8961,7 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                                         <td class="p-4"><span class="px-3 py-1 rounded-full font-extrabold ${f.tipo === 'Receber' ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}">${escapeHTML(f.tipo)}</span></td>
                                         <td class="p-4 font-bold text-teal-700">${pcObj ? escapeHTML(pcObj.codigo + ' - ' + pcObj.nome) : '<span class="text-slate-400">Não vinculada</span>'}</td>
                                         <td class="p-4 font-bold text-slate-800">${escapeHTML(f.historico)}</td>
-                                        <td class="p-4 font-mono font-black ${f.tipo === 'Receber' ? 'text-emerald-600' : 'text-rose-600'}">R$ ${parseFloat(f.valor || 0).toFixed(2)}</td>
+                                        <td class="p-4 font-mono font-black ${f.tipo === 'Receber' ? 'text-emerald-600' : 'text-rose-600'}">${dashboardMoeda(f.valor)}</td>
                                         <td class="p-4 text-center">
                                             <button onclick="window.renderModalNovoTitulo('${f.id}')" class="p-2 bg-slate-100 hover:bg-slate-200 rounded-xl mr-1 transition-colors"><i class="fa-solid fa-pen"></i></button>
                                             <button onclick="excluirRegistro('financeiro','${f.id}')" class="p-2 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl transition-colors"><i class="fa-solid fa-trash"></i></button>
@@ -12492,7 +12492,7 @@ html,body{min-height:100%;background:#080e18!important;color:#e7edf5!important;c
                 );
 
                 financeiroList.forEach(f => {
-                    const val = parseFloat(f.valor) || 0;
+                    const val = dashboardNumero(f.valor);
                     if (f.tipo === 'Receber')
                         totalReceitasDRE += val;
                     else if (f.tipo === 'Pagar')
@@ -12956,7 +12956,7 @@ html,body{min-height:100%;background:#080e18!important;color:#e7edf5!important;c
                   , pag = 0;
                 const porConta = {};
                 (db.financeiro || []).forEach(f => {
-                    const v = parseFloat(f.valor) || 0;
+                    const v = dashboardNumero(f.valor);
                     if (f.tipo === 'Receber')
                         rec += v;
                     else if (f.tipo === 'Pagar')
