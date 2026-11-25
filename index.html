@@ -28612,5 +28612,133 @@ html,body{background:var(--bravo-bg);color:var(--bravo-text)}
 }
 </style>
 
+
+<style id="bravo-formularios-modais-dark-etapa-117">
+/* Etapa 117 — formulários, filtros e modais coerentes com o tema noturno. */
+#app main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea),
+#modal-container :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea){
+  color:#e5e7eb!important;
+  background-color:#111827!important;
+  border:1px solid rgba(148,163,184,.27)!important;
+  border-radius:10px!important;
+  box-shadow:inset 0 1px 2px rgba(0,0,0,.16)!important;
+  caret-color:#5eead4;
+}
+#app main :is(input,select,textarea):hover,
+#modal-container :is(input,select,textarea):hover{
+  border-color:rgba(148,163,184,.45)!important;
+}
+#app main :is(input,select,textarea):focus,
+#modal-container :is(input,select,textarea):focus{
+  background-color:#0f172a!important;
+  border-color:#2dd4bf!important;
+  box-shadow:0 0 0 3px rgba(45,212,191,.13)!important;
+  outline:none!important;
+}
+#app main :is(input,textarea)::placeholder,
+#modal-container :is(input,textarea)::placeholder{
+  color:#8493a6!important;
+  opacity:1;
+}
+#app main select option,
+#modal-container select option{
+  color:#e5e7eb!important;
+  background:#111827!important;
+}
+#app main :is(input[type="checkbox"],input[type="radio"]),
+#modal-container :is(input[type="checkbox"],input[type="radio"]){
+  accent-color:#2dd4bf;
+}
+#app main label,
+#modal-container label{
+  color:#cbd5e1;
+}
+#app main :is(fieldset,.form-section,.form-group-title,.filter-panel,.filter-bar),
+#modal-container :is(fieldset,.form-section,.form-group-title,.filter-panel,.filter-bar){
+  border-color:rgba(148,163,184,.2)!important;
+}
+#app main form :is(.form-section,.form-group-title),
+#modal-container form :is(.form-section,.form-group-title){
+  color:#e2e8f0!important;
+}
+#app main form :is(.text-slate-500,.text-slate-600,.text-gray-500,.text-gray-600),
+#modal-container form :is(.text-slate-500,.text-slate-600,.text-gray-500,.text-gray-600){
+  color:#aebdca!important;
+}
+#app main form :is(.bg-white,.bg-slate-50,.bg-gray-50),
+#modal-container form :is(.bg-white,.bg-slate-50,.bg-gray-50){
+  background-color:rgba(30,41,59,.62)!important;
+}
+#modal-container{
+  color:#e5e7eb;
+  color-scheme:dark;
+}
+#modal-container>div{
+  padding:clamp(10px,2.5vw,20px)!important;
+  background:rgba(2,6,23,.76)!important;
+  backdrop-filter:blur(9px);
+  -webkit-backdrop-filter:blur(9px);
+}
+#modal-container>div>div,
+#modal-container [role="dialog"],
+#modal-container [aria-modal="true"]{
+  color:#e5e7eb!important;
+  background:#171d27!important;
+  border:1px solid rgba(148,163,184,.22)!important;
+  border-radius:18px!important;
+  box-shadow:0 28px 80px rgba(0,0,0,.52),inset 0 1px 0 rgba(255,255,255,.035)!important;
+  scrollbar-width:thin;
+  scrollbar-color:#475569 #171d27;
+}
+#modal-container :is(.bg-white,.bg-slate-50,.bg-gray-50,.bg-slate-100,.bg-gray-100){
+  background-color:#202936!important;
+}
+#modal-container :is(.text-slate-900,.text-slate-800,.text-slate-700,.text-gray-900,.text-gray-800,.text-gray-700){
+  color:#e5e7eb!important;
+}
+#modal-container :is(.text-slate-600,.text-slate-500,.text-gray-600,.text-gray-500){
+  color:#aebdca!important;
+}
+#modal-container :is(.border-slate-100,.border-slate-200,.border-gray-100,.border-gray-200){
+  border-color:rgba(148,163,184,.19)!important;
+}
+#modal-container :is(h1,h2,h3,h4){
+  color:#f1f5f9!important;
+}
+#modal-container button:not([class*="bg-"]){
+  color:#e2e8f0;
+}
+#modal-container :is(button,a):focus-visible{
+  outline:2px solid #5eead4!important;
+  outline-offset:3px;
+}
+#modal-container :is(.rounded-xl,.rounded-2xl,.rounded-3xl){
+  border-color:rgba(148,163,184,.19);
+}
+#modal-container hr{border-color:rgba(148,163,184,.18)!important}
+@media(max-width:640px){
+  #modal-container>div{padding:8px!important;align-items:flex-end!important}
+  #modal-container>div>div,
+  #modal-container [role="dialog"],
+  #modal-container [aria-modal="true"]{
+    width:100%!important;
+    max-width:100%!important;
+    max-height:calc(100dvh - 16px - env(safe-area-inset-top,0px))!important;
+    border-radius:18px 18px 12px 12px!important;
+    padding-bottom:max(16px,env(safe-area-inset-bottom,0px));
+  }
+  #app main :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea),
+  #modal-container :is(input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),select,textarea){
+    max-width:100%;
+    min-height:42px;
+    font-size:16px!important;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  #modal-container>div,
+  #modal-container>div>div{backdrop-filter:none;-webkit-backdrop-filter:none}
+}
+</style>
+
 </body>
 </html>
