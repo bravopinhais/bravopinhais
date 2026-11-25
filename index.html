@@ -16212,61 +16212,64 @@ persistido no banco ou no gateway.
 
                 function groupActionButtons(table) {
                     const headerRow = table.tHead && table.tHead.rows[0];
-                    if (!headerRow)
-                        return;
-                    const actionIndexes = Array.from(headerRow.cells).map( (th, i) => ({
-                        label: norm(th.innerText || th.textContent),
-                        i
-                    })).filter(item => /\b(acoes|opcoes)\b/.test(item.label) || item.label.includes('acoes / senha')).map(item => item.i);
-                    if (!actionIndexes.length)
-                        return;
+                    if (!headerRow) return;
 
-                    Array.from(table.tBodies).forEach(tbody => Array.from(tbody.rows).forEach(row => {
-                        actionIndexes.forEach(index => {
-                            const cell = row.cells[index];
-                            if (!cell || cell.dataset.gridActionsEnhanced === '1')
-                                return;
-                            const buttons = cell.querySelectorAll('button, a[role="button"]');
-                            if (!buttons.length)
-                                return;
-
-                            // Evita converter um botão que já seja um menu.
-                            if (cell.querySelector('.grid-actions-trigger')) {
-                                cell.dataset.gridActionsEnhanced = '1';
-                                return;
-                            }
-
-                            const template = document.createElement('div');
-                            template.className = 'grid-actions-template';
-                            template.hidden = true;
-                            while (cell.firstChild)
-                                template.appendChild(cell.firstChild);
-
-                            const trigger = document.createElement('button');
-                            trigger.type = 'button';
-                            trigger.className = 'grid-actions-trigger';
-                            trigger.title = 'Ações do registro';
-                            trigger.setAttribute('aria-label', 'Abrir ações do registro');
-                            trigger.setAttribute('aria-haspopup', 'menu');
-                            trigger.setAttribute('aria-expanded', 'false');
-                            trigger.innerHTML = '<i class="fa-solid fa-layer-group" aria-hidden="true"></i><span>Ações</span><i class="fa-solid fa-chevron-down grid-actions-chevron" aria-hidden="true"></i>';
-                            trigger.addEventListener('click', event => {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                if (activePopover && activePopover.trigger === trigger)
-                                    closeActionPopover();
-                                else
-                                    openActionPopover(trigger, template);
-                            }
-                            );
-
-                            cell.appendChild(trigger);
-                            cell.appendChild(template);
-                            cell.dataset.gridActionsEnhanced = '1';
-                        }
-                        );
+                    // Identifica as colunas de ação sem criar cadeias de arrays intermediários.
+                    const actionIndexes = [];
+                    for (let i = 0; i < headerRow.cells.length; i++) {
+                        const th = headerRow.cells[i];
+                        const label = norm(th.innerText || th.textContent);
+                        if (/\\b(acoes|opcoes)\\b/.test(label) || label.includes('acoes / senha'))
+                            actionIndexes.push(i);
                     }
-                    ));
+                    if (!actionIndexes.length) return;
+
+                    // Percorre as coleções HTML diretamente; evita Array.from em tabelas grandes.
+                    for (let bodyIndex = 0; bodyIndex < table.tBodies.length; bodyIndex++) {
+                        const rows = table.tBodies[bodyIndex].rows;
+                        for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+                            const row = rows[rowIndex];
+                            for (let actionIndex = 0; actionIndex < actionIndexes.length; actionIndex++) {
+                                const cell = row.cells[actionIndexes[actionIndex]];
+                                if (!cell || cell.dataset.gridActionsEnhanced === '1') continue;
+                                const buttons = cell.querySelectorAll('button, a[role="button"]');
+                                if (!buttons.length) continue;
+
+                                // Evita converter novamente uma célula que já tenha um menu.
+                                if (cell.querySelector('.grid-actions-trigger')) {
+                                    cell.dataset.gridActionsEnhanced = '1';
+                                    continue;
+                                }
+
+                                const template = document.createElement('div');
+                                template.className = 'grid-actions-template';
+                                template.hidden = true;
+                                while (cell.firstChild)
+                                    template.appendChild(cell.firstChild);
+
+                                const trigger = document.createElement('button');
+                                trigger.type = 'button';
+                                trigger.className = 'grid-actions-trigger';
+                                trigger.title = 'Ações do registro';
+                                trigger.setAttribute('aria-label', 'Abrir ações do registro');
+                                trigger.setAttribute('aria-haspopup', 'menu');
+                                trigger.setAttribute('aria-expanded', 'false');
+                                trigger.innerHTML = '<i class="fa-solid fa-layer-group" aria-hidden="true"></i><span>Ações</span><i class="fa-solid fa-chevron-down grid-actions-chevron" aria-hidden="true"></i>';
+                                trigger.addEventListener('click', event => {
+                                    event.preventDefault();
+                                    event.stopPropagation();
+                                    if (activePopover && activePopover.trigger === trigger)
+                                        closeActionPopover();
+                                    else
+                                        openActionPopover(trigger, template);
+                                });
+
+                                cell.appendChild(trigger);
+                                cell.appendChild(template);
+                                cell.dataset.gridActionsEnhanced = '1';
+                            }
+                        }
+                    }
                 }
 
                 function enhanceTable(table, tableIndex) {
