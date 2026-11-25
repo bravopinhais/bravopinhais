@@ -29510,5 +29510,107 @@ html,body{scrollbar-color:#43546a #0b1421;scrollbar-width:thin}
 }
 </style>
 
+
+<style id="bravo-responsividade-area-trabalho-etapa-129">
+/* Etapa 129 — área de trabalho, cabeçalho móvel e abas responsivas. */
+#app{min-width:0;max-width:100%;overflow-x:clip}
+#app>div{min-width:0;max-width:100%}
+#app main{
+  min-width:0;max-width:100%;
+  background:linear-gradient(180deg,#0b1421 0%,#0e1928 100%)!important;
+  color:#dbe5ef!important;
+  scrollbar-color:#40536a #0b1421;
+}
+#app main :is(.flex,.grid){min-width:0}
+#app main :is(h1,h2,h3,h4){color:#edf3fa}
+#app main :is(.text-slate-900,.text-slate-800,.text-gray-900){color:#e8eef6!important}
+#app main :is(.text-slate-700,.text-slate-600,.text-gray-700,.text-gray-600){color:#b5c3d2!important}
+#app main :is(.bg-white,.bg-slate-50,.bg-slate-100,.bg-gray-50,.bg-gray-100){
+  background-color:#142338!important;
+}
+#app main :is(.border-slate-200,.border-slate-300,.border-gray-200,.border-gray-300){
+  border-color:rgba(148,163,184,.19)!important;
+}
+#app main .overflow-x-auto{max-width:100%;overscroll-behavior-x:contain}
+#app header.md\:hidden{
+  min-height:62px;padding:.65rem .85rem!important;
+  background:rgba(10,19,32,.97)!important;
+  border-bottom:1px solid rgba(148,163,184,.17)!important;
+  box-shadow:0 8px 24px rgba(0,0,0,.14);
+}
+#app header.md\:hidden>button{
+  min-width:42px;min-height:42px;
+  display:grid;place-items:center;
+  color:#fff!important;background:#17283c!important;
+  border:1px solid rgba(148,163,184,.22)!important;
+  border-radius:12px!important;
+}
+#app header.md\:hidden>div span{color:#edf5fc!important}
+#app header.md\:hidden>div>div{
+  background:linear-gradient(145deg,#0f766e,#164e63)!important;
+  border:1px solid rgba(94,234,212,.2);
+}
+#app header.md\:hidden+div{
+  min-width:0;max-width:100%;
+  gap:6px!important;padding:.55rem .65rem 0!important;
+  background:#0d1929!important;
+  border-bottom:1px solid rgba(148,163,184,.17)!important;
+  scrollbar-width:thin;scrollbar-color:#40536a #0d1929;
+}
+#app header.md\:hidden+div>div{
+  flex:0 0 auto;min-height:39px;
+  padding:.62rem .85rem!important;
+  border:1px solid transparent!important;
+  border-radius:10px 10px 0 0!important;
+  background:rgba(148,163,184,.08)!important;
+  color:#aebed0!important;
+  font-weight:700!important;
+}
+#app header.md\:hidden+div>div.tab-active{
+  color:#eafffb!important;
+  background:linear-gradient(180deg,rgba(13,148,136,.24),rgba(13,148,136,.1))!important;
+  border-color:rgba(45,212,191,.24)!important;
+  border-bottom-color:#2dd4bf!important;
+  box-shadow:inset 0 -2px 0 #2dd4bf!important;
+}
+#app header.md\:hidden+div>div button{
+  min-width:23px;min-height:23px;color:#9eb1c5!important;
+}
+@media(max-width:767px){
+  #app main{padding:1rem!important;overflow-x:hidden}
+  #app main .dashboard-shell{gap:1rem!important}
+  #app main .dashboard-kpi-grid{gap:.65rem!important}
+  #app main .dashboard-quick-grid{gap:.65rem!important}
+  #app main .dashboard-section-title{align-items:flex-start!important}
+  #app main :is(.grid-cols-2,.sm\:grid-cols-2){grid-template-columns:repeat(2,minmax(0,1fr))}
+  #app main :is(button,a[role="button"]){max-width:100%;overflow-wrap:anywhere}
+  #app main :is(input,select,textarea){max-width:100%;min-width:0}
+  #app main .overflow-x-auto{width:100%;max-width:100%}
+  #app main :is(.flex.items-center,.flex.justify-between):not(.dashboard-quick-grid){
+    min-width:0;
+  }
+}
+@media(max-width:480px){
+  #app header.md\:hidden{min-height:56px;padding:.5rem .65rem!important}
+  #app header.md\:hidden>div span{font-size:12px!important}
+  #app header.md\:hidden>div>div{width:30px;height:30px}
+  #app main{padding:.8rem!important}
+  #app main .dashboard-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important}
+  #app main .dashboard-kpi-grid>article{min-width:0;padding:.8rem!important}
+  #app main .dashboard-quick-grid{grid-template-columns:1fr!important}
+  #app main .dashboard-quick-grid>*{min-width:0}
+  #app main :is(.rounded-2xl,.rounded-3xl){max-width:100%}
+  #app main .dashboard-section-title{gap:.45rem!important}
+  #app header.md\:hidden+div>div{padding:.55rem .7rem!important;font-size:11px!important}
+}
+@media(min-width:768px){
+  #app main{overscroll-behavior:contain}
+  #app header.md\:hidden+div{background:#0d1929!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #app header.md\:hidden+div>div{scroll-behavior:auto!important;transition:none!important}
+}
+</style>
+
 </body>
 </html>
