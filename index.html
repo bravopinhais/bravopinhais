@@ -31016,5 +31016,115 @@ body>.grid-actions-popover :is(button,a,[role="menuitem"]):hover{
 }
 </style>
 
+<style id="bravo-noturno-modulos-cabecalhos-cartoes-etapa-160">
+/* Etapa 160 — acabamento consistente dos cabeçalhos e superfícies dos módulos internos. */
+#app main #cabecalho-modulo-global{
+  position:relative;
+  align-items:center;
+  margin:0 0 1.35rem!important;
+  padding:1.15rem 1.3rem!important;
+  border:1px solid rgba(148,163,184,.18)!important;
+  border-radius:20px!important;
+  background:linear-gradient(115deg,#142236 0%,#17283d 58%,#152b3b 100%)!important;
+  box-shadow:0 12px 28px rgba(2,8,23,.16)!important;
+}
+#app main #cabecalho-modulo-global h2{
+  color:#f1f5f9!important;
+  font-size:clamp(1.25rem,2.2vw,1.8rem)!important;
+  line-height:1.2!important;
+  letter-spacing:-.035em!important;
+}
+#app main #cabecalho-modulo-global p{
+  color:#9fb1c5!important;
+  line-height:1.5!important;
+}
+#app main #cabecalho-modulo-global .no-print{
+  gap:.55rem!important;
+}
+#app main #cabecalho-modulo-global .no-print button,
+#app main #cabecalho-modulo-global .no-print label{
+  min-height:40px;
+  border-radius:12px!important;
+  box-shadow:0 4px 12px rgba(2,8,23,.18)!important;
+  transition:transform .18s ease,filter .18s ease,border-color .18s ease;
+}
+#app main #cabecalho-modulo-global .no-print button:hover,
+#app main #cabecalho-modulo-global .no-print label:hover{
+  transform:translateY(-1px);
+  filter:brightness(1.08);
+}
+#app main :is(.card-modern,.bg-white,.bg-slate-50,.bg-gray-50){
+  color:#dbe6f2!important;
+  background-color:#142236!important;
+  border-color:rgba(148,163,184,.19)!important;
+  box-shadow:0 8px 22px rgba(2,8,23,.12)!important;
+}
+#app main :is(.card-modern,.bg-white,.bg-slate-50,.bg-gray-50) :is(h1,h2,h3,h4){
+  color:#edf4fb!important;
+}
+#app main :is(.card-modern,.bg-white,.bg-slate-50,.bg-gray-50) :is(p,label,small,.text-slate-500,.text-slate-600,.text-slate-700,.text-gray-500,.text-gray-600,.text-gray-700){
+  color:#aebed0!important;
+}
+#app main :is(.card-modern,.bg-white,.bg-slate-50,.bg-gray-50) :is(.border,.border-b,.border-t,.border-slate-100,.border-slate-200,.border-gray-100,.border-gray-200){
+  border-color:rgba(148,163,184,.17)!important;
+}
+#app main :is(.card-modern,.bg-white,.bg-slate-50,.bg-gray-50) :is(input,select,textarea){
+  color:#e5edf6!important;
+  background:#0e1a2a!important;
+  border-color:rgba(148,163,184,.28)!important;
+}
+#app main :is(.card-modern,.bg-white,.bg-slate-50,.bg-gray-50) :is(input,select,textarea)::placeholder{
+  color:#7f93aa!important;
+}
+#app main :is(.card-modern,.bg-white,.bg-slate-50,.bg-gray-50) :is(input,select,textarea):focus{
+  border-color:#2dd4bf!important;
+  box-shadow:0 0 0 3px rgba(45,212,191,.13)!important;
+}
+#app main :is(.card-modern,.bg-white,.bg-slate-50,.bg-gray-50) :is(table thead,thead){
+  color:#c5d3e2!important;
+  background:#1a2b40!important;
+}
+#app main :is(.card-modern,.bg-white,.bg-slate-50,.bg-gray-50) :is(tbody tr){
+  border-color:rgba(148,163,184,.14)!important;
+}
+#app main :is(.card-modern,.bg-white,.bg-slate-50,.bg-gray-50) :is(tbody td){
+  color:#cbd5e1!important;
+}
+#app main :is(.card-modern,.bg-white,.bg-slate-50,.bg-gray-50) :is(button:not([class*="bg-gradient"])){
+  border-color:rgba(148,163,184,.22);
+}
+#app main :is(.card-modern,.bg-white,.bg-slate-50,.bg-gray-50) :is(button):focus-visible,
+#app main #cabecalho-modulo-global :is(button,label):focus-visible{
+  outline:2px solid #2dd4bf!important;
+  outline-offset:3px!important;
+}
+@media(max-width:640px){
+  #app main #cabecalho-modulo-global{
+    align-items:stretch!important;
+    padding:1rem!important;
+    margin-bottom:1rem!important;
+    border-radius:16px!important;
+  }
+  #app main #cabecalho-modulo-global .no-print{
+    display:grid!important;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    width:100%;
+  }
+  #app main #cabecalho-modulo-global .no-print > *{
+    justify-content:center;
+    min-width:0;
+    white-space:normal!important;
+    text-align:center;
+  }
+}
+@media(prefers-reduced-motion:reduce){
+  #app main #cabecalho-modulo-global *,
+  #app main :is(.card-modern,.bg-white,.bg-slate-50,.bg-gray-50) *{
+    transition:none!important;
+    animation:none!important;
+  }
+}
+</style>
+
 </body>
 </html>
