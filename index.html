@@ -6850,7 +6850,7 @@ Cancelar: não gravar nada na nuvem e continuar sem sincronização.`;
                 const grupos = [...new Set(MODULOS_CONFIGURAVEIS.map(m => m.grupo))];
                 const totalAtivos = MODULOS_CONFIGURAVEIS.filter(m => moduloEstaAtivo(m.id)).length;
                 return `
-                <section class="space-y-6">
+                <section class="space-y-6 bravo-configuracoes-shell">
                     <div class="bg-white rounded-3xl border border-slate-200 p-5 sm:p-7 shadow-sm">
                         <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                             <div class="flex gap-4 items-start">
@@ -11515,6 +11515,97 @@ html,body{min-height:100%;background:#080e18!important;color:#e7edf5!important;c
 #app main :is(.bg-blue-50,.bg-indigo-50,.bg-violet-50,.bg-purple-50,.bg-cyan-50){color:#bfdbfe!important;border-color:rgba(96,165,250,.24)!important}
 </style>
 
+<style id="bravo-configuracoes-dashboard-paleta-etapa-176">
+/* Etapa 176 — correção final de superfícies, textos e componentes no tema carvão. */
+#app main .bravo-configuracoes-shell{
+ --cfg-surface:#1b1e24;--cfg-raised:#222831;--cfg-border:#39414d;
+ --cfg-text:#e7ebf1;--cfg-muted:#aab4c2;
+ color:var(--cfg-text)!important;
+}
+#app main .bravo-configuracoes-shell :is(.bg-white,.bg-slate-50,.bg-gray-50,.bg-slate-100,.bg-gray-100){
+ background:var(--cfg-surface)!important;color:var(--cfg-text)!important;border-color:var(--cfg-border)!important;
+}
+#app main .bravo-configuracoes-shell :is(.bg-blue-50,.bg-sky-50){
+ background:#202b39!important;color:#c8d9eb!important;border-color:#40536a!important;
+}
+#app main .bravo-configuracoes-shell :is(.text-slate-900,.text-slate-800,.text-slate-700,.text-gray-900,.text-gray-800,.text-gray-700){
+ color:#e7ebf1!important;
+}
+#app main .bravo-configuracoes-shell :is(.text-slate-600,.text-slate-500,.text-gray-600,.text-gray-500){
+ color:var(--cfg-muted)!important;
+}
+#app main .bravo-configuracoes-shell :is(.border-slate-100,.border-slate-200,.border-gray-100,.border-gray-200){
+ border-color:var(--cfg-border)!important;
+}
+#app main .bravo-configuracoes-shell :is(.shadow-sm,.shadow-md,.shadow-lg){box-shadow:0 8px 22px rgba(0,0,0,.18)!important}
+#app main .bravo-configuracoes-shell input:not([type=checkbox]):not([type=radio]),
+#app main .bravo-configuracoes-shell select,
+#app main .bravo-configuracoes-shell textarea{
+ background:#12161d!important;color:#e7ebf1!important;border-color:#414b59!important;color-scheme:dark!important;
+}
+#app main .bravo-configuracoes-shell input[type=checkbox],
+#app main .bravo-configuracoes-shell input[type=radio]{accent-color:#9aa9ba!important}
+#app main .bravo-configuracoes-shell button:not([class*="bg-teal-"]):not([class*="bg-emerald-"]):not([class*="bg-rose-"]):not([class*="bg-amber-"]){
+ border-color:#414b59!important;
+}
+#app main .bravo-configuracoes-shell :is(.bg-teal-50,.bg-emerald-50,.bg-green-50){
+ background:#1d302b!important;color:#b9dfce!important;border-color:#34594a!important;
+}
+#app main .bravo-configuracoes-shell :is(.text-teal-700,.text-emerald-700,.text-green-700){color:#9bcbb7!important}
+#app main .bravo-configuracoes-shell :is(.bg-amber-50,.bg-yellow-50){background:#352d20!important;color:#ead1a2!important;border-color:#665335!important}
+#app main .bravo-configuracoes-shell :is(.text-amber-700,.text-yellow-700){color:#dfbd7f!important}
+#app main .bravo-configuracoes-shell :is(.bg-rose-50,.bg-red-50){background:#352329!important;color:#efc2ca!important;border-color:#62404a!important}
+#app main .bravo-configuracoes-shell :is(.text-rose-700,.text-red-700){color:#e7a3ae!important}
+#app main .bravo-configuracoes-shell :is(.bg-teal-600,.bg-teal-700,.bg-emerald-700,.bg-emerald-800){color:#fff!important}
+#app main .bravo-configuracoes-shell label{color:inherit}
+#app main .bravo-configuracoes-shell :is(.peer:focus,.peer:focus-visible){outline-color:#9aa9ba!important}
+#app main .dashboard-shell{
+ --dashboard-panel:#1b1e24;--dashboard-panel-raised:#242a33;--dashboard-border:#39414d;
+ color:#e7ebf1!important;
+}
+#app main .dashboard-shell :is(.dashboard-section-title,.dashboard-section-title h3,.dashboard-section-title p,.dashboard-section-title span){
+ color:#e7ebf1!important;
+}
+#app main .dashboard-shell .dashboard-section-title .text-teal-700{color:#aab8c8!important}
+#app main .dashboard-shell .dashboard-section-title>span{
+ background:#222831!important;color:#c4ccd7!important;border-color:#414b59!important;
+}
+#app main .dashboard-shell .dashboard-kpi-grid>article{
+ background:#1b1e24!important;border-color:#39414d!important;
+}
+#app main .dashboard-shell .dashboard-kpi-grid>article :is(.text-slate-900,.text-slate-800,.text-gray-900,.text-gray-800){color:#edf1f6!important}
+#app main .dashboard-shell .dashboard-kpi-grid>article :is(.text-slate-500,.text-slate-600,.text-gray-500,.text-gray-600){color:#aab4c2!important}
+#app main .dashboard-shell .dashboard-kpi-grid>article :is(.border-slate-100,.border-slate-200){border-color:#39414d!important}
+#app main .dashboard-shell .dashboard-analytics-grid>div,
+#app main .dashboard-shell .dashboard-operations-grid>div,
+#app main .dashboard-shell .dashboard-operations-grid>div>div{
+ background:#1b1e24!important;border-color:#39414d!important;color:#e7ebf1!important;
+}
+#app main .dashboard-shell .dashboard-analytics-grid :is(h3,h4,strong),
+#app main .dashboard-shell .dashboard-operations-grid :is(h3,h4,strong){color:#edf1f6!important}
+#app main .dashboard-shell .dashboard-analytics-grid :is(p,small),
+#app main .dashboard-shell .dashboard-operations-grid :is(p,small){color:#aab4c2!important}
+#app main .dashboard-shell .dashboard-operations-grid table{background:#1b1e24!important;color:#e7ebf1!important}
+#app main .dashboard-shell .dashboard-operations-grid thead th{background:#252b34!important;color:#d5dce6!important}
+#app main .dashboard-shell .dashboard-operations-grid tbody tr{background:#1b1e24!important}
+#app main .dashboard-shell .dashboard-operations-grid tbody tr:nth-child(even){background:#20252d!important}
+#app main .dashboard-shell .dashboard-operations-grid tbody tr:hover{background:#2a3039!important}
+#app main .dashboard-shell .dashboard-operations-grid tbody td{color:#d5dce6!important;border-color:#39414d!important}
+#app main .dashboard-shell .dashboard-operations-grid :is(.bg-white,.bg-slate-50,.bg-slate-100){background:#252b34!important;color:#e7ebf1!important}
+#app main .dashboard-shell .dashboard-operations-grid :is(.text-slate-900,.text-slate-800,.text-slate-700,.text-slate-600,.text-slate-500){color:#d5dce6!important}
+#app main .dashboard-shell .dashboard-operations-grid :is(.border-slate-100,.border-slate-200){border-color:#39414d!important}
+#app main .dashboard-shell .dashboard-operations-grid button{color:#dce3ec!important;border-color:#414b59!important}
+#app main .dashboard-shell .dashboard-operations-grid button[class*="text-emerald-"],
+#app main .dashboard-shell .dashboard-operations-grid button[class*="text-rose-"]{color:inherit!important}
+#app main .dashboard-shell .dashboard-analytics-disclosure,
+#app main .dashboard-shell .dashboard-analytics-disclosure>summary{background:#191d24!important;color:#e7ebf1!important;border-color:#39414d!important}
+#app main .dashboard-shell canvas{max-width:100%}
+@media(max-width:640px){
+ #app main .bravo-configuracoes-shell{gap:16px!important}
+ #app main .bravo-configuracoes-shell>div{min-width:0}
+ #app main .dashboard-shell{gap:15px!important}
+}
+</style>
 </body></html>`;
                 win.document.open();
                 win.document.write(doc);
