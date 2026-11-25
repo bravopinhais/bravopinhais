@@ -26264,3 +26264,65 @@ body{scrollbar-color:#656a73 #191b20!important}
     #app table { font-size: .875rem; }
   }
 </style>
+
+
+<!-- BRAVO PINHAIS DARK EDITION — ETAPA 93: MODAIS E NOTIFICAÇÕES -->
+<style id="bravo-dark-modals-notifications-etapa-93">
+  #app .fixed.inset-0 > div,
+  #app [role="dialog"],
+  #app [aria-modal="true"],
+  #scanner-modal-overlay > div {
+    color: #f4f4f5 !important;
+    background: #202329 !important;
+    border: 1px solid #3a3f49 !important;
+    box-shadow: 0 24px 70px rgba(0,0,0,.55) !important;
+  }
+  #app .fixed.inset-0 > div :is(h1,h2,h3,h4,strong),
+  #app [role="dialog"] :is(h1,h2,h3,h4,strong),
+  #app [aria-modal="true"] :is(h1,h2,h3,h4,strong),
+  #scanner-modal-overlay > div :is(h1,h2,h3,h4,strong) {
+    color: #f4f4f5 !important;
+  }
+  #app .fixed.inset-0 > div :is(p,span,label,small),
+  #app [role="dialog"] :is(p,span,label,small),
+  #app [aria-modal="true"] :is(p,span,label,small),
+  #scanner-modal-overlay > div :is(p,span,label,small) {
+    color: #c4c7ce;
+  }
+  #app .fixed.inset-0 > div :is(.bg-white,.bg-slate-50,.bg-gray-50),
+  #app [role="dialog"] :is(.bg-white,.bg-slate-50,.bg-gray-50),
+  #app [aria-modal="true"] :is(.bg-white,.bg-slate-50,.bg-gray-50),
+  #scanner-modal-overlay > div :is(.bg-white,.bg-slate-50,.bg-gray-50) {
+    background: #252830 !important;
+    border-color: #3a3f49 !important;
+  }
+  #app .fixed.inset-0 > div :is(hr,[class*="border"]),
+  #app [role="dialog"] :is(hr,[class*="border"]),
+  #app [aria-modal="true"] :is(hr,[class*="border"]) {
+    border-color: #3a3f49 !important;
+  }
+  #app :is([role="alert"],[role="status"],[class*="toast"],[class*="notification"],[class*="notificacao"]) {
+    color: #f4f4f5 !important;
+    background-color: #252830 !important;
+    border: 1px solid #414650 !important;
+    box-shadow: 0 12px 34px rgba(0,0,0,.42) !important;
+  }
+  #app :is([role="alert"],[role="status"],[class*="toast"],[class*="notification"],[class*="notificacao"]) :is(p,span,strong,small) {
+    color: inherit;
+  }
+  #app .fixed.inset-0 {
+    background-color: rgba(0,0,0,.76) !important;
+    backdrop-filter: blur(8px);
+  }
+  @media (max-width: 640px) {
+    #app .fixed.inset-0 { padding: 12px !important; }
+    #app .fixed.inset-0 > div,
+    #app [role="dialog"],
+    #app [aria-modal="true"] {
+      max-width: calc(100vw - 24px) !important;
+      max-height: calc(100dvh - 24px) !important;
+      overflow-y: auto !important;
+      border-radius: 18px !important;
+    }
+  }
+</style>
