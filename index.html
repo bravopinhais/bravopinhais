@@ -32075,5 +32075,38 @@ body.bg-slate-100{background:#111318!important;color:#e5e7eb!important}
 }
 </style>
 
+
+<!-- BRAVO ETAPA 181: correção pontual dos cards de navegação e análise -->
+<style id="bravo-cards-dashboard-sem-fundo-branco-etapa-181">
+/* Etapa 181 — remove fundos brancos residuais dos dois cards do Dashboard. */
+#app main .dashboard-shell > .dashboard-quick-access,
+#app main .dashboard-shell .dashboard-quick-access{
+  background:#191c22!important;background-image:none!important;color:#e5e7eb!important;
+  border:1px solid #3b424e!important;box-shadow:0 8px 22px rgba(0,0,0,.22)!important;
+}
+#app main .dashboard-shell .dashboard-quick-access :is(h1,h2,h3,h4,strong){color:#f1f3f6!important}
+#app main .dashboard-shell .dashboard-quick-access :is(p,small){color:#aab2bf!important}
+#app main .dashboard-shell .dashboard-quick-access .dashboard-quick-hint{
+  background:#292e36!important;background-image:none!important;color:#dce1e8!important;border:1px solid #454c57!important;
+}
+#app main .dashboard-shell .dashboard-analytics-disclosure{
+  background:#191c22!important;background-image:none!important;color:#e5e7eb!important;
+  border:1px solid #3b424e!important;border-radius:15px!important;box-shadow:0 8px 22px rgba(0,0,0,.22)!important;
+}
+#app main .dashboard-shell .dashboard-analytics-disclosure > summary,
+#app main .dashboard-shell .dashboard-analytics-disclosure > summary.bg-white{
+  background:#22262e!important;background-color:#22262e!important;background-image:none!important;
+  color:#edf0f4!important;border:1px solid #414853!important;box-shadow:none!important;
+}
+#app main .dashboard-shell .dashboard-analytics-disclosure > summary :is(h1,h2,h3,h4,strong){color:#f1f3f6!important}
+#app main .dashboard-shell .dashboard-analytics-disclosure > summary :is(p,small){color:#aeb6c2!important}
+#app main .dashboard-shell .dashboard-analytics-disclosure > summary [class*="bg-teal-"],
+#app main .dashboard-shell .dashboard-analytics-disclosure > summary [class*="bg-green-"],
+#app main .dashboard-shell .dashboard-analytics-disclosure > summary [class*="bg-emerald-"]{
+  background:#303640!important;background-image:none!important;color:#e1e5eb!important;border:1px solid #4a525e!important;
+}
+#app main .dashboard-shell .dashboard-analytics-disclosure > summary:focus-visible{outline:2px solid #aeb6c2!important;outline-offset:3px!important}
+</style>
+
 </body>
 </html>
