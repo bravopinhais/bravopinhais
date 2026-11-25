@@ -28886,5 +28886,35 @@ html,body{background:var(--bravo-bg);color:var(--bravo-text)}
 @media(prefers-reduced-motion:reduce){#app :is([role="tab"],#sidebar-menu nav button,#sidebar-menu nav a){transition:none!important}}
 </style>
 
+
+<style id="bravo-botoes-icones-dark-etapa-121">
+/* Etapa 121 — acabamento dos botões e ícones sem alterar cores funcionais. */
+#app main :is(button,a[role="button"]){-webkit-tap-highlight-color:transparent;transition:background-color .16s ease,border-color .16s ease,box-shadow .16s ease,transform .16s ease}
+#app main :is(button,a[role="button"]):focus-visible{outline:2px solid #5eead4!important;outline-offset:2px!important}
+#app main :is(button,a[role="button"])>svg,
+#app main :is(button,a[role="button"])>i,
+#app main :is(button,a[role="button"]) .lucide{flex:0 0 auto}
+#app main :is(button,a[role="button"])>svg{width:1.05em;height:1.05em;max-width:1.25rem;max-height:1.25rem}
+#app main button:disabled,#app main button[aria-disabled="true"]{opacity:.42!important;cursor:not-allowed!important;filter:saturate(.55)}
+#app main button[aria-pressed="true"]{box-shadow:inset 0 0 0 1px rgba(94,234,212,.38)!important}
+#app main :is(button,a[role="button"]):active:not(:disabled){transform:translateY(1px)}
+#app main :is(.icon-button,.btn-icon,[aria-label])>svg{display:block}
+#sidebar-menu nav :is(button,a) svg{width:18px;height:18px;flex:0 0 18px;opacity:.92}
+#sidebar-menu nav :is(button,a)[aria-current="page"] svg,
+#sidebar-menu nav :is(button,a)[aria-pressed="true"] svg,
+#sidebar-menu nav :is(button,a).active svg{color:#99f6e4;opacity:1}
+@media(hover:hover) and (pointer:fine){
+ #app main button:not(:disabled):hover{filter:brightness(1.07)}
+ #app main button:disabled:hover{filter:saturate(.55)}
+}
+@media(max-width:640px){
+ #app main :is(button,a[role="button"]){min-height:40px}
+ #app main :is(.icon-button,.btn-icon){min-width:40px;min-height:40px}
+}
+@media(prefers-reduced-motion:reduce){
+ #app main :is(button,a[role="button"]){transition:none!important;transform:none!important}
+}
+</style>
+
 </body>
 </html>
