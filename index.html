@@ -26326,3 +26326,68 @@ body{scrollbar-color:#656a73 #191b20!important}
     }
   }
 </style>
+
+
+<!-- BRAVO PINHAIS DARK EDITION — ETAPA 94: AÇÕES, CARREGAMENTO E ESTADOS VAZIOS -->
+<style id="bravo-dark-actions-loading-etapa-94">
+  #app button:not([class*="bg-"]),
+  #app input[type="button"], #app input[type="submit"] {
+    color: #e4e4e7;
+    background-color: #292c33;
+    border: 1px solid #414650;
+    transition: background-color .18s ease, border-color .18s ease,
+                box-shadow .18s ease, transform .18s ease;
+  }
+  #app button:not([class*="bg-"]):hover:not(:disabled),
+  #app input[type="button"]:hover,
+  #app input[type="submit"]:hover {
+    background-color: #343841;
+    border-color: #59616d;
+  }
+  #app button:focus-visible,
+  #app input[type="button"]:focus-visible,
+  #app input[type="submit"]:focus-visible,
+  #app a:focus-visible {
+    outline: 2px solid #a1a1aa !important;
+    outline-offset: 3px;
+  }
+  #app button:disabled, #app button[aria-disabled="true"],
+  #app input:disabled, #app select:disabled {
+    cursor: not-allowed !important;
+    opacity: .48 !important;
+    filter: saturate(.55);
+  }
+  #app :is([aria-busy="true"],.is-loading,.loading-state,.skeleton) {
+    border-color: #3a3f49 !important;
+  }
+  #app :is(.skeleton,[class*="skeleton"]) {
+    background: linear-gradient(90deg,#202329 20%,#2b2f37 38%,#202329 58%) !important;
+    background-size: 220% 100% !important;
+    color: transparent !important;
+    border-radius: 8px;
+  }
+  #app :is(.empty-state,.empty-state-container,[class*="empty-state"],
+          [class*="estado-vazio"],[data-empty-state]) {
+    color: #a1a1aa !important;
+    background: #191b20 !important;
+    border: 1px dashed #414650 !important;
+    border-radius: 14px;
+  }
+  #app :is(.empty-state,.empty-state-container,[class*="empty-state"],
+          [class*="estado-vazio"],[data-empty-state]) :is(h1,h2,h3,h4,strong) {
+    color: #e4e4e7 !important;
+  }
+  #app :is(.empty-state,.empty-state-container,[class*="empty-state"],
+          [class*="estado-vazio"],[data-empty-state]) :is(p,small,span) {
+    color: #a1a1aa;
+  }
+  #app progress { accent-color: #a1a1aa; }
+  #app ::-webkit-progress-bar { background: #292c33; }
+  #app ::-webkit-progress-value { background: #a1a1aa; }
+  @media (prefers-reduced-motion: reduce) {
+    #app button, #app a, #app .skeleton {
+      transition: none !important;
+      animation: none !important;
+    }
+  }
+</style>
