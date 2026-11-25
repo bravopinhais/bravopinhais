@@ -18,7 +18,7 @@ jobs:
   publicar:
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deploy_attempt_1.outputs.page_url || steps.deploy_attempt_2.outputs.page_url || steps.deploy_attempt_3.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Baixar o repositório
@@ -34,8 +34,33 @@ jobs:
         with:
           path: .
 
-      - name: Publicar site
-        id: deployment
+      - name: Publicar site (tentativa 1)
+        id: deploy_attempt_1
         uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Aguardar antes da segunda tentativa
+        if: steps.deploy_attempt_1.outcome == 'failure'
+        run: sleep 10
+
+      - name: Publicar site (tentativa 2)
+        id: deploy_attempt_2
+        if: steps.deploy_attempt_1.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Aguardar antes da terceira tentativa
+        if: steps.deploy_attempt_2.outcome == 'failure'
+        run: sleep 20
+
+      - name: Publicar site (tentativa 3)
+        id: deploy_attempt_3
+        if: steps.deploy_attempt_2.outcome == 'failure'
+        uses: actions/deploy-pages@v4
+        continue-on-error: true
+
+      - name: Confirmar publicação
+        if: steps.deploy_attempt_1.outcome == 'failure' && steps.deploy_attempt_2.outcome == 'failure' && steps.deploy_attempt_3.outcome == 'failure'
+        run: exit 1
 
 # Publicação automática habilitada para o repositório Bravo Pinhais.
