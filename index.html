@@ -30512,5 +30512,64 @@ body>.grid-actions-popover :is(button,a,[role="menuitem"]):hover{
 }
 </style>
 
+
+<style id="bravo-noturno-formularios-controles-etapa-154">
+/* Etapa 154 — padroniza estados de campos e controles nativos no modo noturno. */
+#app main :is(input,select,textarea,[contenteditable="true"]),
+#modal-container :is(input,select,textarea,[contenteditable="true"]){
+  color-scheme:dark!important;
+  caret-color:#5eead4!important;
+  accent-color:#2dd4bf!important;
+}
+#app main :is(input,select,textarea):not([type="checkbox"]):not([type="radio"]),
+#modal-container :is(input,select,textarea):not([type="checkbox"]):not([type="radio"]){
+  border-radius:9px!important;
+  transition:border-color .16s ease,box-shadow .16s ease,background-color .16s ease!important;
+}
+#app main :is(input,select,textarea):focus,
+#modal-container :is(input,select,textarea):focus{
+  border-color:rgba(45,212,191,.78)!important;
+  box-shadow:0 0 0 3px rgba(45,212,191,.13)!important;
+  outline:none!important;
+}
+#app main select option,
+#modal-container select option{
+  color:#e5edf6!important;
+  background:#111c2e!important;
+}
+#app main :is(input,select,textarea):disabled,
+#modal-container :is(input,select,textarea):disabled{
+  color:#8292a6!important;
+  background:#172235!important;
+  border-color:#2b3a50!important;
+  opacity:.72!important;
+  cursor:not-allowed!important;
+}
+#app main :is(input,textarea)[readonly],
+#modal-container :is(input,textarea)[readonly]{
+  color:#bdcadd!important;
+  background:#172235!important;
+  border-style:dashed!important;
+}
+#app main :is(input[type="checkbox"],input[type="radio"]),
+#modal-container :is(input[type="checkbox"],input[type="radio"]){
+  accent-color:#2dd4bf!important;
+  cursor:pointer;
+}
+#app main label,
+#modal-container label{
+  color:#cbd7e5;
+}
+#app main :is(input,select,textarea)::placeholder,
+#modal-container :is(input,select,textarea)::placeholder{
+  color:#8193a9!important;
+  opacity:1!important;
+}
+@media(prefers-reduced-motion:reduce){
+  #app main :is(input,select,textarea),
+  #modal-container :is(input,select,textarea){transition:none!important}
+}
+</style>
+
 </body>
 </html>
