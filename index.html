@@ -31239,5 +31239,85 @@ body>.grid-actions-popover :is(button,a,[role="menuitem"]):hover{
 #app main .estoque-page #tabelaEstoquePrincipal{display:table!important;width:max-content!important;min-width:1420px!important;max-width:none!important;overflow:visible!important;table-layout:auto}
 @media(max-width:768px){#app main .estoque-page .overflow-x-auto{scrollbar-width:thin}#app main .estoque-page #tabelaEstoquePrincipal{min-width:1420px!important}}
 </style>
+
+<style id="bravo-scrollbar-produtos-fixa-etapa-165">
+#bravo-estoque-scrollbar-visivel-v1{
+ position:fixed;left:clamp(10px,2vw,24px);right:clamp(10px,2vw,24px);
+ bottom:calc(env(safe-area-inset-bottom,0px) + 10px);
+ z-index:80;height:18px;padding:2px 0;
+ overflow-x:auto;overflow-y:hidden;
+ border:1px solid #414b5a;border-radius:10px;
+ background:rgba(25,29,36,.96);
+ box-shadow:0 5px 22px rgba(0,0,0,.38);
+ scrollbar-width:thin;scrollbar-color:#a8b2c0 #252b34;
+ -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
+}
+#bravo-estoque-scrollbar-visivel-v1[hidden]{display:none!important}
+#bravo-estoque-scrollbar-visivel-v1::-webkit-scrollbar{height:10px}
+#bravo-estoque-scrollbar-visivel-v1::-webkit-scrollbar-track{background:#252b34;border-radius:10px}
+#bravo-estoque-scrollbar-visivel-v1::-webkit-scrollbar-thumb{background:#a8b2c0;border:2px solid #252b34;border-radius:10px}
+#bravo-estoque-scrollbar-visivel-v1>div{height:1px;pointer-events:none}
+@media(max-width:640px){
+ #bravo-estoque-scrollbar-visivel-v1{left:8px;right:8px;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);height:20px}
+}
+</style>
+<script id="bravo-estoque-scrollbar-visivel-script-v1">
+(function(){
+ 'use strict';
+ if(window.__bravoEstoqueScrollBarV1)return;
+ window.__bravoEstoqueScrollBarV1=true;
+ let bar=null,inner=null,wrap=null,table=null,syncing=false,observer=null;
+ function localizar(){
+  const nextTable=document.querySelector('#app main .estoque-page #tabelaEstoquePrincipal');
+  const nextWrap=nextTable&&nextTable.closest('.overflow-x-auto');
+  if(nextTable!==table||nextWrap!==wrap){
+   if(wrap)wrap.removeEventListener('scroll',onWrapScroll);
+   table=nextTable;wrap=nextWrap;
+   if(wrap)wrap.addEventListener('scroll',onWrapScroll,{passive:true});
+  }
+  atualizar();
+ }
+ function onWrapScroll(){
+  if(!bar||!wrap||syncing)return;
+  syncing=true;bar.scrollLeft=wrap.scrollLeft;syncing=false;
+ }
+ function onBarScroll(){
+  if(!bar||!wrap||syncing)return;
+  syncing=true;wrap.scrollLeft=bar.scrollLeft;syncing=false;
+ }
+ function atualizar(){
+  if(!bar||!inner)return;
+  if(!wrap||!table||!wrap.isConnected||!table.isConnected){bar.hidden=true;return}
+  const rect=wrap.getBoundingClientRect();
+  const visivel=rect.bottom>0&&rect.top<window.innerHeight&&rect.width>0;
+  const overflow=table.scrollWidth>wrap.clientWidth+2;
+  if(!visivel||!overflow){bar.hidden=true;return}
+  inner.style.width=Math.max(table.scrollWidth,wrap.clientWidth)+'px';
+  bar.hidden=false;
+  if(Math.abs(bar.scrollLeft-wrap.scrollLeft)>1)bar.scrollLeft=wrap.scrollLeft;
+ }
+ function iniciar(){
+  if(!document.body)return;
+  bar=document.getElementById('bravo-estoque-scrollbar-visivel-v1');
+  if(!bar){
+   bar=document.createElement('div');bar.id='bravo-estoque-scrollbar-visivel-v1';
+   bar.setAttribute('role','scrollbar');bar.setAttribute('aria-label','Rolagem horizontal da listagem de produtos');
+   bar.setAttribute('aria-orientation','horizontal');bar.tabIndex=0;
+   inner=document.createElement('div');bar.appendChild(inner);document.body.appendChild(bar);
+   bar.addEventListener('scroll',onBarScroll,{passive:true});
+  }else inner=bar.firstElementChild;
+  localizar();
+  if(!observer){
+   observer=new MutationObserver(function(){localizar()});
+   const main=document.querySelector('#app main')||document.body;
+   observer.observe(main,{childList:true,subtree:true});
+  }
+  window.addEventListener('scroll',atualizar,{passive:true});
+  window.addEventListener('resize',atualizar,{passive:true});
+  if(window.visualViewport)window.visualViewport.addEventListener('resize',atualizar,{passive:true});
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',iniciar,{once:true});else iniciar();
+})();
+</script>
 </body>
 </html>
