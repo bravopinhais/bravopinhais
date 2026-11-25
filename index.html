@@ -26201,3 +26201,66 @@ body{scrollbar-color:#656a73 #191b20!important}
         #app .bg-slate-200\/80.border-b { padding-top: 9px !important; }
       }
     </style>
+
+
+<!-- BRAVO PINHAIS DARK EDITION — ETAPA 92: FORMULÁRIOS E TABELAS -->
+<style id="bravo-dark-forms-tables-etapa-92">
+  #app input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  #app select, #app textarea,
+  #app .form-control, #app .form-select {
+    color: #f4f4f5 !important;
+    background-color: #292c33 !important;
+    border: 1px solid #3a3f49 !important;
+    border-radius: 10px;
+    box-shadow: inset 0 1px 2px rgba(0,0,0,.16);
+    color-scheme: dark;
+  }
+  #app input::placeholder, #app textarea::placeholder {
+    color: #858b96 !important; opacity: 1;
+  }
+  #app input:focus, #app select:focus, #app textarea:focus,
+  #app .form-control:focus, #app .form-select:focus {
+    outline: none !important;
+    border-color: #8b929e !important;
+    box-shadow: 0 0 0 3px rgba(161,161,170,.16) !important;
+  }
+  #app input:disabled, #app select:disabled, #app textarea:disabled {
+    color: #858b96 !important; background: #202329 !important;
+    opacity: .72;
+  }
+  #app input[type="checkbox"], #app input[type="radio"] {
+    accent-color: #d4d4d8;
+  }
+  #app table {
+    color: #e4e4e7 !important;
+    border-color: #343841 !important;
+    border-collapse: separate;
+    border-spacing: 0;
+  }
+  #app table thead th, #app table th {
+    color: #e4e4e7 !important;
+    background: #252830 !important;
+    border-color: #3a3f49 !important;
+  }
+  #app table tbody td {
+    color: #d4d4d8 !important;
+    background: #191b20 !important;
+    border-color: #30343c !important;
+  }
+  #app table tbody tr:nth-child(even) td { background: #1e2127 !important; }
+  #app table tbody tr:hover td { background: #292d35 !important; }
+  #app label, #app .form-label {
+    color: #d4d4d8 !important;
+  }
+  #app fieldset, #app .form-section, #app .filter-panel {
+    border-color: #343841 !important;
+  }
+  #app option {
+    color: #f4f4f5; background: #202329;
+  }
+  @media (max-width: 767px) {
+    #app input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+    #app select, #app textarea { max-width: 100%; }
+    #app table { font-size: .875rem; }
+  }
+</style>
