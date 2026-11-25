@@ -10413,12 +10413,18 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                 if (!ctx)
                     return;
 
-                const list = (db.estoque || []).filter(st => !estoqueItemEstaInativo(st));
+                const itensEstoque = Array.isArray(db.estoque) ? db.estoque : [];
+                let totalAtivos = 0;
                 let qtdAdequado = 0;
                 let qtdCritico = 0;
                 let qtdExcedente = 0;
 
-                list.forEach(st => {
+                // Calcula as séries diretamente, sem criar um array intermediário
+                // apenas para descartar os itens inativos em seguida.
+                for (let indice = 0; indice < itensEstoque.length; indice++) {
+                    const st = itensEstoque[indice];
+                    if (estoqueItemEstaInativo(st)) continue;
+                    totalAtivos++;
                     const atual = dashboardNumero(st.quantidade !== undefined ? st.quantidade : (st.qtd || 0));
                     const minimo = dashboardNumero(st.minimo || 0);
                     const maximo = dashboardNumero(st.maximo || 0);
@@ -10430,9 +10436,8 @@ Antes de continuar, baixe um backup atual. Os dados existentes não serão mescl
                     else
                         qtdAdequado++;
                 }
-                );
 
-                if (list.length === 0) {
+                if (totalAtivos === 0) {
                     qtdAdequado = 1;
                 }
 
