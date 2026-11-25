@@ -4473,7 +4473,35 @@
                 animation-duration: .01ms !important;
             }
         </style>
-    </head>
+    <style id="bravo-tema-noturno-fixo">
+:root{color-scheme:dark!important;--app-ink:#e5e7eb;--app-muted:#9ca3af;--app-primary:#2dd4bf;--app-border:#334155}
+html,body{background:#080d18!important;color:#e5e7eb!important}
+body,#app,#app>div,main{background:#0b1220!important;color:#e5e7eb!important}
+.bg-white,.bg-gray-50,.bg-gray-100,.bg-slate-50,.bg-slate-100,.bg-zinc-50,.bg-neutral-50{background-color:#111c2e!important;color:#e5e7eb!important}
+.card-modern,.shadow,.shadow-sm,.shadow-md,.shadow-lg,.rounded-xl,.rounded-2xl{border-color:#263449!important}
+.card-modern{background-color:#111c2e!important;color:#e5e7eb!important;box-shadow:0 8px 24px rgba(0,0,0,.22)!important}
+.text-gray-900,.text-slate-900,.text-zinc-900,.text-neutral-900,.text-gray-800,.text-slate-800,.text-zinc-800,.text-neutral-800,.text-black{color:#e5e7eb!important}
+.text-gray-700,.text-slate-700,.text-zinc-700,.text-neutral-700,.text-gray-600,.text-slate-600,.text-zinc-600,.text-neutral-600{color:#cbd5e1!important}
+.text-gray-500,.text-slate-500,.text-zinc-500,.text-neutral-500{color:#94a3b8!important}
+.border-gray-100,.border-gray-200,.border-slate-100,.border-slate-200,.border-zinc-100,.border-zinc-200{border-color:#29384d!important}
+input,select,textarea{background-color:#111c2e!important;color:#f1f5f9!important;border-color:#3a4b63!important}
+input::placeholder,textarea::placeholder{color:#94a3b8!important}
+select option{background:#111c2e!important;color:#f1f5f9!important}
+table{color:#e5e7eb!important}
+thead,thead tr,thead th{background-color:#172438!important;color:#dbeafe!important}
+tbody tr,tbody td{border-color:#29384d!important}
+tbody tr:hover{background-color:#1a2940!important}
+.tab-active{background-color:#172438!important;color:#5eead4!important;border-bottom-color:#2dd4bf!important}
+.glass-header{background:rgba(8,13,24,.88)!important;border-bottom:1px solid #263449!important;color:#e5e7eb!important}
+#sidebar-menu{background:#0d1728!important;color:#e5e7eb!important;border-color:#263449!important}
+#sidebar-menu nav button{color:#cbd5e1!important}
+#modal-container>div>div{background:#111c2e!important;color:#e5e7eb!important;border-color:#3a4b63!important}
+::-webkit-scrollbar-track{background:#0b1220!important}
+::-webkit-scrollbar-thumb{background:#334155!important}
+::selection{background:#0f766e!important;color:#f0fdfa!important}
+@media(prefers-color-scheme:light){:root{color-scheme:dark!important}}
+</style>
+</head>
     <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
         <!-- Indicador de Status da Nuvem -->
         <div id="status-nuvem" class="bg-slate-900 text-teal-400 text-[11px] font-semibold py-1.5 px-4 text-center no-print flex items-center justify-center gap-2 border-b border-slate-800 shadow-sm">
