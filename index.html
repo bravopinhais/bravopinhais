@@ -31241,14 +31241,14 @@ body>.grid-actions-popover :is(button,a,[role="menuitem"]):hover{
 </style>
 
 <style id="bravo-scrollbar-produtos-fixa-etapa-165">
+/* A barra auxiliar pertence ao fluxo da listagem: não cobre o conteúdo nem fixa no viewport. */
 #bravo-estoque-scrollbar-visivel-v1{
- position:fixed;left:clamp(10px,2vw,24px);right:clamp(10px,2vw,24px);
- bottom:calc(env(safe-area-inset-bottom,0px) + 10px);
- z-index:80;height:18px;padding:2px 0;
+ position:relative;display:block;width:100%;max-width:100%;box-sizing:border-box;
+ margin:8px 0 14px;z-index:1;height:20px;padding:2px 0;
  overflow-x:auto;overflow-y:hidden;
  border:1px solid #414b5a;border-radius:10px;
- background:rgba(25,29,36,.96);
- box-shadow:0 5px 22px rgba(0,0,0,.38);
+ background:#191d24;
+ box-shadow:0 3px 12px rgba(0,0,0,.22);
  scrollbar-width:thin;scrollbar-color:#a8b2c0 #252b34;
  -webkit-overflow-scrolling:touch;overscroll-behavior-x:contain;
 }
@@ -31258,7 +31258,7 @@ body>.grid-actions-popover :is(button,a,[role="menuitem"]):hover{
 #bravo-estoque-scrollbar-visivel-v1::-webkit-scrollbar-thumb{background:#a8b2c0;border:2px solid #252b34;border-radius:10px}
 #bravo-estoque-scrollbar-visivel-v1>div{height:1px;pointer-events:none}
 @media(max-width:640px){
- #bravo-estoque-scrollbar-visivel-v1{left:8px;right:8px;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);height:20px}
+ #bravo-estoque-scrollbar-visivel-v1{height:22px;margin:8px 0 12px}
 }
 </style>
 <script id="bravo-estoque-scrollbar-visivel-script-v1">
@@ -31283,6 +31283,10 @@ body>.grid-actions-popover :is(button,a,[role="menuitem"]):hover{
     if(wrap)resizeObserver.observe(wrap);
     if(table)resizeObserver.observe(table);
    }
+  }
+  /* Mantém a barra como irmã imediata do contêiner da tabela, no fim da listagem. */
+  if(bar&&wrap&&wrap.isConnected&&bar.previousElementSibling!==wrap){
+   wrap.insertAdjacentElement('afterend',bar);
   }
   agendarAtualizacao();
  }
@@ -31315,7 +31319,7 @@ body>.grid-actions-popover :is(button,a,[role="menuitem"]):hover{
    bar=document.createElement('div');bar.id='bravo-estoque-scrollbar-visivel-v1';
    bar.setAttribute('role','region');bar.setAttribute('aria-label','Barra horizontal auxiliar da listagem de produtos');
    bar.setAttribute('aria-orientation','horizontal');bar.tabIndex=0;
-   inner=document.createElement('div');bar.appendChild(inner);document.body.appendChild(bar);
+   inner=document.createElement('div');bar.appendChild(inner);
    bar.addEventListener('scroll',onBarScroll,{passive:true});
   }else{
    inner=bar.firstElementChild;
