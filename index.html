@@ -33902,5 +33902,15 @@ html:root:root:root #app#app main .dashboard-shell .dashboard-analytics-disclosu
  background:#292929!important;color:#dedede!important;border-color:#484848!important;
 }
 </style>
+<style id="bravo-rolagem-tabelas-gesto-vertical-etapa-193">
+/* Etapa 193 — tabelas podem rolar horizontalmente sem bloquear o gesto vertical da página. */
+#app main :is(.overflow-x-auto,.table-responsive,[data-table-scroll]){
+ touch-action:pan-x pan-y!important;
+ overscroll-behavior-x:contain;
+ overscroll-behavior-y:auto;
+ -webkit-overflow-scrolling:touch;
+}
+#app main :is(.overflow-x-auto,.table-responsive,[data-table-scroll]) table{max-width:none}
+</style>
 </body>
 </html>
