@@ -196,3 +196,48 @@ def test_failed_event_insert_rolls_back_and_allows_retry(postgres_database):
 
     retried = store.append(register, **_event_args(decision_id, event_id))
     assert [event.event_id for event in retried.history_for(decision_id)] == [event_id]
+
+
+def test_deferred_commit_failure_rolls_back_and_allows_retry(postgres_database):
+    register = _register()
+    decision_id = register.pending[0].decision_id
+    store = PostgresReviewLedgerStore(lambda: psycopg.connect(postgres_database))
+    store.initialize(register)
+    event_id = f"commit-fail-{uuid4()}"
+
+    with psycopg.connect(postgres_database, autocommit=True) as connection:
+        connection.execute("""
+            CREATE FUNCTION bravo_shadow.reject_commit_event() RETURNS trigger
+            LANGUAGE plpgsql AS $$
+            BEGIN
+                IF NEW.event_id LIKE 'commit-fail-%' THEN
+                    RAISE EXCEPTION 'forced deferred commit failure';
+                END IF;
+                RETURN NEW;
+            END;
+            $$
+        """)
+        connection.execute("""
+            CREATE CONSTRAINT TRIGGER reject_commit_event_at_commit
+            AFTER INSERT ON bravo_shadow.migration_review_events
+            DEFERRABLE INITIALLY DEFERRED
+            FOR EACH ROW EXECUTE FUNCTION bravo_shadow.reject_commit_event()
+        """)
+
+    try:
+        with pytest.raises(psycopg.Error, match="forced deferred commit failure"):
+            store.append(register, **_event_args(decision_id, event_id))
+
+        assert store.load(register).history_for(decision_id) == ()
+    finally:
+        with psycopg.connect(postgres_database, autocommit=True) as connection:
+            connection.execute(
+                "DROP TRIGGER IF EXISTS reject_commit_event_at_commit "
+                "ON bravo_shadow.migration_review_events"
+            )
+            connection.execute(
+                "DROP FUNCTION IF EXISTS bravo_shadow.reject_commit_event()"
+            )
+
+    retried = store.append(register, **_event_args(decision_id, event_id))
+    assert [event.event_id for event in retried.history_for(decision_id)] == [event_id]
