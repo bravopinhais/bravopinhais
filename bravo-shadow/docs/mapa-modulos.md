@@ -61,3 +61,8 @@ A ordem poderá mudar conforme dependências reais e risco operacional.
 ## Segurança e autenticação — ponto de atenção
 
 A varredura do HTML encontrou dados legados de usuários e lógica local de autenticação baseada em senha. Isso não será copiado para a versão sombra. O requisito vigente é preservar a identificação Google/e-mail. Antes de implementar o módulo de usuários, identificar no ambiente ativo o provedor real, os fluxos de sessão, os claims e as políticas de autorização. Não registrar nem transportar credenciais ou hashes legados.
+
+
+## Revisão de integração
+
+A revisão estática de dependências, persistência, transações, CORS, identidade e riscos está em `revisao-integracao-arquitetura.md`. Conclusão atual: APIs ainda em memória, sem persistência ou frontend integrado; não liberar para dados reais. Priorizar persistência e testes transacionais de Financeiro/Plano de Contas e Estoque/Acertos.
