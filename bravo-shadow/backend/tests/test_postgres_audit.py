@@ -105,3 +105,32 @@ def test_postgres_sink_rejects_non_event_before_opening_connection():
         sink.append({"action": "financeiro:create"})
 
     assert opened is False
+
+
+def test_append_in_transaction_does_not_commit_or_close_connection():
+    connection = FakeConnection()
+    sink = PostgresAuditSink(lambda: pytest.fail("factory não deve ser usada"))
+    event = make_event()
+
+    sink.append_in_transaction(connection, event)
+
+    sql, params = connection.cursor_instance.calls[0]
+    assert "INSERT INTO bravo_shadow.audit_events" in sql
+    assert params[0] == event.event_id
+    assert connection.commits == 0
+    assert connection.rollbacks == 0
+    assert connection.closes == 0
+    assert connection.cursor_instance.closed is True
+
+
+def test_append_in_transaction_propagates_error_without_owning_transaction():
+    connection = FakeConnection(fail=True)
+    sink = PostgresAuditSink(lambda: pytest.fail("factory não deve ser usada"))
+
+    with pytest.raises(RuntimeError, match="insert failed"):
+        sink.append_in_transaction(connection, make_event())
+
+    assert connection.commits == 0
+    assert connection.rollbacks == 0
+    assert connection.closes == 0
+    assert connection.cursor_instance.closed is True
