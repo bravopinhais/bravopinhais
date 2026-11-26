@@ -76,10 +76,13 @@ class FakeCursor:
         elif query.startswith("SELECT event_id, decision_id, version, reviewer_id"):
             batch_key, manifest_hash = params
             self.rows = sorted(
-                (row[0], row[2], row[4], row[5], row[6], row[7], row[8])
-                for row in db.events
-                if row[1] == batch_key and row[3] == manifest_hash
-            , key=lambda row: (row[1], row[2]))
+                [
+                    (row[0], row[2], row[4], row[5], row[6], row[7], row[8])
+                    for row in db.events
+                    if row[1] == batch_key and row[3] == manifest_hash
+                ],
+                key=lambda row: (row[1], row[2]),
+            )
         elif query.startswith("SELECT COALESCE(MAX(version), 0)"):
             batch_key, decision_id = params
             versions = [
