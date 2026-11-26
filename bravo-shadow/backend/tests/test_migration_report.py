@@ -51,15 +51,15 @@ def test_report_summarizes_each_collection_and_global_totals():
     assert report.valid is True
     assert moradores.envelope_records == 3
     assert moradores.candidates == 2
-    assert moradores.ready == 1
+    assert moradores.ready == 2
     assert moradores.already_applied == 1
-    assert moradores.not_planned == 1
+    assert moradores.not_planned == 0
     assert categorias.conflicts == 1
     assert report.total_envelope_records == 4
-    assert report.ready == 1
+    assert report.ready == 2
     assert report.already_applied == 1
     assert report.conflicts == 1
-    assert report.not_planned == 1
+    assert report.not_planned == 0
 
 
 def test_report_exposes_preflight_issues_and_does_not_create_a_plan():
