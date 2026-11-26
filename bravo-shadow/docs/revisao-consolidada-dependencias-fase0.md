@@ -141,3 +141,34 @@ Nenhuma carga real será considerada autorizada até que todos os itens abaixo e
 As coleções mapeadas permitem desenhar a sequência de importação, mas ainda não permitem executar uma carga confiável. Os maiores bloqueios são preservação de IDs, reconciliação do saldo de estoque, conversão segura de vínculos textuais para IDs, arquivos Gzip, lacunas temporais do Financeiro e segurança transversal.
 
 **Próximo passo recomendado:** concluir a Fase 0 com uma ficha de importação por domínio que defina chave, transformação, estratégia de upsert, idempotência, validação e relatório de reconciliação. Começar pelo conjunto cadastral independente em ambiente local descartável; não acessar nem alterar produção.
+
+
+## 8. Matriz de relacionamentos — evidência e tratamento na migração
+
+Esta matriz separa referências identificadas nos contratos/fichas de relações que ainda não foram comprovadas. “Não confirmado” significa que o importador não pode criar FK, inferir cardinalidade ou preencher vínculo por semelhança de nome.
+
+| Origem | Destino | Campo/forma observada | Grau de evidência | Regra para importação |
+|---|---|---|---|---|
+| Financeiro | Plano de Contas | `planoContaId` opcional no Shadow; a ficha confirma referência financeira | Confirmado no contrato Shadow; cardinalidade exata ainda não formalizada | Preservar o ID legado quando existir; validar destino. Se ausente, manter sem vínculo. Se órfão, registrar erro de reconciliação sem descartar o título. |
+| Documento | Categoria/Pasta | Legado: `pasta` textual; Shadow: `categoriaId` opcional | Texto legado confirmado; FK é extensão Shadow | Preservar sempre o texto original. Criar FK somente com correspondência textual exata e única. Em zero ou múltiplas correspondências, manter FK nula e registrar pendência. |
+| Acerto de Estoque | Produto/Estoque | `produtoId` no movimento legado | Confirmado na ficha do lote 05 | Importar produtos antes dos movimentos. Preservar ID; não remapear por nome. Movimento com produto ausente é órfão e deve permanecer no relatório de exceções. |
+| Acerto de Estoque | Motivo de Acerto | Legado: texto `motivo`; Shadow: `motivoId` opcional | Texto legado confirmado; vínculo por ID é extensão Shadow | Preservar texto original. Associar ID somente quando a correspondência for exata e única; não normalizar para forçar associação. |
+| Conselho | Condomínio | Contexto institucional sugerido pela estrutura e telas | Relação estrutural não comprovada por FK nesta revisão | Não criar FK nem impor cardinalidade até confirmar no payload e nas operações do legado. Preservar registros e campos integralmente. |
+| Morador | Unidade/Bloco | Campos de bloco/apartamento aparecem como dados textuais na ficha/auditoria | Não foi comprovada coleção independente de unidades nem FK | Preservar bloco/apartamento como texto, inclusive zeros e pontuação. Não criar tabela de unidades nem vínculo automático nesta etapa. |
+| Financeiro | Conta Bancária | Nenhum campo de conta bancária no contrato Financeiro atual | Não confirmado / ausente no contrato observado | Não associar título a conta bancária por forma monetária, histórico ou proximidade de cadastro. |
+| Financeiro | Forma Monetária | Não foi comprovada FK no contrato observado | Não confirmado | Importar o cadastro independente; não inferir vínculo com títulos. |
+| Dashboard/Relatórios/DRE | Financeiro e Plano de Contas | Agregações derivadas; DRE agrupa por conta vinculada | Dependência de leitura confirmada pela auditoria funcional | Reconstruir indicadores a partir das fontes aceitas. Não importar números agregados como registros-base. Títulos sem conta entram nos totais gerais, mas não nas linhas agrupadas por conta. |
+| Usuário autenticado | Perfil interno Bravo | E-mail verificado do Google associado ao perfil interno | Regra de identidade vigente; não é relacionamento de migração de domínio | Resolver por e-mail verificado normalizado e único. Não importar senha/hash legado, nem tratar `perfil` como autorização até capacidades serem aprovadas. |
+
+### Regras transversais de integridade
+
+1. **Preservar chaves:** IDs legados são identificadores opacos; não converter para inteiro, UUID novo ou slug sem contrato explícito.
+2. **Não inventar relações:** nomes iguais, textos parecidos, mesmo bloco ou mesma forma monetária não provam identidade referencial.
+3. **Separar ausência de dado de ausência de relação:** campo inexistente no payload não deve ser preenchido com valor padrão; campo vazio não autoriza inferência.
+4. **Registrar órfãos sem perda:** cada referência inválida deve aparecer no relatório com coleção, ID do registro, campo, valor original e decisão pendente, sem copiar dados pessoais para logs gerais.
+5. **Não confundir agregação com vínculo:** Dashboard e DRE são consumidores de leitura, não pais de registros transacionais.
+6. **Cardinalidade pendente:** onde a ficha não comprova 1:1, 1:N ou N:N, o importador deve validar apenas a referência individual e deixar a cardinalidade para contrato aprovado.
+
+### Portão de aprovação desta matriz
+
+O mapa está consolidado em nível estrutural, mas **não está aprovado para carga**. Para liberar um importador por domínio ainda será necessário conferir o payload autorizado e os pontos de leitura/escrita do legado, formalizar cardinalidades, decidir tratamento de cada classe de órfão e testar reconciliação com dados sintéticos. Nenhuma dessas etapas exige ou autoriza conexão com produção.
