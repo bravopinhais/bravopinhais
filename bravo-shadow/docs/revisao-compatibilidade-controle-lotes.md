@@ -182,3 +182,24 @@ Testes sintéticos cobrem metadados ausentes, hash inválido, inventário mutáv
 ### Integridade verificável do snapshot
 
 O contrato agora calcula SHA-256 sobre uma representação canônica do inventário: sistema de origem e lista ordenada de identidade (sistema, coleção, ID legado) mais hash individual de cada registro. A ordem de chegada dos registros não altera o hash. A construção de `SourceSnapshot` rejeita um hash que não corresponda ao conteúdo recebido. Isso verifica a integridade do inventário de identidades e hashes, não autentica por si só a origem nem substitui assinatura/cadeia de custódia da exportação.
+
+
+## Manifesto de exportação auditável (contrato Shadow)
+
+Foi definido `backend/app/core/migration_export_manifest.py` como contrato de metadados para exportações futuras, construído somente a partir de um `SourceSnapshot` já validado.
+
+O manifesto contém:
+- versão do formato e versão do schema da exportação;
+- ID único da exportação;
+- sistema e baseline da origem;
+- identificação opcional do software exportador;
+- data/hora ISO-8601 com fuso horário obrigatório;
+- quantidade de registros e hash do inventário;
+- hash opcional do manifesto anterior;
+- hash SHA-256 do próprio manifesto, calculado sobre JSON canônico e excluindo o campo de hash.
+
+Os testes sintéticos em `backend/tests/test_migration_export_manifest.py` cobrem imutabilidade, determinismo, alteração de metadados, contagem, timestamp com fuso, versão não suportada e referência ao manifesto anterior.
+
+**Limites de segurança e cadeia de custódia:** o encadeamento permite detectar quebra/alteração na sequência quando o hash anterior é preservado por um canal independente. Ele não prova quem gerou o arquivo, não autentica o sistema de origem e não substitui assinatura digital, armazenamento imutável ou registro externo de custódia. O hash do manifesto não é uma assinatura.
+
+Este módulo não lê nem grava arquivos, não conecta à origem, não inclui payloads, não inicia importação e não aplica alterações. Ainda não existe exportador concreto nem conector legado. Nenhum dado real foi usado.
