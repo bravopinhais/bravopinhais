@@ -3,6 +3,8 @@ from decimal import Decimal
 import pytest
 from fastapi.testclient import TestClient
 
+from app.core.authentication import get_current_principal
+from app.core.authorization import AuthenticatedPrincipal, CAPABILITIES
 from app.main import create_app
 
 
@@ -163,7 +165,12 @@ class FakeConnection:
 
 
 @pytest.fixture
-def postgres_api():
+def postgres_api(monkeypatch):
+    from types import MappingProxyType
+    from app.core import authorization
+
+    # Permissões amplas existem apenas neste cenário sintético de integração.
+    monkeypatch.setattr(authorization, "ROLE_CAPABILITIES", MappingProxyType({"Admin": CAPABILITIES, "Operador": frozenset()}))
     state = FakePostgresState()
     connections = []
 
@@ -176,6 +183,11 @@ def postgres_api():
         storage_backend="postgres",
         postgres_connection_factory=connection_factory,
     )
+
+    async def authenticated_admin() -> AuthenticatedPrincipal:
+        return AuthenticatedPrincipal(subject="google-test-subject", email="teste@example.com", profile="Admin", account_status="Ativo")
+
+    application.dependency_overrides[get_current_principal] = authenticated_admin
     with TestClient(application) as client:
         yield client, state, connections
 
