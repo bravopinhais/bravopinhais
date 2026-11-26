@@ -9,6 +9,20 @@ revoke all on schema bravo_shadow from public;
 revoke all on schema bravo_shadow from anon;
 revoke all on schema bravo_shadow from authenticated;
 
+create table if not exists bravo_shadow.formas_monetarias (
+    id text primary key,
+    nome text not null,
+    -- O legado usa parseFloat sem limites artificiais; double precision preserva
+    -- o contrato numérico atual sem impor escala ou faixa não aprovada.
+    multa_pct double precision not null default 2.0,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    version bigint not null default 1 check (version >= 1)
+);
+
+create index if not exists formas_monetarias_created_at_idx
+    on bravo_shadow.formas_monetarias (created_at, id);
+
 create table if not exists bravo_shadow.plano_contas (
     id text primary key,
     codigo text not null,
@@ -46,10 +60,10 @@ create index if not exists financeiro_created_at_idx
     on bravo_shadow.financeiro (created_at, id);
 
 -- Defesa em profundidade. Sem policies: clientes da Data API não recebem acesso.
-alter table bravo_shadow.plano_contas enable row level security;
+alter table bravo_shadow.formas_monetarias enable row level security;\nalter table bravo_shadow.plano_contas enable row level security;
 alter table bravo_shadow.financeiro enable row level security;
 
-revoke all on table bravo_shadow.plano_contas from public, anon, authenticated;
+revoke all on table bravo_shadow.formas_monetarias from public, anon, authenticated;\nrevoke all on table bravo_shadow.plano_contas from public, anon, authenticated;
 revoke all on table bravo_shadow.financeiro from public, anon, authenticated;
 
 -- Não criar GRANT para anon/authenticated/service_role nesta fase.
