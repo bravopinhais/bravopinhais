@@ -142,3 +142,70 @@ Referência: `auditoria-gestao-usuarios.md`.
 - [ ] Executar testes de aceitação em navegador e persistência descartável após revisão das migrations/policies.
 
 **Limite de evidência:** as duas auditorias são estáticas e baseadas no código versionado. Não houve execução de tela, consulta ao banco, conexão de produção, aplicação de migration ou validação com dados reais.
+
+
+## Complemento de aceite — cadastros auxiliares e operacionais
+
+Critérios derivados das auditorias estáticas existentes. Os itens abaixo organizam o que deve ser provado antes da integração; não aprovam regras adicionais nem liberam os endpoints atuais.
+
+### Formas Monetárias e Contas Bancárias
+
+**Contrato legado observado:** Formas Monetárias contém `id`, `nome`, `multaPct` (novo cadastro apresenta 2,0%). Contas Bancárias contém `id`, `banco`, `saldo` (novo cadastro apresenta 0). O saldo é informado manualmente; não existe histórico de movimentos nem vínculo com títulos financeiros. A multa não foi encontrada em uso no cálculo financeiro.
+
+**Aceite mínimo:** preservar os campos e defaults observados; distinguir saldo informado de saldo calculado/conciliado; não criar relação entre forma monetária, banco e título sem decisão aprovada; testar criação, edição, exclusão, valores decimais e preservação de dados existentes.
+
+**Bloqueio:** autorização HTTP ausente e persistência real não configurada. Não exibir saldo como conciliado e não inferir cobrança de multa.
+
+Referência: `auditoria-formas-monetarias-contas-bancarias.md`.
+
+### Fornecedores e Empregados
+
+**Contrato legado observado:** Fornecedores contém `id`, `cnpj`, `razaoSocial`; CNPJ e razão social são obrigatórios no formulário. Empregados contém `id`, `nome`, `cargo`, `empresa`, `endereco`, `telefone`, `contatoEmergenciaNome`, `contatoEmergenciaTel`; apenas nome e cargo são obrigatórios.
+
+**Aceite mínimo:** preservar exatamente os campos e obrigatoriedades; não introduzir validação matemática de CNPJ, unicidade, dados pessoais adicionais ou vínculos empregatícios presumidos; testar edição sem perda de propriedades previstas, busca/listagem, exclusão e controle de acesso a endereço/contatos.
+
+**Bloqueio:** autorização HTTP e persistência não aprovadas. Não importar dados pessoais reais nesta fase.
+
+Referência: `auditoria-fornecedores-empregados.md`.
+
+### Moradores e Unidades
+
+**Contrato legado observado:** cadastro de morador inclui bloco, apartamento, nome, e-mail, telefone, CPF/RG, pet e vaga. Bloco, apartamento e nome são obrigatórios. A importação legada admite cabeçalho com sinônimos e fallback posicional, mas o parser simples não garante CSV com delimitadores dentro de aspas nem XLSX real.
+
+**Aceite mínimo:** preservar os campos, filtros textuais e busca sem distinção de caixa; parser de importação deve identificar formato real, tratar aspas/escapes, reportar linha inválida e não inserir duplicidades silenciosamente; prévia e relatório por linha devem preceder confirmação de lote; dados pessoais devem ser mascarados em logs e protegidos por capacidade específica.
+
+**Bloqueio:** não importar arquivos reais até haver parser testado, política de duplicidade/unidade e autorização aprovada. O endpoint atual de lote recebe JSON estruturado, não upload de planilha.
+
+Referência: `auditoria-moradores-unidades.md`.
+
+### Pastas, Categorias e Motivos de Acerto
+
+**Contrato legado observado:** ambos usam `id` e `nome`. Pastas são referenciadas por texto em `documentos.pasta`; motivos de acerto são gravados como texto em `acertos_estoque.motivo`, sem vínculo por ID demonstrado.
+
+**Aceite mínimo:** preservar textos históricos; não criar FK artificial para motivo; ao evoluir pasta para ID estável, criar mapeamento explícito, contabilizar órfãos e manter leitura de documentos antigos; impedir exclusão que cause perda de classificação sem política aprovada.
+
+**Bloqueio:** relação documental é textual e não há evidência de vínculo persistido por ID. Não executar normalização ou exclusão em massa.
+
+Referência: `auditoria-pastas-categorias-motivos.md`.
+
+### Segurança transversal das rotas
+
+A auditoria estática identificou routers de negócio sem dependências de autenticação/autorização. O health check é a única exceção pública intencional, sem dados sensíveis.
+
+**Bloqueio crítico comum:** nenhum endpoint de negócio deve ser considerado pronto para uso real ou exposto a dados sensíveis até validação do token Google no servidor, vínculo a perfil ativo e autorização por capacidade em cada ação. CORS, ocultação de telas e campo `perfil` não substituem esse controle.
+
+Referência: `auditoria-rotas-autorizacao.md` e `matriz-roles-permissoes-revisao-migracao.md`.
+
+### Situação desta rodada
+
+- [x] Critérios de aceite para Formas Monetárias e Contas Bancárias registrados.
+- [x] Critérios de aceite para Fornecedores e Empregados registrados.
+- [x] Critérios de aceite para Moradores/Unidades e importação por arquivo registrados.
+- [x] Dependências de Categorias/Pastas e Motivos explicitadas sem inventar relacionamentos.
+- [x] Bloqueio transversal de autenticação/autorização destacado para todos os módulos.
+- [ ] Aprovar a matriz funcional Admin/Operador por capacidade.
+- [ ] Corrigir e testar autenticação/autorização nos routers antes de qualquer teste com dados sensíveis.
+- [ ] Validar parser de planilhas com arquivos sintéticos representativos e relatório de prévia.
+- [ ] Definir política de normalização de pastas e integridade de documentos históricos.
+
+**Evidência:** auditoria estática dos contratos e telas versionadas; nenhum dado real foi consultado, nenhuma migration foi aplicada e nenhuma rota foi alterada nesta rodada.
