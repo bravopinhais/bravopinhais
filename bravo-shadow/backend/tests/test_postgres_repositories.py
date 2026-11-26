@@ -4,10 +4,12 @@ import pytest
 from fastapi import HTTPException
 
 from app.core.postgres_repositories import (
-    PostgresFinanceiroRepository,\n    PostgresFormasMonetariasRepository,
+    PostgresFinanceiroRepository,
+    PostgresFormasMonetariasRepository,
     PostgresPlanoContasRepository,
 )
-from app.modules.formas_monetarias.schemas import FormaMonetaria\nfrom app.modules.financeiro.schemas import FinanceiroTitulo
+from app.modules.formas_monetarias.schemas import FormaMonetaria
+from app.modules.financeiro.schemas import FinanceiroTitulo
 from app.modules.plano_contas.schemas import PlanoConta
 
 
