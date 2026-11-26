@@ -64,7 +64,7 @@ No Shadow, os 15 domínios aparecem na navegação, mas a própria interface inf
 - [x] Principais incompatibilidades já identificadas nos seis lotes, incluindo preservação de IDs, datas históricas, movimentos de estoque, referências textuais e arquivos Gzip.
 - [ ] Inventário completo de campos por tela e formulário para todos os módulos.
 - [ ] Inventário de regras de negócio e validações por operação.
-- [x] Mapa estrutural inicial de coleções, IDs e relacionamentos consolidado em `revisao-consolidada-dependencias-fase0.md`, com vínculos confirmados separados de hipóteses e pendências.\n- [ ] Conferência do mapa contra payload autorizado, cardinalidades e política aprovada para cada classe de órfão.
+- [x] Mapa estrutural de coleções e dependências consolidado em `revisao-consolidada-dependencias-fase0.md`.\n- [x] Conferência estática dos formulários e gravações do legado para os principais vínculos; evidências e linhas do código registradas em `evidencias-relacionamentos-legado-fase0.md`.\n- [ ] Confronto do mapa com payload persistido autorizado, campos históricos e extensões da instalação ativa.\n- [ ] Aprovação de política para órfãos, duplicidades e vínculos ambíguos.
 - [ ] Inventário de relatórios, importações/exportações e formatos de arquivos.
 - [ ] Matriz de permissões por operação aprovada.
 - [ ] Critérios de aceite e reconciliação definidos por módulo.
@@ -73,7 +73,7 @@ No Shadow, os 15 domínios aparecem na navegação, mas a própria interface inf
 ## Próxima sequência recomendada
 
 1. Completar as fichas da Fase 0 para Dashboard/Relatórios/DRE e Gestão de Usuários, incluindo métricas, fórmulas, filtros, operações, permissões e dependências.
-2. Validar a matriz estrutural de relacionamentos contra payload autorizado e formalizar cardinalidades e política de órfãos, sem usar dados reais nesta etapa.
+2. Confrontar as evidências de código com o payload autorizado e formalizar política de órfãos, duplicidades e vínculos ambíguos; não inferir cardinalidades ausentes.
 3. Fazer especificação detalhada de um módulo cadastral de baixo risco, comparando cada formulário e ação com o contrato Shadow.
 4. Validar localmente o backend e os adaptadores com banco descartável, depois de migrations e políticas revisadas.
 5. Só então propor o piloto de importação com dados sintéticos/anonimizados, relatório de divergências e rollback ensaiado.
