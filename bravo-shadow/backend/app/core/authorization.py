@@ -43,14 +43,13 @@ CAPABILITIES = frozenset(
     }
 )
 
-# Proposta provisória: Admin tem as capacidades administrativas listadas.
-# Operador permanece sem concessões até aprovação explícita da matriz.
-# O catálogo não declara UPDATE/DELETE para movimentos de estoque:
-# correções futuras devem ser lançadas como movimentos compensatórios.
-_ADMIN_CAPABILITIES = CAPABILITIES
+# A matriz Admin/Operador ainda não foi aprovada pelo responsável do Bravo.
+# Por segurança, nenhum perfil recebe capacidades implicitamente. A aprovação
+# deverá ser registrada e implementada em alteração isolada, acompanhada de testes.
+# Movimentos de estoque não possuem UPDATE/DELETE no catálogo.
 ROLE_CAPABILITIES = MappingProxyType(
     {
-        "Admin": frozenset(_ADMIN_CAPABILITIES),
+        "Admin": frozenset(),
         "Operador": frozenset(),
     }
 )
