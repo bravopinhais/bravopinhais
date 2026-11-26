@@ -69,3 +69,15 @@ def test_auth_me_denies_invalid_google_token():
         headers={"Authorization": "Bearer token-invalido"},
     )
     assert response.status_code == 401
+
+def test_auth_me_returns_service_unavailable_when_google_is_not_configured(monkeypatch):
+    monkeypatch.delenv("GOOGLE_CLIENT_ID", raising=False)
+    client = TestClient(create_app(storage_backend="memory"))
+
+    response = client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": "Bearer token-de-teste"},
+    )
+
+    assert response.status_code == 503
+    assert response.json()["detail"] == "Autenticação Google não configurada no servidor."
