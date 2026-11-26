@@ -78,3 +78,10 @@ Compatibilidade temporária: o atributo `_items` continua exposto internamente p
 ## Preparação transacional e valores financeiros
 
 O contrato financeiro usa `Decimal` com precisão máxima de 14 dígitos e 2 casas decimais, alinhado ao futuro `numeric(14,2)` do PostgreSQL. O módulo `app/core/transactions.py` define os ports `TransactionalInventoryRepository` e `UnitOfWork` para a futura gravação atômica de movimentos de estoque. Eles ainda não possuem implementação PostgreSQL; os serviços ativos continuam em memória e a movimentação atual ainda não é ACID.
+
+
+### Unidade de trabalho PostgreSQL (infraestrutura inicial)
+
+Foi adicionado `app/core/postgres.py`, com `PostgresUnitOfWork`. Ele recebe uma fábrica de conexões injetada, abre uma conexão por unidade de trabalho, confirma com `commit` quando não há exceção, executa `rollback` em caso de falha e sempre fecha a conexão. Não há driver concreto, variável de ambiente, pool ou conexão automática configurados; isso evita ativar acidentalmente qualquer banco.
+
+Os testes com conexão falsa cobrem o ciclo de commit/rollback/close, e os testes financeiros agora incluem limites de precisão decimal. Os testes foram adicionados ao repositório, mas ainda precisam ser executados em ambiente Python.
