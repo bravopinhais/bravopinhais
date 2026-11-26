@@ -84,3 +84,24 @@ def test_workspace_fails_closed_when_report_does_not_match_evidence():
     assert workspace.register is None
     assert workspace.ledger is None
     assert "report_evidence_mismatch" in workspace.integrity_issue_codes
+
+def test_workspace_fails_closed_if_derived_decision_register_is_inconsistent(monkeypatch):
+    import app.core.migration_review_flow as review_flow
+
+    envelope, candidates, preflight, report, manifest = batch_evidence()
+    original_builder = review_flow.build_decision_register
+
+    def tampered_builder(current_manifest, current_preflight):
+        register = original_builder(current_manifest, current_preflight)
+        return replace(register, ready_count=register.ready_count + 1)
+
+    monkeypatch.setattr(review_flow, "build_decision_register", tampered_builder)
+
+    workspace = build_review_workspace(
+        manifest, envelope, candidates, preflight, report
+    )
+
+    assert workspace.valid is False
+    assert workspace.register is None
+    assert workspace.ledger is None
+    assert "decision_register_evidence_mismatch" in workspace.integrity_issue_codes
