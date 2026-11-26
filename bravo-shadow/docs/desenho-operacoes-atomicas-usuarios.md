@@ -1,7 +1,7 @@
 # Desenho das operações atômicas — Gestão de Usuários
 
-**Status:** desenho técnico para a próxima implementação; não implementado.  
-**Escopo:** somente sistema sombra. Nenhuma rota, regra, tabela, dado ou permissão foi alterada. O router atual de usuários já exige autenticação e capacidades `usuarios:*`; a matriz de Admin/Operador permanece fechada e o provedor Google ainda depende de configuração validada.
+**Status:** implementação parcial; proteção do último Admin e transações compostas ainda não implementadas.  
+**Escopo:** somente sistema sombra. O router atual exige autenticação e capacidades `usuarios:*`; a matriz de Admin/Operador permanece fechada. Os schemas cadastrais separados já existem, mas ainda não estão conectados ao serviço/rotas. O serviço em memória serializa criação/atualização para unicidade de e-mail dentro de uma instância, e o PostgreSQL trata a constraint `usuarios_email_ci_uidx` como conflito. Isso não resolve atribuição concorrente de e-mail entre processos sem a constraint no banco, nem a proteção do último Admin.
 
 ## Objetivo
 
@@ -10,7 +10,7 @@ Fechar as duas condições de corrida identificadas na revisão de integridade:
 1. impedir que duas requisições criem ou atribuam o mesmo e-mail;
 2. impedir que operações concorrentes deixem o sistema sem ao menos um Admin ativo.
 
-A camada de serviço não deve tentar garantir atomicidade com uma sequência `list/get` seguida de `add/replace/delete`. A garantia deve pertencer ao repositório especializado de usuários.
+A camada de serviço ainda usa `list/get` seguida de `add/replace/delete` para o CRUD geral. A garantia de unicidade em memória é limitada pelo `RLock` da instância; no PostgreSQL, a constraint única é a proteção definitiva do e-mail. Ainda falta um repositório especializado que una validação, mutação e auditoria na mesma transação.
 
 ## 1. Contrato especializado do repositório
 
@@ -45,7 +45,7 @@ O adaptador em memória serve para desenvolvimento e testes unitários de uma ú
 
 ## 3. Adaptador PostgreSQL
 
-Todas as operações compostas devem abrir uma única `PostgresUnitOfWork` e usar sua conexão durante validação e escrita.
+Hoje cada método do `PostgresUsuariosRepository` abre sua própria `PostgresUnitOfWork`; portanto, ainda não há transação compartilhada para validação + mutação + auditoria. A futura operação composta deverá abrir uma única unidade de trabalho e usar sua conexão durante todas as etapas.
 
 ### E-mail
 - Manter índice único case-insensitive; ajustar o rascunho SQL para `lower(btrim(email))` ou equivalente, evitando divergência com a normalização do serviço.
@@ -71,7 +71,7 @@ Todas as operações compostas devem abrir uma única `PostgresUnitOfWork` e usa
 - `actor_id` deve vir do principal criado após validação do Google ID token; nunca do corpo ou query string.
 - A checagem de autoalteração de perfil/status deve ocorrer no serviço, comparando o ator autenticado com o usuário-alvo.
 - A capacidade necessária deve ser verificada antes de chamar o método administrativo do repositório. O router já possui dependências de autenticação e capacidades; manter a matriz fechada até aprovação formal.
-- Quando a integração de auditoria estiver pronta, gravar evento na mesma transação da alteração. Falha ao registrar auditoria deve cancelar a alteração.
+- Já existe `PostgresAuditSink.append_in_transaction(connection, event)`, que insere usando uma conexão do chamador sem commit/rollback/close. Porém, o sink ainda não está ligado ao serviço de usuários. A futura operação composta deve chamar esse método na mesma transação da alteração; falha ao registrar auditoria deve cancelar a alteração.
 - Não gravar e-mail, nome, perfil antigo/novo, status antigo/novo ou payload no evento; usar somente ator opaco, ação, tipo/ID da entidade, resultado e request ID conforme o contrato de auditoria existente.
 
 ## 5. Mapeamento de conflitos
@@ -115,4 +115,4 @@ Os códigos HTTP finais devem seguir o padrão de exceções do projeto quando a
 - Concluir contrato de auditoria transacional.
 - Preparar PostgreSQL local descartável e migrations revisadas.
 
-Até essas decisões e pré-requisitos estarem resolvidos, manter este documento como desenho, sem alterar o serviço, repositórios ou rotas. Não conectar o sistema sombra a dados reais nem expor rotas sem autenticação e autorização completas.
+Até essas decisões e pré-requisitos estarem resolvidos, manter a matriz fechada e não conectar o sistema sombra a dados reais. Não expor rotas sem autenticação e autorização completas. As proteções parciais já existentes devem ser preservadas; não interpretar o lock em memória ou a constraint de e-mail como proteção do último Admin.
