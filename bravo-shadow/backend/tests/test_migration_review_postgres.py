@@ -97,6 +97,8 @@ class FakeCursor:
             self.one = (max(versions, default=0),)
         elif query.startswith("INSERT INTO bravo_shadow.migration_review_events"):
             db.events.append(tuple(params))
+            if "RETURNING event_id" in query:
+                self.one = (params[0],)
         else:
             raise AssertionError(f"SQL não previsto no teste: {query}")
 
