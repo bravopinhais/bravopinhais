@@ -32,5 +32,33 @@ def test_default_penalty_and_missing_update():
     assert client.put("/api/v1/formas-monetarias/unknown", json={"nome": "Teste"}).status_code == 404
 
 
-def test_name_is_required():
+def test_name_is_required_and_trimmed():
     assert client.post("/api/v1/formas-monetarias", json={"nome": ""}).status_code == 422
+    assert client.post("/api/v1/formas-monetarias", json={"nome": "   "}).status_code == 422
+    created = client.post("/api/v1/formas-monetarias", json={"nome": "  PIX  "})
+    assert created.status_code == 201
+    assert created.json()["nome"] == "PIX"
+
+
+def test_penalty_must_be_between_zero_and_one_hundred():
+    for value in (-0.01, 100.01):
+        response = client.post(
+            "/api/v1/formas-monetarias",
+            json={"nome": "Teste", "multaPct": value},
+        )
+        assert response.status_code == 422
+
+    for value in (0, 100):
+        response = client.post(
+            "/api/v1/formas-monetarias",
+            json={"nome": "Limite", "multaPct": value},
+        )
+        assert response.status_code == 201
+
+
+def test_name_cannot_exceed_one_hundred_characters():
+    response = client.post(
+        "/api/v1/formas-monetarias",
+        json={"nome": "x" * 101},
+    )
+    assert response.status_code == 422
