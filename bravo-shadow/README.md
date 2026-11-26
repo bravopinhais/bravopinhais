@@ -15,7 +15,7 @@ Versão paralela do Bravo, criada para evolução arquitetural gradual e homolog
 
 - `backend/`: API Python com FastAPI.
 - `frontend/`: futura interface web unificada.
-- `docs/`: inventário, arquitetura e plano de migração.
+- `docs/`: inventário, arquitetura, plano de migração e implantação portátil.
 
 ## Estado atual
 
@@ -23,7 +23,7 @@ Fundação da API e contratos dos 15 módulos implementados na sombra. Plano de 
 
 ## Execução local
 
-Consulte `backend/README.md`. Não configure credenciais de produção neste ambiente.
+Consulte `backend/README.md` para executar a API diretamente e `docs/implantacao-portatil.md` para construir e executar a interface + API em um container Docker. O pacote portátil usa armazenamento temporário em memória e não deve receber dados reais.
 
 ## Regra de promoção
 
