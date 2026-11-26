@@ -234,3 +234,19 @@ Antes de adicionar `Depends(require_capability_dependency(...))` às rotas,
 aprovar explicitamente as permissões de Admin e Operador por ação. Em seguida,
 integrar por módulo com testes HTTP de 401 (sem identidade), 403 (sem
 capacidade), sucesso autorizado, usuário inativo e tentativa de autoelevação.
+
+
+## Revisão de integridade de entrada do Financeiro
+
+Na branch sombra, o schema financeiro agora remove espaços excedentes do
+histórico e do identificador de Plano de Contas. Histórico composto apenas
+por espaços é rejeitado com erro de validação (422). O identificador opcional
+continua aceitando string vazia, preservando o contrato atual do sistema.
+
+Foram adicionados três testes ao arquivo existente
+`backend/tests/test_financeiro.py` para normalização do histórico,
+rejeição de histórico em branco e normalização do vínculo com Plano de Contas.
+Os testes ainda não foram executados neste ambiente.
+
+A autorização dos módulos permanece pendente de aprovação da matriz de
+permissões. Nenhuma rota de negócio foi ativada com a política provisória.
