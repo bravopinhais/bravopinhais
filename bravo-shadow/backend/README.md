@@ -94,3 +94,8 @@ Foi adicionado `app/core/postgres_repositories.py` com adaptadores DB-API para P
 Os adaptadores são injetáveis, mas **a API continua usando os repositórios em memória**. Nenhum driver PostgreSQL foi instalado, nenhuma variável de conexão foi definida e nenhuma tabela foi criada. A camada SQL pressupõe que a migration local do modelo já tenha sido aplicada. Não aponte uma fábrica de conexão para produção.
 
 Foram adicionados testes com conexão/cursor falsos para conferir SQL parametrizado, mapeamento de valores, conversão NULL/ string vazia, commit e rollback. Eles ainda não foram executados. A atualização incrementa `version`, mas ainda não exige versão esperada na escrita; concorrência otimista completa permanece pendente.
+
+
+### Resiliência da unidade de trabalho
+
+A unidade de trabalho também trata falha durante o próprio `commit`: tenta executar `rollback`, libera a conexão em seguida e propaga a exceção original. O teste correspondente foi adicionado com conexão falsa. Isso cobre o fluxo de controle, mas ainda não substitui teste de integração com PostgreSQL real.
