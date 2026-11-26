@@ -39,13 +39,18 @@ No Windows, ative o ambiente com `.venv\\Scripts\\activate`.
 | Acertos de estoque | `GET/POST /api/v1/acertos-estoque`, `DELETE /api/v1/acertos-estoque/{id}` |
 | Documentos | `GET/POST /api/v1/documentos`, `GET/PUT/DELETE /api/v1/documentos/{id}` |
 | Motivos de acerto | `GET/POST /api/v1/motivos-acerto-estoque`, `DELETE /api/v1/motivos-acerto-estoque/{id}` |
+| Usuários / Perfis | `GET/POST /api/v1/usuarios`, `GET/PUT/DELETE /api/v1/usuarios/{id}` |
 
-Os quatorze módulos usam armazenamento temporário em memória. O verificador de exclusão do Plano de Contas consulta os títulos financeiros mantidos no mesmo processo da API.
+Os quinze módulos usam armazenamento temporário em memória. O verificador de exclusão do Plano de Contas consulta os títulos financeiros mantidos no mesmo processo da API.
+
+## Identidade e segurança
+
+O módulo de usuários gerencia somente perfis e vínculo de e-mail. Não implementa login, senha, validação de token Google ou autorização efetiva. O e-mail será vinculado à identidade autenticada somente após validação server-side do token do provedor adotado pelo ambiente ativo. Não são aceitos campos de senha ou hash.
 
 ## Limites desta etapa
 
-A API não está conectada ao Supabase, não recebe tokens, não lê nem grava dados de produção. Os dados são perdidos ao reiniciar o processo. Não há frontend integrado, CORS liberado, autenticação ou autorização. CORS, identidade Google/e-mail, autorização, logging estruturado e persistência serão definidos após o inventário e a modelagem de segurança.
+A API não está conectada ao Supabase, não recebe tokens, não lê nem grava dados de produção. Os dados são perdidos ao reiniciar o processo. Não há frontend integrado, CORS liberado ou autorização efetiva. CORS por allowlist, integração de identidade, matriz de permissões, logging estruturado e persistência serão definidos após homologação.
 
 ## Testes
 
-Há testes automatizados em `backend/tests` para os CRUDs e para a proteção de integridade entre Plano de Contas e Financeiro. Eles foram escritos, mas ainda não executados neste ambiente.
+Há testes automatizados em `backend/tests` para os CRUDs, integridade entre Plano de Contas e Financeiro e perfis de usuário. Foram escritos, mas ainda não executados neste ambiente.
