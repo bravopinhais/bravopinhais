@@ -32,8 +32,8 @@
 
 - O serviço atual permite atualizar `perfil` e `status` por meio do mesmo `UsuarioInput`.
 - O serviço permite excluir qualquer usuário encontrado.
-- Não há contagem protegida de administradores ativos, operação transacional de alteração administrativa ou bloqueio para impedir a remoção do último Admin.
-- O repositório PostgreSQL atual executa cada operação em sua própria unidade de trabalho; não oferece uma transação de domínio que englobe contagem, validação e alteração.
+- Existe agora `PostgresUsuariosRepository.update_administrative_state`, que bloqueia a tabela em modo `SHARE ROW EXCLUSIVE`, lê o alvo, conta Admins ativos e rejeita a remoção do último. A operação atualiza perfil/status e chama `append_in_transaction` com a mesma conexão.
+- Os métodos CRUD genéricos continuam usando unidades de trabalho independentes. A nova operação administrativa é uma exceção explícita e usa uma única unidade de trabalho para bloqueio, contagem, atualização e auditoria.
 - O contrato de gestão de usuários e o plano de refatoração propõem separar dados cadastrais de alterações administrativas, mas essa separação ainda não está implementada.
 
 ### Risco
@@ -42,26 +42,26 @@ Uma verificação simples seguida de atualização não basta: duas operações 
 
 ### Próxima implementação proposta
 
-1. Separar os dados cadastrais das operações privilegiadas de alteração de perfil/status.
-2. No PostgreSQL, executar validação e alteração na mesma transação. Serializar operações administrativas com um bloqueio transacional estável (por exemplo, advisory lock dedicado ao domínio de usuários ou uma linha-sentinela bloqueada com `FOR UPDATE`).
-3. Após obter o bloqueio, contar os usuários `perfil = 'Admin'` e `status = 'Ativo'`. Se a operação reduzir essa contagem abaixo de um, abortar com conflito de regra de negócio.
-4. Aplicar a mesma regra para exclusão e desativação; considerar também impedir que o administrador remova a própria condição de último Admin.
-5. No adaptador em memória, executar contagem, validação e mutação dentro de uma única seção crítica.
-6. Registrar a alteração administrativa em auditoria na mesma transação PostgreSQL quando a integração de auditoria estiver autorizada e pronta.
+1. Separar os dados cadastrais das operações privilegiadas de alteração de perfil/status. Os schemas separados existem, mas ainda não estão ligados ao serviço/rotas.
+2. **Implementado isoladamente no PostgreSQL:** `update_administrative_state` serializa alterações administrativas com `LOCK TABLE ... IN SHARE ROW EXCLUSIVE MODE`, conta Admins ativos, atualiza o usuário e grava auditoria usando a mesma conexão/UoW.
+3. Se a operação reduzir a contagem de Admins ativos abaixo de um, retorna conflito e faz rollback.
+4. Ainda falta estender a regra à exclusão/desativação lógica e impedir explicitamente autoalteração de perfil/status.
+5. O adaptador em memória ainda não possui operação administrativa equivalente.
+6. Testes simulados cobrem sucesso, último Admin, usuário ausente e rollback quando auditoria falha. Falta teste de integração PostgreSQL local descartável.
 
 ## 3. Ordem recomendada antes de ativar a gestão administrativa
 
 1. Aprovar o contrato de gestão de usuários e a regra de cadastro inicial (Ativo, Inativo ou Pendente).
 2. Definir formalmente quais perfis podem cadastrar, editar dados, alterar perfil/status, desativar e excluir usuários.
-3. Implementar operações atômicas nos adaptadores de memória e PostgreSQL.
-4. Criar testes unitários de concorrência e testes de integração PostgreSQL local para último Admin e rollback.
+3. Concluído parcialmente: operação atômica isolada no adaptador PostgreSQL; falta serviço, adaptador em memória e integração HTTP.
+4. Testes unitários simulados adicionados; falta teste de integração PostgreSQL local e teste concorrente real para último Admin.
 5. Confirmar a configuração do provedor Google e manter as rotas condicionadas à identidade verificada e às capacidades formalmente aprovadas.
 
 ## 4. Limites desta revisão
 
 - Não houve conexão com PostgreSQL ou Supabase.
 - O SQL continua sendo rascunho; nenhuma migration foi criada ou aplicada. O índice de e-mail usa `lower(btrim(email))`, mas ainda não foi aplicado em banco.
-- Nenhuma regra de último administrador foi implementada ou ativada.
+- A proteção do último Admin foi implementada apenas em método isolado do repositório PostgreSQL, ainda não conectado ao serviço/rotas. Não foi testada contra PostgreSQL real nem ativada operacionalmente.
 - As rotas de usuários possuem dependências de autenticação e capacidades; a matriz de capacidades para Admin/Operador permanece fechada, e a configuração do provedor Google ainda precisa ser confirmada antes de qualquer exposição operacional.
 - A proposta não aprova automaticamente a matriz de permissões nem define o estado inicial de novos usuários.
 - O workflow de testes citado valida o código coberto por ele, não a implantação, a conexão com banco ou o comportamento em produção.
