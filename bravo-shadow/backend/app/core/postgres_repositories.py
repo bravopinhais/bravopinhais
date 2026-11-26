@@ -250,3 +250,57 @@ class PostgresFinanceiroRepository(_PostgresRepository):
             (account_id,), fetch="one",
         )
         return row is not None
+
+
+class PostgresFormasMonetariasRepository(_PostgresRepository):
+    """Adaptador PostgreSQL para formas monetárias; mantém o contrato legado."""
+
+    _table = "bravo_shadow.formas_monetarias"
+    _columns = "id, nome, multa_pct"
+
+    @staticmethod
+    def _entity(row):
+        from app.modules.formas_monetarias.schemas import FormaMonetaria
+
+        return FormaMonetaria(id=row[0], nome=row[1], multaPct=float(row[2])) if row else None
+
+    def list(self):
+        rows = self._query(
+            f"SELECT {self._columns} FROM {self._table} ORDER BY created_at, id",
+            fetch="all",
+        )
+        return [self._entity(row) for row in rows]
+
+    def get(self, item_id: str):
+        return self._entity(self._query(
+            f"SELECT {self._columns} FROM {self._table} WHERE id = %s",
+            (item_id,), fetch="one",
+        ))
+
+    def exists(self, item_id: str) -> bool:
+        return self.get(item_id) is not None
+
+    def add(self, item_id: str, item) -> None:
+        self._query(
+            f"INSERT INTO {self._table} (id, nome, multa_pct) VALUES (%s, %s, %s)",
+            (item_id, item.nome, item.multaPct),
+        )
+
+    def replace(self, item_id: str, item) -> None:
+        changed = self._query(
+            f"UPDATE {self._table} SET nome = %s, multa_pct = %s, "
+            "updated_at = now(), version = version + 1 WHERE id = %s",
+            (item.nome, item.multaPct, item_id),
+        )
+        if not changed:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Forma monetária não encontrada.")
+
+    def delete(self, item_id: str) -> None:
+        changed = self._query(
+            f"DELETE FROM {self._table} WHERE id = %s",
+            (item_id,),
+        )
+        if not changed:
+            from fastapi import HTTPException
+            raise HTTPException(status_code=404, detail="Forma monetária não encontrada.")
