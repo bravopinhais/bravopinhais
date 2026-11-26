@@ -207,3 +207,17 @@ def test_postgres_adapter_does_not_coerce_corrupt_event_version():
 
     with pytest.raises(ReviewValidationError, match="stored_ledger_binding_or_integrity_error"):
         store.load(register)
+
+def test_postgres_adapter_rejects_null_review_timestamp():
+    register, decision_id, database, store = setup_store()
+    store.initialize(register)
+    store.append(register, **event_args(decision_id, "pg-evt-null-time", 0))
+
+    stored = database.events[0]
+    database.events[0] = (
+        stored[0], stored[1], stored[2], stored[3], stored[4],
+        stored[5], stored[6], stored[7], None,
+    )
+
+    with pytest.raises(ReviewValidationError, match="stored_ledger_binding_or_integrity_error"):
+        store.load(register)
