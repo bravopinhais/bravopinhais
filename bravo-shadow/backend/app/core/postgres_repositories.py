@@ -74,12 +74,12 @@ class _PostgresRepository:
 class PostgresPlanoContasRepository(_PostgresRepository):
     """Adaptador PostgreSQL para Plano de Contas; requer schema bravo_shadow."""
 
-    _columns = "id, codigo, nome, tipo"
+    _columns = "id, codigo, nome, tipo, version"
     _table = "bravo_shadow.plano_contas"
 
     @staticmethod
     def _entity(row) -> PlanoConta | None:
-        return PlanoConta(id=row[0], codigo=row[1], nome=row[2], tipo=row[3]) if row else None
+        return PlanoConta(id=row[0], codigo=row[1], nome=row[2], tipo=row[3], version=row[4]) if row else None
 
     def list(self) -> list[PlanoConta]:
         rows = self._query(
@@ -155,7 +155,7 @@ class PostgresPlanoContasRepository(_PostgresRepository):
 class PostgresFinanceiroRepository(_PostgresRepository):
     """Adaptador PostgreSQL para títulos financeiros; valores permanecem Decimal."""
 
-    _columns = "id, tipo, plano_conta_id, historico, valor"
+    _columns = "id, tipo, plano_conta_id, historico, valor, version"
     _table = "bravo_shadow.financeiro"
 
     @staticmethod
