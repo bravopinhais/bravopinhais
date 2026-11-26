@@ -1,5 +1,5 @@
 -- RASCUNHO DE SQL — ainda não é uma migration executável.
--- Contém as tabelas do piloto: Formas Monetárias, Plano de Contas e Financeiro.
+-- Contém tabelas propostas para Formas Monetárias, Plano de Contas, Financeiro, Estoque e Acertos de Estoque.
 -- Copiar para o arquivo criado por "supabase migration new" após revisão.
 -- Aplicação prevista somente na stack Supabase LOCAL e isolada do Bravo original.
 
@@ -66,9 +66,59 @@ alter table bravo_shadow.formas_monetarias enable row level security;
 alter table bravo_shadow.plano_contas enable row level security;
 alter table bravo_shadow.financeiro enable row level security;
 
+-- Cadastro de produtos. Campos mantêm os nomes e formatos do contrato HTTP legado.
+create table if not exists bravo_shadow.estoque (
+    id text primary key,
+    item text not null,
+    quantidade integer not null default 1,
+    minimo integer not null default 0,
+    maximo integer not null default 0,
+    etiqueta text not null default '',
+    foto_nome text not null default '',
+    foto_compactada_gzip text not null default '',
+    marca text not null default '',
+    linha text not null default '',
+    fabricante text not null default '',
+    data_cadastro date null,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    version bigint not null default 1 check (version >= 1)
+);
+
+create index if not exists estoque_item_idx
+    on bravo_shadow.estoque (item);
+
+-- Histórico de movimentos. O movimento e o saldo do produto devem ser
+-- gravados/atualizados pela mesma transação do backend.
+create table if not exists bravo_shadow.acertos_estoque (
+    id text primary key,
+    data timestamptz not null,
+    tipo text not null check (tipo in ('Entrada', 'Saída')),
+    produto_id text not null,
+    quantidade integer not null check (quantidade > 0),
+    motivo text not null,
+    motivo_id text null,
+    created_at timestamptz not null default now(),
+    constraint acertos_estoque_produto_fk
+        foreign key (produto_id)
+        references bravo_shadow.estoque (id)
+        on delete restrict
+);
+
+create index if not exists acertos_estoque_produto_data_idx
+    on bravo_shadow.acertos_estoque (produto_id, data, id);
+
+create index if not exists acertos_estoque_data_idx
+    on bravo_shadow.acertos_estoque (data, id);
+
+alter table bravo_shadow.estoque enable row level security;
+alter table bravo_shadow.acertos_estoque enable row level security;
+
 revoke all on table bravo_shadow.formas_monetarias from public, anon, authenticated, service_role;
 revoke all on table bravo_shadow.plano_contas from public, anon, authenticated, service_role;
 revoke all on table bravo_shadow.financeiro from public, anon, authenticated, service_role;
+revoke all on table bravo_shadow.estoque from public, anon, authenticated, service_role;
+revoke all on table bravo_shadow.acertos_estoque from public, anon, authenticated, service_role;
 
 -- Não criar GRANT para anon/authenticated/service_role nesta fase.
 -- O backend deverá usar um usuário PostgreSQL dedicado, com privilégios mínimos,
