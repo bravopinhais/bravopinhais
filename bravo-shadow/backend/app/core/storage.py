@@ -4,11 +4,13 @@ from collections.abc import Callable
 from typing import Any, Literal
 
 from app.core.postgres_repositories import (
-    PostgresFinanceiroRepository,\n    PostgresFormasMonetariasRepository,
+    PostgresFinanceiroRepository,
+    PostgresFormasMonetariasRepository,
     PostgresPlanoContasRepository,
 )
 from app.core.repositories import InMemoryCollectionRepository
-from app.modules.financeiro.service import financeiro_service\nfrom app.modules.formas_monetarias.service import formas_monetarias_service
+from app.modules.financeiro.service import financeiro_service
+from app.modules.formas_monetarias.service import formas_monetarias_service
 from app.modules.plano_contas.service import plano_contas_service
 
 StorageBackend = Literal["memory", "postgres"]
@@ -29,7 +31,9 @@ def configure_storage(
     própria. Os demais módulos permanecem em memória nesta fase.
     """
     if backend == "memory":
-        formas_monetarias_service.repository = InMemoryCollectionRepository()\n        formas_monetarias_service._items = formas_monetarias_service.repository._items\n        financeiro_service.repository = InMemoryCollectionRepository()
+        formas_monetarias_service.repository = InMemoryCollectionRepository()
+        formas_monetarias_service._items = formas_monetarias_service.repository._items
+        financeiro_service.repository = InMemoryCollectionRepository()
         financeiro_service._items = financeiro_service.repository._items
         plano_contas_service.repository = InMemoryCollectionRepository()
         plano_contas_service._items = plano_contas_service.repository._items
@@ -49,10 +53,13 @@ def configure_storage(
         )
 
     # Construção explícita: as operações só abrirão conexão quando chamadas.
-    formas_repository = PostgresFormasMonetariasRepository(connection_factory)\n    financeiro_repository = PostgresFinanceiroRepository(connection_factory)
+    formas_repository = PostgresFormasMonetariasRepository(connection_factory)
+    financeiro_repository = PostgresFinanceiroRepository(connection_factory)
     plano_repository = PostgresPlanoContasRepository(connection_factory)
 
-    formas_monetarias_service.repository = formas_repository\n    formas_monetarias_service._items = {}\n    financeiro_service.repository = financeiro_repository
+    formas_monetarias_service.repository = formas_repository
+    formas_monetarias_service._items = {}
+    financeiro_service.repository = financeiro_repository
     financeiro_service._items = {}
     plano_contas_service.repository = plano_repository
     plano_contas_service._items = {}
