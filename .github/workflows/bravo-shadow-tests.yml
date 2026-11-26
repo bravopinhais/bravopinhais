@@ -6,6 +6,9 @@ on:
       - bravo-shadow
     paths:
       - "bravo-shadow/backend/**"
+      - "bravo-shadow/frontend/**"
+      - "bravo-shadow/Dockerfile"
+      - "bravo-shadow/.dockerignore"
       - ".github/workflows/bravo-shadow-tests.yml"
   pull_request:
     paths:
@@ -21,6 +24,16 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  container-build:
+    name: Docker / build de demonstração
+    runs-on: ubuntu-latest
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Construir imagem portátil
+        run: docker build -f bravo-shadow/Dockerfile -t bravo-shadow:ci ./bravo-shadow
+
   backend-tests:
     name: Backend / Python 3.11
     runs-on: ubuntu-latest
