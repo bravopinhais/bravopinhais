@@ -51,3 +51,15 @@ A coleção é `db.financeiro`, um array de objetos. O formulário de título co
 
 ## Limitações da auditoria
 Esta é uma inspeção estática do HTML/JavaScript versionado. Não foram executados fluxos na aplicação, nem consultados dados reais do Supabase. A estrutura de dados em produção pode conter propriedades históricas que o formulário atual não exibe; a rotina de edição observada, porém, reconstrói o objeto e descarta propriedades extras ao salvar.
+
+## Implementação inicial na sombra
+
+Após a auditoria, foi criado o primeiro CRUD de homologação em memória:
+- `GET /api/v1/financeiro`
+- `POST /api/v1/financeiro`
+- `PUT /api/v1/financeiro/{id}`
+- `DELETE /api/v1/financeiro/{id}`
+
+Schemas e serviço preservam os cinco campos observados. O serviço expõe a consulta `has_plan_account_reference`, ligada ao serviço de Plano de Contas na inicialização da API. Assim, a exclusão de conta no ambiente sombra pode retornar 409 quando houver título vinculado.
+
+**Limite:** os dados permanecem em memória e são perdidos ao reiniciar a API. Não há persistência, autenticação, conexão Supabase nem integração com o frontend. Os testes foram adicionados, mas ainda não executados.
