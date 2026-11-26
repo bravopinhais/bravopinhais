@@ -12,6 +12,8 @@ from app.core.postgres_repositories import (
 from app.core.repositories import InMemoryCollectionRepository
 from app.modules.acertos_estoque.service import AcertosEstoqueService
 from app.modules.categorias.service import CategoriasService
+from app.modules.condominio.service import CondominioService
+from app.modules.conselheiros.service import ConselheirosService
 from app.modules.contas_bancarias.service import ContasBancariasService
 from app.modules.documentos.service import DocumentosService
 from app.modules.empregados.service import EmpregadosService
@@ -22,6 +24,7 @@ from app.modules.fornecedores.service import FornecedoresService
 from app.modules.moradores.service import MoradoresService
 from app.modules.motivos_acerto.service import MotivosAcertoService
 from app.modules.plano_contas.service import PlanoContasService
+from app.modules.usuarios.service import UsuariosService
 
 StorageBackend = Literal["memory", "postgres"]
 
@@ -46,6 +49,9 @@ class StorageServices:
     fornecedores: FornecedoresService
     empregados: EmpregadosService
     contas_bancarias: ContasBancariasService
+    condominio: CondominioService
+    conselheiros: ConselheirosService
+    usuarios: UsuariosService
 
 
 def build_storage_services(
@@ -55,8 +61,9 @@ def build_storage_services(
     """Cria serviços isolados; nunca altera singletons ou estado global.
 
     No modo PostgreSQL, a fábrica é obrigatória e só será chamada durante
-    operações de repositório. Estoque, catálogos, documentos, cadastros e
-    movimentos seguem em memória até seus adaptadores serem implementados e testados.
+    operações de repositório. Estoque, catálogos, documentos, cadastros,
+    condomínio, conselho e usuários seguem em memória até seus adaptadores
+    serem implementados e testados.
     """
     if backend == "memory":
         formas_repository = InMemoryCollectionRepository()
@@ -103,6 +110,9 @@ def build_storage_services(
     fornecedores = FornecedoresService(repository=InMemoryCollectionRepository())
     empregados = EmpregadosService(repository=InMemoryCollectionRepository())
     contas_bancarias = ContasBancariasService(repository=InMemoryCollectionRepository())
+    condominio = CondominioService(repository=InMemoryCollectionRepository())
+    conselheiros = ConselheirosService(repository=InMemoryCollectionRepository())
+    usuarios = UsuariosService(repository=InMemoryCollectionRepository())
 
     return StorageServices(
         formas_monetarias=formas_monetarias,
@@ -117,4 +127,7 @@ def build_storage_services(
         fornecedores=fornecedores,
         empregados=empregados,
         contas_bancarias=contas_bancarias,
+        condominio=condominio,
+        conselheiros=conselheiros,
+        usuarios=usuarios,
     )
