@@ -174,3 +174,63 @@ movimentos de estoque.
 
 Nenhuma migration, role, policy PostgreSQL ou alteração no sistema original
 foi feita nesta etapa.
+
+
+## Mapa técnico de capacidades por endpoint — revisão estática
+
+Este mapa foi elaborado conferindo os 15 arquivos `router.py` atuais.
+Ele descreve a capacidade que deverá ser exigida quando a integração for
+aprovada. **Não altera nem protege as rotas nesta etapa.**
+
+| Módulo / método | Rota | Capacidade prevista |
+|---|---|---|
+| Plano de Contas — GET | `/api/v1/plano-contas` | `plano_contas:read` |
+| Plano de Contas — POST | `/api/v1/plano-contas` | `plano_contas:create` |
+| Plano de Contas — PUT | `/api/v1/plano-contas/{item_id}` | `plano_contas:update` |
+| Plano de Contas — DELETE | `/api/v1/plano-contas/{item_id}` | `plano_contas:delete` |
+| Financeiro — GET | `/api/v1/financeiro` | `financeiro:read` |
+| Financeiro — POST | `/api/v1/financeiro` | `financeiro:create` |
+| Financeiro — PUT | `/api/v1/financeiro/{item_id}` | `financeiro:update` |
+| Financeiro — DELETE | `/api/v1/financeiro/{item_id}` | `financeiro:delete` |
+| Formas Monetárias — GET/POST/PUT/DELETE | `/api/v1/formas-monetarias` e `/{item_id}` | `formas_monetarias:read/create/update/delete` conforme método |
+| Contas Bancárias — GET/POST/PUT/DELETE | `/api/v1/contas-bancarias` e `/{item_id}` | `contas_bancarias:read/create/update/delete` conforme método |
+| Fornecedores — GET/POST/PUT/DELETE | `/api/v1/fornecedores` e `/{item_id}` | `fornecedores:read/create/update/delete` conforme método |
+| Empregados — GET/POST/PUT/DELETE | `/api/v1/empregados` e `/{item_id}` | `empregados:read/create/update/delete` conforme método |
+| Condomínio — GET | `/api/v1/condominio` | `condominio:read` |
+| Condomínio — PUT | `/api/v1/condominio` | `condominio:update` |
+| Conselheiros — GET/POST/PUT/DELETE | `/api/v1/conselheiros` e `/{item_id}` | `conselheiros:read/create/update/delete` conforme método |
+| Moradores — GET/POST/PUT/DELETE | `/api/v1/moradores` e `/{item_id}` | `moradores:read/create/update/delete` conforme método |
+| Moradores — POST importar | `/api/v1/moradores/importar` | `moradores:import` |
+| Categorias — GET/POST/DELETE | `/api/v1/categorias` e `/{item_id}` | `categorias:read/create/delete` conforme método |
+| Motivos de Acerto — GET/POST/DELETE | `/api/v1/motivos-acerto-estoque` e `/{item_id}` | `motivos_estoque:read/create/delete` conforme método |
+| Estoque — GET/POST/PUT/DELETE | `/api/v1/estoque` e `/{item_id}` | `estoque:read/create/update/delete` conforme método, sujeito às travas de integridade |
+| Acertos de Estoque — GET | `/api/v1/acertos-estoque` | `acertos_estoque:read` |
+| Acertos de Estoque — POST | `/api/v1/acertos-estoque` | `acertos_estoque:create` |
+| Acertos de Estoque — DELETE legado | `/api/v1/acertos-estoque/{item_id}` | **Sem capacidade de exclusão**; preservar bloqueio/409 no serviço persistente e avaliar retirada da rota legada |
+| Documentos — GET lista/por ID | `/api/v1/documentos` e `/{item_id}` | `documentos:read` |
+| Documentos — POST/PUT/DELETE | `/api/v1/documentos` e `/{item_id}` | `documentos:create/update/delete` conforme método |
+| Usuários — GET lista/por ID | `/api/v1/usuarios` e `/{item_id}` | `usuarios:read` |
+| Usuários — POST/PUT/DELETE | `/api/v1/usuarios` e `/{item_id}` | `usuarios:create/update/delete`; exclusivo de fluxo administrativo aprovado |
+
+### Pontos que exigem atenção antes da integração
+
+1. As capacidades de CRUD acima já existem no catálogo central, mas os nomes
+   `categorias` e `motivos_estoque` são diferentes dos nomes de tabelas
+   SQL em alguns trechos. Manter um único identificador canônico no backend.
+2. A rota de exclusão de acerto de estoque é legado: não criar capacidade para
+   ela. O histórico de movimentos deve permanecer imutável.
+3. A rota de gestão de usuários é especialmente sensível. A autorização para
+   criar/editar/excluir usuários não deve permitir que o solicitante altere o
+   próprio perfil/status nem promova a si mesmo.
+4. O Dashboard ainda não possui endpoint de dados agregados identificado
+   nesta revisão. A capacidade `dashboard:read` não deve ser confundida com
+   acesso automático aos módulos de origem.
+5. A rota de importação de moradores precisa de capacidade própria; não deve
+   herdar automaticamente a permissão de criar um único morador.
+
+### Critério de entrada em implementação
+
+Antes de adicionar `Depends(require_capability_dependency(...))` às rotas,
+aprovar explicitamente as permissões de Admin e Operador por ação. Em seguida,
+integrar por módulo com testes HTTP de 401 (sem identidade), 403 (sem
+capacidade), sucesso autorizado, usuário inativo e tentativa de autoelevação.
