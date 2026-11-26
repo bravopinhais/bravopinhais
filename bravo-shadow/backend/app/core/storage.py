@@ -10,6 +10,8 @@ from app.core.postgres_repositories import (
     PostgresPlanoContasRepository,
 )
 from app.core.repositories import InMemoryCollectionRepository
+from app.modules.acertos_estoque.service import AcertosEstoqueService
+from app.modules.estoque.service import EstoqueService
 from app.modules.financeiro.service import FinanceiroService
 from app.modules.formas_monetarias.service import FormasMonetariasService
 from app.modules.plano_contas.service import PlanoContasService
@@ -28,6 +30,8 @@ class StorageServices:
     formas_monetarias: FormasMonetariasService
     financeiro: FinanceiroService
     plano_contas: PlanoContasService
+    estoque: EstoqueService
+    acertos_estoque: AcertosEstoqueService
 
 
 def build_storage_services(
@@ -37,7 +41,8 @@ def build_storage_services(
     """Cria serviços isolados; nunca altera singletons ou estado global.
 
     No modo PostgreSQL, a fábrica é obrigatória e só será chamada durante
-    operações de repositório. Os demais módulos continuam fora deste piloto.
+    operações de repositório. Estoque e movimentos seguem em memória até que
+    o adaptador transacional específico seja implementado e testado.
     """
     if backend == "memory":
         formas_repository = InMemoryCollectionRepository()
@@ -64,8 +69,16 @@ def build_storage_services(
     )
     formas_monetarias = FormasMonetariasService(repository=formas_repository)
 
+    estoque = EstoqueService(repository=InMemoryCollectionRepository())
+    acertos_estoque = AcertosEstoqueService(
+        repository=InMemoryCollectionRepository(),
+        inventory_service=estoque,
+    )
+
     return StorageServices(
         formas_monetarias=formas_monetarias,
         financeiro=financeiro,
         plano_contas=plano_contas,
+        estoque=estoque,
+        acertos_estoque=acertos_estoque,
     )
