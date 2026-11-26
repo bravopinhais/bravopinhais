@@ -1,4 +1,10 @@
+from decimal import Decimal
+
+import pytest
+from pydantic import ValidationError
 from fastapi.testclient import TestClient
+
+from app.modules.contas_bancarias.schemas import ContaBancariaInput
 
 from app.main import app, create_app
 
@@ -37,3 +43,11 @@ def test_bank_accounts_are_isolated_between_app_instances():
     created = first.post("/api/v1/contas-bancarias", json={"banco": "Conta Isolada"}).json()
     assert first.get("/api/v1/contas-bancarias").json()[0]["id"] == created["id"]
     assert second.get("/api/v1/contas-bancarias").json() == []
+
+
+
+def test_bank_balance_uses_decimal_precision_and_rejects_more_than_two_places():
+    item = ContaBancariaInput(banco="Banco", saldo="1234.56")
+    assert item.saldo == Decimal("1234.56")
+    with pytest.raises(ValidationError):
+        ContaBancariaInput(banco="Banco", saldo="1234.567")
