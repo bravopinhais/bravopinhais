@@ -7,7 +7,7 @@ Fonte: inspeção estática de `index.html` na branch `upgrade/project-hardening
 | Dashboard | `financeiro`, `plano_contas`, `estoque`, `moradores`, `fornecedores`, `documentos` | Indicadores, panorama financeiro e gráficos | Alta |
 | Condomínio & Conselho | `condominio`, `conselheiros` | Dados institucionais, concessionárias, cadastro/edição/exclusão de conselheiros | Média |
 | Plano de Contas | `plano_contas` | Código, nome, tipo; cadastro/edição/exclusão | Alta |
-| Contas a Pagar / Receber | `financeiro`, `plano_contas` | Tipo, vínculo com plano de contas, histórico e valor; cadastro de títulos | Alta |
+| Contas a Pagar / Receber | `financeiro`, `plano_contas` | Título com tipo, vínculo opcional, histórico e valor; cadastro/edição/exclusão. Auditoria detalhada em `auditoria-financeiro.md` | Alta |
 | Formas Monetárias | `formas_monetarias` | Nome e percentual de multa; cadastro/edição/exclusão | Média |
 | Contas Bancárias / Caixa | `contas_bancarias` | Banco e saldo; cadastro/edição/exclusão | Alta |
 | Moradores & Unidades | `moradores` | Listagem, filtros por bloco/nome, cadastro/edição/exclusão, importação de planilha | Alta |
@@ -17,7 +17,7 @@ Fonte: inspeção estática de `index.html` na branch `upgrade/project-hardening
 | Estoque & Inventário | `estoque` | Quantidade, mínimo/máximo, fotos, filtros, scanner e gráfico | Alta |
 | Acerto de Estoque | `acertos_estoque`, `estoque`, `motivos_acerto_estoque`, `documentos` | Ajustes, justificativas e exclusão de acertos | Alta |
 | Gestão de Documentos | `documentos`, `categorias` | Pastas, títulos, arquivos compactados, visualização e download | Média |
-| Central de Relatórios & DRE | `financeiro`, `plano_contas` | Demonstrativo do Resultado e exportação | Alta |
+| Central de Relatórios & DRE | `financeiro`, `plano_contas` | DRE soma todos os títulos, sem filtro por data/status; totais gerais incluem títulos sem conta. Não equivale a caixa realizado | Alta |
 | Gestão de Usuários | `usuarios` | Cadastro, perfis, edição, exclusão e administração de acesso | Crítica |
 
 ## Serviços transversais observados
@@ -39,9 +39,9 @@ Fonte: inspeção estática de `index.html` na branch `upgrade/project-hardening
 2. **Cadastros de referência**: condomínio/conselho, fornecedores e empregados.
 3. **Moradores e unidades**: inclui importação, filtros e integridade de cadastro.
 4. **Estoque e ajustes**: dependência entre produtos, categorias, motivos, fotos e documentos.
-5. **Financeiro**: títulos, contas, formas monetárias e plano de contas.
+5. **Financeiro**: paridade inicial com os cinco campos encontrados; depois avaliar evolução funcional aprovada.
 6. **Documentos**: arquivos, metadados, categorias e armazenamento.
-7. **Dashboard e DRE**: reconstruir indicadores depois de validar as fontes de dados.
+7. **Dashboard e DRE**: reconstruir indicadores depois de validar as fontes de dados e explicitar limitações da soma atual.
 8. **Gestão de usuários**: somente após definir e testar o contrato de identidade, autenticação e autorização atual.
 
 A ordem poderá mudar conforme dependências reais e risco operacional.
