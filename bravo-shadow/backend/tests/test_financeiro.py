@@ -1,6 +1,36 @@
 from fastapi.testclient import TestClient
 
 from app.main import app
+
+import pytest
+from types import MappingProxyType
+
+from app.core.authentication import get_current_principal
+from app.core.authorization import AuthenticatedPrincipal, CAPABILITIES
+from app.core import authorization
+
+def configure_test_auth(application):
+    async def authenticated_admin():
+        return AuthenticatedPrincipal(
+            subject="google-test-subject",
+            email="teste@example.com",
+            profile="Admin",
+            account_status="Ativo",
+        )
+    application.dependency_overrides[get_current_principal] = authenticated_admin
+
+@pytest.fixture(autouse=True)
+def allow_test_admin(monkeypatch):
+    monkeypatch.setattr(
+        authorization,
+        "ROLE_CAPABILITIES",
+        MappingProxyType({"Admin": CAPABILITIES, "Operador": frozenset()}),
+    )
+    configure_test_auth(app)
+    yield
+    app.dependency_overrides.clear()
+
+
 from app.modules.financeiro.schemas import FinanceiroInput
 
 client = TestClient(app)
