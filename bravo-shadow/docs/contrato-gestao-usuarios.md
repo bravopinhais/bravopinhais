@@ -52,9 +52,15 @@ Listagem e detalhe são privados. A rota DELETE existente ainda representa exclu
 2. Implementar schemas separados e testes unitários de rejeição de campos privilegiados.
 3. Implementar operações de usuário com autorização explícita, proteção do último Admin e auditoria.
 4. Atualizar testes de API para exigir token válido e testar 401/403/permitido.
-5. Validar concorrência e persistência em PostgreSQL local descartável.
+5. Validar concorrência e persistência em PostgreSQL local descartável. Os testes de integração real foram acrescentados para alteração/auditoria atômica, último Admin, rollback e duas alterações concorrentes; aguardam a execução da CI.
 6. Fazer revisão de segurança de todas as rotas antes de qualquer deploy privado.
 
 ## Fora do escopo desta etapa
 
 Nenhuma rota foi alterada ou exposta, nenhum usuário foi criado, nenhuma migration foi gerada e nenhum banco foi conectado. O CRUD atual ainda contém exclusão física, mas a autorização permanece fechada. A tela de login permanece como está, conforme o planejamento de redesenhá-la posteriormente.
+
+## Integração PostgreSQL real — teste preparado
+
+O arquivo `backend/tests/test_usuarios_admin_postgres_integration.py` usa os dois DDLs de referência já existentes (`sql-piloto-financeiro.sql` e `sql-auditoria-rascunho.sql`) em banco PostgreSQL local descartável, com nome terminado em `_test`. Ele não executa migration remota nem importa dados reais. A CI configura PostgreSQL 16 e a variável de ambiente necessária.
+
+A cobertura inclui sucesso com auditoria na mesma transação, proteção do último Admin, rollback diante de falha de auditoria e concorrência entre duas tentativas de rebaixar os dois últimos Admins. A execução ainda está pendente; até a CI concluir, esses cenários estão implementados como testes, não declarados como aprovados.
