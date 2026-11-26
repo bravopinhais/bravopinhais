@@ -26,7 +26,7 @@
 - API e interface sombra conectadas para listar, cadastrar, editar e excluir registros.
 - Persistência ainda temporária em memória; não usar dados reais nem considerar este piloto homologado.
 - Comparação estática com o HTML original concluída: campos `nome` e `multaPct`, multa padrão 2%, nome obrigatório e campo numérico com passo 0,01. O original não define limites mínimo/máximo nem tamanho máximo do nome; a sombra preserva esse comportamento, sem impor regras novas.
-- Testes automatizados e smoke test Docker aprovados no commit `ffda875`; após o ajuste de paridade, uma nova execução de CI está em andamento.
+- Pipeline CI atualizado: build Docker e smoke test da interface/API aprovados; backend validado com PostgreSQL 16 descartável. Na execução `45894322542` (commit `adae893`), `360 passed, 1 warning`. A suíte inclui testes reais de concorrência, idempotência e rollback no PostgreSQL efêmero; isso não equivale a aplicar migrations ou conectar o banco original.
 - Ainda pendente: validar o fluxo visual/funcional em navegador e medir latência/erros antes de avançar para outro domínio.
 - Novo gate técnico antes da persistência real: eliminar o uso de serviços globais mutáveis no `create_app()` e injetar serviços/repositórios por instância FastAPI. O teste deve provar que duas aplicações com configurações de armazenamento diferentes não compartilham estado nem alteram a configuração uma da outra.
 - Medir latência, erros e consistência antes de avançar para outro domínio.
