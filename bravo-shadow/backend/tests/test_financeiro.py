@@ -151,3 +151,18 @@ def test_plan_account_reference_is_trimmed():
     )
     assert response.status_code == 201
     assert response.json()["planoContaId"] == "pc_test"
+
+
+def test_plan_account_reference_uses_repository_optimized_checker():
+    service = app.state.services.financeiro
+    calls = []
+
+    def optimized_checker(account_id):
+        calls.append(account_id)
+        return account_id == "pc_fast"
+
+    service.repository.has_plan_account_reference = optimized_checker
+    assert service.has_plan_account_reference("pc_fast") is True
+    assert service.has_plan_account_reference("pc_other") is False
+    assert calls == ["pc_fast", "pc_other"]
+    del service.repository.has_plan_account_reference
