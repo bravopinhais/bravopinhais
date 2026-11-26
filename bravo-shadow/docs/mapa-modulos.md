@@ -11,8 +11,8 @@ Fonte: inspeção estática de `index.html` na branch `upgrade/project-hardening
 | Formas Monetárias | `formas_monetarias` | Nome e percentual de multa (padrão 2%); CRUD. Auditoria em `auditoria-formas-monetarias-contas-bancarias.md` | Média |
 | Contas Bancárias / Caixa | `contas_bancarias` | Banco e saldo manual; CRUD. Sem conciliação ou vínculo com títulos no original. Auditoria em `auditoria-formas-monetarias-contas-bancarias.md` | Alta |
 | Moradores & Unidades | `moradores` | Listagem, filtros por bloco/nome, cadastro/edição/exclusão, importação de planilha | Alta |
-| Fornecedores | `fornecedores` | CNPJ e razão social; cadastro/edição/exclusão | Média |
-| Empregados | `empregados` | Dados pessoais/profissionais e contatos de emergência | Média |
+| Fornecedores | `fornecedores` | CNPJ e razão social obrigatórios; CRUD. Auditoria em `auditoria-fornecedores-empregados.md` | Média |
+| Empregados | `empregados` | Nome e cargo obrigatórios; empresa, endereço, telefone e contato de emergência opcionais; CRUD. Auditoria em `auditoria-fornecedores-empregados.md` | Média |
 | Pastas & Categorias | `categorias`, `motivos_acerto_estoque`, `estoque` | Pastas gerais, motivos de ajuste e relações com itens | Média |
 | Estoque & Inventário | `estoque` | Quantidade, mínimo/máximo, fotos, filtros, scanner e gráfico | Alta |
 | Acerto de Estoque | `acertos_estoque`, `estoque`, `motivos_acerto_estoque`, `documentos` | Ajustes, justificativas e exclusão de acertos | Alta |
@@ -36,7 +36,7 @@ Fonte: inspeção estática de `index.html` na branch `upgrade/project-hardening
 ## Sequência recomendada de migração
 
 1. **Contratos de dados e validações**: plano de contas, formas monetárias e contas bancárias (auditorias e CRUDs iniciais concluídos na sombra).
-2. **Cadastros de referência**: condomínio/conselho, fornecedores e empregados.
+2. **Cadastros de referência**: fornecedores e empregados auditados e com CRUD inicial na sombra; condomínio/conselho ainda pendente.
 3. **Moradores e unidades**: inclui importação, filtros e integridade de cadastro.
 4. **Estoque e ajustes**: dependência entre produtos, categorias, motivos, fotos e documentos.
 5. **Financeiro**: paridade inicial com os cinco campos encontrados; depois avaliar evolução funcional aprovada.
