@@ -69,3 +69,12 @@ Foi acrescentado `backend/app/core/postgres_audit.py` com `PostgresAuditSink`. E
 Os testes em `backend/tests/test_postgres_audit.py` cobrem parâmetros enviados, commit, rollback em falha e rejeição de objeto inválido antes de abrir conexão. **Foram escritos, mas não executados.** Usam conexão simulada e não comprovam compatibilidade com PostgreSQL real, RLS ou GRANTs.
 
 O adaptador permanece deliberadamente fora de `storage.py` e `main.py`: não há tabela aplicada, credencial writer configurada, nem prova de que a role de conexão possua somente INSERT. Também não há atomicidade conjunta com operações de negócio nesta etapa; cada evento usa uma transação própria. Portanto, ainda não deve ser usado como trilha de auditoria operacional.
+
+
+## Inserção na transação do serviço — atualização
+
+O adaptador também expõe `append_in_transaction(connection, event)`. Esse método executa o INSERT na conexão fornecida pelo serviço, fecha somente o cursor e **não** executa commit, rollback ou close. Assim, um serviço que já controla uma unidade de trabalho pode incluir o evento antes do commit e confirmar ou reverter a alteração de negócio e a auditoria em conjunto.
+
+O método `append(event)` continua disponível para uma transação independente, útil em contextos isolados, mas não garante atomicidade com uma operação de negócio que use outra conexão. Não usar esse caminho como substituto da gravação integrada em operações críticas.
+
+Foram acrescentados testes unitários simulados para verificar que `append_in_transaction` não assume a propriedade da conexão, inclusive quando o INSERT falha. Os testes ainda não foram executados e não substituem testes de integração com PostgreSQL local. Nenhum serviço ou router foi conectado ao adaptador.
