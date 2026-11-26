@@ -217,3 +217,17 @@ Foi acrescentado `backend/app/core/migration_export_chain.py`, um verificador pu
 A sequência deve ser fornecida em ordem cronológica. Para uma primeira exportação sem histórico anterior, o primeiro manifesto não deve apontar para um hash anterior. Quando já existir histórico, o chamador pode informar `expected_previous_manifest_hash`, obtido de um registro independente.
 
 O verificador detecta lacunas, reordenação e alterações nos metadados, mas não pode provar que uma sequência está completa sem uma âncora confiável. Também não autentica o exportador nem a origem. Não realiza I/O, não procura arquivos, não conecta ao legado e não altera os manifestos. Testes sintéticos cobrem cadeia válida, quebra de elo, reordenação, âncora externa, IDs duplicados e adulteração.
+
+
+## Gate de validação pré-importação (somente evidências)
+
+Foi criado `backend/app/core/migration_pre_import_validation.py` para consolidar, em uma avaliação única e determinística:
+
+- integridade do snapshot e correspondência do hash;
+- correspondência entre snapshot e manifesto (origem, baseline, hash, quantidade e data);
+- validade da cadeia e confirmação de que o manifesto avaliado é o último elo;
+- resultado da reconciliação entre inventário de origem e proveniência Shadow.
+
+O retorno informa `ready` e uma lista estável de bloqueios. Qualquer divergência mantém `ready=False`. A reconciliação é obrigatória: ausência de evidência não é tratada como aprovação.
+
+**Limite de segurança:** `ready=True` significa apenas que as evidências fornecidas são consistentes. Não é autorização, não executa importação, não cria transação, não abre conexão, não lê dados do legado e não substitui aprovação humana, validação de permissões ou controles transacionais. A cadeia também depende de âncora externa confiável quando há exportações anteriores.
