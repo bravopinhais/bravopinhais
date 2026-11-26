@@ -11,7 +11,7 @@ class ListService(Protocol):
 
 @dataclass(frozen=True)
 class DashboardSummary:
-    """Resumo agregado interno; ainda não é exposto por endpoint HTTP."""
+    """Resumo agregado de leitura exposto pelo endpoint protegido do Dashboard."""
 
     total_formas_monetarias: int
     total_contas_plano: int
