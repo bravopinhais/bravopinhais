@@ -27,3 +27,12 @@ Definir `GOOGLE_CLIENT_ID` com o Client ID OAuth do projeto Google correto no am
 - Não há refresh token, sessão própria, logout remoto ou autorização aplicada aos endpoints nesta entrega.
 - `/api/v1/health` permanece público.
 - Antes de integrar as rotas, testar a dependency com token real de homologação, Client ID correto e matriz de capacidades aprovada.
+
+
+## Endpoint de identidade da sessão
+
+Foi adicionado `GET /api/v1/auth/me`, protegido por `get_current_principal`. Ele retorna apenas `subject`, `email`, `profile` e `status` depois da validação do token e da consulta ao cadastro interno.
+
+Este endpoint permite validar o fluxo de identidade antes de proteger os módulos. As demais rotas de negócio ainda não estão protegidas e não devem ser expostas publicamente.
+
+Testes automatizados escritos para: ausência de Bearer token (401), identidade Google válida vinculada a usuário ativo (200), e-mail sem cadastro (403) e token inválido (401). A execução ainda depende de CI ou ambiente Python configurado.
