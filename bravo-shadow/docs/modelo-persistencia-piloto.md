@@ -4,7 +4,7 @@
 
 Projeto de banco documentado para revisão. **Nenhuma migration foi aplicada, nenhum projeto Supabase foi alterado e nenhum dado foi copiado.** Este documento não é um comando de execução.
 
-A migration versionada deverá ser gerada no ambiente local com a versão de Supabase CLI efetivamente instalada usando o comando documentado `supabase migration new bravo_pilot_financeiro_estoque`, e revisada antes de qualquer aplicação. A CLI v3 mudou o padrão para local e exige `--remote` para operações hospedadas; não usar comandos remotos nesta etapa.
+A migration versionada ainda não foi criada. O rascunho SQL para as duas primeiras tabelas está em [`sql-piloto-financeiro.sql`](./sql-piloto-financeiro.sql); ele não é um arquivo de migration e não deve ser aplicado diretamente. No ambiente local do projeto, primeiro verificar `supabase --version`, `supabase --help` e `supabase migration new --help`; em seguida gerar o arquivo com `supabase migration new bravo_pilot_financeiro_estoque` e copiar o SQL revisado para o arquivo timestampado criado pela CLI. A CLI v3 usa a stack local por padrão; operações hospedadas exigem `--remote` e confirmação. Não usar `--remote` nesta fase. A partir da CLI v3.4.0, `supabase init` cria `supabase/config.jsonc` por padrão; projetos existentes com `config.toml` continuam suportados.
 
 ## Decisões do piloto
 
@@ -157,3 +157,18 @@ Plano de Contas e Financeiro agora expõem `version` nos modelos de resposta. O 
 Foi criado `app/core/storage.py` e a fábrica `create_app()` passou a aceitar seleção explícita do backend. O padrão é memória. O modo PostgreSQL exige uma `connection_factory` DB-API injetada pelo ambiente; ausência da fábrica gera erro de configuração, sem tentar conexão ou fallback. Nesta etapa, somente Plano de Contas e Financeiro são substituídos pelos adaptadores PostgreSQL; os demais módulos permanecem em memória.
 
 A configuração não instala driver, não lê variáveis de credenciais, não cria schema e não abre conexão no startup. A ativação prática permanece bloqueada até migration local, driver escolhido e testes de integração em banco isolado. O endpoint de saúde informa apenas o backend configurado, não a disponibilidade do banco.
+
+
+## Rascunho SQL do primeiro lote — revisão estática
+
+O arquivo [`sql-piloto-financeiro.sql`](./sql-piloto-financeiro.sql) registra o DDL proposto para `bravo_shadow.plano_contas` e `bravo_shadow.financeiro`, alinhado aos nomes de colunas efetivamente usados por `postgres_repositories.py`. Inclui PKs textuais, checks de tipo, `numeric(14,2)`, versão, timestamps, FK com `ON DELETE RESTRICT`, índices e RLS habilitado sem policies ou grants para `anon`/`authenticated`.
+
+**Não é migration e não foi executado.** A migration definitiva deve ser criada pela Supabase CLI no diretório `supabase/migrations/`, após conferir a versão e o help da CLI. A CLI v3.4.0 cria `config.jsonc` em projetos novos; não presumir que haverá `config.toml`. A stack local ainda não foi iniciada, e nenhuma conexão Supabase foi aberta.
+
+### Revisões antes de aplicar localmente
+
+- Confirmar que o usuário PostgreSQL usado pelo backend terá somente os privilégios necessários; o rascunho não concede acesso à Data API nem ao papel `service_role`.
+- Manter o schema fora dos schemas expostos pela Data API.
+- Não adicionar unicidade a `codigo` até a regra de duplicidade ser confirmada.
+- Não aplicar esse DDL em qualquer projeto hospedado ou de produção.
+- Depois de gerar a migration, revisar o SQL completo e validar com reset local desde banco vazio.
