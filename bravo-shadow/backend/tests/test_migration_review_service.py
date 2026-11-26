@@ -7,7 +7,7 @@ from fastapi import HTTPException
 
 from app.core.authorization import AuthenticatedPrincipal
 from app.core.migration_decisions import build_decision_register
-from app.core.migration_review_service import MigrationReviewService
+from app.core.migration_review_service import MigrationReviewAccessDenied, MigrationReviewService
 from test_migration_decisions import setup_batch
 
 
@@ -58,7 +58,7 @@ def test_batch_policy_denies_before_persistence(monkeypatch):
 
     monkeypatch.setattr(service_module, "require_capability", lambda *_args: None)
     service, runtime, principal, register = setup_service()
-    with pytest.raises(Exception, match="batch_access_not_approved"):
+    with pytest.raises(MigrationReviewAccessDenied, match="batch_access_not_approved"):
         service.append(
             principal,
             register,
