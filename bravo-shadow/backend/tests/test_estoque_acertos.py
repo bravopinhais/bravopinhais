@@ -199,3 +199,11 @@ def test_stock_registration_date_accepts_blank_as_not_informed():
     )
     assert response.status_code == 201
     assert response.json()["dataCadastro"] == ""
+
+
+def test_stock_registration_date_rejects_non_iso_format():
+    response = client.post(
+        "/api/v1/estoque",
+        json={"item": "Material", "dataCadastro": "26/11/2026"},
+    )
+    assert response.status_code == 422
