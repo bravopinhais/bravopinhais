@@ -76,7 +76,15 @@ class AcertosEstoqueService:
     def delete(self, item_id: str) -> None:
         if not self.repository.exists(item_id):
             raise HTTPException(status_code=404, detail="Acerto não encontrado.")
-        # Não reverte o saldo: comportamento legado preservado nesta etapa.
+        if self.movement_repository is not None:
+            raise HTTPException(
+                status_code=409,
+                detail=(
+                    "Movimentos persistidos são imutáveis para preservar o saldo e o histórico. "
+                    "A correção por estorno compensatório será disponibilizada em etapa própria."
+                ),
+            )
+        # O modo memória mantém o comportamento legado apenas para testes/sombra local.
         self.repository.delete(item_id)
 
 
