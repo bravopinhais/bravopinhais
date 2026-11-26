@@ -67,3 +67,20 @@ Uma verificação simples seguida de atualização não basta: duas operações 
 - As rotas de usuários possuem dependências de autenticação e capacidades; a matriz de capacidades para Admin/Operador permanece fechada, e a configuração do provedor Google ainda precisa ser confirmada antes de qualquer exposição operacional.
 - A proposta não aprova automaticamente a matriz de permissões nem define o estado inicial de novos usuários.
 - O workflow de testes citado valida o código coberto por ele, não a implantação, a conexão com banco ou o comportamento em produção.
+
+
+## Integração PostgreSQL descartável — etapa adicionada
+
+Foi acrescentado `backend/tests/test_usuarios_admin_postgres_integration.py`. O fixture exige `BRAVO_SHADOW_TEST_DATABASE_URL`, aceita somente PostgreSQL em localhost com nome terminado em `_test`, recria o schema isolado `bravo_shadow` a partir dos rascunhos versionados `docs/sql-piloto-financeiro.sql` e `docs/sql-auditoria-rascunho.sql`, e remove o schema ao final.
+
+A cobertura real inclui:
+- atualização de perfil/status com evento de auditoria na mesma transação;
+- recusa de remoção do último Admin ativo sem alterar usuário nem inserir evento;
+- rollback da alteração quando o INSERT de auditoria falha;
+- duas remoções concorrentes de Admin, provando que somente uma pode ser confirmada e que permanece um Admin ativo.
+
+**Correção do diagnóstico anterior:** os rascunhos DDL de usuários e auditoria já existem no repositório. Eles definem `bravo_shadow.usuarios` (incluindo `updated_at` e `version`) e `bravo_shadow.audit_events`. O que ainda não existe é uma migration Supabase aplicada/versionada em `supabase/migrations`; os arquivos continuam explicitamente identificados como rascunhos.
+
+A CI já fornece PostgreSQL 16 descartável e a variável de conexão local `BRAVO_SHADOW_TEST_DATABASE_URL`, portanto o novo teste foi ligado ao fluxo normal de backend sem criar credenciais ou acessar banco externo. A validação efetiva depende da execução da CI deste commit.
+
+Nenhum router foi conectado, nenhuma capacidade foi liberada, nenhuma migration foi aplicada e nenhum dado real foi usado.
