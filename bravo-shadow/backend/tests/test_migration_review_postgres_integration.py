@@ -159,3 +159,40 @@ def test_event_id_is_unique_across_decisions_in_batch(postgres_database):
     ledger = store.load(register)
     assert len(ledger.events) == 1
     assert ledger.events[0].event_id == shared_event_id
+
+
+def test_failed_event_insert_rolls_back_and_allows_retry(postgres_database):
+    register = _register()
+    decision_id = register.pending[0].decision_id
+    store = PostgresReviewLedgerStore(lambda: psycopg.connect(postgres_database))
+    store.initialize(register)
+    event_id = f"rollback-{uuid4()}"
+    with psycopg.connect(postgres_database, autocommit=True) as connection:
+        connection.execute("""
+            CREATE FUNCTION bravo_shadow.reject_test_event() RETURNS trigger
+            LANGUAGE plpgsql AS $$
+            BEGIN
+                IF NEW.event_id LIKE 'rollback-%' THEN
+                    RAISE EXCEPTION 'forced integration rollback';
+                END IF;
+                RETURN NEW;
+            END;
+            $$
+        """)
+        connection.execute("""
+            CREATE TRIGGER reject_test_event_before_insert
+            BEFORE INSERT ON bravo_shadow.migration_review_events
+            FOR EACH ROW EXECUTE FUNCTION bravo_shadow.reject_test_event()
+        """)
+
+    with pytest.raises(psycopg.Error, match="forced integration rollback"):
+        store.append(register, **_event_args(decision_id, event_id))
+
+    assert store.load(register).history_for(decision_id) == ()
+
+    with psycopg.connect(postgres_database, autocommit=True) as connection:
+        connection.execute("DROP TRIGGER reject_test_event_before_insert ON bravo_shadow.migration_review_events")
+        connection.execute("DROP FUNCTION bravo_shadow.reject_test_event()")
+
+    retried = store.append(register, **_event_args(decision_id, event_id))
+    assert [event.event_id for event in retried.history_for(decision_id)] == [event_id]
