@@ -2,13 +2,12 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.modules.financeiro.schemas import FinanceiroInput
-from app.modules.financeiro.service import financeiro_service
 
 client = TestClient(app)
 
 
 def setup_function() -> None:
-    financeiro_service._items.clear()
+    app.state.services.financeiro._items.clear()
 
 
 def payload(**overrides):
@@ -67,9 +66,10 @@ def test_delete_title():
 
 
 def test_plan_account_reference_checker():
-    financeiro_service.create(FinanceiroInput(**payload(planoContaId="pc_linked")))
-    assert financeiro_service.has_plan_account_reference("pc_linked") is True
-    assert financeiro_service.has_plan_account_reference("pc_unused") is False
+    service = app.state.services.financeiro
+    service.create(FinanceiroInput(**payload(planoContaId="pc_linked")))
+    assert service.has_plan_account_reference("pc_linked") is True
+    assert service.has_plan_account_reference("pc_unused") is False
 
 
 def test_reject_invalid_title_type():
