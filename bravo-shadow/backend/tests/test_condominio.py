@@ -1,48 +1,59 @@
+import pytest
 from fastapi.testclient import TestClient
 
+from app.core.authentication import get_current_principal
+from app.core.authorization import AuthenticatedPrincipal
 from app.main import create_app
+from app.modules.condominio.schemas import CondominioPatch
+from app.modules.condominio.service import CondominioService
 
 
-def test_condominium_patch_preserves_unedited_fields():
-    client = TestClient(create_app())
-    client.put("/api/v1/condominio", json={"razaoSocial": "Condomínio Exemplo", "cidade": "Curitiba"})
-    response = client.put("/api/v1/condominio", json={"nome": "Residencial Exemplo", "telefone": "4133330000"})
-    assert response.status_code == 200
-    data = response.json()
-    assert data["razaoSocial"] == "Condomínio Exemplo"
-    assert data["cidade"] == "Curitiba"
-    assert data["nome"] == "Residencial Exemplo"
-    assert data["telefone"] == "4133330000"
+def build_client(profile: str | None = None) -> TestClient:
+    application = create_app(storage_backend="memory")
+    if profile is not None:
+        async def authenticated_principal() -> AuthenticatedPrincipal:
+            return AuthenticatedPrincipal(subject="google-test-subject", email="teste@example.com", profile=profile, account_status="Ativo")
+        application.dependency_overrides[get_current_principal] = authenticated_principal
+    return TestClient(application)
 
 
-def test_condominium_rejects_unknown_fields():
-    client = TestClient(create_app())
-    assert client.put("/api/v1/condominio", json={"campoInventado": "x"}).status_code == 422
+def test_condominium_routes_require_authentication():
+    client = build_client()
+    assert client.get("/api/v1/condominio").status_code == 401
+    assert client.put("/api/v1/condominio", json={"nome":"Residencial"}).status_code == 401
 
 
-def test_condominium_is_isolated_between_app_instances():
-    first, second = TestClient(create_app()), TestClient(create_app())
-    first.put("/api/v1/condominio", json={"nome": "Condomínio A"})
-    assert first.get("/api/v1/condominio").json()["nome"] == "Condomínio A"
-    assert second.get("/api/v1/condominio").json()["nome"] is None
+def test_admin_and_operator_are_denied_until_capability_matrix_approval():
+    for profile in ("Admin", "Operador"):
+        client = build_client(profile)
+        assert client.get("/api/v1/condominio").status_code == 403
+        assert client.put("/api/v1/condominio", json={"nome":"Residencial"}).status_code == 403
 
 
+def test_condominium_patch_preserves_unedited_fields_and_trims_values():
+    service = CondominioService()
+    service.update(CondominioPatch(razaoSocial=" Condomínio Exemplo ", cidade=" Curitiba "))
+    response = service.update(CondominioPatch(nome=" Residencial Exemplo ", telefone="4133330000"))
+    assert response.razaoSocial == "Condomínio Exemplo"
+    assert response.cidade == "Curitiba"
+    assert response.nome == "Residencial Exemplo"
+    assert response.telefone == "4133330000"
 
-def test_condominium_patch_trims_values_and_preserves_omitted_fields():
-    client = TestClient(create_app())
-    client.put("/api/v1/condominio", json={"nome": "  Residencial Exemplo  ", "cidade": " Curitiba "})
-    response = client.put("/api/v1/condominio", json={"telefone": "  (41) 3333-0000  ", "email": "  contato@example.com "})
-    assert response.status_code == 200
-    data = response.json()
-    assert data["nome"] == "Residencial Exemplo"
-    assert data["cidade"] == "Curitiba"
-    assert data["telefone"] == "(41) 3333-0000"
-    assert data["email"] == "contato@example.com"
+
+def test_condominium_schema_rejects_unknown_fields():
+    with pytest.raises(Exception):
+        CondominioPatch(campoInventado="x")
+
+
+def test_condominium_is_isolated_between_service_instances():
+    first, second = CondominioService(), CondominioService()
+    first.update(CondominioPatch(nome="Condomínio A"))
+    assert first.get().nome == "Condomínio A"
+    assert second.get().nome is None
 
 
 def test_condominium_patch_accepts_empty_optional_values():
-    client = TestClient(create_app())
-    response = client.put("/api/v1/condominio", json={"telefone": "   ", "email": "  "})
-    assert response.status_code == 200
-    assert response.json()["telefone"] == ""
-    assert response.json()["email"] == ""
+    service = CondominioService()
+    result = service.update(CondominioPatch(telefone="   ", email="  "))
+    assert result.telefone == ""
+    assert result.email == ""
