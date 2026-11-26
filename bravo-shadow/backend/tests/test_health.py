@@ -52,3 +52,11 @@ def test_unknown_storage_backend_is_rejected() -> None:
 
     with pytest.raises(StorageConfigurationError, match="BRAVO_STORAGE_BACKEND"):
         create_app(storage_backend="automatic")
+
+
+def test_frontend_is_served_from_root() -> None:
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert "Bravo Shadow" in response.text
+    assert 'id="navigation"' in response.text
