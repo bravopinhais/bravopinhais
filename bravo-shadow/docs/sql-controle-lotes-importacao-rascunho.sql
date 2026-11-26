@@ -6,7 +6,9 @@
 
 CREATE SCHEMA IF NOT EXISTS bravo_shadow;
 
--- batch_id é determinístico sobre snapshot + versões do envelope, manifesto,\n-- canonicalização, importador e mapeamento; nova lógica gera novo lote.\nCREATE TABLE IF NOT EXISTS bravo_shadow.migration_batches (
+-- batch_id é determinístico sobre snapshot + versões do envelope, manifesto,
+-- canonicalização, importador e mapeamento; nova lógica gera novo lote.
+CREATE TABLE IF NOT EXISTS bravo_shadow.migration_batches (
     batch_id text PRIMARY KEY,
     snapshot_hash text NOT NULL,
     manifest_hash text NOT NULL,
