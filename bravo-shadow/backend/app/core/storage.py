@@ -19,10 +19,6 @@ from app.core.postgres_catalogs import (
     PostgresDocumentosRepository,
     PostgresMotivosAcertoRepository,
 )
-from app.core.postgres_governance import (
-    PostgresCondominioRepository,
-    PostgresConselheirosRepository,
-)
 from app.core.postgres_inventory import (
     PostgresAcertosEstoqueRepository,
     PostgresEstoqueRepository,
