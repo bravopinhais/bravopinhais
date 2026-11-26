@@ -92,7 +92,7 @@ O schema HTTP de Financeiro passou a usar `Decimal` com limite de 14 dígitos e 
 
 - Criar schema privado e não adicioná-lo à lista de schemas expostos da Data API.
 - Revogar privilégios de `anon`, `authenticated` e `public` sobre schema e tabelas.
-- Habilitar RLS nas quatro tabelas como defesa em profundidade, sem políticas permissivas nesta fase.
+- Habilitar RLS nas cinco tabelas como defesa em profundidade, sem políticas permissivas nesta fase.
 - O backend usará credencial server-side de privilégio mínimo armazenada em variável de ambiente/secret manager; nunca no HTML.
 - Não definir política por `user_metadata`. A identidade Google/e-mail precisa ser validada no backend antes de estabelecer autorização.
 - Antes de permitir acesso direto por cliente Supabase, desenhar políticas com `auth.uid()`, papéis e escopo real; não criar `USING (true)`.
