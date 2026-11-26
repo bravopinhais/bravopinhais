@@ -33,3 +33,12 @@ A interface deve ser reconhecível como Bravo: modo noturno fixo, visual profiss
 ## Estado
 
 Este documento define o contrato visual. A interface será construída após o inventário de fluxos e componentes do original, evitando criar telas fictícias ou controles sem funcionalidade.
+
+
+## Primeiro módulo conectado à API
+
+O módulo **Formas Monetárias** já utiliza a API relativa `/api/v1/formas-monetarias` para listar, cadastrar, editar e excluir registros. A interface apresenta estados de carregamento e erro, valida o nome e a multa (0–100%) e escapa os valores exibidos.
+
+O backend deste módulo ainda utiliza armazenamento em memória. Os registros são exclusivos do processo do ambiente sombra e são perdidos quando ele reinicia. Isso não é persistência definitiva nem integração com o banco de produção.
+
+Os demais módulos continuam identificados como estrutura visual até que seus contratos e fluxos sejam conectados individualmente.
