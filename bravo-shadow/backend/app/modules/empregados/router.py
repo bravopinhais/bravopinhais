@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Request, status
+from fastapi import APIRouter, Depends, Request, status
 
+from app.core.authorization import AuthenticatedPrincipal, require_capability_dependency
 from .schemas import Empregado, EmpregadoInput
 from .service import EmpregadosService
 
@@ -11,20 +12,36 @@ def get_service(request: Request) -> EmpregadosService:
 
 
 @router.get("", response_model=list[Empregado])
-def list_employees(request: Request) -> list[Empregado]:
+def list_employees(
+    request: Request,
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("empregados:read")),
+) -> list[Empregado]:
     return get_service(request).list()
 
 
 @router.post("", response_model=Empregado, status_code=status.HTTP_201_CREATED)
-def create_employee(request: Request, data: EmpregadoInput) -> Empregado:
+def create_employee(
+    request: Request,
+    data: EmpregadoInput,
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("empregados:create")),
+) -> Empregado:
     return get_service(request).create(data)
 
 
 @router.put("/{item_id}", response_model=Empregado)
-def update_employee(request: Request, item_id: str, data: EmpregadoInput) -> Empregado:
+def update_employee(
+    request: Request,
+    item_id: str,
+    data: EmpregadoInput,
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("empregados:update")),
+) -> Empregado:
     return get_service(request).update(item_id, data)
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_employee(request: Request, item_id: str) -> None:
+def delete_employee(
+    request: Request,
+    item_id: str,
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("empregados:delete")),
+) -> None:
     get_service(request).delete(item_id)
