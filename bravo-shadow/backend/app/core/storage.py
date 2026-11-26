@@ -4,7 +4,7 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from app.core.postgres_inventory import (
+from app.core.postgres_catalogs import (\n    PostgresCategoriasRepository,\n    PostgresDocumentosRepository,\n    PostgresMotivosAcertoRepository,\n)\nfrom app.core.postgres_inventory import (
     PostgresAcertosEstoqueRepository,
     PostgresEstoqueRepository,
 )
@@ -108,7 +108,7 @@ def build_storage_services(
     )
     categorias.set_reference_checker(documentos.has_category_reference)
 
-    motivos_acerto = MotivosAcertoService(repository=InMemoryCollectionRepository())
+    motivos_acerto = MotivosAcertoService(repository=motivos_repository)
     acertos_estoque = AcertosEstoqueService(
         repository=acertos_repository,
         inventory_service=estoque,
