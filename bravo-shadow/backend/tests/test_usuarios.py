@@ -66,3 +66,31 @@ def test_user_schema_rejects_local_password_fields_and_normalizes_email():
     assert user.email == "admin@example.com"
     with pytest.raises(ValidationError):
         UsuarioInput(email="user@example.com", nome="Pessoa", cargo="Conselho", senhaHash="legacy")
+
+def test_concurrent_user_creation_cannot_duplicate_email_in_memory():
+    from concurrent.futures import ThreadPoolExecutor
+    from threading import Barrier
+
+    service = UsuariosService()
+    barrier = Barrier(8)
+
+    def create_same_email(index):
+        barrier.wait()
+        try:
+            service.create(
+                UsuarioInput(
+                    email="same@example.com",
+                    nome=f"Pessoa {index}",
+                    cargo="Conselho",
+                )
+            )
+            return "created"
+        except HTTPException as error:
+            return error.status_code
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        results = list(executor.map(create_same_email, range(8)))
+
+    assert results.count("created") == 1
+    assert results.count(409) == 7
+    assert len(service.list()) == 1
