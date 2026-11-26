@@ -5,7 +5,7 @@ Fonte: inspeção estática de `index.html` na branch `upgrade/project-hardening
 | Módulo original | Coleções/dados observados | Comportamentos identificados | Prioridade de descoberta |
 |---|---|---|---|
 | Dashboard | `financeiro`, `plano_contas`, `estoque`, `moradores`, `fornecedores`, `documentos` | Indicadores, panorama financeiro e gráficos | Alta |
-| Condomínio & Conselho | `condominio`, `conselheiros` | Dados institucionais, concessionárias, cadastro/edição/exclusão de conselheiros | Média |
+| Condomínio & Conselho | `condominio`, `conselheiros` | Dados institucionais e concessionárias; corpo diretivo com nome/cargo obrigatórios e bloco/ap e telefone opcionais. CRUD inicial na sombra; auditoria em `auditoria-condominio-conselho.md` | Média |
 | Plano de Contas | `plano_contas` | Código, nome, tipo; cadastro/edição/exclusão | Alta |
 | Contas a Pagar / Receber | `financeiro`, `plano_contas` | Título com tipo, vínculo opcional, histórico e valor; cadastro/edição/exclusão. Auditoria detalhada em `auditoria-financeiro.md` | Alta |
 | Formas Monetárias | `formas_monetarias` | Nome e percentual de multa (padrão 2%); CRUD. Auditoria em `auditoria-formas-monetarias-contas-bancarias.md` | Média |
@@ -36,7 +36,7 @@ Fonte: inspeção estática de `index.html` na branch `upgrade/project-hardening
 ## Sequência recomendada de migração
 
 1. **Contratos de dados e validações**: plano de contas, formas monetárias e contas bancárias (auditorias e CRUDs iniciais concluídos na sombra).
-2. **Cadastros de referência**: fornecedores e empregados auditados e com CRUD inicial na sombra; condomínio/conselho ainda pendente.
+2. **Cadastros de referência**: fornecedores, empregados, condomínio e conselho auditados e com CRUD inicial na sombra.
 3. **Moradores e unidades**: inclui importação, filtros e integridade de cadastro.
 4. **Estoque e ajustes**: dependência entre produtos, categorias, motivos, fotos e documentos.
 5. **Financeiro**: paridade inicial com os cinco campos encontrados; depois avaliar evolução funcional aprovada.
