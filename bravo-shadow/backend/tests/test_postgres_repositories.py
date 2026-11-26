@@ -99,7 +99,8 @@ def test_finance_repository_maps_null_account_to_legacy_empty_string():
     result = repository.get("fin_1")
 
     assert result.planoContaId == ""
-    assert result.valor == Decimal("8.50")\n    assert result.version == 6
+    assert result.valor == Decimal("8.50")
+    assert result.version == 6
 
 
 def test_plan_account_delete_translates_foreign_key_conflict():
