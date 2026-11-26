@@ -1,72 +1,77 @@
 # Revisão de integração e arquitetura — Bravo Shadow
 
-## Escopo e método
-Revisão estática dos serviços, composição FastAPI, dependências e documentação na branch `bravo-shadow`. Não foi executada a aplicação, não foram rodados testes e não houve conexão com Supabase. A branch original `upgrade/project-hardening` foi consultada apenas para preservar o contrato já inventariado.
+## Estado da revisão — 26/11/2026
 
-## Diagnóstico executivo
-A sombra possui 15 módulos/recursos com rotas registradas em uma aplicação FastAPI única, mas ainda é um protótipo de contratos: os serviços usam dicionários em memória, sem repositórios persistentes, transações, isolamento entre processos ou recuperação após reinício. O frontend também não consome essas APIs.
+Revisão estática da branch `bravo-shadow`. Os 15 routers foram inspecionados e todos resolvem seus serviços por `request.app.state.services`; nenhum dos routers inspecionados importa diretamente um singleton de serviço. A composição de serviços está concentrada em `build_storage_services()`, chamada por `create_app()`.
 
-**Conclusão:** não liberar para dados reais nem promover para o sistema original nesta fase.
+Esta verificação é de código-fonte. Não representa teste de execução, teste de browser, teste de banco ou homologação funcional. O CI da etapa mais recente ainda deve concluir antes de considerar os novos módulos validados.
 
-## Composição da aplicação
-- Um único objeto FastAPI em `backend/app/main.py`.
-- Os 15 routers são registrados no mesmo processo.
-- Cada serviço instancia seu próprio armazenamento em memória.
-- A ligação Plano de Contas → Financeiro é feita manualmente no `main.py`, atribuindo um callback a um atributo privado do serviço.
-- **Novo achado de isolamento:** `create_app()` chama `configure_storage()`, que substitui repositórios em objetos de serviço globais (`plano_contas_service`, `financeiro_service`, `formas_monetarias_service`). Os routers importam esses singletons diretamente. Assim, criar duas instâncias FastAPI com configurações diferentes no mesmo processo pode fazer uma aplicação usar o armazenamento configurado pela outra. O teste atual restaura manualmente o modo `memory`, o que evita parte da interferência no teste, mas não resolve o acoplamento estrutural.
-- `CORSMiddleware` está importado, mas não está configurado nem adicionado à aplicação. A API não possui política CORS efetiva.
-- A dependência `email-validator` foi adicionada para suportar o tipo `EmailStr` no perfil de usuário.
+## Arquitetura atual
 
-## Matriz de dependências e integridade
+- Uma aplicação FastAPI integrada, com 15 módulos/recursos e API versionada em `/api/v1`.
+- Serviços e repositórios construídos por instância de aplicação e expostos em `app.state.services`.
+- Repositório em memória como padrão seguro; adequado a desenvolvimento/testes, não a produção, multi-worker ou persistência após reinício.
+- Adaptadores PostgreSQL existem apenas para Formas Monetárias, Plano de Contas e Financeiro.
+- O frontend sombra pode ser servido pelo processo FastAPI, mas a integração completa de todas as telas com as APIs ainda não foi homologada.
+- CORS permanece fechado até definição de allowlist.
+- Nenhuma conexão com banco de produção foi configurada ou executada.
 
-| Origem | Destino | Vínculo atual | Risco / trabalho necessário |
+## Matriz dos 15 módulos
+
+| Módulo | Serviço por aplicação | Persistência PostgreSQL | Observações |
 |---|---|---|---|
-| Financeiro | Plano de Contas | `planoContaId` opcional; checker impede exclusão de conta referenciada | Sem FK no banco; serviço de vínculo consulta apenas memória local; concorrência entre gravação financeira e exclusão não é transacional |
-| Acertos de Estoque | Estoque | `produtoId`; entrada/saída altera quantidade | Alteração do saldo e gravação do histórico são operações separadas; precisam de uma transação atômica e controle de concorrência |
-| Documentos | Pastas/Categorias | `pasta` é texto, não ID | Renomear/excluir pasta pode deixar documentos com nome antigo; decidir migração para ID mantendo compatibilidade |
-| Acertos de Estoque | Motivos de Acerto | Motivo gravado como texto | Sem integridade referencial; exclusão/renomeação não atualiza históricos |
-| Dashboard / DRE | Financeiro e Plano de Contas | Leituras agregadas planejadas | Não há endpoint agregado nem fonte persistente; regras atuais do original incluem limitações de data/status |
-| Usuários | Identidade Google/e-mail | Perfil contém e-mail normalizado | Sem validação de token, identidade verificada, sessão ou autorização no backend |
-| Contas Bancárias | Financeiro | Nenhum vínculo confirmado | Saldo bancário manual não pode ser tratado como saldo conciliado |
-| Fornecedores / Moradores | Financeiro | Nenhum vínculo no contrato atual | Não inventar associação até confirmar regra de negócio original |
+| Dashboard | Não possui serviço próprio | Não | Indicadores atuais são demonstrativos; falta endpoint agregado |
+| Condomínio | Sim | Não | Cadastro único em memória; atualização parcial preserva campos não enviados |
+| Conselho | Sim | Não | CRUD em memória |
+| Plano de Contas | Sim | Sim, adaptador existente | Verifica referências financeiras; restrição final deve ser garantida no banco |
+| Contas a Pagar/Receber | Sim | Sim, adaptador existente | Usa `planoContaId`; vínculo opcional no contrato atual |
+| Formas Monetárias | Sim | Sim, adaptador existente | Piloto de persistência |
+| Contas Bancárias/Caixa | Sim | Não | Saldo informado/manual, não equivale a conciliação bancária |
+| Moradores/Unidades | Sim | Não | CRUD, filtros e importação em lote em memória |
+| Fornecedores | Sim | Não | CRUD em memória; vínculo financeiro não confirmado |
+| Empregados | Sim | Não | CRUD em memória; dados pessoais exigem controles de privacidade |
+| Pastas/Categorias | Sim | Não | Documentos podem apontar para categoria por ID; exclusão referenciada é bloqueada |
+| Estoque/Inventário | Sim | Não | CRUD em memória |
+| Acerto de Estoque | Sim | Não | Usa instância de Estoque da mesma aplicação; saldo e histórico ainda não são ACID |
+| Gestão de Documentos | Sim | Não | CategoriaId opcional e texto legado preservado; arquivo compactado ainda fica no payload |
+| Gestão de Usuários | Sim | Não | Perfil associado a e-mail normalizado; não valida identidade Google nem autoriza requisições |
 
-## Riscos técnicos prioritários
+## Vínculos e integridade
 
-### P0 — antes de qualquer dado real
-1. **Persistência:** substituir os dicionários em memória por repositórios PostgreSQL/Supabase de homologação, com migrações versionadas, chaves e constraints. Manter o banco de produção fora do escopo.
-2. **Transações:** garantir atomicidade em Acerto de Estoque (saldo + histórico) e nas verificações/exclusões de Plano de Contas. Implementar bloqueio/controle otimista para atualizações concorrentes.
-3. **Autorização:** validar token Google no servidor, obter e-mail verificado do token validado e aplicar permissões por rota/ação. O campo `perfil` sozinho não protege endpoint algum.
-4. **CORS:** configurar middleware com allowlist exata para os domínios de desenvolvimento/homologação; não usar curinga com credenciais.
-5. **Privacidade:** definir controle de acesso e auditoria para CPF, telefone, endereço, dados de empregados, documentos e anexos.
+1. **Financeiro → Plano de Contas:** o serviço verifica referências antes da exclusão; o adaptador SQL possui FK com restrição. A operação completa ainda precisa ser validada em banco isolado sob concorrência.
+2. **Acerto → Estoque:** o acerto usa a instância de Estoque construída na mesma aplicação. Atualização de saldo e gravação do histórico ainda são operações separadas em memória; PostgreSQL deve implementá-las em uma transação única, com bloqueio de linha e idempotência.
+3. **Documento → Categoria:** `categoriaId` opcional; o nome da categoria é copiado para o campo textual legado `pasta`. A exclusão de categoria referenciada é bloqueada pelo serviço.
+4. **Acerto → Motivo:** `motivoId` opcional; o nome do motivo é copiado para o texto legado `motivo`. A exclusão de motivo referenciado é bloqueada.
+5. **Contas Bancárias → Financeiro:** não há vínculo de conciliação confirmado. Não apresentar saldo manual como saldo conciliado.
+6. **Fornecedores/Moradores → Financeiro:** associação ainda não confirmada com as regras do sistema original; não criar relação por suposição.
 
-### P1 — antes da homologação funcional
-6. **Isolamento por aplicação:** remover a mutação de serviços globais no `configure_storage`; construir repositórios/serviços por instância e injetá-los nos routers via dependências FastAPI ou `app.state`. Adicionar teste que cria duas aplicações com storages distintos e comprova que uma não altera a outra. Fazer isso antes de executar testes de integração com múltiplas configurações.
-7. **Contratos e relações:** documentar IDs, campos opcionais, regras de exclusão, estados e erros HTTP; introduzir FKs ou relações explícitas quando a regra for confirmada.
-8. **Arquivos:** validar tamanho, MIME, extensão, limites de memória, integridade e compatibilidade do formato deflate/Base64 legado. Considerar armazenamento de objetos separado do payload JSON.
-9. **Concorrência e idempotência:** definir versão/ETag ou `updated_at` + versão, idempotency key para operações de movimento e tratamento de conflito.
-10. **Paginação e filtros:** evitar listagens ilimitadas à medida que os cadastros crescerem.
-11. **Observabilidade:** logs estruturados com request ID, métricas, trilha de auditoria e mensagens de erro sem dados pessoais.
+## Riscos e gates pendentes
 
-### P2 — antes da promoção
-11. Testes automatizados executados em CI, testes de integração com banco isolado, testes de concorrência e restauração de backup.
-12. Frontend sombra conectado à API, com estados de carregamento/erro, tratamento de 401/403/409 e sem acesso direto ao banco.
-13. Comparação de resultados com o original em base sanitizada e plano de rollback testado.
+### Antes de qualquer dado real
+- Completar adaptadores PostgreSQL e migrations para os módulos ainda em memória.
+- Garantir atomicidade e concorrência em operações multi-entidade.
+- Validar token Google no servidor, usar identidade verificada e implementar autorização por rota/ação. O campo `perfil` sozinho não protege endpoint.
+- Definir CORS por allowlist exata.
+- Definir proteção e auditoria de CPF, telefone, endereço, empregados, documentos e anexos.
+- Configurar credenciais server-side com privilégio mínimo; nunca colocar segredos no frontend.
 
-## Decisões recomendadas para a próxima etapa
-- Manter FastAPI como backend único e modular; não dividir os módulos em aplicações independentes.
-- Criar camada de repositórios e migrações para PostgreSQL no ambiente sombra isolado.
-- Preservar os contratos públicos atuais inicialmente, mas não congelar schemas antes de uma revisão de paridade.
-- Priorizar primeiro a persistência e testes de integração de Plano de Contas/Financeiro e Estoque/Acertos, pois são os vínculos operacionais mais sensíveis.
-- Não ativar ainda autenticação/permissões, arquivos ou escrita real até concluir seus gates de segurança.
+### Antes da homologação funcional
+- Comparar schemas, campos, validações e regras com o HTML original em base sanitizada.
+- Validar importação de moradores, anexos, formatos de arquivo e limites de payload.
+- Definir paginação, filtros, trilha de auditoria, logs sem dados pessoais e tratamento de conflitos.
+- Executar testes de integração e concorrência com PostgreSQL local isolado.
+- Conectar e homologar as telas do frontend com a API, incluindo estados de erro e conflito.
 
-## Critérios para considerar a integração pronta
-- Dados sobrevivem a reinício e estão isolados por ambiente.
-- Operações multi-entidade são atômicas.
-- Restrições de referência são garantidas no banco e na camada de serviço.
-- Cada endpoint protegido exige identidade validada e permissão explícita.
-- CORS usa allowlist e não há segredos no frontend.
-- Testes de unidade, integração, concorrência e backup/restauração passam em CI.
-- Frontend chama exclusivamente a API e erros são apresentados de forma previsível.
+### Antes da promoção ao sistema original
+- Testes automatizados aprovados em CI para o commit exato.
+- Comparação funcional com o original e evidências de equivalência.
+- Backup/restauração e rollback ensaiados.
+- Aprovação explícita antes de qualquer mudança na branch original ou banco de produção.
+
+## Conclusão
+
+O isolamento de serviços por instância está agora aplicado aos 15 routers. Isso corrige o acoplamento anterior dos routers com singletons globais, mas não significa que os 15 módulos estejam persistidos ou prontos para produção. Somente Formas Monetárias, Plano de Contas e Financeiro possuem adaptadores PostgreSQL neste estágio; os demais permanecem em memória. A próxima prioridade técnica é completar e testar persistência transacional para Estoque/Acertos e os cadastros restantes, sem tocar no original.
 
 ## Integridade do original
-Esta revisão não altera o `index.html` original e não configura conexão com o banco de produção.
+
+Esta revisão não altera o `index.html` original nem configura conexão com o banco de produção.
