@@ -1,4 +1,5 @@
 -- RASCUNHO DE SQL — ainda não é uma migration executável.
+-- Contém as tabelas do piloto: Formas Monetárias, Plano de Contas e Financeiro.
 -- Copiar para o arquivo criado por "supabase migration new" após revisão.
 -- Aplicação prevista somente na stack Supabase LOCAL e isolada do Bravo original.
 
