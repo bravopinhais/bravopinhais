@@ -73,3 +73,21 @@ def test_inactive_internal_user_is_denied_even_with_valid_google_identity():
             services.usuarios,
         )
     assert error.value.status_code == 403
+
+def test_ambiguous_duplicate_internal_email_is_denied():
+    from types import SimpleNamespace
+
+    class DuplicateUsersService:
+        def list(self):
+            return [
+                SimpleNamespace(email="admin@example.com", status="Ativo", perfil="Admin"),
+                SimpleNamespace(email="ADMIN@example.com", status="Ativo", perfil="Operador"),
+            ]
+
+    with pytest.raises(HTTPException) as error:
+        principal_from_google_claims(
+            {"sub": "subject", "email": "admin@example.com", "email_verified": True},
+            DuplicateUsersService(),
+        )
+
+    assert error.value.status_code == 403
