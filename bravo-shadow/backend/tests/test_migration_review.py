@@ -1,0 +1,109 @@
+import pytest
+
+from app.core.migration_decisions import build_decision_register
+from app.core.migration_review import (
+    ReviewValidationError,
+    append_review,
+    create_review_ledger,
+)
+from test_migration_decisions import setup_batch
+
+
+def setup_review():
+    _, _, preflight, manifest = setup_batch()
+    register = build_decision_register(manifest, preflight)
+    ledger = create_review_ledger(register)
+    return register, ledger, register.pending[0].decision_id
+
+
+def test_review_appends_version_one_without_mutating_original_ledger():
+    register, ledger, decision_id = setup_review()
+
+    updated = append_review(
+        ledger,
+        register,
+        event_id="evt-001",
+        decision_id=decision_id,
+        expected_version=0,
+        reviewer_id="reviewer@example.test",
+        choice="keep_blocked",
+        rationale="A referência precisa ser conferida.",
+        reviewed_at="2026-11-26T15:30:00-03:00",
+    )
+
+    assert ledger.events == ()
+    assert len(updated.events) == 1
+    assert updated.events[0].version == 1
+    assert updated.version_for(decision_id) == 1
+    assert updated.history_for(decision_id)[0].reviewer_id == "reviewer@example.test"
+
+
+def test_new_review_versions_preserve_full_history():
+    register, ledger, decision_id = setup_review()
+    first = append_review(
+        ledger, register,
+        event_id="evt-001", decision_id=decision_id, expected_version=0,
+        reviewer_id="reviewer-1", choice="keep_blocked",
+        rationale="Manter bloqueado.", reviewed_at="2026-11-26T15:30:00-03:00",
+    )
+    second = append_review(
+        first, register,
+        event_id="evt-002", decision_id=decision_id, expected_version=1,
+        reviewer_id="reviewer-2", choice="request_more_information",
+        rationale="Solicitar evidência adicional.", reviewed_at="2026-11-26T15:40:00-03:00",
+    )
+
+    assert [event.version for event in second.history_for(decision_id)] == [1, 2]
+    assert [event.event_id for event in second.history_for(decision_id)] == ["evt-001", "evt-002"]
+
+
+def test_stale_version_is_rejected():
+    register, ledger, decision_id = setup_review()
+    with pytest.raises(ReviewValidationError, match="stale_review_version"):
+        append_review(
+            ledger, register,
+            event_id="evt-001", decision_id=decision_id, expected_version=1,
+            reviewer_id="reviewer", choice="keep_blocked",
+            rationale="Não executar.", reviewed_at="2026-11-26T15:30:00-03:00",
+        )
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "error"),
+    [
+        ("reviewer_id", " ", "reviewer_required"),
+        ("rationale", " ", "rationale_required"),
+        ("reviewed_at", "", "reviewed_at_required"),
+        ("event_id", "", "duplicate_or_empty_event_id"),
+    ],
+)
+def test_required_review_fields_are_validated(field, value, error):
+    register, ledger, decision_id = setup_review()
+    args = dict(
+        event_id="evt-001", decision_id=decision_id, expected_version=0,
+        reviewer_id="reviewer", choice="keep_blocked",
+        rationale="Justificativa.", reviewed_at="2026-11-26T15:30:00-03:00",
+    )
+    args[field] = value
+    with pytest.raises(ReviewValidationError, match=error):
+        append_review(ledger, register, **args)
+
+
+def test_review_cannot_target_unknown_decision_or_other_manifest():
+    register, ledger, decision_id = setup_review()
+    with pytest.raises(ReviewValidationError, match="unknown_decision"):
+        append_review(
+            ledger, register,
+            event_id="evt-001", decision_id="unknown", expected_version=0,
+            reviewer_id="reviewer", choice="keep_blocked",
+            rationale="Justificativa.", reviewed_at="2026-11-26T15:30:00-03:00",
+        )
+    from dataclasses import replace
+    other_register = replace(register, manifest_hash="f" * 64)
+    with pytest.raises(ReviewValidationError, match="ledger_batch_mismatch"):
+        append_review(
+            ledger, other_register,
+            event_id="evt-002", decision_id=decision_id, expected_version=0,
+            reviewer_id="reviewer", choice="keep_blocked",
+            rationale="Justificativa.", reviewed_at="2026-11-26T15:30:00-03:00",
+        )
