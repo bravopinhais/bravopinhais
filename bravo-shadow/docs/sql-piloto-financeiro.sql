@@ -315,3 +315,9 @@ revoke all on table bravo_shadow.usuarios from public, anon, authenticated, serv
 -- Não criar GRANT para anon/authenticated/service_role nesta fase.
 -- O backend deverá usar um usuário PostgreSQL dedicado, com privilégios mínimos,
 -- definido somente depois dos testes locais e da revisão da política de acesso.
+
+
+-- Política de imutabilidade: o papel dedicado da API não deve receber
+-- DELETE em bravo_shadow.acertos_estoque. Correções devem ser lançadas como
+-- movimentos compensatórios após implementação do fluxo específico.
+-- Não conceder DELETE nessa tabela ao usuário PostgreSQL da aplicação.
