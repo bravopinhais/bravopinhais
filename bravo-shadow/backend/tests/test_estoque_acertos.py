@@ -115,31 +115,23 @@ def test_inventory_and_adjustments_are_isolated_between_app_instances():
 
 
 def test_adjustment_reason_link_and_restrict_delete():
-    product = client.post(
-        "/api/v1/estoque", json={"item": "Filtro", "quantidade": 3}
-    ).json()
-    reason = client.post(
-        "/api/v1/motivos-acerto-estoque", json={"nome": "Avaria"}
-    ).json()
-    movement = client.post(
-        "/api/v1/acertos-estoque",
-        json={
-            "tipo": "Entrada",
-            "produtoId": product["id"],
-            "quantidade": 1,
-            "motivo": "Texto legado",
-            "motivoId": reason.id,
-        },
-    )
+    product = client.post("/api/v1/estoque", json={"item": "Filtro", "quantidade": 3}).json()
+    reason = app.state.services.motivos_acerto.create(MotivoAcertoInput(nome="Avaria"))
+    movement = client.post("/api/v1/acertos-estoque", json={
+        "tipo": "Entrada", "produtoId": product["id"], "quantidade": 1,
+        "motivo": "Texto legado", "motivoId": reason.id,
+    })
     assert movement.status_code == 201
     data = movement.json()
-    assert data["motivoId"] == reason["id"]
+    assert data["motivoId"] == reason.id
     assert data["motivo"] == "Avaria"
-    assert client.delete("/api/v1/motivos-acerto-estoque/" + reason["id"]).status_code == 409
+    with pytest.raises(HTTPException) as error:
+        app.state.services.motivos_acerto.delete(reason.id)
+    assert error.value.status_code == 409
     assert client.delete("/api/v1/acertos-estoque/" + data["id"]).status_code == 409
-    assert client.delete("/api/v1/motivos-acerto-estoque/" + reason["id"]).status_code == 409
-
-
+    with pytest.raises(HTTPException) as error:
+        app.state.services.motivos_acerto.delete(reason.id)
+    assert error.value.status_code == 409
 def test_adjustment_rejects_unknown_reason():
     product = client.post(
         "/api/v1/estoque", json={"item": "Filtro", "quantidade": 3}
@@ -216,22 +208,15 @@ def test_stock_registration_date_rejects_non_iso_format():
 def test_adjustment_trims_required_text_and_optional_reason_id():
     product = client.post("/api/v1/estoque", json={"item": "Filtro", "quantidade": 2}).json()
     reason = app.state.services.motivos_acerto.create(MotivoAcertoInput(nome="Avaria"))
-    response = client.post(
-        "/api/v1/acertos-estoque",
-        json={
-            "tipo": "Entrada",
-            "produtoId": " " + product["id"] + " ",
-            "quantidade": 1,
-            "motivo": "  Reposição  ",
-            "motivoId": " " + reason["id"] + " ",
-        },
-    )
+    response = client.post("/api/v1/acertos-estoque", json={
+        "tipo": "Entrada", "produtoId": " " + product["id"] + " ",
+        "quantidade": 1, "motivo": "  Reposição  ",
+        "motivoId": " " + reason.id + " ",
+    })
     assert response.status_code == 201
     assert response.json()["produtoId"] == product["id"]
     assert response.json()["motivo"] == "Avaria"
-    assert response.json()["motivoId"] == reason["id"]
-
-
+    assert response.json()["motivoId"] == reason.id
 def test_adjustment_rejects_blank_product_and_reason_text():
     product = client.post("/api/v1/estoque", json={"item": "Filtro", "quantidade": 2}).json()
     for payload in (
