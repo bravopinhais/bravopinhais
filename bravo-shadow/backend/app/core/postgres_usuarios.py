@@ -33,7 +33,11 @@ class PostgresUsuariosRepository:
                 finally:
                     cursor.close()
         except Exception as exc:
-            if getattr(exc, "sqlstate", None) == "23505":
+            if (
+                getattr(exc, "sqlstate", None) == "23505"
+                and getattr(getattr(exc, "diag", None), "constraint_name", None)
+                == "usuarios_email_ci_uidx"
+            ):
                 raise HTTPException(
                     status_code=409,
                     detail="Já existe um perfil vinculado a este e-mail.",
