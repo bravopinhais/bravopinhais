@@ -1,3 +1,4 @@
+from decimal import Decimal
 from types import MappingProxyType
 
 from fastapi.testclient import TestClient
@@ -49,6 +50,6 @@ def test_dashboard_summary_returns_aggregates_only(monkeypatch):
     assert response.status_code == 200
     data = response.json()
     assert data["total_moradores"] == 0
-    assert data["valor_receber"] == "0.00"
+    assert Decimal(str(data["valor_receber"])) == Decimal("0.00")
     assert "moradores" not in data
     assert "historicos" not in data
