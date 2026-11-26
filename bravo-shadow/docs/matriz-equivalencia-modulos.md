@@ -216,3 +216,27 @@ Referência: `auditoria-rotas-autorizacao.md` e `matriz-roles-permissoes-revisao
 A matriz funcional Admin/Operador permanece sem aprovação. O código de autorização foi ajustado para que ambos os perfis tenham conjunto vazio de capacidades até aprovação formal. Portanto, autenticação Google válida e conta ativa não concedem acesso a operações de negócio por si só. A dependência central retorna 403 para ambos os perfis enquanto a matriz não for aprovada.
 
 Esta correção não protege automaticamente os routers existentes: cada rota de negócio ainda precisa declarar dependências de autenticação e capacidade, e a validação completa deverá ocorrer em testes HTTP. Nenhum endpoint deve ser considerado liberado para dados reais nesta fase.
+
+
+## Atualização de implementação — proteção HTTP por capacidade (26/11/2026)
+
+A política de capacidades continua em modo deny-by-default: os perfis Admin e Operador não recebem permissões até aprovação explícita da matriz. Nesta rodada, a dependência central de autenticação Google + capacidade foi integrada diretamente aos endpoints abaixo:
+
+| Router | Ações protegidas |
+|---|---|
+| `formas_monetarias` | read, create, update, delete |
+| `categorias` | read, create, delete |
+| `motivos_acerto` | read, create, delete |
+| `conselheiros` | read, create, update, delete |
+| `fornecedores` | read, create, update, delete |
+| `empregados` | read, create, update, delete |
+| `moradores` | read, create, update, delete, import |
+| `usuarios` | read (lista e detalhe), create, update, delete |
+
+Sem token autenticado, os endpoints protegidos retornam 401. Com identidade autenticada, mas sem capacidade aprovada, retornam 403. Os testes usam identidades sintéticas e validam o bloqueio dos perfis Admin e Operador; não concedem permissões a eles.
+
+**Importante — Gestão de Usuários:** o cadastro interno continua sendo apenas o vínculo de perfil por e-mail. Não há senha local nem campo de senha aceito pelo schema. As rotas administrativas de usuários estão protegidas por capacidades, mas o procedimento de primeiro administrador e a matriz de permissões continuam pendentes. Não alterar a tela de login nesta fase.
+
+**Limite da cobertura:** os routers de Condomínio, Plano de Contas, Financeiro, Contas Bancárias, Estoque, Acertos de Estoque, Documentos e demais domínios não listados nesta tabela ainda precisam de auditoria/proteção individual. A fundação central não protege automaticamente rotas que não declaram a dependência.
+
+**Validação:** a suíte deve ser considerada pendente para o commit mais recente até que o GitHub Actions execute o SHA final. Nenhuma migration, política RLS, conexão de produção, importação real, dual-write ou cutover foi executado. A branch original permanece fora desta alteração.
