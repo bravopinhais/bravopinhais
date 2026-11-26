@@ -19,6 +19,8 @@ class Cursor:
         self.connection.calls.append((sql, params))
         if "SELECT quantidade" in sql:
             self.connection.row = self.connection.stock_row
+        elif "SELECT 1 FROM bravo_shadow.acertos_estoque" in sql:
+            self.connection.row = self.connection.movement_row
         elif sql.lstrip().startswith("SELECT"):
             self.connection.row = self.connection.rows[0] if self.connection.rows else None
         self.rowcount = self.connection.rowcount
@@ -34,8 +36,9 @@ class Cursor:
 
 
 class Connection:
-    def __init__(self, *, stock_row=(5,), rows=None, rowcount=1):
+    def __init__(self, *, stock_row=(5,), movement_row=None, rows=None, rowcount=1):
         self.stock_row = stock_row
+        self.movement_row = movement_row
         self.row = None
         self.rows = rows or []
         self.rowcount = rowcount
@@ -140,5 +143,43 @@ def test_movement_for_missing_product_returns_404_and_rolls_back():
         )
 
     assert error.value.status_code == 404
+    assert connection.rollbacks == 1
+    assert connection.commits == 0
+
+
+
+def test_stock_edit_preserves_balance_when_no_movement_exists():
+    connection = Connection(stock_row=(5,), movement_row=None)
+    repository = PostgresEstoqueRepository(factory(connection))
+    item = EstoqueItem(
+        id="est_1", item="Lâmpada", quantidade=8, minimo=2, maximo=20,
+        etiqueta="", fotoNome="", fotoCompactadaGzip="", marca="Marca",
+        linha="Linha", fabricante="Fábrica", dataCadastro="",
+    )
+
+    repository.replace("est_1", item)
+
+    assert len(connection.calls) == 3
+    assert "FOR UPDATE" in connection.calls[0][0]
+    assert "SELECT 1 FROM bravo_shadow.acertos_estoque" in connection.calls[1][0]
+    assert "UPDATE bravo_shadow.estoque" in connection.calls[2][0]
+    assert connection.commits == 1
+    assert connection.rollbacks == 0
+
+
+def test_stock_edit_cannot_change_balance_after_movement_history_exists():
+    connection = Connection(stock_row=(5,), movement_row=("ac_1",))
+    repository = PostgresEstoqueRepository(factory(connection))
+    item = EstoqueItem(
+        id="est_1", item="Lâmpada", quantidade=8, minimo=2, maximo=20,
+        etiqueta="", fotoNome="", fotoCompactadaGzip="", marca="Marca",
+        linha="Linha", fabricante="Fábrica", dataCadastro="",
+    )
+
+    with pytest.raises(HTTPException) as error:
+        repository.replace("est_1", item)
+
+    assert error.value.status_code == 409
+    assert len(connection.calls) == 2
     assert connection.rollbacks == 1
     assert connection.commits == 0
