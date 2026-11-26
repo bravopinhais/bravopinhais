@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Request, status
+from fastapi import APIRouter, Depends, Request, status
+
+from app.core.authorization import AuthenticatedPrincipal, require_capability_dependency
 
 from .schemas import FormaMonetaria, FormaMonetariaInput
 from .service import FormasMonetariasService
@@ -11,20 +13,36 @@ def get_service(request: Request) -> FormasMonetariasService:
 
 
 @router.get("", response_model=list[FormaMonetaria])
-def list_forms(request: Request) -> list[FormaMonetaria]:
+def list_forms(
+    request: Request,
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("formas_monetarias:read")),
+) -> list[FormaMonetaria]:
     return get_service(request).list()
 
 
 @router.post("", response_model=FormaMonetaria, status_code=status.HTTP_201_CREATED)
-def create_form(data: FormaMonetariaInput, request: Request) -> FormaMonetaria:
+def create_form(
+    data: FormaMonetariaInput,
+    request: Request,
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("formas_monetarias:create")),
+) -> FormaMonetaria:
     return get_service(request).create(data)
 
 
 @router.put("/{item_id}", response_model=FormaMonetaria)
-def update_form(item_id: str, data: FormaMonetariaInput, request: Request) -> FormaMonetaria:
+def update_form(
+    item_id: str,
+    data: FormaMonetariaInput,
+    request: Request,
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("formas_monetarias:update")),
+) -> FormaMonetaria:
     return get_service(request).update(item_id, data)
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_form(item_id: str, request: Request) -> None:
+def delete_form(
+    item_id: str,
+    request: Request,
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("formas_monetarias:delete")),
+) -> None:
     get_service(request).delete(item_id)
