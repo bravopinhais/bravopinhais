@@ -325,3 +325,14 @@ No modo PostgreSQL, a edição cadastral de um produto bloqueia a linha com `FOR
 - Motivos são referenciados por Acertos de Estoque por meio de `motivo_id`; a exclusão de motivo utilizado é bloqueada pelo serviço em memória e pela FK `ON DELETE RESTRICT` no rascunho PostgreSQL. O texto do motivo permanece como snapshot no movimento para preservar o histórico.
 - Os campos de nome não são convertidos para maiúsculas/minúsculas, e nenhum texto de histórico é reescrito. As regras de vínculo existentes foram preservadas.
 - Foram adicionados testes para normalização e rejeição de nomes somente com espaços. Os testes ainda não foram executados; a integridade referencial PostgreSQL segue dependente de migration e validação em banco local isolado.
+
+
+## Revisão de integridade — Gestão de Documentos
+
+- Os metadados textuais `pasta`, `titulo` e `nomeArquivo` removem espaços externos. Título e nome do arquivo permanecem obrigatórios; valores compostos apenas por espaços são rejeitados após normalização.
+- `categoriaId` remove espaços externos e converte string vazia em `null`, mantendo o documento sem categoria. Quando há ID, o serviço confirma a existência da categoria e usa o nome dela como pasta; no PostgreSQL, a FK também protege contra referências inválidas e exclusão concorrente.
+- **O conteúdo compactado `arquivoCompactadoGzip` não é normalizado nem reescrito.** O valor recebido é preservado exatamente, inclusive espaços externos, para não alterar conteúdo legado. O campo continua obrigatório.
+- O contrato e o schema SQL armazenam o conteúdo compactado como texto. Não foi introduzido limite de tamanho, decodificação Base64, validação do cabeçalho GZIP, antivírus ou armazenamento externo; essas decisões exigem conhecer o formato real dos arquivos legados e o volume esperado.
+- A atualização continua substituindo o registro completo via PUT; não foi alterada para PATCH. O nome original do arquivo é preservado como metadado e não é usado como caminho de armazenamento.
+- Foram adicionados testes para normalização de metadados, categoria opcional, rejeição de título/nome de arquivo em branco e preservação byte a byte do valor textual compactado. Os testes ainda não foram executados.
+- Documentos podem conter informações pessoais ou administrativas. As rotas de negócio seguem sem autorização funcional; não disponibilizar documentos reais externamente até autenticação Google validada, matriz de permissões aprovada e controles de acesso implementados.
