@@ -88,107 +88,86 @@
         }
 
     </style>
-
-    <style id="bravo-dark-dashboard-refresh">
-      :root {
-        color-scheme: dark;
-        --bravo-bg: #111315;
-        --bravo-surface: #1b1e21;
-        --bravo-surface-2: #22262a;
-        --bravo-border: #30363b;
-        --bravo-text: #edf0f2;
-        --bravo-muted: #9aa3aa;
-        --bravo-accent: #36b7a5;
-      }
-      body { background: var(--bravo-bg) !important; color: var(--bravo-text) !important; }
-      #app, #app > div { background: var(--bravo-bg) !important; color: var(--bravo-text); }
-      #sidebar-menu, #sidebar-menu > div { background: #191c1f !important; border-color: var(--bravo-border) !important; }
-      #sidebar-menu nav button { border-radius: 10px !important; }
-      #sidebar-menu nav button:not(.bg-gradient-to-r):hover { background: #292e32 !important; }
-      #sidebar-menu nav button.bg-gradient-to-r { background: #176e64 !important; box-shadow: none !important; }
-      #sidebar-menu .text-slate-500 { color: #879198 !important; }
-      #sidebar-menu .border-slate-800, #sidebar-menu .border-slate-900 { border-color: var(--bravo-border) !important; }
-      #app main { background: var(--bravo-bg) !important; color: var(--bravo-text) !important; }
-      #app main:has(#chartReceitaDespesa) .bg-white,
-      #app main:has(#chartReceitaDespesa) .bg-white\/90 {
-        background: var(--bravo-surface) !important;
-        border: 1px solid var(--bravo-border) !important;
-        box-shadow: 0 8px 24px rgba(0,0,0,.18) !important;
-      }
-      #app main:has(#chartReceitaDespesa) .bg-slate-50,
-      #app main:has(#chartReceitaDespesa) .bg-slate-100 { background: #24292d !important; }
-      #app main:has(#chartReceitaDespesa) .text-slate-900,
-      #app main:has(#chartReceitaDespesa) .text-slate-800 { color: #edf0f2 !important; }
-      #app main:has(#chartReceitaDespesa) .text-slate-600,
-      #app main:has(#chartReceitaDespesa) .text-slate-500,
-      #app main:has(#chartReceitaDespesa) .text-slate-400 { color: var(--bravo-muted) !important; }
-      #app main:has(#chartReceitaDespesa) .border-slate-100,
-      #app main:has(#chartReceitaDespesa) .border-slate-200 { border-color: var(--bravo-border) !important; }
-      #app main:has(#chartReceitaDespesa) tbody tr:hover { background: #292f33 !important; }
-      #app main:has(#chartReceitaDespesa) thead { background: #24292d !important; color: #aeb7bd !important; }
-      #app main:has(#chartReceitaDespesa) .bg-slate-950 { background: #171a1d !important; }
-      #app main:has(#chartReceitaDespesa) .text-teal-700,
-      #app main:has(#chartReceitaDespesa) .text-teal-600 { color: #55cbbb !important; }
-      #app main:has(#chartReceitaDespesa) .bg-teal-50 { background: rgba(45,180,160,.12) !important; }
-      #app main:has(#chartReceitaDespesa) .bg-emerald-50 { background: rgba(16,185,129,.12) !important; }
-      #app main:has(#chartReceitaDespesa) .bg-blue-50 { background: rgba(59,130,246,.12) !important; }
-      #app main:has(#chartReceitaDespesa) .bg-amber-50 { background: rgba(245,158,11,.12) !important; }
-      #app main:has(#chartReceitaDespesa) .bg-rose-50 { background: rgba(244,63,94,.12) !important; }
-      #app > div > div.flex-1.flex.flex-col.min-h-screen.overflow-hidden > div:nth-of-type(1) {
-        scrollbar-width: thin;
-      }
-      #app .tab-active {
-        background: #252b2f !important;
-        color: #f4f6f7 !important;
-        border: 1px solid #3a444a !important;
-        border-bottom: 2px solid var(--bravo-accent) !important;
-        border-radius: 10px 10px 0 0 !important;
-        box-shadow: none !important;
-      }
-      #app .tab-active + div { margin-left: 0; }
-      #app .tab-active span { color: #f4f6f7 !important; }
-      #app .tab-active button { color: #aab4ba !important; }
-      #app .tab-active button:hover { background: #3a2529 !important; color: #ff9aa6 !important; }
-      @media (max-width: 768px) {
-        #app main { padding: 14px !important; }
-        #app main:has(#chartReceitaDespesa) .rounded-3xl { border-radius: 16px !important; }
-        #app .tab-active { border-radius: 9px 9px 0 0 !important; }
-      }
-    </style>
-
-
-<style id="bravo-dark-global-consistency">
-:root{color-scheme:dark}
-html,body,#app{background:#111315!important;color:#e8ecef!important}
-#app main{background:#111315!important;color:#e8ecef!important}
-#app main .bg-white,#app main .bg-white\/90,#app main .bg-slate-50,#app main .bg-slate-100,#app main .bg-gray-50,#app main .bg-gray-100{background:#1b1f22!important;color:#e8ecef!important}
-#app main .bg-slate-200,#app main .bg-slate-200\/80,#app main .bg-gray-200{background:#252a2e!important}
-#app main .text-slate-950,#app main .text-slate-900,#app main .text-slate-800,#app main .text-gray-900,#app main .text-gray-800{color:#edf1f3!important}
-#app main .text-slate-700,#app main .text-slate-600,#app main .text-slate-500,#app main .text-slate-400,#app main .text-gray-700,#app main .text-gray-600,#app main .text-gray-500{color:#a4adb3!important}
-#app main .border-slate-50,#app main .border-slate-100,#app main .border-slate-200,#app main .border-gray-100,#app main .border-gray-200{border-color:#343b40!important}
-#app main tbody tr:hover{background:#272d31!important}
-#app main input:not([type=checkbox]):not([type=radio]),#app main select,#app main textarea{background:#171b1e!important;color:#edf1f3!important;border:1px solid #3a444a!important}
-#app main input::placeholder,#app main textarea::placeholder{color:#78838a!important}
-#app main input:focus,#app main select:focus,#app main textarea:focus{border-color:#36b7a5!important;box-shadow:0 0 0 3px rgba(54,183,165,.14)!important}
-#app main .card-modern{border-color:#343b40!important;box-shadow:0 8px 24px rgba(0,0,0,.16)!important}
+<style id="bravo-theme-engine">
+/* Bravo UI foundation — tokens semânticos, tema noturno fixo */
+:root{
+ color-scheme:dark;
+ --br-bg:#111315;
+ --br-surface-1:#191d20;
+ --br-surface-2:#202529;
+ --br-surface-3:#272e33;
+ --br-overlay:rgba(7,10,12,.88);
+ --br-text:#edf1f3;
+ --br-text-soft:#c2cbd0;
+ --br-muted:#929da4;
+ --br-border:#343d43;
+ --br-border-strong:#465159;
+ --br-accent:#36b7a5;
+ --br-accent-hover:#49cbb8;
+ --br-focus:rgba(54,183,165,.2);
+ --br-shadow:0 10px 28px rgba(0,0,0,.22);
+ --br-radius:16px;
+ --br-motion:180ms;
+}
+html,body{min-height:100%;background:var(--br-bg)!important;color:var(--br-text)!important}
+#app{background:var(--br-bg)!important;color:var(--br-text)!important}
+#app main{background:var(--br-bg)!important;color:var(--br-text)!important}
+#sidebar-menu{background:#15191c!important;border-color:var(--br-border)!important}
+#sidebar-menu nav button{transition:background-color var(--br-motion) ease,color var(--br-motion) ease,border-color var(--br-motion) ease}
+#app main .bg-white,#app main .bg-white\/95,#app main .bg-white\/90,
+#app main .bg-slate-50,#app main .bg-slate-50\/50,#app main .bg-slate-100,
+#app main .bg-gray-50,#app main .bg-gray-100{
+ background:var(--br-surface-1)!important;color:var(--br-text)!important
+}
+#app main .bg-slate-200,#app main .bg-slate-200\/80,#app main .bg-gray-200{
+ background:var(--br-surface-3)!important;color:var(--br-text-soft)!important
+}
 #app main .bg-slate-950{background:#15191c!important}
-#app main .bg-slate-900{background:#1c2226!important}
-#app main .bg-slate-800{background:#252c30!important}
-#app > div > div.flex-1.flex.flex-col.min-h-screen.overflow-hidden > div.bg-slate-200\/80{background:#191d20!important;border-color:#343b40!important}
-#app > div > div.flex-1.flex.flex-col.min-h-screen.overflow-hidden > div.bg-gradient-to-r{background:#1b2829!important;border-color:#344448!important}
-#app header{background:#171b1e!important;border-color:#343b40!important}
-#modal-container > div{background:rgba(0,0,0,.72)!important}
-#modal-container > div > div{background:#1b1f22!important;color:#edf1f3!important;border-color:#3a444a!important}
-#modal-container .bg-white,#modal-container .bg-slate-50{background:#22272b!important;color:#edf1f3!important}
-#modal-container .text-slate-900,#modal-container .text-slate-800{color:#edf1f3!important}
-#modal-container .text-slate-600,#modal-container .text-slate-500{color:#a4adb3!important}
-#modal-container input,#modal-container select,#modal-container textarea{background:#171b1e!important;color:#edf1f3!important;border-color:#3a444a!important}
-::-webkit-scrollbar-track{background:#171b1e!important}
-::-webkit-scrollbar-thumb{background:#414a50!important}
-::-webkit-scrollbar-thumb:hover{background:#59666e!important}
+#app main .bg-slate-900{background:var(--br-surface-2)!important}
+#app main .bg-slate-800{background:var(--br-surface-3)!important}
+#app main .text-slate-950,#app main .text-slate-900,#app main .text-slate-800,
+#app main .text-gray-900,#app main .text-gray-800{color:var(--br-text)!important}
+#app main .text-slate-700,#app main .text-slate-600,#app main .text-gray-700,
+#app main .text-gray-600{color:var(--br-text-soft)!important}
+#app main .text-slate-500,#app main .text-slate-400,#app main .text-gray-500{color:var(--br-muted)!important}
+#app main .border-slate-50,#app main .border-slate-100,#app main .border-slate-200,
+#app main .border-gray-100,#app main .border-gray-200{border-color:var(--br-border)!important}
+#app main .card-modern{border-color:var(--br-border)!important;box-shadow:var(--br-shadow)!important}
+#app main table{color:var(--br-text-soft);border-color:var(--br-border)}
+#app main thead th{color:var(--br-muted)!important;border-color:var(--br-border)!important}
+#app main tbody tr{border-color:var(--br-border)!important}
+#app main tbody tr:hover{background:var(--br-surface-3)!important}
+#app main input:not([type=checkbox]):not([type=radio]),
+#app main select,#app main textarea,
+#modal-container input:not([type=checkbox]):not([type=radio]),
+#modal-container select,#modal-container textarea{
+ background:var(--br-surface-1)!important;color:var(--br-text)!important;
+ border:1px solid var(--br-border-strong)!important
+}
+#app main input::placeholder,#app main textarea::placeholder,
+#modal-container input::placeholder,#modal-container textarea::placeholder{color:var(--br-muted)!important;opacity:1}
+#app main input:focus,#app main select:focus,#app main textarea:focus,
+#modal-container input:focus,#modal-container select:focus,#modal-container textarea:focus{
+ border-color:var(--br-accent)!important;box-shadow:0 0 0 3px var(--br-focus)!important;outline:0
+}
+#app main input:disabled,#app main select:disabled,#app main textarea:disabled{opacity:.58;cursor:not-allowed}
+#app .tab-active{background:var(--br-surface-3)!important;color:var(--br-text)!important;border:1px solid var(--br-border-strong)!important;border-bottom:2px solid var(--br-accent)!important;box-shadow:none!important}
+#app header{background:var(--br-surface-1)!important;border-color:var(--br-border)!important;color:var(--br-text)!important}
+#modal-container .bg-white,#modal-container .bg-white\/95,#modal-container .bg-slate-50,
+#modal-container .bg-slate-100{background:var(--br-surface-2)!important;color:var(--br-text)!important}
+#modal-container .text-slate-950,#modal-container .text-slate-900,#modal-container .text-slate-800{color:var(--br-text)!important}
+#modal-container .text-slate-700,#modal-container .text-slate-600,#modal-container .text-slate-500{color:var(--br-text-soft)!important}
+#modal-container .border-slate-100,#modal-container .border-slate-200{border-color:var(--br-border)!important}
+#status-nuvem{color:var(--br-text-soft)}
+button,a,input,select,textarea{transition:background-color var(--br-motion) ease,border-color var(--br-motion) ease,color var(--br-motion) ease,box-shadow var(--br-motion) ease}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--br-accent)!important;outline-offset:2px}
+::-webkit-scrollbar-track{background:var(--br-surface-1)!important}
+::-webkit-scrollbar-thumb{background:var(--br-border-strong)!important;border-radius:999px}
+::-webkit-scrollbar-thumb:hover{background:var(--br-muted)!important}
+::selection{background:var(--br-accent);color:#071311}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{scroll-behavior:auto!important;transition-duration:.01ms!important;animation-duration:.01ms!important;animation-iteration-count:1!important}}
 @media print{html,body,#app,#app main{background:#fff!important;color:#000!important}#app main .bg-white,#app main .bg-slate-50{background:#fff!important;color:#000!important}}
 </style>
-
 </head>
 <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
 
