@@ -1,5 +1,5 @@
 -- RASCUNHO DE SQL — ainda não é uma migration executável.
--- Contém tabelas propostas para Formas Monetárias, Plano de Contas, Financeiro, Estoque e Acertos de Estoque.
+-- Contém tabelas propostas para cadastros financeiros, estoque, catálogos e documentos.
 -- Copiar para o arquivo criado por "supabase migration new" após revisão.
 -- Aplicação prevista somente na stack Supabase LOCAL e isolada do Bravo original.
 
@@ -149,6 +149,10 @@ create table if not exists bravo_shadow.acertos_estoque (
     constraint acertos_estoque_produto_fk
         foreign key (produto_id)
         references bravo_shadow.estoque (id)
+        on delete restrict,
+    constraint acertos_estoque_motivo_fk
+        foreign key (motivo_id)
+        references bravo_shadow.motivos_acerto (id)
         on delete restrict
 );
 
@@ -160,12 +164,18 @@ create index if not exists acertos_estoque_data_idx
 
 alter table bravo_shadow.estoque enable row level security;
 alter table bravo_shadow.acertos_estoque enable row level security;
+alter table bravo_shadow.categorias enable row level security;
+alter table bravo_shadow.motivos_acerto enable row level security;
+alter table bravo_shadow.documentos enable row level security;
 
 revoke all on table bravo_shadow.formas_monetarias from public, anon, authenticated, service_role;
 revoke all on table bravo_shadow.plano_contas from public, anon, authenticated, service_role;
 revoke all on table bravo_shadow.financeiro from public, anon, authenticated, service_role;
 revoke all on table bravo_shadow.estoque from public, anon, authenticated, service_role;
-revoke all on table bravo_shadow.acertos_estoque from public, anon, authenticated, service_role;\nrevoke all on table bravo_shadow.categorias from public, anon, authenticated, service_role;\nrevoke all on table bravo_shadow.motivos_acerto from public, anon, authenticated, service_role;\nrevoke all on table bravo_shadow.documentos from public, anon, authenticated, service_role;
+revoke all on table bravo_shadow.acertos_estoque from public, anon, authenticated, service_role;
+revoke all on table bravo_shadow.categorias from public, anon, authenticated, service_role;
+revoke all on table bravo_shadow.motivos_acerto from public, anon, authenticated, service_role;
+revoke all on table bravo_shadow.documentos from public, anon, authenticated, service_role;
 
 -- Não criar GRANT para anon/authenticated/service_role nesta fase.
 -- O backend deverá usar um usuário PostgreSQL dedicado, com privilégios mínimos,
