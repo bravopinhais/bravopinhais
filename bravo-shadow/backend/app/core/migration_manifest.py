@@ -64,6 +64,50 @@ def _sha256(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
 
+def _manifest_payload(manifest: MigrationManifest) -> dict[str, Any]:
+    """Return the versioned canonical payload covered by manifest_hash."""
+    return {
+        "formatVersion": manifest.format_version,
+        "canonicalizationVersion": manifest.canonicalization_version,
+        "batchId": manifest.batch_id,
+        "snapshotHash": manifest.snapshot_hash,
+        "sourceSystem": manifest.source_system,
+        "sourceBranch": manifest.source_branch,
+        "sourceBaseline": manifest.source_baseline,
+        "exportedAt": manifest.exported_at,
+        "createdAt": manifest.created_at,
+        "environment": manifest.environment,
+        "importerVersion": manifest.importer_version,
+        "mappingVersion": manifest.mapping_version,
+        "envelopeFormatVersion": manifest.envelope_format_version,
+        "collectionPresence": [[name, present] for name, present in manifest.collection_presence],
+        "records": [
+            {
+                "sourceSystem": item.source_system,
+                "sourceCollection": item.source_collection,
+                "legacyId": item.legacy_id,
+                "sourceRecordHash": item.source_record_hash,
+                "status": item.status,
+            }
+            for item in manifest.records
+        ],
+        "reportTotals": [[name, count] for name, count in manifest.report_totals],
+        "issueCodes": list(manifest.issue_codes),
+    }
+
+
+def serialize_migration_manifest(manifest: MigrationManifest) -> str:
+    """Serialize the manifest with its integrity hash in canonical JSON."""
+    payload = _manifest_payload(manifest)
+    payload["manifestHash"] = manifest.manifest_hash
+    return _canonical_json(payload)
+
+
+def verify_migration_manifest(manifest: MigrationManifest) -> bool:
+    """Check that the immutable fields still match the recorded integrity hash."""
+    return _sha256(_canonical_json(_manifest_payload(manifest))) == manifest.manifest_hash
+
+
 def build_migration_manifest(
     envelope: Mapping[str, Any],
     candidates: tuple[DryRunCandidate, ...],
@@ -94,6 +138,13 @@ def build_migration_manifest(
     ):
         if not isinstance(value, str) or not value.strip():
             raise ValueError(f"{field} deve ser texto não vazio.")
+
+    if any(
+        not isinstance(candidate.source_record_hash, str)
+        or not candidate.source_record_hash.strip()
+        for candidate in candidates
+    ):
+        raise ValueError("Cada candidato deve conter hash de origem não vazio.")
 
     records = tuple(sorted(
         (
