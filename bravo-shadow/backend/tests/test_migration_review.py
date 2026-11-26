@@ -107,3 +107,47 @@ def test_review_cannot_target_unknown_decision_or_other_manifest():
             reviewer_id="reviewer", choice="keep_blocked",
             rationale="Justificativa.", reviewed_at="2026-11-26T15:30:00-03:00",
         )
+
+
+
+def test_review_history_serializes_deterministically_and_verifies():
+    from app.core.migration_review import serialize_review_ledger, verify_review_ledger
+
+    register, ledger, decision_id = setup_review()
+    reviewed = append_review(
+        ledger, register,
+        event_id="evt-integrity", decision_id=decision_id, expected_version=0,
+        reviewer_id="reviewer", choice="keep_blocked",
+        rationale="Aguardando conferência.", reviewed_at="2026-11-26T15:45:00-03:00",
+    )
+
+    assert serialize_review_ledger(reviewed) == serialize_review_ledger(reviewed)
+    assert '"formatVersion":1' in serialize_review_ledger(reviewed)
+    assert verify_review_ledger(reviewed, register) is True
+
+
+def test_review_history_verifier_rejects_duplicate_or_broken_versions():
+    from dataclasses import replace
+    from app.core.migration_review import verify_review_ledger
+
+    register, ledger, decision_id = setup_review()
+    first = append_review(
+        ledger, register,
+        event_id="evt-1", decision_id=decision_id, expected_version=0,
+        reviewer_id="reviewer", choice="keep_blocked",
+        rationale="Manter bloqueado.", reviewed_at="2026-11-26T15:30:00-03:00",
+    )
+    broken_event = replace(first.events[0], version=3)
+    broken = replace(first, events=(broken_event,))
+
+    assert verify_review_ledger(first, register) is True
+    assert verify_review_ledger(broken, register) is False
+    assert verify_review_ledger(first, replace(register, manifest_hash="c" * 64)) is False
+
+
+def test_review_history_is_bound_to_original_manifest():
+    from app.core.migration_review import verify_review_ledger
+
+    register, ledger, _ = setup_review()
+    assert verify_review_ledger(ledger, register) is True
+    assert verify_review_ledger(ledger, replace(register, manifest_hash="a" * 64)) is False
