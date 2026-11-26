@@ -91,16 +91,47 @@ class PostgresEstoqueRepository(_InventoryPostgresBase):
         )
 
     def replace(self, item_id: str, item: EstoqueItem) -> None:
-        values = self._values(item)
-        changed = self._query(
-            f"UPDATE {self._table} SET item = %s, quantidade = %s, minimo = %s, "
-            "maximo = %s, etiqueta = %s, foto_nome = %s, foto_compactada_gzip = %s, "
-            "marca = %s, linha = %s, fabricante = %s, data_cadastro = %s, "
-            f"updated_at = now(), version = version + 1 WHERE id = %s",
-            (*values, item_id),
-        )
-        if not changed:
-            raise HTTPException(status_code=404, detail="Produto não encontrado.")
+        # Serializa edição cadastral com movimentos de estoque. Depois do primeiro
+        # movimento, o saldo só pode mudar pelo fluxo transacional de acerto.
+        with self._uow as uow:
+            connection = uow.connection
+            if connection is None:
+                raise RuntimeError("A conexão PostgreSQL não foi aberta.")
+            cursor = connection.cursor()
+            try:
+                cursor.execute(
+                    f"SELECT quantidade FROM {self._table} WHERE id = %s FOR UPDATE",
+                    (item_id,),
+                )
+                current = cursor.fetchone()
+                if current is None:
+                    raise HTTPException(status_code=404, detail="Produto não encontrado.")
+                cursor.execute(
+                    "SELECT 1 FROM bravo_shadow.acertos_estoque "
+                    "WHERE produto_id = %s LIMIT 1",
+                    (item_id,),
+                )
+                has_movements = cursor.fetchone() is not None
+                if has_movements and item.quantidade != current[0]:
+                    raise HTTPException(
+                        status_code=409,
+                        detail=(
+                            "O saldo deste produto possui histórico de movimentações. "
+                            "Altere a quantidade por um acerto de estoque."
+                        ),
+                    )
+                values = self._values(item)
+                cursor.execute(
+                    f"UPDATE {self._table} SET item = %s, quantidade = %s, minimo = %s, "
+                    "maximo = %s, etiqueta = %s, foto_nome = %s, foto_compactada_gzip = %s, "
+                    "marca = %s, linha = %s, fabricante = %s, data_cadastro = %s, "
+                    f"updated_at = now(), version = version + 1 WHERE id = %s",
+                    (*values, item_id),
+                )
+                if cursor.rowcount != 1:
+                    raise HTTPException(status_code=404, detail="Produto não encontrado.")
+            finally:
+                cursor.close()
 
     def delete(self, item_id: str) -> None:
         try:
