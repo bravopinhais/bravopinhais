@@ -10,12 +10,16 @@ from app.core.postgres_cadastros import (
     PostgresFornecedoresRepository,
     PostgresMoradoresRepository,
 )
-from app.core.postgres_catalogs import (
+from app.core.postgres_governance import (\n    PostgresCondominioRepository,\n    PostgresConselheirosRepository,\n)\nfrom app.core.postgres_catalogs import (
     PostgresCategoriasRepository,
     PostgresDocumentosRepository,
     PostgresMotivosAcertoRepository,
 )
-from app.core.postgres_governance import (\n    PostgresCondominioRepository,\n    PostgresConselheirosRepository,\n)\nfrom app.core.postgres_inventory import (
+from app.core.postgres_governance import (
+    PostgresCondominioRepository,
+    PostgresConselheirosRepository,
+)
+from app.core.postgres_inventory import (
     PostgresAcertosEstoqueRepository,
     PostgresEstoqueRepository,
 )
