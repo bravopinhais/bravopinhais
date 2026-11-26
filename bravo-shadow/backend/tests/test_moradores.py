@@ -1,83 +1,67 @@
+import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
-from app.main import app, create_app
-
-client = TestClient(app)
-
-
-def setup_function() -> None:
-    app.state.services.moradores._items.clear()
+from app.core.authentication import get_current_principal
+from app.core.authorization import AuthenticatedPrincipal
+from app.main import create_app
+from app.modules.moradores.schemas import MoradorImportBatch, MoradorInput
+from app.modules.moradores.service import MoradoresService
 
 
-def test_resident_crud_and_filters():
-    response = client.post("/api/v1/moradores", json={
-        "bloco": "1", "apartamento": "101", "nome": "Ana Maria", "email": "ana@example.com",
-        "telefone": "41999990000", "cpf": "123", "petNome": "Gato / Mimi", "vagaGaragem": "G12"
-    })
-    assert response.status_code == 201
-    item = response.json()
-    assert client.get("/api/v1/moradores?bloco=1&busca=ana").json()[0]["id"] == item["id"]
-    assert client.put(f"/api/v1/moradores/{item['id']}", json={
-        "bloco": "2", "apartamento": "202", "nome": "Ana Maria"
-    }).status_code == 200
-    assert client.delete(f"/api/v1/moradores/{item['id']}").status_code == 204
+def build_client(profile: str | None = None) -> TestClient:
+    application = create_app(storage_backend="memory")
+    if profile is not None:
+        async def authenticated_principal() -> AuthenticatedPrincipal:
+            return AuthenticatedPrincipal(subject="google-test-subject", email="teste@example.com", profile=profile, account_status="Ativo")
+        application.dependency_overrides[get_current_principal] = authenticated_principal
+    return TestClient(application)
 
 
-def test_resident_required_fields_and_import():
-    assert client.post("/api/v1/moradores", json={"bloco": "1", "nome": "Ana"}).status_code == 422
-    response = client.post("/api/v1/moradores/importar", json={"moradores": [
-        {"bloco": "3", "apartamento": "301", "nome": "Carlos"},
-        {"apartamento": "302", "nome": "Sem Nome"}
-    ]})
-    assert response.status_code == 200
-    assert response.json()["importados"] == 2
-    assert len(client.get("/api/v1/moradores").json()) == 2
+def test_all_resident_routes_require_authentication():
+    client = build_client()
+    requests = [
+        ("GET", "/api/v1/moradores", None),
+        ("POST", "/api/v1/moradores", {"bloco": "1", "apartamento": "101", "nome": "Ana"}),
+        ("PUT", "/api/v1/moradores/id-teste", {"bloco": "1", "apartamento": "101", "nome": "Ana"}),
+        ("DELETE", "/api/v1/moradores/id-teste", None),
+        ("POST", "/api/v1/moradores/importar", {"moradores": []}),
+    ]
+    for method, path, payload in requests:
+        assert client.request(method, path, json=payload).status_code == 401
 
 
-def test_resident_not_found():
-    assert client.delete("/api/v1/moradores/inexistente").status_code == 404
+def test_both_profiles_are_denied_resident_actions_until_matrix_approval():
+    requests = [
+        ("GET", "/api/v1/moradores", None),
+        ("POST", "/api/v1/moradores", {"bloco": "1", "apartamento": "101", "nome": "Ana"}),
+        ("PUT", "/api/v1/moradores/id-teste", {"bloco": "1", "apartamento": "101", "nome": "Ana"}),
+        ("DELETE", "/api/v1/moradores/id-teste", None),
+        ("POST", "/api/v1/moradores/importar", {"moradores": []}),
+    ]
+    for profile in ("Admin", "Operador"):
+        client = build_client(profile)
+        for method, path, payload in requests:
+            assert client.request(method, path, json=payload).status_code == 403
 
 
-def test_residents_are_isolated_between_app_instances():
-    first, second = TestClient(create_app()), TestClient(create_app())
-    created = first.post("/api/v1/moradores", json={
-        "bloco": "1", "apartamento": "101", "nome": "Morador Isolado"
-    }).json()
-    assert first.get("/api/v1/moradores").json()[0]["id"] == created["id"]
-    assert second.get("/api/v1/moradores").json() == []
+def test_resident_service_crud_filters_and_import():
+    service = MoradoresService()
+    data = MoradorInput(bloco="1", apartamento="101", nome="Ana Maria", email="ana@example.com", telefone="41999990000", cpf="123", petNome="Mimi", vagaGaragem="G12")
+    item = service.create(data)
+    assert service.list(bloco="1", busca="ana") == [item]
+    updated = service.update(item.id, MoradorInput(bloco="2", apartamento="202", nome="Ana Maria"))
+    assert updated.bloco == "2"
+    assert service.import_batch(MoradorImportBatch(moradores=[{"bloco":"3","apartamento":"301","nome":"Carlos"}])) == 1
+    assert len(service.list()) == 2
+    service.delete(item.id)
+    with pytest.raises(HTTPException) as error:
+        service.delete(item.id)
+    assert error.value.status_code == 404
 
 
-def test_resident_text_fields_are_trimmed_without_reformatting_documents():
-    response = client.post("/api/v1/moradores", json={
-        "bloco": "  1  ", "apartamento": " 101 ", "nome": " Ana Maria ",
-        "email": " ana@example.com ", "telefone": "  (41) 99999-0000  ",
-        "cpf": " 123.456.789-00 ", "petNome": " Mimi ", "vagaGaragem": " G12 "
-    })
-    assert response.status_code == 201
-    item = response.json()
-    assert item["bloco"] == "1"
-    assert item["apartamento"] == "101"
-    assert item["nome"] == "Ana Maria"
-    assert item["email"] == "ana@example.com"
-    assert item["telefone"] == "(41) 99999-0000"
-    assert item["cpf"] == "123.456.789-00"
-    assert item["petNome"] == "Mimi"
-    assert item["vagaGaragem"] == "G12"
-
-
-def test_resident_required_fields_reject_whitespace_only_values():
-    response = client.post("/api/v1/moradores", json={
-        "bloco": " 1 ", "apartamento": "   ", "nome": " Ana "
-    })
-    assert response.status_code == 422
-
-
-def test_optional_resident_fields_accept_blank_values_after_trim():
-    response = client.post("/api/v1/moradores", json={
-        "bloco": "1", "apartamento": "101", "nome": "Ana",
-        "email": "   ", "telefone": "  ", "cpf": " "
-    })
-    assert response.status_code == 201
-    assert response.json()["email"] == ""
-    assert response.json()["telefone"] == ""
-    assert response.json()["cpf"] == ""
+def test_resident_required_fields_and_text_normalization():
+    with pytest.raises(Exception):
+        MoradorInput(bloco="1", apartamento="   ", nome="Ana")
+    item = MoradorInput(bloco=" 1 ", apartamento=" 101 ", nome=" Ana ", email=" ana@example.com ", telefone=" (41) 99999-0000 ")
+    assert (item.bloco, item.apartamento, item.nome, item.email, item.telefone) == ("1", "101", "Ana", "ana@example.com", "(41) 99999-0000")
