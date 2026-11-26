@@ -209,3 +209,10 @@ Referência: `auditoria-rotas-autorizacao.md` e `matriz-roles-permissoes-revisao
 - [ ] Definir política de normalização de pastas e integridade de documentos históricos.
 
 **Evidência:** auditoria estática dos contratos e telas versionadas; nenhum dado real foi consultado, nenhuma migration foi aplicada e nenhuma rota foi alterada nesta rodada.
+
+
+## Atualização de segurança — política efetiva de capacidades
+
+A matriz funcional Admin/Operador permanece sem aprovação. O código de autorização foi ajustado para que ambos os perfis tenham conjunto vazio de capacidades até aprovação formal. Portanto, autenticação Google válida e conta ativa não concedem acesso a operações de negócio por si só. A dependência central retorna 403 para ambos os perfis enquanto a matriz não for aprovada.
+
+Esta correção não protege automaticamente os routers existentes: cada rota de negócio ainda precisa declarar dependências de autenticação e capacidade, e a validação completa deverá ocorrer em testes HTTP. Nenhum endpoint deve ser considerado liberado para dados reais nesta fase.
