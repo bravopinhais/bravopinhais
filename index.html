@@ -88,6 +88,74 @@
         }
 
     </style>
+
+    <style id="bravo-dark-dashboard-refresh">
+      :root {
+        color-scheme: dark;
+        --bravo-bg: #111315;
+        --bravo-surface: #1b1e21;
+        --bravo-surface-2: #22262a;
+        --bravo-border: #30363b;
+        --bravo-text: #edf0f2;
+        --bravo-muted: #9aa3aa;
+        --bravo-accent: #36b7a5;
+      }
+      body { background: var(--bravo-bg) !important; color: var(--bravo-text) !important; }
+      #app, #app > div { background: var(--bravo-bg) !important; color: var(--bravo-text); }
+      #sidebar-menu, #sidebar-menu > div { background: #191c1f !important; border-color: var(--bravo-border) !important; }
+      #sidebar-menu nav button { border-radius: 10px !important; }
+      #sidebar-menu nav button:not(.bg-gradient-to-r):hover { background: #292e32 !important; }
+      #sidebar-menu nav button.bg-gradient-to-r { background: #176e64 !important; box-shadow: none !important; }
+      #sidebar-menu .text-slate-500 { color: #879198 !important; }
+      #sidebar-menu .border-slate-800, #sidebar-menu .border-slate-900 { border-color: var(--bravo-border) !important; }
+      #app main { background: var(--bravo-bg) !important; color: var(--bravo-text) !important; }
+      #app main:has(#chartReceitaDespesa) .bg-white,
+      #app main:has(#chartReceitaDespesa) .bg-white\/90 {
+        background: var(--bravo-surface) !important;
+        border: 1px solid var(--bravo-border) !important;
+        box-shadow: 0 8px 24px rgba(0,0,0,.18) !important;
+      }
+      #app main:has(#chartReceitaDespesa) .bg-slate-50,
+      #app main:has(#chartReceitaDespesa) .bg-slate-100 { background: #24292d !important; }
+      #app main:has(#chartReceitaDespesa) .text-slate-900,
+      #app main:has(#chartReceitaDespesa) .text-slate-800 { color: #edf0f2 !important; }
+      #app main:has(#chartReceitaDespesa) .text-slate-600,
+      #app main:has(#chartReceitaDespesa) .text-slate-500,
+      #app main:has(#chartReceitaDespesa) .text-slate-400 { color: var(--bravo-muted) !important; }
+      #app main:has(#chartReceitaDespesa) .border-slate-100,
+      #app main:has(#chartReceitaDespesa) .border-slate-200 { border-color: var(--bravo-border) !important; }
+      #app main:has(#chartReceitaDespesa) tbody tr:hover { background: #292f33 !important; }
+      #app main:has(#chartReceitaDespesa) thead { background: #24292d !important; color: #aeb7bd !important; }
+      #app main:has(#chartReceitaDespesa) .bg-slate-950 { background: #171a1d !important; }
+      #app main:has(#chartReceitaDespesa) .text-teal-700,
+      #app main:has(#chartReceitaDespesa) .text-teal-600 { color: #55cbbb !important; }
+      #app main:has(#chartReceitaDespesa) .bg-teal-50 { background: rgba(45,180,160,.12) !important; }
+      #app main:has(#chartReceitaDespesa) .bg-emerald-50 { background: rgba(16,185,129,.12) !important; }
+      #app main:has(#chartReceitaDespesa) .bg-blue-50 { background: rgba(59,130,246,.12) !important; }
+      #app main:has(#chartReceitaDespesa) .bg-amber-50 { background: rgba(245,158,11,.12) !important; }
+      #app main:has(#chartReceitaDespesa) .bg-rose-50 { background: rgba(244,63,94,.12) !important; }
+      #app > div > div.flex-1.flex.flex-col.min-h-screen.overflow-hidden > div:nth-of-type(1) {
+        scrollbar-width: thin;
+      }
+      #app .tab-active {
+        background: #252b2f !important;
+        color: #f4f6f7 !important;
+        border: 1px solid #3a444a !important;
+        border-bottom: 2px solid var(--bravo-accent) !important;
+        border-radius: 10px 10px 0 0 !important;
+        box-shadow: none !important;
+      }
+      #app .tab-active + div { margin-left: 0; }
+      #app .tab-active span { color: #f4f6f7 !important; }
+      #app .tab-active button { color: #aab4ba !important; }
+      #app .tab-active button:hover { background: #3a2529 !important; color: #ff9aa6 !important; }
+      @media (max-width: 768px) {
+        #app main { padding: 14px !important; }
+        #app main:has(#chartReceitaDespesa) .rounded-3xl { border-radius: 16px !important; }
+        #app .tab-active { border-radius: 9px 9px 0 0 !important; }
+      }
+    </style>
+
 </head>
 <body class="bg-slate-100 font-sans antialiased text-slate-800 min-h-screen flex flex-col">
 
