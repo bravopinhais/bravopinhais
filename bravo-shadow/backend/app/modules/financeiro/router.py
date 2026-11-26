@@ -1,6 +1,5 @@
-from fastapi import APIRouter, Depends, Header, Request, Response, status
+from fastapi import APIRouter, Header, Request, Response, status
 
-from app.core.authorization import require_capability_dependency
 from app.core.etag import format_etag, parse_if_match
 from .schemas import FinanceiroInput, FinanceiroTitulo
 from .service import FinanceiroService
@@ -12,32 +11,19 @@ def get_service(request: Request) -> FinanceiroService:
     return request.app.state.services.financeiro
 
 
-@router.get(
-    "",
-    response_model=list[FinanceiroTitulo],
-    dependencies=[Depends(require_capability_dependency("financeiro:read"))],
-)
+@router.get("", response_model=list[FinanceiroTitulo])
 def list_titles(request: Request) -> list[FinanceiroTitulo]:
     return get_service(request).list()
 
 
-@router.post(
-    "",
-    response_model=FinanceiroTitulo,
-    status_code=status.HTTP_201_CREATED,
-    dependencies=[Depends(require_capability_dependency("financeiro:create"))],
-)
+@router.post("", response_model=FinanceiroTitulo, status_code=status.HTTP_201_CREATED)
 def create_title(data: FinanceiroInput, request: Request, response: Response):
     item = get_service(request).create(data)
     response.headers["ETag"] = format_etag(item.version)
     return item
 
 
-@router.put(
-    "/{item_id}",
-    response_model=FinanceiroTitulo,
-    dependencies=[Depends(require_capability_dependency("financeiro:update"))],
-)
+@router.put("/{item_id}", response_model=FinanceiroTitulo)
 def update_title(
     item_id: str,
     data: FinanceiroInput,
@@ -51,10 +37,6 @@ def update_title(
     return item
 
 
-@router.delete(
-    "/{item_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(require_capability_dependency("financeiro:delete"))],
-)
+@router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_title(item_id: str, request: Request) -> None:
     get_service(request).delete(item_id)
