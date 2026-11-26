@@ -204,3 +204,39 @@ def test_invalid_choice_is_rejected_and_tampered_choice_fails_verification():
     assert verify_review_ledger(valid, register) is True
     assert verify_review_ledger(altered_ledger, register) is False
 
+
+
+
+def test_review_verifier_rejects_boolean_version_and_non_tuple_history():
+    from dataclasses import replace
+    from app.core.migration_review import verify_review_ledger
+
+    register, ledger, decision_id = setup_review()
+    valid = append_review(
+        ledger, register,
+        event_id="evt-strict-version", decision_id=decision_id, expected_version=0,
+        reviewer_id="reviewer", choice="keep_blocked",
+        rationale="Manter bloqueado.", reviewed_at="2026-11-26T16:45:00-03:00",
+    )
+    boolean_version = replace(valid.events[0], version=True)
+
+    assert verify_review_ledger(
+        replace(valid, events=(boolean_version,)), register
+    ) is False
+    assert verify_review_ledger(
+        replace(valid, events=list(valid.events)), register
+    ) is False
+
+
+def test_append_rejects_boolean_or_negative_expected_version():
+    register, ledger, decision_id = setup_review()
+
+    for invalid_version in (True, -1):
+        with pytest.raises(ReviewValidationError, match="invalid_expected_version"):
+            append_review(
+                ledger, register,
+                event_id="evt-invalid-version", decision_id=decision_id,
+                expected_version=invalid_version, reviewer_id="reviewer",
+                choice="keep_blocked", rationale="Manter bloqueado.",
+                reviewed_at="2026-11-26T16:46:00-03:00",
+            )
