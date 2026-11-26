@@ -1,7 +1,7 @@
 import pytest
 from fastapi import HTTPException
 
-from app.modules.usuarios.schemas import Usuario, UsuarioAdministracaoInput
+from app.modules.usuarios.schemas import Usuario, UsuarioAdministracaoInput, UsuarioInput
 from app.modules.usuarios.service import UsuariosService
 
 
@@ -67,7 +67,7 @@ def test_service_blocks_actor_from_changing_own_profile_or_status():
 def test_memory_repository_fails_closed_for_admin_changes():
     service = UsuariosService()
     created = service.create(
-        __import__("app.modules.usuarios.schemas", fromlist=["UsuarioInput"]).UsuarioInput(
+        UsuarioInput(
             email="target@example.com", nome="Pessoa", cargo="Conselho",
             perfil="Admin",
         )
