@@ -33,9 +33,11 @@ No Windows, ative o ambiente com `.venv\\Scripts\\activate`.
 | Empregados | `GET/POST /api/v1/empregados`, `PUT/DELETE /api/v1/empregados/{id}` |
 | Condomínio | `GET/PUT /api/v1/condominio` (atualização parcial) |
 | Conselheiros | `GET/POST /api/v1/conselheiros`, `PUT/DELETE /api/v1/conselheiros/{id}` |
-| Moradores | `GET/POST /api/v1/moradores`, `GET` com filtros `bloco`/`busca`, `PUT/DELETE /api/v1/moradores/{id}`, `POST /api/v1/moradores/importar` (lote JSON) |
+| Moradores | `GET/POST /api/v1/moradores`, filtros `bloco`/`busca`, `PUT/DELETE /api/v1/moradores/{id}`, `POST /api/v1/moradores/importar` (lote JSON) |
+| Pastas | `GET/POST /api/v1/categorias`, `DELETE /api/v1/categorias/{id}` |
+| Motivos de acerto | `GET/POST /api/v1/motivos-acerto-estoque`, `DELETE /api/v1/motivos-acerto-estoque/{id}` |
 
-Os nove módulos usam armazenamento temporário em memória. O verificador de exclusão do Plano de Contas consulta os títulos financeiros mantidos no mesmo processo da API.
+Os onze módulos usam armazenamento temporário em memória. O verificador de exclusão do Plano de Contas consulta os títulos financeiros mantidos no mesmo processo da API.
 
 ## Limites desta etapa
 
