@@ -1,14 +1,28 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Request, status
+
 from .schemas import MotivoAcerto, MotivoAcertoInput
-from .service import motivos_acerto_service
+from .service import MotivosAcertoService
 
-router = APIRouter(prefix='/api/v1/motivos-acerto-estoque', tags=['Motivos de Acerto de Estoque'])
+router = APIRouter(
+    prefix="/api/v1/motivos-acerto-estoque",
+    tags=["Motivos de Acerto de Estoque"],
+)
 
-@router.get('', response_model=list[MotivoAcerto])
-def list_reasons(): return motivos_acerto_service.list()
 
-@router.post('', response_model=MotivoAcerto, status_code=status.HTTP_201_CREATED)
-def create_reason(data: MotivoAcertoInput): return motivos_acerto_service.create(data)
+def get_service(request: Request) -> MotivosAcertoService:
+    return request.app.state.services.motivos_acerto
 
-@router.delete('/{item_id}', status_code=status.HTTP_204_NO_CONTENT)
-def delete_reason(item_id: str): motivos_acerto_service.delete(item_id)
+
+@router.get("", response_model=list[MotivoAcerto])
+def list_reasons(request: Request):
+    return get_service(request).list()
+
+
+@router.post("", response_model=MotivoAcerto, status_code=status.HTTP_201_CREATED)
+def create_reason(data: MotivoAcertoInput, request: Request):
+    return get_service(request).create(data)
+
+
+@router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_reason(item_id: str, request: Request):
+    get_service(request).delete(item_id)
