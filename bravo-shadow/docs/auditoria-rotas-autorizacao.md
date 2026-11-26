@@ -106,3 +106,42 @@ Não habilitar o modo PostgreSQL em ambiente acessível por usuários enquanto a
 - Nenhum token ou credencial foi solicitado ou manipulado.
 - Nenhuma migration, role, policy ou banco foi criado/alterado.
 - O sistema original e seu `index.html` permanecem fora do escopo.
+
+
+## Matriz provisória por módulo — política segura até aprovação
+
+Como o repositório não contém uma matriz funcional aprovada para `Admin` e `Operador`, a regra técnica provisória recomendada é **negar por padrão**. Isso evita transformar suposições em permissões reais.
+
+| Módulo | Admin autenticado e ativo | Operador autenticado e ativo | Observação |
+|---|---|---|---|
+| Dashboard | Consultar | Pendente de aprovação | Indicadores podem revelar dados financeiros e pessoais |
+| Condomínio & Conselho | Consultar/criar/editar/excluir conforme rotas | Pendente de aprovação | Alteração institucional |
+| Plano de Contas | Consultar/criar/editar/excluir | Pendente de aprovação | Impacta classificação financeira |
+| Contas a Pagar / Receber | Consultar/criar/editar/excluir | Pendente de aprovação | Informação financeira sensível |
+| Formas Monetárias | Consultar/criar/editar/excluir | Pendente de aprovação | Configuração que afeta cálculos |
+| Contas Bancárias / Caixa | Consultar/criar/editar/excluir | Pendente de aprovação | Saldo e dados bancários |
+| Moradores & Unidades | Consultar/criar/editar/excluir/importar | Pendente de aprovação | Contém dados pessoais |
+| Fornecedores | Consultar/criar/editar/excluir | Pendente de aprovação | Dados cadastrais e fiscais |
+| Empregados | Consultar/criar/editar/excluir | Pendente de aprovação | Dados pessoais e contatos de emergência |
+| Pastas & Categorias | Consultar/criar/excluir conforme rotas | Pendente de aprovação | Cadastros de referência |
+| Estoque & Inventário | Consultar/criar/editar/excluir conforme integridade | Pendente de aprovação | Saldo não pode ser alterado diretamente após histórico |
+| Acerto de Estoque | Consultar e registrar movimentos | Pendente de aprovação | Histórico persistido sem UPDATE/DELETE |
+| Gestão de Documentos | Consultar/criar/editar/excluir | Pendente de aprovação | Conteúdo documental |
+| Relatórios & DRE | Consultar | Pendente de aprovação | Dados agregados podem revelar informação financeira |
+| Gestão de Usuários | Consultar/criar/editar/excluir perfis | **Negado** | Exclusivo de administrador; proteger contra autoelevação |
+
+**Interpretação:** “Pendente de aprovação” significa que a aplicação deve negar a ação até existir uma decisão explícita. Não significa que o Operador jamais poderá executar a ação. Depois de aprovada, a permissão deve ser atribuída por capacidade específica (por exemplo, `moradores:ler`, `estoque:registrar_movimento`) e não por uma regra genérica ampla.
+
+### Regras invariáveis
+
+- Usuário inexistente, inativo, sem token válido ou sem capacidade explícita: negar.
+- O cliente não pode escolher o próprio perfil ou enviar permissões para elevar o acesso.
+- Criação de usuário por endpoint público não pode criar Admin; a criação e promoção de Admin exigem fluxo administrativo protegido.
+- Um usuário não pode alterar o próprio perfil ou status.
+- O perfil `Admin` não pode alterar/apagar o histórico de movimentos persistidos de estoque; correções devem ser por movimento compensatório futuro.
+- O health check permanece público e não expõe dados de negócio.
+- A role PostgreSQL da API não decide entre Admin e Operador; essa decisão pertence ao backend autenticado.
+
+### Recomendação para implementação posterior
+
+Não adicionar ainda uma matriz hardcoded aos routers. Primeiro aprovar as capacidades do Operador; em seguida criar um catálogo central de permissões, testes unitários da política e testes HTTP para cada rota. A API deve aplicar a mesma política independentemente de a interface esconder ou mostrar um botão.
