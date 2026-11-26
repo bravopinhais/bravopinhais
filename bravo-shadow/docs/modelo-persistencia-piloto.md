@@ -304,3 +304,14 @@ No modo PostgreSQL, a edição cadastral de um produto bloqueia a linha com `FOR
 - Não foram criadas regras de unicidade para nome, telefone ou contato de emergência. Nome não é identificador único de empregado.
 - Foram acrescentados testes para normalização dos campos, rejeição de cargo em branco e compatibilidade com campos opcionais vazios. Os testes ainda não foram executados.
 - O cadastro pode conter endereço e dados de contato pessoal. Antes de importar dados reais, permanecem necessários controles de acesso server-side, autenticação validada, matriz de permissões aprovada e política de retenção.
+
+
+## Revisão de integridade — Condomínio e Conselho
+
+- **Condomínio:** os campos textuais do perfil são normalizados removendo espaços externos. O endpoint continua sendo um PATCH semântico via PUT: campos omitidos permanecem intactos e valores `null` não apagam dados existentes; string vazia continua sendo aceita para permitir limpar campos opcionais.
+- **Conselheiros:** nome, cargo, bloco/apartamento e telefone removem espaços externos na criação e atualização. Nome e cargo seguem obrigatórios; valores somente com espaços são rejeitados após normalização. Bloco/apartamento e telefone continuam opcionais.
+- A pontuação e o formato de telefones são preservados; não foram adicionadas máscaras, validação de DDD ou normalização de números.
+- Não foi criado vínculo por FK entre conselheiros e moradores/unidades: o campo `BlocoAp` é texto livre no contrato atual. Converter para relacionamento exigiria identificar unidades de referência e definir comportamento para mudanças de bloco/apartamento.
+- Não foram adicionadas regras de unicidade para nome, cargo, e-mail, telefone ou unidade. O cadastro pode conter conselheiros com nomes iguais e o sistema não tem identificador de unidade estruturado neste módulo.
+- Foram adicionados testes para normalização, preservação de campos omitidos, limpeza por string vazia e rejeição de campos obrigatórios em branco. Os testes ainda não foram executados.
+- Os dados de condomínio e conselho não devem ser tratados como protegidos por autorização funcional: as rotas de negócio continuam sem dependências de autorização enquanto a matriz de permissões não for aprovada e a validação do token Google não for confirmada.
