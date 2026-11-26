@@ -1,7 +1,7 @@
 # Revisão de integridade — Gestão de Usuários
 
 **Escopo:** análise estática do módulo de usuários no branch `bravo-shadow`.  
-**Status:** diagnóstico atualizado; correções de unicidade implementadas e cobertas por testes. A proteção do último administrador permanece pendente de definição e implementação.
+**Status:** proteção transacional de perfil/status implementada de forma isolada no serviço e no repositório PostgreSQL, com testes simulados aprovados. Ainda não está exposta por rota nem validada contra PostgreSQL real. O contrato DDL das tabelas de usuários e auditoria precisa ser formalizado antes do teste de integração.
 
 ## 1. Unicidade de e-mail
 
@@ -46,15 +46,15 @@ Uma verificação simples seguida de atualização não basta: duas operações 
 1. Separar os dados cadastrais das operações privilegiadas de alteração de perfil/status. Os schemas separados existem, mas ainda não estão ligados ao serviço/rotas.
 2. **Implementado isoladamente no PostgreSQL:** `update_administrative_state` serializa alterações administrativas com `LOCK TABLE ... IN SHARE ROW EXCLUSIVE MODE`, conta Admins ativos, atualiza o usuário e grava auditoria usando a mesma conexão/UoW.
 3. Se a operação reduzir a contagem de Admins ativos abaixo de um, retorna conflito e faz rollback.
-4. Ainda falta estender a regra à exclusão/desativação lógica e impedir explicitamente autoalteração de perfil/status.
-5. O adaptador em memória ainda não possui operação administrativa equivalente.
-6. Testes simulados cobrem sucesso, último Admin, usuário ausente e rollback quando auditoria falha. Falta teste de integração PostgreSQL local descartável.
+4. A autoalteração de perfil/status já é bloqueada no serviço por comparação do e-mail autenticado com o usuário-alvo. Essa validação ainda precisa ser reforçada no limite transacional antes da exposição por rota.
+5. O adaptador em memória não possui operação administrativa equivalente e falha fechado com HTTP 503.
+6. Testes simulados cobrem sucesso, último Admin, usuário ausente e rollback quando auditoria falha. Falta teste de integração PostgreSQL local descartável porque ainda não há DDL versionado das tabelas `bravo_shadow.usuarios` e `bravo_shadow.audit_events` no Shadow.
 
 ## 3. Ordem recomendada antes de ativar a gestão administrativa
 
 1. Aprovar o contrato de gestão de usuários e a regra de cadastro inicial (Ativo, Inativo ou Pendente).
 2. Definir formalmente quais perfis podem cadastrar, editar dados, alterar perfil/status, desativar e excluir usuários.
-3. Concluído parcialmente: operação atômica no adaptador PostgreSQL e delegação no serviço; o adaptador em memória falha fechado. Falta integração HTTP.
+3. Concluído parcialmente: operação atômica no adaptador PostgreSQL, delegação no serviço, bloqueio de autoalteração e falha fechada no adaptador em memória. Falta contrato DDL, integração PostgreSQL real e integração HTTP.
 4. Testes unitários simulados adicionados; falta teste de integração PostgreSQL local e teste concorrente real para último Admin.
 5. Confirmar a configuração do provedor Google e manter as rotas condicionadas à identidade verificada e às capacidades formalmente aprovadas.
 
@@ -62,7 +62,8 @@ Uma verificação simples seguida de atualização não basta: duas operações 
 
 - Não houve conexão com PostgreSQL ou Supabase.
 - O SQL continua sendo rascunho; nenhuma migration foi criada ou aplicada. O índice de e-mail usa `lower(btrim(email))`, mas ainda não foi aplicado em banco.
-- A proteção do último Admin foi implementada apenas em método isolado do repositório PostgreSQL, ainda não conectado ao serviço/rotas. Não foi testada contra PostgreSQL real nem ativada operacionalmente.
+- A proteção do último Admin está implementada no método transacional PostgreSQL e integrada ao serviço, mas permanece fora das rotas. Os testes atuais do método usam conexão simulada; não foi validada contra PostgreSQL real nem ativada operacionalmente.
+- A pasta `docs/sql` não contém, nesta revisão, um DDL versionado das tabelas `bravo_shadow.usuarios` e `bravo_shadow.audit_events`. Os métodos PostgreSQL pressupõem colunas como `updated_at` e `version`; não se deve criar teste de integração com esquema presumido.
 - As rotas de usuários possuem dependências de autenticação e capacidades; a matriz de capacidades para Admin/Operador permanece fechada, e a configuração do provedor Google ainda precisa ser confirmada antes de qualquer exposição operacional.
 - A proposta não aprova automaticamente a matriz de permissões nem define o estado inicial de novos usuários.
 - O workflow de testes citado valida o código coberto por ele, não a implantação, a conexão com banco ou o comportamento em produção.
