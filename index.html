@@ -33976,3 +33976,24 @@ html:root:root:root #app#app main .dashboard-shell .dashboard-analytics-disclosu
   pointer-events: auto;
 }
 </style>
+
+<style id="bravo-fix-fundo-painel-lateral-2026">
+/* Unifica o fundo do painel lateral com a superfície grafite do sistema. */
+html:root:root:root #sidebar-menu,
+html:root:root:root #sidebar-menu > div:first-child,
+html:root:root:root #sidebar-menu > div:last-child,
+html:root:root:root #sidebar-menu nav {
+  background: #1f1f1f !important;
+  background-image: none !important;
+  color: #ececec !important;
+}
+/* As áreas de navegação internas não devem reintroduzir o azul-marinho. */
+html:root:root:root #sidebar-menu nav > div {
+  background: transparent !important;
+}
+/* Mantém os botões como superfícies destacadas sobre o painel grafite. */
+html:root:root:root #sidebar-menu nav button:not([aria-current="page"]) {
+  background-color: #242424 !important;
+  border-color: #303030 !important;
+}
+</style>
