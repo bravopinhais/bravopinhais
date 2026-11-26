@@ -10,8 +10,8 @@
 - `UsuarioInput.normalize_email` remove espaços externos e converte o e-mail para minúsculas.
 - `UsuariosService._ensure_email_available` percorre a coleção antes de criar ou atualizar.
 - O repositório em memória protege individualmente `list` e `add` com `RLock`, mas a sequência verificar-e-gravar não é uma única operação atômica.
-- O rascunho SQL cria `usuarios_email_ci_uidx` em `lower(email)`, que impede duplicidade concorrente no PostgreSQL para e-mails normalizados.
-- `PostgresUsuariosRepository` traduz qualquer erro SQLSTATE `23505` para conflito de e-mail. Isso pode mascarar uma violação de outra restrição única que venha a ser adicionada.
+- O rascunho SQL cria `usuarios_email_ci_uidx` em `lower(btrim(email))`, que impede duplicidade concorrente no PostgreSQL inclusive quando uma gravação direta contém espaços externos.
+- `PostgresUsuariosRepository` agora traduz para HTTP 409 somente a violação SQLSTATE `23505` cuja constraint seja `usuarios_email_ci_uidx`; outras violações de unicidade são propagadas sem serem mascaradas.
 
 ### Risco
 
@@ -21,7 +21,7 @@ No backend em memória, duas requisições concorrentes podem consultar a coleç
 
 1. Acrescentar ao contrato do repositório de usuários uma operação atômica de criação/alteração que valide e grave o e-mail sob o mesmo bloqueio no adaptador em memória.
 2. No PostgreSQL, manter a restrição única como autoridade final; normalizar no serviço/schema e considerar índice em `lower(btrim(email))` ou uma restrição equivalente para também proteger gravações diretas com espaços externos.
-3. Na captura de `23505`, verificar o nome da constraint/índice (por exemplo, `usuarios_email_ci_uidx`) antes de retornar HTTP 409 de e-mail duplicado. Repropagar violações de outras constraints corretamente.
+3. Na captura de `23505`, verificar o nome da constraint/índice `usuarios_email_ci_uidx` antes de retornar HTTP 409 de e-mail duplicado. Repropagar violações de outras constraints corretamente. **Implementado no adaptador PostgreSQL e coberto por testes com exceções simuladas.**
 4. Testar duas criações concorrentes com o mesmo e-mail em variantes de caixa e espaços, além da atualização que mantém o próprio e-mail.
 
 ## 2. Proteção do último administrador ativo
@@ -58,7 +58,7 @@ Uma verificação simples seguida de atualização não basta: duas operações 
 ## 4. Limites desta revisão
 
 - Não houve conexão com PostgreSQL ou Supabase.
-- O SQL continua sendo rascunho; nenhuma migration foi criada ou aplicada.
+- O SQL continua sendo rascunho; nenhuma migration foi criada ou aplicada. O índice de e-mail no rascunho usa `lower(btrim(email))`; a alteração ainda não foi aplicada em banco.
 - Nenhuma rota, schema, serviço, tabela, permissão ou tela foi alterada.
 - As rotas de usuários continuam sem autenticação/autorização; não devem ser expostas publicamente.
 - A proposta não aprova automaticamente a matriz de permissões nem define o estado inicial de novos usuários.
