@@ -3,7 +3,6 @@ from collections.abc import Callable
 from typing import Any
 
 from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.storage import StorageConfigurationError, configure_storage
 from app.modules.contas_bancarias.router import router as contas_bancarias_router
