@@ -168,3 +168,12 @@ Limites preservados:
 
 Este serviço fecha a orquestração técnica da comparação, mas não representa
 validação de dados reais nem conclusão da migração.
+
+
+## Contrato do snapshot de origem
+
+Foi definido `backend/app/core/migration_source_snapshot.py` como contrato estrutural para uma futura fonte de inventário legado. O objeto imutável `SourceSnapshot` exige sistema de origem, baseline, hash SHA-256 do snapshot, data de exportação e uma tupla de registros com hashes individuais.
+
+O protocolo `SourceSnapshotProvider` descreve a interface esperada de um provedor futuro, mas **nenhum conector concreto foi criado**. O contrato valida que todos os registros pertencem ao sistema declarado e rejeita listas mutáveis, hashes inválidos e itens de tipo incorreto.
+
+Testes sintéticos cobrem metadados ausentes, hash inválido, inventário mutável e mistura de sistemas de origem. Não há leitura de arquivos, APIs ou banco legado; o payload funcional não é carregado por esta abstração.
