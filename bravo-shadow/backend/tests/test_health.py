@@ -1,5 +1,7 @@
 from fastapi.testclient import TestClient
 
+from app.core.authentication import get_current_principal
+from app.core.authorization import AuthenticatedPrincipal, CAPABILITIES
 from app.main import app, create_app
 
 
@@ -88,9 +90,18 @@ def test_app_instances_do_not_share_pilot_storage() -> None:
     assert len(second_service.list()) == 1
 
 
-def test_app_instances_keep_financial_services_separate() -> None:
+def test_app_instances_keep_financial_services_separate(monkeypatch) -> None:
+    from types import MappingProxyType
+    from app.core import authorization
+
+    monkeypatch.setattr(authorization, "ROLE_CAPABILITIES", MappingProxyType({"Admin": CAPABILITIES, "Operador": frozenset()}))
     first_app = create_app(storage_backend="memory")
     second_app = create_app(storage_backend="memory")
+    async def authenticated_admin() -> AuthenticatedPrincipal:
+        return AuthenticatedPrincipal(subject="google-test-subject", email="teste@example.com", profile="Admin", account_status="Ativo")
+
+    first_app.dependency_overrides[get_current_principal] = authenticated_admin
+    second_app.dependency_overrides[get_current_principal] = authenticated_admin
     first_client = TestClient(first_app)
     second_client = TestClient(second_app)
 
