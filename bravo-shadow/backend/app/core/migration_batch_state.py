@@ -56,10 +56,15 @@ def transition_batch(
     """Validate and return a new state; caller persists atomically under row lock."""
     if not isinstance(state, BatchState):
         raise BatchTransitionError("invalid_batch_state")
-    if not state.batch_id.strip() or not state.manifest_hash.strip():
+    if (
+        not isinstance(state.batch_id, str) or not state.batch_id.strip()
+        or not isinstance(state.manifest_hash, str) or not state.manifest_hash.strip()
+    ):
         raise BatchTransitionError("batch_identity_required")
-    if state.environment not in ALLOWED_ENVIRONMENTS:
+    if not isinstance(state.environment, str) or state.environment not in ALLOWED_ENVIRONMENTS:
         raise BatchTransitionError("environment_not_allowed")
+    if not isinstance(state.status, str) or not isinstance(target, str):
+        raise BatchTransitionError("unknown_batch_status")
     if state.status not in TRANSITIONS or target not in TRANSITIONS:
         raise BatchTransitionError("unknown_batch_status")
     if target not in TRANSITIONS[state.status]:
@@ -68,7 +73,11 @@ def transition_batch(
     if target == "approved":
         if not isinstance(approval, BatchApproval):
             raise BatchTransitionError("approval_required")
-        if not approval.reviewer_id.strip() or not approval.approved_at.strip():
+        if (
+            not isinstance(approval.reviewer_id, str) or not approval.reviewer_id.strip()
+            or not isinstance(approval.approved_at, str) or not approval.approved_at.strip()
+            or not isinstance(approval.manifest_hash, str)
+        ):
             raise BatchTransitionError("approval_identity_and_time_required")
         if approval.manifest_hash != state.manifest_hash:
             raise BatchTransitionError("approval_manifest_mismatch")
