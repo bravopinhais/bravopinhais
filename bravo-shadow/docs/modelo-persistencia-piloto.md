@@ -4,7 +4,7 @@
 
 Projeto de banco documentado para revisão. **Nenhuma migration foi aplicada, nenhum projeto Supabase foi alterado e nenhum dado foi copiado.** Este documento não é um comando de execução.
 
-A migration versionada ainda não foi criada. O rascunho SQL para as duas primeiras tabelas está em [`sql-piloto-financeiro.sql`](./sql-piloto-financeiro.sql); ele não é um arquivo de migration e não deve ser aplicado diretamente. No ambiente local do projeto, primeiro verificar `supabase --version`, `supabase --help` e `supabase migration new --help`; em seguida gerar o arquivo com `supabase migration new bravo_pilot_financeiro_estoque` e copiar o SQL revisado para o arquivo timestampado criado pela CLI. A CLI v3 usa a stack local por padrão; operações hospedadas exigem `--remote` e confirmação. Não usar `--remote` nesta fase. A partir da CLI v3.4.0, `supabase init` cria `supabase/config.jsonc` por padrão; projetos existentes com `config.toml` continuam suportados.
+A migration versionada ainda não foi criada. O rascunho SQL para as duas primeiras tabelas está em [`sql-piloto-financeiro.sql`](./sql-piloto-financeiro.sql); ele não é um arquivo de migration e não deve ser aplicado diretamente. No ambiente local do projeto, primeiro verificar `supabase --version`, `supabase --help` e `supabase migration new --help`; em seguida gerar o arquivo com `supabase migration new bravo_pilot_financeiro` e copiar o SQL revisado para o arquivo timestampado criado pela CLI. A CLI v3 usa a stack local por padrão; operações hospedadas exigem `--remote` e confirmação. Não usar `--remote` nesta fase. A partir da CLI v3.4.0, `supabase init` cria `supabase/config.jsonc` por padrão; projetos existentes com `config.toml` continuam suportados.
 
 ## Decisões do piloto
 
@@ -111,7 +111,7 @@ Serviços recebem repositórios por injeção de dependência. Implementações 
 
 1. Revisar este modelo e confirmar regras de exclusão/estoque.
 2. Inicializar Supabase CLI localmente no diretório sombra; verificar `supabase --version` e `supabase --help`.
-3. Gerar arquivo com `supabase migration new bravo_pilot_financeiro_estoque`.
+3. Gerar arquivo com `supabase migration new bravo_pilot_financeiro`.
 4. Escrever SQL no arquivo gerado, revisar constraints, grants e RLS.
 5. Subir somente stack local e testar migration do zero.
 6. Criar testes de integração e concorrência; só depois considerar projeto Supabase de homologação dedicado.
