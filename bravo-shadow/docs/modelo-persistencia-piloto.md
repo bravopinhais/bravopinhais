@@ -336,3 +336,14 @@ No modo PostgreSQL, a edição cadastral de um produto bloqueia a linha com `FOR
 - A atualização continua substituindo o registro completo via PUT; não foi alterada para PATCH. O nome original do arquivo é preservado como metadado e não é usado como caminho de armazenamento.
 - Foram adicionados testes para normalização de metadados, categoria opcional, rejeição de título/nome de arquivo em branco e preservação byte a byte do valor textual compactado. Os testes ainda não foram executados.
 - Documentos podem conter informações pessoais ou administrativas. As rotas de negócio seguem sem autorização funcional; não disponibilizar documentos reais externamente até autenticação Google validada, matriz de permissões aprovada e controles de acesso implementados.
+
+
+## Revisão de integridade — Estoque e Inventário
+
+- Os metadados textuais do produto (item, etiqueta, fotoNome, marca, linha e fabricante) removem espaços externos na entrada. O nome do item continua obrigatório e valores compostos apenas por espaços são rejeitados.
+- dataCadastro permanece uma string ISO AAAA-MM-DD no contrato HTTP para preservar compatibilidade com o frontend. O backend remove espaços externos, valida a data real do calendário e normaliza o valor; campo vazio permanece como não informado. O adaptador PostgreSQL converte vazio para NULL na coluna date.
+- fotoCompactadaGzip não é normalizado nem reescrito, preservando exatamente o conteúdo legado recebido. Não foram adicionados limites de tamanho, validação Base64/GZIP, antivírus ou migração para armazenamento externo.
+- Os campos marca, linha, fabricante e dataCadastro já percorrem schema, serviço e adaptador PostgreSQL, além das colunas correspondentes no rascunho SQL. A interface HTML da sombra ainda não contém um formulário de cadastro de estoque conectado a essa API; portanto, a integração visual permanece pendente.
+- Quantidade, mínimo e máximo continuam inteiros com os valores padrão atuais. Não foi imposta regra para saldo negativo, mínimo maior que máximo, máximo igual a zero ou limites de reposição, pois o significado operacional desses campos precisa ser confirmado. Movimentos registrados continuam sendo o caminho protegido para alterar saldo no modo PostgreSQL.
+- Foram acrescentados testes de normalização dos metadados, preservação do conteúdo compactado, validação de data e rejeição de nome em branco. Os testes foram escritos, mas ainda não executados; a persistência PostgreSQL também depende de teste de integração em banco local isolado.
+- A exclusão de produto com movimentos segue protegida pela FK no rascunho SQL. As rotas de negócio continuam sem autorização funcional; não inserir dados reais nem expor o módulo até concluir autenticação, matriz de permissões e controles de acesso.
