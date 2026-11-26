@@ -1,4 +1,6 @@
-import pytest\nfrom fastapi import HTTPException\nfrom fastapi.testclient import TestClient
+import pytest
+from fastapi import HTTPException
+from fastapi.testclient import TestClient
 
 from app.modules.motivos_acerto.schemas import MotivoAcertoInput
 
