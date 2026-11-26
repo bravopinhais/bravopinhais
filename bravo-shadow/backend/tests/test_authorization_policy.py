@@ -69,3 +69,23 @@ def test_require_capability_returns_for_allowed_access() -> None:
 def test_non_string_identity_fields_are_denied() -> None:
     malformed = AuthenticatedPrincipal(None, "usuario@example.com", "Admin", "Ativo")
     assert not has_capability(malformed, "dashboard:read")
+
+
+
+def test_fastapi_dependency_enforces_capability_after_authentication() -> None:
+    from app.core.authorization import require_capability_dependency
+
+    dependency = require_capability_dependency("financeiro:read")
+    assert dependency(principal()) == principal()
+
+    with pytest.raises(HTTPException) as error:
+        dependency(principal("Operador"))
+    assert error.value.status_code == 403
+
+
+def test_fastapi_dependency_returns_authenticated_principal() -> None:
+    from app.core.authorization import require_capability_dependency
+
+    dependency = require_capability_dependency("dashboard:read")
+    authenticated = principal()
+    assert dependency(authenticated) is authenticated
