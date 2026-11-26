@@ -52,3 +52,8 @@ Frontend web unificado (HTML/CSS/JS)
 - Sem escrita dupla em produção.
 - Comparação de resultados e trilha de auditoria antes de cada promoção.
 - Rollback documentado por etapa.
+
+
+## Gate de integração
+
+A composição modular da API não significa que os módulos estejam prontos para operação: persistência, transações, autorização server-side, CORS por allowlist, observabilidade e testes de integração são pré-requisitos. Ver `revisao-integracao-arquitetura.md`.
