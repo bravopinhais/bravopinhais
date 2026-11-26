@@ -45,3 +45,39 @@ def test_residents_are_isolated_between_app_instances():
     }).json()
     assert first.get("/api/v1/moradores").json()[0]["id"] == created["id"]
     assert second.get("/api/v1/moradores").json() == []
+
+
+def test_resident_text_fields_are_trimmed_without_reformatting_documents():
+    response = client.post("/api/v1/moradores", json={
+        "bloco": "  1  ", "apartamento": " 101 ", "nome": " Ana Maria ",
+        "email": " ana@example.com ", "telefone": "  (41) 99999-0000  ",
+        "cpf": " 123.456.789-00 ", "petNome": " Mimi ", "vagaGaragem": " G12 "
+    })
+    assert response.status_code == 201
+    item = response.json()
+    assert item["bloco"] == "1"
+    assert item["apartamento"] == "101"
+    assert item["nome"] == "Ana Maria"
+    assert item["email"] == "ana@example.com"
+    assert item["telefone"] == "(41) 99999-0000"
+    assert item["cpf"] == "123.456.789-00"
+    assert item["petNome"] == "Mimi"
+    assert item["vagaGaragem"] == "G12"
+
+
+def test_resident_required_fields_reject_whitespace_only_values():
+    response = client.post("/api/v1/moradores", json={
+        "bloco": " 1 ", "apartamento": "   ", "nome": " Ana "
+    })
+    assert response.status_code == 422
+
+
+def test_optional_resident_fields_accept_blank_values_after_trim():
+    response = client.post("/api/v1/moradores", json={
+        "bloco": "1", "apartamento": "101", "nome": "Ana",
+        "email": "   ", "telefone": "  ", "cpf": " "
+    })
+    assert response.status_code == 201
+    assert response.json()["email"] == ""
+    assert response.json()["telefone"] == ""
+    assert response.json()["cpf"] == ""
