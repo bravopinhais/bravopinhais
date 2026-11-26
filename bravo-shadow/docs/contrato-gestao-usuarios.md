@@ -10,7 +10,8 @@
 - O mesmo schema é usado em criação e atualização integral.
 - O router de usuários já exige dependências de autenticação e capacidades específicas (`usuarios:read/create/update/delete`). A matriz atual mantém as capacidades de Admin/Operador fechadas, e os testes verificam 401 sem identidade e 403 para ambos os perfis.
 - Os testes atuais verificam o bloqueio das rotas sem autenticação e para os perfis ainda sem capacidades aprovadas.
-- O serviço em memória é isolado por instância, mas não é persistente.
+- O serviço em memória é isolado por instância, mas não é persistente. A criação/atualização serializa a checagem de e-mail dentro dessa instância; no PostgreSQL, a constraint única `usuarios_email_ci_uidx` protege a unicidade no banco.
+- A rota `DELETE /api/v1/usuarios/{item_id}` e o método de serviço atual ainda fazem exclusão física. A matriz de capacidades está fechada, então a rota permanece negada para Admin/Operador. A decisão de desativação lógica como substituição ainda não foi implementada.
 
 ## Separação de contratos proposta
 
@@ -34,7 +35,7 @@ Perfil e status devem ficar em uma operação/schema separado, protegido por cap
 
 ### 5. Consulta e exclusão
 
-Listagem e detalhe são privados. Exclusão não deve ser um CRUD irrestrito: avaliar desativação lógica como padrão, preservar histórico e impedir a remoção do último Admin ativo. A decisão entre exclusão lógica e física depende da política de retenção e deve ser aprovada antes da implementação.
+Listagem e detalhe são privados. A rota DELETE existente ainda representa exclusão física no serviço, mas segue inacessível enquanto a matriz estiver fechada. Não habilitar essa operação. A evolução deve substituir o fluxo por desativação lógica, preservar histórico e impedir a desativação do último Admin ativo. A política de retenção deve ser aprovada antes da implementação.
 
 ## Regras invariáveis
 
@@ -56,4 +57,4 @@ Listagem e detalhe são privados. Exclusão não deve ser um CRUD irrestrito: av
 
 ## Fora do escopo desta etapa
 
-Nenhuma rota foi alterada ou exposta, nenhum usuário foi criado, nenhuma migration foi gerada e nenhum banco foi conectado. Os testes foram adicionados ao CI, mas o resultado da execução precisa ser confirmado para o commit mais recente. A tela de login permanece como está, conforme o planejamento de redesenhá-la posteriormente.
+Nenhuma rota foi alterada ou exposta, nenhum usuário foi criado, nenhuma migration foi gerada e nenhum banco foi conectado. O CRUD atual ainda contém exclusão física, mas a autorização permanece fechada. A tela de login permanece como está, conforme o planejamento de redesenhá-la posteriormente.
