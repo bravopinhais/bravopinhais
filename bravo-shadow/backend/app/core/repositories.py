@@ -54,6 +54,23 @@ class InMemoryCollectionRepository(Generic[T, K]):
         with self._lock:
             return item_id in self._items
 
+    def replace_if_version(self, item_id: K, item: T, expected_version: int) -> int:
+        """Compara e substitui atomicamente registros que expõem o campo version."""
+        with self._lock:
+            current = self._items.get(item_id)
+            if current is None:
+                return 0
+            current_version = getattr(current, "version", None)
+            if current_version != expected_version:
+                return -1
+            next_version = expected_version + 1
+            try:
+                item = item.model_copy(update={"version": next_version})
+            except AttributeError:
+                setattr(item, "version", next_version)
+            self._items[item_id] = item
+            return next_version
+
     def any(self, predicate: Callable[[T], bool]) -> bool:
         with self._lock:
             return any(predicate(item) for item in self._items.values())
