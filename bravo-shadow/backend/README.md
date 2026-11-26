@@ -53,7 +53,7 @@ A API não está conectada ao Supabase, não recebe tokens, não lê nem grava d
 
 ## Testes
 
-Há testes automatizados em `backend/tests` para os CRUDs, integridade entre Plano de Contas e Financeiro, perfis de usuário, adaptadores PostgreSQL com conexões falsas e seleção explícita do armazenamento. Eles foram escritos, mas ainda não executados neste ambiente. Os testes com conexão falsa validam SQL/fluxos de commit e rollback; não substituem os testes de integração contra PostgreSQL local.
+Há testes automatizados em `backend/tests` para os CRUDs, integridade entre Plano de Contas e Financeiro, perfis de usuário, adaptadores PostgreSQL com conexões falsas, seleção explícita do armazenamento e fluxos HTTP completos sobre repositórios PostgreSQL simulados. Eles foram escritos, mas ainda não executados neste ambiente. Os testes com conexão falsa validam SQL/fluxos de commit e rollback; não substituem os testes de integração contra PostgreSQL local.
 
 
 ## Revisão de arquitetura
@@ -91,7 +91,7 @@ Os testes com conexão falsa cobrem o ciclo de commit/rollback/close, e os teste
 
 Foi adicionado `app/core/postgres_repositories.py` com adaptadores DB-API para Plano de Contas e Financeiro. As consultas usam parâmetros, schema explícito `bravo_shadow`, mantêm `Decimal` no valor financeiro e convertem `planoContaId=""` para SQL `NULL` (e vice-versa na leitura). Cada método abre sua própria unidade de trabalho; falhas provocam rollback. A exclusão de conta traduz violação de FK (`23503`) em conflito HTTP 409.
 
-Os adaptadores são injetáveis, mas **a API continua usando os repositórios em memória**. Nenhum driver PostgreSQL foi instalado, nenhuma variável de conexão foi definida e nenhuma tabela foi criada. A camada SQL pressupõe que a migration local do modelo já tenha sido aplicada. Não aponte uma fábrica de conexão para produção.
+Os adaptadores são selecionados pela configuração explícita `create_app(storage_backend="postgres", postgres_connection_factory=...)`; as rotas de Plano de Contas e Financeiro passam a operar por esses repositórios quando esse modo é selecionado. Nenhum driver PostgreSQL foi instalado, nenhuma variável de conexão foi definida e nenhuma tabela foi criada. A camada SQL pressupõe que a migration local do modelo já tenha sido aplicada. Não aponte uma fábrica de conexão para produção.
 
 Foram adicionados testes com conexão/cursor falsos para conferir SQL parametrizado, mapeamento de valores, conversão NULL/ string vazia, commit e rollback. Eles ainda não foram executados. Os adaptadores PostgreSQL agora oferecem `replace_if_version`: o UPDATE inclui `WHERE id = %s AND version = %s`, incrementa a versão e, se não atualizar linha, distingue registro inexistente (404) de versão desatualizada (409) na mesma transação. As consultas de leitura também retornam `version`, e os schemas de resposta expõem esse campo. **A API exige `If-Match` nas rotas PUT**, com comparação atômica no adaptador em memória. Os adaptadores PostgreSQL oferecem a operação SQL equivalente, mas ainda não estão injetados nas rotas.
 
@@ -103,7 +103,7 @@ A unidade de trabalho também trata falha durante o próprio `commit`: tenta exe
 
 ### Concorrência otimista — camada de repositório
 
-Os adaptadores PostgreSQL implementam `replace_if_version` para Plano de Contas e Financeiro. O cliente obtém `version` na leitura e a camada de aplicação encaminha a versão esperada; atualização obsoleta retorna HTTP 409 e ID inexistente retorna 404. **Nas rotas HTTP atuais, o contrato `If-Match` já está ativo com o adaptador em memória:** ausência do cabeçalho retorna 428, formato inválido retorna 400 e versão obsoleta retorna 409. A comparação e substituição em memória são atômicas sob lock. Os adaptadores PostgreSQL têm a operação SQL equivalente, mas ainda não estão injetados nas rotas. A integração PostgreSQL deve ocorrer somente após migration local, driver escolhido e testes de integração em banco isolado.
+Os adaptadores PostgreSQL implementam `replace_if_version` para Plano de Contas e Financeiro. O cliente obtém `version` na leitura e a camada de aplicação encaminha a versão esperada; atualização obsoleta retorna HTTP 409 e ID inexistente retorna 404. **Nas rotas HTTP atuais, o contrato `If-Match` já está ativo com o adaptador em memória:** ausência do cabeçalho retorna 428, formato inválido retorna 400 e versão obsoleta retorna 409. A comparação e substituição em memória são atômicas sob lock. Os adaptadores PostgreSQL têm a operação SQL equivalente e são injetados nas rotas quando o modo PostgreSQL é selecionado explicitamente. A integração PostgreSQL deve ocorrer somente após migration local, driver escolhido e testes de integração em banco isolado.
 
 
 ### Controle de versão HTTP (Plano de Contas e Financeiro)
@@ -118,3 +118,8 @@ A aplicação é criada por `create_app()`. O padrão é `BRAVO_STORAGE_BACKEND=
 A infraestrutura também aceita `create_app(storage_backend="postgres", postgres_connection_factory=...)`. A fábrica DB-API precisa ser fornecida explicitamente pelo ambiente hospedeiro. A configuração não importa driver, não lê credenciais, não abre conexão no startup e não tenta fallback para memória. Sem fábrica, a inicialização em modo PostgreSQL falha de forma explícita.
 
 **Escopo atual:** somente Plano de Contas e Financeiro têm adaptadores PostgreSQL. Os outros módulos continuam em memória. Não há driver instalado, migration aplicada ou teste contra banco real; portanto, não habilite PostgreSQL até preparar o schema privado `bravo_shadow` em uma instância local isolada e validar os adaptadores. O health endpoint informa o modo configurado, mas não verifica a conectividade com o banco.
+
+
+### Integração das rotas com adaptadores PostgreSQL (simulada)
+
+O teste `test_postgres_api_integration.py` cria a aplicação com `storage_backend="postgres"` e uma fábrica DB-API falsa, mantendo estado isolado por teste. Ele percorre criação e leitura de conta e título, atualização com ETag, rejeição de versão obsoleta, bloqueio de exclusão por vínculo financeiro e tradução de violação de unicidade. Isso valida a ligação entre rotas, serviços, seleção de storage e adaptadores SQL sem acessar banco externo. A simulação não substitui execução contra PostgreSQL real; os testes ainda precisam ser executados no ambiente Python.
