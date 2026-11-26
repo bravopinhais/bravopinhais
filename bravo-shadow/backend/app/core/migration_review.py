@@ -78,14 +78,18 @@ def append_review(
         raise ReviewValidationError("ledger_batch_mismatch")
     if decision_id not in {item.decision_id for item in register.pending}:
         raise ReviewValidationError("unknown_decision")
-    if not event_id.strip() or any(event.event_id == event_id for event in ledger.events):
+    if not isinstance(event_id, str) or not event_id.strip() or any(
+        event.event_id == event_id for event in ledger.events
+    ):
         raise ReviewValidationError("duplicate_or_empty_event_id")
-    if not reviewer_id.strip():
+    if not isinstance(reviewer_id, str) or not reviewer_id.strip():
         raise ReviewValidationError("reviewer_required")
-    if not rationale.strip():
+    if not isinstance(rationale, str) or not rationale.strip():
         raise ReviewValidationError("rationale_required")
-    if not reviewed_at.strip():
+    if not isinstance(reviewed_at, str) or not reviewed_at.strip():
         raise ReviewValidationError("reviewed_at_required")
+    if type(expected_version) is not int or expected_version < 0:
+        raise ReviewValidationError("invalid_expected_version")
     if choice not in {
         "approved_for_manual_resolution",
         "keep_blocked",
@@ -155,18 +159,26 @@ def verify_review_ledger(
     """Validate batch binding, event uniqueness, decisions and version sequence."""
     if ledger.batch_id != register.batch_id or ledger.manifest_hash != register.manifest_hash:
         return False
+    if not isinstance(ledger.events, tuple):
+        return False
     known_decisions = {item.decision_id for item in register.pending}
     seen_events: set[str] = set()
     versions: dict[str, int] = {}
     for event in ledger.events:
-        if event.event_id in seen_events or event.decision_id not in known_decisions:
+        if not isinstance(event.event_id, str) or not event.event_id.strip():
             return False
-        if not event.event_id.strip() or not event.reviewer_id.strip():
+        if not isinstance(event.decision_id, str) or event.decision_id not in known_decisions:
             return False
-        if not event.rationale.strip() or not event.reviewed_at.strip():
+        if not isinstance(event.reviewer_id, str) or not event.reviewer_id.strip():
+            return False
+        if not isinstance(event.rationale, str) or not event.rationale.strip():
+            return False
+        if not isinstance(event.reviewed_at, str) or not event.reviewed_at.strip():
+            return False
+        if event.event_id in seen_events:
             return False
         expected = versions.get(event.decision_id, 0) + 1
-        if event.version != expected:
+        if type(event.version) is not int or event.version != expected:
             return False
         if event.choice not in {
             "approved_for_manual_resolution",
