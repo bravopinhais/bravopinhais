@@ -60,3 +60,12 @@ def test_frontend_is_served_from_root() -> None:
     assert response.status_code == 200
     assert "Bravo Shadow" in response.text
     assert 'id="navigation"' in response.text
+
+
+def test_frontend_exposes_first_api_integrated_module() -> None:
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert 'id="forma-form"' in response.text
+    assert '"/formas-monetarias"' in response.text
+    assert "Carregando dados da API" in response.text
