@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from app.core.postgres_cadastros import (
     PostgresContasBancariasRepository,
     PostgresEmpregadosRepository,
@@ -107,12 +109,12 @@ def test_empregados_repository_preserves_emergency_contact_fields():
 
 
 def test_bank_accounts_repository_preserves_reported_balance():
-    connection = Connection(row=("cb_1", "Banco Exemplo", 1234.56))
+    connection = Connection(row=("cb_1", "Banco Exemplo", Decimal("1234.56")))
     repository = PostgresContasBancariasRepository(factory(connection))
 
     item = repository.get("cb_1")
 
-    assert item == ContaBancaria(id="cb_1", banco="Banco Exemplo", saldo=1234.56)
+    assert item == ContaBancaria(id="cb_1", banco="Banco Exemplo", saldo=Decimal("1234.56"))
     assert "saldo" in connection.calls[0][0]
 
 
