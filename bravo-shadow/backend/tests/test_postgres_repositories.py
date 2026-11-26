@@ -66,12 +66,12 @@ def factory_for(connection):
 
 
 def test_plan_account_repository_maps_rows_and_commits():
-    connection = FakeConnection(rows=[("pc_1", "1.1", "Receita", "Receita")])
+    connection = FakeConnection(rows=[("pc_1", "1.1", "Receita", "Receita", 3)])
     repository = PostgresPlanoContasRepository(factory_for(connection))
 
     result = repository.get("pc_1")
 
-    assert result == PlanoConta(id="pc_1", codigo="1.1", nome="Receita", tipo="Receita")
+    assert result == PlanoConta(id="pc_1", codigo="1.1", nome="Receita", tipo="Receita", version=3)
     assert connection.calls[0][1] == ("pc_1",)
     assert connection.commits == 1
     assert connection.closed == connection.cursor_closed == 1
@@ -93,13 +93,13 @@ def test_finance_repository_converts_empty_account_to_null_and_decimal():
 
 
 def test_finance_repository_maps_null_account_to_legacy_empty_string():
-    connection = FakeConnection(rows=[("fin_1", "Pagar", None, "Água", Decimal("8.50"))])
+    connection = FakeConnection(rows=[("fin_1", "Pagar", None, "Água", Decimal("8.50"), 6)])
     repository = PostgresFinanceiroRepository(factory_for(connection))
 
     result = repository.get("fin_1")
 
     assert result.planoContaId == ""
-    assert result.valor == Decimal("8.50")
+    assert result.valor == Decimal("8.50")\n    assert result.version == 6
 
 
 def test_plan_account_delete_translates_foreign_key_conflict():
