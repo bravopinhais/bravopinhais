@@ -59,3 +59,8 @@ Há testes automatizados em `backend/tests` para os CRUDs, integridade entre Pla
 ## Revisão de arquitetura
 
 Consulte [`docs/revisao-integracao-arquitetura.md`](../docs/revisao-integracao-arquitetura.md) para a matriz de dependências, riscos prioritários e critérios de prontidão. A API continua em memória e não deve receber dados reais.
+
+
+## Próxima etapa: persistência PostgreSQL
+
+O modelo do primeiro lote está em [`docs/modelo-persistencia-piloto.md`](../docs/modelo-persistencia-piloto.md). Até a geração e validação de migrations em stack local, os serviços continuam exclusivamente em memória. Não configure `DATABASE_URL` nem credenciais Supabase apontando para produção. A implementação futura usará repositórios injetados, transações para movimentos de estoque e controle otimista por versão.
