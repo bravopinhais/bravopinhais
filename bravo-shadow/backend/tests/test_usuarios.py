@@ -104,6 +104,8 @@ def test_separated_user_schemas_keep_privileged_fields_out_of_cadastral_payloads
     )
     assert cadastro.email == "novo@example.com"
     assert cadastro.nome == "Pessoa"
+    with pytest.raises(ValidationError):
+        UsuarioCadastroInput(email="novo@example.com", nome="   ", cargo="Conselho")
 
     with pytest.raises(ValidationError):
         UsuarioCadastroInput(
