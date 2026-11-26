@@ -64,3 +64,8 @@ def test_require_capability_raises_for_denied_access() -> None:
 
 def test_require_capability_returns_for_allowed_access() -> None:
     assert require_capability(principal(), "financeiro:read") is None
+
+
+def test_non_string_identity_fields_are_denied() -> None:
+    malformed = AuthenticatedPrincipal(None, "usuario@example.com", "Admin", "Ativo")
+    assert not has_capability(malformed, "dashboard:read")
