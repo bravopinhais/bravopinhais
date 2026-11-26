@@ -10,7 +10,7 @@ Fonte: inspeção estática de `index.html` na branch `upgrade/project-hardening
 | Contas a Pagar / Receber | `financeiro`, `plano_contas` | Título com tipo, vínculo opcional, histórico e valor; cadastro/edição/exclusão. Auditoria detalhada em `auditoria-financeiro.md` | Alta |
 | Formas Monetárias | `formas_monetarias` | Nome e percentual de multa (padrão 2%); CRUD. Auditoria em `auditoria-formas-monetarias-contas-bancarias.md` | Média |
 | Contas Bancárias / Caixa | `contas_bancarias` | Banco e saldo manual; CRUD. Sem conciliação ou vínculo com títulos no original. Auditoria em `auditoria-formas-monetarias-contas-bancarias.md` | Alta |
-| Moradores & Unidades | `moradores` | Listagem, filtros por bloco/nome, cadastro/edição/exclusão, importação de planilha | Alta |
+| Moradores & Unidades | `moradores` | Bloco, apartamento e nome obrigatórios; contato, CPF/RG, pet e vaga opcionais; filtros por bloco/nome e importação em lote JSON (não upload XLSX/CSV). Auditoria em `auditoria-moradores-unidades.md` | Alta |
 | Fornecedores | `fornecedores` | CNPJ e razão social obrigatórios; CRUD. Auditoria em `auditoria-fornecedores-empregados.md` | Média |
 | Empregados | `empregados` | Nome e cargo obrigatórios; empresa, endereço, telefone e contato de emergência opcionais; CRUD. Auditoria em `auditoria-fornecedores-empregados.md` | Média |
 | Pastas & Categorias | `categorias`, `motivos_acerto_estoque`, `estoque` | Pastas gerais, motivos de ajuste e relações com itens | Média |
