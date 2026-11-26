@@ -62,12 +62,12 @@ class FakeCursor:
                 batch_key, manifest_hash, decision_id, kind, status,
                 requires_human, automatic_action,
             ))
-        elif query.startswith("SELECT decision_id, decision_kind, decision_status"):
-            batch_key, manifest_hash = params
+        elif query.startswith("SELECT decision_id, manifest_hash, decision_kind, decision_status"):
+            batch_key = params[0]
             self.rows = sorted(
-                (row[2], row[3], row[4], row[5], row[6])
+                (row[2], row[1], row[3], row[4], row[5], row[6])
                 for row in db.decisions.values()
-                if row[0] == batch_key and row[1] == manifest_hash
+                if row[0] == batch_key
             )
         elif query.startswith("SELECT batch_key, manifest_hash FROM bravo_shadow.migration_review_decisions"):
             batch_key, decision_id = params
