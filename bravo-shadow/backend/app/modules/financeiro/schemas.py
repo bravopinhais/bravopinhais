@@ -15,3 +15,4 @@ class FinanceiroInput(BaseModel):
 
 class FinanceiroTitulo(FinanceiroInput):
     id: str
+    version: int = Field(default=1, ge=1)
