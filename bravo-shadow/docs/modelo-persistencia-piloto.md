@@ -181,3 +181,14 @@ A edição de Plano de Contas e Financeiro usa compare-and-swap por `version`: o
 O código do Plano de Contas é comparado sem diferenciar maiúsculas/minúsculas na API. O rascunho SQL inclui índice único em `lower(codigo)` para garantir a mesma regra no banco e impedir duplicidade em requisições simultâneas. A validação prévia da API melhora a mensagem, mas a restrição do banco é a garantia final.
 
 Essas alterações continuam sendo especificação/rascunho: o SQL não foi aplicado e os testes não foram executados.
+
+
+## Piloto de Formas Monetárias — adaptador preparado
+
+O serviço de Formas Monetárias foi desacoplado do dicionário em memória e passou a receber um repositório. O modo padrão continua em memória. Quando a aplicação recebe explicitamente o backend PostgreSQL e uma fábrica de conexão, o módulo usa `PostgresFormasMonetariasRepository`; não existe fallback silencioso.
+
+O adaptador usa a tabela `bravo_shadow.formas_monetarias` e os campos `id`, `nome` e `multa_pct`. A multa é armazenada como `double precision`, com default 2.0, sem limites de faixa ou casas decimais que não existam no legado. Atualizações incrementam `version`; o contrato HTTP atual ainda não expõe controle otimista para este módulo.
+
+O DDL da tabela foi acrescentado ao rascunho `sql-piloto-financeiro.sql`, com RLS habilitado e sem grants para clientes da Data API. **Continua sendo apenas rascunho**: não foi criada migration pela CLI, não houve conexão com PostgreSQL/Supabase e nenhuma tabela foi criada.
+
+Foram acrescentados testes unitários com conexão/cursor falsos para mapear os campos, executar o CRUD e verificar 404 em atualização/exclusão de registros ausentes. Esses testes ainda precisam ser executados na CI; o fake não substitui teste real na stack PostgreSQL local.
