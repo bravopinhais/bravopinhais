@@ -16,7 +16,7 @@ Esta matriz inicia a Fase 0 da migração híbrida e gradual. Compara o legado n
 
 O legado tem 2.838 linhas nesta baseline. O roteador de conteúdo do original contém renderizadores dedicados para os 15 domínios, incluindo `renderDashboardView`, `renderCondominioView`, `renderPlanoContasView`, `renderFinanceiroView`, `renderFormasMonetariasView`, `renderContasBancariasView`, `renderMoradoresView`, `renderFornecedoresView`, `renderEmpregadosView`, `renderCategoriasView`, `renderEstoqueView`, `renderAcertoEstoqueView`, `renderDocumentosView`, `renderUsuariosView` e `renderRelatoriosCentralView`.
 
-No Shadow, os 15 domínios aparecem na navegação, mas a própria interface informa que os módulos ainda não executam operações de negócio, com exceção do fluxo de Formas Monetárias. A API registra routers para os domínios operacionais; Dashboard tem serviço agregado, mas não router/endpoints próprios.
+No Shadow, os 15 domínios aparecem na navegação, mas a própria interface informa que os módulos ainda não executam operações de negócio, com exceção do fluxo de Formas Monetárias. A API registra routers para os domínios operacionais e possui endpoint agregado de leitura para Dashboard; a interface ainda não está integrada a ele.
 
 ## Legenda de situação
 
@@ -89,7 +89,7 @@ Esta seção complementa a matriz com critérios verificáveis derivados das aud
 
 ### Dashboard, Relatórios e DRE
 
-**Estado confirmado:** a interface Shadow ainda não consulta indicadores reais; não há router nem serviço próprio de Dashboard/DRE. O Financeiro e o Plano de Contas existem como domínios da API, mas isso não constitui uma DRE implementada.
+**Estado confirmado:** a interface Shadow ainda não consulta indicadores reais. O backend possui `DashboardService` e `GET /api/v1/dashboard/resumo`, protegido por `dashboard:read`, com totais de títulos e diferença aritmética; isso não constitui uma DRE completa nem está integrado à interface. Não há router/serviço de relatórios por período ou DRE agrupada.
 
 **Paridade legada que precisa ser preservada ou explicitamente revista:**
 - totais gerais somam todos os títulos, sem filtro de período ou liquidação;
@@ -108,7 +108,7 @@ Esta seção complementa a matriz com critérios verificáveis derivados das aud
 6. Sem filtros por data, competência, vencimento, liquidação ou conciliação até aprovação de novos campos e regras.
 7. Nenhuma exposição dos dados financeiros antes da autenticação e autorização efetivas.
 
-**Bloqueios atuais:** ausência de endpoint agregado, ausência de proteção de autorização aprovada e contrato financeiro sem datas, status de liquidação ou conta bancária. Portanto, relatórios por período e saldo de caixa/banco permanecem fora do escopo.
+**Bloqueios atuais:** interface sem integração com o endpoint agregado; matriz Admin/Operador ainda sem aprovação; contrato financeiro sem datas, status de liquidação ou conta bancária. Portanto, relatórios por período e saldo de caixa/banco permanecem fora do escopo.
 
 Referência: `auditoria-dashboard-relatorios-dre.md`.
 
@@ -136,7 +136,7 @@ Referência: `auditoria-gestao-usuarios.md`.
 
 - [x] Auditoria estática específica de Dashboard/Relatórios/DRE registrada e critérios mínimos de aceite detalhados.
 - [x] Auditoria estática específica de Gestão de Usuários registrada e bloqueios de identidade/autorização detalhados.
-- [ ] Implementar serviço agregado de Dashboard/DRE após revisão de autorização e testes com dados sintéticos.
+- [x] Implementar serviço agregado e endpoint de resumo do Dashboard, protegido por `dashboard:read` e coberto por testes HTTP e unitários.\n- [ ] Integrar a interface ao endpoint e implementar agrupamentos de DRE somente após aprovação de fórmulas e campos.
 - [ ] Aprovar matriz de capacidades e procedimento do primeiro administrador.
 - [ ] Integrar validação Google no servidor sem alterar a tela de login nesta fase.
 - [ ] Executar testes de aceitação em navegador e persistência descartável após revisão das migrations/policies.
@@ -256,3 +256,18 @@ A proteção HTTP não equivale a paridade visual ou aceite de negócio. A matri
 **Correção de CI:** a execução `45902519204` encontrou 1 falha em 421 testes: o teste de isolamento de Documentos criava instâncias FastAPI sem configurar a identidade sintética exigida pelo endpoint protegido. O teste foi ajustado para autenticar ambas as instâncias; nenhuma regra de produção foi relaxada. A nova execução vinculada ao commit corretivo deve ser verificada antes de declarar sucesso.
 
 Nenhuma migration foi aplicada, nenhum dado real foi consultado/importado e o original permanece inalterado.
+
+
+## Correção de auditoria — Dashboard/DRE (26/11/2026)
+
+A revisão cruzada identificou descrições desatualizadas na documentação anterior. O código atual já contém `DashboardService`, `GET /api/v1/dashboard/resumo` e dependência `dashboard:read`. Os testes cobrem 401 sem identidade, 403 sem capacidade e retorno apenas de agregados quando a capacidade é habilitada no ambiente de teste.
+
+O endpoint retorna contagens e totais agregados de títulos, calculados com `Decimal`. Ele não expõe os registros pessoais nem os textos de histórico. A interface Shadow ainda não está conectada ao endpoint. Não existe implementação completa de DRE, agrupamento por conta ou filtros por período.
+
+A auditoria foi corrigida para separar explicitamente:
+- Dashboard agregado existente no backend;
+- integração visual ainda pendente;
+- Relatórios/DRE ainda não implementados;
+- matriz de perfis ainda deny-by-default.
+
+A execução CI `45902675530` concluiu com sucesso para o commit corretivo `9e2d0f87656e58fcf1be282d5e93cae0823fce88`. As alterações documentais desta correção foram feitas depois dessa execução e ainda precisam de uma execução própria para serem cobertas pelo CI.
