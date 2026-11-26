@@ -270,7 +270,9 @@ alter table bravo_shadow.documentos enable row level security;
 alter table bravo_shadow.moradores enable row level security;
 alter table bravo_shadow.fornecedores enable row level security;
 alter table bravo_shadow.empregados enable row level security;
-alter table bravo_shadow.contas_bancarias enable row level security;\nalter table bravo_shadow.condominio enable row level security;\nalter table bravo_shadow.conselheiros enable row level security;
+alter table bravo_shadow.contas_bancarias enable row level security;
+alter table bravo_shadow.condominio enable row level security;
+alter table bravo_shadow.conselheiros enable row level security;
 
 revoke all on table bravo_shadow.formas_monetarias from public, anon, authenticated, service_role;
 revoke all on table bravo_shadow.plano_contas from public, anon, authenticated, service_role;
@@ -283,7 +285,9 @@ revoke all on table bravo_shadow.documentos from public, anon, authenticated, se
 revoke all on table bravo_shadow.moradores from public, anon, authenticated, service_role;
 revoke all on table bravo_shadow.fornecedores from public, anon, authenticated, service_role;
 revoke all on table bravo_shadow.empregados from public, anon, authenticated, service_role;
-revoke all on table bravo_shadow.contas_bancarias from public, anon, authenticated, service_role;\nrevoke all on table bravo_shadow.condominio from public, anon, authenticated, service_role;\nrevoke all on table bravo_shadow.conselheiros from public, anon, authenticated, service_role;
+revoke all on table bravo_shadow.contas_bancarias from public, anon, authenticated, service_role;
+revoke all on table bravo_shadow.condominio from public, anon, authenticated, service_role;
+revoke all on table bravo_shadow.conselheiros from public, anon, authenticated, service_role;
 
 -- Não criar GRANT para anon/authenticated/service_role nesta fase.
 -- O backend deverá usar um usuário PostgreSQL dedicado, com privilégios mínimos,
