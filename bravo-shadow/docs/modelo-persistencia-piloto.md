@@ -145,3 +145,8 @@ A unidade de trabalho tenta executar `rollback` caso o próprio `commit` lance u
 Os adaptadores PostgreSQL agora têm `replace_if_version` para Plano de Contas e Financeiro. O UPDATE compara simultaneamente ID e versão esperada, incrementando `version` no sucesso. Se nenhuma linha for alterada, uma consulta dentro da mesma unidade de trabalho distingue ID inexistente (404) de versão obsoleta (409). Os métodos de leitura incluem a coluna `version`, e os schemas de resposta expõem esse valor.
 
 **Ainda não é uma proteção ativa da API:** os serviços/rotas atuais continuam usando os repositórios em memória e os PUTs não exigem `If-Match` ou versão esperada. A próxima etapa deve integrar o precondicionamento HTTP e injeção de dependências no ambiente PostgreSQL local, antes de qualquer uso real.
+
+
+## Precondição HTTP para concorrência otimista
+
+Plano de Contas e Financeiro agora expõem `version` nos modelos de resposta. O POST também devolve um ETag forte (`"1"` na criação). O PUT exige `If-Match` com a versão que o cliente leu: cabeçalho ausente retorna 428, ETag inválida retorna 400 e conflito de versão retorna 409. O adaptador em memória implementa comparação e substituição atômicas com lock; os adaptadores PostgreSQL usam `UPDATE ... WHERE id = ... AND version = ...`. A API ainda opera em memória, então a ativação PostgreSQL permanece etapa separada e depende de migration/driver/ambiente local.
