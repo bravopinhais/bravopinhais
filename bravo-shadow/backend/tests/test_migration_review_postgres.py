@@ -73,15 +73,15 @@ class FakeCursor:
             batch_key, decision_id = params
             row = db.decisions.get(decision_id)
             self.one = (row[0], row[1]) if row and row[0] == batch_key else None
-        elif query.startswith("SELECT event_id, decision_id, version, reviewer_id"):
-            batch_key, manifest_hash = params
+        elif query.startswith("SELECT event_id, decision_id, manifest_hash, version"):
+            (batch_key,) = params
             self.rows = sorted(
                 [
-                    (row[0], row[2], row[4], row[5], row[6], row[7], row[8])
+                    (row[0], row[2], row[3], row[4], row[5], row[6], row[7], row[8])
                     for row in db.events
-                    if row[1] == batch_key and row[3] == manifest_hash
+                    if row[1] == batch_key
                 ],
-                key=lambda row: (row[1], row[2]),
+                key=lambda row: (row[1], row[3]),
             )
         elif query.startswith("SELECT COALESCE(MAX(version), 0)"):
             batch_key, decision_id = params
@@ -177,4 +177,33 @@ def test_postgres_adapter_detects_changed_decision_snapshot():
     database.decisions[decision_id] = (row[0], row[1], row[2], row[3], "tampered", row[5], row[6])
 
     with pytest.raises(ReviewValidationError, match="stored_decision_snapshot_mismatch"):
+        store.load(register)
+
+def test_postgres_adapter_rejects_events_bound_to_another_manifest():
+    register, decision_id, database, store = setup_store()
+    store.initialize(register)
+    store.append(register, **event_args(decision_id, "pg-evt-valid", 0))
+
+    stored = database.events[0]
+    database.events[0] = (
+        stored[0], stored[1], stored[2], "e" * 64,
+        stored[4], stored[5], stored[6], stored[7], stored[8],
+    )
+
+    with pytest.raises(ReviewValidationError, match="stored_event_manifest_mismatch"):
+        store.load(register)
+
+
+def test_postgres_adapter_does_not_coerce_corrupt_event_version():
+    register, decision_id, database, store = setup_store()
+    store.initialize(register)
+    store.append(register, **event_args(decision_id, "pg-evt-version", 0))
+
+    stored = database.events[0]
+    database.events[0] = (
+        stored[0], stored[1], stored[2], stored[3], True,
+        stored[5], stored[6], stored[7], stored[8],
+    )
+
+    with pytest.raises(ReviewValidationError, match="stored_ledger_binding_or_integrity_error"):
         store.load(register)
