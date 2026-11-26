@@ -61,10 +61,12 @@ create index if not exists financeiro_created_at_idx
     on bravo_shadow.financeiro (created_at, id);
 
 -- Defesa em profundidade. Sem policies: clientes da Data API não recebem acesso.
-alter table bravo_shadow.formas_monetarias enable row level security;\nalter table bravo_shadow.plano_contas enable row level security;
+alter table bravo_shadow.formas_monetarias enable row level security;
+alter table bravo_shadow.plano_contas enable row level security;
 alter table bravo_shadow.financeiro enable row level security;
 
-revoke all on table bravo_shadow.formas_monetarias from public, anon, authenticated;\nrevoke all on table bravo_shadow.plano_contas from public, anon, authenticated;
+revoke all on table bravo_shadow.formas_monetarias from public, anon, authenticated;
+revoke all on table bravo_shadow.plano_contas from public, anon, authenticated;
 revoke all on table bravo_shadow.financeiro from public, anon, authenticated;
 
 -- Não criar GRANT para anon/authenticated/service_role nesta fase.
