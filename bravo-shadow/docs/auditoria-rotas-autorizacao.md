@@ -250,3 +250,19 @@ Os testes ainda não foram executados neste ambiente.
 
 A autorização dos módulos permanece pendente de aprovação da matriz de
 permissões. Nenhuma rota de negócio foi ativada com a política provisória.
+
+
+## Revisão de integridade do Plano de Contas e vínculo com Financeiro
+
+A revisão estática confirmou que:
+
+- O schema do Plano de Contas remove espaços excedentes de código e nome e rejeita valores vazios após a normalização.
+- A aplicação verifica duplicidade de código sem diferenciar maiúsculas/minúsculas.
+- O rascunho SQL define índice único em `lower(codigo)`, protegendo também contra duplicidade concorrente no PostgreSQL; o adaptador converte violação de unicidade em HTTP 409.
+- O vínculo Financeiro → Plano de Contas é opcional, mas quando informado o PostgreSQL aplica chave estrangeira com `ON DELETE RESTRICT`.
+- O serviço verifica referências financeiras antes da exclusão; sem verificador configurado, responde 503, e com referência existente responde 409.
+- A atualização usa controle otimista de versão (`If-Match`/ETag).
+
+Foram reforçados os testes de `backend/tests/test_plano_contas.py`: a duplicidade agora compara códigos alfanuméricos com diferenças de caixa, e foram incluídos casos de normalização de código/nome e rejeição de valores compostos apenas por espaços. Os testes ainda não foram executados.
+
+O SQL continua sendo rascunho, não migration aplicada. A proteção efetiva no PostgreSQL só estará disponível depois de revisão e aplicação controlada da migration no ambiente local isolado. Nenhum banco foi conectado ou alterado nesta etapa.
