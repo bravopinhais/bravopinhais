@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.modules.contas_bancarias.router import router as contas_bancarias_router
 from app.modules.condominio.router import router as condominio_router
 from app.modules.conselheiros.router import router as conselheiros_router
+from app.modules.moradores.router import router as moradores_router
 from app.modules.financeiro.router import router as financeiro_router
 from app.modules.financeiro.service import financeiro_service
 from app.modules.fornecedores.router import router as fornecedores_router
@@ -30,6 +31,7 @@ app.include_router(fornecedores_router)
 app.include_router(empregados_router)
 app.include_router(condominio_router)
 app.include_router(conselheiros_router)
+app.include_router(moradores_router)
 
 # CORS permanecerá restrito até que os domínios oficiais dos ambientes
 # de desenvolvimento e homologação sejam definidos. Não usar "*" em produção.
