@@ -44,3 +44,17 @@ def test_catalog_services_are_isolated_between_app_instances():
     assert first.get("/api/v1/motivos-acerto-estoque").json()[0]["id"] == reason["id"]
     assert second.get("/api/v1/categorias").json() == []
     assert second.get("/api/v1/motivos-acerto-estoque").json() == []
+
+
+def test_category_and_reason_names_are_trimmed():
+    category = client.post("/api/v1/categorias", json={"nome": "  Financeiro  "})
+    reason = client.post("/api/v1/motivos-acerto-estoque", json={"nome": "  Quebra  "})
+    assert category.status_code == 201
+    assert reason.status_code == 201
+    assert category.json()["nome"] == "Financeiro"
+    assert reason.json()["nome"] == "Quebra"
+
+
+def test_category_and_reason_names_reject_whitespace_only():
+    assert client.post("/api/v1/categorias", json={"nome": "   "}).status_code == 422
+    assert client.post("/api/v1/motivos-acerto-estoque", json={"nome": "   "}).status_code == 422
