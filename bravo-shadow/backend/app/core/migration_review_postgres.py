@@ -261,16 +261,24 @@ class PostgresReviewLedgerStore:
         cursor = self._run(
             connection,
             """
-            SELECT event_id, decision_id, version, reviewer_id, choice,
-                   rationale, reviewed_at
+            SELECT event_id, decision_id, manifest_hash, version, reviewer_id,
+                   choice, rationale, reviewed_at
             FROM bravo_shadow.migration_review_events
-            WHERE batch_key = %s AND manifest_hash = %s
+            WHERE batch_key = %s
             ORDER BY decision_id, version
             """,
-            (register.batch_id, register.manifest_hash),
+            (register.batch_id,),
         )
         rows = cursor.fetchall()
         cursor.close()
+
+        if any(
+            not isinstance(row, (tuple, list))
+            or len(row) != 8
+            or row[2] != register.manifest_hash
+            for row in rows
+        ):
+            raise ReviewValidationError("stored_event_manifest_mismatch")
 
         ledger = ReviewLedger(
             batch_id=register.batch_id,
@@ -279,11 +287,11 @@ class PostgresReviewLedgerStore:
                 ReviewEvent(
                     event_id=row[0],
                     decision_id=row[1],
-                    version=int(row[2]),
-                    reviewer_id=row[3],
-                    choice=row[4],
-                    rationale=row[5],
-                    reviewed_at=self._timestamp(row[6]),
+                    version=row[3],
+                    reviewer_id=row[4],
+                    choice=row[5],
+                    rationale=row[6],
+                    reviewed_at=self._timestamp(row[7]),
                 )
                 for row in rows
             ),
