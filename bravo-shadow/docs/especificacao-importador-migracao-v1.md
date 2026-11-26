@@ -194,3 +194,106 @@ A especificação não significa que o importador esteja implementado ou testado
 - cortar ou redirecionar módulos do Bravo original.
 
 **Próxima etapa técnica:** revisar o schema PostgreSQL local e desenhar a tabela de controle de lotes/origem, sem aplicar migrations. Em seguida, criar testes unitários do planejador de importação com dados sintéticos.
+
+
+## 12. Modelo lógico do controle de lotes e da origem
+
+**Status:** desenho lógico para revisão; não é migration SQL e não foi aplicado a nenhum banco.
+
+O controle é separado dos dados funcionais do Bravo. Ele registra a proveniência e o estado do processamento sem copiar o payload de origem.
+
+### 12.1. Entidade `migration_batches`
+
+| Campo lógico | Tipo recomendado | Regra |
+|---|---|---|
+| `batch_id` | texto/UUID determinístico | Chave primária lógica; derivada da identidade do snapshot conforme versão do manifesto. |
+| `snapshot_hash` | texto SHA-256 | Obrigatório; identifica os bytes/envelope de origem. |
+| `manifest_hash` | texto SHA-256 | Obrigatório; vincula o lote ao manifesto aprovado. |
+| `source_system` | texto | Obrigatório; parte da identidade de origem. |
+| `source_baseline` | texto | SHA da baseline interpretada. |
+| `environment` | texto com CHECK | Somente `local_disposable` ou `ci_ephemeral` na V1. Valores de produção são recusados. |
+| `mode` | texto com CHECK | `inspect`, `dry_run`, `apply`, `verify` ou `rollback`. |
+| `status` | texto com CHECK | `prepared`, `approved`, `applying`, `applied`, `verified`, `failed`, `rolled_back`. |
+| `mapping_version` | texto | Versão imutável do mapeamento usado. |
+| `created_at`, `finished_at` | timestamp com fuso | Datas de auditoria; não substituem `exportedAt`. |
+| `approved_by`, `approved_at` | texto/timestamp com fuso, anuláveis | Preenchidos somente por aprovação explícita, autenticada e vinculada ao hash. |
+
+Restrições:
+- `batch_id` é único.
+- `manifest_hash` e `snapshot_hash` devem ter formato SHA-256 validado pela aplicação e, quando possível, por CHECK no banco.
+- Transições de status são controladas; lote `applied` ou `verified` não pode voltar a `prepared`.
+- Um lote aprovado só pode ser aplicado se o hash do manifesto apresentado for idêntico ao hash aprovado.
+- A V1 não aceita `environment` de produção, nem mesmo se o operador tentar marcar o lote como aprovado.
+
+### 12.2. Entidade `migration_source_records`
+
+| Campo lógico | Tipo recomendado | Regra |
+|---|---|---|
+| `source_system` | texto | Não vazio; sem normalização silenciosa. |
+| `source_collection` | texto | Nome exato da coleção de origem. |
+| `legacy_id` | texto | ID opaco; preservar zeros, prefixos e caixa. |
+| `destination_collection` | texto | Coleção/tabela Shadow aprovada no mapeamento. |
+| `destination_id` | texto | ID efetivamente atribuído; preservar o legado quando permitido. |
+| `source_record_hash` | texto SHA-256 | Hash canônico e versionado do registro de origem. |
+| `first_batch_id` | texto/UUID | Lote que criou o vínculo de proveniência. |
+| `last_verified_batch_id` | texto/UUID, anulável | Último lote em que conteúdo e vínculo foram verificados. |
+| `created_at`, `updated_at` | timestamp com fuso | Auditoria do vínculo, não do dado de negócio. |
+
+Restrições e comportamento:
+- Chave única composta: `(source_system, source_collection, legacy_id)`.
+- A identidade da origem nunca é atualizada para apontar silenciosamente a outro destino.
+- `destination_collection, destination_id` também deve ter unicidade dentro do escopo de destino, impedindo que duas identidades de origem reivindiquem o mesmo registro.
+- Alteração do hash de origem gera conflito para revisão; não atualiza automaticamente `source_record_hash`.
+- `first_batch_id` referencia o lote criador e não muda em reexecuções.
+- A tabela não deve armazenar payload bruto, documentos, Base64, CPF, telefone, e-mail ou endereço.
+- A exclusão de um registro funcional não apaga o vínculo de proveniência; deve gerar estado explícito de destino ausente/conflito, sujeito a revisão.
+
+### 12.3. Histórico append-only de decisões
+
+As decisões manuais ficam em registro separado e append-only, vinculadas a:
+- identidade de origem;
+- hash de origem observado;
+- hash do manifesto/lote;
+- classificação anterior e decisão escolhida;
+- justificativa obrigatória;
+- revisor autenticado e instante com fuso.
+
+Uma decisão não altera o manifesto original. Uma nova entrada de decisão gera nova versão de revisão e exige novo dry-run; decisões antigas permanecem auditáveis. A revisão não concede por si só permissão de escrita no banco.
+
+### 12.4. Transação e concorrência
+
+1. Adquirir lock transacional pela identidade composta antes de consultar/inserir o vínculo de origem.
+2. Revalidar colisão no destino dentro da mesma transação.
+3. Inserir o registro funcional e o vínculo `migration_source_records` na mesma transação.
+4. Atualizar contadores/estado do lote na mesma transação do domínio, sempre que possível.
+5. Se a restrição única disparar, reler e classificar como reexecução ou conflito; nunca repetir INSERT sem classificação.
+6. Se qualquer registro obrigatório do domínio falhar, abortar a transação daquele domínio e registrar falha fora dela, sem deixar vínculo parcial.
+7. Não implementar dual-write, fila de sincronização contínua ou gatilho de escrita no legado.
+
+### 12.5. Ordem de piloto para cadastros independentes
+
+O primeiro piloto deve usar somente fixtures sintéticas, pequenas e autocontidas. A seleção de coleções deve ser explícita no envelope; não assumir que todas estão presentes.
+
+Ordem sugerida para cadastros sem dependência referencial confirmada:
+1. Categorias e Motivos de Acerto, mantendo os dois cadastros separados.
+2. Fornecedores e Empregados, sem inferir relações entre eles.
+3. Moradores, preservando bloco e apartamento como texto.
+4. Condomínio e Conselho como estruturas separadas, sem FK inventada.
+5. Plano de Contas.
+6. Formas Monetárias e Contas Bancárias como cadastros independentes.
+
+Essa ordem é uma sequência de ensaio, não uma afirmação de dependência funcional nem autorização de carga. Financeiro, Documentos e Acertos de Estoque ficam fora do primeiro piloto, pois exigem validação de referências ou arquivos. Dashboard/DRE não são importados.
+
+### 12.6. Critérios de aceite específicos do controle
+
+- [ ] Duas execuções concorrentes com a mesma identidade não criam duplicidade.
+- [ ] Mesma identidade + mesmo hash resulta em `already_applied`.
+- [ ] Mesma identidade + hash diferente resulta em conflito revisável, sem UPDATE.
+- [ ] ID de destino ocupado sem vínculo de origem resulta em colisão.
+- [ ] Uma identidade de origem não pode reivindicar destino já associado a outra origem.
+- [ ] Lote não pode ser aplicado com hash diferente do aprovado.
+- [ ] Falha transacional não deixa registro funcional sem proveniência nem proveniência sem registro funcional.
+- [ ] Rollback não remove registros alterados ou referenciados após a criação.
+- [ ] Ambiente de produção é recusado no nível da aplicação e da configuração de conexão.
+- [ ] Relatórios não expõem conteúdo pessoal ou binário.
+
