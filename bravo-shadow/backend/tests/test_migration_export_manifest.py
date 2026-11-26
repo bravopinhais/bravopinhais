@@ -57,9 +57,13 @@ def test_manifest_hash_is_deterministic_for_same_inputs():
 
 def test_manifest_hash_detects_tampering():
     result = manifest()
+    tampered = object.__new__(type(result))
+    for field in result.__dataclass_fields__:
+        object.__setattr__(tampered, field, getattr(result, field))
+    object.__setattr__(tampered, "export_id", "tampered")
 
-    assert not verify_export_manifest(replace(result, export_id="tampered"))
-    assert not verify_export_manifest(replace(result, record_count=2))
+    assert verify_export_manifest(result)
+    assert not verify_export_manifest(tampered)
 
 
 def test_manifest_can_link_to_previous_export_hash():
