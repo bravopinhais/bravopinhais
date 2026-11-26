@@ -13,7 +13,7 @@ from app.core.postgres import PostgresUnitOfWork
 
 
 class PostgresAuditSink:
-    """Grava um evento por transação curta; não oferece leitura/edição/exclusão."""
+    """Grava eventos sem oferecer leitura, edição ou exclusão."""
 
     _INSERT = """
         INSERT INTO bravo_shadow.audit_events (
@@ -27,27 +27,44 @@ class PostgresAuditSink:
             raise TypeError("connection_factory deve ser chamável.")
         self._uow = PostgresUnitOfWork(connection_factory)
 
-    def append(self, event: AuditEvent) -> None:
+    @staticmethod
+    def _validate_event(event: AuditEvent) -> None:
         if not isinstance(event, AuditEvent):
             raise TypeError("Somente AuditEvent pode ser registrado.")
+
+    def append_in_transaction(self, connection: Any, event: AuditEvent) -> None:
+        """Insere usando conexão do chamador, sem commit, rollback ou close.
+
+        Permite que o serviço grave auditoria e alteração de negócio na mesma
+        transação. O chamador é responsável por confirmar ou reverter ambos.
+        """
+        self._validate_event(event)
+        if connection is None or not callable(getattr(connection, "cursor", None)):
+            raise TypeError("connection deve ser uma conexão DB-API válida.")
+
+        cursor = connection.cursor()
+        try:
+            cursor.execute(
+                self._INSERT,
+                (
+                    event.event_id,
+                    event.occurred_at,
+                    event.actor_subject,
+                    event.action,
+                    event.entity_type,
+                    event.entity_id,
+                    event.outcome,
+                    event.request_id,
+                ),
+            )
+        finally:
+            cursor.close()
+
+    def append(self, event: AuditEvent) -> None:
+        """Abre uma transação própria; não substitui o uso atômico integrado."""
+        self._validate_event(event)
         with self._uow as uow:
             connection = uow.connection
             if connection is None:
                 raise RuntimeError("A conexão PostgreSQL não foi aberta.")
-            cursor = connection.cursor()
-            try:
-                cursor.execute(
-                    self._INSERT,
-                    (
-                        event.event_id,
-                        event.occurred_at,
-                        event.actor_subject,
-                        event.action,
-                        event.entity_type,
-                        event.entity_id,
-                        event.outcome,
-                        event.request_id,
-                    ),
-                )
-            finally:
-                cursor.close()
+            self.append_in_transaction(connection, event)
