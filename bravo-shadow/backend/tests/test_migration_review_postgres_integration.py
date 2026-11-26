@@ -12,6 +12,9 @@ import psycopg
 import pytest
 
 from app.core.migration_decisions import build_decision_register
+from app.core.migration_manifest import build_migration_manifest
+from app.core.migration_preflight import run_migration_preflight
+from app.core.migration_report import build_preflight_report
 from app.core.migration_review import ReviewValidationError
 from app.core.migration_review_postgres import PostgresReviewLedgerStore
 from test_migration_decisions import setup_batch
@@ -61,6 +64,27 @@ def postgres_database():
 
 def _register():
     _, _, preflight, manifest = setup_batch()
+    return build_decision_register(manifest, preflight)
+
+
+
+def _register_for_distinct_batch():
+    envelope, candidates, _, _ = setup_batch()
+    envelope = dict(envelope)
+    envelope["sourceBaseline"] = "synthetic-decisions-second-batch"
+    envelope["snapshotHash"] = "c" * 64
+    preflight = run_migration_preflight(envelope, candidates)
+    report = build_preflight_report(envelope, candidates, preflight)
+    manifest = build_migration_manifest(
+        envelope,
+        candidates,
+        preflight,
+        report,
+        environment="shadow-test",
+        importer_version="1.0.0",
+        mapping_version="1.0.0",
+        created_at="2026-11-26T15:00:00-03:00",
+    )
     return build_decision_register(manifest, preflight)
 
 
@@ -241,3 +265,31 @@ def test_deferred_commit_failure_rolls_back_and_allows_retry(postgres_database):
 
     retried = store.append(register, **_event_args(decision_id, event_id))
     assert [event.event_id for event in retried.history_for(decision_id)] == [event_id]
+
+
+def test_event_id_is_unique_across_batches(postgres_database):
+    first_register = _register()
+    second_register = _register_for_distinct_batch()
+    assert first_register.batch_id != second_register.batch_id
+    assert first_register.pending[0].decision_id != second_register.pending[0].decision_id
+
+    store = PostgresReviewLedgerStore(lambda: psycopg.connect(postgres_database))
+    store.initialize(first_register)
+    store.initialize(second_register)
+
+    shared_event_id = f"cross-batch-{uuid4()}"
+    first_decision_id = first_register.pending[0].decision_id
+    second_decision_id = second_register.pending[0].decision_id
+    store.append(
+        first_register,
+        **_event_args(first_decision_id, shared_event_id),
+    )
+
+    with pytest.raises(ReviewValidationError, match="duplicate_review_event_id"):
+        store.append(
+            second_register,
+            **_event_args(second_decision_id, shared_event_id),
+        )
+
+    assert len(store.load(first_register).events) == 1
+    assert store.load(second_register).events == ()
