@@ -84,3 +84,23 @@ def require_capability(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Acesso negado para esta operação.",
         )
+
+
+
+def require_capability_dependency(capability: str):
+    """Cria uma dependência FastAPI para proteger uma rota por capacidade.
+
+    A dependência autentica primeiro via get_current_principal e só então
+    verifica a capacidade. A função é uma ferramenta de integração; não
+    protege rotas até ser declarada explicitamente em cada endpoint.
+    """
+    from fastapi import Depends
+    from app.core.authentication import get_current_principal
+
+    def dependency(
+        principal: AuthenticatedPrincipal = Depends(get_current_principal),
+    ) -> AuthenticatedPrincipal:
+        require_capability(principal, capability)
+        return principal
+
+    return dependency
