@@ -123,3 +123,6 @@ A infraestrutura também aceita `create_app(storage_backend="postgres", postgres
 ### Integração das rotas com adaptadores PostgreSQL (simulada)
 
 O teste `test_postgres_api_integration.py` cria a aplicação com `storage_backend="postgres"` e uma fábrica DB-API falsa, mantendo estado isolado por teste. Ele percorre criação e leitura de conta e título, atualização com ETag, rejeição de versão obsoleta, bloqueio de exclusão por vínculo financeiro e rejeição de código duplicado. Isso valida a ligação entre rotas, serviços, seleção de storage e adaptadores SQL sem acessar banco externo. A simulação não substitui execução contra PostgreSQL real; os testes ainda precisam ser executados no ambiente Python.
+
+
+A camada Financeiro também traduz violações de chave estrangeira ao criar ou atualizar títulos com uma conta inexistente para HTTP 409. Os testes cobrem os caminhos de repositório e a resposta da rota, preservando rollback e evitando erro interno não tratado.
