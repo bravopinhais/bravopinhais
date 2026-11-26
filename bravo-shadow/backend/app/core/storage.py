@@ -4,7 +4,13 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from app.core.postgres_cadastros import (\n    PostgresContasBancariasRepository,\n    PostgresEmpregadosRepository,\n    PostgresFornecedoresRepository,\n    PostgresMoradoresRepository,\n)\nfrom app.core.postgres_catalogs import (
+from app.core.postgres_cadastros import (
+    PostgresContasBancariasRepository,
+    PostgresEmpregadosRepository,
+    PostgresFornecedoresRepository,
+    PostgresMoradoresRepository,
+)
+from app.core.postgres_catalogs import (
     PostgresCategoriasRepository,
     PostgresDocumentosRepository,
     PostgresMotivosAcertoRepository,
@@ -70,9 +76,9 @@ def build_storage_services(
     """Cria serviços isolados; nunca altera singletons ou estado global.
 
     No modo PostgreSQL, a fábrica é obrigatória e só será chamada durante
-    operações de repositório. Estoque, Acertos, Categorias, Motivos de Acerto
-    e Documentos usam adapters PostgreSQL; cadastros, condomínio, conselho
-    e usuários seguem em memória até seus adapters serem implementados.
+    operações de repositório. Cadastros financeiros, estoque, catálogos,
+    documentos, moradores, fornecedores, empregados e contas bancárias usam
+    adapters PostgreSQL; condomínio, conselho e usuários seguem em memória.
     """
     movement_repository = None
     if backend == "memory":
@@ -84,6 +90,10 @@ def build_storage_services(
         categorias_repository = InMemoryCollectionRepository()
         motivos_repository = InMemoryCollectionRepository()
         documentos_repository = InMemoryCollectionRepository()
+        moradores_repository = InMemoryCollectionRepository()
+        fornecedores_repository = InMemoryCollectionRepository()
+        empregados_repository = InMemoryCollectionRepository()
+        contas_bancarias_repository = InMemoryCollectionRepository()
     elif backend == "postgres":
         if connection_factory is None:
             raise StorageConfigurationError(
@@ -98,6 +108,10 @@ def build_storage_services(
         categorias_repository = PostgresCategoriasRepository(connection_factory)
         motivos_repository = PostgresMotivosAcertoRepository(connection_factory)
         documentos_repository = PostgresDocumentosRepository(connection_factory)
+        moradores_repository = PostgresMoradoresRepository(connection_factory)
+        fornecedores_repository = PostgresFornecedoresRepository(connection_factory)
+        empregados_repository = PostgresEmpregadosRepository(connection_factory)
+        contas_bancarias_repository = PostgresContasBancariasRepository(connection_factory)
         movement_repository = acertos_repository
     else:
         raise StorageConfigurationError(
@@ -128,10 +142,10 @@ def build_storage_services(
     )
     motivos_acerto.set_reference_checker(acertos_estoque.has_reason_reference)
 
-    moradores = MoradoresService(repository=InMemoryCollectionRepository())
-    fornecedores = FornecedoresService(repository=InMemoryCollectionRepository())
-    empregados = EmpregadosService(repository=InMemoryCollectionRepository())
-    contas_bancarias = ContasBancariasService(repository=InMemoryCollectionRepository())
+    moradores = MoradoresService(repository=moradores_repository)
+    fornecedores = FornecedoresService(repository=fornecedores_repository)
+    empregados = EmpregadosService(repository=empregados_repository)
+    contas_bancarias = ContasBancariasService(repository=contas_bancarias_repository)
     condominio = CondominioService(repository=InMemoryCollectionRepository())
     conselheiros = ConselheirosService(repository=InMemoryCollectionRepository())
     usuarios = UsuariosService(repository=InMemoryCollectionRepository())
