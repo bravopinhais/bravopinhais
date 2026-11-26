@@ -315,3 +315,13 @@ No modo PostgreSQL, a edição cadastral de um produto bloqueia a linha com `FOR
 - Não foram adicionadas regras de unicidade para nome, cargo, e-mail, telefone ou unidade. O cadastro pode conter conselheiros com nomes iguais e o sistema não tem identificador de unidade estruturado neste módulo.
 - Foram adicionados testes para normalização, preservação de campos omitidos, limpeza por string vazia e rejeição de campos obrigatórios em branco. Os testes ainda não foram executados.
 - Os dados de condomínio e conselho não devem ser tratados como protegidos por autorização funcional: as rotas de negócio continuam sem dependências de autorização enquanto a matriz de permissões não for aprovada e a validação do token Google não for confirmada.
+
+
+## Revisão de integridade — Categorias e Motivos de Acerto
+
+- Os nomes de Categorias e Motivos de Acerto agora removem espaços externos na entrada. Valores vazios ou compostos apenas por espaços são rejeitados pela validação de tamanho mínimo após a normalização.
+- Não foi criada unicidade de nome nem comparação sem diferenciar maiúsculas/minúsculas. O contrato atual não confirma se nomes iguais podem representar categorias/motivos distintos, inclusive em pastas ou fluxos diferentes; impor unicidade poderia bloquear cadastros existentes.
+- Categorias são referenciadas por Documentos por meio de `categoria_id`; a exclusão de categoria em uso é bloqueada pelo serviço em memória e pela FK `ON DELETE RESTRICT` no rascunho PostgreSQL.
+- Motivos são referenciados por Acertos de Estoque por meio de `motivo_id`; a exclusão de motivo utilizado é bloqueada pelo serviço em memória e pela FK `ON DELETE RESTRICT` no rascunho PostgreSQL. O texto do motivo permanece como snapshot no movimento para preservar o histórico.
+- Os campos de nome não são convertidos para maiúsculas/minúsculas, e nenhum texto de histórico é reescrito. As regras de vínculo existentes foram preservadas.
+- Foram adicionados testes para normalização e rejeição de nomes somente com espaços. Os testes ainda não foram executados; a integridade referencial PostgreSQL segue dependente de migration e validação em banco local isolado.
