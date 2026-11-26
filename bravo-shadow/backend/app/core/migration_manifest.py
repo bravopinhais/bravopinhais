@@ -179,10 +179,18 @@ def build_migration_manifest(
     )))
     issue_codes = tuple(sorted(report.issue_codes))
 
+    # The batch key must distinguish a re-import of the same snapshot with
+    # different transformation logic. Otherwise the batch PK collides while
+    # the manifest hash correctly changes, preventing an auditable new run.
     identity_payload = {
         "sourceSystem": envelope["sourceSystem"],
         "sourceBaseline": envelope["sourceBaseline"],
         "snapshotHash": envelope["snapshotHash"],
+        "envelopeFormatVersion": result.envelope_validation.format_version,
+        "manifestFormatVersion": MANIFEST_FORMAT_VERSION,
+        "canonicalizationVersion": CANONICALIZATION_VERSION,
+        "importerVersion": importer_version,
+        "mappingVersion": mapping_version,
     }
     batch_id = "batch-" + _sha256(_canonical_json(identity_payload))
 
