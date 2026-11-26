@@ -190,6 +190,20 @@ class PostgresReviewLedgerStore:
             if database_version != expected_version:
                 raise ReviewValidationError("stale_review_version")
 
+            cursor = self._run(
+                connection,
+                """
+                SELECT event_id
+                FROM bravo_shadow.migration_review_events
+                WHERE event_id = %s
+                """,
+                (event_id,),
+            )
+            duplicate_event = cursor.fetchone()
+            cursor.close()
+            if duplicate_event is not None:
+                raise ReviewValidationError("duplicate_review_event_id")
+
             updated = append_review(
                 current,
                 register,
