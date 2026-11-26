@@ -70,8 +70,10 @@ def test_adjustment_updates_quantity_and_prevents_negative_balance():
         ).status_code
         == 409
     )
-    assert client.delete("/api/v1/acertos-estoque/" + move.json()["id"]).status_code == 204
+    deletion = client.delete("/api/v1/acertos-estoque/" + move.json()["id"])
+    assert deletion.status_code == 409
     assert client.get("/api/v1/estoque").json()[0]["quantidade"] == 3
+    assert client.get("/api/v1/acertos-estoque").json()[0]["id"] == move.json()["id"]
 
 
 def test_adjustment_requires_existing_product():
@@ -132,8 +134,8 @@ def test_adjustment_reason_link_and_restrict_delete():
     assert data["motivoId"] == reason["id"]
     assert data["motivo"] == "Avaria"
     assert client.delete("/api/v1/motivos-acerto-estoque/" + reason["id"]).status_code == 409
-    assert client.delete("/api/v1/acertos-estoque/" + data["id"]).status_code == 204
-    assert client.delete("/api/v1/motivos-acerto-estoque/" + reason["id"]).status_code == 204
+    assert client.delete("/api/v1/acertos-estoque/" + data["id"]).status_code == 409
+    assert client.delete("/api/v1/motivos-acerto-estoque/" + reason["id"]).status_code == 409
 
 
 def test_adjustment_rejects_unknown_reason():
@@ -207,3 +209,51 @@ def test_stock_registration_date_rejects_non_iso_format():
         json={"item": "Material", "dataCadastro": "26/11/2026"},
     )
     assert response.status_code == 422
+
+
+def test_adjustment_trims_required_text_and_optional_reason_id():
+    product = client.post("/api/v1/estoque", json={"item": "Filtro", "quantidade": 2}).json()
+    reason = client.post("/api/v1/motivos-acerto-estoque", json={"nome": "Avaria"}).json()
+    response = client.post(
+        "/api/v1/acertos-estoque",
+        json={
+            "tipo": "Entrada",
+            "produtoId": " " + product["id"] + " ",
+            "quantidade": 1,
+            "motivo": "  Reposição  ",
+            "motivoId": " " + reason["id"] + " ",
+        },
+    )
+    assert response.status_code == 201
+    assert response.json()["produtoId"] == product["id"]
+    assert response.json()["motivo"] == "Avaria"
+    assert response.json()["motivoId"] == reason["id"]
+
+
+def test_adjustment_rejects_blank_product_and_reason_text():
+    product = client.post("/api/v1/estoque", json={"item": "Filtro", "quantidade": 2}).json()
+    for payload in (
+        {"tipo": "Entrada", "produtoId": "   ", "quantidade": 1, "motivo": "Reposição"},
+        {"tipo": "Entrada", "produtoId": product["id"], "quantidade": 1, "motivo": "   "},
+    ):
+        assert client.post("/api/v1/acertos-estoque", json=payload).status_code == 422
+
+
+def test_adjustment_requires_positive_integer_quantity():
+    product = client.post("/api/v1/estoque", json={"item": "Filtro", "quantidade": 2}).json()
+    for quantity in (0, -1):
+        response = client.post(
+            "/api/v1/acertos-estoque",
+            json={
+                "tipo": "Entrada",
+                "produtoId": product["id"],
+                "quantidade": quantity,
+                "motivo": "Reposição",
+            },
+        )
+        assert response.status_code == 422
+
+
+def test_adjustment_delete_of_unknown_id_returns_404():
+    response = client.delete("/api/v1/acertos-estoque/does-not-exist")
+    assert response.status_code == 404
