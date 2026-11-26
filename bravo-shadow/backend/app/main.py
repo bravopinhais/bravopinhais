@@ -1,7 +1,14 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.modules.financeiro.router import router as financeiro_router
+from app.modules.financeiro.service import financeiro_service
 from app.modules.plano_contas.router import router as plano_contas_router
+from app.modules.plano_contas.service import plano_contas_service
+
+# O checker consulta a coleção financeira de homologação em memória.
+# Continua sem conexão com Supabase ou dados de produção.
+plano_contas_service._has_financial_references = financeiro_service.has_plan_account_reference
 
 app = FastAPI(
     title="Bravo Shadow API",
@@ -10,6 +17,7 @@ app = FastAPI(
 )
 
 app.include_router(plano_contas_router)
+app.include_router(financeiro_router)
 
 # CORS permanecerá restrito até que os domínios oficiais dos ambientes
 # de desenvolvimento e homologação sejam definidos. Não usar "*" em produção.
