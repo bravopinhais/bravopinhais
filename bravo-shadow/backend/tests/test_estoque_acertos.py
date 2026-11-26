@@ -257,3 +257,37 @@ def test_adjustment_requires_positive_integer_quantity():
 def test_adjustment_delete_of_unknown_id_returns_404():
     response = client.delete("/api/v1/acertos-estoque/does-not-exist")
     assert response.status_code == 404
+
+
+def test_product_with_movements_cannot_be_deleted_or_have_balance_edited():
+    product = client.post("/api/v1/estoque", json={"item": "Cabo", "quantidade": 5}).json()
+    movement = client.post(
+        "/api/v1/acertos-estoque",
+        json={"tipo": "Saída", "produtoId": product["id"], "quantidade": 1, "motivo": "Uso"},
+    )
+    assert movement.status_code == 201
+    update = client.put(
+        "/api/v1/estoque/" + product["id"],
+        json={"item": "Cabo", "quantidade": 9},
+    )
+    assert update.status_code == 409
+    deletion = client.delete("/api/v1/estoque/" + product["id"])
+    assert deletion.status_code == 409
+    assert client.get("/api/v1/estoque").json()[0]["quantidade"] == 4
+    assert len(client.get("/api/v1/acertos-estoque").json()) == 1
+
+
+def test_product_metadata_can_be_edited_without_changing_movement_balance():
+    product = client.post("/api/v1/estoque", json={"item": "Cabo", "quantidade": 5}).json()
+    movement = client.post(
+        "/api/v1/acertos-estoque",
+        json={"tipo": "Saída", "produtoId": product["id"], "quantidade": 1, "motivo": "Uso"},
+    )
+    assert movement.status_code == 201
+    update = client.put(
+        "/api/v1/estoque/" + product["id"],
+        json={"item": "Cabo reforçado", "quantidade": 4, "marca": "Marca B"},
+    )
+    assert update.status_code == 200
+    assert update.json()["item"] == "Cabo reforçado"
+    assert update.json()["quantidade"] == 4
