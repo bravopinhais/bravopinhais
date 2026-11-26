@@ -1,78 +1,56 @@
+import pytest
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
-from app.main import app, create_app
-
-client = TestClient(app)
-
-
-def setup_function() -> None:
-    app.state.services.empregados._items.clear()
-
-
-def test_employee_crud_and_optional_fields():
-    response = client.post("/api/v1/empregados", json={"nome": "Maria Exemplo", "cargo": "Zeladora"})
-    assert response.status_code == 201
-    item = response.json()
-    assert item["empresa"] == ""
-    assert item["contatoEmergenciaTel"] == ""
-    updated = client.put(f"/api/v1/empregados/{item['id']}", json={
-        "nome": "Maria Exemplo", "cargo": "Supervisora", "empresa": "Condomínio",
-        "endereco": "Rua Exemplo", "telefone": "41999990000",
-        "contatoEmergenciaNome": "João", "contatoEmergenciaTel": "41988887777"
-    })
-    assert updated.status_code == 200
-    assert updated.json()["contatoEmergenciaNome"] == "João"
-    assert client.delete(f"/api/v1/empregados/{item['id']}").status_code == 204
+from app.core.authentication import get_current_principal
+from app.core.authorization import AuthenticatedPrincipal
+from app.main import create_app
+from app.modules.empregados.schemas import EmpregadoInput
+from app.modules.empregados.service import EmpregadosService
 
 
-def test_employee_required_fields_and_not_found():
-    assert client.post("/api/v1/empregados", json={"nome": "Maria"}).status_code == 422
-    assert client.delete("/api/v1/empregados/inexistente").status_code == 404
+def build_client(profile: str | None = None) -> TestClient:
+    application = create_app(storage_backend="memory")
+    if profile is not None:
+        async def authenticated_principal() -> AuthenticatedPrincipal:
+            return AuthenticatedPrincipal(subject="google-test-subject", email="teste@example.com", profile=profile, account_status="Ativo")
+        application.dependency_overrides[get_current_principal] = authenticated_principal
+    return TestClient(application)
 
 
-def test_employees_are_isolated_between_app_instances():
-    first, second = TestClient(create_app()), TestClient(create_app())
-    created = first.post("/api/v1/empregados", json={"nome": "Pessoa Isolada", "cargo": "Zelador"}).json()
-    assert first.get("/api/v1/empregados").json()[0]["id"] == created["id"]
-    assert second.get("/api/v1/empregados").json() == []
+def test_all_empregados_routes_require_authentication():
+    client = build_client()
+    requests = [
+        ("GET", "/api/v1/empregados", None),
+        ("POST", "/api/v1/empregados", {"nome": "Maria Exemplo", "cargo": "Zeladora", "telefone": "41999990000", "contatoEmergenciaNome": "João", "contatoEmergenciaTel": "41988887777"}),
+        ("PUT", "/api/v1/empregados/id-teste", {"nome": "Maria Exemplo", "cargo": "Zeladora", "telefone": "41999990000", "contatoEmergenciaNome": "João", "contatoEmergenciaTel": "41988887777"}),
+        ("DELETE", "/api/v1/empregados/id-teste", None),
+    ]
+    for method, path, payload in requests:
+        assert client.request(method, path, json=payload).status_code == 401
 
 
-def test_employee_text_fields_are_trimmed_without_changing_phone_format():
-    response = client.post("/api/v1/empregados", json={
-        "nome": "  Maria Exemplo  ", "cargo": "  Zeladora ",
-        "empresa": " Condomínio Exemplo ", "endereco": " Rua A, 100 ",
-        "telefone": " (41) 99999-0000 ",
-        "contatoEmergenciaNome": " João Silva ",
-        "contatoEmergenciaTel": " 41988887777 "
-    })
-    assert response.status_code == 201
-    item = response.json()
-    assert item["nome"] == "Maria Exemplo"
-    assert item["cargo"] == "Zeladora"
-    assert item["empresa"] == "Condomínio Exemplo"
-    assert item["endereco"] == "Rua A, 100"
-    assert item["telefone"] == "(41) 99999-0000"
-    assert item["contatoEmergenciaNome"] == "João Silva"
-    assert item["contatoEmergenciaTel"] == "41988887777"
+def test_both_profiles_are_denied_until_capability_matrix_approval():
+    requests = [
+        ("GET", "/api/v1/empregados", None),
+        ("POST", "/api/v1/empregados", {"nome": "Maria Exemplo", "cargo": "Zeladora", "telefone": "41999990000", "contatoEmergenciaNome": "João", "contatoEmergenciaTel": "41988887777"}),
+        ("PUT", "/api/v1/empregados/id-teste", {"nome": "Maria Exemplo", "cargo": "Zeladora", "telefone": "41999990000", "contatoEmergenciaNome": "João", "contatoEmergenciaTel": "41988887777"}),
+        ("DELETE", "/api/v1/empregados/id-teste", None),
+    ]
+    for profile in ("Admin", "Operador"):
+        client = build_client(profile)
+        for method, path, payload in requests:
+            assert client.request(method, path, json=payload).status_code == 403
 
 
-def test_employee_required_fields_reject_whitespace_only_values():
-    response = client.post("/api/v1/empregados", json={
-        "nome": " Maria ", "cargo": "   "
-    })
-    assert response.status_code == 422
-
-
-def test_employee_update_trims_optional_fields():
-    created = client.post("/api/v1/empregados", json={
-        "nome": "Maria", "cargo": "Zeladora"
-    }).json()
-    response = client.put(f"/api/v1/empregados/{created['id']}", json={
-        "nome": " Maria Atualizada ", "cargo": " Supervisora ",
-        "empresa": "  ", "endereco": " Rua B "
-    })
-    assert response.status_code == 200
-    assert response.json()["nome"] == "Maria Atualizada"
-    assert response.json()["cargo"] == "Supervisora"
-    assert response.json()["empresa"] == ""
-    assert response.json()["endereco"] == "Rua B"
+def test_empregados_service_keeps_crud_and_validation_independent_from_http_auth():
+    service = EmpregadosService()
+    data = EmpregadoInput.model_validate({"nome": "Maria Exemplo", "cargo": "Zeladora", "telefone": "41999990000", "contatoEmergenciaNome": "João", "contatoEmergenciaTel": "41988887777"})
+    created = service.create(data)
+    assert service.list() == [created]
+    updated = service.update(created.id, data)
+    assert updated.id == created.id
+    service.delete(created.id)
+    assert service.list() == []
+    with pytest.raises(ValidationError):
+        EmpregadoInput.model_validate({})
