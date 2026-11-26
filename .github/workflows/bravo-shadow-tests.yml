@@ -13,6 +13,9 @@ on:
   pull_request:
     paths:
       - "bravo-shadow/backend/**"
+      - "bravo-shadow/frontend/**"
+      - "bravo-shadow/Dockerfile"
+      - "bravo-shadow/.dockerignore"
       - ".github/workflows/bravo-shadow-tests.yml"
   workflow_dispatch:
 
