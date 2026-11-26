@@ -161,6 +161,27 @@ create table if not exists bravo_shadow.conselheiros (
 create index if not exists conselheiros_nome_idx
     on bravo_shadow.conselheiros (nome, id);
 
+-- Perfis de aplicação vinculados ao e-mail Google já verificado pelo fluxo de autenticação.
+-- Esta tabela não autentica usuários nem concede autorização por perfil.
+create table if not exists bravo_shadow.usuarios (
+    id text primary key,
+    email text not null,
+    nome text not null,
+    loja text not null default 'Guardiões do Bravo',
+    cargo text not null,
+    perfil text not null default 'Operador' check (perfil in ('Admin', 'Operador')),
+    status text not null default 'Ativo' check (status in ('Ativo', 'Inativo')),
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    version bigint not null default 1 check (version >= 1)
+);
+
+create unique index if not exists usuarios_email_ci_uidx
+    on bravo_shadow.usuarios (lower(email));
+
+create index if not exists usuarios_nome_idx
+    on bravo_shadow.usuarios (nome, id);
+
 -- Defesa em profundidade. Sem policies: clientes da Data API não recebem acesso.
 alter table bravo_shadow.formas_monetarias enable row level security;
 alter table bravo_shadow.plano_contas enable row level security;
@@ -273,6 +294,7 @@ alter table bravo_shadow.empregados enable row level security;
 alter table bravo_shadow.contas_bancarias enable row level security;
 alter table bravo_shadow.condominio enable row level security;
 alter table bravo_shadow.conselheiros enable row level security;
+alter table bravo_shadow.usuarios enable row level security;
 
 revoke all on table bravo_shadow.formas_monetarias from public, anon, authenticated, service_role;
 revoke all on table bravo_shadow.plano_contas from public, anon, authenticated, service_role;
@@ -288,6 +310,7 @@ revoke all on table bravo_shadow.empregados from public, anon, authenticated, se
 revoke all on table bravo_shadow.contas_bancarias from public, anon, authenticated, service_role;
 revoke all on table bravo_shadow.condominio from public, anon, authenticated, service_role;
 revoke all on table bravo_shadow.conselheiros from public, anon, authenticated, service_role;
+revoke all on table bravo_shadow.usuarios from public, anon, authenticated, service_role;
 
 -- Não criar GRANT para anon/authenticated/service_role nesta fase.
 -- O backend deverá usar um usuário PostgreSQL dedicado, com privilégios mínimos,
