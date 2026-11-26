@@ -147,3 +147,24 @@ Foi adicionado `backend/app/core/migration_provenance_snapshot_postgres.py`, um 
 Testes com conexão/cursor falsos cobrem a ordem da transação somente leitura, snapshot vazio, falha de consulta e linha malformada.
 
 **Limites:** o chamador deve fornecer uma conexão em transação ainda sem comandos anteriores, pois PostgreSQL exige que `SET TRANSACTION READ ONLY` seja executado antes da primeira consulta. O leitor não coleta o snapshot do sistema legado nem compara dados funcionais; entrega somente o inventário de proveniência do Shadow ao reconciliador. Nenhuma conexão foi aberta nesta implementação e nenhum SQL foi aplicado.
+
+
+## Serviço de reconciliação somente leitura
+
+Foi adicionada a camada `backend/app/core/migration_reconciliation_service.py`.
+Ela recebe o inventário de origem como tupla imutável fornecida pelo chamador,
+solicita ao leitor PostgreSQL o snapshot de proveniência e encaminha ambos ao
+comparador puro em memória.
+
+Limites preservados:
+- não existe conexão automática com o sistema legado;
+- o inventário de origem ainda precisa ser obtido por um processo autorizado e
+  fornecido explicitamente ao serviço;
+- a conexão PostgreSQL e o ciclo da transação pertencem ao chamador;
+- a primeira instrução executada pelo leitor continua sendo
+  `SET TRANSACTION READ ONLY`;
+- o serviço não grava, corrige, confirma, reverte ou autoriza importações;
+- os testes usam conexão/cursor falsos e dados sintéticos; não conectam banco.
+
+Este serviço fecha a orquestração técnica da comparação, mas não representa
+validação de dados reais nem conclusão da migração.
