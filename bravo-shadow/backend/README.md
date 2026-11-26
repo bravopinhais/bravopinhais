@@ -115,9 +115,9 @@ As rotas POST devolvem a versão no corpo e um ETag forte no cabeçalho de respo
 
 A aplicação é criada por `create_app()`. O padrão é `BRAVO_STORAGE_BACKEND=memory`; nesse modo, Plano de Contas e Financeiro usam repositórios temporários em memória, como os demais módulos.
 
-A infraestrutura também aceita `create_app(storage_backend="postgres", postgres_connection_factory=...)`. A fábrica DB-API precisa ser fornecida explicitamente pelo ambiente hospedeiro. A configuração não importa driver, não lê credenciais, não abre conexão no startup e não tenta fallback para memória. Sem fábrica, a inicialização em modo PostgreSQL falha de forma explícita.
+A infraestrutura aceita `create_app(storage_backend="postgres", postgres_connection_factory=...)`. Se a fábrica não for injetada, a aplicação monta uma fábrica Psycopg 3 a partir de `BRAVO_DATABASE_URL`; a variável é obrigatória nesse modo. O driver é importado somente quando PostgreSQL é selecionado. A fábrica não abre conexão no startup: cada operação do repositório abre e fecha sua própria conexão/transação. Sem URL ou driver, a inicialização falha explicitamente e não há fallback para memória.
 
-**Escopo atual:** somente Plano de Contas e Financeiro têm adaptadores PostgreSQL. Os outros módulos continuam em memória. Não há driver instalado, migration aplicada ou teste contra banco real; portanto, não habilite PostgreSQL até preparar o schema privado `bravo_shadow` em uma instância local isolada e validar os adaptadores. O health endpoint informa o modo configurado, mas não verifica a conectividade com o banco.
+**Escopo atual:** somente Plano de Contas e Financeiro têm adaptadores PostgreSQL. Os outros módulos continuam em memória. O driver Psycopg 3.3.9 está declarado e fixado em `requirements.txt`, mas ainda não há migration aplicada, concessão de privilégios ao usuário dedicado da API nem teste contra banco real. Portanto, não habilite PostgreSQL até preparar o schema privado `bravo_shadow`, criar um usuário local de privilégio mínimo e validar os adaptadores. O health endpoint informa o modo configurado, mas não verifica a conectividade com o banco.
 
 
 ### Integração das rotas com adaptadores PostgreSQL (simulada)
