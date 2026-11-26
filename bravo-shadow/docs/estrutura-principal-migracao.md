@@ -154,7 +154,7 @@ Cada migração deve ter uma ficha com:
 ## Situação atual conhecida
 
 - Existe estrutura Shadow com frontend integrado, API FastAPI e 15 domínios de serviço.
-- Existem adapters PostgreSQL para os domínios e um rascunho SQL, mas não há evidência de migration aplicada ou teste com PostgreSQL real.
+- Existem adapters PostgreSQL e rascunhos SQL ainda não aplicados. O pipeline CI executa testes de integração contra PostgreSQL 16 descartável, incluindo concorrência, idempotência e rollback do controle de revisão de migração; isso não significa migration aplicada nem conexão com o banco original.
 - O backend pode operar em memória; persistência PostgreSQL exige configuração explícita.
 - Autenticação Google está implementada como fundação, mas o Client ID não foi configurado e as rotas de negócio continuam sem dependências de autenticação/autorização.
 - Matriz de capacidades, onboarding e bootstrap do primeiro Admin ainda aguardam aprovação.
