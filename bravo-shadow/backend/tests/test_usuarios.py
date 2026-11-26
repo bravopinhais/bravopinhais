@@ -6,7 +6,10 @@ from pydantic import ValidationError
 from app.core.authentication import get_current_principal
 from app.core.authorization import AuthenticatedPrincipal
 from app.main import create_app
-from app.modules.usuarios.schemas import (\n    UsuarioInput, UsuarioCadastroInput,\n    UsuarioDadosCadastraisUpdateInput, UsuarioAdministracaoInput,\n)
+from app.modules.usuarios.schemas import (
+    UsuarioInput, UsuarioCadastroInput,
+    UsuarioDadosCadastraisUpdateInput, UsuarioAdministracaoInput,
+)
 from app.modules.usuarios.service import UsuariosService
 
 
@@ -116,6 +119,13 @@ def test_separated_user_schemas_keep_privileged_fields_out_of_cadastral_payloads
         UsuarioDadosCadastraisUpdateInput(status="Inativo")
 
 
+def test_cadastral_update_requires_at_least_one_non_empty_field():
+    with pytest.raises(ValidationError):
+        UsuarioDadosCadastraisUpdateInput()
+    with pytest.raises(ValidationError):
+        UsuarioDadosCadastraisUpdateInput(nome="   ")
+
+
 def test_administrative_user_schema_requires_explicit_profile_and_status():
     change = UsuarioAdministracaoInput(perfil="Operador", status="Inativo")
     assert change.perfil == "Operador"
@@ -124,4 +134,4 @@ def test_administrative_user_schema_requires_explicit_profile_and_status():
         UsuarioAdministracaoInput(perfil="Admin")
     with pytest.raises(ValidationError):
         UsuarioAdministracaoInput(perfil="Root", status="Ativo")
-\n
+
