@@ -240,3 +240,33 @@ def test_postgres_adapter_rejects_event_id_already_used_in_another_batch():
         store.append(register, **event_args(decision_id, "globally-used-event", 0))
 
     assert len(database.events) == 1
+
+
+
+def test_postgres_adapter_initialization_is_idempotent_for_same_snapshot():
+    register, _, database, store = setup_store()
+
+    first = store.initialize(register)
+    second = store.initialize(register)
+
+    assert first == second
+    assert len(database.batches) == 1
+    assert len(database.decisions) == len(register.pending)
+
+
+def test_postgres_adapter_rejects_duplicate_decision_ids_before_writing():
+    from dataclasses import replace
+
+    register, _, database, store = setup_store()
+    duplicated = replace(
+        register,
+        pending=register.pending + (register.pending[0],),
+        pending_count=register.pending_count + 1,
+    )
+
+    with pytest.raises(ReviewValidationError, match="duplicate_decision_id_in_register"):
+        store.initialize(duplicated)
+
+    assert database.batches == {}
+    assert database.decisions == {}
+    assert database.events == []
