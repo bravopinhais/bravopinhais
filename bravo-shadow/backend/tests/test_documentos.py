@@ -74,8 +74,18 @@ def test_document_requires_file_content():
 
 
 def test_documents_are_isolated_between_app_instances():
-    first = TestClient(create_app())
-    second = TestClient(create_app())
+    first_app, second_app = create_app(), create_app()
+
+    async def authenticated_admin():
+        return AuthenticatedPrincipal(
+            subject="google-test-subject", email="teste@example.com",
+            profile="Admin", account_status="Ativo",
+        )
+
+    first_app.dependency_overrides[get_current_principal] = authenticated_admin
+    second_app.dependency_overrides[get_current_principal] = authenticated_admin
+    first = TestClient(first_app)
+    second = TestClient(second_app)
 
     created = first.post("/api/v1/documentos", json=payload()).json()
     assert first.get("/api/v1/documentos/" + created["id"]).status_code == 200
