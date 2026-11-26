@@ -74,7 +74,14 @@ def append_review(
     expected_version provides optimistic concurrency: the first review is
     version 1 and must expect version 0. Later reviews retain prior history.
     """
-    if ledger.batch_id != register.batch_id or ledger.manifest_hash != register.manifest_hash:
+    if (
+        not isinstance(ledger.batch_id, str)
+        or not ledger.batch_id.strip()
+        or not isinstance(ledger.manifest_hash, str)
+        or not ledger.manifest_hash.strip()
+        or ledger.batch_id != register.batch_id
+        or ledger.manifest_hash != register.manifest_hash
+    ):
         raise ReviewValidationError("ledger_batch_mismatch")
     if decision_id not in {item.decision_id for item in register.pending}:
         raise ReviewValidationError("unknown_decision")
@@ -90,7 +97,7 @@ def append_review(
         raise ReviewValidationError("reviewed_at_required")
     if type(expected_version) is not int or expected_version < 0:
         raise ReviewValidationError("invalid_expected_version")
-    if choice not in {
+    if not isinstance(choice, str) or choice not in {
         "approved_for_manual_resolution",
         "keep_blocked",
         "exclude_from_this_batch",
@@ -157,7 +164,14 @@ def verify_review_ledger(
     register: DecisionRegister,
 ) -> bool:
     """Validate batch binding, event uniqueness, decisions and version sequence."""
-    if ledger.batch_id != register.batch_id or ledger.manifest_hash != register.manifest_hash:
+    if (
+        not isinstance(ledger.batch_id, str)
+        or not ledger.batch_id.strip()
+        or not isinstance(ledger.manifest_hash, str)
+        or not ledger.manifest_hash.strip()
+        or ledger.batch_id != register.batch_id
+        or ledger.manifest_hash != register.manifest_hash
+    ):
         return False
     if not isinstance(ledger.events, tuple):
         return False
@@ -165,6 +179,8 @@ def verify_review_ledger(
     seen_events: set[str] = set()
     versions: dict[str, int] = {}
     for event in ledger.events:
+        if not isinstance(event, ReviewEvent):
+            return False
         if not isinstance(event.event_id, str) or not event.event_id.strip():
             return False
         if not isinstance(event.decision_id, str) or event.decision_id not in known_decisions:
@@ -180,7 +196,7 @@ def verify_review_ledger(
         expected = versions.get(event.decision_id, 0) + 1
         if type(event.version) is not int or event.version != expected:
             return False
-        if event.choice not in {
+        if not isinstance(event.choice, str) or event.choice not in {
             "approved_for_manual_resolution",
             "keep_blocked",
             "exclude_from_this_batch",
