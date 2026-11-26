@@ -61,6 +61,66 @@ create index if not exists financeiro_plano_conta_id_idx
 create index if not exists financeiro_created_at_idx
     on bravo_shadow.financeiro (created_at, id);
 
+-- Cadastros administrativos e dados pessoais: acesso somente pelo backend.
+create table if not exists bravo_shadow.moradores (
+    id text primary key,
+    bloco text not null,
+    apartamento text not null,
+    nome text not null,
+    email text not null default '',
+    telefone text not null default '',
+    cpf text not null default '',
+    pet_nome text not null default '',
+    vaga_garagem text not null default '',
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    version bigint not null default 1 check (version >= 1)
+);
+
+create index if not exists moradores_bloco_apartamento_idx
+    on bravo_shadow.moradores (bloco, apartamento, nome, id);
+
+create table if not exists bravo_shadow.fornecedores (
+    id text primary key,
+    cnpj text not null,
+    razao_social text not null,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    version bigint not null default 1 check (version >= 1)
+);
+
+create index if not exists fornecedores_razao_social_idx
+    on bravo_shadow.fornecedores (razao_social, id);
+
+create table if not exists bravo_shadow.empregados (
+    id text primary key,
+    nome text not null,
+    cargo text not null,
+    empresa text not null default '',
+    endereco text not null default '',
+    telefone text not null default '',
+    contato_emergencia_nome text not null default '',
+    contato_emergencia_tel text not null default '',
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    version bigint not null default 1 check (version >= 1)
+);
+
+create index if not exists empregados_nome_idx
+    on bravo_shadow.empregados (nome, id);
+
+create table if not exists bravo_shadow.contas_bancarias (
+    id text primary key,
+    banco text not null,
+    saldo double precision not null default 0,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    version bigint not null default 1 check (version >= 1)
+);
+
+create index if not exists contas_bancarias_banco_idx
+    on bravo_shadow.contas_bancarias (banco, id);
+
 -- Defesa em profundidade. Sem policies: clientes da Data API não recebem acesso.
 alter table bravo_shadow.formas_monetarias enable row level security;
 alter table bravo_shadow.plano_contas enable row level security;
@@ -167,6 +227,10 @@ alter table bravo_shadow.acertos_estoque enable row level security;
 alter table bravo_shadow.categorias enable row level security;
 alter table bravo_shadow.motivos_acerto enable row level security;
 alter table bravo_shadow.documentos enable row level security;
+alter table bravo_shadow.moradores enable row level security;
+alter table bravo_shadow.fornecedores enable row level security;
+alter table bravo_shadow.empregados enable row level security;
+alter table bravo_shadow.contas_bancarias enable row level security;
 
 revoke all on table bravo_shadow.formas_monetarias from public, anon, authenticated, service_role;
 revoke all on table bravo_shadow.plano_contas from public, anon, authenticated, service_role;
@@ -176,6 +240,10 @@ revoke all on table bravo_shadow.acertos_estoque from public, anon, authenticate
 revoke all on table bravo_shadow.categorias from public, anon, authenticated, service_role;
 revoke all on table bravo_shadow.motivos_acerto from public, anon, authenticated, service_role;
 revoke all on table bravo_shadow.documentos from public, anon, authenticated, service_role;
+revoke all on table bravo_shadow.moradores from public, anon, authenticated, service_role;
+revoke all on table bravo_shadow.fornecedores from public, anon, authenticated, service_role;
+revoke all on table bravo_shadow.empregados from public, anon, authenticated, service_role;
+revoke all on table bravo_shadow.contas_bancarias from public, anon, authenticated, service_role;
 
 -- Não criar GRANT para anon/authenticated/service_role nesta fase.
 -- O backend deverá usar um usuário PostgreSQL dedicado, com privilégios mínimos,
