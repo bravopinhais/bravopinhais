@@ -6,6 +6,7 @@ approve, discard, rewrite, or execute any migration record.
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
 from typing import Literal
 
 from app.core.migration_plan import DryRunPlan
@@ -46,6 +47,15 @@ class DecisionRegister:
     automatic_resolution_count: int
 
 
+def _record_identity_key(source_system: str, source_collection: str, legacy_id: str) -> str:
+    """Encode identity components injectively; delimiters may occur in source IDs."""
+    return json.dumps(
+        [source_system, source_collection, legacy_id],
+        ensure_ascii=False,
+        separators=(",", ":"),
+    )
+
+
 _STATUS_TO_KIND: dict[str, DecisionKind] = {
     "conflict_changed_source": "changed_source_conflict",
     "destination_id_collision": "destination_id_collision",
@@ -66,11 +76,11 @@ def build_decision_register(
         kind = _STATUS_TO_KIND.get(record.status)
         if kind is None:
             continue
-        identity = "|".join((
+        identity = _record_identity_key(
             record.source_system,
             record.source_collection,
             record.legacy_id,
-        ))
+        )
         pending.append(
             PendingDecision(
                 decision_id=f"{manifest.batch_id}:record:{identity}:{record.status}",
