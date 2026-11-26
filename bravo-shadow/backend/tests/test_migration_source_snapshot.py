@@ -2,7 +2,7 @@ import pytest
 
 from app.core.migration_identity import SourceIdentity
 from app.core.migration_reconciliation import SourceSnapshotRecord
-from app.core.migration_source_snapshot import SourceSnapshot
+from app.core.migration_source_snapshot import SourceSnapshot, calculate_snapshot_hash
 
 
 def record(source_system="legacy-bravo", legacy_id="m1"):
@@ -15,7 +15,7 @@ def snapshot(records=(record(),), **overrides):
     values = {
         "source_system": "legacy-bravo",
         "source_baseline": "legacy-export-2026-11-26",
-        "snapshot_hash": "b" * 64,
+        "snapshot_hash": calculate_snapshot_hash("legacy-bravo", records),
         "exported_at": "2026-11-26T18:00:00-03:00",
         "records": records,
     }
@@ -51,3 +51,18 @@ def test_source_snapshot_rejects_mutable_or_invalid_record_collection():
 def test_source_snapshot_rejects_records_from_another_source_system():
     with pytest.raises(ValueError, match="source_system declarado"):
         snapshot(records=(record(source_system="other-system"),))
+
+
+
+def test_source_snapshot_rejects_hash_that_does_not_match_inventory():
+    with pytest.raises(ValueError, match="não corresponde"):
+        snapshot(snapshot_hash="c" * 64)
+
+
+def test_snapshot_hash_is_deterministic_independent_of_record_order():
+    first = (record("legacy-bravo", "m1"), record("legacy-bravo", "m2"))
+    second = tuple(reversed(first))
+
+    assert calculate_snapshot_hash("legacy-bravo", first) == calculate_snapshot_hash(
+        "legacy-bravo", second
+    )
