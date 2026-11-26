@@ -21,19 +21,19 @@ Fichas consideradas:
 | Domínio / coleção | Depende de | Quem depende dele | Observação para a carga |
 |---|---|---|---|
 | Condomínio | Nenhuma coleção de negócio identificada | Dados institucionais e telas relacionadas | Preservar campos não exibidos no formulário; não reduzir o objeto aos campos visíveis. |
-| Conselho | Condomínio/contexto institucional | Exibição de governança | Preservar IDs e grafia/capitalização exata de `BlocoAp`. |
+| Conselho | Nenhuma FK explícita encontrada para Condomínio | Exibição conjunta na tela institucional | `db.conselheiros` e `db.condominio` são gravados separadamente; não criar FK sem payload adicional que a comprove. Preservar `BlocoAp`. |
 | Categorias / Pastas Gerais | Nenhuma | Documentos | Importar antes de documentos; legado guarda o nome da pasta, Shadow aceita `categoriaId` opcional. |
 | Motivos de Acerto | Nenhuma | Acertos de Estoque | Importar antes dos acertos; legado grava texto do motivo, não ID. |
 | Fornecedores | Nenhuma relação estrutural confirmada nesta inspeção | Possíveis fluxos financeiros/administrativos | Não criar FK por suposição; conferir uso real no restante do legado antes da carga. |
 | Empregados | Nenhuma relação estrutural confirmada nesta inspeção | Possíveis fluxos administrativos | Dados de contato de emergência exigem proteção de acesso; não inventar campos trabalhistas ausentes. |
-| Moradores | Nenhuma relação estrutural confirmada nesta inspeção | Possíveis relatórios e cadastros de unidades | Preservar CPF/telefone como texto; importação CSV legada exige validação por linha e deduplicação explícita. |
+| Moradores | Nenhuma coleção/FK de Unidade encontrada | Dashboard e filtros de moradores | `bloco` e `apartamento` são campos textuais no próprio morador; não criar entidade Unidade por inferência. Preservar CPF/telefone como texto; importação CSV exige validação por linha. |
 | Plano de Contas | Nenhuma | Financeiro; Relatórios/DRE | Importar antes de títulos financeiros; preservar `id` e `codigo` como texto. |
 | Formas Monetárias | Nenhuma dependência estrutural comprovada | Fluxos financeiros (uso operacional a confirmar) | Importar como cadastro independente; não presumir vínculo com títulos sem evidência. |
 | Contas Bancárias | Nenhuma dependência estrutural comprovada | Caixa/relatórios (uso operacional a confirmar) | Saldo é manual; não tratar como extrato nem conciliação. |
 | Financeiro | Plano de Contas opcional por `planoContaId` | Dashboard e DRE | Contrato atual não contém datas, status de liquidação nem conta bancária; não reconstruir períodos/baixas inexistentes. |
 | Estoque | Nenhuma coleção auxiliar estrutural obrigatória; cadastro de produtos | Acertos de Estoque | Importar IDs e saldo atuais antes dos movimentos; preservar imagens Gzip. |
-| Acertos de Estoque | Estoque; cadastro de Motivos (vínculo legado textual) | Histórico e saldo de estoque | Importar depois de produtos e motivos; manter movimentos imutáveis; reconciliar saldos e órfãos. |
-| Documentos | Categorias opcionais (legado por texto) | Gestão documental e consultas | Importar categorias antes; preservar pasta textual e bytes Gzip; vínculo por ID apenas quando inequívoco. |
+| Acertos de Estoque | Estoque por `produtoId`; Motivos por texto `motivo` | Histórico e saldo de estoque | `produtoId` é FK lógica explícita; motivo é texto, não `motivoId`. Importar depois de produtos e motivos; manter movimentos imutáveis e reconciliar órfãos. |
+| Documentos | Categorias por nome em `pasta` textual | Gestão documental e consultas | O formulário lista nomes de categorias e grava o nome em `pasta`; não existe FK de categoria no legado. Preservar texto e bytes Gzip; vínculo por ID apenas como extensão Shadow, se exato e único. |
 | Dashboard | Dados dos módulos de origem | Visão geral | Não importar métricas calculadas como se fossem dados-base; reconstruir após fontes aceitas. |
 | Relatórios / DRE | Financeiro e Plano de Contas; regras contábeis aprovadas | Gestão/decisão | Última camada; não produzir relatório por período sem campos temporais adequados. |
 | Usuários / Identidade | Google ID token, cadastro interno, matriz de capacidades, auditoria | Todas as rotas de negócio | Pré-requisito transversal de segurança, não apenas uma coleção a importar. |
@@ -172,3 +172,10 @@ Esta matriz separa referências identificadas nos contratos/fichas de relações
 ### Portão de aprovação desta matriz
 
 O mapa está consolidado em nível estrutural, mas **não está aprovado para carga**. Para liberar um importador por domínio ainda será necessário conferir o payload autorizado e os pontos de leitura/escrita do legado, formalizar cardinalidades, decidir tratamento de cada classe de órfão e testar reconciliação com dados sintéticos. Nenhuma dessas etapas exige ou autoriza conexão com produção.
+
+
+## 9. Evidência direta no legado — revisão de hipóteses
+
+A inspeção dos formulários e funções de gravação do baseline foi consolidada em `evidencias-relacionamentos-legado-fase0.md`. Ela confirmou três referências usadas pelo código: Financeiro → Plano de Contas (`planoContaId`), Acerto de Estoque → Produto (`produtoId`) e Documentos → Categorias por nome textual (`pasta`). Também esclareceu que Conselho/Condomínio não têm FK explícita no código observado, Moradores guardam bloco/apartamento como texto, e Acertos guardam motivo como texto. Não foi encontrada associação Financeiro → Conta Bancária ou Forma Monetária.
+
+Esta evidência corrige as hipóteses da tabela inicial: associação visual ou dependência de consulta não equivale a relacionamento referencial. O documento de evidências registra as linhas do código-fonte para cada conclusão. Ainda é necessário confrontar com o payload persistido autorizado, pois campos históricos ou extensões da instalação ativa podem não aparecer nos formulários atuais.
