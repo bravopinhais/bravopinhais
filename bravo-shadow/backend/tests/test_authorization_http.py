@@ -44,15 +44,14 @@ def test_protected_route_returns_401_without_identity():
     assert response.status_code == 401
 
 
-def test_protected_route_returns_403_without_capability():
+def test_protected_route_returns_403_for_operator_until_matrix_is_approved():
     response = build_test_client(make_principal("Operador")).get("/protected")
     assert response.status_code == 403
 
 
-def test_protected_route_returns_200_with_required_capability():
+def test_protected_route_returns_403_for_admin_until_matrix_is_approved():
     response = build_test_client(make_principal("Admin")).get("/protected")
-    assert response.status_code == 200
-    assert response.json() == {"ok": True}
+    assert response.status_code == 403
 
 
 def test_protected_route_rejects_unknown_capability_even_for_admin():
