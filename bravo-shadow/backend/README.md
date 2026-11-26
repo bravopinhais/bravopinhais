@@ -82,7 +82,7 @@ O contrato financeiro usa `Decimal` com precisão máxima de 14 dígitos e 2 cas
 
 ### Unidade de trabalho PostgreSQL (infraestrutura inicial)
 
-Foi adicionado `app/core/postgres.py`, com `PostgresUnitOfWork`. Ele recebe uma fábrica de conexões injetada, abre uma conexão por unidade de trabalho, confirma com `commit` quando não há exceção, executa `rollback` em caso de falha e sempre fecha a conexão. Não há driver concreto, variável de ambiente, pool ou conexão automática configurados; isso evita ativar acidentalmente qualquer banco.
+Foi adicionado `app/core/postgres.py`, com `PostgresUnitOfWork`. Ele recebe uma fábrica de conexões injetada, abre uma conexão por unidade de trabalho, confirma com `commit` quando não há exceção, executa `rollback` em caso de falha e sempre fecha a conexão. A fábrica Psycopg 3 lê `BRAVO_DATABASE_URL` no backend e só abre conexão quando uma operação SQL é chamada. Não há pool; cada operação abre e fecha uma conexão.
 
 Os testes com conexão falsa cobrem o ciclo de commit/rollback/close, e os testes financeiros agora incluem limites de precisão decimal. Os testes foram adicionados ao repositório, mas ainda precisam ser executados em ambiente Python.
 
@@ -91,7 +91,7 @@ Os testes com conexão falsa cobrem o ciclo de commit/rollback/close, e os teste
 
 Foi adicionado `app/core/postgres_repositories.py` com adaptadores DB-API para Plano de Contas e Financeiro. As consultas usam parâmetros, schema explícito `bravo_shadow`, mantêm `Decimal` no valor financeiro e convertem `planoContaId=""` para SQL `NULL` (e vice-versa na leitura). Cada método abre sua própria unidade de trabalho; falhas provocam rollback. A exclusão de conta traduz violação de FK (`23503`) em conflito HTTP 409.
 
-Os adaptadores são selecionados pela configuração explícita `create_app(storage_backend="postgres", postgres_connection_factory=...)`; as rotas de Plano de Contas e Financeiro passam a operar por esses repositórios quando esse modo é selecionado. Nenhum driver PostgreSQL foi instalado, nenhuma variável de conexão foi definida e nenhuma tabela foi criada. A camada SQL pressupõe que a migration local do modelo já tenha sido aplicada. Não aponte uma fábrica de conexão para produção.
+Os adaptadores são selecionados pela configuração explícita `create_app(storage_backend="postgres", postgres_connection_factory=...)`; as rotas de Plano de Contas e Financeiro passam a operar por esses repositórios quando esse modo é selecionado. O driver Psycopg 3.3.9 está fixado em `requirements.txt`; nenhuma URL foi definida, nenhuma tabela foi criada e a conexão não foi testada. A camada SQL pressupõe que a migration local do modelo já tenha sido aplicada. Não aponte uma fábrica de conexão para produção.
 
 Foram adicionados testes com conexão/cursor falsos para conferir SQL parametrizado, mapeamento de valores, conversão NULL/ string vazia, commit e rollback. Eles ainda não foram executados. Os adaptadores PostgreSQL agora oferecem `replace_if_version`: o UPDATE inclui `WHERE id = %s AND version = %s`, incrementa a versão e, se não atualizar linha, distingue registro inexistente (404) de versão desatualizada (409) na mesma transação. As consultas de leitura também retornam `version`, e os schemas de resposta expõem esse campo. **A API exige `If-Match` nas rotas PUT**, com comparação atômica no adaptador em memória. Os adaptadores PostgreSQL oferecem a operação SQL equivalente, mas ainda não estão injetados nas rotas.
 
@@ -117,7 +117,7 @@ A aplicação é criada por `create_app()`. O padrão é `BRAVO_STORAGE_BACKEND=
 
 A infraestrutura aceita `create_app(storage_backend="postgres", postgres_connection_factory=...)`. Se a fábrica não for injetada, a aplicação monta uma fábrica Psycopg 3 a partir de `BRAVO_DATABASE_URL`; a variável é obrigatória nesse modo. O driver é importado somente quando PostgreSQL é selecionado. A fábrica não abre conexão no startup: cada operação do repositório abre e fecha sua própria conexão/transação. Sem URL ou driver, a inicialização falha explicitamente e não há fallback para memória.
 
-**Escopo atual:** somente Plano de Contas e Financeiro têm adaptadores PostgreSQL. Os outros módulos continuam em memória. O driver Psycopg 3.3.9 está declarado e fixado em `requirements.txt`, mas ainda não há migration aplicada, concessão de privilégios ao usuário dedicado da API nem teste contra banco real. Portanto, não habilite PostgreSQL até preparar o schema privado `bravo_shadow`, criar um usuário local de privilégio mínimo e validar os adaptadores. O health endpoint informa o modo configurado, mas não verifica a conectividade com o banco.
+**Escopo atual:** Plano de Contas, Financeiro e Formas Monetárias têm adaptadores PostgreSQL. Os outros módulos continuam em memória. O driver Psycopg 3.3.9 está declarado e fixado em `requirements.txt`, mas ainda não há migration aplicada, concessão de privilégios ao usuário dedicado da API nem teste contra banco real. Portanto, não habilite PostgreSQL até preparar o schema privado `bravo_shadow`, criar um usuário local de privilégio mínimo e validar os adaptadores. O health endpoint informa o modo configurado, mas não verifica a conectividade com o banco.
 
 
 ### Integração das rotas com adaptadores PostgreSQL (simulada)
