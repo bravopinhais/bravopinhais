@@ -18,7 +18,7 @@ Não usar `service_role` do Supabase como atalho para o backend. Não conceder a
 O rascunho habilita RLS e não cria policies permissivas, o que é uma boa postura inicial de bloqueio. Porém, no PostgreSQL, o proprietário da tabela normalmente pode ignorar RLS, a menos que seja usado `FORCE ROW LEVEL SECURITY`; superusers e roles com `BYPASSRLS` também podem ignorá-la.
 
 Antes de habilitar qualquer acesso:
-1. Aplicar `FORCE ROW LEVEL SECURITY` nas três tabelas.
+1. Na migration final, aplicar `FORCE ROW LEVEL SECURITY` nas três tabelas junto com policies explícitas para a role de migration e a role privada de runtime. Não ativar FORCE isoladamente sem planejar o acesso administrativo legítimo.
 2. Garantir que a role de runtime não seja owner, superuser nem `BYPASSRLS`.
 3. Manter a role de migration separada e sem uso pela aplicação.
 4. Criar policies somente após escolher formalmente a estratégia de autorização.
@@ -35,7 +35,7 @@ Ajustes a considerar antes de uma migration:
 - Avaliar se `decision_id` deve ser PK global ou se a chave primária deve ser composta por lote e decisão. A unicidade global só é correta se o gerador garantir IDs globalmente únicos; a FK e o adaptador já tratam a identidade como pertencente ao lote.
 - Adicionar validações de não vazio para `event_id`, `decision_id`, `decision_kind`, `decision_status` e `batch_key`.
 - Manter `automatic_action = 'none'` enquanto este ledger for exclusivamente de revisão; nenhuma escolha deve executar importação.
-- Considerar constraints para impedir divergência entre o manifesto do lote, o manifesto da decisão e o manifesto do evento. A FK atual não garante igualdade do hash entre as três tabelas.
+- O rascunho SQL revisado agora usa FKs compostas para impedir divergência entre o manifesto do lote, da decisão e do evento. O hash usa `text` com validação hexadecimal de 64 caracteres; ainda precisa de validação em PostgreSQL local.
 
 ## 4. Observação sobre o adaptador Python
 
