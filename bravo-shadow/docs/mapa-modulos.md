@@ -16,7 +16,7 @@ Fonte: inspeção estática de `index.html` na branch `upgrade/project-hardening
 | Pastas & Categorias | `categorias`, `motivos_acerto_estoque` | Pastas (`id`, `nome`) usadas textualmente em `documentos.pasta`; motivos (`id`, `nome`) sem vínculo por ID confirmado nos acertos. Auditoria em `auditoria-pastas-categorias-motivos.md` | Média |
 | Estoque & Inventário | `estoque` | Cadastro, etiqueta, saldo, mínimo/máximo, foto Gzip, filtros e scanner; API sombra inclui marca, linha, fabricante e data de cadastro como extensão. Auditoria em `auditoria-estoque-inventario-acertos.md` | Alta |
 | Acerto de Estoque | `acertos_estoque`, `estoque`, `motivos_acerto_estoque` | Entrada/saída atualiza saldo; histórico guarda produtoId, quantidade, tipo, data e motivo textual. Exclusão não estorna saldo no original. Auditoria em `auditoria-estoque-inventario-acertos.md` | Alta |
-| Gestão de Documentos | `documentos`, `categorias` | Pastas, títulos, arquivos compactados, visualização e download | Média |
+| Gestão de Documentos | `documentos`, `categorias` | Pasta textual, título, nome original e conteúdo deflate/Base64; visualizar, baixar, editar e excluir. Auditoria em `auditoria-gestao-documentos.md` | Média |
 | Central de Relatórios & DRE | `financeiro`, `plano_contas` | DRE soma todos os títulos, sem filtro por data/status; totais gerais incluem títulos sem conta. Não equivale a caixa realizado | Alta |
 | Gestão de Usuários | `usuarios` | Cadastro, perfis, edição, exclusão e administração de acesso | Crítica |
 
