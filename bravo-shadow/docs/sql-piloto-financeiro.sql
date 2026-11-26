@@ -19,6 +19,11 @@ create table if not exists bravo_shadow.plano_contas (
     version bigint not null default 1 check (version >= 1)
 );
 
+-- A API trata códigos sem diferenciar maiúsculas/minúsculas; o índice fecha
+-- também a condição de corrida entre duas criações/edições concorrentes.
+create unique index if not exists plano_contas_codigo_ci_uidx
+    on bravo_shadow.plano_contas (lower(codigo));
+
 create table if not exists bravo_shadow.financeiro (
     id text primary key,
     tipo text not null check (tipo in ('Receber', 'Pagar')),
