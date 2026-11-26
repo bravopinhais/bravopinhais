@@ -31,3 +31,32 @@ def test_suppliers_are_isolated_between_app_instances():
     created = first.post("/api/v1/fornecedores", json={"cnpj": "123", "razaoSocial": "Fornecedor Isolado"}).json()
     assert first.get("/api/v1/fornecedores").json()[0]["id"] == created["id"]
     assert second.get("/api/v1/fornecedores").json() == []
+
+
+def test_supplier_fields_are_trimmed_and_cnpj_format_is_preserved():
+    response = client.post("/api/v1/fornecedores", json={
+        "cnpj": " 12.345.678/0001-90 ",
+        "razaoSocial": "  Empresa Exemplo Ltda  "
+    })
+    assert response.status_code == 201
+    assert response.json()["cnpj"] == "12.345.678/0001-90"
+    assert response.json()["razaoSocial"] == "Empresa Exemplo Ltda"
+
+
+def test_supplier_required_fields_reject_whitespace_only_values():
+    response = client.post("/api/v1/fornecedores", json={
+        "cnpj": "   ", "razaoSocial": " Empresa Exemplo "
+    })
+    assert response.status_code == 422
+
+
+def test_supplier_update_trims_fields():
+    created = client.post("/api/v1/fornecedores", json={
+        "cnpj": "123", "razaoSocial": "Empresa"
+    }).json()
+    response = client.put(f"/api/v1/fornecedores/{created['id']}", json={
+        "cnpj": "  123  ", "razaoSocial": "  Nome Atualizado  "
+    })
+    assert response.status_code == 200
+    assert response.json()["cnpj"] == "123"
+    assert response.json()["razaoSocial"] == "Nome Atualizado"
