@@ -47,8 +47,8 @@ def build_storage_services(
     """Cria serviços isolados; nunca altera singletons ou estado global.
 
     No modo PostgreSQL, a fábrica é obrigatória e só será chamada durante
-    operações de repositório. Estoque/movimentos e os módulos de catálogo
-    continuam em memória até seus adaptadores serem implementados e testados.
+    operações de repositório. Estoque, catálogos, documentos e movimentos
+    seguem em memória até que seus adaptadores sejam implementados e testados.
     """
     if backend == "memory":
         formas_repository = InMemoryCollectionRepository()
@@ -76,13 +76,20 @@ def build_storage_services(
     formas_monetarias = FormasMonetariasService(repository=formas_repository)
 
     estoque = EstoqueService(repository=InMemoryCollectionRepository())
+    categorias = CategoriasService(repository=InMemoryCollectionRepository())
+    documentos = DocumentosService(
+        repository=InMemoryCollectionRepository(),
+        category_service=categorias,
+    )
+    categorias.set_reference_checker(documentos.has_category_reference)
+
+    motivos_acerto = MotivosAcertoService(repository=InMemoryCollectionRepository())
     acertos_estoque = AcertosEstoqueService(
         repository=InMemoryCollectionRepository(),
         inventory_service=estoque,
+        reason_service=motivos_acerto,
     )
-    categorias = CategoriasService(repository=InMemoryCollectionRepository())
-    motivos_acerto = MotivosAcertoService(repository=InMemoryCollectionRepository())
-    documentos = DocumentosService(repository=InMemoryCollectionRepository())
+    motivos_acerto.set_reference_checker(acertos_estoque.has_reason_reference)
 
     return StorageServices(
         formas_monetarias=formas_monetarias,
