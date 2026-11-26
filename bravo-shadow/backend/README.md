@@ -85,3 +85,12 @@ O contrato financeiro usa `Decimal` com precisão máxima de 14 dígitos e 2 cas
 Foi adicionado `app/core/postgres.py`, com `PostgresUnitOfWork`. Ele recebe uma fábrica de conexões injetada, abre uma conexão por unidade de trabalho, confirma com `commit` quando não há exceção, executa `rollback` em caso de falha e sempre fecha a conexão. Não há driver concreto, variável de ambiente, pool ou conexão automática configurados; isso evita ativar acidentalmente qualquer banco.
 
 Os testes com conexão falsa cobrem o ciclo de commit/rollback/close, e os testes financeiros agora incluem limites de precisão decimal. Os testes foram adicionados ao repositório, mas ainda precisam ser executados em ambiente Python.
+
+
+### Repositórios PostgreSQL — primeiro adaptador SQL
+
+Foi adicionado `app/core/postgres_repositories.py` com adaptadores DB-API para Plano de Contas e Financeiro. As consultas usam parâmetros, schema explícito `bravo_shadow`, mantêm `Decimal` no valor financeiro e convertem `planoContaId=""` para SQL `NULL` (e vice-versa na leitura). Cada método abre sua própria unidade de trabalho; falhas provocam rollback. A exclusão de conta traduz violação de FK (`23503`) em conflito HTTP 409.
+
+Os adaptadores são injetáveis, mas **a API continua usando os repositórios em memória**. Nenhum driver PostgreSQL foi instalado, nenhuma variável de conexão foi definida e nenhuma tabela foi criada. A camada SQL pressupõe que a migration local do modelo já tenha sido aplicada. Não aponte uma fábrica de conexão para produção.
+
+Foram adicionados testes com conexão/cursor falsos para conferir SQL parametrizado, mapeamento de valores, conversão NULL/ string vazia, commit e rollback. Eles ainda não foram executados. A atualização incrementa `version`, mas ainda não exige versão esperada na escrita; concorrência otimista completa permanece pendente.
