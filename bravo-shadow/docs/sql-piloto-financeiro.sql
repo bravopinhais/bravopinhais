@@ -88,6 +88,53 @@ create table if not exists bravo_shadow.estoque (
 create index if not exists estoque_item_idx
     on bravo_shadow.estoque (item);
 
+-- Catálogos com IDs estáveis para manter os vínculos referenciais.
+create table if not exists bravo_shadow.categorias (
+    id text primary key,
+    nome text not null,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    version bigint not null default 1 check (version >= 1)
+);
+
+create index if not exists categorias_nome_idx
+    on bravo_shadow.categorias (nome, id);
+
+create table if not exists bravo_shadow.motivos_acerto (
+    id text primary key,
+    nome text not null,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    version bigint not null default 1 check (version >= 1)
+);
+
+create index if not exists motivos_acerto_nome_idx
+    on bravo_shadow.motivos_acerto (nome, id);
+
+-- Mantém o conteúdo compactado legado como texto; não migra arquivos para
+-- Supabase Storage nem altera o formato/base64 nesta etapa.
+create table if not exists bravo_shadow.documentos (
+    id text primary key,
+    pasta text not null default 'Geral',
+    categoria_id text null,
+    titulo text not null,
+    nome_arquivo text not null,
+    arquivo_compactado_gzip text not null,
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    version bigint not null default 1 check (version >= 1),
+    constraint documentos_categoria_fk
+        foreign key (categoria_id)
+        references bravo_shadow.categorias (id)
+        on delete restrict
+);
+
+create index if not exists documentos_categoria_id_idx
+    on bravo_shadow.documentos (categoria_id);
+
+create index if not exists documentos_created_at_idx
+    on bravo_shadow.documentos (created_at, id);
+
 -- Histórico de movimentos. O movimento e o saldo do produto devem ser
 -- gravados/atualizados pela mesma transação do backend.
 create table if not exists bravo_shadow.acertos_estoque (
@@ -118,7 +165,7 @@ revoke all on table bravo_shadow.formas_monetarias from public, anon, authentica
 revoke all on table bravo_shadow.plano_contas from public, anon, authenticated, service_role;
 revoke all on table bravo_shadow.financeiro from public, anon, authenticated, service_role;
 revoke all on table bravo_shadow.estoque from public, anon, authenticated, service_role;
-revoke all on table bravo_shadow.acertos_estoque from public, anon, authenticated, service_role;
+revoke all on table bravo_shadow.acertos_estoque from public, anon, authenticated, service_role;\nrevoke all on table bravo_shadow.categorias from public, anon, authenticated, service_role;\nrevoke all on table bravo_shadow.motivos_acerto from public, anon, authenticated, service_role;\nrevoke all on table bravo_shadow.documentos from public, anon, authenticated, service_role;
 
 -- Não criar GRANT para anon/authenticated/service_role nesta fase.
 -- O backend deverá usar um usuário PostgreSQL dedicado, com privilégios mínimos,
