@@ -83,3 +83,43 @@ def test_manifest_detects_candidate_identity_change():
 
     assert result.valid is False
     assert "manifest_evidence_mismatch" in {issue.code for issue in result.issues}
+
+def test_manifest_detects_metadata_tampering():
+    envelope, candidates, preflight, report, manifest = sample()
+    changed = replace(manifest, importer_version="9.9.9")
+
+    result = verify_manifest_against_batch(manifest=changed, envelope=envelope,
+                                            candidates=candidates, preflight=preflight,
+                                            report=report)
+
+    assert result.valid is False
+    codes = {issue.code for issue in result.issues}
+    assert "manifest_hash_mismatch" in codes
+    assert "manifest_evidence_mismatch" in codes
+
+
+def test_manifest_detects_record_hash_tampering():
+    envelope, candidates, preflight, report, manifest = sample()
+    changed_record = replace(manifest.records[0], source_record_hash="tampered")
+    changed = replace(manifest, records=(changed_record, *manifest.records[1:]))
+
+    result = verify_manifest_against_batch(changed, envelope, candidates, preflight, report)
+
+    assert result.valid is False
+    codes = {issue.code for issue in result.issues}
+    assert "manifest_hash_mismatch" in codes
+    assert "manifest_evidence_mismatch" in codes
+
+
+def test_manifest_rebuild_is_deterministic_for_same_evidence():
+    envelope, candidates, preflight, report, manifest = sample()
+
+    rebuilt = build_migration_manifest(
+        envelope, candidates, preflight, report,
+        environment=manifest.environment,
+        importer_version=manifest.importer_version,
+        mapping_version=manifest.mapping_version,
+        created_at=manifest.created_at,
+    )
+
+    assert rebuilt == manifest
