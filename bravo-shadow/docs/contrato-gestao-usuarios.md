@@ -8,8 +8,8 @@
 
 - `UsuarioInput` mistura dados cadastrais (`email`, `nome`, `loja`, `cargo`) com campos privilegiados (`perfil`, `status`).
 - O mesmo schema é usado em criação e atualização integral.
-- O router de usuários ainda expõe listagem, detalhe, criação, alteração e exclusão sem dependências de autenticação/autorização.
-- O teste legado cria um Admin por POST sem token; ele precisa ser substituído quando a proteção for implementada.
+- O router de usuários já exige dependências de autenticação e capacidades específicas (`usuarios:read/create/update/delete`). A matriz atual mantém as capacidades de Admin/Operador fechadas, e os testes verificam 401 sem identidade e 403 para ambos os perfis.
+- Os testes atuais verificam o bloqueio das rotas sem autenticação e para os perfis ainda sem capacidades aprovadas.
 - O serviço em memória é isolado por instância, mas não é persistente.
 
 ## Separação de contratos proposta
@@ -41,7 +41,7 @@ Listagem e detalhe são privados. Exclusão não deve ser um CRUD irrestrito: av
 - A identidade vem de Google ID token validado no servidor; nunca de `email`, `perfil` ou `status` enviados pelo cliente.
 - O e-mail autenticado deve ser verificado e corresponder a exatamente um cadastro interno ativo.
 - Falha ou ambiguidade resulta em negação, nunca em perfil padrão privilegiado.
-- Nenhuma rota de negócio ou de usuários deve ser exposta antes de autenticação e autorização completas.
+- Nenhuma rota de negócio ou de usuários deve ser liberada operacionalmente antes da configuração Google validada e da aprovação explícita das capacidades; as dependências de proteção já estão no router, mas a matriz permanece fechada.
 - O bootstrap do primeiro Admin permanece fora da API pública e segue `provisionamento-primeiro-admin.md`.
 - Não introduzir login por senha local.
 
