@@ -74,7 +74,7 @@ Regras:
 6. Reexecutar o mesmo lote deve produzir o mesmo plano e não duplicar dados.
 7. A ordem de registros no arquivo não deve alterar o resultado.
 
-O hash por registro deve ser calculado sobre uma representação canônica e versionada do conteúdo de origem. A canonicalização não pode normalizar valores de negócio. A versão do algoritmo e os campos incluídos no hash devem constar no manifesto.
+O hash por registro deve ser calculado sobre uma representação canônica e versionada do conteúdo de origem. A canonicalização não pode normalizar valores de negócio. A versão do algoritmo e os campos incluídos no hash devem constar no manifesto. A identidade do lote (`batchId`) deve incluir, além do sistema/baseline/snapshot, as versões do envelope, manifesto, canonicalização, importador e mapeamento. Assim, uma nova lógica aplicada ao mesmo snapshot gera novo lote auditável, sem colidir com a chave primária do lote anterior.
 
 ## 5. Manifesto e rastreabilidade
 
@@ -206,7 +206,7 @@ O controle é separado dos dados funcionais do Bravo. Ele registra a proveniênc
 
 | Campo lógico | Tipo recomendado | Regra |
 |---|---|---|
-| `batch_id` | texto/UUID determinístico | Chave primária lógica; derivada da identidade do snapshot conforme versão do manifesto. |
+| `batch_id` | texto/UUID determinístico | Chave primária lógica; derivada do snapshot e das versões do envelope, manifesto, canonicalização, importador e mapeamento. |
 | `snapshot_hash` | texto SHA-256 | Obrigatório; identifica os bytes/envelope de origem. |
 | `manifest_hash` | texto SHA-256 | Obrigatório; vincula o lote ao manifesto aprovado. |
 | `source_system` | texto | Obrigatório; parte da identidade de origem. |
@@ -219,7 +219,7 @@ O controle é separado dos dados funcionais do Bravo. Ele registra a proveniênc
 | `approved_by`, `approved_at` | texto/timestamp com fuso, anuláveis | Preenchidos somente por aprovação explícita, autenticada e vinculada ao hash. |
 
 Restrições:
-- `batch_id` é único.
+- `batch_id` é único e muda quando mudar qualquer versão do processamento que altere a interpretação do snapshot.
 - `manifest_hash` e `snapshot_hash` devem ter formato SHA-256 validado pela aplicação e, quando possível, por CHECK no banco.
 - Transições de status são controladas; lote `applied` ou `verified` não pode voltar a `prepared`.
 - Um lote aprovado só pode ser aplicado se o hash do manifesto apresentado for idêntico ao hash aprovado.
