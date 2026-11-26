@@ -1,61 +1,43 @@
 from fastapi.testclient import TestClient
 
-from app.main import app
-from app.modules.formas_monetarias.service import formas_monetarias_service
-
-client = TestClient(app)
-
-
-def setup_function() -> None:
-    formas_monetarias_service._items.clear()
+from app.core.authentication import get_current_principal
+from app.core.authorization import AuthenticatedPrincipal
+from app.main import create_app
 
 
-def test_create_list_update_delete_form():
-    created = client.post("/api/v1/formas-monetarias", json={"nome": "Boleto", "multaPct": 2.0})
-    assert created.status_code == 201
-    item = created.json()
-    assert item["multaPct"] == 2.0
-    updated = client.put(
-        f"/api/v1/formas-monetarias/{item['id']}",
-        json={"nome": "PIX", "multaPct": 0.0},
-    )
-    assert updated.status_code == 200
-    assert updated.json()["nome"] == "PIX"
-    assert client.delete(f"/api/v1/formas-monetarias/{item['id']}").status_code == 204
-    assert client.get("/api/v1/formas-monetarias").json() == []
+def build_client(profile: str | None = None) -> TestClient:
+    application = create_app(storage_backend="memory")
+    if profile is not None:
+        async def authenticated_principal() -> AuthenticatedPrincipal:
+            return AuthenticatedPrincipal(
+                subject="google-test-subject",
+                email="teste@example.com",
+                profile=profile,
+                account_status="Ativo",
+            )
+        application.dependency_overrides[get_current_principal] = authenticated_principal
+    return TestClient(application)
 
 
-def test_default_penalty_and_missing_update():
-    created = client.post("/api/v1/formas-monetarias", json={"nome": "Dinheiro"})
-    assert created.status_code == 201
-    assert created.json()["multaPct"] == 2.0
-    assert client.put("/api/v1/formas-monetarias/unknown", json={"nome": "Teste"}).status_code == 404
+def test_all_formas_monetarias_routes_require_authentication():
+    client = build_client()
+    assert client.get("/api/v1/formas-monetarias").status_code == 401
+    assert client.post("/api/v1/formas-monetarias", json={"nome": "Boleto"}).status_code == 401
+    assert client.put("/api/v1/formas-monetarias/1", json={"nome": "PIX"}).status_code == 401
+    assert client.delete("/api/v1/formas-monetarias/1").status_code == 401
 
 
-def test_name_is_required_and_trimmed():
-    assert client.post("/api/v1/formas-monetarias", json={"nome": ""}).status_code == 422
-    assert client.post("/api/v1/formas-monetarias", json={"nome": "   "}).status_code == 422
-    created = client.post("/api/v1/formas-monetarias", json={"nome": "  PIX  "})
-    assert created.status_code == 201
-    assert created.json()["nome"] == "PIX"
+def test_admin_is_denied_all_formas_monetarias_actions_until_matrix_approval():
+    client = build_client("Admin")
+    assert client.get("/api/v1/formas-monetarias").status_code == 403
+    assert client.post("/api/v1/formas-monetarias", json={"nome": "Boleto"}).status_code == 403
+    assert client.put("/api/v1/formas-monetarias/1", json={"nome": "PIX"}).status_code == 403
+    assert client.delete("/api/v1/formas-monetarias/1").status_code == 403
 
 
-def test_penalty_preserves_legacy_unbounded_numeric_behavior():
-    # O HTML original aceita valores numéricos sem min/max; não impor limites novos.
-    for value in (-0.01, 100.01):
-        response = client.post(
-            "/api/v1/formas-monetarias",
-            json={"nome": "Teste", "multaPct": value},
-        )
-        assert response.status_code == 201
-        assert response.json()["multaPct"] == value
-
-
-def test_name_has_no_new_maximum_length_restriction():
-    name = "x" * 150
-    response = client.post(
-        "/api/v1/formas-monetarias",
-        json={"nome": name},
-    )
-    assert response.status_code == 201
-    assert response.json()["nome"] == name
+def test_operator_is_denied_all_formas_monetarias_actions_until_matrix_approval():
+    client = build_client("Operador")
+    assert client.get("/api/v1/formas-monetarias").status_code == 403
+    assert client.post("/api/v1/formas-monetarias", json={"nome": "Boleto"}).status_code == 403
+    assert client.put("/api/v1/formas-monetarias/1", json={"nome": "PIX"}).status_code == 403
+    assert client.delete("/api/v1/formas-monetarias/1").status_code == 403
