@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Request, status
+from fastapi import APIRouter, Depends, Request, status
 
+from app.core.authorization import AuthenticatedPrincipal, require_capability_dependency
 from .schemas import Morador, MoradorInput, MoradorImportBatch
 from .service import MoradoresService
 
@@ -11,25 +12,47 @@ def get_service(request: Request) -> MoradoresService:
 
 
 @router.get("", response_model=list[Morador])
-def list_residents(request: Request, bloco: str | None = None, busca: str | None = None) -> list[Morador]:
+def list_residents(
+    request: Request,
+    bloco: str | None = None,
+    busca: str | None = None,
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("moradores:read")),
+) -> list[Morador]:
     return get_service(request).list(bloco=bloco, busca=busca)
 
 
 @router.post("", response_model=Morador, status_code=status.HTTP_201_CREATED)
-def create_resident(request: Request, data: MoradorInput) -> Morador:
+def create_resident(
+    request: Request,
+    data: MoradorInput,
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("moradores:create")),
+) -> Morador:
     return get_service(request).create(data)
 
 
 @router.put("/{item_id}", response_model=Morador)
-def update_resident(request: Request, item_id: str, data: MoradorInput) -> Morador:
+def update_resident(
+    request: Request,
+    item_id: str,
+    data: MoradorInput,
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("moradores:update")),
+) -> Morador:
     return get_service(request).update(item_id, data)
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_resident(request: Request, item_id: str) -> None:
+def delete_resident(
+    request: Request,
+    item_id: str,
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("moradores:delete")),
+) -> None:
     get_service(request).delete(item_id)
 
 
 @router.post("/importar", status_code=status.HTTP_200_OK)
-def import_residents(request: Request, batch: MoradorImportBatch) -> dict[str, int]:
+def import_residents(
+    request: Request,
+    batch: MoradorImportBatch,
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("moradores:import")),
+) -> dict[str, int]:
     return {"importados": get_service(request).import_batch(batch)}
