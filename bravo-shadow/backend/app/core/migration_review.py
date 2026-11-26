@@ -112,3 +112,69 @@ def append_review(
         manifest_hash=ledger.manifest_hash,
         events=ledger.events + (event,),
     )
+
+
+def _review_payload(ledger: ReviewLedger) -> dict[str, object]:
+    """Canonical payload used to serialize and fingerprint the review history."""
+    return {
+        "formatVersion": 1,
+        "batchId": ledger.batch_id,
+        "manifestHash": ledger.manifest_hash,
+        "events": [
+            {
+                "eventId": event.event_id,
+                "decisionId": event.decision_id,
+                "version": event.version,
+                "reviewerId": event.reviewer_id,
+                "choice": event.choice,
+                "rationale": event.rationale,
+                "reviewedAt": event.reviewed_at,
+            }
+            for event in ledger.events
+        ],
+    }
+
+
+def serialize_review_ledger(ledger: ReviewLedger) -> str:
+    """Return stable JSON; no file or database access is performed."""
+    import json
+
+    return json.dumps(
+        _review_payload(ledger),
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
+
+
+def verify_review_ledger(
+    ledger: ReviewLedger,
+    register: DecisionRegister,
+) -> bool:
+    """Validate batch binding, event uniqueness, decisions and version sequence."""
+    if ledger.batch_id != register.batch_id or ledger.manifest_hash != register.manifest_hash:
+        return False
+    known_decisions = {item.decision_id for item in register.pending}
+    seen_events: set[str] = set()
+    versions: dict[str, int] = {}
+    for event in ledger.events:
+        if event.event_id in seen_events or event.decision_id not in known_decisions:
+            return False
+        if not event.event_id.strip() or not event.reviewer_id.strip():
+            return False
+        if not event.rationale.strip() or not event.reviewed_at.strip():
+            return False
+        expected = versions.get(event.decision_id, 0) + 1
+        if event.version != expected:
+            return False
+        if event.choice not in {
+            "approved_for_manual_resolution",
+            "keep_blocked",
+            "exclude_from_this_batch",
+            "request_more_information",
+        }:
+            return False
+        seen_events.add(event.event_id)
+        versions[event.decision_id] = expected
+    return True
