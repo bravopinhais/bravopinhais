@@ -177,3 +177,8 @@ Foi definido `backend/app/core/migration_source_snapshot.py` como contrato estru
 O protocolo `SourceSnapshotProvider` descreve a interface esperada de um provedor futuro, mas **nenhum conector concreto foi criado**. O contrato valida que todos os registros pertencem ao sistema declarado e rejeita listas mutáveis, hashes inválidos e itens de tipo incorreto.
 
 Testes sintéticos cobrem metadados ausentes, hash inválido, inventário mutável e mistura de sistemas de origem. Não há leitura de arquivos, APIs ou banco legado; o payload funcional não é carregado por esta abstração.
+
+
+### Integridade verificável do snapshot
+
+O contrato agora calcula SHA-256 sobre uma representação canônica do inventário: sistema de origem e lista ordenada de identidade (sistema, coleção, ID legado) mais hash individual de cada registro. A ordem de chegada dos registros não altera o hash. A construção de `SourceSnapshot` rejeita um hash que não corresponda ao conteúdo recebido. Isso verifica a integridade do inventário de identidades e hashes, não autentica por si só a origem nem substitui assinatura/cadeia de custódia da exportação.
