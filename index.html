@@ -33911,6 +33911,33 @@ html:root:root:root #app#app main .dashboard-shell .dashboard-analytics-disclosu
  -webkit-overflow-scrolling:touch;
 }
 #app main :is(.overflow-x-auto,.table-responsive,[data-table-scroll]) table{max-width:none}
+
+/* Modal global: sempre sobre a página, sem entrar no fluxo de rolagem. */
+#modal-container {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 99999 !important;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+#modal-container > .fixed {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 99999 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    overflow-y: auto !important;
+    pointer-events: auto !important;
+    padding: max(12px, env(safe-area-inset-top)) 12px max(12px, env(safe-area-inset-bottom)) !important;
+}
+#modal-container > .fixed > div {
+    flex-shrink: 0;
+    max-height: calc(100dvh - 24px - env(safe-area-inset-top) - env(safe-area-inset-bottom)) !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch;
+}
 </style>
 </body>
 </html>
