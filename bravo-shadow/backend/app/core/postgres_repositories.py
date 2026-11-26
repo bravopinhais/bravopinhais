@@ -168,6 +168,7 @@ class PostgresFinanceiroRepository(_PostgresRepository):
             planoContaId=row[2] or "",
             historico=row[3],
             valor=Decimal(row[4]),
+            version=row[5],
         )
 
     def list(self) -> list[FinanceiroTitulo]:
