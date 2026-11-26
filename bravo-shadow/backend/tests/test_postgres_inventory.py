@@ -19,6 +19,8 @@ class Cursor:
         self.connection.calls.append((sql, params))
         if "SELECT quantidade" in sql:
             self.connection.row = self.connection.stock_row
+        elif sql.lstrip().startswith("SELECT"):
+            self.connection.row = self.connection.rows[0] if self.connection.rows else None
         self.rowcount = self.connection.rowcount
 
     def fetchone(self):
