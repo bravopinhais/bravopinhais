@@ -1,20 +1,24 @@
-from fastapi import APIRouter, Header, Response, status
+from fastapi import APIRouter, Header, Request, Response, status
 
 from app.core.etag import format_etag, parse_if_match
 from .schemas import PlanoConta, PlanoContaInput
-from .service import plano_contas_service
+from .service import PlanoContasService
 
 router = APIRouter(prefix="/api/v1/plano-contas", tags=["Plano de Contas"])
 
 
+def get_service(request: Request) -> PlanoContasService:
+    return request.app.state.services.plano_contas
+
+
 @router.get("", response_model=list[PlanoConta])
-def list_accounts() -> list[PlanoConta]:
-    return plano_contas_service.list()
+def list_accounts(request: Request) -> list[PlanoConta]:
+    return get_service(request).list()
 
 
 @router.post("", response_model=PlanoConta, status_code=status.HTTP_201_CREATED)
-def create_account(data: PlanoContaInput, response: Response):
-    item = plano_contas_service.create(data)
+def create_account(data: PlanoContaInput, request: Request, response: Response):
+    item = get_service(request).create(data)
     response.headers["ETag"] = format_etag(item.version)
     return item
 
@@ -23,15 +27,16 @@ def create_account(data: PlanoContaInput, response: Response):
 def update_account(
     item_id: str,
     data: PlanoContaInput,
+    request: Request,
     response: Response,
     if_match: str | None = Header(default=None, alias="If-Match"),
 ):
     expected_version = parse_if_match(if_match)
-    item = plano_contas_service.update(item_id, data, expected_version)
+    item = get_service(request).update(item_id, data, expected_version)
     response.headers["ETag"] = format_etag(item.version)
     return item
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_account(item_id: str) -> None:
-    plano_contas_service.delete(item_id)
+def delete_account(item_id: str, request: Request) -> None:
+    get_service(request).delete(item_id)
