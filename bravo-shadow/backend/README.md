@@ -108,7 +108,7 @@ Os adaptadores PostgreSQL implementam `replace_if_version` para Plano de Contas 
 
 ### Controle de versão HTTP (Plano de Contas e Financeiro)
 
-As rotas POST devolvem a versão no corpo e um ETag forte no cabeçalho de resposta. As rotas PUT exigem o cabeçalho `If-Match: "n"`; sem esse cabeçalho retornam 428, formato inválido retorna 400 e versão desatualizada retorna 409. A comparação e substituição do adaptador em memória são atômicas sob lock, e os adaptadores PostgreSQL oferecem a operação SQL equivalente. Isso protege as rotas de homologação em memória contra atualização obsoleta; **a API ainda não está configurada para usar PostgreSQL**. O cliente deve obter a versão mais recente antes de editar e reenviar a ETag recebida.
+As rotas POST devolvem a versão no corpo e um ETag forte no cabeçalho de resposta. As rotas PUT exigem o cabeçalho `If-Match: "n"`; sem esse cabeçalho retornam 428, formato inválido retorna 400 e versão desatualizada retorna 409. A comparação e substituição do adaptador em memória são atômicas sob lock, e os adaptadores PostgreSQL oferecem a operação SQL equivalente. Isso protege as rotas de homologação contra atualização obsoleta. A configuração Psycopg já está disponível, mas o uso real permanece bloqueado até migration local, privilégios mínimos e testes de integração. O cliente deve obter a versão mais recente antes de editar e reenviar a ETag recebida.
 
 
 ## Seleção explícita do armazenamento
