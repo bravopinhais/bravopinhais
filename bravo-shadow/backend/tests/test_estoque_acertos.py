@@ -1,4 +1,6 @@
-from fastapi.testclient import TestClient
+import pytest\nfrom fastapi import HTTPException\nfrom fastapi.testclient import TestClient
+
+from app.modules.motivos_acerto.schemas import MotivoAcertoInput
 
 from app.main import app, create_app
 
@@ -126,7 +128,7 @@ def test_adjustment_reason_link_and_restrict_delete():
             "produtoId": product["id"],
             "quantidade": 1,
             "motivo": "Texto legado",
-            "motivoId": reason["id"],
+            "motivoId": reason.id,
         },
     )
     assert movement.status_code == 201
@@ -213,7 +215,7 @@ def test_stock_registration_date_rejects_non_iso_format():
 
 def test_adjustment_trims_required_text_and_optional_reason_id():
     product = client.post("/api/v1/estoque", json={"item": "Filtro", "quantidade": 2}).json()
-    reason = client.post("/api/v1/motivos-acerto-estoque", json={"nome": "Avaria"}).json()
+    reason = app.state.services.motivos_acerto.create(MotivoAcertoInput(nome="Avaria"))
     response = client.post(
         "/api/v1/acertos-estoque",
         json={
