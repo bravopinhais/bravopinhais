@@ -5,7 +5,8 @@
 - O frontend contém os 15 módulos no menu, mas apenas **Formas Monetárias** está ligado a operações da API nesta tela.
 - O Dashboard mostra contagens e textos estáticos de arquitetura. Não consulta a API e não apresenta indicadores financeiros reais.
 - Ao abrir **Central de Relatórios & DRE**, o frontend exibe um cartão de módulo ainda não migrado.
-- Não há routers ou serviços próprios de Dashboard, Relatórios ou DRE em `backend/app/modules`.
+- O backend possui `DashboardService` e router `GET /api/v1/dashboard/resumo`, protegido por `dashboard:read`. O endpoint retorna indicadores agregados; a interface ainda não consome esse endpoint.
+- Não há router/serviço de Relatórios ou DRE por período/conta. O resumo do Dashboard não equivale a uma DRE completa.
 - O domínio Financeiro já existe na API sombra e está conectado ao Plano de Contas pelo serviço de persistência. Isso não significa que a DRE esteja implementada.
 - O rascunho de persistência possui tabelas para Financeiro e Plano de Contas, mas nenhuma migration foi aplicada e nenhum banco foi consultado nesta revisão.
 
@@ -45,13 +46,13 @@ O contrato não possui data de competência/vencimento, data de pagamento/recebi
 
 ## Arquitetura recomendada para a próxima implementação
 
-1. Criar um serviço de consulta agregada de leitura para Dashboard/DRE, separado dos serviços de cadastro.
-2. Usar os repositórios de Financeiro e Plano de Contas já existentes; evitar carregar ou duplicar registros em outro armazenamento.
-3. Implementar endpoint de resumo geral somente com os campos existentes: totais de Receber, Pagar, diferença aritmética e quantidade de títulos.
-4. Implementar agrupamento por conta com código/nome/tipo da conta e totais por tipo de título, mantendo títulos sem conta fora das linhas agrupadas.
+1. Manter o serviço agregado de leitura do Dashboard separado dos serviços de cadastro.
+2. Usar os serviços de Financeiro e Plano de Contas existentes; evitar carregar ou duplicar registros em outro armazenamento.
+3. O endpoint atual `/api/v1/dashboard/resumo` já calcula totais de Receber/Pagar, diferença aritmética e quantidade de títulos com os campos disponíveis.
+4. Próxima ampliação possível: agrupamento por conta com código/nome/tipo e totais por tipo de título, mantendo títulos sem conta fora das linhas agrupadas.
 5. Não criar filtros por competência, vencimento, liquidação ou período até que o contrato financeiro receba datas e status aprovados.
 6. Não chamar a diferença entre Receber e Pagar de saldo bancário. Conciliação exige vínculo de lançamentos com contas bancárias e regras específicas ainda não definidas.
-7. Proteger os endpoints com autenticação e autorização antes de disponibilizar dados financeiros. A matriz de permissões ainda não foi aprovada; não ativar rotas públicas de dados sensíveis.
+7. Manter autenticação e autorização por capacidade. A matriz de permissões continua sem aprovação; não liberar dados financeiros a perfis reais.
 8. Cobrir com testes: lista vazia real, títulos sem conta, contas excluídas/referenciadas, valores Decimal, divergência entre tipo do título e tipo da conta, erro de repositório e consistência dos totais.
 
 ## Fora do escopo desta revisão
@@ -59,7 +60,7 @@ O contrato não possui data de competência/vencimento, data de pagamento/recebi
 - Nenhuma alteração no `index.html` original.
 - Nenhuma mudança no formulário ou no contrato financeiro.
 - Nenhuma migration, conexão com produção ou consulta a dados reais.
-- Nenhum endpoint de Dashboard/DRE criado nesta etapa.
+- O endpoint agregado do Dashboard já existe e é somente leitura; nenhum endpoint de Relatórios/DRE foi criado nesta etapa.
 - Nenhuma matriz de autorização presumida ou ativada.
 
 ## Próxima decisão funcional
