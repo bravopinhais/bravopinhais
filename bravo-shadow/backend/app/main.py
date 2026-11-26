@@ -17,6 +17,7 @@ from app.modules.empregados.router import router as empregados_router
 from app.modules.formas_monetarias.router import router as formas_monetarias_router
 from app.modules.plano_contas.router import router as plano_contas_router
 from app.modules.plano_contas.service import plano_contas_service
+from app.modules.usuarios.router import router as usuarios_router
 
 # O checker consulta a coleção financeira de homologação em memória.
 # Continua sem conexão com Supabase ou dados de produção.
@@ -42,6 +43,7 @@ app.include_router(motivos_acerto_router)
 app.include_router(estoque_router)
 app.include_router(acertos_estoque_router)
 app.include_router(documentos_router)
+app.include_router(usuarios_router)
 
 # CORS permanecerá restrito até que os domínios oficiais dos ambientes
 # de desenvolvimento e homologação sejam definidos. Não usar "*" em produção.
