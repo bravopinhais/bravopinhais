@@ -57,3 +57,8 @@ Frontend web unificado (HTML/CSS/JS)
 ## Gate de integração
 
 A composição modular da API não significa que os módulos estejam prontos para operação: persistência, transações, autorização server-side, CORS por allowlist, observabilidade e testes de integração são pré-requisitos. Ver `revisao-integracao-arquitetura.md`.
+
+
+## Persistência — próximo gate
+
+O modelo inicial do piloto está documentado em `modelo-persistencia-piloto.md`. O primeiro lote prevê Plano de Contas, Financeiro, Estoque e Acertos de Estoque em schema privado `bravo_shadow`, com IDs textuais compatíveis, chaves estrangeiras, controle de versão e transações. Esta é uma especificação, não uma migration aplicada. A geração de migration deverá ocorrer pela Supabase CLI no ambiente local; nenhuma conexão ou alteração remota foi autorizada.
