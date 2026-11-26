@@ -1,7 +1,7 @@
 # Desenho das operações atômicas — Gestão de Usuários
 
 **Status:** desenho técnico para a próxima implementação; não implementado.  
-**Escopo:** somente sistema sombra. Nenhuma rota, regra, tabela, dado ou permissão foi alterada.
+**Escopo:** somente sistema sombra. Nenhuma rota, regra, tabela, dado ou permissão foi alterada. O router atual de usuários já exige autenticação e capacidades `usuarios:*`; a matriz de Admin/Operador permanece fechada e o provedor Google ainda depende de configuração validada.
 
 ## Objetivo
 
@@ -70,7 +70,7 @@ Todas as operações compostas devem abrir uma única `PostgresUnitOfWork` e usa
 
 - `actor_id` deve vir do principal criado após validação do Google ID token; nunca do corpo ou query string.
 - A checagem de autoalteração de perfil/status deve ocorrer no serviço, comparando o ator autenticado com o usuário-alvo.
-- A capacidade necessária deve ser verificada antes de chamar o método administrativo do repositório.
+- A capacidade necessária deve ser verificada antes de chamar o método administrativo do repositório. O router já possui dependências de autenticação e capacidades; manter a matriz fechada até aprovação formal.
 - Quando a integração de auditoria estiver pronta, gravar evento na mesma transação da alteração. Falha ao registrar auditoria deve cancelar a alteração.
 - Não gravar e-mail, nome, perfil antigo/novo, status antigo/novo ou payload no evento; usar somente ator opaco, ação, tipo/ID da entidade, resultado e request ID conforme o contrato de auditoria existente.
 
