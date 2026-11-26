@@ -29,7 +29,7 @@ No Shadow, os 15 domínios aparecem na navegação, mas a própria interface inf
 
 | Módulo | Evidência no legado | Situação Shadow observada | Lacuna principal / dependência |
 |---|---|---|---|
-| Dashboard | `renderDashboardView`; gráficos de receitas/despesas, ocupação e estoque; funções de inicialização de gráficos | Tela inicial com indicadores explicitamente ilustrativos; existe `DashboardService`, sem router de dashboard | Definir métricas e filtros equivalentes; endpoints agregados; só usar dados reais de módulos aceitos; não exibir zeros fictícios |
+| Dashboard | `renderDashboardView`; gráficos de receitas/despesas, ocupação e estoque; funções de inicialização de gráficos | API possui `DashboardService` e endpoint agregado `/api/v1/dashboard/resumo`, protegido por `dashboard:read`; UI ainda precisa de integração e aceite | Definir métricas e filtros equivalentes; não exibir zeros fictícios nem converter falha de API em saldo zero |
 | Condomínio & Conselho | `renderCondominioView`, `salvarDadosCondominio`; renderização institucional e dados do conselho | Navegação/placeholder; backend possui routers separados para condomínio e conselheiros | Conferir todos os campos, concessionárias, composição do conselho, cardinalidade e regras de atualização |
 | Plano de Contas | `renderPlanoContasView`; cadastro/edição e classificação | Navegação/placeholder; router e persistência no backend | Comparar hierarquia, códigos, natureza, obrigatoriedade e referências financeiras; manter integridade referencial |
 | Contas a Pagar / Receber | `renderFinanceiroView`; títulos e classificações | Navegação/placeholder; router e persistência no backend | Faltam no contrato Shadow datas/status/baixa e vínculo bancário necessários a vários relatórios; mapear regras reais antes de ampliar |
@@ -240,3 +240,19 @@ Sem token autenticado, os endpoints protegidos retornam 401. Com identidade aute
 **Limite da cobertura:** os routers de Condomínio, Plano de Contas, Financeiro, Contas Bancárias, Estoque, Acertos de Estoque, Documentos e demais domínios não listados nesta tabela ainda precisam de auditoria/proteção individual. A fundação central não protege automaticamente rotas que não declaram a dependência.
 
 **Validação:** a suíte deve ser considerada pendente para o commit mais recente até que o GitHub Actions execute o SHA final. Nenhuma migration, política RLS, conexão de produção, importação real, dual-write ou cutover foi executado. A branch original permanece fora desta alteração.
+
+
+## Atualização de segurança — Dashboard e Documentos (26/11/2026)
+
+A inspeção dos routers confirmou que ambos os módulos já declaram dependências de capacidade por endpoint:
+
+| Módulo | Operações protegidas | Observação |
+|---|---|---|
+| Dashboard | `dashboard:read` | Endpoint agregado somente leitura; testes cobrem 401, 403 e resposta agregada sem registros detalhados |
+| Documentos | `documentos:read`, `documentos:create`, `documentos:update`, `documentos:delete` | Lista, detalhe, criação, edição e exclusão protegidos; conteúdo comprimido preservado pelo contrato |
+
+A proteção HTTP não equivale a paridade visual ou aceite de negócio. A matriz Admin/Operador permanece deny-by-default. Os testes usam identidade sintética e overrides locais.
+
+**Correção de CI:** a execução `45902519204` encontrou 1 falha em 421 testes: o teste de isolamento de Documentos criava instâncias FastAPI sem configurar a identidade sintética exigida pelo endpoint protegido. O teste foi ajustado para autenticar ambas as instâncias; nenhuma regra de produção foi relaxada. A nova execução vinculada ao commit corretivo deve ser verificada antes de declarar sucesso.
+
+Nenhuma migration foi aplicada, nenhum dado real foi consultado/importado e o original permanece inalterado.
