@@ -19,7 +19,7 @@ Versão paralela do Bravo, criada para evolução arquitetural gradual e homolog
 
 ## Estado atual
 
-Fundação inicial criada. A API expõe apenas um endpoint de saúde; ainda não há conexão com Supabase, dados reais, autenticação ou operações de negócio. Isso é intencional até a conclusão do inventário e da definição dos contratos.
+Fundação da API e contratos dos 15 módulos implementados na sombra. Plano de Contas e Financeiro possuem adaptadores PostgreSQL preparados, mas o runtime permanece em memória por padrão. Ainda não há migration aplicada, driver configurado, conexão Supabase, dados reais ou autenticação Google validada. Consulte `docs/` e `supabase/README.md` para o estado e os limites do piloto.
 
 ## Execução local
 
