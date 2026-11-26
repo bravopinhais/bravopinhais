@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 class CondominioPatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -19,6 +19,11 @@ class CondominioPatch(BaseModel):
     copelAreasComuns: str | None = None
     gasSalao: str | None = None
     sanepar: str | None = None
+
+    @field_validator("*", mode="before")
+    @classmethod
+    def trim_string_fields(cls, value):
+        return value.strip() if isinstance(value, str) else value
 
 class Condominio(CondominioPatch):
     pass
