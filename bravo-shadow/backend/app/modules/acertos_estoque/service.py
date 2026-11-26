@@ -31,6 +31,9 @@ class AcertosEstoqueService:
         return self.repository.list()
 
     def has_reason_reference(self, reason_id: str) -> bool:
+        checker = getattr(self.repository, "any", None)
+        if callable(checker):
+            return checker(lambda item: item.motivoId == reason_id)
         return any(item.motivoId == reason_id for item in self.repository.list())
 
     def create(self, data: AcertoInput) -> Acerto:
@@ -76,16 +79,13 @@ class AcertosEstoqueService:
     def delete(self, item_id: str) -> None:
         if not self.repository.exists(item_id):
             raise HTTPException(status_code=404, detail="Acerto não encontrado.")
-        if self.movement_repository is not None:
-            raise HTTPException(
-                status_code=409,
-                detail=(
-                    "Movimentos persistidos são imutáveis para preservar o saldo e o histórico. "
-                    "A correção por estorno compensatório será disponibilizada em etapa própria."
-                ),
-            )
-        # O modo memória mantém o comportamento legado apenas para testes/sombra local.
-        self.repository.delete(item_id)
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Movimentações de estoque são imutáveis para preservar o saldo e o histórico. "
+                "A correção deve ser feita por um movimento compensatório."
+            ),
+        )
 
 
 acertos_estoque_service = AcertosEstoqueService()
