@@ -33941,3 +33941,23 @@ html:root:root:root #app#app main .dashboard-shell .dashboard-analytics-disclosu
 </style>
 </body>
 </html>
+
+
+<style id="bravo-fix-backdrop-lateral-2026">
+<!-- BRAVO FIX: isolamento do backdrop lateral -->
+/* O fundo do menu lateral não é um modal e nunca deve herdar o blur global. */
+#app #sidebar-backdrop.fixed.inset-0 {
+  background: rgba(0,0,0,.42) !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+#app #sidebar-backdrop.hidden {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+#app #sidebar-backdrop:not(.hidden) {
+  visibility: visible;
+  pointer-events: auto;
+}
+</style>
