@@ -42,7 +42,10 @@ class UsuarioCadastroInput(BaseModel):
     @field_validator("nome", "loja", "cargo")
     @classmethod
     def trim_text(cls, value: str) -> str:
-        return value.strip()
+        value = value.strip()
+        if not value:
+            raise ValueError("O campo não pode ficar vazio.")
+        return value
 
 
 class UsuarioDadosCadastraisUpdateInput(BaseModel):
