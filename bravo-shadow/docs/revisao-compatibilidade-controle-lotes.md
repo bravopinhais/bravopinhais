@@ -203,3 +203,17 @@ Os testes sintéticos em `backend/tests/test_migration_export_manifest.py` cobre
 **Limites de segurança e cadeia de custódia:** o encadeamento permite detectar quebra/alteração na sequência quando o hash anterior é preservado por um canal independente. Ele não prova quem gerou o arquivo, não autentica o sistema de origem e não substitui assinatura digital, armazenamento imutável ou registro externo de custódia. O hash do manifesto não é uma assinatura.
 
 Este módulo não lê nem grava arquivos, não conecta à origem, não inclui payloads, não inicia importação e não aplica alterações. Ainda não existe exportador concreto nem conector legado. Nenhum dado real foi usado.
+
+
+## Verificador de cadeia de exportações
+
+Foi acrescentado `backend/app/core/migration_export_chain.py`, um verificador puro e somente leitura que recebe uma tupla ordenada de manifestos e valida:
+
+- integridade do hash de cada manifesto;
+- continuidade entre `previous_manifest_hash` e o hash do manifesto anterior;
+- ausência de IDs de exportação duplicados;
+- vínculo do primeiro manifesto com um hash previamente preservado, quando informado.
+
+A sequência deve ser fornecida em ordem cronológica. Para uma primeira exportação sem histórico anterior, o primeiro manifesto não deve apontar para um hash anterior. Quando já existir histórico, o chamador pode informar `expected_previous_manifest_hash`, obtido de um registro independente.
+
+O verificador detecta lacunas, reordenação e alterações nos metadados, mas não pode provar que uma sequência está completa sem uma âncora confiável. Também não autentica o exportador nem a origem. Não realiza I/O, não procura arquivos, não conecta ao legado e não altera os manifestos. Testes sintéticos cobrem cadeia válida, quebra de elo, reordenação, âncora externa, IDs duplicados e adulteração.
