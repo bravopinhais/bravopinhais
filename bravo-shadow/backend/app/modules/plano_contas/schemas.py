@@ -20,3 +20,4 @@ class PlanoContaInput(BaseModel):
 
 class PlanoConta(PlanoContaInput):
     id: str
+    version: int = Field(default=1, ge=1)
