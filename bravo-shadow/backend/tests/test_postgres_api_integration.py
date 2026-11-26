@@ -267,3 +267,17 @@ def test_postgres_routes_reject_duplicate_account_code(postgres_api):
         json={"codigo": "2.1", "nome": "Receita B", "tipo": "Receita"},
     )
     assert duplicate.status_code == 409
+
+
+def test_postgres_routes_reject_unknown_account_reference(postgres_api):
+    client, state, _connections = postgres_api
+    response = client.post(
+        "/api/v1/financeiro",
+        json={
+            "tipo": "Receber", "planoContaId": "pc_inexistente",
+            "historico": "Lançamento sem conta válida", "valor": "10.00",
+        },
+    )
+    assert response.status_code == 409
+    assert "Plano de Contas" in response.json()["detail"]
+    assert state.financial_titles == {}
