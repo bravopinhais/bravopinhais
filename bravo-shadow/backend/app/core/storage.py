@@ -27,6 +27,7 @@ from app.core.postgres_inventory import (
     PostgresAcertosEstoqueRepository,
     PostgresEstoqueRepository,
 )
+from app.core.postgres_usuarios import PostgresUsuariosRepository
 from app.core.postgres_repositories import (
     PostgresFinanceiroRepository,
     PostgresFormasMonetariasRepository,
@@ -86,7 +87,7 @@ def build_storage_services(
     No modo PostgreSQL, a fábrica é obrigatória e só será chamada durante
     operações de repositório. Cadastros financeiros, estoque, catálogos,
     documentos, moradores, fornecedores, empregados e contas bancárias usam
-    adapters PostgreSQL; condomínio e conselho também usam PostgreSQL; usuários seguem em memória.
+    adapters PostgreSQL; condomínio, conselho e perfis de usuário também usam PostgreSQL.
     """
     movement_repository = None
     if backend == "memory":
@@ -104,6 +105,7 @@ def build_storage_services(
         contas_bancarias_repository = InMemoryCollectionRepository()
         condominio_repository = InMemoryCollectionRepository()
         conselheiros_repository = InMemoryCollectionRepository()
+        usuarios_repository = InMemoryCollectionRepository()
     elif backend == "postgres":
         if connection_factory is None:
             raise StorageConfigurationError(
@@ -124,6 +126,7 @@ def build_storage_services(
         contas_bancarias_repository = PostgresContasBancariasRepository(connection_factory)
         condominio_repository = PostgresCondominioRepository(connection_factory)
         conselheiros_repository = PostgresConselheirosRepository(connection_factory)
+        usuarios_repository = PostgresUsuariosRepository(connection_factory)
         movement_repository = acertos_repository
     else:
         raise StorageConfigurationError(
@@ -160,7 +163,7 @@ def build_storage_services(
     contas_bancarias = ContasBancariasService(repository=contas_bancarias_repository)
     condominio = CondominioService(repository=condominio_repository)
     conselheiros = ConselheirosService(repository=conselheiros_repository)
-    usuarios = UsuariosService(repository=InMemoryCollectionRepository())
+    usuarios = UsuariosService(repository=usuarios_repository)
 
     return StorageServices(
         formas_monetarias=formas_monetarias,
