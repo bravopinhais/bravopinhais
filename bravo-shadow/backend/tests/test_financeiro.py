@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 from app.main import app
+from app.modules.financeiro.schemas import FinanceiroInput
 from app.modules.financeiro.service import financeiro_service
 
 client = TestClient(app)
@@ -66,7 +67,7 @@ def test_delete_title():
 
 
 def test_plan_account_reference_checker():
-    financeiro_service.create(payload(planoContaId="pc_linked"))
+    financeiro_service.create(FinanceiroInput(**payload(planoContaId="pc_linked")))
     assert financeiro_service.has_plan_account_reference("pc_linked") is True
     assert financeiro_service.has_plan_account_reference("pc_unused") is False
 
