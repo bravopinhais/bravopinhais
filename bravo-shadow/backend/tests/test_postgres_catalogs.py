@@ -136,3 +136,22 @@ def test_category_delete_translates_document_reference_to_conflict():
 
     assert error.value.status_code == 409
     assert connection.rollbacks == 1
+
+
+
+def test_postgres_storage_wires_all_persistent_catalog_repositories_without_connecting():
+    from app.core.storage import build_storage_services
+    from app.core.postgres_catalogs import (
+        PostgresCategoriasRepository,
+        PostgresDocumentosRepository,
+        PostgresMotivosAcertoRepository,
+    )
+
+    def unexpected_connection():
+        raise AssertionError("A connection factory não deve ser chamada na montagem dos serviços.")
+
+    services = build_storage_services("postgres", connection_factory=unexpected_connection)
+
+    assert isinstance(services.categorias.repository, PostgresCategoriasRepository)
+    assert isinstance(services.documentos.repository, PostgresDocumentosRepository)
+    assert isinstance(services.motivos_acerto.repository, PostgresMotivosAcertoRepository)
