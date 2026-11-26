@@ -27258,12 +27258,12 @@ body{scrollbar-color:#656a73 #191b20!important}
   #app :is([role="alert"],[role="status"],[class*="toast"],[class*="notification"],[class*="notificacao"]) :is(p,span,strong,small) {
     color: inherit;
   }
-  #app .fixed.inset-0 {
+  #app #modal-container > .fixed.inset-0 {
     background-color: rgba(0, 0, 0, .76) !important;
     backdrop-filter: blur(8px);
   }
   @media (max-width: 640px) {
-    #app .fixed.inset-0 { padding: 12px !important; }
+    #app #modal-container > .fixed.inset-0 { padding: 12px !important; }
     #app .fixed.inset-0 > div,
     #app [role="dialog"],
     #app [aria-modal="true"] {
@@ -33944,7 +33944,7 @@ html:root:root:root #app#app main .dashboard-shell .dashboard-analytics-disclosu
 
 
 <style id="bravo-fix-backdrop-lateral-2026">
-<!-- BRAVO FIX: isolamento do backdrop lateral -->
+/* BRAVO FIX: isolamento do backdrop lateral */
 /* O fundo do menu lateral não é um modal e nunca deve herdar o blur global. */
 #app #sidebar-backdrop.fixed.inset-0 {
   background: rgba(0,0,0,.42) !important;
