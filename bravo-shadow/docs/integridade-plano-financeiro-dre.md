@@ -21,7 +21,7 @@ O serviço recebe um verificador `has_financial_references(account_id)`. No esta
 No original, Dashboard e DRE somam todos os títulos sem filtro por data ou status. A classificação geral usa o tipo do título; a DRE agrupa por conta vinculada. Títulos sem conta entram nos totais gerais, mas não em linhas por conta. A soma por conta não confere se o tipo do título coincide com o tipo cadastrado na conta. O indicador “Saldo em Caixa” é apenas Receber menos Pagar, não um saldo bancário conciliado. Essas regras e limitações devem ser mantidas como referência de paridade até aprovação de uma mudança funcional.
 
 ## Limite atual
-Ainda não existe módulo/repositório financeiro na sombra. A proteção é uma barreira de segurança e um contrato testável, não uma consulta real a lançamentos. A próxima etapa é modelar o domínio Financeiro e ligar o verificador ao repositório de homologação, com integridade referencial no banco (chave estrangeira ou política equivalente).
+O módulo Financeiro e seu repositório já existem na API sombra, e o serviço é conectado ao verificador de referências do Plano de Contas por `build_storage_services()`. A verificação usa o repositório em memória ou a consulta especializada do adapter PostgreSQL, conforme o backend selecionado. O que ainda não existe é um módulo de Dashboard/DRE na API: os indicadores gerenciais permanecem apenas como estrutura visual e não devem ser apresentados como resultados calculados. A persistência PostgreSQL continua dependente de banco sombra isolado e testes de integração.
 
 ## Testes adicionados
 - Exclusão bloqueada quando o verificador não está configurado.
