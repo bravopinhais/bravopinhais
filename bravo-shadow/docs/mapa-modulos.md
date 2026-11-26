@@ -8,8 +8,8 @@ Fonte: inspeção estática de `index.html` na branch `upgrade/project-hardening
 | Condomínio & Conselho | `condominio`, `conselheiros` | Dados institucionais, concessionárias, cadastro/edição/exclusão de conselheiros | Média |
 | Plano de Contas | `plano_contas` | Código, nome, tipo; cadastro/edição/exclusão | Alta |
 | Contas a Pagar / Receber | `financeiro`, `plano_contas` | Título com tipo, vínculo opcional, histórico e valor; cadastro/edição/exclusão. Auditoria detalhada em `auditoria-financeiro.md` | Alta |
-| Formas Monetárias | `formas_monetarias` | Nome e percentual de multa; cadastro/edição/exclusão | Média |
-| Contas Bancárias / Caixa | `contas_bancarias` | Banco e saldo; cadastro/edição/exclusão | Alta |
+| Formas Monetárias | `formas_monetarias` | Nome e percentual de multa (padrão 2%); CRUD. Auditoria em `auditoria-formas-monetarias-contas-bancarias.md` | Média |
+| Contas Bancárias / Caixa | `contas_bancarias` | Banco e saldo manual; CRUD. Sem conciliação ou vínculo com títulos no original. Auditoria em `auditoria-formas-monetarias-contas-bancarias.md` | Alta |
 | Moradores & Unidades | `moradores` | Listagem, filtros por bloco/nome, cadastro/edição/exclusão, importação de planilha | Alta |
 | Fornecedores | `fornecedores` | CNPJ e razão social; cadastro/edição/exclusão | Média |
 | Empregados | `empregados` | Dados pessoais/profissionais e contatos de emergência | Média |
@@ -35,7 +35,7 @@ Fonte: inspeção estática de `index.html` na branch `upgrade/project-hardening
 
 ## Sequência recomendada de migração
 
-1. **Contratos de dados e validações**: plano de contas, formas monetárias e contas bancárias.
+1. **Contratos de dados e validações**: plano de contas, formas monetárias e contas bancárias (auditorias e CRUDs iniciais concluídos na sombra).
 2. **Cadastros de referência**: condomínio/conselho, fornecedores e empregados.
 3. **Moradores e unidades**: inclui importação, filtros e integridade de cadastro.
 4. **Estoque e ajustes**: dependência entre produtos, categorias, motivos, fotos e documentos.
