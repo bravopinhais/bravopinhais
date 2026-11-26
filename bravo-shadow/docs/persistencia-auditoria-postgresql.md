@@ -68,7 +68,7 @@ Foi acrescentado `backend/app/core/postgres_audit.py` com `PostgresAuditSink`. E
 
 Os testes em `backend/tests/test_postgres_audit.py` cobrem parâmetros enviados, commit, rollback em falha e rejeição de objeto inválido antes de abrir conexão. **Foram escritos, mas não executados.** Usam conexão simulada e não comprovam compatibilidade com PostgreSQL real, RLS ou GRANTs.
 
-O adaptador permanece deliberadamente fora de `storage.py` e `main.py`: não há tabela aplicada, credencial writer configurada, nem prova de que a role de conexão possua somente INSERT. Também não há atomicidade conjunta com operações de negócio nesta etapa; cada evento usa uma transação própria. Portanto, ainda não deve ser usado como trilha de auditoria operacional.
+O adaptador permanece deliberadamente fora de `storage.py` e `main.py`: não há tabela aplicada, credencial writer configurada, nem prova de que a role de conexão possua somente INSERT. A atomicidade conjunta agora é tecnicamente possível por `append_in_transaction`, mas ainda não foi adotada por nenhum serviço nem comprovada em PostgreSQL real. Portanto, o adaptador ainda não deve ser usado como trilha de auditoria operacional.
 
 
 ## Inserção na transação do serviço — atualização
