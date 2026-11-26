@@ -45,11 +45,9 @@ CAPABILITIES = frozenset(
 
 # Proposta provisória: Admin tem as capacidades administrativas listadas.
 # Operador permanece sem concessões até aprovação explícita da matriz.
-_ADMIN_CAPABILITIES = CAPABILITIES - {
-    # Movimento de estoque é append-only: não há editar/excluir acerto.
-    "acertos_estoque:update",
-    "acertos_estoque:delete",
-}
+# O catálogo não declara UPDATE/DELETE para movimentos de estoque:
+# correções futuras devem ser lançadas como movimentos compensatórios.
+_ADMIN_CAPABILITIES = CAPABILITIES
 ROLE_CAPABILITIES = MappingProxyType(
     {
         "Admin": frozenset(_ADMIN_CAPABILITIES),
@@ -66,6 +64,8 @@ def has_capability(
     if principal is None:
         return False
     if principal.account_status != "Ativo":
+        return False
+    if not isinstance(principal.subject, str) or not isinstance(principal.email, str):
         return False
     if not principal.subject.strip() or not principal.email.strip():
         return False
