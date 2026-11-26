@@ -124,3 +124,12 @@ Serviços recebem repositórios por injeção de dependência. Implementações 
 - Definir como tratar edição/exclusão de acertos antigos sem perder histórico nem distorcer saldo.
 - Confirmar formato e fuso horário de data nos acertos legados.
 - Definir política de retenção e migração de fotos compactadas.
+
+
+## Adaptadores SQL Python — primeiro corte
+
+Foi criado `app/core/postgres_repositories.py` com implementações DB-API de Plano de Contas e Financeiro. Cada operação abre uma unidade de trabalho própria; os parâmetros são enviados separadamente do SQL, o valor financeiro permanece `Decimal`, e a referência vazia de plano de contas é persistida como `NULL`. A FK do banco é a autoridade final para impedir exclusão de conta referenciada, com tradução de violação de integridade para HTTP 409.
+
+**Limite importante:** estes adaptadores ainda não estão conectados aos serviços ou às rotas. A API ativa continua usando os repositórios em memória. Não foi instalado driver, configurada conexão, criada migration ou acessado qualquer projeto Supabase. Os testes usam cursor falso e precisam ser executados; não substituem teste de integração contra PostgreSQL local.
+
+A coluna `version` é incrementada nas atualizações, mas os contratos atuais de serviço/HTTP ainda não transportam uma versão esperada. Portanto, não declarar controle otimista de concorrência concluído. Essa alteração requer evolução explícita do contrato e testes de conflito antes de ativar persistência.
