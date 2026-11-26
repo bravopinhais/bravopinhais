@@ -133,3 +133,8 @@ Foi criado `app/core/postgres_repositories.py` com implementações DB-API de Pl
 **Limite importante:** estes adaptadores ainda não estão conectados aos serviços ou às rotas. A API ativa continua usando os repositórios em memória. Não foi instalado driver, configurada conexão, criada migration ou acessado qualquer projeto Supabase. Os testes usam cursor falso e precisam ser executados; não substituem teste de integração contra PostgreSQL local.
 
 A coluna `version` é incrementada nas atualizações, mas os contratos atuais de serviço/HTTP ainda não transportam uma versão esperada. Portanto, não declarar controle otimista de concorrência concluído. Essa alteração requer evolução explícita do contrato e testes de conflito antes de ativar persistência.
+
+
+## Falha durante o commit
+
+A unidade de trabalho tenta executar `rollback` caso o próprio `commit` lance uma exceção, fecha a conexão em seguida e propaga a falha original. Há teste unitário com conexão falsa para esse cenário; a confirmação final depende de teste de integração em PostgreSQL local.
