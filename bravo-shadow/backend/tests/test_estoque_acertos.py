@@ -238,7 +238,12 @@ def test_stock_and_adjustment_routes_require_authentication():
     }).status_code == 401
 
 
-def test_stock_and_adjustment_routes_deny_profiles_until_matrix_approval():
+def test_stock_and_adjustment_routes_deny_profiles_until_matrix_approval(monkeypatch):
+    monkeypatch.setattr(
+        authorization,
+        "ROLE_CAPABILITIES",
+        MappingProxyType({"Admin": frozenset(), "Operador": frozenset()}),
+    )
     for profile in ("Admin", "Operador"):
         application = create_app(storage_backend="memory")
 
