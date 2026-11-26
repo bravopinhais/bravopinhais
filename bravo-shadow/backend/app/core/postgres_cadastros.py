@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from decimal import Decimal
 from typing import Any
 
 from fastapi import HTTPException
@@ -216,7 +217,7 @@ class PostgresContasBancariasRepository(_PostgresCadastroRepository):
 
     @staticmethod
     def _entity(row) -> ContaBancaria | None:
-        return ContaBancaria(id=row[0], banco=row[1], saldo=float(row[2])) if row else None
+        return ContaBancaria(id=row[0], banco=row[1], saldo=Decimal(row[2])) if row else None
 
     def list(self) -> list[ContaBancaria]:
         rows = self._query(
