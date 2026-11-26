@@ -2,13 +2,16 @@ from app.core.postgres import PostgresUnitOfWork
 
 
 class FakeConnection:
-    def __init__(self):
+    def __init__(self, commit_error=None):
         self.commits = 0
         self.rollbacks = 0
         self.closes = 0
+        self.commit_error = commit_error
 
     def commit(self):
         self.commits += 1
+        if self.commit_error:
+            raise self.commit_error
 
     def rollback(self):
         self.rollbacks += 1
@@ -37,5 +40,19 @@ def test_unit_of_work_rolls_back_and_closes_on_error():
     else:
         raise AssertionError("A exceção deveria ser propagada")
     assert connection.commits == 0
+    assert connection.rollbacks == 1
+    assert connection.closes == 1
+
+
+def test_unit_of_work_rolls_back_if_commit_fails_and_still_closes():
+    connection = FakeConnection(commit_error=RuntimeError("commit falhou"))
+    try:
+        with PostgresUnitOfWork(lambda: connection):
+            pass
+    except RuntimeError as error:
+        assert str(error) == "commit falhou"
+    else:
+        raise AssertionError("A falha do commit deveria ser propagada")
+    assert connection.commits == 1
     assert connection.rollbacks == 1
     assert connection.closes == 1
