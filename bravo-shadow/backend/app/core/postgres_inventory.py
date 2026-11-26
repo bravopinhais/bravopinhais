@@ -188,19 +188,20 @@ class PostgresAcertosEstoqueRepository(_InventoryPostgresBase):
         )
 
     def replace(self, item_id: str, item: Acerto) -> None:
-        changed = self._query(
-            f"UPDATE {self._table} SET data = %s, tipo = %s, produto_id = %s, "
-            "quantidade = %s, motivo = %s, motivo_id = %s WHERE id = %s",
-            (item.data, item.tipo, item.produtoId, item.quantidade,
-             item.motivo, item.motivoId, item_id),
-        )
-        if not changed:
+        if self.get(item_id) is None:
             raise HTTPException(status_code=404, detail="Acerto não encontrado.")
+        raise HTTPException(
+            status_code=409,
+            detail="Movimentações de estoque são imutáveis; registre um movimento compensatório.",
+        )
 
     def delete(self, item_id: str) -> None:
-        changed = self._query(f"DELETE FROM {self._table} WHERE id = %s", (item_id,))
-        if not changed:
+        if self.get(item_id) is None:
             raise HTTPException(status_code=404, detail="Acerto não encontrado.")
+        raise HTTPException(
+            status_code=409,
+            detail="Movimentações de estoque são imutáveis; registre um movimento compensatório.",
+        )
 
     def register_movement(
         self, *, product_id: str, movement: Acerto, delta: int,
