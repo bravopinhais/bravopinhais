@@ -152,6 +152,7 @@ def build_storage_services(
         movement_repository=movement_repository,
     )
     motivos_acerto.set_reference_checker(acertos_estoque.has_reason_reference)
+    estoque.set_movement_reference_checker(acertos_estoque.has_product_reference)
 
     moradores = MoradoresService(repository=moradores_repository)
     fornecedores = FornecedoresService(repository=fornecedores_repository)
