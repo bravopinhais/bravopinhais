@@ -347,3 +347,16 @@ No modo PostgreSQL, a edição cadastral de um produto bloqueia a linha com `FOR
 - Quantidade, mínimo e máximo continuam inteiros com os valores padrão atuais. Não foi imposta regra para saldo negativo, mínimo maior que máximo, máximo igual a zero ou limites de reposição, pois o significado operacional desses campos precisa ser confirmado. Movimentos registrados continuam sendo o caminho protegido para alterar saldo no modo PostgreSQL.
 - Foram acrescentados testes de normalização dos metadados, preservação do conteúdo compactado, validação de data e rejeição de nome em branco. Os testes foram escritos, mas ainda não executados; a persistência PostgreSQL também depende de teste de integração em banco local isolado.
 - A exclusão de produto com movimentos segue protegida pela FK no rascunho SQL. As rotas de negócio continuam sem autorização funcional; não inserir dados reais nem expor o módulo até concluir autenticação, matriz de permissões e controles de acesso.
+
+
+## Revisão de integridade — Acerto de Estoque
+
+- O acerto aceita somente os tipos Entrada e Saída, exige quantidade inteira maior que zero e exige produto e motivo textual não vazios. Produto e motivo removem espaços externos; motivoId opcional também é normalizado, e string vazia equivale a ausência de vínculo.
+- A criação verifica a existência do produto e, quando informado, a existência do motivo cadastrado. Se o motivoId for válido, o nome atual do catálogo é gravado como snapshot no campo motivo do movimento.
+- A saída não pode exceder o saldo disponível. No PostgreSQL, o produto é bloqueado com SELECT FOR UPDATE e a atualização do saldo e a inserção do movimento ocorrem na mesma transação, evitando saldo negativo e perda de atualização concorrente.
+- Movimentos são imutáveis em ambos os modos de armazenamento: a rota DELETE retorna 409 para um movimento existente e 404 para um ID inexistente. Correções deverão ser feitas por lançamento compensatório; esse fluxo ainda não foi implementado.
+- Produtos com movimentações não podem ser excluídos. Também não podem ter o saldo alterado diretamente pelo PUT; a alteração cadastral permanece permitida quando mantém o saldo atual. O saldo deve ser modificado por Entrada/Saída.
+- O verificador de referência usa busca protegida pelo lock do repositório em memória e a FK ON DELETE RESTRICT no PostgreSQL. O adaptador PostgreSQL mantém também bloqueio transacional do produto durante o registro.
+- Foram adicionados testes para normalização de campos, quantidade positiva, rejeição de textos em branco, imutabilidade do movimento, bloqueio de exclusão/alteração direta do saldo do produto e manutenção de alterações cadastrais sem mudar saldo. Os testes foram escritos, mas ainda não executados.
+- O repositório em memória é destinado a testes e desenvolvimento local, não oferece garantia de transação concorrente equivalente ao PostgreSQL e não deve ser usado em produção. A validação definitiva do fluxo persistente depende de teste em banco PostgreSQL local isolado.
+- A rota DELETE legada permanece no contrato por compatibilidade, mas responde conflito; não existe capacidade de autorização para excluir movimentos. As rotas de negócio continuam sem autorização funcional até aprovação da matriz e validação completa da autenticação.
