@@ -216,3 +216,27 @@ A criação de um acerto deve executar dentro de uma única transação PostgreS
 6. Confirmar a transação; qualquer falha antes do commit deve reverter saldo e histórico juntos.
 
 O contrato de serviço atual ainda executa as duas operações separadamente em memória. O SQL ampliado é somente especificação: **não foi aplicado, não é migration e não habilita PostgreSQL para esses módulos**. Antes da ativação, será necessário implementar adaptadores DB-API, testes com PostgreSQL local isolado e migration criada pela Supabase CLI. A CLI/Docker não estão disponíveis no ambiente de trabalho atual, portanto essa validação local ainda não foi feita.
+
+
+## Extensão do piloto — Categorias, Motivos e Documentos
+
+O rascunho SQL foi ampliado com três tabelas e vínculos referenciais:
+
+- `bravo_shadow.categorias`: catálogo de pastas/categorias usado por Documentos.
+- `bravo_shadow.motivos_acerto`: catálogo de motivos referenciado por Acertos de Estoque.
+- `bravo_shadow.documentos`: mantém pasta textual, título, nome do arquivo e o conteúdo legado `arquivoCompactadoGzip` em texto; `categoria_id` é opcional.
+
+As FKs usam `ON DELETE RESTRICT`. Assim, categorias com documentos e motivos utilizados em movimentações não podem ser removidos, inclusive em operações concorrentes. IDs nulos continuam permitidos para documentos e acertos antigos sem vínculo. O texto `pasta` e o texto `motivo` permanecem armazenados como snapshot histórico, além dos IDs referenciais.
+
+### Adaptadores Python
+
+Foi criado `app/core/postgres_catalogs.py` com repositórios DB-API para Categorias, Motivos de Acerto e Documentos. O modo PostgreSQL agora injeta esses adaptadores nos serviços correspondentes; o modo memória continua como padrão e usa repositórios isolados por aplicação. Erros de FK ao excluir categorias/motivos são traduzidos para HTTP 409. Documentos preservam o conteúdo compactado legado sem conversão nem migração de arquivos para Supabase Storage.
+
+O SQL continua sendo apenas rascunho. Não foi criada migration pela CLI, não houve conexão a PostgreSQL real e nenhuma tabela foi aplicada. Os testes adicionados usam conexões/cursors falsos; a validação em banco local isolado continua pendente.
+
+### Limites preservados
+
+- O armazenamento de arquivos permanece no campo legado compactado em texto; política de tamanho, recuperação, preview e migração para object storage seguem para uma etapa própria.
+- A autenticação Google/e-mail e autorização server-side ainda não foram concluídas; não expor o schema privado à Data API.
+- O backend ainda não tem pool de conexões.
+- Nenhum dado de produção foi copiado ou utilizado.
