@@ -56,3 +56,13 @@
 - Sem erros críticos nos testes.
 - Desempenho e experiência iguais ou melhores.
 - Rollback testado e documentado.
+
+
+## Etapa 0 — complemento do importador (26/11/2026)
+
+- Evidências estáticas dos relacionamentos do legado consolidadas em `evidencias-relacionamentos-legado-fase0.md`.
+- Modelo lógico do controle de lotes e da identidade de origem especificado em `especificacao-importador-migracao-v1.md`, seções 12.1–12.6.
+- Definidas chaves únicas compostas de proveniência, proteção contra colisão no destino, transação conjunta do registro e vínculo, concorrência por identidade e revisão append-only.
+- Primeiro piloto limitado a cadastros independentes com fixtures sintéticas; Financeiro, Documentos e Acertos de Estoque permanecem fora desse primeiro ensaio.
+- **Não implementado:** schema/tabelas de controle, migrations, adaptador de escrita, importação `apply`, rollback automatizado e execução de piloto.
+- **Gate seguinte:** revisar o schema PostgreSQL local existente e produzir DDL rascunho para `migration_batches` e `migration_source_records`, sem executar. Depois, criar testes sintéticos para concorrência e integridade atômica antes de qualquer adaptador de persistência.
