@@ -21,10 +21,11 @@
 - Não alterar schema de produção nesta etapa.
 
 ## Etapa 3 — Piloto
-- Escolher uma capacidade de baixo risco e com poucas dependências.
-- Executar testes unitários, integração e equivalência com o original.
-- Medir latência, erros e consistência.
-- Só liberar uso sombra após aprovação.
+- Capacidade inicial escolhida: Formas Monetárias, por ter CRUD simples e poucas dependências.
+- API e interface sombra conectadas para listar, cadastrar, editar e excluir registros.
+- Persistência ainda temporária em memória; não usar dados reais nem considerar este piloto homologado.
+- Próximos critérios: executar testes automatizados, validar o fluxo no navegador e comparar regras/campos com o original.
+- Medir latência, erros e consistência antes de avançar para outro domínio.
 
 ## Etapa 4 — Migração por domínio
 - Migrar uma capacidade por vez.
