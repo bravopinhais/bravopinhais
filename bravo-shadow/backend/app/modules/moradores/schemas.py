@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 class MoradorInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -10,6 +10,12 @@ class MoradorInput(BaseModel):
     cpf: str = ""
     petNome: str = ""
     vagaGaragem: str = ""
+
+    @field_validator("*", mode="before")
+    @classmethod
+    def trim_string_fields(cls, value):
+        # Normaliza espaços sem alterar pontuação ou formato legado de CPF/telefone.
+        return value.strip() if isinstance(value, str) else value
 
 class Morador(MoradorInput):
     id: str
