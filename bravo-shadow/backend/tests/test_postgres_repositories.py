@@ -4,10 +4,10 @@ import pytest
 from fastapi import HTTPException
 
 from app.core.postgres_repositories import (
-    PostgresFinanceiroRepository,
+    PostgresFinanceiroRepository,\n    PostgresFormasMonetariasRepository,
     PostgresPlanoContasRepository,
 )
-from app.modules.financeiro.schemas import FinanceiroTitulo
+from app.modules.formas_monetarias.schemas import FormaMonetaria\nfrom app.modules.financeiro.schemas import FinanceiroTitulo
 from app.modules.plano_contas.schemas import PlanoConta
 
 
@@ -217,3 +217,41 @@ def test_finance_update_translates_missing_plan_account_reference():
     assert "Plano de Contas" in error.value.detail
     assert connection.rollbacks == 1
     assert connection.closed == 1
+
+
+
+def test_monetary_forms_repository_crud_uses_legacy_fields():
+    connection = FakeConnection(
+        rows=[("fm_1", "Boleto", 2.5)]
+    )
+    repository = PostgresFormasMonetariasRepository(factory_for(connection))
+
+    item = repository.get("fm_1")
+    assert item == FormaMonetaria(id="fm_1", nome="Boleto", multaPct=2.5)
+    assert "SELECT id, nome, multa_pct" in connection.calls[0][0]
+
+    repository.add("fm_2", FormaMonetaria(id="fm_2", nome="PIX", multaPct=0.0))
+    assert connection.calls[1][1] == ("fm_2", "PIX", 0.0)
+
+    repository.replace("fm_2", FormaMonetaria(id="fm_2", nome="Dinheiro", multaPct=-1.0))
+    assert "version = version + 1" in connection.calls[2][0]
+    assert connection.calls[2][1] == ("Dinheiro", -1.0, "fm_2")
+
+    repository.delete("fm_2")
+    assert "DELETE FROM bravo_shadow.formas_monetarias" in connection.calls[3][0]
+    assert connection.commits == 4
+    assert connection.closed == 4
+
+
+def test_monetary_forms_repository_missing_update_and_delete_return_404():
+    connection = FakeConnection(rowcount=0)
+    repository = PostgresFormasMonetariasRepository(factory_for(connection))
+    item = FormaMonetaria(id="missing", nome="Boleto", multaPct=2.0)
+
+    with pytest.raises(HTTPException) as update_error:
+        repository.replace("missing", item)
+    assert update_error.value.status_code == 404
+
+    with pytest.raises(HTTPException) as delete_error:
+        repository.delete("missing")
+    assert delete_error.value.status_code == 404
