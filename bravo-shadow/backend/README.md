@@ -21,11 +21,21 @@ No Windows, ative o ambiente com `.venv\\Scripts\\activate`.
 - Saúde: `GET http://127.0.0.1:8000/api/v1/health`
 - OpenAPI: `http://127.0.0.1:8000/docs`
 
+## Rotas implementadas na sombra
+
+| Módulo | Rotas |
+|---|---|
+| Plano de Contas | `GET/POST /api/v1/plano-contas`, `PUT/DELETE /api/v1/plano-contas/{id}` |
+| Financeiro | `GET/POST /api/v1/financeiro`, `PUT/DELETE /api/v1/financeiro/{id}` |
+| Formas Monetárias | `GET/POST /api/v1/formas-monetarias`, `PUT/DELETE /api/v1/formas-monetarias/{id}` |
+| Contas Bancárias | `GET/POST /api/v1/contas-bancarias`, `PUT/DELETE /api/v1/contas-bancarias/{id}` |
+
+Os quatro módulos usam armazenamento temporário em memória. O verificador de exclusão do Plano de Contas consulta os títulos financeiros mantidos no mesmo processo da API.
+
 ## Limites desta etapa
 
-A API não está conectada ao Supabase, não recebe tokens, não lê nem grava dados. CORS, autenticação, autorização, logging estruturado e integração de dados serão definidos após o inventário e a modelagem de segurança.
+A API não está conectada ao Supabase, não recebe tokens, não lê nem grava dados de produção. Os dados são perdidos ao reiniciar o processo. Não há frontend integrado, CORS liberado, autenticação ou autorização. CORS, identidade Google/e-mail, autorização, logging estruturado e persistência serão definidos após o inventário e a modelagem de segurança.
 
+## Testes
 
-## Módulo piloto: Plano de Contas
-
-CRUD isolado em memória com validação de código, nome e tipo (Receita/Despesa), bloqueio de código duplicado e respostas HTTP documentadas. O armazenamento é temporário e não persiste após reiniciar a API.
+Há testes automatizados em `backend/tests` para os CRUDs e para a proteção de integridade entre Plano de Contas e Financeiro. Eles foram escritos, mas ainda não executados neste ambiente.
