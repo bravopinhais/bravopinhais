@@ -259,3 +259,30 @@ exclusão do próprio cadastro e operações administrativas sobre outro usuári
 proteção foi aplicada apenas ao router de usuários; os outros 14 módulos
 continuam sem dependências de autorização e não devem ser expostos como API
 pública. Esta implementação permanece na branch `bravo-shadow`.
+
+
+## Proteção do módulo Financeiro — implementada na branch sombra
+
+As quatro operações do router `/api/v1/financeiro` agora exigem:
+- GET/listagem: `financeiro:read`;
+- POST/criação: `financeiro:create`;
+- PUT/alteração: `financeiro:update`;
+- DELETE/exclusão: `financeiro:delete`.
+
+A dependência central valida o Bearer token Google, resolve o cadastro Bravo
+ativo e consulta a capacidade do perfil interno. O perfil Operador continua
+sem capacidades concedidas até aprovação formal da matriz.
+
+O controle de concorrência existente foi preservado: PUT continua exigindo
+ETag forte em `If-Match` e mantém os retornos de versão/ conflito do serviço.
+
+Foram adicionados testes HTTP em
+`backend/tests/test_financeiro_authorization.py` cobrindo ausência de
+identidade, bloqueio do Operador e operações autorizadas de leitura, criação,
+alteração e exclusão.
+
+**Limite atualizado:** os módulos Usuários e Financeiro estão protegidos na
+branch sombra. Os outros 13 módulos de negócio ainda não estão protegidos.
+Os testes foram escritos, mas não executados neste ambiente. Não expor a API
+sombra publicamente enquanto os módulos restantes e a configuração OAuth
+não forem validados.
