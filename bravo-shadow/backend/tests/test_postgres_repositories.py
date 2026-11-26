@@ -130,3 +130,49 @@ def test_missing_update_is_not_found():
         )
 
     assert error.value.status_code == 404
+
+
+def test_plan_account_update_requires_matching_version():
+    connection = FakeConnection(rowcount=1)
+    repository = PostgresPlanoContasRepository(factory_for(connection))
+    item = PlanoConta(id="pc_1", codigo="1.1", nome="Atualizada", tipo="Receita")
+
+    new_version = repository.replace_if_version("pc_1", item, expected_version=4)
+
+    sql, params = connection.calls[0]
+    assert "WHERE id = %s AND version = %s" in sql
+    assert params == ("1.1", "Atualizada", "Receita", "pc_1", 4)
+    assert new_version == 5
+    assert connection.commits == 1
+
+
+def test_finance_update_rejects_stale_version_with_conflict():
+    connection = FakeConnection(rows=[(8,)], rowcount=0)
+    repository = PostgresFinanceiroRepository(factory_for(connection))
+    item = FinanceiroTitulo(
+        id="fin_1", tipo="Receber", planoContaId="", historico="Atualizado", valor=Decimal("25.00")
+    )
+
+    with pytest.raises(HTTPException) as error:
+        repository.replace_if_version("fin_1", item, expected_version=7)
+
+    assert error.value.status_code == 409
+    assert "alterado por outra operação" in error.value.detail
+    assert "SELECT version FROM bravo_shadow.financeiro" in connection.calls[1][0]
+    assert connection.rollbacks == 1
+    assert connection.closed == 1
+
+
+def test_finance_update_with_version_returns_not_found_for_missing_record():
+    connection = FakeConnection(rows=[], rowcount=0)
+    repository = PostgresFinanceiroRepository(factory_for(connection))
+    item = FinanceiroTitulo(
+        id="missing", tipo="Receber", planoContaId="", historico="Cota", valor=Decimal("1.00")
+    )
+
+    with pytest.raises(HTTPException) as error:
+        repository.replace_if_version("missing", item, expected_version=1)
+
+    assert error.value.status_code == 404
+    assert connection.rollbacks == 1
+    assert connection.closed == 1
