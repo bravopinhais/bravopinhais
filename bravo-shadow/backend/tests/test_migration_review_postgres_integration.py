@@ -319,7 +319,8 @@ def test_parallel_cross_batch_duplicate_event_id_has_one_database_winner(postgre
                 **_event_args(decision_id, shared_event_id),
             )
             return "committed"
-        except psycopg.IntegrityError:
+        except ReviewValidationError as error:
+            assert str(error) == "duplicate_review_event_id"
             return "unique_constraint_rejected"
 
     with ThreadPoolExecutor(max_workers=2) as pool:
