@@ -24,7 +24,9 @@
 - Capacidade inicial escolhida: Formas Monetárias, por ter CRUD simples e poucas dependências.
 - API e interface sombra conectadas para listar, cadastrar, editar e excluir registros.
 - Persistência ainda temporária em memória; não usar dados reais nem considerar este piloto homologado.
-- Próximos critérios: executar testes automatizados, validar o fluxo no navegador e comparar regras/campos com o original.
+- Comparação estática com o HTML original concluída: campos `nome` e `multaPct`, multa padrão 2%, nome obrigatório e campo numérico com passo 0,01. O original não define limites mínimo/máximo nem tamanho máximo do nome; a sombra preserva esse comportamento, sem impor regras novas.
+- Testes automatizados e smoke test Docker aprovados no commit `ffda875`; após o ajuste de paridade, uma nova execução de CI está em andamento.
+- Ainda pendente: validar o fluxo visual/funcional em navegador e medir latência/erros antes de avançar para outro domínio.
 - Medir latência, erros e consistência antes de avançar para outro domínio.
 
 ## Etapa 4 — Migração por domínio
