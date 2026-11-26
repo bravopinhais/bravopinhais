@@ -39,6 +39,7 @@ def test_update_account():
     updated = client.put(
         f"/api/v1/plano-contas/{created['id']}",
         json=payload(nome="Taxa atualizada", tipo="Despesa"),
+        headers={"If-Match": f'"{created["version"]}"'},
     )
     assert updated.status_code == 200
     assert updated.json()["nome"] == "Taxa atualizada"
@@ -91,3 +92,27 @@ def test_delete_account_blocked_by_real_shadow_financial_reference():
     response = client.delete(f"/api/v1/plano-contas/{account['id']}")
     assert response.status_code == 409
     assert len(client.get("/api/v1/plano-contas").json()) == 1
+
+
+def test_update_requires_if_match_header():
+    created = client.post("/api/v1/plano-contas", json=payload()).json()
+    response = client.put(f"/api/v1/plano-contas/{created['id']}", json=payload(nome="Sem versão"))
+    assert response.status_code == 428
+
+
+def test_update_rejects_stale_if_match_version():
+    created = client.post("/api/v1/plano-contas", json=payload()).json()
+    first = client.put(
+        f"/api/v1/plano-contas/{created['id']}",
+        json=payload(nome="Primeira alteração"),
+        headers={"If-Match": '"1"'},
+    )
+    assert first.status_code == 200
+    assert first.json()["version"] == 2
+    stale = client.put(
+        f"/api/v1/plano-contas/{created['id']}",
+        json=payload(nome="Alteração antiga"),
+        headers={"If-Match": '"1"'},
+    )
+    assert stale.status_code == 409
+    assert client.get("/api/v1/plano-contas").json()[0]["nome"] == "Primeira alteração"
