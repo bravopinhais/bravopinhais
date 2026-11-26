@@ -52,17 +52,16 @@ def validate_pre_import_evidence(
 
     if not verify_export_manifest(manifest):
         blockers.append("manifest_hash_invalid")
-    else:
-        if manifest.source_system != snapshot.source_system:
-            blockers.append("source_system_mismatch")
-        if manifest.source_baseline != snapshot.source_baseline:
-            blockers.append("source_baseline_mismatch")
-        if manifest.snapshot_hash != snapshot.snapshot_hash:
-            blockers.append("snapshot_hash_mismatch")
-        if manifest.record_count != len(snapshot.records):
-            blockers.append("record_count_mismatch")
-        if manifest.exported_at != snapshot.exported_at:
-            blockers.append("export_timestamp_mismatch")
+    if manifest.source_system != snapshot.source_system:
+        blockers.append("source_system_mismatch")
+    if manifest.source_baseline != snapshot.source_baseline:
+        blockers.append("source_baseline_mismatch")
+    if manifest.snapshot_hash != snapshot.snapshot_hash:
+        blockers.append("snapshot_hash_mismatch")
+    if manifest.record_count != len(snapshot.records):
+        blockers.append("record_count_mismatch")
+    if manifest.exported_at != snapshot.exported_at:
+        blockers.append("export_timestamp_mismatch")
 
     chain_report = verify_export_chain(
         export_chain,
