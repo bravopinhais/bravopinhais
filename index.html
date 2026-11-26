@@ -72,8 +72,18 @@ thead th{letter-spacing:.06em;font-size:10px}
 html,body{min-height:100%;background:var(--br-bg)!important;color:var(--br-text)!important}
 #app{background:var(--br-bg)!important;color:var(--br-text)!important}
 #app main{background:var(--br-bg)!important;color:var(--br-text)!important}
-#sidebar-menu{background:#15191c!important;border-color:var(--br-border)!important}
+/* Painel lateral alinhado ao fundo principal do dashboard */
+#sidebar-menu,
+#sidebar-menu>div,
+#sidebar-menu nav,
+#sidebar-menu .bg-slate-950,
+#sidebar-menu .bg-slate-900{
+ background:var(--br-bg)!important;
+ color:var(--br-text-soft)!important;
+}
+#sidebar-menu{border-color:var(--br-border)!important}
 #sidebar-menu nav button{transition:background-color var(--br-motion) ease,color var(--br-motion) ease,border-color var(--br-motion) ease}
+#sidebar-menu nav button:not(.bg-gradient-to-r):hover{background:var(--br-surface-2)!important;color:var(--br-text)!important}
 #app main .bg-white,#app main .bg-white\/95,#app main .bg-white\/90,
 #app main .bg-slate-50,#app main .bg-slate-50\/50,#app main .bg-slate-100,
 #app main .bg-gray-50,#app main .bg-gray-100{
