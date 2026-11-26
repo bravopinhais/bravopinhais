@@ -258,3 +258,8 @@ O rascunho SQL cria tabelas privadas para os quatro cadastros, com IDs textuais,
 O modo PostgreSQL injeta os novos repositórios nos serviços. O modo memória continua padrão. Testes DB-API simulados cobrem mapeamento de campos e injeção dos quatro repositórios.
 
 **Limites:** não houve importação de cadastros existentes, conexão a PostgreSQL real, criação/aplicação de migration ou revisão jurídica/operacional de retenção de dados pessoais. Antes de dados reais, ainda são necessários banco local isolado, política de acesso por identidade Google validada no backend, regras de unicidade aprovadas e avaliação de privacidade.
+
+
+## Proteção do saldo após histórico de estoque
+
+No modo PostgreSQL, a edição cadastral de um produto bloqueia a linha com `FOR UPDATE` e verifica se já existem acertos vinculados. Se houver histórico, a quantidade não pode ser alterada pela edição geral: mudanças de saldo devem passar pelo fluxo transacional de Entrada/Saída, preservando a trilha de movimentos. A edição de outros campos cadastrais continua permitida. A regra é serializada com a criação de movimentos pelo mesmo bloqueio de linha.
