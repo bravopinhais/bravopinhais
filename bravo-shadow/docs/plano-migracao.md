@@ -19,6 +19,7 @@
 - Criar camada repository/service para isolar persistência e regras.
 - Planejar ambiente de dados sombra com cópia sanitizada.
 - Não alterar schema de produção nesta etapa.
+- Não habilitar PostgreSQL até que a composição da aplicação seja isolada por instância, o schema local tenha sido aplicado e os testes reais de integração estejam aprovados.
 
 ## Etapa 3 — Piloto
 - Capacidade inicial escolhida: Formas Monetárias, por ter CRUD simples e poucas dependências.
@@ -27,6 +28,7 @@
 - Comparação estática com o HTML original concluída: campos `nome` e `multaPct`, multa padrão 2%, nome obrigatório e campo numérico com passo 0,01. O original não define limites mínimo/máximo nem tamanho máximo do nome; a sombra preserva esse comportamento, sem impor regras novas.
 - Testes automatizados e smoke test Docker aprovados no commit `ffda875`; após o ajuste de paridade, uma nova execução de CI está em andamento.
 - Ainda pendente: validar o fluxo visual/funcional em navegador e medir latência/erros antes de avançar para outro domínio.
+- Novo gate técnico antes da persistência real: eliminar o uso de serviços globais mutáveis no `create_app()` e injetar serviços/repositórios por instância FastAPI. O teste deve provar que duas aplicações com configurações de armazenamento diferentes não compartilham estado nem alteram a configuração uma da outra.
 - Medir latência, erros e consistência antes de avançar para outro domínio.
 
 ## Etapa 4 — Migração por domínio
