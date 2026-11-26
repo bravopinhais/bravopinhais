@@ -8,7 +8,7 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import dataclass
 from datetime import datetime
 
 from app.core.migration_source_snapshot import SourceSnapshot
@@ -117,9 +117,6 @@ def build_export_manifest(
         "snapshot_hash": snapshot.snapshot_hash,
         "previous_manifest_hash": previous_manifest_hash,
     }
-    provisional = object.__new__(ExportManifest)
-    for name, value in values.items():
-        object.__setattr__(provisional, name, value)
     digest = hashlib.sha256(
         json.dumps(values, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
