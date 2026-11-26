@@ -61,6 +61,10 @@ class PostgresCondominioRepository(_GovernanceRepository):
 
     def replace(self, item_id: str, item: dict[str, str]) -> None:
         fields = [field for field in self._fields if field in item]
+        if not fields:
+            if not self.exists(item_id):
+                raise HTTPException(status_code=404, detail="Condomínio não encontrado.")
+            return
         assignments = ", ".join(f'"{field}" = %s' for field in fields)
         changed = self._query(
             f"UPDATE {self._table} SET {assignments}, updated_at = now(), "
