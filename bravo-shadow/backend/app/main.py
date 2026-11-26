@@ -6,6 +6,7 @@ from fastapi import FastAPI
 
 from app.core.postgres_connection import create_postgres_connection_factory
 from app.core.storage import StorageConfigurationError, build_storage_services
+from app.modules.auth.router import router as auth_router
 from app.modules.contas_bancarias.router import router as contas_bancarias_router
 from app.modules.condominio.router import router as condominio_router
 from app.modules.conselheiros.router import router as conselheiros_router
@@ -57,6 +58,7 @@ def create_app(
     application.state.storage_backend = selected_backend
     application.state.services = services
 
+    application.include_router(auth_router)
     application.include_router(plano_contas_router)
     application.include_router(financeiro_router)
     application.include_router(formas_monetarias_router)
