@@ -24,3 +24,8 @@ No Windows, ative o ambiente com `.venv\\Scripts\\activate`.
 ## Limites desta etapa
 
 A API não está conectada ao Supabase, não recebe tokens, não lê nem grava dados. CORS, autenticação, autorização, logging estruturado e integração de dados serão definidos após o inventário e a modelagem de segurança.
+
+
+## Módulo piloto: Plano de Contas
+
+CRUD isolado em memória com validação de código, nome e tipo (Receita/Despesa), bloqueio de código duplicado e respostas HTTP documentadas. O armazenamento é temporário e não persiste após reiniciar a API.
