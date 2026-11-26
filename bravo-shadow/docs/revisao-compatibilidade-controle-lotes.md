@@ -132,3 +132,18 @@ A reconciliação não consulta banco, não corrige divergências, não cria ví
 Testes adicionados com cenários sintéticos de correspondência, ausência, hash divergente, vínculo órfão, duplicidade e repetibilidade.
 
 **Limite atual:** a camada de leitura que coleta snapshots reais ainda não foi implementada. O reconciliador recebe estruturas em memória, mantendo a fronteira de segurança e sem abrir conexão com o banco.
+
+
+## 11. Leitura controlada do inventário de proveniência
+
+Foi adicionado `backend/app/core/migration_provenance_snapshot_postgres.py`, um leitor que:
+- recebe uma conexão já aberta pela camada chamadora;
+- exige `SET TRANSACTION READ ONLY` como primeiro comando da transação;
+- consulta somente identidade, hash e destino na tabela de proveniência;
+- ordena o resultado por sistema, coleção e ID de origem para produzir snapshot determinístico;
+- valida cada linha antes de convertê-la em `DestinationProvenance`;
+- não lê payloads funcionais, não abre conexão, não confirma nem reverte a transação.
+
+Testes com conexão/cursor falsos cobrem a ordem da transação somente leitura, snapshot vazio, falha de consulta e linha malformada.
+
+**Limites:** o chamador deve fornecer uma conexão em transação ainda sem comandos anteriores, pois PostgreSQL exige que `SET TRANSACTION READ ONLY` seja executado antes da primeira consulta. O leitor não coleta o snapshot do sistema legado nem compara dados funcionais; entrega somente o inventário de proveniência do Shadow ao reconciliador. Nenhuma conexão foi aberta nesta implementação e nenhum SQL foi aplicado.
