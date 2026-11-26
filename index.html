@@ -123,6 +123,27 @@ html,body{min-height:100%;background:var(--br-bg)!important;color:var(--br-text)
  border-color:var(--br-accent)!important;box-shadow:0 0 0 3px var(--br-focus)!important;outline:0
 }
 #app main input:disabled,#app main select:disabled,#app main textarea:disabled{opacity:.58;cursor:not-allowed}
+/* Barra de abas integrada ao mesmo sistema visual dos módulos */
+#app-tabs{
+ background:var(--br-surface-1)!important;
+ border-color:var(--br-border)!important;
+}
+#app-tabs>div:not(.tab-active){
+ background:var(--br-surface-2)!important;
+ color:var(--br-text-soft)!important;
+ border:1px solid var(--br-border)!important;
+}
+#app-tabs>div:not(.tab-active):hover{
+ background:var(--br-surface-3)!important;
+ color:var(--br-text)!important;
+}
+#app-tabs>div button{
+ color:var(--br-muted)!important;
+}
+#app-tabs>div button:hover{
+ background:var(--br-surface-3)!important;
+ color:#fda4af!important;
+}
 #app .tab-active{background:var(--br-surface-3)!important;color:var(--br-text)!important;border:1px solid var(--br-border-strong)!important;border-bottom:2px solid var(--br-accent)!important;box-shadow:none!important}
 #app header{background:var(--br-surface-1)!important;border-color:var(--br-border)!important;color:var(--br-text)!important}
 #modal-container .bg-white,#modal-container .bg-white\/95,#modal-container .bg-slate-50,
