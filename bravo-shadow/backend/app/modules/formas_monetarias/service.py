@@ -2,34 +2,45 @@ from uuid import uuid4
 
 from fastapi import HTTPException, status
 
+from app.core.repositories import CollectionRepository, InMemoryCollectionRepository
 from .schemas import FormaMonetaria, FormaMonetariaInput
 
 
 class FormasMonetariasService:
-    """Armazenamento temporário em memória, sem ligação com produção."""
+    """Regras de formas monetárias independentes do mecanismo de persistência."""
 
-    def __init__(self) -> None:
-        self._items: dict[str, FormaMonetaria] = {}
+    def __init__(
+        self,
+        repository: CollectionRepository[FormaMonetaria, str] | None = None,
+    ) -> None:
+        self.repository = repository or InMemoryCollectionRepository()
+        self._items = getattr(self.repository, "_items", {})
 
     def list(self) -> list[FormaMonetaria]:
-        return list(self._items.values())
+        return self.repository.list()
 
     def create(self, data: FormaMonetariaInput) -> FormaMonetaria:
         item = FormaMonetaria(id=f"fm_shadow_{uuid4().hex}", **data.model_dump())
-        self._items[item.id] = item
+        self.repository.add(item.id, item)
         return item
 
     def update(self, item_id: str, data: FormaMonetariaInput) -> FormaMonetaria:
-        if item_id not in self._items:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Forma monetária não encontrada.")
+        if not self.repository.exists(item_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Forma monetária não encontrada.",
+            )
         item = FormaMonetaria(id=item_id, **data.model_dump())
-        self._items[item_id] = item
+        self.repository.replace(item_id, item)
         return item
 
     def delete(self, item_id: str) -> None:
-        if item_id not in self._items:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Forma monetária não encontrada.")
-        del self._items[item_id]
+        if not self.repository.exists(item_id):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Forma monetária não encontrada.",
+            )
+        self.repository.delete(item_id)
 
 
 formas_monetarias_service = FormasMonetariasService()
