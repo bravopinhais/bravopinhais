@@ -234,3 +234,28 @@ Antes de adicionar `Depends(require_capability_dependency(...))` às rotas,
 aprovar explicitamente as permissões de Admin e Operador por ação. Em seguida,
 integrar por módulo com testes HTTP de 401 (sem identidade), 403 (sem
 capacidade), sucesso autorizado, usuário inativo e tentativa de autoelevação.
+
+
+## Proteção inicial do módulo de usuários — implementada na branch sombra
+
+As rotas de gestão de usuários passaram a exigir as capacidades centrais
+`usuarios:read`, `usuarios:create`, `usuarios:update` e
+`usuarios:delete`, respectivamente. Como a política atual concede essas
+capacidades somente ao perfil Admin autenticado e ativo, o Operador recebe
+403 até aprovação de uma matriz diferente.
+
+Também foram acrescentadas salvaguardas contra autoelevação:
+- usuário autenticado não pode alterar o próprio e-mail, perfil ou status;
+- usuário autenticado não pode excluir o próprio cadastro;
+- alteração de outros cadastros continua sujeita à capacidade `usuarios:update`;
+- criação de novo Admin exige a capacidade `usuarios:create`, hoje restrita a Admin.
+
+Foram adicionados testes HTTP em
+`backend/tests/test_usuarios_authorization.py` para ausência de identidade,
+negação do Operador, tentativa de alterar os próprios dados protegidos,
+exclusão do próprio cadastro e operações administrativas sobre outro usuário.
+
+**Limite:** os testes foram escritos, mas não executados neste ambiente. A
+proteção foi aplicada apenas ao router de usuários; os outros 14 módulos
+continuam sem dependências de autorização e não devem ser expostos como API
+pública. Esta implementação permanece na branch `bravo-shadow`.
