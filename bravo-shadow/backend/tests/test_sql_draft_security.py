@@ -12,15 +12,15 @@ def _sql() -> str:
 def test_every_declared_table_has_rls_and_client_grants_revoked():
     sql = _sql()
     tables = set(re.findall(
-        r"create table if not exists bravo_shadow\\.(\\w+)", sql, re.IGNORECASE
+        r"create table if not exists bravo_shadow\.(\w+)", sql, re.IGNORECASE
     ))
     rls = set(re.findall(
-        r"alter table bravo_shadow\\.(\\w+) enable row level security",
+        r"alter table bravo_shadow\.(\w+) enable row level security",
         sql,
         re.IGNORECASE,
     ))
     revoked = set(re.findall(
-        r"revoke all on table bravo_shadow\\.(\\w+) from public, anon, authenticated, service_role",
+        r"revoke all on table bravo_shadow\.(\w+) from public, anon, authenticated, service_role",
         sql,
         re.IGNORECASE,
     ))
