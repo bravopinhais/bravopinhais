@@ -112,7 +112,7 @@ create index if not exists empregados_nome_idx
 create table if not exists bravo_shadow.contas_bancarias (
     id text primary key,
     banco text not null,
-    saldo double precision not null default 0,
+    saldo numeric(14, 2) not null default 0,
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
     version bigint not null default 1 check (version >= 1)
