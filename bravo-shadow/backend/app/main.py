@@ -4,6 +4,7 @@ from typing import Any
 
 from fastapi import FastAPI
 
+from app.core.postgres_connection import create_postgres_connection_factory
 from app.core.storage import StorageConfigurationError, configure_storage
 from app.modules.contas_bancarias.router import router as contas_bancarias_router
 from app.modules.condominio.router import router as condominio_router
@@ -38,6 +39,12 @@ def create_app(
         raise StorageConfigurationError(
             "BRAVO_STORAGE_BACKEND deve ser 'memory' ou 'postgres'."
         )
+    if selected_backend == "postgres" and postgres_connection_factory is None:
+        try:
+            postgres_connection_factory = create_postgres_connection_factory()
+        except (RuntimeError, ValueError) as exc:
+            raise StorageConfigurationError(str(exc)) from exc
+
     configured_backend = configure_storage(
         selected_backend, postgres_connection_factory
     )
