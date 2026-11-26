@@ -77,3 +77,10 @@ def test_draft_contains_no_data_mutation_or_execution_shortcuts():
     assert not re.search(r"\b(insert\s+into|update\s+bravo_shadow|delete\s+from|truncate\s+)\b", sql)
     assert "create table if not exists bravo_shadow.migration_batches" in sql
     assert "create table if not exists bravo_shadow.migration_source_records" in sql
+
+
+def test_sql_does_not_claim_to_enforce_the_future_application_gate():
+    sql = _sql().lower()
+
+    assert "o futuro importador deverá recusar produção" in sql
+    assert "este ddl, isoladamente, não executa essa proteção" in sql
