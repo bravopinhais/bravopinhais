@@ -37,9 +37,10 @@ No Windows, ative o ambiente com `.venv\\Scripts\\activate`.
 | Pastas | `GET/POST /api/v1/categorias`, `DELETE /api/v1/categorias/{id}` |
 | Estoque | `GET/POST /api/v1/estoque`, `PUT/DELETE /api/v1/estoque/{id}` |
 | Acertos de estoque | `GET/POST /api/v1/acertos-estoque`, `DELETE /api/v1/acertos-estoque/{id}` |
+| Documentos | `GET/POST /api/v1/documentos`, `GET/PUT/DELETE /api/v1/documentos/{id}` |
 | Motivos de acerto | `GET/POST /api/v1/motivos-acerto-estoque`, `DELETE /api/v1/motivos-acerto-estoque/{id}` |
 
-Os treze módulos usam armazenamento temporário em memória. O verificador de exclusão do Plano de Contas consulta os títulos financeiros mantidos no mesmo processo da API.
+Os quatorze módulos usam armazenamento temporário em memória. O verificador de exclusão do Plano de Contas consulta os títulos financeiros mantidos no mesmo processo da API.
 
 ## Limites desta etapa
 
