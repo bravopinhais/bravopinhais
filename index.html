@@ -33997,3 +33997,382 @@ html:root:root:root #sidebar-menu nav button:not([aria-current="page"]) {
   border-color: #303030 !important;
 }
 </style>
+
+<style id="bravo-redesign-dashboard-sidebar-tabs-2026">
+/* BRAVO — identidade visual noturna unificada: dashboard, menu lateral e abas. */
+:root{
+  --bravo-bg:#101216;
+  --bravo-panel:#191d23;
+  --bravo-panel-2:#20252d;
+  --bravo-panel-3:#282e37;
+  --bravo-line:#303741;
+  --bravo-line-soft:#272d35;
+  --bravo-text:#f1f3f6;
+  --bravo-muted:#a2aab5;
+  --bravo-subtle:#737d89;
+  --bravo-accent:#c5cbd3;
+  --bravo-shadow:0 14px 36px rgba(0,0,0,.22);
+}
+
+/* Base da área logada */
+#app,
+#app > div,
+#app main{
+  background:var(--bravo-bg)!important;
+  color:var(--bravo-text)!important;
+}
+#app main{
+  padding:clamp(14px,2.2vw,30px)!important;
+  overscroll-behavior-y:contain;
+}
+
+/* Menu lateral: identidade mais limpa, hierarquia clara e largura controlada. */
+#app #sidebar-menu,
+#app #sidebar-menu > div:first-child,
+#app #sidebar-menu > div:last-child{
+  background:#171a20!important;
+  color:var(--bravo-text)!important;
+  border-color:var(--bravo-line)!important;
+}
+#app #sidebar-menu{
+  width:276px!important;
+  box-shadow:12px 0 36px rgba(0,0,0,.24)!important;
+}
+#app #sidebar-menu > div:first-child{
+  min-height:104px;
+  padding:20px 18px!important;
+  border-bottom:1px solid var(--bravo-line)!important;
+}
+#app #sidebar-menu > div:first-child .w-10{
+  background:#292f38!important;
+  color:#f4f6f8!important;
+  border:1px solid #3b434e;
+  box-shadow:none!important;
+}
+#app #sidebar-menu > div:first-child p{color:#aeb6c1!important}
+#app #sidebar-menu nav{
+  padding:18px 14px!important;
+  gap:22px!important;
+  background:#171a20!important;
+  scrollbar-color:#454d59 #171a20;
+}
+#app #sidebar-menu nav > div{
+  padding-bottom:14px;
+  border-bottom:1px solid #292f38;
+}
+#app #sidebar-menu nav > div:last-child{border-bottom:0;padding-bottom:0}
+#app #sidebar-menu nav p{
+  color:#818b98!important;
+  font-size:10px!important;
+  letter-spacing:.17em!important;
+  padding:0 11px 10px!important;
+}
+#app #sidebar-menu nav button,
+#app #sidebar-menu nav a{
+  min-height:46px!important;
+  padding:11px 12px!important;
+  border:1px solid transparent!important;
+  border-radius:13px!important;
+  color:#c0c7d0!important;
+  background:transparent!important;
+  font-size:12px!important;
+  font-weight:650!important;
+  letter-spacing:.005em;
+}
+#app #sidebar-menu nav button i,
+#app #sidebar-menu nav a i:first-child{
+  color:#9da7b3!important;
+  width:21px;
+  font-size:14px!important;
+}
+#app #sidebar-menu nav button:hover,
+#app #sidebar-menu nav a:hover{
+  background:#222730!important;
+  border-color:#343c47!important;
+  color:#fff!important;
+}
+#app #sidebar-menu nav button[class*="bg-gradient-to-r"]{
+  background:#303741!important;
+  border-color:#4a535f!important;
+  color:#fff!important;
+  box-shadow:inset 3px 0 0 #d1d6dd!important;
+}
+#app #sidebar-menu nav button[class*="bg-gradient-to-r"] i{color:#f3f5f7!important}
+#app #sidebar-menu nav button[class*="text-rose"]{
+  color:#d5a7a7!important;
+  border-color:#493536!important;
+}
+#app #sidebar-menu nav button[class*="text-rose"]:hover{background:#302326!important}
+#app #sidebar-menu > div:nth-last-child(2){
+  background:#171a20!important;
+  border-color:var(--bravo-line)!important;
+  padding:14px!important;
+}
+#app #sidebar-menu > div:nth-last-child(2) button,
+#app #sidebar-menu > div:nth-last-child(2) label{
+  min-height:44px!important;
+  border-radius:12px!important;
+  background:#222730!important;
+  border:1px solid #353d48!important;
+  color:#e3e7ec!important;
+}
+#app #sidebar-menu > div:last-child{
+  min-height:82px;
+  padding:16px!important;
+  border-top:1px solid var(--bravo-line)!important;
+}
+#app #sidebar-menu > div:last-child span:first-child{color:#f1f3f6!important}
+#app #sidebar-menu > div:last-child span:nth-child(2){color:#9da7b3!important}
+
+/* Cabeçalho móvel */
+#app header.bg-slate-950{
+  background:#171a20!important;
+  border-color:var(--bravo-line)!important;
+  min-height:68px;
+  padding:12px 16px!important;
+}
+#app header.bg-slate-950 button{
+  background:#242a33!important;
+  border:1px solid #39414d!important;
+  border-radius:13px!important;
+}
+#app header.bg-slate-950 .bg-teal-600{
+  background:#303741!important;
+  border:1px solid #46505c;
+}
+
+/* Abas abertas: trilho escuro e aba ativa destacada sem cores berrantes. */
+#app .bg-slate-200\/80.border-b.flex.items-center.overflow-x-auto,
+#app > div > div > div.bg-slate-200\/80{
+  background:#15181e!important;
+  border-color:var(--bravo-line)!important;
+  padding:10px 14px 0!important;
+  gap:7px!important;
+  min-height:54px;
+  scrollbar-width:thin;
+  scrollbar-color:#454d59 #15181e;
+}
+#app .gb-tabs-scroller > div,
+#app .bg-slate-200\/80.border-b.flex.items-center.overflow-x-auto > div{
+  min-height:42px!important;
+  padding:10px 15px!important;
+  border:1px solid #303741!important;
+  border-bottom:0!important;
+  border-radius:12px 12px 0 0!important;
+  background:#20252d!important;
+  color:#aeb6c1!important;
+  font-size:11px!important;
+  font-weight:700!important;
+  letter-spacing:.01em;
+  transition:background .18s ease,border-color .18s ease,color .18s ease;
+}
+#app .gb-tabs-scroller > div:hover,
+#app .bg-slate-200\/80.border-b.flex.items-center.overflow-x-auto > div:hover{
+  background:#292f38!important;
+  color:#fff!important;
+}
+#app .gb-tabs-scroller > div.tab-active,
+#app .bg-slate-200\/80.border-b.flex.items-center.overflow-x-auto > div.tab-active{
+  position:relative;
+  background:#303741!important;
+  border-color:#505a67!important;
+  color:#fff!important;
+  box-shadow:inset 0 2px 0 #d6dbe1!important;
+}
+#app .gb-tabs-scroller > div button,
+#app .bg-slate-200\/80.border-b.flex.items-center.overflow-x-auto > div button{
+  color:#9da7b3!important;
+  border-radius:50%!important;
+}
+#app .gb-tabs-scroller > div button:hover,
+#app .bg-slate-200\/80.border-b.flex.items-center.overflow-x-auto > div button:hover{
+  background:#414955!important;color:#fff!important;
+}
+
+/* Dashboard — superfícies, títulos, indicadores e painéis analíticos. */
+#app main .dashboard-shell{
+  max-width:1600px;
+  margin:0 auto;
+  gap:22px!important;
+  color:var(--bravo-text)!important;
+}
+#app main .dashboard-shell .dashboard-section-title{
+  color:var(--bravo-text)!important;
+}
+#app main .dashboard-shell .dashboard-section-title h3,
+#app main .dashboard-shell h3,
+#app main .dashboard-shell h2{
+  color:#f0f2f5!important;
+}
+#app main .dashboard-shell .dashboard-section-title p,
+#app main .dashboard-shell p.text-slate-500,
+#app main .dashboard-shell p.text-slate-600{
+  color:#9ca6b2!important;
+}
+#app main .dashboard-shell .dashboard-quick-access,
+#app main .dashboard-shell .dashboard-analytics-disclosure > summary{
+  background:#191d23!important;
+  border:1px solid #303741!important;
+  border-radius:18px!important;
+  box-shadow:var(--bravo-shadow)!important;
+  color:#e9edf2!important;
+}
+#app main .dashboard-shell .dashboard-quick-access{
+  padding:20px!important;
+}
+#app main .dashboard-shell .dashboard-quick-eyebrow,
+#app main .dashboard-shell .dashboard-section-title .text-teal-700,
+#app main .dashboard-shell .dashboard-section-title .text-teal-800{
+  color:#aeb7c2!important;
+}
+#app main .dashboard-shell .dashboard-quick-access-heading h3{color:#f4f5f7!important}
+#app main .dashboard-shell .dashboard-quick-access-heading p{color:#9da7b3!important}
+#app main .dashboard-shell .dashboard-quick-hint{
+  background:#282e37!important;
+  color:#d9dee5!important;
+  border:1px solid #3a424e!important;
+}
+#app main .dashboard-shell .dashboard-quick-grid{
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:12px!important;
+}
+#app main .dashboard-shell .dashboard-quick-grid>button{
+  min-height:76px;
+  padding:13px!important;
+  background:#222730!important;
+  border:1px solid #343c47!important;
+  border-radius:15px!important;
+  color:#e9edf2!important;
+  box-shadow:none!important;
+}
+#app main .dashboard-shell .dashboard-quick-grid>button:hover{
+  background:#2a303a!important;
+  border-color:#56606d!important;
+  transform:translateY(-2px);
+}
+#app main .dashboard-shell .dashboard-quick-grid>button strong{color:#f2f4f6!important}
+#app main .dashboard-shell .dashboard-quick-grid>button small{color:#9da7b3!important}
+#app main .dashboard-shell .dashboard-quick-icon{
+  background:#303741!important;
+  color:#e4e8ed!important;
+  border:1px solid #414a56!important;
+}
+#app main .dashboard-shell .dashboard-quick-icon i{color:inherit!important}
+#app main .dashboard-shell .dashboard-quick-arrow{color:#87919e!important}
+
+#app main .dashboard-shell .dashboard-kpi-grid>article,
+#app main .dashboard-shell .dashboard-analytics-grid>div,
+#app main .dashboard-shell .dashboard-operations-grid>div{
+  background:#191d23!important;
+  border:1px solid #303741!important;
+  border-radius:18px!important;
+  box-shadow:var(--bravo-shadow)!important;
+  color:#e9edf2!important;
+}
+#app main .dashboard-shell .dashboard-kpi-grid>article{
+  min-height:154px;
+  padding:20px!important;
+}
+#app main .dashboard-shell .dashboard-kpi-grid>article p,
+#app main .dashboard-shell .dashboard-analytics-grid>div p,
+#app main .dashboard-shell .dashboard-operations-grid>div p{
+  color:#aeb7c2!important;
+}
+#app main .dashboard-shell .dashboard-kpi-grid>article p.text-2xl,
+#app main .dashboard-shell .dashboard-kpi-grid>article p.text-3xl{
+  color:#f4f6f8!important;
+  letter-spacing:-.035em;
+}
+#app main .dashboard-shell .dashboard-kpi-grid>article [class*="bg-emerald-"],
+#app main .dashboard-shell .dashboard-kpi-grid>article [class*="bg-rose-"],
+#app main .dashboard-shell .dashboard-kpi-grid>article [class*="bg-sky-"],
+#app main .dashboard-shell .dashboard-kpi-grid>article [class*="bg-amber-"]{
+  background:#2a3039!important;
+  color:#dce1e7!important;
+  border:1px solid #3b444f!important;
+}
+#app main .dashboard-shell .dashboard-kpi-grid>article [class*="text-emerald-"],
+#app main .dashboard-shell .dashboard-kpi-grid>article [class*="text-rose-"],
+#app main .dashboard-shell .dashboard-kpi-grid>article [class*="text-sky-"],
+#app main .dashboard-shell .dashboard-kpi-grid>article [class*="text-amber-"]{
+  color:#d1d7df!important;
+}
+#app main .dashboard-shell .dashboard-kpi-grid>article [class*="border-emerald-"],
+#app main .dashboard-shell .dashboard-kpi-grid>article [class*="border-rose-"],
+#app main .dashboard-shell .dashboard-kpi-grid>article [class*="border-sky-"],
+#app main .dashboard-shell .dashboard-kpi-grid>article [class*="border-amber-"]{
+  border-color:#3b444f!important;
+}
+#app main .dashboard-shell .dashboard-kpi-grid>article .border-t,
+#app main .dashboard-shell .dashboard-operations-grid>div .border-b{
+  border-color:#303741!important;
+}
+#app main .dashboard-shell .dashboard-analytics-disclosure>summary{
+  padding:17px 20px!important;
+  cursor:pointer;
+}
+#app main .dashboard-shell .dashboard-analytics-disclosure>summary:hover{
+  border-color:#515b68!important;
+  background:#20252d!important;
+}
+#app main .dashboard-shell .dashboard-analytics-disclosure>summary [class*="bg-teal-"]{
+  background:#303741!important;color:#e4e8ed!important;border:1px solid #46505c!important;
+}
+#app main .dashboard-shell .dashboard-analytics-grid>div,
+#app main .dashboard-shell .dashboard-operations-grid>div{padding:20px!important}
+#app main .dashboard-shell .dashboard-analytics-grid h3,
+#app main .dashboard-shell .dashboard-operations-grid h3{color:#f0f2f5!important}
+#app main .dashboard-shell .dashboard-analytics-grid [class*="bg-emerald-"],
+#app main .dashboard-shell .dashboard-analytics-grid [class*="bg-rose-"],
+#app main .dashboard-shell .dashboard-analytics-grid [class*="bg-slate-100"],
+#app main .dashboard-shell .dashboard-operations-grid [class*="bg-slate-100"]{
+  background:#292f38!important;color:#dce1e7!important;border-color:#3c4551!important;
+}
+#app main .dashboard-shell .dashboard-operations-grid button[class*="border-"]{
+  border-color:#3b444f!important;
+}
+#app main .dashboard-shell .dashboard-operations-grid button[class*="bg-rose-"],
+#app main .dashboard-shell .dashboard-operations-grid button[class*="bg-amber-"],
+#app main .dashboard-shell .dashboard-operations-grid button[class*="bg-sky-"],
+#app main .dashboard-shell .dashboard-operations-grid button[class*="bg-emerald-"]{
+  background:#242a32!important;color:#dfe4ea!important;
+}
+#app main .dashboard-shell .dashboard-operations-grid button span span{color:inherit!important}
+
+/* Mobile: cards e navegação com melhor aproveitamento da largura. */
+@media(max-width:768px){
+  #app #sidebar-menu{
+    width:min(86vw,340px)!important;
+    max-width:340px!important;
+  }
+  #app main{padding:14px!important}
+  #app main .dashboard-shell{gap:16px!important}
+  #app main .dashboard-shell .dashboard-quick-access{padding:15px!important}
+  #app main .dashboard-shell .dashboard-quick-grid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:9px!important;
+  }
+  #app main .dashboard-shell .dashboard-quick-grid>button{
+    min-height:72px;padding:10px!important;gap:9px!important;
+  }
+  #app main .dashboard-shell .dashboard-quick-icon{
+    width:38px!important;height:38px!important;flex-basis:38px!important;
+  }
+  #app main .dashboard-shell .dashboard-kpi-grid{gap:10px!important}
+  #app main .dashboard-shell .dashboard-kpi-grid>article{min-height:132px;padding:14px!important;border-radius:15px!important}
+  #app main .dashboard-shell .dashboard-analytics-grid,
+  #app main .dashboard-shell .dashboard-operations-grid{gap:12px!important}
+  #app main .dashboard-shell .dashboard-analytics-grid>div,
+  #app main .dashboard-shell .dashboard-operations-grid>div{padding:15px!important;border-radius:16px!important}
+  #app .bg-slate-200\/80.border-b.flex.items-center.overflow-x-auto,
+  #app > div > div > div.bg-slate-200\/80{padding:8px 9px 0!important;min-height:48px}
+  #app .bg-slate-200\/80.border-b.flex.items-center.overflow-x-auto>div{min-height:39px!important;padding:9px 11px!important;font-size:10px!important}
+}
+@media(min-width:769px){
+  #app main .dashboard-shell .dashboard-kpi-grid{gap:14px!important}
+}
+@media(prefers-reduced-motion:reduce){
+  #app #sidebar-menu *,#app main .dashboard-shell *,#app .gb-tabs-scroller *{transition:none!important;animation:none!important}
+}
+</style>
+
