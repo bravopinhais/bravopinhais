@@ -8,6 +8,7 @@ client = TestClient(app)
 
 def setup_function():
     app.state.services.documentos._items.clear()
+    app.state.services.categorias._items.clear()
 
 
 def payload(**overrides):
@@ -55,3 +56,26 @@ def test_documents_are_isolated_between_app_instances():
     assert first.get("/api/v1/documentos/" + created["id"]).status_code == 200
     assert second.get("/api/v1/documentos").json() == []
     assert second.get("/api/v1/documentos/" + created["id"]).status_code == 404
+
+
+def test_document_category_link_and_restrict_delete():
+    category = client.post("/api/v1/categorias", json={"nome": "Atas"}).json()
+    created = client.post(
+        "/api/v1/documentos",
+        json=payload(categoriaId=category["id"], pasta="Nome antigo"),
+    )
+    assert created.status_code == 201
+    document = created.json()
+    assert document["categoriaId"] == category["id"]
+    assert document["pasta"] == "Atas"
+    assert client.delete("/api/v1/categorias/" + category["id"]).status_code == 409
+    assert client.delete("/api/v1/documentos/" + document["id"]).status_code == 204
+    assert client.delete("/api/v1/categorias/" + category["id"]).status_code == 204
+
+
+def test_document_rejects_unknown_category():
+    response = client.post(
+        "/api/v1/documentos",
+        json=payload(categoriaId="categoria-inexistente"),
+    )
+    assert response.status_code == 404
