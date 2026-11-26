@@ -26,7 +26,7 @@ Esta auditoria é estática; não executou requisições HTTP nem testes de pene
 | Categorias | `/api/v1/categorias` | GET lista; POST cria; DELETE exclui |
 | Motivos de Acerto | `/api/v1/motivos-acerto-estoque` | GET lista; POST cria; DELETE exclui |
 | Estoque | `/api/v1/estoque` | GET lista; POST cria; PUT altera; DELETE exclui |
-| Acertos de Estoque | `/api/v1/acertos-estoque` | GET lista; POST registra movimento; DELETE rota legada, bloqueada no serviço persistente |
+| Acertos de Estoque | `/api/v1/acertos-estoque` | GET lista; POST registra movimento; DELETE rota legada, bloqueada com 409 em memória e PostgreSQL |
 | Documentos | `/api/v1/documentos` | GET lista; GET por ID; POST cria; PUT altera; DELETE exclui |
 | Usuários | `/api/v1/usuarios` | GET lista; GET por ID; POST cria; PUT altera; DELETE exclui |
 
@@ -206,7 +206,7 @@ aprovada. **Não altera nem protege as rotas nesta etapa.**
 | Estoque — GET/POST/PUT/DELETE | `/api/v1/estoque` e `/{item_id}` | `estoque:read/create/update/delete` conforme método, sujeito às travas de integridade |
 | Acertos de Estoque — GET | `/api/v1/acertos-estoque` | `acertos_estoque:read` |
 | Acertos de Estoque — POST | `/api/v1/acertos-estoque` | `acertos_estoque:create` |
-| Acertos de Estoque — DELETE legado | `/api/v1/acertos-estoque/{item_id}` | **Sem capacidade de exclusão**; preservar bloqueio/409 no serviço persistente e avaliar retirada da rota legada |
+| Acertos de Estoque — DELETE legado | `/api/v1/acertos-estoque/{item_id}` | **Sem capacidade de exclusão**; bloqueio/409 em todos os modos, movimento imutável e correção futura por lançamento compensatório |
 | Documentos — GET lista/por ID | `/api/v1/documentos` e `/{item_id}` | `documentos:read` |
 | Documentos — POST/PUT/DELETE | `/api/v1/documentos` e `/{item_id}` | `documentos:create/update/delete` conforme método |
 | Usuários — GET lista/por ID | `/api/v1/usuarios` e `/{item_id}` | `usuarios:read` |
@@ -276,3 +276,14 @@ O SQL continua sendo rascunho, não migration aplicada. A proteção efetiva no 
 - O Financeiro agora delega a verificação ao método especializado `has_plan_account_reference` do repositório PostgreSQL (consulta `SELECT 1 ... LIMIT 1`), evitando carregar toda a coleção para uma simples checagem. No repositório em memória, usa a busca protegida pelo lock; adapters simples mantêm fallback compatível.
 - A verificação de serviço e a restrição FK são salvaguardas complementares: a FK é a proteção definitiva contra exclusão concorrente no PostgreSQL.
 - Teste automatizado foi acrescentado para confirmar que o serviço usa o verificador otimizado quando o adapter o disponibiliza. Os testes ainda precisam ser executados em ambiente Python e contra PostgreSQL local antes de considerar a integração validada.
+
+
+## Revisão de integridade — Acerto de Estoque
+
+A revisão da branch sombra identificou uma divergência entre os modos de armazenamento: PostgreSQL bloqueava a exclusão de movimentos, enquanto memória permitia apagar o registro sem reverter o saldo. O serviço agora responde 409 para exclusão de qualquer movimento existente nos dois modos; IDs inexistentes retornam 404. A rota permanece apenas por compatibilidade e não deve receber capacidade de exclusão.
+
+Também foi alinhada a proteção do produto: quando existe movimento, a exclusão do produto é bloqueada e o PUT não pode alterar diretamente a quantidade. Alterações de descrição e metadados continuam permitidas se preservarem o saldo. O histórico e o saldo só mudam pelo fluxo de Entrada/Saída; correções futuras deverão usar movimento compensatório.
+
+O schema normaliza produtoId, motivo e motivoId, rejeitando campos obrigatórios vazios após a normalização. Quantidade continua estritamente maior que zero. O vínculo com motivo preserva o texto como snapshot. A checagem de referências em memória usa a operação protegida pelo lock do repositório; no PostgreSQL, a FK e o bloqueio `FOR UPDATE` permanecem como salvaguardas transacionais.
+
+Foram adicionados testes para esses casos, mas não foram executados nesta etapa. A proteção de concorrência do repositório em memória não equivale à transação PostgreSQL; o modo memória permanece destinado a testes/desenvolvimento.
