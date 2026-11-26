@@ -150,3 +150,10 @@ Os adaptadores PostgreSQL agora têm `replace_if_version` para Plano de Contas e
 ## Precondição HTTP para concorrência otimista
 
 Plano de Contas e Financeiro agora expõem `version` nos modelos de resposta. O POST também devolve um ETag forte (`"1"` na criação). O PUT exige `If-Match` com a versão que o cliente leu: cabeçalho ausente retorna 428, ETag inválida retorna 400 e conflito de versão retorna 409. O adaptador em memória implementa comparação e substituição atômicas com lock; os adaptadores PostgreSQL usam `UPDATE ... WHERE id = ... AND version = ...`. A API ainda opera em memória, então a ativação PostgreSQL permanece etapa separada e depende de migration/driver/ambiente local.
+
+
+## Seleção de armazenamento na aplicação
+
+Foi criado `app/core/storage.py` e a fábrica `create_app()` passou a aceitar seleção explícita do backend. O padrão é memória. O modo PostgreSQL exige uma `connection_factory` DB-API injetada pelo ambiente; ausência da fábrica gera erro de configuração, sem tentar conexão ou fallback. Nesta etapa, somente Plano de Contas e Financeiro são substituídos pelos adaptadores PostgreSQL; os demais módulos permanecem em memória.
+
+A configuração não instala driver, não lê variáveis de credenciais, não cria schema e não abre conexão no startup. A ativação prática permanece bloqueada até migration local, driver escolhido e testes de integração em banco isolado. O endpoint de saúde informa apenas o backend configurado, não a disponibilidade do banco.
