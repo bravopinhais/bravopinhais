@@ -116,3 +116,19 @@ def test_update_rejects_stale_if_match_version():
     )
     assert stale.status_code == 409
     assert client.get("/api/v1/plano-contas").json()[0]["nome"] == "Primeira alteração"
+
+
+def test_create_returns_etag_header():
+    response = client.post("/api/v1/plano-contas", json=payload())
+    assert response.status_code == 201
+    assert response.headers["etag"] == '"1"'
+
+
+def test_update_rejects_unquoted_if_match():
+    created = client.post("/api/v1/plano-contas", json=payload()).json()
+    response = client.put(
+        f"/api/v1/plano-contas/{created['id']}",
+        json=payload(),
+        headers={"If-Match": "1"},
+    )
+    assert response.status_code == 400
