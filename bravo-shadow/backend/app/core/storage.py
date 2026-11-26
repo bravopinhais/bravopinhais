@@ -70,9 +70,9 @@ def build_storage_services(
     """Cria serviços isolados; nunca altera singletons ou estado global.
 
     No modo PostgreSQL, a fábrica é obrigatória e só será chamada durante
-    operações de repositório. Estoque e Acertos usam adapters PostgreSQL;
-    catálogos, documentos, cadastros, condomínio, conselho e usuários seguem
-    em memória até seus adapters serem implementados e testados.
+    operações de repositório. Estoque, Acertos, Categorias, Motivos de Acerto
+    e Documentos usam adapters PostgreSQL; cadastros, condomínio, conselho
+    e usuários seguem em memória até seus adapters serem implementados.
     """
     movement_repository = None
     if backend == "memory":
@@ -81,6 +81,9 @@ def build_storage_services(
         plano_repository = InMemoryCollectionRepository()
         estoque_repository = InMemoryCollectionRepository()
         acertos_repository = InMemoryCollectionRepository()
+        categorias_repository = InMemoryCollectionRepository()
+        motivos_repository = InMemoryCollectionRepository()
+        documentos_repository = InMemoryCollectionRepository()
     elif backend == "postgres":
         if connection_factory is None:
             raise StorageConfigurationError(
@@ -92,6 +95,9 @@ def build_storage_services(
         plano_repository = PostgresPlanoContasRepository(connection_factory)
         estoque_repository = PostgresEstoqueRepository(connection_factory)
         acertos_repository = PostgresAcertosEstoqueRepository(connection_factory)
+        categorias_repository = PostgresCategoriasRepository(connection_factory)
+        motivos_repository = PostgresMotivosAcertoRepository(connection_factory)
+        documentos_repository = PostgresDocumentosRepository(connection_factory)
         movement_repository = acertos_repository
     else:
         raise StorageConfigurationError(
@@ -106,9 +112,9 @@ def build_storage_services(
     formas_monetarias = FormasMonetariasService(repository=formas_repository)
 
     estoque = EstoqueService(repository=estoque_repository)
-    categorias = CategoriasService(repository=InMemoryCollectionRepository())
+    categorias = CategoriasService(repository=categorias_repository)
     documentos = DocumentosService(
-        repository=InMemoryCollectionRepository(),
+        repository=documentos_repository,
         category_service=categorias,
     )
     categorias.set_reference_checker(documentos.has_category_reference)
