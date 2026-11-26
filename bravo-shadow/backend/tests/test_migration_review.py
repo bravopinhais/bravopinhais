@@ -240,3 +240,38 @@ def test_append_rejects_boolean_or_negative_expected_version():
                 choice="keep_blocked", rationale="Manter bloqueado.",
                 reviewed_at="2026-11-26T16:46:00-03:00",
             )
+
+def test_review_rejects_unhashable_choice_without_raising_type_error():
+    register, ledger, decision_id = setup_review()
+
+    with pytest.raises(ReviewValidationError, match="invalid_review_choice"):
+        append_review(
+            ledger, register,
+            event_id="evt-unhashable-choice", decision_id=decision_id,
+            expected_version=0, reviewer_id="reviewer",
+            choice=["keep_blocked"], rationale="Entrada inválida.",
+            reviewed_at="2026-11-26T17:00:00-03:00",
+        )
+
+
+def test_review_verifier_fails_closed_on_malformed_event_objects_and_choices():
+    from dataclasses import replace
+    from app.core.migration_review import ReviewEvent, verify_review_ledger
+
+    register, ledger, decision_id = setup_review()
+    valid = append_review(
+        ledger, register,
+        event_id="evt-valid-malformed-check", decision_id=decision_id,
+        expected_version=0, reviewer_id="reviewer",
+        choice="keep_blocked", rationale="Manter bloqueado.",
+        reviewed_at="2026-11-26T17:01:00-03:00",
+    )
+    malformed_choice = replace(valid.events[0], choice=["keep_blocked"])
+    malformed_ledger = replace(valid, events=(malformed_choice,))
+    unknown_event = replace(valid, events=(object(),))
+    empty_binding = replace(valid, batch_id=" ")
+
+    assert verify_review_ledger(valid, register) is True
+    assert verify_review_ledger(malformed_ledger, register) is False
+    assert verify_review_ledger(unknown_event, register) is False
+    assert verify_review_ledger(empty_binding, register) is False
