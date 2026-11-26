@@ -177,7 +177,7 @@ create table if not exists bravo_shadow.usuarios (
 );
 
 create unique index if not exists usuarios_email_ci_uidx
-    on bravo_shadow.usuarios (lower(email));
+    on bravo_shadow.usuarios (lower(btrim(email)));
 
 create index if not exists usuarios_nome_idx
     on bravo_shadow.usuarios (nome, id);
