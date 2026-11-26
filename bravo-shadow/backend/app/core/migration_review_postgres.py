@@ -229,6 +229,8 @@ class PostgresReviewLedgerStore:
                     (event_id, batch_key, decision_id, manifest_hash, version,
                      reviewer_id, choice, rationale, reviewed_at)
                 VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                ON CONFLICT (event_id) DO NOTHING
+                RETURNING event_id
                 """,
                 (
                     event.event_id,
@@ -242,7 +244,10 @@ class PostgresReviewLedgerStore:
                     event.reviewed_at,
                 ),
             )
+            inserted = cursor.fetchone()
             cursor.close()
+            if inserted is None:
+                raise ReviewValidationError("duplicate_review_event_id")
             return updated
 
     def _assert_decision_snapshot(self, connection: Any, register: DecisionRegister) -> None:
