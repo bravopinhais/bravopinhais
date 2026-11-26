@@ -154,8 +154,10 @@ def test_postgres_adapter_uses_compare_and_set_on_update():
 
 
 def test_postgres_adapter_rolls_back_when_update_loses_race():
-    database, connection, store = setup_store()
+    database = FakeDatabase()
     database.rows["batch-1"][3] = "failed"
+    connection = database.connect()
+    store = PostgresBatchStateStore(lambda: connection)
     before = deepcopy(database.rows)
 
     with pytest.raises(BatchTransitionError, match="invalid_status_transition"):
