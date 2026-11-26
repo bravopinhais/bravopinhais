@@ -81,3 +81,64 @@ No Shadow, os 15 domínios aparecem na navegação, mas a própria interface inf
 A CI da branch bravo-shadow executou build/smoke test Docker e 360 testes backend aprovados contra PostgreSQL descartável no run 45894322542. Essa evidência valida a suíte automatizada, mas não substitui a conclusão das fichas restantes, validação visual em navegador, revisão de segurança ou aceite funcional.
 
 **Não é aceite de migração:** nenhuma linha desta matriz autoriza corte, escrita dupla, mudança de roteamento, migração de dados reais ou alteração do original. As descrições de campos e regras ainda precisam ser verificadas nos formulários e operações completos antes da implementação.
+
+
+## Complemento de aceite — Dashboard/DRE e Gestão de Usuários
+
+Esta seção complementa a matriz com critérios verificáveis derivados das auditorias estáticas específicas. Ela não representa aceite funcional nem liberação de rotas.
+
+### Dashboard, Relatórios e DRE
+
+**Estado confirmado:** a interface Shadow ainda não consulta indicadores reais; não há router nem serviço próprio de Dashboard/DRE. O Financeiro e o Plano de Contas existem como domínios da API, mas isso não constitui uma DRE implementada.
+
+**Paridade legada que precisa ser preservada ou explicitamente revista:**
+- totais gerais somam todos os títulos, sem filtro de período ou liquidação;
+- Receber e Pagar são classificados pelo tipo do título;
+- agrupamento por conta usa `planoContaId` existente;
+- títulos sem conta entram nos totais gerais, mas não nas linhas por conta;
+- o legado não valida correspondência entre tipo do título e tipo da conta;
+- a diferença Receber menos Pagar não é saldo bancário conciliado.
+
+**Critérios de aceite para primeira entrega Shadow:**
+1. Serviço agregado somente de leitura, usando as fontes Financeiro e Plano de Contas existentes.
+2. Totais separados de Receber e Pagar, diferença aritmética com nome explícito e quantidade de títulos.
+3. Agrupamento por conta sem excluir títulos sem vínculo dos totais gerais.
+4. Valores calculados com Decimal, sem conversão intermediária para float.
+5. Estado vazio real distinto de falha de API; indisponibilidade nunca deve virar R$ 0,00.
+6. Sem filtros por data, competência, vencimento, liquidação ou conciliação até aprovação de novos campos e regras.
+7. Nenhuma exposição dos dados financeiros antes da autenticação e autorização efetivas.
+
+**Bloqueios atuais:** ausência de endpoint agregado, ausência de proteção de autorização aprovada e contrato financeiro sem datas, status de liquidação ou conta bancária. Portanto, relatórios por período e saldo de caixa/banco permanecem fora do escopo.
+
+Referência: `auditoria-dashboard-relatorios-dre.md`.
+
+### Gestão de Usuários
+
+**Estado confirmado:** o contrato Shadow modela perfil por e-mail, nome, loja, cargo, perfil e status; o armazenamento ainda é temporário em memória. Não existe integração Google/token/claims nem autorização efetiva nas rotas. O campo `perfil` ainda não é uma permissão aplicada.
+
+**Regra de identidade obrigatória:** autenticação pela conta Google/e-mail verificado. Não transportar senha/hash legado, não criar login por senha local e não copiar credenciais de exemplo do HTML.
+
+**Critérios de aceite antes de ativar o módulo:**
+1. Validar token Google no servidor e exigir e-mail verificado.
+2. Vincular a identidade autenticada a um único perfil interno ativo por e-mail normalizado.
+3. Rejeitar e-mail duplicado e perfil inativo; não provisionar privilégios automaticamente a partir de claims não aprovados.
+4. Aplicar matriz explícita de capacidades por módulo e ação; não confiar no texto do campo `perfil` isoladamente.
+5. Proteger todas as rotas de usuários e impedir autoexclusão/remoção do último administrador ativo.
+6. Auditar criação, alteração de perfil/status e desativação, sem registrar tokens ou segredos.
+7. Definir primeiro administrador por procedimento controlado e aprovado, sem credenciais embutidas.
+8. Testar token ausente/inválido/expirado, e-mail não verificado, usuário inexistente/inativo, duplicidade, privilégio insuficiente e último administrador.
+
+**Bloqueios atuais:** integração Google não configurada, autorização não aplicada às rotas, persistência em memória e matriz de capacidades ainda não aprovada. A tela de login permanece fora desta etapa e não será redesenhada agora.
+
+Referência: `auditoria-gestao-usuarios.md`.
+
+### Situação atualizada da descoberta
+
+- [x] Auditoria estática específica de Dashboard/Relatórios/DRE registrada e critérios mínimos de aceite detalhados.
+- [x] Auditoria estática específica de Gestão de Usuários registrada e bloqueios de identidade/autorização detalhados.
+- [ ] Implementar serviço agregado de Dashboard/DRE após revisão de autorização e testes com dados sintéticos.
+- [ ] Aprovar matriz de capacidades e procedimento do primeiro administrador.
+- [ ] Integrar validação Google no servidor sem alterar a tela de login nesta fase.
+- [ ] Executar testes de aceitação em navegador e persistência descartável após revisão das migrations/policies.
+
+**Limite de evidência:** as duas auditorias são estáticas e baseadas no código versionado. Não houve execução de tela, consulta ao banco, conexão de produção, aplicação de migration ou validação com dados reais.
