@@ -29,8 +29,8 @@ def create_app(
 ) -> FastAPI:
     """Cria a API sombra com armazenamento explicitamente selecionado.
 
-    Padrão seguro: memória. PostgreSQL só é selecionado quando solicitado e
-    acompanhado de uma fábrica de conexão fornecida pelo ambiente hospedeiro.
+    Padrão seguro: memória. PostgreSQL só é selecionado quando solicitado; a fábrica
+    pode ser injetada pelo hospedeiro ou criada a partir de BRAVO_DATABASE_URL.
     """
     selected_backend = (
         storage_backend or os.getenv("BRAVO_STORAGE_BACKEND", "memory")
