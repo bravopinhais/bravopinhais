@@ -18,12 +18,13 @@ def test_health_endpoint_returns_ok() -> None:
     }
 
 
-def test_postgres_mode_requires_explicit_connection_factory() -> None:
+def test_postgres_mode_requires_database_url_when_factory_is_not_injected(monkeypatch) -> None:
     import pytest
 
     from app.core.storage import StorageConfigurationError
 
-    with pytest.raises(StorageConfigurationError, match="connection_factory explícita"):
+    monkeypatch.delenv("BRAVO_DATABASE_URL", raising=False)
+    with pytest.raises(StorageConfigurationError, match="BRAVO_DATABASE_URL"):
         create_app(storage_backend="postgres")
 
 
