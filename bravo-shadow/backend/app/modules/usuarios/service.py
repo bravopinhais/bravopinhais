@@ -56,9 +56,6 @@ class UsuariosService:
         self.get(item_id)
         self.repository.delete(item_id)
 
-
-usuarios_service = UsuariosService()
-
     def update_administrative_state(
         self,
         item_id: str,
@@ -113,3 +110,6 @@ usuarios_service = UsuariosService()
             event=event,
             audit_sink=audit_sink,
         )
+
+
+usuarios_service = UsuariosService()
