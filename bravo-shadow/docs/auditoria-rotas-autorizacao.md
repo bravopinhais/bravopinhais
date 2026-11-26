@@ -287,3 +287,45 @@ Também foi alinhada a proteção do produto: quando existe movimento, a exclus�
 O schema normaliza produtoId, motivo e motivoId, rejeitando campos obrigatórios vazios após a normalização. Quantidade continua estritamente maior que zero. O vínculo com motivo preserva o texto como snapshot. A checagem de referências em memória usa a operação protegida pelo lock do repositório; no PostgreSQL, a FK e o bloqueio `FOR UPDATE` permanecem como salvaguardas transacionais.
 
 Foram adicionados testes para esses casos, mas não foram executados nesta etapa. A proteção de concorrência do repositório em memória não equivale à transação PostgreSQL; o modo memória permanece destinado a testes/desenvolvimento.
+
+
+## Inventário de exposição dos routers — revisão complementar
+
+Revisão estática dos decorators dos 15 routers de negócio e do router de identidade. Nesta revisão, nenhum decorator de rota de negócio declara `Depends(get_current_principal)`, `require_capability_dependency` ou outra dependência de autorização.
+
+| Módulo | Operações encontradas | Observação de risco |
+|---|---|---|
+| Usuários | GET lista/detalhe, POST, PUT, DELETE | **Crítico:** POST/PUT aceitam perfil e status; sem autorização, podem criar ou alterar contas privilegiadas. |
+| Financeiro | GET, POST, PUT, DELETE | **Crítico:** leitura e alteração de dados financeiros sem identidade exigida. |
+| Moradores | GET, POST, PUT, DELETE, POST importar | **Crítico:** dados pessoais e importação sem autorização. |
+| Empregados | GET, POST, PUT, DELETE | **Crítico:** dados funcionais pessoais sem autorização. |
+| Documentos | GET lista/detalhe, POST, PUT, DELETE | **Crítico:** documentos e conteúdo armazenado sem autorização. |
+| Contas Bancárias | GET, POST, PUT, DELETE | **Alto:** dados e saldos informados sem autorização. |
+| Plano de Contas | GET, POST, PUT, DELETE | **Alto:** estrutura contábil alterável sem autorização. |
+| Estoque | GET, POST, PUT, DELETE | **Alto:** cadastro e inventário sem autorização; regras de imutabilidade devem continuar no serviço. |
+| Acertos de Estoque | GET, POST, DELETE | **Alto:** movimentações consultáveis/criáveis sem autorização; exclusão deve continuar bloqueada pela regra de domínio. |
+| Fornecedores | GET, POST, PUT, DELETE | **Alto:** dados cadastrais e comerciais sem autorização. |
+| Condomínio | GET, PUT | **Alto:** dados institucionais sem autorização. |
+| Conselheiros | GET, POST, PUT, DELETE | **Alto:** cadastro pessoal e institucional sem autorização. |
+| Formas Monetárias | GET, POST, PUT, DELETE | **Médio:** configuração financeira sem autorização. |
+| Categorias | GET, POST, DELETE | **Médio:** configuração sem autorização. |
+| Motivos de Acerto | GET, POST, DELETE | **Médio:** configuração sem autorização. |
+| Autenticação | GET /auth/me | Protegido por validação do ID token Google e vínculo ao usuário interno ativo. |
+| Saúde | GET /health | Público intencionalmente; informa somente serviço, versão e modo de armazenamento, não consulta dados. |
+
+### Conclusão técnica
+
+- O inventário confirma que o endpoint `/api/v1/auth/me` é protegido, mas os routers de negócio não estão protegidos por autenticação/autorização.
+- A rota de Usuários exige atenção especial: o schema permite `perfil=Admin` e `status=Ativo`; não há controle de quem pode atribuir esses valores enquanto o router estiver aberto.
+- A existência do catálogo `ROLE_CAPABILITIES` não protege nenhuma rota por si só.
+- O agregador interno do Dashboard continua sem endpoint HTTP, portanto não amplia a superfície de exposição.
+- Não aplicar uma proteção global improvisada: a integração deve mapear cada método HTTP para uma capacidade explícita, incluir testes 401/403/permitido por rota e tratar primeiro o provisionamento seguro do primeiro administrador.
+- Até essa etapa, a API sombra não deve ser publicada para acesso público nem receber dados reais.
+
+### Ordem de implementação recomendada
+
+1. Definir provisionamento seguro do primeiro Admin e impedir autoatribuição de perfil/status.
+2. Aprovar a matriz de permissões por módulo e operação.
+3. Aplicar dependências de autenticação e capacidade a cada rota, começando por Usuários e módulos sensíveis.
+4. Criar testes de integração 401, 403 e acesso permitido para cada grupo de rotas.
+5. Só então expor os endpoints de Dashboard e relatórios.
