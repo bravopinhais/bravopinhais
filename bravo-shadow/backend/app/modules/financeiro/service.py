@@ -22,9 +22,8 @@ class FinanceiroService:
         return item
 
     def update(self, item_id: str, data: FinanceiroInput, expected_version: int) -> FinanceiroTitulo:
-        current = self.repository.get(item_id)
-        if current is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Título não encontrado.")
+        # A operação CAS do repositório distingue registro ausente de versão obsoleta.
+        # Não é necessário fazer uma leitura separada antes do UPDATE.
         item = FinanceiroTitulo(id=item_id, version=expected_version, **data.model_dump())
         compare_and_swap = getattr(self.repository, "replace_if_version", None)
         if compare_and_swap is None:
@@ -35,9 +34,6 @@ class FinanceiroService:
         if result == -1:
             raise HTTPException(status_code=409, detail="O título foi alterado por outra operação. Recarregue os dados.")
         if isinstance(result, int):
-            saved = self.repository.get(item_id)
-            if saved is not None:
-                return saved
             return item.model_copy(update={"version": result})
         return item
 
