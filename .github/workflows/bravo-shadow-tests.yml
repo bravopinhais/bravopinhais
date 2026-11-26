@@ -1,0 +1,47 @@
+name: Bravo Shadow — testes automatizados
+
+on:
+  push:
+    branches:
+      - bravo-shadow
+    paths:
+      - "bravo-shadow/backend/**"
+      - ".github/workflows/bravo-shadow-tests.yml"
+  pull_request:
+    paths:
+      - "bravo-shadow/backend/**"
+      - ".github/workflows/bravo-shadow-tests.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: bravo-shadow-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend-tests:
+    name: Backend / Python 3.11
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bravo-shadow/backend
+    steps:
+      - name: Baixar repositório
+        uses: actions/checkout@v4
+
+      - name: Configurar Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: bravo-shadow/backend/requirements.txt
+
+      - name: Instalar dependências
+        run: python -m pip install -r requirements.txt
+
+      - name: Executar testes
+        env:
+          PYTHONPATH: .
+        run: python -m pytest -q
