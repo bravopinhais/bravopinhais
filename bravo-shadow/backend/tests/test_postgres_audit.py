@@ -57,13 +57,14 @@ def test_postgres_sink_inserts_only_audit_fields_and_commits():
     connection = FakeConnection()
     sink = PostgresAuditSink(lambda: connection)
 
-    sink.append(make_event())
+    event = make_event()
+    sink.append(event)
 
     sql, params = connection.cursor_instance.calls[0]
     assert "INSERT INTO bravo_shadow.audit_events" in sql
     assert params == (
-        "audit_" + make_event().event_id.removeprefix("audit_"),
-        make_event().occurred_at,
+        event.event_id,
+        event.occurred_at,
         "google-subject-123",
         "financeiro:create",
         "financeiro",
