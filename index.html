@@ -23658,7 +23658,20 @@ body.bravo-renderizando-modulo::before{
  outline:2px solid #777!important;outline-offset:2px!important
 }
 /* Cartões e janelas: bordas leves, fundo branco e sombra controlada. */
-#modal-container{background:rgba(20, 20, 20, .48)!important;backdrop-filter:blur(3px)!important}
+/* O contêiner global permanece neutro quando não há modal aberto. */
+#modal-container{
+ background:transparent!important;
+ -webkit-backdrop-filter:none!important;
+ backdrop-filter:none!important;
+}
+#modal-container:empty{display:none!important}
+#modal-container:not(:empty){display:block!important}
+/* O escurecimento/desfoque pertence somente à camada real do modal. */
+#modal-container > .fixed.inset-0{
+ background-color:rgba(0,0,0,.76)!important;
+ -webkit-backdrop-filter:blur(8px);
+ backdrop-filter:blur(8px);
+}
 #modal-container>div{padding:16px!important}
 #modal-container>div>div{
  background:#fff!important;color:#292929!important;
@@ -27258,12 +27271,14 @@ body{scrollbar-color:#656a73 #191b20!important}
   #app :is([role="alert"],[role="status"],[class*="toast"],[class*="notification"],[class*="notificacao"]) :is(p,span,strong,small) {
     color: inherit;
   }
-  #app #modal-container > .fixed.inset-0 {
+  #modal-container > .fixed.inset-0 {
     background-color: rgba(0, 0, 0, .76) !important;
+    -webkit-backdrop-filter: blur(8px);
     backdrop-filter: blur(8px);
   }
   @media (max-width: 640px) {
-    #app #modal-container > .fixed.inset-0 { padding: 12px !important; }
+    #modal-container > .fixed.inset-0 { padding: 12px !important; }
+    #modal-container > .fixed > div,
     #app .fixed.inset-0 > div,
     #app [role="dialog"],
     #app [aria-modal="true"] {
