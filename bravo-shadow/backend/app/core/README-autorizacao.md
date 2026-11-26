@@ -45,3 +45,26 @@ Não instanciar esse objeto a partir de campos enviados pelo cliente.
 Cada endpoint deverá declarar explicitamente a capacidade exigida por meio de
 dependências FastAPI centrais. A integração deve ocorrer somente após definir
 e testar a validação do token Google e o vínculo com o cadastro interno.
+
+
+## Dependência FastAPI reutilizável — preparada
+
+```python
+from fastapi import Depends
+from app.core.authorization import require_capability_dependency
+
+@router.get("/exemplo")
+def listar_exemplo(
+    principal = Depends(require_capability_dependency("financeiro:read")),
+):
+    ...
+```
+
+A fábrica `require_capability_dependency` combina a identidade
+validada por `get_current_principal` com a verificação da capacidade
+solicitada. Ela retorna o principal autenticado para uso opcional no handler.
+
+A fábrica não foi aplicada aos routers de negócio nesta etapa. Portanto, não
+interpretar a existência dessa função como proteção HTTP já ativada. A
+integração por rota depende da aprovação da matriz funcional e deverá ser
+acompanhada de testes HTTP positivos e negativos.
