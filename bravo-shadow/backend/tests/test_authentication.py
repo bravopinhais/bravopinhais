@@ -3,17 +3,19 @@ from fastapi import HTTPException
 
 from app.core.authentication import principal_from_google_claims
 from app.core.storage import build_storage_services
+from app.modules.usuarios.schemas import UsuarioInput
 
 
 def make_user(services, email="admin@example.com", profile="Admin", account_status="Ativo"):
-    return services.usuarios.create({
-        "email": email,
-        "nome": "Administrador",
-        "loja": "Bravo",
-        "cargo": "Gestor",
-        "perfil": profile,
-        "status": account_status,
-    })
+    data = UsuarioInput(
+        email=email,
+        nome="Administrador",
+        loja="Bravo",
+        cargo="Gestor",
+        perfil=profile,
+        status=account_status,
+    )
+    return services.usuarios.create(data)
 
 
 def test_verified_google_email_resolves_internal_profile_and_status():
