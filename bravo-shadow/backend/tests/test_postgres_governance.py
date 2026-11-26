@@ -93,3 +93,30 @@ def test_postgres_storage_wires_governance_repositories_without_connecting():
 
     assert isinstance(services.condominio.repository, PostgresCondominioRepository)
     assert isinstance(services.conselheiros.repository, PostgresConselheirosRepository)
+
+
+
+def test_empty_condominio_patch_checks_existence_without_invalid_update():
+    connection = Connection(row=("Bravo",) + tuple("" for _ in range(16)))
+    repository = PostgresCondominioRepository(factory(connection))
+
+    repository.replace("singleton", {})
+
+    assert len(connection.calls) == 1
+    assert connection.calls[0][0].startswith("SELECT")
+    assert connection.commits == 1
+
+
+def test_empty_condominio_patch_still_returns_not_found_for_missing_record():
+    connection = Connection(row=None)
+    repository = PostgresCondominioRepository(factory(connection))
+
+    from fastapi import HTTPException
+    import pytest
+
+    with pytest.raises(HTTPException) as error:
+        repository.replace("missing", {})
+
+    assert error.value.status_code == 404
+    assert len(connection.calls) == 1
+    assert connection.commits == 1
