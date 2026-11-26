@@ -73,3 +73,13 @@ def test_plan_account_reference_checker():
 def test_reject_invalid_title_type():
     response = client.post("/api/v1/financeiro", json=payload(tipo="Transferência"))
     assert response.status_code == 422
+
+
+def test_reject_amount_with_more_than_two_decimal_places():
+    response = client.post("/api/v1/financeiro", json=payload(valor=10.123))
+    assert response.status_code == 422
+
+
+def test_reject_amount_exceeding_numeric_precision():
+    response = client.post("/api/v1/financeiro", json=payload(valor=1000000000000.00))
+    assert response.status_code == 422
