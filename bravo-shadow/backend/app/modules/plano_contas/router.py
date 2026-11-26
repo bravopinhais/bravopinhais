@@ -1,5 +1,6 @@
-from fastapi import APIRouter, Header, Request, Response, status
+from fastapi import APIRouter, Depends, Header, Request, Response, status
 
+from app.core.authorization import AuthenticatedPrincipal, require_capability_dependency
 from app.core.etag import format_etag, parse_if_match
 from .schemas import PlanoConta, PlanoContaInput
 from .service import PlanoContasService
@@ -12,12 +13,20 @@ def get_service(request: Request) -> PlanoContasService:
 
 
 @router.get("", response_model=list[PlanoConta])
-def list_accounts(request: Request) -> list[PlanoConta]:
+def list_accounts(
+    request: Request,
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("plano_contas:read")),
+) -> list[PlanoConta]:
     return get_service(request).list()
 
 
 @router.post("", response_model=PlanoConta, status_code=status.HTTP_201_CREATED)
-def create_account(data: PlanoContaInput, request: Request, response: Response):
+def create_account(
+    data: PlanoContaInput,
+    request: Request,
+    response: Response,
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("plano_contas:create")),
+):
     item = get_service(request).create(data)
     response.headers["ETag"] = format_etag(item.version)
     return item
@@ -30,6 +39,7 @@ def update_account(
     request: Request,
     response: Response,
     if_match: str | None = Header(default=None, alias="If-Match"),
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("plano_contas:update")),
 ):
     expected_version = parse_if_match(if_match)
     item = get_service(request).update(item_id, data, expected_version)
@@ -38,5 +48,9 @@ def update_account(
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_account(item_id: str, request: Request) -> None:
+def delete_account(
+    item_id: str,
+    request: Request,
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("plano_contas:delete")),
+) -> None:
     get_service(request).delete(item_id)
