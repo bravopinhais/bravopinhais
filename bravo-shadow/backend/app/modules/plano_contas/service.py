@@ -28,12 +28,25 @@ class PlanoContasService:
         self.repository.add(item.id, item)
         return item
 
-    def update(self, item_id: str, data: PlanoContaInput) -> PlanoConta:
-        if not self.repository.exists(item_id):
+    def update(self, item_id: str, data: PlanoContaInput, expected_version: int) -> PlanoConta:
+        current = self.repository.get(item_id)
+        if current is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conta não encontrada.")
         self._ensure_unique_code(data.codigo, excluding=item_id)
-        item = PlanoConta(id=item_id, **data.model_dump())
-        self.repository.replace(item_id, item)
+        item = PlanoConta(id=item_id, version=expected_version, **data.model_dump())
+        compare_and_swap = getattr(self.repository, "replace_if_version", None)
+        if compare_and_swap is None:
+            raise HTTPException(status_code=503, detail="Repositório sem suporte a controle de versão.")
+        result = compare_and_swap(item_id, item, expected_version)
+        if result == 0:
+            raise HTTPException(status_code=404, detail="Conta não encontrada.")
+        if result == -1:
+            raise HTTPException(status_code=409, detail="A conta foi alterada por outra operação. Recarregue os dados.")
+        if isinstance(result, int):
+            saved = self.repository.get(item_id)
+            if saved is not None:
+                return saved
+            return item.model_copy(update={"version": result})
         return item
 
     def delete(self, item_id: str) -> None:
