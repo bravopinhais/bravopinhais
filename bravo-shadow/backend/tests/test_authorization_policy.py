@@ -18,12 +18,9 @@ def principal(profile: str = "Admin", account_status: str = "Ativo") -> Authenti
     )
 
 
-def test_admin_receives_only_declared_capabilities() -> None:
-    assert has_capability(principal(), "financeiro:read")
-    assert has_capability(principal(), "usuarios:delete")
-    assert has_capability(principal(), "estoque:create")
-    assert not has_capability(principal(), "acertos_estoque:delete")
-    assert not has_capability(principal(), "acertos_estoque:update")
+def test_admin_is_denied_until_permission_matrix_is_approved() -> None:
+    for capability in CAPABILITIES:
+        assert not has_capability(principal("Admin"), capability)
 
 
 def test_operator_is_denied_until_permission_matrix_is_approved() -> None:
@@ -62,8 +59,10 @@ def test_require_capability_raises_for_denied_access() -> None:
     assert error.value.detail == "Acesso negado para esta operação."
 
 
-def test_require_capability_returns_for_allowed_access() -> None:
-    assert require_capability(principal(), "financeiro:read") is None
+def test_require_capability_denies_admin_until_matrix_is_approved() -> None:
+    with pytest.raises(HTTPException) as error:
+        require_capability(principal("Admin"), "financeiro:read")
+    assert error.value.status_code == 403
 
 
 def test_non_string_identity_fields_are_denied() -> None:
@@ -76,16 +75,16 @@ def test_fastapi_dependency_enforces_capability_after_authentication() -> None:
     from app.core.authorization import require_capability_dependency
 
     dependency = require_capability_dependency("financeiro:read")
-    assert dependency(principal()) == principal()
+    for profile in ("Admin", "Operador"):
+        with pytest.raises(HTTPException) as error:
+            dependency(principal(profile))
+        assert error.value.status_code == 403
 
-    with pytest.raises(HTTPException) as error:
-        dependency(principal("Operador"))
-    assert error.value.status_code == 403
 
-
-def test_fastapi_dependency_returns_authenticated_principal() -> None:
+def test_fastapi_dependency_does_not_grant_unapproved_profile() -> None:
     from app.core.authorization import require_capability_dependency
 
     dependency = require_capability_dependency("dashboard:read")
-    authenticated = principal()
-    assert dependency(authenticated) is authenticated
+    with pytest.raises(HTTPException) as error:
+        dependency(principal("Admin"))
+    assert error.value.status_code == 403
