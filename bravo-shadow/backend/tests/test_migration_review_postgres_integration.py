@@ -30,6 +30,8 @@ def _guard_test_database(url: str) -> None:
         )
     if parsed.scheme not in {"postgres", "postgresql"}:
         raise RuntimeError("A URL de integração precisa usar PostgreSQL.")
+    if parsed.hostname not in {"localhost", "127.0.0.1", "::1"}:
+        raise RuntimeError("Os testes só podem conectar a PostgreSQL local/descartável.")
 
 
 @pytest.fixture
@@ -119,3 +121,41 @@ def test_parallel_initialization_is_idempotent(postgres_database):
 
     assert ledgers[0] == ledgers[1]
     assert store.load(register).events == ()
+
+
+def test_parallel_appends_to_different_decisions_preserve_both_events(postgres_database):
+    register = _register()
+    assert len(register.pending) >= 2, "Fixture sintética precisa de duas decisões."
+    store = PostgresReviewLedgerStore(lambda: psycopg.connect(postgres_database))
+    store.initialize(register)
+    barrier = Barrier(2)
+
+    def append(decision_id: str, event_id: str):
+        barrier.wait(timeout=10)
+        return store.append(register, **_event_args(decision_id, event_id))
+
+    items = (
+        (register.pending[0].decision_id, f"distinct-{uuid4()}"),
+        (register.pending[1].decision_id, f"distinct-{uuid4()}"),
+    )
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(lambda item: append(*item), items))
+
+    assert all(len(result.events) >= 1 for result in results)
+    ledger = store.load(register)
+    assert len(ledger.events) == 2
+    assert {event.decision_id for event in ledger.events} == {items[0][0], items[1][0]}
+
+
+def test_event_id_is_globally_unique_within_batch(postgres_database):
+    register = _register()
+    assert len(register.pending) >= 2, "Fixture sintética precisa de duas decisões."
+    store = PostgresReviewLedgerStore(lambda: psycopg.connect(postgres_database))
+    store.initialize(register)
+    shared_event_id = f"shared-{uuid4()}"
+    store.append(register, **_event_args(register.pending[0].decision_id, shared_event_id))
+    with pytest.raises(ReviewValidationError, match="duplicate_review_event_id"):
+        store.append(register, **_event_args(register.pending[1].decision_id, shared_event_id))
+    ledger = store.load(register)
+    assert len(ledger.events) == 1
+    assert ledger.events[0].event_id == shared_event_id
