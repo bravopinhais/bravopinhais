@@ -57,3 +57,12 @@ Esses testes protegem o contrato textual do rascunho. **Não são parser SQL, n�
 5. Só depois desenhar o adaptador de persistência, ainda sem acesso a produção.
 
 **Nenhuma migration foi criada/aplicada, nenhum banco foi iniciado e nenhuma credencial foi usada nesta revisão.**
+
+
+## 6. Identidade do lote e colisão entre versões
+
+A inspeção do manifesto encontrou uma incompatibilidade de modelo: o identificador determinístico do lote era derivado apenas de sistema, baseline e snapshot, enquanto o hash do manifesto também mudava quando a versão do importador ou do mapeamento mudava. Como `migration_batches.batch_id` é chave primária, reprocessar o mesmo snapshot com uma versão diferente poderia colidir com o lote anterior e impedir a trilha auditável.
+
+**Correção aplicada:** `batchId` agora inclui as versões do envelope, formato do manifesto, canonicalização, importador e mapeamento. Testes cobrem mudança de versão do importador e do mapeamento, além da repetibilidade para entradas idênticas. O SQL de controle continua compatível porque mantém `batch_id` como chave primária e não exige alteração de coluna.
+
+Essa mudança é de identidade lógica e não executa importação nem altera dados.
