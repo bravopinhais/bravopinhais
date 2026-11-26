@@ -113,3 +113,22 @@ O adaptador não armazena payload, não abre conexão e não faz commit. Deve se
 Testes adicionados para repetição idempotente, mudança de hash, redirecionamento de destino e campos/hash inválidos.
 
 **Ainda não há integração com tabelas funcionais específicas.** O adaptador é genérico e depende do chamador fornecer o ID de destino já criado na mesma transação. Nenhum SQL de modelagem foi aplicado.
+
+
+## 10. Reconciliação de origem e Shadow (somente leitura)
+
+Foi adicionado `backend/app/core/migration_reconciliation.py`, uma comparação pura entre dois conjuntos fornecidos pelo chamador: inventário de origem e vínculos de proveniência do Shadow.
+
+O relatório identifica:
+- registro de origem sem vínculo;
+- divergência entre hash atual e hash registrado;
+- identidade repetida no inventário ou na proveniência;
+- destino associado a mais de uma origem;
+- vínculo no Shadow ausente do inventário de origem;
+- correspondências exatas um-para-um.
+
+A reconciliação não consulta banco, não corrige divergências, não cria vínculos e não autoriza lote. Qualquer divergência torna o relatório inválido; a resolução permanece manual e deve gerar nova evidência/dry-run. O resultado é determinístico para as mesmas entradas.
+
+Testes adicionados com cenários sintéticos de correspondência, ausência, hash divergente, vínculo órfão, duplicidade e repetibilidade.
+
+**Limite atual:** a camada de leitura que coleta snapshots reais ainda não foi implementada. O reconciliador recebe estruturas em memória, mantendo a fronteira de segurança e sem abrir conexão com o banco.
