@@ -54,8 +54,22 @@ jobs:
           curl --fail --silent http://localhost:8000/docs >/dev/null
 
   backend-tests:
-    name: Backend / Python 3.11
+    name: Backend / Python 3.11 + PostgreSQL descartável
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: bravo_test
+          POSTGRES_PASSWORD: bravo_test
+          POSTGRES_DB: bravo_shadow_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bravo_test -d bravo_shadow_test"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
     defaults:
       run:
         working-directory: bravo-shadow/backend
@@ -76,4 +90,5 @@ jobs:
       - name: Executar testes
         env:
           PYTHONPATH: .
+          BRAVO_SHADOW_TEST_DATABASE_URL: postgresql://bravo_test:bravo_test@127.0.0.1:5432/bravo_shadow_test
         run: python -m pytest -q
