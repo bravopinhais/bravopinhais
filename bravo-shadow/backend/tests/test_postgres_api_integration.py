@@ -3,7 +3,6 @@ from decimal import Decimal
 import pytest
 from fastapi.testclient import TestClient
 
-from app.core.storage import configure_storage
 from app.main import create_app
 
 
@@ -177,11 +176,8 @@ def postgres_api():
         storage_backend="postgres",
         postgres_connection_factory=connection_factory,
     )
-    try:
-        with TestClient(application) as client:
-            yield client, state, connections
-    finally:
-        configure_storage("memory")
+    with TestClient(application) as client:
+        yield client, state, connections
 
 
 def test_postgres_routes_create_read_update_and_enforce_references(postgres_api):
