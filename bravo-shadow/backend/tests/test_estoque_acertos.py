@@ -151,3 +151,51 @@ def test_adjustment_rejects_unknown_reason():
         },
     )
     assert response.status_code == 404
+
+
+def test_stock_metadata_is_trimmed_and_registration_date_is_normalized():
+    response = client.post(
+        "/api/v1/estoque",
+        json={
+            "item": "  Lâmpada LED  ",
+            "marca": "  Marca A ",
+            "linha": " Linha 2  ",
+            "fabricante": " Fábrica X ",
+            "etiqueta": " 789 ",
+            "fotoNome": " foto.png ",
+            "dataCadastro": " 2026-11-26 ",
+            "fotoCompactadaGzip": "  legado compactado  ",
+        },
+    )
+    assert response.status_code == 201
+    item = response.json()
+    assert item["item"] == "Lâmpada LED"
+    assert item["marca"] == "Marca A"
+    assert item["linha"] == "Linha 2"
+    assert item["fabricante"] == "Fábrica X"
+    assert item["etiqueta"] == "789"
+    assert item["fotoNome"] == "foto.png"
+    assert item["dataCadastro"] == "2026-11-26"
+    assert item["fotoCompactadaGzip"] == "  legado compactado  "
+
+
+def test_stock_item_rejects_whitespace_only_name():
+    response = client.post("/api/v1/estoque", json={"item": "   "})
+    assert response.status_code == 422
+
+
+def test_stock_registration_date_rejects_invalid_calendar_date():
+    response = client.post(
+        "/api/v1/estoque",
+        json={"item": "Material", "dataCadastro": "2026-02-30"},
+    )
+    assert response.status_code == 422
+
+
+def test_stock_registration_date_accepts_blank_as_not_informed():
+    response = client.post(
+        "/api/v1/estoque",
+        json={"item": "Material", "dataCadastro": "   "},
+    )
+    assert response.status_code == 201
+    assert response.json()["dataCadastro"] == ""
