@@ -125,3 +125,29 @@ def test_update_rejects_unquoted_if_match():
         headers={"If-Match": "1"},
     )
     assert response.status_code == 400
+
+
+def test_financial_history_is_trimmed():
+    response = client.post(
+        "/api/v1/financeiro",
+        json=payload(historico="  Taxa de manutenção  "),
+    )
+    assert response.status_code == 201
+    assert response.json()["historico"] == "Taxa de manutenção"
+
+
+def test_financial_history_cannot_be_only_whitespace():
+    response = client.post(
+        "/api/v1/financeiro",
+        json=payload(historico="   "),
+    )
+    assert response.status_code == 422
+
+
+def test_plan_account_reference_is_trimmed():
+    response = client.post(
+        "/api/v1/financeiro",
+        json=payload(planoContaId="  pc_test  "),
+    )
+    assert response.status_code == 201
+    assert response.json()["planoContaId"] == "pc_test"
