@@ -1,0 +1,59 @@
+# Contrato de gestão de usuários — Bravo Shadow
+
+## Status
+
+**Proposta técnica para revisão; não implementada.** Não altera rotas, autenticação, permissões, interface ou dados. A matriz de permissões e o fluxo de entrada de novos usuários continuam pendentes de aprovação.
+
+## Situação encontrada
+
+- `UsuarioInput` mistura dados cadastrais (`email`, `nome`, `loja`, `cargo`) com campos privilegiados (`perfil`, `status`).
+- O mesmo schema é usado em criação e atualização integral.
+- O router de usuários ainda expõe listagem, detalhe, criação, alteração e exclusão sem dependências de autenticação/autorização.
+- O teste legado cria um Admin por POST sem token; ele precisa ser substituído quando a proteção for implementada.
+- O serviço em memória é isolado por instância, mas não é persistente.
+
+## Separação de contratos proposta
+
+### 1. Dados cadastrais
+
+Um schema de dados cadastrais deve conter apenas `email`, `nome`, `loja` e `cargo`. Não deve aceitar `perfil`, `status`, senha, hash de senha, token Google ou identificador de provedor. `extra="forbid"` deve continuar ativo.
+
+### 2. Criação administrativa
+
+A criação de um usuário deve ser uma operação administrativa protegida por capacidade explícita. O payload cadastral não escolhe o perfil nem o status. O servidor aplica os valores iniciais definidos pela política aprovada.
+
+**Ponto ainda não decidido:** se o cadastro novo começa como `Ativo` ou `Inativo/Pendente`, e se haverá convite/aprovação antes do primeiro acesso. Não codificar um padrão até essa regra ser aprovada.
+
+### 3. Alteração cadastral
+
+A alteração comum deve aceitar apenas campos cadastrais permitidos e tratar atualização parcial de forma explícita. Não deve permitir trocar e-mail de identidade sem um fluxo próprio de reconciliação com a conta Google.
+
+### 4. Alteração administrativa
+
+Perfil e status devem ficar em uma operação/schema separado, protegido por capacidade administrativa. A operação deve validar valores no servidor, impedir autoelevação, impedir que a conta autenticada altere o próprio perfil/status, proteger o último Admin ativo, registrar auditoria mínima e usar transação e controle de concorrência no PostgreSQL.
+
+### 5. Consulta e exclusão
+
+Listagem e detalhe são privados. Exclusão não deve ser um CRUD irrestrito: avaliar desativação lógica como padrão, preservar histórico e impedir a remoção do último Admin ativo. A decisão entre exclusão lógica e física depende da política de retenção e deve ser aprovada antes da implementação.
+
+## Regras invariáveis
+
+- A identidade vem de Google ID token validado no servidor; nunca de `email`, `perfil` ou `status` enviados pelo cliente.
+- O e-mail autenticado deve ser verificado e corresponder a exatamente um cadastro interno ativo.
+- Falha ou ambiguidade resulta em negação, nunca em perfil padrão privilegiado.
+- Nenhuma rota de negócio ou de usuários deve ser exposta antes de autenticação e autorização completas.
+- O bootstrap do primeiro Admin permanece fora da API pública e segue `provisionamento-primeiro-admin.md`.
+- Não introduzir login por senha local.
+
+## Sequência segura de implementação
+
+1. Aprovar matriz de capacidades e regra de onboarding (estado inicial do usuário).
+2. Implementar schemas separados e testes unitários de rejeição de campos privilegiados.
+3. Implementar operações de usuário com autorização explícita, proteção do último Admin e auditoria.
+4. Atualizar testes de API para exigir token válido e testar 401/403/permitido.
+5. Validar concorrência e persistência em PostgreSQL local descartável.
+6. Fazer revisão de segurança de todas as rotas antes de qualquer deploy privado.
+
+## Fora do escopo desta etapa
+
+Nenhum schema de produção foi alterado, nenhuma rota foi protegida ou exposta, nenhum usuário foi criado, nenhuma migration foi gerada e nenhum teste foi executado. A tela de login permanece como está, conforme o planejamento de redesenhá-la posteriormente.
