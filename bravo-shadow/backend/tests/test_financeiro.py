@@ -45,6 +45,7 @@ def test_update_replaces_title_fields():
     updated = client.put(
         f"/api/v1/financeiro/{created['id']}",
         json=payload(tipo="Pagar", historico="Conta de água", valor=120),
+        headers={"If-Match": f'"{created["version"]}"'},
     )
     assert updated.status_code == 200
     assert updated.json()["tipo"] == "Pagar"
@@ -53,7 +54,7 @@ def test_update_replaces_title_fields():
 
 
 def test_update_missing_title_returns_404():
-    response = client.put("/api/v1/financeiro/inexistente", json=payload())
+    response = client.put("/api/v1/financeiro/inexistente", json=payload(), headers={"If-Match": '"1"'})
     assert response.status_code == 404
 
 
@@ -83,3 +84,27 @@ def test_reject_amount_with_more_than_two_decimal_places():
 def test_reject_amount_exceeding_numeric_precision():
     response = client.post("/api/v1/financeiro", json=payload(valor=1000000000000.00))
     assert response.status_code == 422
+
+
+def test_update_requires_if_match_header():
+    created = client.post("/api/v1/financeiro", json=payload()).json()
+    response = client.put(f"/api/v1/financeiro/{created['id']}", json=payload(valor=99))
+    assert response.status_code == 428
+
+
+def test_update_rejects_stale_if_match_version():
+    created = client.post("/api/v1/financeiro", json=payload()).json()
+    first = client.put(
+        f"/api/v1/financeiro/{created['id']}",
+        json=payload(valor=99),
+        headers={"If-Match": '"1"'},
+    )
+    assert first.status_code == 200
+    assert first.json()["version"] == 2
+    stale = client.put(
+        f"/api/v1/financeiro/{created['id']}",
+        json=payload(valor=88),
+        headers={"If-Match": '"1"'},
+    )
+    assert stale.status_code == 409
+    assert client.get("/api/v1/financeiro").json()[0]["valor"] == 99
