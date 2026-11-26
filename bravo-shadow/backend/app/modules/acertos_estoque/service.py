@@ -30,6 +30,12 @@ class AcertosEstoqueService:
     def list(self) -> list[Acerto]:
         return self.repository.list()
 
+    def has_product_reference(self, product_id: str) -> bool:
+        checker = getattr(self.repository, "any", None)
+        if callable(checker):
+            return checker(lambda item: item.produtoId == product_id)
+        return any(item.produtoId == product_id for item in self.repository.list())
+
     def has_reason_reference(self, reason_id: str) -> bool:
         checker = getattr(self.repository, "any", None)
         if callable(checker):
