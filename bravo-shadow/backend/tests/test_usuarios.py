@@ -6,7 +6,7 @@ from pydantic import ValidationError
 from app.core.authentication import get_current_principal
 from app.core.authorization import AuthenticatedPrincipal
 from app.main import create_app
-from app.modules.usuarios.schemas import UsuarioInput
+from app.modules.usuarios.schemas import (\n    UsuarioInput, UsuarioCadastroInput,\n    UsuarioDadosCadastraisUpdateInput, UsuarioAdministracaoInput,\n)
 from app.modules.usuarios.service import UsuariosService
 
 
@@ -94,3 +94,34 @@ def test_concurrent_user_creation_cannot_duplicate_email_in_memory():
     assert results.count("created") == 1
     assert results.count(409) == 7
     assert len(service.list()) == 1
+
+def test_separated_user_schemas_keep_privileged_fields_out_of_cadastral_payloads():
+    cadastro = UsuarioCadastroInput(
+        email=" NOVO@EXAMPLE.COM ", nome=" Pessoa ", cargo="Conselho"
+    )
+    assert cadastro.email == "novo@example.com"
+    assert cadastro.nome == "Pessoa"
+
+    with pytest.raises(ValidationError):
+        UsuarioCadastroInput(
+            email="novo@example.com", nome="Pessoa", cargo="Conselho",
+            perfil="Admin",
+        )
+
+    update = UsuarioDadosCadastraisUpdateInput(nome=" Nome novo ")
+    assert update.nome == "Nome novo"
+    with pytest.raises(ValidationError):
+        UsuarioDadosCadastraisUpdateInput(email="troca@example.com")
+    with pytest.raises(ValidationError):
+        UsuarioDadosCadastraisUpdateInput(status="Inativo")
+
+
+def test_administrative_user_schema_requires_explicit_profile_and_status():
+    change = UsuarioAdministracaoInput(perfil="Operador", status="Inativo")
+    assert change.perfil == "Operador"
+    assert change.status == "Inativo"
+    with pytest.raises(ValidationError):
+        UsuarioAdministracaoInput(perfil="Admin")
+    with pytest.raises(ValidationError):
+        UsuarioAdministracaoInput(perfil="Root", status="Ativo")
+\n
