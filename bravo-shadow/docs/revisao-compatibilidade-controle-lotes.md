@@ -231,3 +231,16 @@ Foi criado `backend/app/core/migration_pre_import_validation.py` para consolidar
 O retorno informa `ready` e uma lista estável de bloqueios. Qualquer divergência mantém `ready=False`. A reconciliação é obrigatória: ausência de evidência não é tratada como aprovação.
 
 **Limite de segurança:** `ready=True` significa apenas que as evidências fornecidas são consistentes. Não é autorização, não executa importação, não cria transação, não abre conexão, não lê dados do legado e não substitui aprovação humana, validação de permissões ou controles transacionais. A cadeia também depende de âncora externa confiável quando há exportações anteriores.
+
+
+## Relatório consolidado de prontidão
+
+Foi adicionado `backend/app/core/migration_readiness_report.py`, que consolida o resultado do preflight do lote e da validação das evidências pré-importação. Cada ocorrência é classificada por gravidade (`critical`, `high`, `medium` ou `low`) e categoria, com ordenação determinística e deduplicação de códigos.
+
+Critérios principais:
+- hashes, manifesto, snapshot e continuidade da cadeia: críticos;
+- divergências de reconciliação e manifesto que não seja o último elo: altos;
+- inventário incompleto, candidatos extras ou duplicados: altos;
+- demais inconsistências de preflight: médios.
+
+O relatório só marca `ready=True` quando o preflight e a validação de evidências estão válidos e não há ocorrências. Esse estado é exclusivamente informativo: não concede permissão, não aprova lote, não inicia transação e não chama qualquer importador. A decisão final continua separada e sujeita a aprovação explícita.
