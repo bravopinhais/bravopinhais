@@ -9,6 +9,7 @@ client = TestClient(app)
 def setup_function():
     app.state.services.estoque._items.clear()
     app.state.services.acertos_estoque._items.clear()
+    app.state.services.motivos_acerto._items.clear()
 
 
 def test_stock_crud_and_extended_origin_fields():
@@ -107,3 +108,46 @@ def test_inventory_and_adjustments_are_isolated_between_app_instances():
     assert second.get("/api/v1/estoque").json() == []
     assert second.get("/api/v1/acertos-estoque").json() == []
     assert first.get("/api/v1/acertos-estoque").json()[0]["produtoId"] == product["id"]
+
+
+def test_adjustment_reason_link_and_restrict_delete():
+    product = client.post(
+        "/api/v1/estoque", json={"item": "Filtro", "quantidade": 3}
+    ).json()
+    reason = client.post(
+        "/api/v1/motivos-acerto-estoque", json={"nome": "Avaria"}
+    ).json()
+    movement = client.post(
+        "/api/v1/acertos-estoque",
+        json={
+            "tipo": "Entrada",
+            "produtoId": product["id"],
+            "quantidade": 1,
+            "motivo": "Texto legado",
+            "motivoId": reason["id"],
+        },
+    )
+    assert movement.status_code == 201
+    data = movement.json()
+    assert data["motivoId"] == reason["id"]
+    assert data["motivo"] == "Avaria"
+    assert client.delete("/api/v1/motivos-acerto-estoque/" + reason["id"]).status_code == 409
+    assert client.delete("/api/v1/acertos-estoque/" + data["id"]).status_code == 204
+    assert client.delete("/api/v1/motivos-acerto-estoque/" + reason["id"]).status_code == 204
+
+
+def test_adjustment_rejects_unknown_reason():
+    product = client.post(
+        "/api/v1/estoque", json={"item": "Filtro", "quantidade": 3}
+    ).json()
+    response = client.post(
+        "/api/v1/acertos-estoque",
+        json={
+            "tipo": "Entrada",
+            "produtoId": product["id"],
+            "quantidade": 1,
+            "motivo": "Texto",
+            "motivoId": "motivo-inexistente",
+        },
+    )
+    assert response.status_code == 404
