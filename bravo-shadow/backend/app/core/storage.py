@@ -4,6 +4,10 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from app.core.postgres_inventory import (
+    PostgresAcertosEstoqueRepository,
+    PostgresEstoqueRepository,
+)
 from app.core.postgres_repositories import (
     PostgresFinanceiroRepository,
     PostgresFormasMonetariasRepository,
@@ -61,14 +65,17 @@ def build_storage_services(
     """Cria serviços isolados; nunca altera singletons ou estado global.
 
     No modo PostgreSQL, a fábrica é obrigatória e só será chamada durante
-    operações de repositório. Estoque, catálogos, documentos, cadastros,
-    condomínio, conselho e usuários seguem em memória até seus adaptadores
-    serem implementados e testados.
+    operações de repositório. Estoque e Acertos usam adapters PostgreSQL;
+    catálogos, documentos, cadastros, condomínio, conselho e usuários seguem
+    em memória até seus adapters serem implementados e testados.
     """
+    movement_repository = None
     if backend == "memory":
         formas_repository = InMemoryCollectionRepository()
         financeiro_repository = InMemoryCollectionRepository()
         plano_repository = InMemoryCollectionRepository()
+        estoque_repository = InMemoryCollectionRepository()
+        acertos_repository = InMemoryCollectionRepository()
     elif backend == "postgres":
         if connection_factory is None:
             raise StorageConfigurationError(
@@ -78,6 +85,9 @@ def build_storage_services(
         formas_repository = PostgresFormasMonetariasRepository(connection_factory)
         financeiro_repository = PostgresFinanceiroRepository(connection_factory)
         plano_repository = PostgresPlanoContasRepository(connection_factory)
+        estoque_repository = PostgresEstoqueRepository(connection_factory)
+        acertos_repository = PostgresAcertosEstoqueRepository(connection_factory)
+        movement_repository = acertos_repository
     else:
         raise StorageConfigurationError(
             "BRAVO_STORAGE_BACKEND deve ser 'memory' ou 'postgres'."
@@ -90,7 +100,7 @@ def build_storage_services(
     )
     formas_monetarias = FormasMonetariasService(repository=formas_repository)
 
-    estoque = EstoqueService(repository=InMemoryCollectionRepository())
+    estoque = EstoqueService(repository=estoque_repository)
     categorias = CategoriasService(repository=InMemoryCollectionRepository())
     documentos = DocumentosService(
         repository=InMemoryCollectionRepository(),
@@ -100,9 +110,10 @@ def build_storage_services(
 
     motivos_acerto = MotivosAcertoService(repository=InMemoryCollectionRepository())
     acertos_estoque = AcertosEstoqueService(
-        repository=InMemoryCollectionRepository(),
+        repository=acertos_repository,
         inventory_service=estoque,
         reason_service=motivos_acerto,
+        movement_repository=movement_repository,
     )
     motivos_acerto.set_reference_checker(acertos_estoque.has_reason_reference)
 
