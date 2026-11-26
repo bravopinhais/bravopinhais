@@ -266,3 +266,13 @@ A revisão estática confirmou que:
 Foram reforçados os testes de `backend/tests/test_plano_contas.py`: a duplicidade agora compara códigos alfanuméricos com diferenças de caixa, e foram incluídos casos de normalização de código/nome e rejeição de valores compostos apenas por espaços. Os testes ainda não foram executados.
 
 O SQL continua sendo rascunho, não migration aplicada. A proteção efetiva no PostgreSQL só estará disponível depois de revisão e aplicação controlada da migration no ambiente local isolado. Nenhum banco foi conectado ou alterado nesta etapa.
+
+
+## Revisão do vínculo entre Plano de Contas e Financeiro
+
+- Os campos `codigo` e `nome` do Plano de Contas são normalizados pelo Pydantic (remoção de espaços externos) e rejeitam valores compostos apenas por espaços.
+- A unicidade do código é verificada sem diferenciar maiúsculas/minúsculas no serviço; o banco também possui restrição de unicidade para proteger gravações concorrentes.
+- A exclusão consulta o Financeiro e falha de forma fechada quando o verificador não está configurado; havendo vínculo, responde conflito. A chave estrangeira PostgreSQL com exclusão restrita permanece como segunda barreira no banco.
+- O Financeiro agora delega a verificação ao método especializado `has_plan_account_reference` do repositório PostgreSQL (consulta `SELECT 1 ... LIMIT 1`), evitando carregar toda a coleção para uma simples checagem. No repositório em memória, usa a busca protegida pelo lock; adapters simples mantêm fallback compatível.
+- A verificação de serviço e a restrição FK são salvaguardas complementares: a FK é a proteção definitiva contra exclusão concorrente no PostgreSQL.
+- Teste automatizado foi acrescentado para confirmar que o serviço usa o verificador otimizado quando o adapter o disponibiliza. Os testes ainda precisam ser executados em ambiente Python e contra PostgreSQL local antes de considerar a integração validada.
