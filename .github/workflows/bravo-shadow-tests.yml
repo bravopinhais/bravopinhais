@@ -37,6 +37,22 @@ jobs:
       - name: Construir imagem portátil
         run: docker build -f bravo-shadow/Dockerfile -t bravo-shadow:ci ./bravo-shadow
 
+      - name: Iniciar contêiner para smoke test
+        run: docker run -d --name bravo-shadow-smoke -p 8000:8000 bravo-shadow:ci
+
+      - name: Validar interface e API dentro do contêiner
+        run: |
+          trap 'docker rm -f bravo-shadow-smoke >/dev/null 2>&1 || true' EXIT
+          for attempt in $(seq 1 30); do
+            if curl --fail --silent http://localhost:8000/api/v1/health > /tmp/bravo-health.json; then
+              break
+            fi
+            sleep 2
+          done
+          grep -q '"status":"ok"' /tmp/bravo-health.json
+          curl --fail --silent http://localhost:8000/ | grep -q 'Bravo Shadow'
+          curl --fail --silent http://localhost:8000/docs >/dev/null
+
   backend-tests:
     name: Backend / Python 3.11
     runs-on: ubuntu-latest
