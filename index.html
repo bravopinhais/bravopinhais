@@ -714,9 +714,26 @@ function salvarCacheLocal() {
             `;
         }
 
+        function destruirGraficosAtuais() {
+            [chartInstanceReceitaDespesa, chartInstanceOcupacao, chartInstanceEstoque, chartInstanceEstoqueDash].forEach(grafico => {
+                if (grafico && typeof grafico.destroy === 'function') {
+                    try {
+                        grafico.destroy();
+                    } catch (erro) {
+                        console.warn('Não foi possível liberar um gráfico:', erro);
+                    }
+                }
+            });
+            chartInstanceReceitaDespesa = null;
+            chartInstanceOcupacao = null;
+            chartInstanceEstoque = null;
+            chartInstanceEstoqueDash = null;
+        }
+
         function renderMainOnly() {
             const mainEl = document.getElementById('app-main') || document.querySelector('main');
             if (!mainEl) return false;
+            destruirGraficosAtuais();
             mainEl.innerHTML = renderModuleContent(tabsState.activeTab);
             if (tabsState.activeTab === 'dashboard') {
                 requestAnimationFrame(() => {
@@ -765,6 +782,7 @@ function salvarCacheLocal() {
         function renderApp() {
             const container = document.getElementById('app');
             if (!container) return;
+            destruirGraficosAtuais();
 
             if (usuarioPendentePrimeiroAcesso) {
                 container.innerHTML = renderTelaPrimeiroAcesso();
