@@ -152,6 +152,9 @@ def test_real_postgres_rejects_removing_last_active_admin(postgres_users_databas
 def test_real_postgres_audit_failure_rolls_back_user_change(postgres_users_database):
     database_url = postgres_users_database
     _insert_user(database_url, "usr_rollback", "rollback@example.test")
+    # Mantém outro Admin ativo para que a falha exercite a auditoria,
+    # e não a proteção independente do último administrador.
+    _insert_user(database_url, "usr_rollback_peer", "rollback-peer@example.test")
 
     with psycopg.connect(database_url, autocommit=True) as connection:
         connection.execute(
