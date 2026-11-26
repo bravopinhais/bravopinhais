@@ -9,6 +9,8 @@ from app.core.migration_report import build_preflight_report
 from app.core.migration_manifest import (
     CANONICALIZATION_VERSION,
     build_migration_manifest,
+    serialize_migration_manifest,
+    verify_migration_manifest,
 )
 
 
@@ -121,6 +123,16 @@ def test_manifest_refuses_invalid_preflight():
             mapping_version="1.0",
             created_at="2026-11-26T15:00:00-03:00",
         )
+
+
+def test_manifest_hash_detects_tampering():
+    from dataclasses import replace
+
+    manifest = build()
+    tampered = replace(manifest, environment="production")
+
+    assert verify_migration_manifest(manifest) is True
+    assert verify_migration_manifest(tampered) is False
 
 
 def test_manifest_rejects_missing_version_or_environment():
