@@ -1,7 +1,9 @@
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from app.main import app
-from app.modules.plano_contas.service import plano_contas_service
+from app.modules.plano_contas.schemas import PlanoContaInput
+from app.modules.plano_contas.service import PlanoContasService, plano_contas_service
 
 client = TestClient(app)
 
@@ -40,11 +42,29 @@ def test_update_account():
     assert updated.json()["tipo"] == "Despesa"
 
 
-def test_delete_account():
+def test_delete_fails_closed_without_financial_reference_checker():
     created = client.post("/api/v1/plano-contas", json=payload()).json()
-    deleted = client.delete(f"/api/v1/plano-contas/{created['id']}")
-    assert deleted.status_code == 204
-    assert client.get("/api/v1/plano-contas").json() == []
+    response = client.delete(f"/api/v1/plano-contas/{created['id']}")
+    assert response.status_code == 503
+    assert len(client.get("/api/v1/plano-contas").json()) == 1
+
+
+def test_delete_rejected_when_financial_references_exist():
+    service = PlanoContasService(has_financial_references=lambda _account_id: True)
+    item = service.create(PlanoContaInput(**payload()))
+    try:
+        service.delete(item.id)
+        assert False, "A exclusão deveria ter sido bloqueada."
+    except HTTPException as exc:
+        assert exc.status_code == 409
+        assert service.list()
+
+
+def test_delete_allowed_only_after_reference_check_returns_false():
+    service = PlanoContasService(has_financial_references=lambda _account_id: False)
+    item = service.create(PlanoContaInput(**payload()))
+    service.delete(item.id)
+    assert service.list() == []
 
 
 def test_invalid_type_is_rejected():
