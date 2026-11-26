@@ -1,24 +1,47 @@
 from uuid import uuid4
+
 from fastapi import HTTPException
+
+from app.core.repositories import CollectionRepository, InMemoryCollectionRepository
 from .schemas import EstoqueInput, EstoqueItem
 
+
 class EstoqueService:
-    def __init__(self): self._items = {}
-    def list(self): return list(self._items.values())
-    def get(self, item_id):
-        if item_id not in self._items: raise HTTPException(status_code=404, detail='Produto não encontrado.')
-        return self._items[item_id]
-    def create(self, data: EstoqueInput):
-        item = EstoqueItem(id=f'est_shadow_{uuid4().hex}', **data.model_dump())
-        self._items[item.id] = item
+    """Regras de estoque desacopladas do armazenamento."""
+
+    def __init__(self, repository: CollectionRepository[EstoqueItem, str] | None = None) -> None:
+        self.repository = repository or InMemoryCollectionRepository()
+        self._items = getattr(self.repository, "_items", {})
+
+    def list(self) -> list[EstoqueItem]:
+        return self.repository.list()
+
+    def get(self, item_id: str) -> EstoqueItem:
+        item = self.repository.get(item_id)
+        if item is None:
+            raise HTTPException(status_code=404, detail="Produto não encontrado.")
         return item
-    def update(self, item_id, data: EstoqueInput):
+
+    def create(self, data: EstoqueInput) -> EstoqueItem:
+        item = EstoqueItem(id=f"est_shadow_{uuid4().hex}", **data.model_dump())
+        self.repository.add(item.id, item)
+        return item
+
+    def update(self, item_id: str, data: EstoqueInput) -> EstoqueItem:
         self.get(item_id)
         item = EstoqueItem(id=item_id, **data.model_dump())
-        self._items[item_id] = item
+        self.repository.replace(item_id, item)
         return item
-    def delete(self, item_id):
+
+    def update_quantity(self, item_id: str, quantity: int) -> EstoqueItem:
+        product = self.get(item_id)
+        updated = product.model_copy(update={"quantidade": quantity})
+        self.repository.replace(item_id, updated)
+        return updated
+
+    def delete(self, item_id: str) -> None:
         self.get(item_id)
-        del self._items[item_id]
+        self.repository.delete(item_id)
+
 
 estoque_service = EstoqueService()
