@@ -273,3 +273,14 @@ No modo PostgreSQL, a edição cadastral de um produto bloqueia a linha com `FOR
 - Não existe coluna de conta bancária em `financeiro`, nem FK ou regra de associação entre títulos e contas bancárias. Portanto, não se presume que um lançamento pertença a determinada conta, e nenhuma conciliação automática é possível nesta versão.
 - A exclusão de conta bancária não possui bloqueio por lançamentos financeiros, pois não há vínculo referencial no modelo atual. Antes de introduzir esse vínculo, é necessário definir se títulos podem ser associados a uma conta, em qual etapa, e como tratar transferências, pagamentos parciais e conciliação.
 - Foram acrescentados testes de normalização no POST e PUT e rejeição de nome em branco. Os testes ainda não foram executados; o adaptador PostgreSQL ainda depende de validação em banco local isolado.
+
+
+## Revisão de integridade — Moradores e Unidades
+
+- Os campos textuais do cadastro agora removem espaços externos na entrada, tanto em criação/edição quanto no schema de importação que herda o modelo-base.
+- Campos obrigatórios `bloco`, `apartamento` e `nome` continuam obrigatórios; valores compostos apenas por espaços são rejeitados após a normalização.
+- Campos opcionais de contato e identificação continuam aceitando vazio. A normalização não remove pontuação nem altera o formato legado de CPF e telefone.
+- Não foi ativada validação de dígitos de CPF, unicidade de CPF, unicidade de unidade ou validação estrita de formato de e-mail. O teste legado já utiliza CPF abreviado, e essas regras exigem saneamento/decisão de negócio antes de bloquear cadastros existentes ou importações.
+- A busca por nome/apartamento e o filtro por bloco continuam sem alteração funcional.
+- Foram acrescentados testes de normalização, rejeição de campo obrigatório só com espaços e compatibilidade com campos opcionais vazios. Os testes ainda não foram executados.
+- O cadastro contém dados pessoais (inclusive CPF e contato). Antes de qualquer dado real, continuam obrigatórios autenticação Google validada no backend, matriz de autorização aprovada, banco privado com grants mínimos e definição de retenção/acesso. Nenhuma dessas proteções foi presumida como concluída nesta revisão.
