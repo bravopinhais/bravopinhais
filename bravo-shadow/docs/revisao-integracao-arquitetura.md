@@ -4,14 +4,14 @@
 
 Revisão estática da branch `bravo-shadow`. Os 15 routers foram inspecionados e todos resolvem seus serviços por `request.app.state.services`; nenhum dos routers inspecionados importa diretamente um singleton de serviço. A composição de serviços está concentrada em `build_storage_services()`, chamada por `create_app()`.
 
-Esta verificação é de código-fonte. O CI do commit `79d97af` concluiu com sucesso para a política de imutabilidade de acertos persistidos. As alterações posteriores de precisão monetária ainda dependem da conclusão do CI. Isso não representa teste de browser, teste de banco PostgreSQL real ou homologação funcional.
+Esta verificação é de código-fonte. O CI do commit `79d97af` concluiu com sucesso para a política de imutabilidade de acertos persistidos. As alterações de precisão monetária para Contas Bancárias passaram no CI do commit `cfd3211` (run `45843573270`). Isso não representa teste de browser, teste de banco PostgreSQL real ou homologação funcional.
 
 ## Arquitetura atual
 
 - Uma aplicação FastAPI integrada, com 15 módulos/recursos e API versionada em `/api/v1`.
 - Serviços e repositórios construídos por instância de aplicação e expostos em `app.state.services`.
 - Repositório em memória como padrão seguro; adequado a desenvolvimento/testes, não a produção, multi-worker ou persistência após reinício.
-- Adaptadores PostgreSQL estão conectados no `build_storage_services()` para os 14 módulos com repositório próprio: Plano de Contas, Financeiro, Formas Monetárias, Contas Bancárias, Moradores, Fornecedores, Empregados, Estoque, Acertos de Estoque, Categorias, Motivos de Acerto, Documentos, Condomínio, Conselho e Usuários. O Dashboard não tem repositório próprio; seus indicadores ainda são demonstrativos.
+- Adaptadores PostgreSQL estão conectados no `build_storage_services()` para os 14 módulos com repositório próprio. O saldo bancário usa `Decimal` no contrato Python e `numeric(14,2)` no SQL, mantendo o JSON numérico legado: Plano de Contas, Financeiro, Formas Monetárias, Contas Bancárias, Moradores, Fornecedores, Empregados, Estoque, Acertos de Estoque, Categorias, Motivos de Acerto, Documentos, Condomínio, Conselho e Usuários. O Dashboard não tem repositório próprio; seus indicadores ainda são demonstrativos.
 - O frontend sombra pode ser servido pelo processo FastAPI, mas a integração completa de todas as telas com as APIs ainda não foi homologada.
 - CORS permanece fechado até definição de allowlist.
 - Nenhuma conexão com banco de produção foi configurada ou executada.
