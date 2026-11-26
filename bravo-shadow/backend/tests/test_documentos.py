@@ -79,3 +79,40 @@ def test_document_rejects_unknown_category():
         json=payload(categoriaId="categoria-inexistente"),
     )
     assert response.status_code == 404
+
+
+def test_document_metadata_is_trimmed_and_compressed_content_is_preserved():
+    compressed_payload = "  H4sIAAAAA==  "
+    response = client.post(
+        "/api/v1/documentos",
+        json=payload(
+            pasta="  Financeiro  ",
+            categoriaId="  ",
+            titulo="  Ata de reunião  ",
+            nomeArquivo="  ata final.pdf  ",
+            arquivoCompactadoGzip=compressed_payload,
+        ),
+    )
+    assert response.status_code == 201
+    item = response.json()
+    assert item["pasta"] == "Financeiro"
+    assert item["categoriaId"] is None
+    assert item["titulo"] == "Ata de reunião"
+    assert item["nomeArquivo"] == "ata final.pdf"
+    assert item["arquivoCompactadoGzip"] == compressed_payload
+
+
+def test_document_required_metadata_rejects_whitespace_only():
+    assert client.post("/api/v1/documentos", json=payload(titulo="   ")).status_code == 422
+    assert client.post("/api/v1/documentos", json=payload(nomeArquivo="   ")).status_code == 422
+
+
+def test_document_category_id_is_trimmed_before_lookup():
+    category = client.post("/api/v1/categorias", json={"nome": "Atas"}).json()
+    response = client.post(
+        "/api/v1/documentos",
+        json=payload(categoriaId=f"  {category['id']}  "),
+    )
+    assert response.status_code == 201
+    assert response.json()["categoriaId"] == category["id"]
+    assert response.json()["pasta"] == "Atas"
