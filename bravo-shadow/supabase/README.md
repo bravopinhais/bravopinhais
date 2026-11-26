@@ -9,7 +9,8 @@ Este diretório documenta a preparação do banco isolado. Nenhum projeto remoto
 - Nenhum banco foi iniciado ou alterado.
 - Não existe seed com dados do condomínio.
 - Não instalar nem configurar credenciais de produção.
-- O backend tem driver Psycopg e fábrica por `BRAVO_DATABASE_URL`, mas o modo padrão continua `memory`. Não habilitar PostgreSQL antes dos critérios de aceite abaixo.
+- O backend tem driver Psycopg e fábrica por `BRAVO_DATABASE_URL`, mas o modo padrão continua `memory`. O modo `postgres` conecta todos os adaptadores dos módulos, não apenas o piloto financeiro. Não habilitar PostgreSQL antes dos critérios de aceite abaixo.
+- O SQL habilita RLS sem policies. A role customizada da API precisa de políticas explícitas; não basta conceder GRANTs SQL. A solução de autorização no banco ainda precisa ser projetada e testada.
 
 ## Versão e preparação local
 
@@ -61,8 +62,10 @@ O `db reset` sem `--remote` recria a base local e reaplica as migrations. Confir
 5. RLS está habilitado e não há policies permissivas nem grants a `anon`/`authenticated`.
 6. A API não tem credenciais nem driver configurados para banco remoto.
 7. Testes de integração usam somente a instância local descartável.
-8. Um usuário PostgreSQL dedicado da API recebe somente os privilégios necessários nas três tabelas do piloto; não usar o superusuário padrão da stack como credencial permanente da API.
-9. CRUD de Formas Monetárias, Plano de Contas e Financeiro funciona após reiniciar a API e os dados persistem.
+8. O modo `postgres` do backend conecta adaptadores para os 14 módulos com repositório próprio; portanto, o teste completo exige permissões mínimas em todas as 15 tabelas do schema. Não limitar os GRANTs às três tabelas financeiras enquanto esse modo ligar todos os adaptadores.
+9. Definir a identidade da role da API e políticas RLS explícitas. O SQL atual habilita RLS sem policies e revoga os grants das roles padrão; uma role comum sem política também ficará bloqueada. Não conceder `BYPASSRLS` como atalho, nem usar o superusuário padrão como credencial permanente.
+10. A tabela `acertos_estoque` deve permitir à API somente SELECT e INSERT; não conceder UPDATE/DELETE para manter o histórico imutável. Demais permissões devem refletir o CRUD realmente usado por cada módulo.
+11. CRUD de todos os módulos habilitados no modo PostgreSQL funciona após reiniciar a API e os dados persistem, respeitando as políticas e permissões definidas.
 
 Só depois desses critérios deve ser ativado `BRAVO_STORAGE_BACKEND=postgres` na sombra. Não conceder acesso amplo ao schema nem expor `bravo_shadow` pela Data API.
 
