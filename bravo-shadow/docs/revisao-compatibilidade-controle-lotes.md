@@ -82,3 +82,18 @@ Foi criada `backend/app/core/migration_batch_state.py` com validação fail-clos
 Os testes em `backend/tests/test_migration_batch_state.py` cobrem fluxo válido, hash divergente, ambiente proibido, rollback prematuro, estados terminais e imutabilidade.
 
 **Limite importante:** isso é regra de domínio em memória. Antes de uso persistente, o adaptador PostgreSQL deverá executar a leitura com `SELECT ... FOR UPDATE`, validar e atualizar o estado dentro da mesma transação. A função pura, sozinha, não oferece bloqueio concorrente nem autorização de usuário.
+
+
+## 8. Adaptador PostgreSQL com bloqueio de linha
+
+Foi adicionado `backend/app/core/migration_batch_state_postgres.py`. A operação:
+1. Abre uma unidade de trabalho somente quando chamada, usando fábrica injetada.
+2. Lê o lote com `SELECT ... FOR UPDATE`.
+3. Reconstitui e valida a aprovação persistida e seu vínculo com o manifesto.
+4. Aplica a máquina de estados pura.
+5. Atualiza status e campos de aprovação com condição de compare-and-set (`batch_id + manifest_hash + status anterior`).
+6. Confirma tudo pela unidade de trabalho; exceções provocam rollback.
+
+Testes com banco falso cobrem bloqueio, persistência do fluxo, lote ausente, aprovação parcial, hash divergente e compare-and-set.
+
+**Limitações mantidas:** não cria lotes, não autentica nem autoriza o revisor, não executa importação e não inicializa conexão automaticamente. O SQL continua sendo rascunho não aplicado. A autenticação/autoridade do aprovador deve ser verificada pela camada de aplicação antes de chamar o adaptador.
