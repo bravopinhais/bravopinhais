@@ -64,3 +64,12 @@ Consulte [`docs/revisao-integracao-arquitetura.md`](../docs/revisao-integracao-a
 ## Próxima etapa: persistência PostgreSQL
 
 O modelo do primeiro lote está em [`docs/modelo-persistencia-piloto.md`](../docs/modelo-persistencia-piloto.md). Até a geração e validação de migrations em stack local, os serviços continuam exclusivamente em memória. Não configure `DATABASE_URL` nem credenciais Supabase apontando para produção. A implementação futura usará repositórios injetados, transações para movimentos de estoque e controle otimista por versão.
+
+
+## Camada de repositórios (primeiro corte)
+
+Foi introduzido `app/core/repositories.py` com o contrato `CollectionRepository` e o adaptador `InMemoryCollectionRepository`. Plano de Contas, Financeiro, Estoque e Acertos de Estoque agora recebem repositórios por injeção no construtor, mantendo o adaptador em memória como padrão da sombra. As rotas HTTP permanecem iguais.
+
+O serviço de Acertos de Estoque deixou de acessar diretamente o dicionário privado do serviço de Estoque: a atualização de saldo passa por `update_quantity`. Isso melhora o isolamento entre módulos, mas **não cria atomicidade** no adaptador em memória. A operação transacional de saldo + histórico continua sendo requisito obrigatório para o adaptador PostgreSQL e bloqueia qualquer uso com dados reais.
+
+Compatibilidade temporária: o atributo `_items` continua exposto internamente pelos serviços para que os testes atuais possam limpar o adaptador em memória. Código novo deve usar os métodos do repositório, não manipular esse atributo.
