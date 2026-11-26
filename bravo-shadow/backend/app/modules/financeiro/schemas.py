@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -9,7 +10,7 @@ class FinanceiroInput(BaseModel):
     tipo: Literal["Receber", "Pagar"]
     planoContaId: str = ""
     historico: str = Field(min_length=1)
-    valor: float
+    valor: Decimal = Field(max_digits=14, decimal_places=2)
 
 
 class FinanceiroTitulo(FinanceiroInput):
