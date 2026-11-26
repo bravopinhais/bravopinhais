@@ -108,3 +108,19 @@ def test_update_rejects_stale_if_match_version():
     )
     assert stale.status_code == 409
     assert client.get("/api/v1/financeiro").json()[0]["valor"] == 99
+
+
+def test_create_returns_etag_header():
+    response = client.post("/api/v1/financeiro", json=payload())
+    assert response.status_code == 201
+    assert response.headers["etag"] == '"1"'
+
+
+def test_update_rejects_unquoted_if_match():
+    created = client.post("/api/v1/financeiro", json=payload()).json()
+    response = client.put(
+        f"/api/v1/financeiro/{created['id']}",
+        json=payload(),
+        headers={"If-Match": "1"},
+    )
+    assert response.status_code == 400
