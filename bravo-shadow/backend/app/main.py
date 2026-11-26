@@ -78,6 +78,15 @@ def create_app(
             "storage": configured_backend,
         }
 
+    # A interface estática é servida pelo mesmo processo da API quando disponível.
+    # No container, frontend/ fica ao lado de backend/ na raiz de bravo-shadow.
+    from pathlib import Path
+    from fastapi.staticfiles import StaticFiles
+
+    frontend_dir = Path(__file__).resolve().parents[2] / "frontend"
+    if frontend_dir.is_dir():
+        application.mount("/", StaticFiles(directory=str(frontend_dir), html=True), name="frontend")
+
     return application
 
 
