@@ -20,6 +20,7 @@ class PostgresUnitOfWork:
 
     A fábrica deve abrir uma conexão PostgreSQL nova. O driver concreto é
     injetado pelo ambiente, evitando conexão implícita ou fallback em memória.
+    Se o próprio commit falhar, tenta rollback antes de liberar a conexão.
     """
 
     def __init__(self, connection_factory: Callable[[], ConnectionT]) -> None:
@@ -35,11 +36,17 @@ class PostgresUnitOfWork:
         if connection is None:
             return False
         try:
-            if exc_type is None:
-                connection.commit()
-            else:
+            if exc_type is not None:
                 connection.rollback()
+            else:
+                try:
+                    connection.commit()
+                except Exception:
+                    connection.rollback()
+                    raise
         finally:
-            connection.close()
-            self.connection = None
+            try:
+                connection.close()
+            finally:
+                self.connection = None
         return False
