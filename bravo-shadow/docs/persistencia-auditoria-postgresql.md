@@ -61,3 +61,11 @@ RLS está habilitado e forçado no rascunho, sem policies permissivas. Isso bloq
 ## Limites preservados
 
 Nenhuma migration foi criada ou aplicada. Nenhuma role, policy, grant ou banco foi alterado. O `AuditSink` em memória continua isolado e não é apresentado como persistência. Nenhum router foi conectado à auditoria e nenhuma rota foi exposta.
+
+## Adaptador Python — etapa isolada
+
+Foi acrescentado `backend/app/core/postgres_audit.py` com `PostgresAuditSink`. Ele recebe uma `connection_factory`, valida que o objeto é um `AuditEvent`, executa somente INSERT parametrizado e usa a unidade de trabalho existente para commit/rollback/close. Não oferece métodos de consulta, alteração ou exclusão.
+
+Os testes em `backend/tests/test_postgres_audit.py` cobrem parâmetros enviados, commit, rollback em falha e rejeição de objeto inválido antes de abrir conexão. **Foram escritos, mas não executados.** Usam conexão simulada e não comprovam compatibilidade com PostgreSQL real, RLS ou GRANTs.
+
+O adaptador permanece deliberadamente fora de `storage.py` e `main.py`: não há tabela aplicada, credencial writer configurada, nem prova de que a role de conexão possua somente INSERT. Também não há atomicidade conjunta com operações de negócio nesta etapa; cada evento usa uma transação própria. Portanto, ainda não deve ser usado como trilha de auditoria operacional.
