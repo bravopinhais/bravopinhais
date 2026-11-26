@@ -4,7 +4,12 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Any, Literal
 
-from app.core.postgres_catalogs import (\n    PostgresCategoriasRepository,\n    PostgresDocumentosRepository,\n    PostgresMotivosAcertoRepository,\n)\nfrom app.core.postgres_inventory import (
+from app.core.postgres_catalogs import (
+    PostgresCategoriasRepository,
+    PostgresDocumentosRepository,
+    PostgresMotivosAcertoRepository,
+)
+from app.core.postgres_inventory import (
     PostgresAcertosEstoqueRepository,
     PostgresEstoqueRepository,
 )
