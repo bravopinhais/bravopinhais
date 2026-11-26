@@ -19,6 +19,10 @@ def calculate_snapshot_hash(
     records: tuple[SourceSnapshotRecord, ...],
 ) -> str:
     """Return SHA-256 of a stable identity/hash inventory representation."""
+    if not isinstance(records, tuple):
+        raise TypeError("records deve ser uma tupla imutável.")
+    if any(not isinstance(item, SourceSnapshotRecord) for item in records):
+        raise TypeError("records contém item de tipo inválido.")
     canonical_records = sorted(
         (
             item.identity.source_system,
