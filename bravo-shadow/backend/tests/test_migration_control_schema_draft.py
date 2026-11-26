@@ -57,7 +57,7 @@ def test_only_disposable_environments_are_allowed():
     sql = _sql().lower()
 
     assert "environment in ('local_disposable', 'ci_ephemeral')" in sql
-    assert "production" in sql
+    assert "produção" in sql
 
 
 def test_rls_is_enabled_and_no_grants_or_policies_are_opened():
