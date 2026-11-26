@@ -10,6 +10,7 @@ client = TestClient(app)
 
 def setup_function() -> None:
     plano_contas_service._items.clear()
+    plano_contas_service._has_financial_references = None
 
 
 def payload(**overrides):
