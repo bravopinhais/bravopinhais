@@ -13,6 +13,7 @@ A sombra possui 15 módulos/recursos com rotas registradas em uma aplicação Fa
 - Os 15 routers são registrados no mesmo processo.
 - Cada serviço instancia seu próprio armazenamento em memória.
 - A ligação Plano de Contas → Financeiro é feita manualmente no `main.py`, atribuindo um callback a um atributo privado do serviço.
+- **Novo achado de isolamento:** `create_app()` chama `configure_storage()`, que substitui repositórios em objetos de serviço globais (`plano_contas_service`, `financeiro_service`, `formas_monetarias_service`). Os routers importam esses singletons diretamente. Assim, criar duas instâncias FastAPI com configurações diferentes no mesmo processo pode fazer uma aplicação usar o armazenamento configurado pela outra. O teste atual restaura manualmente o modo `memory`, o que evita parte da interferência no teste, mas não resolve o acoplamento estrutural.
 - `CORSMiddleware` está importado, mas não está configurado nem adicionado à aplicação. A API não possui política CORS efetiva.
 - A dependência `email-validator` foi adicionada para suportar o tipo `EmailStr` no perfil de usuário.
 
@@ -39,11 +40,12 @@ A sombra possui 15 módulos/recursos com rotas registradas em uma aplicação Fa
 5. **Privacidade:** definir controle de acesso e auditoria para CPF, telefone, endereço, dados de empregados, documentos e anexos.
 
 ### P1 — antes da homologação funcional
-6. **Contratos e relações:** documentar IDs, campos opcionais, regras de exclusão, estados e erros HTTP; introduzir FKs ou relações explícitas quando a regra for confirmada.
-7. **Arquivos:** validar tamanho, MIME, extensão, limites de memória, integridade e compatibilidade do formato deflate/Base64 legado. Considerar armazenamento de objetos separado do payload JSON.
-8. **Concorrência e idempotência:** definir versão/ETag ou `updated_at` + versão, idempotency key para operações de movimento e tratamento de conflito.
-9. **Paginação e filtros:** evitar listagens ilimitadas à medida que os cadastros crescerem.
-10. **Observabilidade:** logs estruturados com request ID, métricas, trilha de auditoria e mensagens de erro sem dados pessoais.
+6. **Isolamento por aplicação:** remover a mutação de serviços globais no `configure_storage`; construir repositórios/serviços por instância e injetá-los nos routers via dependências FastAPI ou `app.state`. Adicionar teste que cria duas aplicações com storages distintos e comprova que uma não altera a outra. Fazer isso antes de executar testes de integração com múltiplas configurações.
+7. **Contratos e relações:** documentar IDs, campos opcionais, regras de exclusão, estados e erros HTTP; introduzir FKs ou relações explícitas quando a regra for confirmada.
+8. **Arquivos:** validar tamanho, MIME, extensão, limites de memória, integridade e compatibilidade do formato deflate/Base64 legado. Considerar armazenamento de objetos separado do payload JSON.
+9. **Concorrência e idempotência:** definir versão/ETag ou `updated_at` + versão, idempotency key para operações de movimento e tratamento de conflito.
+10. **Paginação e filtros:** evitar listagens ilimitadas à medida que os cadastros crescerem.
+11. **Observabilidade:** logs estruturados com request ID, métricas, trilha de auditoria e mensagens de erro sem dados pessoais.
 
 ### P2 — antes da promoção
 11. Testes automatizados executados em CI, testes de integração com banco isolado, testes de concorrência e restauração de backup.
