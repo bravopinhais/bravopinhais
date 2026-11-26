@@ -142,7 +142,7 @@ class PostgresReviewLedgerStore:
         rationale: str,
         reviewed_at: str,
     ) -> ReviewLedger:
-        """Append one review under a per-decision row lock and optimistic version."""
+        """Append under a batch lock, then decision lock, with optimistic versioning."""
         with PostgresUnitOfWork(self._connection_factory) as uow:
             connection = uow.connection
 
@@ -152,6 +152,7 @@ class PostgresReviewLedgerStore:
                 SELECT manifest_hash
                 FROM bravo_shadow.migration_review_batches
                 WHERE batch_key = %s
+                FOR UPDATE
                 """,
                 (register.batch_id,),
             )
