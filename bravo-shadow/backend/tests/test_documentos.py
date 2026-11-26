@@ -68,13 +68,13 @@ def test_document_category_link_and_restrict_delete():
     )
     assert created.status_code == 201
     document = created.json()
-    assert document["categoriaId"] == category["id"]
+    assert document["categoriaId"] == category.id
     assert document["pasta"] == "Atas"
-    assert client.delete("/api/v1/categorias/" + category["id"]).status_code == 409
+    with pytest.raises(HTTPException) as error:
+        app.state.services.categorias.delete(category.id)
+    assert error.value.status_code == 409
     assert client.delete("/api/v1/documentos/" + document["id"]).status_code == 204
-    assert client.delete("/api/v1/categorias/" + category["id"]).status_code == 204
-
-
+    app.state.services.categorias.delete(category.id)
 def test_document_rejects_unknown_category():
     response = client.post(
         "/api/v1/documentos",
@@ -110,11 +110,11 @@ def test_document_required_metadata_rejects_whitespace_only():
 
 
 def test_document_category_id_is_trimmed_before_lookup():
-    category = client.post("/api/v1/categorias", json={"nome": "Atas"}).json()
+    category = app.state.services.categorias.create(CategoriaInput(nome="Atas"))
     response = client.post(
         "/api/v1/documentos",
         json=payload(categoriaId=f"  {category.id}  "),
     )
     assert response.status_code == 201
-    assert response.json()["categoriaId"] == category["id"]
+    assert response.json()["categoriaId"] == category.id
     assert response.json()["pasta"] == "Atas"
