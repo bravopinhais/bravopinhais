@@ -79,6 +79,8 @@ A exclusão física de produto referenciado deve ser bloqueada por FK. O histór
 
 1. **Criar acerto:** em uma única transação, bloquear a linha do produto (`SELECT ... FOR UPDATE`), validar o saldo conforme regra aprovada, atualizar quantidade e inserir histórico. Se qualquer etapa falhar, tudo sofre rollback.
 2. **Editar/excluir acerto:** não permitir edição destrutiva de movimento que já alterou saldo sem recalcular saldo de forma transacional. No primeiro corte, manter somente exclusão bloqueada ou implementar estorno compensatório; não copiar a exclusão atual que apaga histórico sem reverter saldo.
+
+**Política aplicada no adaptador persistente:** a API sombra retorna HTTP 409 ao tentar excluir um acerto existente. O histórico é preservado e o saldo não é alterado. O modo em memória mantém o comportamento legado apenas para testes; o usuário PostgreSQL dedicado também não deverá receber privilégio `DELETE` sobre `bravo_shadow.acertos_estoque`. O fluxo de estorno compensatório ainda não foi implementado.
 3. **Excluir plano de contas:** a FK `ON DELETE RESTRICT` impede excluir conta usada por título financeiro, mesmo sob concorrência.
 4. **Atualização concorrente:** UPDATE deve exigir a versão lida (`WHERE id = :id AND version = :expected_version`) e incrementar `version`; zero linhas atualizadas vira conflito HTTP 409.
 
