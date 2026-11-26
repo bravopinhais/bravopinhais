@@ -240,3 +240,19 @@ O SQL continua sendo apenas rascunho. Não foi criada migration pela CLI, não h
 - A autenticação Google/e-mail e autorização server-side ainda não foram concluídas; não expor o schema privado à Data API.
 - O backend ainda não tem pool de conexões.
 - Nenhum dado de produção foi copiado ou utilizado.
+
+
+## Extensão — Moradores, Fornecedores, Empregados e Contas Bancárias
+
+Foram adicionados adaptadores DB-API em `app/core/postgres_cadastros.py` para os quatro cadastros, mantendo os campos e nomes do contrato atual:
+
+- **Moradores:** bloco, apartamento, nome, e-mail, telefone, CPF, nome do pet e vaga de garagem.
+- **Fornecedores:** CNPJ e razão social.
+- **Empregados:** nome, cargo, empresa, endereço, telefone e contato de emergência.
+- **Contas Bancárias:** banco e saldo informado.
+
+O rascunho SQL cria tabelas privadas para os quatro cadastros, com IDs textuais, timestamps e versão. Os campos pessoais são mantidos apenas no schema privado, com RLS habilitado, sem policies e com revogação de grants de `public`, `anon`, `authenticated` e `service_role`. Não foram adicionadas restrições de unicidade para CPF/CNPJ nem vínculos entre contas bancárias e lançamentos financeiros, pois essas regras não foram confirmadas no contrato legado. O saldo bancário continua sendo saldo informado, não conciliação bancária.
+
+O modo PostgreSQL injeta os novos repositórios nos serviços. O modo memória continua padrão. Testes DB-API simulados cobrem mapeamento de campos e injeção dos quatro repositórios.
+
+**Limites:** não houve importação de cadastros existentes, conexão a PostgreSQL real, criação/aplicação de migration ou revisão jurídica/operacional de retenção de dados pessoais. Antes de dados reais, ainda são necessários banco local isolado, política de acesso por identidade Google validada no backend, regras de unicidade aprovadas e avaliação de privacidade.
