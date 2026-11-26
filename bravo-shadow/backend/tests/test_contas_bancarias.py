@@ -51,3 +51,32 @@ def test_bank_balance_uses_decimal_precision_and_rejects_more_than_two_places():
     assert item.saldo == Decimal("1234.56")
     with pytest.raises(ValidationError):
         ContaBancariaInput(banco="Banco", saldo="1234.567")
+
+
+def test_bank_name_is_trimmed_on_create():
+    response = client.post(
+        "/api/v1/contas-bancarias",
+        json={"banco": "  Banco Cooperativo  ", "saldo": "10.00"},
+    )
+    assert response.status_code == 201
+    assert response.json()["banco"] == "Banco Cooperativo"
+
+
+def test_bank_name_with_only_whitespace_is_rejected():
+    response = client.post(
+        "/api/v1/contas-bancarias",
+        json={"banco": "   ", "saldo": "10.00"},
+    )
+    assert response.status_code == 422
+
+
+def test_bank_name_is_trimmed_on_update():
+    created = client.post(
+        "/api/v1/contas-bancarias", json={"banco": "Banco A", "saldo": 0}
+    ).json()
+    response = client.put(
+        f"/api/v1/contas-bancarias/{created['id']}",
+        json={"banco": "  Banco B  ", "saldo": 0},
+    )
+    assert response.status_code == 200
+    assert response.json()["banco"] == "Banco B"
