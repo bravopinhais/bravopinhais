@@ -2,7 +2,7 @@
 -- RASCUNHO DE MODELAGEM — NÃO EXECUTAR / NÃO É MIGRATION.
 -- Sem roles, grants, policies, triggers ou conexão configurados neste arquivo.
 -- Ambiente permitido na V1: local_disposable e ci_ephemeral.
--- Produção é recusada pela aplicação/configuração; este DDL não a habilita.
+-- O futuro importador deverá recusar produção; este DDL, isoladamente, não executa essa proteção.
 
 CREATE SCHEMA IF NOT EXISTS bravo_shadow;
 
