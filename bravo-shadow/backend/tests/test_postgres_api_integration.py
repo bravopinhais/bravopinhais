@@ -254,7 +254,7 @@ def test_postgres_routes_create_read_update_and_enforce_references(postgres_api)
     assert all(connection.closed == connection.cursors_closed for connection in connections)
 
 
-def test_postgres_routes_translate_database_unique_violation(postgres_api):
+def test_postgres_routes_reject_duplicate_account_code(postgres_api):
     client, _state, _connections = postgres_api
     first = client.post(
         "/api/v1/plano-contas",
