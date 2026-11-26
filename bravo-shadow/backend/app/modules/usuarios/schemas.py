@@ -1,5 +1,5 @@
 from typing import Literal
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator, model_validator
 
 class UsuarioInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -18,7 +18,10 @@ class UsuarioInput(BaseModel):
     @field_validator("nome", "loja", "cargo")
     @classmethod
     def trim_text(cls, value: str) -> str:
-        return value.strip()
+        value = value.strip()
+        if not value:
+            raise ValueError("O campo não pode ficar vazio.")
+        return value
 
 class Usuario(UsuarioInput):
     id: str
@@ -52,7 +55,18 @@ class UsuarioDadosCadastraisUpdateInput(BaseModel):
     @field_validator("nome", "loja", "cargo")
     @classmethod
     def trim_optional_text(cls, value: str | None) -> str | None:
-        return value.strip() if value is not None else None
+        if value is None:
+            return None
+        value = value.strip()
+        if not value:
+            raise ValueError("O campo não pode ficar vazio.")
+        return value
+
+    @model_validator(mode="after")
+    def require_at_least_one_field(self):
+        if not any(getattr(self, field) is not None for field in ("nome", "loja", "cargo")):
+            raise ValueError("Informe ao menos um campo cadastral para atualizar.")
+        return self
 
 
 class UsuarioAdministracaoInput(BaseModel):
@@ -60,4 +74,4 @@ class UsuarioAdministracaoInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
     perfil: Literal["Admin", "Operador"]
     status: Literal["Ativo", "Inativo"]
-\n
+
