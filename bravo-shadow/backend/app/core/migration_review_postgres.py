@@ -65,7 +65,12 @@ class PostgresReviewLedgerStore:
         ))
 
     def initialize(self, register: DecisionRegister) -> ReviewLedger:
-        """Create the immutable batch/decision snapshot, or verify an existing one."""
+        """Create or verify a snapshot; the batch row lock serializes same-batch initializers."""
+        expected_decisions = self._expected_decisions(register)
+        decision_ids = tuple(item[0] for item in expected_decisions)
+        if len(decision_ids) != len(set(decision_ids)):
+            raise ReviewValidationError("duplicate_decision_id_in_register")
+
         with PostgresUnitOfWork(self._connection_factory) as uow:
             connection = uow.connection
             cursor = self._run(
