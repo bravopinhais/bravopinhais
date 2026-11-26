@@ -42,10 +42,10 @@ def postgres_users_database():
 
     with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
         for role in ("anon", "authenticated", "service_role"):
-            connection.execute(
+            existing_role = connection.execute(
                 "SELECT 1 FROM pg_roles WHERE rolname = %s", (role,)
-            )
-            if connection.fetchone() is None:
+            ).fetchone()
+            if existing_role is None:
                 connection.execute(f'CREATE ROLE "{role}" NOLOGIN')
         connection.execute("DROP SCHEMA IF EXISTS bravo_shadow CASCADE")
         connection.execute(users_ddl.read_text(encoding="utf-8"), prepare=False)
