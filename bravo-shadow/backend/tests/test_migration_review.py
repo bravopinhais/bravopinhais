@@ -146,6 +146,7 @@ def test_review_history_verifier_rejects_duplicate_or_broken_versions():
 
 
 def test_review_history_is_bound_to_original_manifest():
+    from dataclasses import replace
     from app.core.migration_review import verify_review_ledger
 
     register, ledger, _ = setup_review()
