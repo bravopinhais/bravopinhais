@@ -7,6 +7,8 @@ from app.modules.conselheiros.router import router as conselheiros_router
 from app.modules.moradores.router import router as moradores_router
 from app.modules.categorias.router import router as categorias_router
 from app.modules.motivos_acerto.router import router as motivos_acerto_router
+from app.modules.estoque.router import router as estoque_router
+from app.modules.acertos_estoque.router import router as acertos_estoque_router
 from app.modules.financeiro.router import router as financeiro_router
 from app.modules.financeiro.service import financeiro_service
 from app.modules.fornecedores.router import router as fornecedores_router
@@ -36,6 +38,8 @@ app.include_router(conselheiros_router)
 app.include_router(moradores_router)
 app.include_router(categorias_router)
 app.include_router(motivos_acerto_router)
+app.include_router(estoque_router)
+app.include_router(acertos_estoque_router)
 
 # CORS permanecerá restrito até que os domínios oficiais dos ambientes
 # de desenvolvimento e homologação sejam definidos. Não usar "*" em produção.
