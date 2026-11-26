@@ -1,10 +1,31 @@
 import pytest
+from types import MappingProxyType
+from app.core.authentication import get_current_principal
+from app.core.authorization import AuthenticatedPrincipal, CAPABILITIES
+from app.core import authorization
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
 
 from app.modules.categorias.schemas import CategoriaInput
 
 from app.main import app, create_app
+
+
+@pytest.fixture(autouse=True)
+def allow_test_admin(monkeypatch):
+    monkeypatch.setattr(
+        authorization,
+        "ROLE_CAPABILITIES",
+        MappingProxyType({"Admin": CAPABILITIES, "Operador": frozenset()}),
+    )
+    async def authenticated_admin():
+        return AuthenticatedPrincipal(
+            subject="google-test-subject", email="teste@example.com",
+            profile="Admin", account_status="Ativo",
+        )
+    app.dependency_overrides[get_current_principal] = authenticated_admin
+    yield
+    app.dependency_overrides.clear()
 
 
 client = TestClient(app)
@@ -120,3 +141,35 @@ def test_document_category_id_is_trimmed_before_lookup():
     assert response.status_code == 201
     assert response.json()["categoriaId"] == category.id
     assert response.json()["pasta"] == "Atas"
+
+
+
+def test_document_routes_require_authentication():
+    unauthenticated = TestClient(create_app(storage_backend="memory"))
+    assert unauthenticated.get("/api/v1/documentos").status_code == 401
+    assert unauthenticated.get("/api/v1/documentos/x").status_code == 401
+    assert unauthenticated.post("/api/v1/documentos", json=payload()).status_code == 401
+    assert unauthenticated.put("/api/v1/documentos/x", json=payload()).status_code == 401
+    assert unauthenticated.delete("/api/v1/documentos/x").status_code == 401
+
+
+def test_document_routes_deny_profiles_until_matrix_approval(monkeypatch):
+    monkeypatch.setattr(
+        authorization,
+        "ROLE_CAPABILITIES",
+        MappingProxyType({"Admin": frozenset(), "Operador": frozenset()}),
+    )
+    for profile in ("Admin", "Operador"):
+        application = create_app(storage_backend="memory")
+        async def principal(profile=profile):
+            return AuthenticatedPrincipal(
+                subject="google-test-subject", email="teste@example.com",
+                profile=profile, account_status="Ativo",
+            )
+        application.dependency_overrides[get_current_principal] = principal
+        denied = TestClient(application)
+        assert denied.get("/api/v1/documentos").status_code == 403
+        assert denied.get("/api/v1/documentos/x").status_code == 403
+        assert denied.post("/api/v1/documentos", json=payload()).status_code == 403
+        assert denied.put("/api/v1/documentos/x", json=payload()).status_code == 403
+        assert denied.delete("/api/v1/documentos/x").status_code == 403
