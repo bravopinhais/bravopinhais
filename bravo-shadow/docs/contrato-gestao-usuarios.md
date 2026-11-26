@@ -2,7 +2,7 @@
 
 ## Status
 
-**Proposta técnica para revisão; não implementada.** Não altera rotas, autenticação, permissões, interface ou dados. A matriz de permissões e o fluxo de entrada de novos usuários continuam pendentes de aprovação.
+**Implementação parcial em Shadow; ainda não integrada às rotas.** Os schemas separados e seus testes unitários existem, mas o serviço e os endpoints continuam usando o contrato legado. Não altera autenticação, permissões, interface ou dados. A matriz de permissões e o fluxo de entrada de novos usuários continuam pendentes de aprovação.
 
 ## Situação encontrada
 
@@ -16,7 +16,7 @@
 
 ### 1. Dados cadastrais
 
-Um schema de dados cadastrais deve conter apenas `email`, `nome`, `loja` e `cargo`. Não deve aceitar `perfil`, `status`, senha, hash de senha, token Google ou identificador de provedor. `extra="forbid"` deve continuar ativo.
+O `UsuarioCadastroInput` contém apenas `email`, `nome`, `loja` e `cargo`; rejeita campos extras e normaliza e-mail/textos. O `UsuarioDadosCadastraisUpdateInput` permite apenas `nome`, `loja` e `cargo`, sem troca de e-mail ou status, e exige ao menos um campo não vazio. Ambos têm testes unitários. Esses schemas ainda não substituem `UsuarioInput` nas rotas.
 
 ### 2. Criação administrativa
 
@@ -56,4 +56,4 @@ Listagem e detalhe são privados. Exclusão não deve ser um CRUD irrestrito: av
 
 ## Fora do escopo desta etapa
 
-Nenhum schema de produção foi alterado, nenhuma rota foi protegida ou exposta, nenhum usuário foi criado, nenhuma migration foi gerada e nenhum teste foi executado. A tela de login permanece como está, conforme o planejamento de redesenhá-la posteriormente.
+Nenhuma rota foi alterada ou exposta, nenhum usuário foi criado, nenhuma migration foi gerada e nenhum banco foi conectado. Os testes foram adicionados ao CI, mas o resultado da execução precisa ser confirmado para o commit mais recente. A tela de login permanece como está, conforme o planejamento de redesenhá-la posteriormente.
