@@ -91,6 +91,7 @@ documentos:{name:"Gestão de Documentos",title:"Gestão de Documentos",desc:"Arq
 relatorios:{name:"Relatórios & DRE",title:"Central de Relatórios & DRE",desc:"Relatórios gerenciais e demonstrativo de resultados."},
 usuarios:{name:"Gestão de Usuários",title:"Gestão de Usuários",desc:"Perfis e administração de acesso. Autenticação será integrada após auditoria."}
 };
+const dashboardMarkup=document.getElementById("view").innerHTML;
 function openModule(id){
  const item=modules[id];if(!item)return;
  document.querySelectorAll("[data-module]").forEach(el=>{if(el.closest("#navigation")){if(el.dataset.module===id)el.setAttribute("aria-current","page");else el.removeAttribute("aria-current")}});
@@ -98,7 +99,7 @@ function openModule(id){
  document.getElementById("page-title").textContent=item.title;
  document.getElementById("page-subtitle").textContent=item.desc;
  const view=document.getElementById("view");
- if(id==="dashboard"){location.hash="";location.reload();return}
+ if(id==="dashboard"){view.innerHTML=dashboardMarkup;location.hash="";return}
  view.innerHTML='<section class="panel module-view"><div><div class="big-icon">◇</div><span class="eyebrow">Módulo mapeado · Bravo Shadow</span><h2>'+item.title+'</h2><p>'+item.desc+'</p><span class="tag">Estrutura visual inicial · Funcionalidade ainda não migrada</span></div></section>';
  location.hash=id;
 }
