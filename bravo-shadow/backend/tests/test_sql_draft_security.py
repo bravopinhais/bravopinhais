@@ -41,7 +41,7 @@ def test_financial_and_inventory_integrity_constraints_are_present():
     assert "foreign key (produto_id)" in sql
     assert "foreign key (motivo_id)" in sql
     assert "lower(codigo)" in sql
-    assert "lower(email)" in sql
+    assert "lower(btrim(email))" in sql
 
 
 def test_stock_movement_history_is_marked_immutable_for_api_role():
