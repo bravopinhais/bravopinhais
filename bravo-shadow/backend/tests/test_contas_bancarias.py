@@ -1,6 +1,34 @@
 from decimal import Decimal
 
 import pytest
+from types import MappingProxyType
+
+from app.core.authentication import get_current_principal
+from app.core.authorization import AuthenticatedPrincipal, CAPABILITIES
+from app.core import authorization
+
+def configure_test_auth(application):
+    async def authenticated_admin():
+        return AuthenticatedPrincipal(
+            subject="google-test-subject",
+            email="teste@example.com",
+            profile="Admin",
+            account_status="Ativo",
+        )
+    application.dependency_overrides[get_current_principal] = authenticated_admin
+
+@pytest.fixture(autouse=True)
+def allow_test_admin(monkeypatch):
+    monkeypatch.setattr(
+        authorization,
+        "ROLE_CAPABILITIES",
+        MappingProxyType({"Admin": CAPABILITIES, "Operador": frozenset()}),
+    )
+    configure_test_auth(app)
+    yield
+    app.dependency_overrides.clear()
+
+
 from pydantic import ValidationError
 from fastapi.testclient import TestClient
 
@@ -39,7 +67,10 @@ def test_bank_name_is_required():
 
 
 def test_bank_accounts_are_isolated_between_app_instances():
-    first, second = TestClient(create_app()), TestClient(create_app())
+    first_app, second_app = create_app(), create_app()
+    configure_test_auth(first_app)
+    configure_test_auth(second_app)
+    first, second = TestClient(first_app), TestClient(second_app)
     created = first.post("/api/v1/contas-bancarias", json={"banco": "Conta Isolada"}).json()
     assert first.get("/api/v1/contas-bancarias").json()[0]["id"] == created["id"]
     assert second.get("/api/v1/contas-bancarias").json() == []
