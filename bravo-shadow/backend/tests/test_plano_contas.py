@@ -30,9 +30,29 @@ def test_create_and_list_account():
 
 
 def test_reject_duplicate_code_case_insensitive():
-    assert client.post("/api/v1/plano-contas", json=payload()).status_code == 201
-    duplicate = client.post("/api/v1/plano-contas", json=payload(codigo="1.1"))
+    assert client.post("/api/v1/plano-contas", json=payload(codigo="ABC-1")).status_code == 201
+    duplicate = client.post("/api/v1/plano-contas", json=payload(codigo="abc-1"))
     assert duplicate.status_code == 409
+
+
+def test_account_code_and_name_are_trimmed():
+    response = client.post(
+        "/api/v1/plano-contas",
+        json=payload(codigo="  2.1  ", nome="  Fundo de Reserva  "),
+    )
+    assert response.status_code == 201
+    assert response.json()["codigo"] == "2.1"
+    assert response.json()["nome"] == "Fundo de Reserva"
+
+
+def test_account_code_cannot_be_only_whitespace():
+    response = client.post("/api/v1/plano-contas", json=payload(codigo="   "))
+    assert response.status_code == 422
+
+
+def test_account_name_cannot_be_only_whitespace():
+    response = client.post("/api/v1/plano-contas", json=payload(nome="   "))
+    assert response.status_code == 422
 
 
 def test_update_account():
