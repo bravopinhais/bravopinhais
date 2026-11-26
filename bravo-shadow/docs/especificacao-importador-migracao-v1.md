@@ -297,3 +297,22 @@ Essa ordem é uma sequência de ensaio, não uma afirmação de dependência fun
 - [ ] Ambiente de produção é recusado no nível da aplicação e da configuração de conexão.
 - [ ] Relatórios não expõem conteúdo pessoal ou binário.
 
+
+
+## 13. DDL de referência do controle
+
+O desenho SQL inicial está em `sql-controle-lotes-importacao-rascunho.sql`. Ele descreve apenas:
+- `migration_batches`: manifesto, snapshot, ambiente, modo, estado e aprovação vinculada ao hash;
+- `migration_source_records`: identidade composta da origem, destino lógico, hash e lotes de criação/verificação.
+
+O DDL é **rascunho não executável como migration**. Não foi aplicado, não cria tabelas funcionais, não concede permissões e não configura políticas RLS. A modelagem não substitui a validação do schema PostgreSQL local, das roles reais e das políticas necessárias.
+
+Pontos que permanecem para a revisão técnica antes de gerar uma migration:
+1. Conferir convenções e versão PostgreSQL efetivamente usadas pelo ambiente local descartável.
+2. Definir a máquina de estados/transições protegida por lock, incluindo aprovação e falha.
+3. Validar a estratégia de unicidade do destino para cada coleção e tipo de ID.
+4. Definir retenção e auditoria append-only das decisões de conflito.
+5. Criar testes concorrentes e transacionais contra PostgreSQL efêmero.
+6. Revisar RLS/grants com roles dedicadas, sem habilitar runtime nem produção.
+
+A coluna `approved_manifest_hash` deve ser igual a `manifest_hash`; qualquer alteração no manifesto exige nova revisão e nova aprovação. Nenhuma decisão humana pode autorizar atualização silenciosa de um vínculo de proveniência.
