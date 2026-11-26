@@ -93,9 +93,14 @@ Foi adicionado `app/core/postgres_repositories.py` com adaptadores DB-API para P
 
 Os adaptadores são injetáveis, mas **a API continua usando os repositórios em memória**. Nenhum driver PostgreSQL foi instalado, nenhuma variável de conexão foi definida e nenhuma tabela foi criada. A camada SQL pressupõe que a migration local do modelo já tenha sido aplicada. Não aponte uma fábrica de conexão para produção.
 
-Foram adicionados testes com conexão/cursor falsos para conferir SQL parametrizado, mapeamento de valores, conversão NULL/ string vazia, commit e rollback. Eles ainda não foram executados. A atualização incrementa `version`, mas ainda não exige versão esperada na escrita; concorrência otimista completa permanece pendente.
+Foram adicionados testes com conexão/cursor falsos para conferir SQL parametrizado, mapeamento de valores, conversão NULL/ string vazia, commit e rollback. Eles ainda não foram executados. Os adaptadores PostgreSQL agora oferecem `replace_if_version`: o UPDATE inclui `WHERE id = %s AND version = %s`, incrementa a versão e, se não atualizar linha, distingue registro inexistente (404) de versão desatualizada (409) na mesma transação. As consultas de leitura também retornam `version`, e os schemas de resposta expõem esse campo. **A API ativa ainda não exige `If-Match` nem injeta esses adaptadores**; portanto a proteção ainda não está ativa nas rotas HTTP.
 
 
 ### Resiliência da unidade de trabalho
 
 A unidade de trabalho também trata falha durante o próprio `commit`: tenta executar `rollback`, libera a conexão em seguida e propaga a exceção original. O teste correspondente foi adicionado com conexão falsa. Isso cobre o fluxo de controle, mas ainda não substitui teste de integração com PostgreSQL real.
+
+
+### Concorrência otimista — camada de repositório
+
+Os adaptadores PostgreSQL implementam `replace_if_version` para Plano de Contas e Financeiro. O cliente obtém `version` na leitura e a camada de aplicação deve encaminhar essa versão esperada; atualização obsoleta retorna HTTP 409 e ID inexistente retorna 404. A API atual continua em memória e as rotas PUT ainda não recebem/precondicionam a versão. A próxima integração deve adotar `If-Match` (ou contrato equivalente), injetar os repositórios PostgreSQL somente em ambiente local isolado e garantir que a resposta devolva a nova versão.
