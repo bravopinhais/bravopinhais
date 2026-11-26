@@ -5,7 +5,7 @@ from typing import Any
 from fastapi import FastAPI
 
 from app.core.postgres_connection import create_postgres_connection_factory
-from app.core.storage import StorageConfigurationError, configure_storage
+from app.core.storage import StorageConfigurationError, build_storage_services
 from app.modules.contas_bancarias.router import router as contas_bancarias_router
 from app.modules.condominio.router import router as condominio_router
 from app.modules.conselheiros.router import router as conselheiros_router
@@ -45,7 +45,7 @@ def create_app(
         except (RuntimeError, ValueError) as exc:
             raise StorageConfigurationError(str(exc)) from exc
 
-    configured_backend = configure_storage(
+    services = build_storage_services(
         selected_backend, postgres_connection_factory
     )
 
@@ -54,7 +54,8 @@ def create_app(
         description="API paralela do Bravo — ambiente de desenvolvimento e homologação.",
         version="0.1.0",
     )
-    application.state.storage_backend = configured_backend
+    application.state.storage_backend = selected_backend
+    application.state.services = services
 
     application.include_router(plano_contas_router)
     application.include_router(financeiro_router)
@@ -82,7 +83,7 @@ def create_app(
             "status": "ok",
             "service": "bravo-shadow-api",
             "version": "0.1.0",
-            "storage": configured_backend,
+            "storage": selected_backend,
         }
 
     # A interface estática é servida pelo mesmo processo da API quando disponível.
