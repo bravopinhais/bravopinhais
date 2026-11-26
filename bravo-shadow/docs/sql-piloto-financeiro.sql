@@ -9,6 +9,7 @@ create schema if not exists bravo_shadow;
 revoke all on schema bravo_shadow from public;
 revoke all on schema bravo_shadow from anon;
 revoke all on schema bravo_shadow from authenticated;
+revoke all on schema bravo_shadow from service_role;
 
 create table if not exists bravo_shadow.formas_monetarias (
     id text primary key,
@@ -65,9 +66,9 @@ alter table bravo_shadow.formas_monetarias enable row level security;
 alter table bravo_shadow.plano_contas enable row level security;
 alter table bravo_shadow.financeiro enable row level security;
 
-revoke all on table bravo_shadow.formas_monetarias from public, anon, authenticated;
-revoke all on table bravo_shadow.plano_contas from public, anon, authenticated;
-revoke all on table bravo_shadow.financeiro from public, anon, authenticated;
+revoke all on table bravo_shadow.formas_monetarias from public, anon, authenticated, service_role;
+revoke all on table bravo_shadow.plano_contas from public, anon, authenticated, service_role;
+revoke all on table bravo_shadow.financeiro from public, anon, authenticated, service_role;
 
 -- Não criar GRANT para anon/authenticated/service_role nesta fase.
 -- O backend deverá usar um usuário PostgreSQL dedicado, com privilégios mínimos,
