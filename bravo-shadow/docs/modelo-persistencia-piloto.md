@@ -4,7 +4,7 @@
 
 Projeto de banco documentado para revisão. **Nenhuma migration foi aplicada, nenhum projeto Supabase foi alterado e nenhum dado foi copiado.** Este documento não é um comando de execução.
 
-A migration versionada ainda não foi criada. O rascunho SQL para as duas primeiras tabelas está em [`sql-piloto-financeiro.sql`](./sql-piloto-financeiro.sql); ele não é um arquivo de migration e não deve ser aplicado diretamente. No ambiente local do projeto, primeiro verificar `supabase --version`, `supabase --help` e `supabase migration new --help`; em seguida gerar o arquivo com `supabase migration new bravo_pilot_financeiro` e copiar o SQL revisado para o arquivo timestampado criado pela CLI. A CLI v3 usa a stack local por padrão; operações hospedadas exigem `--remote` e confirmação. Não usar `--remote` nesta fase. A partir da CLI v3.4.0, `supabase init` cria `supabase/config.jsonc` por padrão; projetos existentes com `config.toml` continuam suportados.
+A migration versionada ainda não foi criada. O rascunho SQL das tabelas do piloto está em [`sql-piloto-financeiro.sql`](./sql-piloto-financeiro.sql); ele não é um arquivo de migration e não deve ser aplicado diretamente. No ambiente local do projeto, primeiro verificar `supabase --version`, `supabase --help` e `supabase migration new --help`; em seguida gerar o arquivo com `supabase migration new bravo_pilot_financeiro` e copiar o SQL revisado para o arquivo timestampado criado pela CLI. A CLI v3 usa a stack local por padrão; operações hospedadas exigem `--remote` e confirmação. Não usar `--remote` nesta fase. A partir da CLI v3.4.0, `supabase init` cria `supabase/config.jsonc` por padrão; projetos existentes com `config.toml` continuam suportados.
 
 ## Decisões do piloto
 
@@ -92,7 +92,7 @@ O schema HTTP de Financeiro passou a usar `Decimal` com limite de 14 dígitos e 
 
 - Criar schema privado e não adicioná-lo à lista de schemas expostos da Data API.
 - Revogar privilégios de `anon`, `authenticated` e `public` sobre schema e tabelas.
-- Habilitar RLS nas cinco tabelas como defesa em profundidade, sem políticas permissivas nesta fase.
+- Habilitar RLS em todas as tabelas do schema como defesa em profundidade, sem políticas permissivas nesta fase.
 - O backend usará credencial server-side de privilégio mínimo armazenada em variável de ambiente/secret manager; nunca no HTML.
 - Não definir política por `user_metadata`. A identidade Google/e-mail precisa ser validada no backend antes de estabelecer autorização.
 - Antes de permitir acesso direto por cliente Supabase, desenhar políticas com `auth.uid()`, papéis e escopo real; não criar `USING (true)`.
