@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 from app.main import app
 from app.modules.plano_contas.schemas import PlanoContaInput
 from app.modules.plano_contas.service import PlanoContasService, plano_contas_service
+from app.modules.financeiro.service import financeiro_service
 
 client = TestClient(app)
 
@@ -11,6 +12,7 @@ client = TestClient(app)
 def setup_function() -> None:
     plano_contas_service._items.clear()
     plano_contas_service._has_financial_references = None
+    financeiro_service._items.clear()
 
 
 def payload(**overrides):
@@ -71,3 +73,21 @@ def test_delete_allowed_only_after_reference_check_returns_false():
 def test_invalid_type_is_rejected():
     response = client.post("/api/v1/plano-contas", json=payload(tipo="Transferência"))
     assert response.status_code == 422
+
+
+
+def test_delete_account_blocked_by_real_shadow_financial_reference():
+    account = client.post("/api/v1/plano-contas", json=payload()).json()
+    client.post(
+        "/api/v1/financeiro",
+        json={
+            "tipo": "Pagar",
+            "planoContaId": account["id"],
+            "historico": "Conta vinculada",
+            "valor": 99.9,
+        },
+    )
+    plano_contas_service._has_financial_references = financeiro_service.has_plan_account_reference
+    response = client.delete(f"/api/v1/plano-contas/{account['id']}")
+    assert response.status_code == 409
+    assert len(client.get("/api/v1/plano-contas").json()) == 1
