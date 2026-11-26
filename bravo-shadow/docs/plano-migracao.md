@@ -66,3 +66,8 @@
 - Primeiro piloto limitado a cadastros independentes com fixtures sintéticas; Financeiro, Documentos e Acertos de Estoque permanecem fora desse primeiro ensaio.
 - **Não implementado:** schema/tabelas de controle, migrations, adaptador de escrita, importação `apply`, rollback automatizado e execução de piloto.
 - **Gate seguinte:** revisar o schema PostgreSQL local existente e produzir DDL rascunho para `migration_batches` e `migration_source_records`, sem executar. Depois, criar testes sintéticos para concorrência e integridade atômica antes de qualquer adaptador de persistência.
+
+
+- DDL rascunho do controle de lotes/proveniência criado em `sql-controle-lotes-importacao-rascunho.sql`, com `migration_batches` e `migration_source_records`; RLS habilitado sem policies/grants, e sem execução.
+- A especificação do importador referencia o DDL e lista os gates para revisar PostgreSQL local, máquina de estados, unicidade, RLS e testes transacionais.
+- Próximo passo: comparar este rascunho com o schema efetivo do PostgreSQL descartável e escrever testes de integridade/concorrência; não gerar migration aplicada nem ativar persistência ainda.
