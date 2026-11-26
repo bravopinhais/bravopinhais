@@ -50,7 +50,7 @@ Campos extras são rejeitados. Espaços periféricos são removidos na validaç�
 
 Os testes foram adicionados ao repositório, mas ainda precisam ser executados em ambiente Python para confirmar o resultado runtime.
 
-## Próximas validações
+## Auditoria de paridade com o original\n\nA auditoria estática detalhada está em [auditoria de paridade](./auditoria-plano-contas.md). Ela identificou diferenças importantes: o original não aplica unicidade/limites no salvamento, não ordena explicitamente por código e permite excluir contas mesmo quando títulos financeiros as referenciam. Essas diferenças precisam ser deliberadamente aprovadas ou corrigidas antes de integrar a tela.\n\n## Próximas validações
 
 1. Instalar dependências e executar `pytest`.
 2. Executar API local e validar OpenAPI/HTTP.
