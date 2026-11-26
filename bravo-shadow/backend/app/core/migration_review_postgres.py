@@ -79,7 +79,7 @@ class PostgresReviewLedgerStore:
                 INSERT INTO bravo_shadow.migration_review_batches
                     (batch_key, manifest_hash)
                 VALUES (%s, %s)
-                ON CONFLICT (batch_key) DO NOTHING
+                ON CONFLICT DO NOTHING
                 """,
                 (register.batch_id, register.manifest_hash),
             )
