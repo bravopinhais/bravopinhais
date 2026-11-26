@@ -147,7 +147,7 @@ def test_parallel_appends_to_different_decisions_preserve_both_events(postgres_d
     assert {event.decision_id for event in ledger.events} == {items[0][0], items[1][0]}
 
 
-def test_event_id_is_globally_unique_within_batch(postgres_database):
+def test_event_id_is_unique_across_decisions_in_batch(postgres_database):
     register = _register()
     assert len(register.pending) >= 2, "Fixture sintética precisa de duas decisões."
     store = PostgresReviewLedgerStore(lambda: psycopg.connect(postgres_database))
