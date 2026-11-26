@@ -177,3 +177,43 @@ def test_finance_update_with_version_returns_not_found_for_missing_record():
     assert error.value.status_code == 404
     assert connection.rollbacks == 1
     assert connection.closed == 1
+
+
+def test_finance_create_translates_missing_plan_account_reference():
+    class ForeignKeyViolation(Exception):
+        sqlstate = "23503"
+
+    connection = FakeConnection(error=ForeignKeyViolation("missing account"))
+    repository = PostgresFinanceiroRepository(factory_for(connection))
+    item = FinanceiroTitulo(
+        id="fin_2", tipo="Receber", planoContaId="pc_missing",
+        historico="Cota", valor=Decimal("10.00"),
+    )
+
+    with pytest.raises(HTTPException) as error:
+        repository.add(item.id, item)
+
+    assert error.value.status_code == 409
+    assert "Plano de Contas" in error.value.detail
+    assert connection.rollbacks == 1
+    assert connection.closed == 1
+
+
+def test_finance_update_translates_missing_plan_account_reference():
+    class ForeignKeyViolation(Exception):
+        sqlstate = "23503"
+
+    connection = FakeConnection(error=ForeignKeyViolation("missing account"))
+    repository = PostgresFinanceiroRepository(factory_for(connection))
+    item = FinanceiroTitulo(
+        id="fin_2", tipo="Receber", planoContaId="pc_missing",
+        historico="Cota", valor=Decimal("10.00"),
+    )
+
+    with pytest.raises(HTTPException) as error:
+        repository.replace_if_version(item.id, item, expected_version=1)
+
+    assert error.value.status_code == 409
+    assert "Plano de Contas" in error.value.detail
+    assert connection.rollbacks == 1
+    assert connection.closed == 1
