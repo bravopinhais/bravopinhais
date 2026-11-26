@@ -109,3 +109,12 @@ Os adaptadores PostgreSQL implementam `replace_if_version` para Plano de Contas 
 ### Controle de versão HTTP (Plano de Contas e Financeiro)
 
 As rotas POST devolvem a versão no corpo e um ETag forte no cabeçalho de resposta. As rotas PUT exigem o cabeçalho `If-Match: "n"`; sem esse cabeçalho retornam 428, formato inválido retorna 400 e versão desatualizada retorna 409. A comparação e substituição do adaptador em memória são atômicas sob lock, e os adaptadores PostgreSQL oferecem a operação SQL equivalente. Isso protege as rotas de homologação em memória contra atualização obsoleta; **a API ainda não está configurada para usar PostgreSQL**. O cliente deve obter a versão mais recente antes de editar e reenviar a ETag recebida.
+
+
+## Seleção explícita do armazenamento
+
+A aplicação é criada por `create_app()`. O padrão é `BRAVO_STORAGE_BACKEND=memory`; nesse modo, Plano de Contas e Financeiro usam repositórios temporários em memória, como os demais módulos.
+
+A infraestrutura também aceita `create_app(storage_backend="postgres", postgres_connection_factory=...)`. A fábrica DB-API precisa ser fornecida explicitamente pelo ambiente hospedeiro. A configuração não importa driver, não lê credenciais, não abre conexão no startup e não tenta fallback para memória. Sem fábrica, a inicialização em modo PostgreSQL falha de forma explícita.
+
+**Escopo atual:** somente Plano de Contas e Financeiro têm adaptadores PostgreSQL. Os outros módulos continuam em memória. Não há driver instalado, migration aplicada ou teste contra banco real; portanto, não habilite PostgreSQL até preparar o schema privado `bravo_shadow` em uma instância local isolada e validar os adaptadores. O health endpoint informa o modo configurado, mas não verifica a conectividade com o banco.
