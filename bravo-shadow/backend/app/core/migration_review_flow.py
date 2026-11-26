@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Any, Mapping
 
 from app.core.migration_decisions import DecisionRegister, build_decision_register
+from app.core.migration_decision_verifier import verify_decision_register_against_batch
 from app.core.migration_manifest import MigrationManifest
 from app.core.migration_manifest_verifier import verify_manifest_against_batch
 from app.core.migration_plan import DryRunCandidate
@@ -34,7 +35,7 @@ def build_review_workspace(
     preflight: PreflightResult,
     report: PreflightReport,
 ) -> ReviewWorkspace:
-    """Verify the batch before exposing pending decisions for human review."""
+    """Verify evidence and the derived decision queue before human review."""
     integrity = verify_manifest_against_batch(
         manifest, envelope, candidates, preflight, report
     )
@@ -50,6 +51,21 @@ def build_review_workspace(
         )
 
     register = build_decision_register(manifest, preflight)
+    register_integrity = verify_decision_register_against_batch(
+        register, manifest, envelope, candidates, preflight, report
+    )
+    if not register_integrity.valid:
+        return ReviewWorkspace(
+            valid=False,
+            batch_id=manifest.batch_id,
+            manifest_hash=manifest.manifest_hash,
+            integrity_issue_codes=tuple(
+                issue.code for issue in register_integrity.issues
+            ),
+            register=None,
+            ledger=None,
+        )
+
     ledger = create_review_ledger(register)
     return ReviewWorkspace(
         valid=True,
