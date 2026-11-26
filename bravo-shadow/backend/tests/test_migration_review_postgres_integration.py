@@ -32,7 +32,7 @@ def _guard_test_database(url: str) -> None:
         raise RuntimeError("A URL de integração precisa usar PostgreSQL.")
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def postgres_database():
     if not DATABASE_URL:
         pytest.skip("PostgreSQL real não configurado; testes de integração opt-in.")
