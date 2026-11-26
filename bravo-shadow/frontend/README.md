@@ -49,3 +49,12 @@ Os demais módulos continuam identificados como estrutura visual até que seus c
 A tela inicial apresenta o contrato do resumo protegido `GET /api/v1/dashboard/resumo`, mas mantém os indicadores indisponíveis até a integração da sessão Google no navegador. A API exige um ID token Google no cabeçalho Bearer e a capacidade `dashboard:read`; a matriz de perfis continua fechada por padrão.
 
 A interface não inventa valores, não interpreta falha de autenticação como zero e não tenta armazenar tokens em `localStorage` ou em variáveis globais. A próxima etapa técnica é integrar o provedor de sessão Google já aprovado, transmitir o token de forma efêmera e só então renderizar o resumo após resposta autorizada. A autenticação visual/login não foi redesenhada nesta etapa.
+
+
+## Dependência pendente — sessão Google no navegador
+
+A revisão do código disponível não identificou um bootstrap cliente do Google Identity Services nem um módulo de sessão que forneça o ID token à interface. O arquivo legado `js/auth.js` do original contém formulário de usuário/senha e não deve ser reutilizado, pois esse fluxo foi descontinuado como requisito do Bravo.
+
+A API sombra já valida ID token Google no servidor (`GOOGLE_CLIENT_ID`, assinatura, emissor, audiência e expiração por meio de `google-auth`) e vincula o e-mail verificado a um usuário interno ativo. A interface não deve receber segredo de cliente, simular token, guardar token em `localStorage` ou aceitar identidade informada manualmente.
+
+**Próximo insumo necessário para concluir a integração:** identificar e aprovar o provedor Google efetivamente usado no ambiente ativo (ou fornecer sua configuração pública de cliente/redirect URI e fluxo autorizado). Até essa confirmação, o Dashboard permanece em estado indisponível e protegido. A tela de login original não foi modificada.
