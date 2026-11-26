@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import pytest
+
+from app.core.migration_review import ReviewValidationError
 from app.core.migration_review_postgres_roles import (
     PostgresReviewRuntimeStore,
     PostgresReviewSnapshotInitializer,
@@ -28,6 +31,8 @@ def test_initializer_and_runtime_use_separate_connection_factories():
     assert initialized.events == ()
     assert len(preparation_db.batches) == 1
 
-    # Runtime has its own database connection identity and cannot initialize.
-    assert runtime.load(register) if False else True
+    # The runtime facade cannot create its own snapshot and fails closed
+    # when its independently wired database has not been prepared.
+    with pytest.raises(ReviewValidationError, match="review_batch_not_initialized"):
+        runtime.load(register)
     assert runtime_db.batches == {}
