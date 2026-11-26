@@ -294,3 +294,13 @@ No modo PostgreSQL, a edição cadastral de um produto bloqueia a linha com `FOR
 - Razão social não é convertida para maiúsculas/minúsculas; apenas espaços externos são removidos.
 - Foram acrescentados testes para normalização no POST/PUT, rejeição de CNPJ em branco e preservação do formato pontuado. Os testes ainda não foram executados.
 - A tabela de fornecedores contém identificador empresarial. Antes de importar dados reais, manter as proteções de banco privado, autenticação e autorização server-side pendentes já documentadas.
+
+
+## Revisão de integridade — Empregados
+
+- Todos os campos textuais do cadastro removem espaços externos na criação e atualização: nome, cargo, empresa, endereço, telefone e contatos de emergência.
+- Nome e cargo continuam obrigatórios; valores compostos apenas por espaços são rejeitados depois da normalização. Empresa, endereço e contatos permanecem opcionais e aceitam vazio.
+- Telefones preservam pontuação, espaços internos e demais caracteres informados; não foi imposta validação de DDD, quantidade de dígitos ou máscara, para não bloquear registros legados.
+- Não foram criadas regras de unicidade para nome, telefone ou contato de emergência. Nome não é identificador único de empregado.
+- Foram acrescentados testes para normalização dos campos, rejeição de cargo em branco e compatibilidade com campos opcionais vazios. Os testes ainda não foram executados.
+- O cadastro pode conter endereço e dados de contato pessoal. Antes de importar dados reais, permanecem necessários controles de acesso server-side, autenticação validada, matriz de permissões aprovada e política de retenção.
