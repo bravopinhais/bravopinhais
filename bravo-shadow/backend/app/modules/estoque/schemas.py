@@ -1,4 +1,5 @@
 from datetime import date
+import re
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
@@ -36,10 +37,12 @@ class EstoqueInput(BaseModel):
         normalized = value.strip()
         if not normalized:
             return ""
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", normalized) is None:
+            raise ValueError("A data de cadastro deve estar no formato AAAA-MM-DD.")
         try:
             return date.fromisoformat(normalized).isoformat()
         except ValueError as exc:
-            raise ValueError("A data de cadastro deve estar no formato AAAA-MM-DD.") from exc
+            raise ValueError("A data de cadastro deve ser uma data válida.") from exc
 
 
 class EstoqueItem(EstoqueInput):
