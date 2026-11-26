@@ -41,7 +41,7 @@ No Windows, ative o ambiente com `.venv\\Scripts\\activate`.
 | Motivos de acerto | `GET/POST /api/v1/motivos-acerto-estoque`, `DELETE /api/v1/motivos-acerto-estoque/{id}` |
 | Usuários / Perfis | `GET/POST /api/v1/usuarios`, `GET/PUT/DELETE /api/v1/usuarios/{id}` |
 
-Os quinze módulos usam armazenamento temporário em memória. O verificador de exclusão do Plano de Contas consulta os títulos financeiros mantidos no mesmo processo da API.
+Os quinze módulos usam armazenamento temporário em memória por padrão. Plano de Contas, Financeiro e Formas Monetárias recebem serviços/repositórios próprios por instância FastAPI; o verificador de exclusão do Plano de Contas consulta os títulos financeiros da mesma instância. As demais rotas ainda usam serviços em memória no escopo atual.
 
 ## Identidade e segurança
 
@@ -126,3 +126,9 @@ O teste `test_postgres_api_integration.py` cria a aplicação com `storage_backe
 
 
 A camada Financeiro também traduz violações de chave estrangeira ao criar ou atualizar títulos com uma conta inexistente para HTTP 409. Os testes cobrem os caminhos de repositório e a resposta da rota, preservando rollback e evitando erro interno não tratado.
+
+
+
+### Isolamento de serviços por instância
+
+A fábrica `build_storage_services()` cria os três serviços do piloto para cada chamada de `create_app()`. Os routers obtêm a instância correspondente por `request.app.state.services`; não há reconfiguração de singletons globais ao iniciar outra aplicação. Isso permite testes e ambientes paralelos com backends diferentes sem compartilhar os repositórios do piloto. O isolamento está coberto por testes HTTP que criam duas aplicações independentes. Esses testes foram adicionados, mas precisam ser executados no CI/ambiente Python antes de considerar o gate validado.
