@@ -183,3 +183,30 @@ def test_stock_edit_cannot_change_balance_after_movement_history_exists():
     assert len(connection.calls) == 2
     assert connection.rollbacks == 1
     assert connection.commits == 0
+
+
+def test_postgres_movement_repository_blocks_replace_and_delete():
+    row = ("ac_1", "2026-11-26T10:00:00-03:00", "Saída", "est_1", 1, "Uso", None)
+    for operation in ("replace", "delete"):
+        connection = Connection(rows=[row])
+        repository = PostgresAcertosEstoqueRepository(factory(connection))
+        with pytest.raises(HTTPException) as error:
+            if operation == "replace":
+                movement = Acerto(
+                    id="ac_1", data=row[1], tipo="Saída", produtoId="est_1",
+                    quantidade=1, motivo="Uso",
+                )
+                repository.replace("ac_1", movement)
+            else:
+                repository.delete("ac_1")
+        assert error.value.status_code == 409
+        assert len(connection.calls) == 1
+        assert connection.calls[0][0].startswith("SELECT")
+
+
+def test_postgres_movement_repository_returns_404_for_missing_immutable_record():
+    connection = Connection(rows=[])
+    repository = PostgresAcertosEstoqueRepository(factory(connection))
+    with pytest.raises(HTTPException) as error:
+        repository.delete("missing")
+    assert error.value.status_code == 404
