@@ -103,7 +103,7 @@ A unidade de trabalho também trata falha durante o próprio `commit`: tenta exe
 
 ### Concorrência otimista — camada de repositório
 
-Os adaptadores PostgreSQL implementam `replace_if_version` para Plano de Contas e Financeiro. O cliente obtém `version` na leitura e a camada de aplicação deve encaminhar essa versão esperada; atualização obsoleta retorna HTTP 409 e ID inexistente retorna 404. A API atual continua em memória e as rotas PUT ainda não recebem/precondicionam a versão. A próxima integração deve adotar `If-Match` (ou contrato equivalente), injetar os repositórios PostgreSQL somente em ambiente local isolado e garantir que a resposta devolva a nova versão.
+Os adaptadores PostgreSQL implementam `replace_if_version` para Plano de Contas e Financeiro. O cliente obtém `version` na leitura e a camada de aplicação deve encaminhar essa versão esperada; atualização obsoleta retorna HTTP 409 e ID inexistente retorna 404. A API atual continua em memória e as rotas PUT ainda não recebem/precondicionam a versão. O contrato HTTP `If-Match` já foi adotado nas rotas de homologação; a próxima integração deve injetar os repositórios PostgreSQL somente em ambiente local isolado e garantir que a resposta devolva a nova versão.
 
 
 ### Controle de versão HTTP (Plano de Contas e Financeiro)
