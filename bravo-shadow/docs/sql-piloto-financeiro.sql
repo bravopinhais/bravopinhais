@@ -121,6 +121,46 @@ create table if not exists bravo_shadow.contas_bancarias (
 create index if not exists contas_bancarias_banco_idx
     on bravo_shadow.contas_bancarias (banco, id);
 
+-- Dados institucionais do condomínio e membros do conselho.
+-- Colunas camelCase são mantidas entre aspas para refletir o contrato legado.
+create table if not exists bravo_shadow.condominio (
+    id text primary key,
+    "nome" text not null default '',
+    "cnpj" text not null default '',
+    "razaoSocial" text not null default '',
+    "endereco" text not null default '',
+    "bairro" text not null default '',
+    "cidade" text not null default '',
+    "uf" text not null default '',
+    "cep" text not null default '',
+    "telefone" text not null default '',
+    "email" text not null default '',
+    "copelBloco1" text not null default '',
+    "copelBloco2" text not null default '',
+    "copelBloco3" text not null default '',
+    "copelBloco4" text not null default '',
+    "copelAreasComuns" text not null default '',
+    "gasSalao" text not null default '',
+    "sanepar" text not null default '',
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    version bigint not null default 1 check (version >= 1)
+);
+
+create table if not exists bravo_shadow.conselheiros (
+    id text primary key,
+    nome text not null,
+    cargo text not null,
+    "BlocoAp" text not null default '',
+    telefone text not null default '',
+    created_at timestamptz not null default now(),
+    updated_at timestamptz not null default now(),
+    version bigint not null default 1 check (version >= 1)
+);
+
+create index if not exists conselheiros_nome_idx
+    on bravo_shadow.conselheiros (nome, id);
+
 -- Defesa em profundidade. Sem policies: clientes da Data API não recebem acesso.
 alter table bravo_shadow.formas_monetarias enable row level security;
 alter table bravo_shadow.plano_contas enable row level security;
@@ -230,7 +270,7 @@ alter table bravo_shadow.documentos enable row level security;
 alter table bravo_shadow.moradores enable row level security;
 alter table bravo_shadow.fornecedores enable row level security;
 alter table bravo_shadow.empregados enable row level security;
-alter table bravo_shadow.contas_bancarias enable row level security;
+alter table bravo_shadow.contas_bancarias enable row level security;\nalter table bravo_shadow.condominio enable row level security;\nalter table bravo_shadow.conselheiros enable row level security;
 
 revoke all on table bravo_shadow.formas_monetarias from public, anon, authenticated, service_role;
 revoke all on table bravo_shadow.plano_contas from public, anon, authenticated, service_role;
@@ -243,7 +283,7 @@ revoke all on table bravo_shadow.documentos from public, anon, authenticated, se
 revoke all on table bravo_shadow.moradores from public, anon, authenticated, service_role;
 revoke all on table bravo_shadow.fornecedores from public, anon, authenticated, service_role;
 revoke all on table bravo_shadow.empregados from public, anon, authenticated, service_role;
-revoke all on table bravo_shadow.contas_bancarias from public, anon, authenticated, service_role;
+revoke all on table bravo_shadow.contas_bancarias from public, anon, authenticated, service_role;\nrevoke all on table bravo_shadow.condominio from public, anon, authenticated, service_role;\nrevoke all on table bravo_shadow.conselheiros from public, anon, authenticated, service_role;
 
 -- Não criar GRANT para anon/authenticated/service_role nesta fase.
 -- O backend deverá usar um usuário PostgreSQL dedicado, com privilégios mínimos,
