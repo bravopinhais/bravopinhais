@@ -1,3 +1,4 @@
+from threading import RLock
 from uuid import uuid4
 
 from fastapi import HTTPException, status
@@ -13,6 +14,7 @@ class UsuariosService:
     ) -> None:
         self.repository = repository if repository is not None else InMemoryCollectionRepository()
         self._items = getattr(self.repository, "_items", {})
+        self._email_lock = RLock()
 
     def list(self) -> list[Usuario]:
         return self.repository.list()
@@ -29,21 +31,25 @@ class UsuariosService:
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Já existe um perfil vinculado a este e-mail.")
 
     def create(self, data: UsuarioInput) -> Usuario:
-        self._ensure_email_available(data.email)
-        payload = data.model_dump()
-        payload["email"] = data.email.strip().lower()
-        item = Usuario(id=f"usr_shadow_{uuid4().hex}", **payload)
-        self.repository.add(item.id, item)
-        return item
+        # O adaptador em memória é single-process; a seção crítica torna a
+        # verificação de unicidade + gravação atômica dentro desta instância.
+        with self._email_lock:
+            self._ensure_email_available(data.email)
+            payload = data.model_dump()
+            payload["email"] = data.email.strip().lower()
+            item = Usuario(id=f"usr_shadow_{uuid4().hex}", **payload)
+            self.repository.add(item.id, item)
+            return item
 
     def update(self, item_id: str, data: UsuarioInput) -> Usuario:
-        current = self.get(item_id)
-        self._ensure_email_available(data.email, excluding_id=item_id)
-        payload = data.model_dump()
-        payload["email"] = data.email.strip().lower()
-        item = Usuario(id=current.id, **payload)
-        self.repository.replace(item_id, item)
-        return item
+        with self._email_lock:
+            current = self.get(item_id)
+            self._ensure_email_available(data.email, excluding_id=item_id)
+            payload = data.model_dump()
+            payload["email"] = data.email.strip().lower()
+            item = Usuario(id=current.id, **payload)
+            self.repository.replace(item_id, item)
+            return item
 
     def delete(self, item_id: str) -> None:
         self.get(item_id)
