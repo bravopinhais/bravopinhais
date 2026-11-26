@@ -145,3 +145,32 @@ Como o repositório não contém uma matriz funcional aprovada para `Admin` e `O
 ### Recomendação para implementação posterior
 
 Não adicionar ainda uma matriz hardcoded aos routers. Primeiro aprovar as capacidades do Operador; em seguida criar um catálogo central de permissões, testes unitários da política e testes HTTP para cada rota. A API deve aplicar a mesma política independentemente de a interface esconder ou mostrar um botão.
+
+
+## Fundação técnica de autorização — implementada, ainda isolada
+
+Foi criado `backend/app/core/authorization.py` com:
+
+- catálogo explícito de capacidades por ação;
+- principal imutável que representa identidade já autenticada;
+- política provisória Admin/Operador;
+- negação por padrão para usuário ausente/inativo, perfil desconhecido, identidade malformada ou capacidade desconhecida;
+- resposta HTTP 403 quando a capacidade não é concedida.
+
+Também foram adicionados testes unitários em
+`backend/tests/test_authorization_policy.py` e instruções em
+`backend/app/core/README-autorizacao.md`.
+
+**Limite importante:** a política ainda não está conectada aos routers, não cria
+sessões, não valida token Google e não consulta o cadastro. Nenhum endpoint
+passou a exigir autenticação nesta entrega. O objeto `AuthenticatedPrincipal`
+só poderá ser construído pela futura camada de autenticação após validar o
+token e resolver o usuário ativo no banco.
+
+O perfil Operador continua sem permissões concedidas até aprovação funcional.
+A matriz do Admin é uma proposta técnica provisória e também deverá ser
+confirmada antes da ativação. O catálogo não oferece edição/exclusão de
+movimentos de estoque.
+
+Nenhuma migration, role, policy PostgreSQL ou alteração no sistema original
+foi feita nesta etapa.
