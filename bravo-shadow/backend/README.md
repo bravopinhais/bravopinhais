@@ -35,9 +35,11 @@ No Windows, ative o ambiente com `.venv\\Scripts\\activate`.
 | Conselheiros | `GET/POST /api/v1/conselheiros`, `PUT/DELETE /api/v1/conselheiros/{id}` |
 | Moradores | `GET/POST /api/v1/moradores`, filtros `bloco`/`busca`, `PUT/DELETE /api/v1/moradores/{id}`, `POST /api/v1/moradores/importar` (lote JSON) |
 | Pastas | `GET/POST /api/v1/categorias`, `DELETE /api/v1/categorias/{id}` |
+| Estoque | `GET/POST /api/v1/estoque`, `PUT/DELETE /api/v1/estoque/{id}` |
+| Acertos de estoque | `GET/POST /api/v1/acertos-estoque`, `DELETE /api/v1/acertos-estoque/{id}` |
 | Motivos de acerto | `GET/POST /api/v1/motivos-acerto-estoque`, `DELETE /api/v1/motivos-acerto-estoque/{id}` |
 
-Os onze módulos usam armazenamento temporário em memória. O verificador de exclusão do Plano de Contas consulta os títulos financeiros mantidos no mesmo processo da API.
+Os treze módulos usam armazenamento temporário em memória. O verificador de exclusão do Plano de Contas consulta os títulos financeiros mantidos no mesmo processo da API.
 
 ## Limites desta etapa
 
