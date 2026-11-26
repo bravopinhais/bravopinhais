@@ -434,15 +434,15 @@ function salvarCacheLocal() {
             if (!tabsState.openTabs.includes(moduloId)) tabsState.openTabs.push(moduloId);
             tabsState.activeTab = moduloId;
             fecharMenuMobile();
-            renderApp();
+            if (!renderWorkspaceOnly()) renderApp();
         }
 
         function fecharAba(e, moduloId) {
-            e.stopPropagation();
+            if (e) e.stopPropagation();
             if (tabsState.openTabs.length === 1) return;
             tabsState.openTabs = tabsState.openTabs.filter(id => id !== moduloId);
             if (tabsState.activeTab === moduloId) tabsState.activeTab = tabsState.openTabs[tabsState.openTabs.length - 1];
-            renderApp();
+            if (!renderWorkspaceOnly()) renderApp();
         }
 
         function toggleMenuMobile() {
@@ -715,15 +715,51 @@ function salvarCacheLocal() {
         }
 
         function renderMainOnly() {
-            const mainEl = document.querySelector('main');
-            if (mainEl) {
-                mainEl.innerHTML = renderModuleContent(tabsState.activeTab);
-                if (tabsState.activeTab === 'dashboard') {
+            const mainEl = document.getElementById('app-main') || document.querySelector('main');
+            if (!mainEl) return false;
+            mainEl.innerHTML = renderModuleContent(tabsState.activeTab);
+            if (tabsState.activeTab === 'dashboard') {
+                requestAnimationFrame(() => {
                     initDashboardCharts();
                     initDashboardEstoqueChart();
-                }
-                if (tabsState.activeTab === 'estoque') initEstoqueChart();
+                });
+            } else if (tabsState.activeTab === 'estoque') {
+                requestAnimationFrame(() => initEstoqueChart());
             }
+            return true;
+        }
+
+        function renderTabsOnly() {
+            const tabsEl = document.getElementById('app-tabs');
+            if (!tabsEl) return false;
+            tabsEl.innerHTML = tabsState.openTabs.map(tabId => `
+                <div onclick="abrirModulo('${tabId}')" class="flex items-center gap-2.5 px-4 py-2.5 rounded-t-2xl text-xs cursor-pointer whitespace-nowrap transition-all ${tabsState.activeTab === tabId ? 'tab-active' : 'bg-slate-300/60 text-slate-600 hover:bg-slate-300 hover:text-slate-900 font-semibold'}">
+                    <span>${MODULE_NAMES[tabId] || tabId}</span>
+                    ${tabsState.openTabs.length > 1 ? `<button onclick="fecharAba(event, '${tabId}')" class="hover:text-rose-600 ml-1 p-0.5 rounded-full hover:bg-slate-200 transition-all"><i class="fa-solid fa-xmark text-xs"></i></button>` : ''}
+                </div>
+            `).join('');
+            return true;
+        }
+
+        function renderNavigationState() {
+            const sidebar = document.getElementById('sidebar-menu');
+            if (!sidebar) return;
+            const activeClasses = ['bg-gradient-to-r', 'from-teal-600', 'to-teal-700', 'text-white', 'shadow-md', 'shadow-teal-600/20'];
+            const inactiveClasses = ['hover:bg-slate-900', 'hover:text-white', 'text-slate-400'];
+            sidebar.querySelectorAll('button[onclick^="abrirModulo("]').forEach(button => {
+                const match = button.getAttribute('onclick').match(/abrirModulo\('([^']+)'/);
+                if (!match) return;
+                const active = match[1] === tabsState.activeTab;
+                (active ? inactiveClasses : activeClasses).forEach(className => button.classList.remove(className));
+                (active ? activeClasses : inactiveClasses).forEach(className => button.classList.add(className));
+            });
+        }
+
+        function renderWorkspaceOnly() {
+            const tabsUpdated = renderTabsOnly();
+            const mainUpdated = renderMainOnly();
+            renderNavigationState();
+            return tabsUpdated && mainUpdated;
         }
 
         function renderApp() {
@@ -823,7 +859,7 @@ function salvarCacheLocal() {
                         </header>
 
                         <!-- Barra de Abas Flutuante -->
-                        <div class="bg-slate-200/80 border-b border-slate-300 flex items-center overflow-x-auto px-3 pt-2.5 gap-2 no-print w-full backdrop-blur-sm">
+                        <div id="app-tabs" class="bg-slate-200/80 border-b border-slate-300 flex items-center overflow-x-auto px-3 pt-2.5 gap-2 no-print w-full backdrop-blur-sm">
                             ${tabsState.openTabs.map(tabId => `
                                 <div onclick="abrirModulo('${tabId}')" class="flex items-center gap-2.5 px-4 py-2.5 rounded-t-2xl text-xs cursor-pointer whitespace-nowrap transition-all ${tabsState.activeTab === tabId ? 'tab-active' : 'bg-slate-300/60 text-slate-600 hover:bg-slate-300 hover:text-slate-900 font-semibold'}">
                                     <span>${MODULE_NAMES[tabId] || tabId}</span>
@@ -840,7 +876,7 @@ function salvarCacheLocal() {
                             <span class="text-[10px] bg-teal-950/60 border border-teal-700/50 px-3 py-1 rounded-full text-teal-200 font-mono hidden sm:inline-block">Sessão Segura</span>
                         </div>
 
-                        <main class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-slate-100/90 w-full">
+                        <main id="app-main" class="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-slate-100/90 w-full">
                             ${renderModuleContent(tabsState.activeTab)}
                         </main>
                     </div>
