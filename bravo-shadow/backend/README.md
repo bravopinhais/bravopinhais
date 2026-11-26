@@ -53,7 +53,7 @@ A API não está conectada ao Supabase, não recebe tokens, não lê nem grava d
 
 ## Testes
 
-Há testes automatizados em `backend/tests` para os CRUDs, integridade entre Plano de Contas e Financeiro e perfis de usuário. Foram escritos, mas ainda não executados neste ambiente.
+Há testes automatizados em `backend/tests` para os CRUDs, integridade entre Plano de Contas e Financeiro, perfis de usuário, adaptadores PostgreSQL com conexões falsas e seleção explícita do armazenamento. Eles foram escritos, mas ainda não executados neste ambiente. Os testes com conexão falsa validam SQL/fluxos de commit e rollback; não substituem os testes de integração contra PostgreSQL local.
 
 
 ## Revisão de arquitetura
