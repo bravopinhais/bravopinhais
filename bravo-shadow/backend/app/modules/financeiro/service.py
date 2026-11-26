@@ -43,6 +43,18 @@ class FinanceiroService:
         self.repository.delete(item_id)
 
     def has_plan_account_reference(self, account_id: str) -> bool:
+        # Prefere a consulta EXISTS do adapter PostgreSQL, evitando carregar
+        # todos os títulos financeiros apenas para verificar um vínculo.
+        checker = getattr(self.repository, "has_plan_account_reference", None)
+        if callable(checker):
+            return checker(account_id)
+
+        # O adapter em memória oferece busca protegida pelo seu próprio lock.
+        any_match = getattr(self.repository, "any", None)
+        if callable(any_match):
+            return any_match(lambda item: item.planoContaId == account_id)
+
+        # Compatibilidade com adapters simples que implementem apenas list().
         return any(item.planoContaId == account_id for item in self.repository.list())
 
 
