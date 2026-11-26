@@ -3,8 +3,9 @@ from uuid import uuid4
 
 from fastapi import HTTPException, status
 
+from app.core.audit import AuditEvent
 from app.core.repositories import CollectionRepository, InMemoryCollectionRepository
-from .schemas import Usuario, UsuarioInput
+from .schemas import Usuario, UsuarioAdministracaoInput, UsuarioInput
 
 
 class UsuariosService:
@@ -57,3 +58,58 @@ class UsuariosService:
 
 
 usuarios_service = UsuariosService()
+
+    def update_administrative_state(
+        self,
+        item_id: str,
+        data: UsuarioAdministracaoInput,
+        *,
+        actor_subject: str,
+        actor_email: str,
+        audit_sink,
+    ) -> None:
+        """Executa alteração privilegiada somente em repositório transacional.
+
+        Não está exposta por rota. O repositório deve persistir alteração e
+        auditoria na mesma transação; adaptadores sem esse contrato falham
+        fechados, sem mutar o cadastro.
+        """
+        if not actor_subject or not actor_subject.strip():
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Identidade autenticada inválida.",
+            )
+        if not actor_email or not actor_email.strip():
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="E-mail autenticado inválido.",
+            )
+
+        current = self.get(item_id)
+        if current.email.strip().lower() == actor_email.strip().lower():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Não é permitido alterar o próprio perfil ou status.",
+            )
+
+        operation = getattr(self.repository, "update_administrative_state", None)
+        if not callable(operation):
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Alteração administrativa transacional indisponível neste armazenamento.",
+            )
+
+        event = AuditEvent(
+            actor_subject=actor_subject.strip(),
+            action="usuarios:update_administracao",
+            entity_type="usuario",
+            entity_id=item_id,
+            outcome="success",
+        )
+        operation(
+            item_id,
+            perfil=data.perfil,
+            status=data.status,
+            event=event,
+            audit_sink=audit_sink,
+        )
