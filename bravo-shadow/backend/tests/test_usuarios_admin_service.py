@@ -85,3 +85,29 @@ def test_memory_repository_fails_closed_for_admin_changes():
     assert error.value.status_code == 503
     assert service.get(created.id).perfil == "Admin"
     assert service.get(created.id).status == "Ativo"
+
+
+
+@pytest.mark.parametrize(
+    ("actor_subject", "actor_email"),
+    [
+        ("", "admin@example.com"),
+        ("google-subject-admin", ""),
+        ("   ", "admin@example.com"),
+    ],
+)
+def test_service_rejects_missing_authenticated_actor_identity(actor_subject, actor_email):
+    repository = TransactionalRepository(user())
+    service = UsuariosService(repository=repository)
+
+    with pytest.raises(HTTPException) as error:
+        service.update_administrative_state(
+            "usr_target",
+            UsuarioAdministracaoInput(perfil="Operador", status="Inativo"),
+            actor_subject=actor_subject,
+            actor_email=actor_email,
+            audit_sink=object(),
+        )
+
+    assert error.value.status_code == 401
+    assert repository.call is None
