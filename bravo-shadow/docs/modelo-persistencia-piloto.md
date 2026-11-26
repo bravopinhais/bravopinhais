@@ -138,3 +138,10 @@ A coluna `version` é incrementada nas atualizações, mas os contratos atuais d
 ## Falha durante o commit
 
 A unidade de trabalho tenta executar `rollback` caso o próprio `commit` lance uma exceção, fecha a conexão em seguida e propaga a falha original. Há teste unitário com conexão falsa para esse cenário; a confirmação final depende de teste de integração em PostgreSQL local.
+
+
+## Concorrência otimista — adaptadores SQL
+
+Os adaptadores PostgreSQL agora têm `replace_if_version` para Plano de Contas e Financeiro. O UPDATE compara simultaneamente ID e versão esperada, incrementando `version` no sucesso. Se nenhuma linha for alterada, uma consulta dentro da mesma unidade de trabalho distingue ID inexistente (404) de versão obsoleta (409). Os métodos de leitura incluem a coluna `version`, e os schemas de resposta expõem esse valor.
+
+**Ainda não é uma proteção ativa da API:** os serviços/rotas atuais continuam usando os repositórios em memória e os PUTs não exigem `If-Match` ou versão esperada. A próxima etapa deve integrar o precondicionamento HTTP e injeção de dependências no ambiente PostgreSQL local, antes de qualquer uso real.
