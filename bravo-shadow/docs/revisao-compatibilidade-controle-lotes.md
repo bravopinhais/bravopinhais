@@ -97,3 +97,19 @@ Foi adicionado `backend/app/core/migration_batch_state_postgres.py`. A operaçã
 Testes com banco falso cobrem bloqueio, persistência do fluxo, lote ausente, aprovação parcial, hash divergente e compare-and-set.
 
 **Limitações mantidas:** não cria lotes, não autentica nem autoriza o revisor, não executa importação e não inicializa conexão automaticamente. O SQL continua sendo rascunho não aplicado. A autenticação/autoridade do aprovador deve ser verificada pela camada de aplicação antes de chamar o adaptador.
+
+
+## 9. Proveniência imutável de registros de origem
+
+Foi criado `backend/app/core/migration_source_records_postgres.py`, que recebe a conexão da unidade de trabalho já aberta e:
+- insere a identidade de origem, coleção de destino, ID de destino e hash do registro;
+- em repetição, bloqueia a linha existente com `FOR UPDATE`;
+- aceita repetição somente se hash e destino forem idênticos;
+- preserva o `first_batch_id` original;
+- rejeita alteração de conteúdo ou tentativa de redirecionar a mesma identidade para outro destino.
+
+O adaptador não armazena payload, não abre conexão e não faz commit. Deve ser chamado como `write_source_map` dentro de `execute_migration_write_unit`, junto com a gravação funcional e o evento de sucesso. Assim, se qualquer etapa falhar, a unidade de trabalho reverte tudo.
+
+Testes adicionados para repetição idempotente, mudança de hash, redirecionamento de destino e campos/hash inválidos.
+
+**Ainda não há integração com tabelas funcionais específicas.** O adaptador é genérico e depende do chamador fornecer o ID de destino já criado na mesma transação. Nenhum SQL de modelagem foi aplicado.
