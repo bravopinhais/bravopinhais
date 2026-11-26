@@ -17,6 +17,7 @@ class AcertosEstoqueService:
         repository: CollectionRepository[Acerto, str] | None = None,
         inventory_service: EstoqueService | None = None,
         reason_service: MotivosAcertoService | None = None,
+        movement_repository=None,
     ) -> None:
         self.repository = repository if repository is not None else InMemoryCollectionRepository()
         self._items = getattr(self.repository, "_items", {})
@@ -24,6 +25,7 @@ class AcertosEstoqueService:
             inventory_service if inventory_service is not None else estoque_service
         )
         self.reason_service = reason_service
+        self.movement_repository = movement_repository
 
     def list(self) -> list[Acerto]:
         return self.repository.list()
@@ -57,8 +59,16 @@ class AcertosEstoqueService:
             data=datetime.now().astimezone().isoformat(),
             **values,
         )
-        # Memória não oferece transação ACID. O futuro adaptador PostgreSQL
-        # deverá atualizar saldo e histórico na mesma transação.
+        if self.movement_repository is not None:
+            # O adaptador persistente relê o saldo com FOR UPDATE e grava
+            # saldo + histórico em uma única transação PostgreSQL.
+            return self.movement_repository.register_movement(
+                product_id=product.id,
+                movement=item,
+                delta=data.quantidade if data.tipo == "Entrada" else -data.quantidade,
+            )
+
+        # O adaptador em memória preserva o comportamento atual para testes.
         self.inventory_service.update_quantity(product.id, new_quantity)
         self.repository.add(item.id, item)
         return item
