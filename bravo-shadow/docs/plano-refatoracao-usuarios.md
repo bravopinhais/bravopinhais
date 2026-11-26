@@ -2,19 +2,19 @@
 
 ## Status
 
-Plano técnico detalhado, ainda não implementado. Foi elaborado após leitura dos schemas, serviço, router, contrato de gestão e desenho de bootstrap. Não altera código, dados, rotas, autenticação, permissões ou interface.
+Plano técnico em andamento. Parte da separação de contratos já foi implementada em Shadow e coberta por testes unitários; os schemas novos ainda não foram ligados ao serviço nem às rotas. A autorização continua fechada e não houve alteração de dados, autenticação, permissões operacionais ou interface.
 
 ## Diagnóstico confirmado
 
-O módulo atual usa um único modelo de entrada para criação e atualização. Esse modelo contém simultaneamente dados cadastrais (e-mail, nome, loja e cargo) e campos privilegiados (perfil e status).
+O módulo mantém o contrato legado `UsuarioInput` para as rotas e o serviço, que ainda contém dados cadastrais e campos privilegiados. Em paralelo, já existem `UsuarioCadastroInput`, `UsuarioDadosCadastraisUpdateInput` e `UsuarioAdministracaoInput`, com `extra=forbid`, normalização e testes. A separação foi criada, mas ainda não está conectada ao fluxo HTTP.
 
-O serviço usa o mesmo objeto para criar e substituir integralmente um registro. O router expõe lista, detalhe, POST, PUT e DELETE sem dependências de autenticação/autorização. A exclusão é física. O repositório padrão é em memória.
+O serviço usa o mesmo objeto para criar e substituir integralmente um registro. O router expõe lista, detalhe, POST, PUT e DELETE com dependências de autenticação e capacidades granulares. A matriz `ROLE_CAPABILITIES` de Admin/Operador permanece vazia, então as operações continuam negadas para esses perfis. A exclusão é física. O repositório padrão é em memória; existe adaptador PostgreSQL, mas cada método CRUD abre sua própria unidade de trabalho. Ainda não existe uma operação transacional de domínio que englobe bloqueio, validação, alteração e auditoria.
 
-Consequência: não é seguro apenas adicionar uma dependência genérica ao router atual. Primeiro é necessário separar os contratos e as operações administrativas.
+Consequência: não é seguro apenas trocar o schema no router. É necessário adaptar serviço e repositórios para operações distintas e transacionais, preservando a matriz fechada até aprovação.
 
 ## Contratos-alvo propostos
 
-Os nomes são sugestões para implementação futura.
+Os schemas de cadastro, atualização cadastral e administração já existem em `app/modules/usuarios/schemas.py`; o modelo de saída explícito ainda precisa ser avaliado.
 
 ### 1. UsuarioCadastroInput
 
@@ -22,19 +22,19 @@ Campos permitidos: email, nome, loja e cargo.
 
 Não aceitar: perfil, status, id, subject Google, token, senha ou hash de senha.
 
-Manter validação de e-mail normalizado, remoção de espaços excedentes e extra=forbid.
+Implementado no schema atual: validação de e-mail normalizado, remoção de espaços excedentes e `extra=forbid`; testes cobrem rejeição de campos privilegiados e valores vazios.
 
 **Regra:** alteração do e-mail não deve ocorrer no fluxo cadastral comum. A identidade está vinculada ao e-mail verificado da conta Google; eventual troca exige fluxo próprio de reconciliação, confirmação e auditoria.
 
 ### 2. UsuarioCadastroUpdate
 
-Atualização parcial dos campos cadastrais autorizados. Campo omitido significa “preservar valor atual”; campo enviado vazio deve ser rejeitado quando obrigatório. Não aceitar perfil ou status.
+Implementado como schema parcial: campo omitido fica ausente e o schema rejeita payload vazio e textos em branco. A semântica de aplicar PATCH no serviço ainda não foi implementada. Não aceita perfil, status ou e-mail.
 
 ### 3. UsuarioAdministracaoUpdate
 
 Contrato separado, contendo apenas os campos administrativos que forem aprovados: perfil, limitado aos perfis internos conhecidos; status, limitado aos estados aprovados.
 
-Este contrato exige capacidade administrativa específica, validação contextual, auditoria e transação. Não deve ser reaproveitado no endpoint de edição cadastral.
+O schema `UsuarioAdministracaoInput` já exige perfil e status explícitos, mas ainda não é consumido por serviço/rota. A operação futura exige capacidade administrativa específica, validação contextual, proteção do último Admin, auditoria e transação. Não deve ser reaproveitado no endpoint de edição cadastral.
 
 ### 4. UsuarioRead
 
@@ -62,7 +62,7 @@ Não manter um PUT integral que aceite campos cadastrais e administrativos no me
 2. Último Admin: não permitir desativar, rebaixar ou excluir o último Admin ativo.
 3. Concorrência: a contagem de Admins ativos e a alteração devem ocorrer na mesma transação com bloqueio apropriado, evitando duas operações simultâneas que removam a última conta administrativa.
 4. Unicidade: e-mail normalizado deve ter unicidade garantida no banco, não apenas checagem prévia em Python.
-5. Auditoria: mudança de perfil/status e desativação devem gravar evento append-only na mesma transação da alteração. Se a auditoria falhar, a operação deve fazer rollback.
+5. Auditoria: existe `PostgresAuditSink.append_in_transaction(connection, event)`, testado para não executar commit/rollback/close da conexão do chamador. Ainda falta integrá-lo à operação de usuários. Mudança de perfil/status e desativação devem gravar evento append-only na mesma transação; se a auditoria falhar, a operação deve fazer rollback.
 6. Identidade: o ator vem exclusivamente do principal construído após validação do Google ID token e resolução do cadastro ativo.
 7. Falha fechada: usuário ausente/inativo, perfil desconhecido, capacidade ausente, conflito ou erro de persistência nunca deve resultar em concessão.
 8. Sem promoção implícita: criação não aceita perfil Admin; bootstrap inicial permanece fora da API conforme documento próprio.
@@ -111,8 +111,8 @@ Executar somente em PostgreSQL local descartável, após migration revisada. Nã
 ## Ordem recomendada
 
 1. Aprovar decisões de onboarding e matriz de capacidades.
-2. Implementar schemas separados e testes unitários.
-3. Implementar métodos de serviço distintos para cadastro, atualização cadastral, alteração administrativa e desativação.
+2. Concluído parcialmente: criar schemas separados e testes unitários. Falta ligar os schemas novos ao serviço e atualizar contratos HTTP.
+3. Implementar métodos de serviço distintos para cadastro, atualização cadastral, alteração administrativa e desativação lógica.
 4. Definir restrições de unicidade e transação para último Admin.
 5. Integrar auditoria na mesma transação.
 6. Proteger cada rota com Google ID token validado e capacidade específica.
@@ -121,4 +121,4 @@ Executar somente em PostgreSQL local descartável, após migration revisada. Nã
 
 ## Estado preservado
 
-O módulo continua no estado atual, sem mudanças de código nesta etapa. Não há autorização para exposição pública, conexão com dados reais ou promoção de usuários. O sistema original e a tela de login permanecem intocados.
+O módulo continua em migração gradual no branch `bravo-shadow`. Schemas novos, testes de contrato, proteção por dependências e bases de auditoria já existem, mas a operação administrativa transacional ainda não foi integrada. Não há autorização para exposição pública, conexão com dados reais ou promoção de usuários. O sistema original e a tela de login permanecem intocados.
