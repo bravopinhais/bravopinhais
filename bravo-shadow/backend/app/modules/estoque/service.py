@@ -10,7 +10,7 @@ class EstoqueService:
     """Regras de estoque desacopladas do armazenamento."""
 
     def __init__(self, repository: CollectionRepository[EstoqueItem, str] | None = None) -> None:
-        self.repository = repository or InMemoryCollectionRepository()
+        self.repository = repository if repository is not None else InMemoryCollectionRepository()
         self._items = getattr(self.repository, "_items", {})
 
     def list(self) -> list[EstoqueItem]:
@@ -44,4 +44,6 @@ class EstoqueService:
         self.repository.delete(item_id)
 
 
+# Compatibilidade temporária para consumidores legados fora dos routers.
+# A aplicação FastAPI usa instâncias isoladas criadas em build_storage_services().
 estoque_service = EstoqueService()
