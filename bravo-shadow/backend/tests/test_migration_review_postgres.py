@@ -25,6 +25,7 @@ class FakeConnection:
         self.database = database
         self.before = deepcopy((database.batches, database.decisions, database.events))
         self.closed = False
+        self.statements = []
 
     def cursor(self):
         return FakeCursor(self)
@@ -48,6 +49,7 @@ class FakeCursor:
     def execute(self, sql, params=()):
         db = self.connection.database
         query = " ".join(sql.split())
+        self.connection.statements.append(query)
 
         if query.startswith("INSERT INTO bravo_shadow.migration_review_batches"):
             batch_key, manifest_hash = params
@@ -270,3 +272,28 @@ def test_postgres_adapter_rejects_duplicate_decision_ids_before_writing():
     assert database.batches == {}
     assert database.decisions == {}
     assert database.events == []
+
+
+
+def test_postgres_adapter_locks_batch_before_decision_during_append():
+    register, decision_id, database, store = setup_store()
+    store.initialize(register)
+    connection = database.connect()
+
+    class CapturingStore(PostgresReviewLedgerStore):
+        def __init__(self):
+            super().__init__(lambda: connection)
+
+    CapturingStore().append(register, **event_args(decision_id, "lock-order-event", 0))
+
+    batch_lock = next(
+        index for index, statement in enumerate(connection.statements)
+        if statement.startswith("SELECT manifest_hash FROM bravo_shadow.migration_review_batches")
+        and "FOR UPDATE" in statement
+    )
+    decision_lock = next(
+        index for index, statement in enumerate(connection.statements)
+        if statement.startswith("SELECT batch_key, manifest_hash FROM bravo_shadow.migration_review_decisions")
+        and "FOR UPDATE" in statement
+    )
+    assert batch_lock < decision_lock
