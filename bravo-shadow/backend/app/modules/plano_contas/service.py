@@ -29,9 +29,8 @@ class PlanoContasService:
         return item
 
     def update(self, item_id: str, data: PlanoContaInput, expected_version: int) -> PlanoConta:
-        current = self.repository.get(item_id)
-        if current is None:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conta não encontrada.")
+        # A operação CAS do repositório é a autoridade para existência e versão.
+        # No PostgreSQL, isso evita uma leitura extra e fecha a janela entre GET e UPDATE.
         self._ensure_unique_code(data.codigo, excluding=item_id)
         item = PlanoConta(id=item_id, version=expected_version, **data.model_dump())
         compare_and_swap = getattr(self.repository, "replace_if_version", None)
@@ -43,9 +42,6 @@ class PlanoContasService:
         if result == -1:
             raise HTTPException(status_code=409, detail="A conta foi alterada por outra operação. Recarregue os dados.")
         if isinstance(result, int):
-            saved = self.repository.get(item_id)
-            if saved is not None:
-                return saved
             return item.model_copy(update={"version": result})
         return item
 
