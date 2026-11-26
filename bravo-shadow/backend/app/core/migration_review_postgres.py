@@ -46,6 +46,8 @@ class PostgresReviewLedgerStore:
 
     @staticmethod
     def _timestamp(value: Any) -> str:
+        if value is None:
+            return ""
         return value.isoformat() if isinstance(value, datetime) else str(value)
 
     @staticmethod
