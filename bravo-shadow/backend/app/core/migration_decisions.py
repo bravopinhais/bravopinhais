@@ -72,7 +72,7 @@ def build_decision_register(
     """Create stable review items from manifest records and preflight issues."""
     pending: list[PendingDecision] = []
 
-    for record in manifest.records:
+    for record_index, record in enumerate(manifest.records):
         kind = _STATUS_TO_KIND.get(record.status)
         if kind is None:
             continue
@@ -83,7 +83,7 @@ def build_decision_register(
         )
         pending.append(
             PendingDecision(
-                decision_id=f"{manifest.batch_id}:record:{identity}:{record.status}",
+                decision_id=f"{manifest.batch_id}:record:{record_index}:{identity}:{record.status}",
                 kind=kind,
                 source_system=record.source_system,
                 source_collection=record.source_collection,
