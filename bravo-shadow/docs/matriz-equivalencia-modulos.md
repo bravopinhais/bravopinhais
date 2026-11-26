@@ -60,7 +60,9 @@ No Shadow, os 15 domínios aparecem na navegação, mas a própria interface inf
 - [x] Lista dos 15 módulos confirmada no roteador do legado e na navegação Shadow.
 - [x] Renderizadores e funções transversais mais relevantes identificados.
 - [x] Diferença entre presença visual, API e persistência explicitada.
-- [ ] Inventário completo de campos por tela e formulário.
+- [x] Fichas estáticas de coleções dos lotes 01 a 06 elaboradas: Condomínio/Conselho/Plano de Contas; Financeiro/Formas Monetárias/Contas Bancárias; Moradores/Fornecedores/Empregados; Categorias/Motivos; Estoque/Acertos; Documentos.
+- [x] Principais incompatibilidades já identificadas nos seis lotes, incluindo preservação de IDs, datas históricas, movimentos de estoque, referências textuais e arquivos Gzip.
+- [ ] Inventário completo de campos por tela e formulário para todos os módulos.
 - [ ] Inventário de regras de negócio e validações por operação.
 - [ ] Mapeamento de tabelas/coleções, IDs e relacionamentos do legado.
 - [ ] Inventário de relatórios, importações/exportações e formatos de arquivos.
@@ -70,9 +72,12 @@ No Shadow, os 15 domínios aparecem na navegação, mas a própria interface inf
 
 ## Próxima sequência recomendada
 
-1. Completar o mapa de dados do legado: coleções/tabelas, chaves, relações e campos por domínio, sem ler ou copiar dados pessoais.
-2. Fazer especificação detalhada de um módulo cadastral de baixo risco, comparando cada formulário e ação com o contrato Shadow.
-3. Validar localmente o backend e os adaptadores com banco descartável, depois de migrations e políticas revisadas.
-4. Só então propor o piloto de importação com dados sintéticos/anonimizados, relatório de divergências e rollback ensaiado.
+1. Completar as fichas da Fase 0 para Dashboard/Relatórios/DRE e Gestão de Usuários, incluindo métricas, fórmulas, filtros, operações, permissões e dependências.
+2. Consolidar a matriz de relacionamentos entre coleções, incluindo referências financeiras, documentos, moradores/unidades e movimentos de estoque.
+3. Fazer especificação detalhada de um módulo cadastral de baixo risco, comparando cada formulário e ação com o contrato Shadow.
+4. Validar localmente o backend e os adaptadores com banco descartável, depois de migrations e políticas revisadas.
+5. Só então propor o piloto de importação com dados sintéticos/anonimizados, relatório de divergências e rollback ensaiado.
+
+A CI da branch bravo-shadow executou build/smoke test Docker e 360 testes backend aprovados contra PostgreSQL descartável no run 45894322542. Essa evidência valida a suíte automatizada, mas não substitui a conclusão das fichas restantes, validação visual em navegador, revisão de segurança ou aceite funcional.
 
 **Não é aceite de migração:** nenhuma linha desta matriz autoriza corte, escrita dupla, mudança de roteamento, migração de dados reais ou alteração do original. As descrições de campos e regras ainda precisam ser verificadas nos formulários e operações completos antes da implementação.
