@@ -188,32 +188,56 @@ class PostgresFinanceiroRepository(_PostgresRepository):
         return self.get(item_id) is not None
 
     def add(self, item_id: str, item: FinanceiroTitulo) -> None:
-        self._query(
-            f"INSERT INTO {self._table} (id, tipo, plano_conta_id, historico, valor) "
-            "VALUES (%s, %s, %s, %s, %s)",
-            (item_id, item.tipo, item.planoContaId or None, item.historico, item.valor),
-        )
+        try:
+            self._query(
+                f"INSERT INTO {self._table} (id, tipo, plano_conta_id, historico, valor) "
+                "VALUES (%s, %s, %s, %s, %s)",
+                (item_id, item.tipo, item.planoContaId or None, item.historico, item.valor),
+            )
+        except Exception as exc:
+            if self._sqlstate(exc) == "23503":
+                raise HTTPException(
+                    status_code=409,
+                    detail="A conta do Plano de Contas informada não existe.",
+                ) from exc
+            raise
 
     def replace(self, item_id: str, item: FinanceiroTitulo) -> None:
-        changed = self._query(
-            f"UPDATE {self._table} SET tipo = %s, plano_conta_id = %s, "
-            "historico = %s, valor = %s, updated_at = now(), version = version + 1 "
-            "WHERE id = %s",
-            (item.tipo, item.planoContaId or None, item.historico, item.valor, item_id),
-        )
+        try:
+            changed = self._query(
+                f"UPDATE {self._table} SET tipo = %s, plano_conta_id = %s, "
+                "historico = %s, valor = %s, updated_at = now(), version = version + 1 "
+                "WHERE id = %s",
+                (item.tipo, item.planoContaId or None, item.historico, item.valor, item_id),
+            )
+        except Exception as exc:
+            if self._sqlstate(exc) == "23503":
+                raise HTTPException(
+                    status_code=409,
+                    detail="A conta do Plano de Contas informada não existe.",
+                ) from exc
+            raise
         if not changed:
             raise HTTPException(status_code=404, detail="Título não encontrado.")
 
     def replace_if_version(self, item_id: str, item: FinanceiroTitulo, expected_version: int) -> int:
-        return self._replace_if_version(
-            table=self._table,
-            assignments="tipo = %s, plano_conta_id = %s, historico = %s, valor = %s",
-            values=(item.tipo, item.planoContaId or None, item.historico, item.valor),
-            item_id=item_id,
-            expected_version=expected_version,
-            missing_detail="Título não encontrado.",
-            conflict_detail="O título foi alterado por outra operação. Recarregue os dados antes de tentar novamente.",
-        )
+        try:
+            return self._replace_if_version(
+                table=self._table,
+                assignments="tipo = %s, plano_conta_id = %s, historico = %s, valor = %s",
+                values=(item.tipo, item.planoContaId or None, item.historico, item.valor),
+                item_id=item_id,
+                expected_version=expected_version,
+                missing_detail="Título não encontrado.",
+                conflict_detail="O título foi alterado por outra operação. Recarregue os dados antes de tentar novamente.",
+            )
+        except Exception as exc:
+            if self._sqlstate(exc) == "23503":
+                raise HTTPException(
+                    status_code=409,
+                    detail="A conta do Plano de Contas informada não existe.",
+                ) from exc
+            raise
 
     def delete(self, item_id: str) -> None:
         changed = self._query(f"DELETE FROM {self._table} WHERE id = %s", (item_id,))
