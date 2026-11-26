@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+from dataclasses import dataclass
 from typing import Any, Literal
 
 from app.core.postgres_repositories import (
@@ -9,9 +10,9 @@ from app.core.postgres_repositories import (
     PostgresPlanoContasRepository,
 )
 from app.core.repositories import InMemoryCollectionRepository
-from app.modules.financeiro.service import financeiro_service
-from app.modules.formas_monetarias.service import formas_monetarias_service
-from app.modules.plano_contas.service import plano_contas_service
+from app.modules.financeiro.service import FinanceiroService
+from app.modules.formas_monetarias.service import FormasMonetariasService
+from app.modules.plano_contas.service import PlanoContasService
 
 StorageBackend = Literal["memory", "postgres"]
 
@@ -20,50 +21,51 @@ class StorageConfigurationError(RuntimeError):
     """Configuração de persistência ausente ou inválida."""
 
 
-def configure_storage(
+@dataclass(frozen=True)
+class StorageServices:
+    """Serviços pertencentes exclusivamente a uma instância da aplicação."""
+
+    formas_monetarias: FormasMonetariasService
+    financeiro: FinanceiroService
+    plano_contas: PlanoContasService
+
+
+def build_storage_services(
     backend: StorageBackend,
     connection_factory: Callable[[], Any] | None = None,
-) -> str:
-    """Injeta os repositórios dos módulos persistidos sem fallback implícito.
+) -> StorageServices:
+    """Cria serviços isolados; nunca altera singletons ou estado global.
 
-    O modo PostgreSQL exige uma fábrica de conexão fornecida pelo ambiente.
-    Este módulo não importa driver, lê credenciais ou abre conexão por conta
-    própria. Os demais módulos permanecem em memória nesta fase.
+    No modo PostgreSQL, a fábrica é obrigatória e só será chamada durante
+    operações de repositório. Os demais módulos continuam fora deste piloto.
     """
     if backend == "memory":
-        formas_monetarias_service.repository = InMemoryCollectionRepository()
-        formas_monetarias_service._items = formas_monetarias_service.repository._items
-        financeiro_service.repository = InMemoryCollectionRepository()
-        financeiro_service._items = financeiro_service.repository._items
-        plano_contas_service.repository = InMemoryCollectionRepository()
-        plano_contas_service._items = plano_contas_service.repository._items
-        plano_contas_service._has_financial_references = (
-            financeiro_service.has_plan_account_reference
-        )
-        return "memory"
-
-    if backend != "postgres":
+        formas_repository = InMemoryCollectionRepository()
+        financeiro_repository = InMemoryCollectionRepository()
+        plano_repository = InMemoryCollectionRepository()
+    elif backend == "postgres":
+        if connection_factory is None:
+            raise StorageConfigurationError(
+                "O modo PostgreSQL exige uma connection_factory explícita. "
+                "Nenhuma conexão foi tentada e não haverá fallback para memória."
+            )
+        formas_repository = PostgresFormasMonetariasRepository(connection_factory)
+        financeiro_repository = PostgresFinanceiroRepository(connection_factory)
+        plano_repository = PostgresPlanoContasRepository(connection_factory)
+    else:
         raise StorageConfigurationError(
             "BRAVO_STORAGE_BACKEND deve ser 'memory' ou 'postgres'."
         )
-    if connection_factory is None:
-        raise StorageConfigurationError(
-            "O modo PostgreSQL exige uma connection_factory explícita. "
-            "Nenhuma conexão foi tentada e não haverá fallback para memória."
-        )
 
-    # Construção explícita: as operações só abrirão conexão quando chamadas.
-    formas_repository = PostgresFormasMonetariasRepository(connection_factory)
-    financeiro_repository = PostgresFinanceiroRepository(connection_factory)
-    plano_repository = PostgresPlanoContasRepository(connection_factory)
-
-    formas_monetarias_service.repository = formas_repository
-    formas_monetarias_service._items = {}
-    financeiro_service.repository = financeiro_repository
-    financeiro_service._items = {}
-    plano_contas_service.repository = plano_repository
-    plano_contas_service._items = {}
-    plano_contas_service._has_financial_references = (
-        financeiro_service.has_plan_account_reference
+    financeiro = FinanceiroService(repository=financeiro_repository)
+    plano_contas = PlanoContasService(
+        repository=plano_repository,
+        has_financial_references=financeiro.has_plan_account_reference,
     )
-    return "postgres"
+    formas_monetarias = FormasMonetariasService(repository=formas_repository)
+
+    return StorageServices(
+        formas_monetarias=formas_monetarias,
+        financeiro=financeiro,
+        plano_contas=plano_contas,
+    )
