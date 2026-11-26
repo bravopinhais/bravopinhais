@@ -11,7 +11,7 @@ A migration versionada deverá ser gerada no ambiente local com a versão de Sup
 - PostgreSQL em schema privado `bravo_shadow`, fora do schema exposto pela Data API.
 - FastAPI é o único caminho de acesso da aplicação. O frontend não recebe chave privilegiada nem conecta diretamente ao banco.
 - IDs permanecem `text` para preservar os identificadores prefixados já usados pela API sombra e permitir importação controlada futura.
-- Valores monetários usam `numeric(14,2)`, nunca `float` no armazenamento.
+- Valores monetários usam `Decimal` no contrato Python e `numeric(14,2)` no PostgreSQL; `float` não deve atravessar a camada de persistência. O schema HTTP de Financeiro já valida até 14 dígitos e 2 casas decimais.
 - Datas operacionais usam `timestamptz`; datas de cadastro informadas pelo usuário permanecem separadas.
 - Todas as tabelas terão `created_at`, `updated_at` e `version` para auditoria básica e concorrência otimista.
 - Nenhuma regra nova de negócio será ativada sem comparar com o contrato original.
@@ -81,6 +81,12 @@ A exclusão física de produto referenciado deve ser bloqueada por FK. O histór
 2. **Editar/excluir acerto:** não permitir edição destrutiva de movimento que já alterou saldo sem recalcular saldo de forma transacional. No primeiro corte, manter somente exclusão bloqueada ou implementar estorno compensatório; não copiar a exclusão atual que apaga histórico sem reverter saldo.
 3. **Excluir plano de contas:** a FK `ON DELETE RESTRICT` impede excluir conta usada por título financeiro, mesmo sob concorrência.
 4. **Atualização concorrente:** UPDATE deve exigir a versão lida (`WHERE id = :id AND version = :expected_version`) e incrementar `version`; zero linhas atualizadas vira conflito HTTP 409.
+
+## Contratos Python de transação
+
+Foi criado `app/core/transactions.py` com o port `TransactionalInventoryRepository`: a implementação persistente deverá receber o movimento, o produto e a variação de saldo e executar tudo atomicamente. O protocolo `UnitOfWork` estabelece o limite transacional. São contratos arquiteturais, não um adaptador PostgreSQL pronto; nenhum driver ou conexão foi adicionado nesta etapa.
+
+O schema HTTP de Financeiro passou a usar `Decimal` com limite de 14 dígitos e 2 casas decimais, alinhando a representação Python ao `numeric(14,2)`. Valores com mais de duas casas ou precisão acima do limite são rejeitados na validação da API.
 
 ## Segurança do banco
 
