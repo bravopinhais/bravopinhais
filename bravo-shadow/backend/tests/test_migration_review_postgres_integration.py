@@ -293,3 +293,48 @@ def test_event_id_is_unique_across_batches(postgres_database):
 
     assert len(store.load(first_register).events) == 1
     assert store.load(second_register).events == ()
+
+
+def test_parallel_cross_batch_duplicate_event_id_has_one_database_winner(postgres_database):
+    first_register = _register()
+    second_register = _register_for_distinct_batch()
+    store = PostgresReviewLedgerStore(lambda: psycopg.connect(postgres_database))
+    store.initialize(first_register)
+    store.initialize(second_register)
+
+    shared_event_id = f"parallel-cross-batch-{uuid4()}"
+    barrier = Barrier(2)
+
+    items = (
+        (first_register, first_register.pending[0].decision_id),
+        (second_register, second_register.pending[0].decision_id),
+    )
+
+    def append(item):
+        register, decision_id = item
+        barrier.wait(timeout=10)
+        try:
+            store.append(
+                register,
+                **_event_args(decision_id, shared_event_id),
+            )
+            return "committed"
+        except psycopg.IntegrityError:
+            return "unique_constraint_rejected"
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        outcomes = list(pool.map(append, items))
+
+    assert outcomes.count("committed") == 1
+    assert outcomes.count("unique_constraint_rejected") == 1
+
+    with psycopg.connect(postgres_database) as connection:
+        persisted = connection.execute(
+            "SELECT batch_key, decision_id FROM bravo_shadow.migration_review_events "
+            "WHERE event_id = %s",
+            (shared_event_id,),
+        ).fetchall()
+
+    assert len(persisted) == 1
+    assert persisted[0][0] in {first_register.batch_id, second_register.batch_id}
+    assert len(store.load(first_register).events) + len(store.load(second_register).events) == 1
