@@ -3,7 +3,7 @@ from app.core.migration_plan import DryRunCandidate
 from app.core.migration_preflight import run_migration_preflight
 from app.core.migration_report import build_preflight_report
 from app.core.migration_manifest import build_migration_manifest
-from app.core.migration_decisions import build_decision_register
+from app.core.migration_decisions import build_decision_register, _record_identity_key
 
 
 def setup_batch():
@@ -99,3 +99,14 @@ def test_ready_and_already_applied_records_are_not_review_items():
     register = build_decision_register(manifest, preflight)
 
     assert all(item.status not in {"ready", "already_applied"} for item in register.pending)
+
+
+
+def test_record_identity_key_is_unambiguous_when_components_contain_delimiters():
+    first = _record_identity_key("system|part", "collection", "legacy")
+    second = _record_identity_key("system", "part|collection", "legacy")
+
+    assert first != second
+    assert _record_identity_key("sistema", "moradores", "0001") == _record_identity_key(
+        "sistema", "moradores", "0001"
+    )
