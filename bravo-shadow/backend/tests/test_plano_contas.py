@@ -3,16 +3,17 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.modules.plano_contas.schemas import PlanoContaInput
-from app.modules.plano_contas.service import PlanoContasService, plano_contas_service
-from app.modules.financeiro.service import financeiro_service
+from app.modules.plano_contas.service import PlanoContasService
 
 client = TestClient(app)
 
 
 def setup_function() -> None:
-    plano_contas_service._items.clear()
-    plano_contas_service._has_financial_references = None
-    financeiro_service._items.clear()
+    app.state.services.plano_contas._items.clear()
+    app.state.services.financeiro._items.clear()
+    app.state.services.plano_contas._has_financial_references = (
+        app.state.services.financeiro.has_plan_account_reference
+    )
 
 
 def payload(**overrides):
@@ -47,10 +48,16 @@ def test_update_account():
 
 
 def test_delete_fails_closed_without_financial_reference_checker():
-    created = client.post("/api/v1/plano-contas", json=payload()).json()
-    response = client.delete(f"/api/v1/plano-contas/{created['id']}")
-    assert response.status_code == 503
-    assert len(client.get("/api/v1/plano-contas").json()) == 1
+    service = app.state.services.plano_contas
+    checker = service._has_financial_references
+    service._has_financial_references = None
+    try:
+        created = client.post("/api/v1/plano-contas", json=payload()).json()
+        response = client.delete(f"/api/v1/plano-contas/{created['id']}")
+        assert response.status_code == 503
+        assert len(client.get("/api/v1/plano-contas").json()) == 1
+    finally:
+        service._has_financial_references = checker
 
 
 def test_delete_rejected_when_financial_references_exist():
@@ -88,7 +95,9 @@ def test_delete_account_blocked_by_real_shadow_financial_reference():
             "valor": 99.9,
         },
     )
-    plano_contas_service._has_financial_references = financeiro_service.has_plan_account_reference
+    app.state.services.plano_contas._has_financial_references = (
+        app.state.services.financeiro.has_plan_account_reference
+    )
     response = client.delete(f"/api/v1/plano-contas/{account['id']}")
     assert response.status_code == 409
     assert len(client.get("/api/v1/plano-contas").json()) == 1
