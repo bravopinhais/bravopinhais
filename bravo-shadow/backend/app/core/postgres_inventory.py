@@ -176,37 +176,45 @@ class PostgresAcertosEstoqueRepository(_InventoryPostgresBase):
         allow_negative: bool = False,
     ) -> Acerto:
         """Bloqueia o produto e grava saldo + histórico no mesmo commit."""
-        with self._uow as uow:
-            connection = uow.connection
-            if connection is None:
-                raise RuntimeError("A conexão PostgreSQL não foi aberta.")
-            cursor = connection.cursor()
-            try:
-                cursor.execute(
-                    "SELECT quantidade FROM bravo_shadow.estoque WHERE id = %s FOR UPDATE",
-                    (product_id,),
-                )
-                row = cursor.fetchone()
-                if row is None:
-                    raise HTTPException(status_code=404, detail="Produto não encontrado.")
-                new_quantity = row[0] + delta
-                if new_quantity < 0 and not allow_negative:
-                    raise HTTPException(
-                        status_code=409,
-                        detail="Quantidade de saída superior ao saldo disponível.",
+        try:
+            with self._uow as uow:
+                connection = uow.connection
+                if connection is None:
+                    raise RuntimeError("A conexão PostgreSQL não foi aberta.")
+                cursor = connection.cursor()
+                try:
+                    cursor.execute(
+                        "SELECT quantidade FROM bravo_shadow.estoque WHERE id = %s FOR UPDATE",
+                        (product_id,),
                     )
-                cursor.execute(
-                    "UPDATE bravo_shadow.estoque SET quantidade = %s, "
-                    "updated_at = now(), version = version + 1 WHERE id = %s",
-                    (new_quantity, product_id),
-                )
-                cursor.execute(
-                    f"INSERT INTO {self._table} "
-                    "(id, data, tipo, produto_id, quantidade, motivo, motivo_id) "
-                    "VALUES (%s, %s, %s, %s, %s, %s, %s)",
-                    (movement.id, movement.data, movement.tipo, movement.produtoId,
-                     movement.quantidade, movement.motivo, movement.motivoId),
-                )
-                return movement
-            finally:
-                cursor.close()
+                    row = cursor.fetchone()
+                    if row is None:
+                        raise HTTPException(status_code=404, detail="Produto não encontrado.")
+                    new_quantity = row[0] + delta
+                    if new_quantity < 0 and not allow_negative:
+                        raise HTTPException(
+                            status_code=409,
+                            detail="Quantidade de saída superior ao saldo disponível.",
+                        )
+                    cursor.execute(
+                        "UPDATE bravo_shadow.estoque SET quantidade = %s, "
+                        "updated_at = now(), version = version + 1 WHERE id = %s",
+                        (new_quantity, product_id),
+                    )
+                    cursor.execute(
+                        f"INSERT INTO {self._table} "
+                        "(id, data, tipo, produto_id, quantidade, motivo, motivo_id) "
+                        "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                        (movement.id, movement.data, movement.tipo, movement.produtoId,
+                         movement.quantidade, movement.motivo, movement.motivoId),
+                    )
+                    return movement
+                finally:
+                    cursor.close()
+        except Exception as exc:
+            if self._sqlstate(exc) == "23503":
+                raise HTTPException(
+                    status_code=409,
+                    detail="O motivo informado não existe ou não pode ser removido durante a movimentação.",
+                ) from exc
+            raise
