@@ -59,7 +59,7 @@ def test_apply_requires_approved_manifest_and_exact_dry_run():
     approved = approve()
     with pytest.raises(BatchTransitionError, match="dry_run_manifest_mismatch"):
         transition_batch(approved, "applying", expected_manifest_hash="b" * 64)
-    with pytest.raises(BatchTransitionError, match="approved_batch_required"):
+    with pytest.raises(BatchTransitionError, match="invalid_status_transition"):
         transition_batch(prepared(), "applying", expected_manifest_hash=HASH)
 
 
