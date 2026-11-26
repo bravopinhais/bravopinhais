@@ -263,3 +263,13 @@ O modo PostgreSQL injeta os novos repositórios nos serviços. O modo memória c
 ## Proteção do saldo após histórico de estoque
 
 No modo PostgreSQL, a edição cadastral de um produto bloqueia a linha com `FOR UPDATE` e verifica se já existem acertos vinculados. Se houver histórico, a quantidade não pode ser alterada pela edição geral: mudanças de saldo devem passar pelo fluxo transacional de Entrada/Saída, preservando a trilha de movimentos. A edição de outros campos cadastrais continua permitida. A regra é serializada com a criação de movimentos pelo mesmo bloqueio de linha.
+
+
+## Revisão de integridade — Contas Bancárias
+
+- O campo `banco` agora remove espaços externos e rejeita valores compostos apenas por espaços, tanto na criação quanto na atualização, por meio do schema compartilhado.
+- O saldo continua como `Decimal` com até 14 dígitos e duas casas decimais; não foi criada regra para impedir saldo negativo, pois isso depende de confirmação operacional.
+- O CRUD atual permite atualizar banco e saldo diretamente. Esse saldo permanece um valor informado/manual, não um saldo calculado por extrato ou conciliação.
+- Não existe coluna de conta bancária em `financeiro`, nem FK ou regra de associação entre títulos e contas bancárias. Portanto, não se presume que um lançamento pertença a determinada conta, e nenhuma conciliação automática é possível nesta versão.
+- A exclusão de conta bancária não possui bloqueio por lançamentos financeiros, pois não há vínculo referencial no modelo atual. Antes de introduzir esse vínculo, é necessário definir se títulos podem ser associados a uma conta, em qual etapa, e como tratar transferências, pagamentos parciais e conciliação.
+- Foram acrescentados testes de normalização no POST e PUT e rejeição de nome em branco. Os testes ainda não foram executados; o adaptador PostgreSQL ainda depende de validação em banco local isolado.
