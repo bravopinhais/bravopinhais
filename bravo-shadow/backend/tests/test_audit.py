@@ -1,0 +1,62 @@
+from dataclasses import FrozenInstanceError
+from datetime import datetime
+
+import pytest
+
+from app.core.audit import AuditEvent, InMemoryAuditSink
+
+
+def make_event(**overrides):
+    values = {
+        "actor_subject": "google-subject-123",
+        "action": "financeiro:create",
+        "entity_type": "financeiro",
+        "entity_id": "fin_123",
+        "outcome": "success",
+    }
+    values.update(overrides)
+    return AuditEvent(**values)
+
+
+def test_audit_event_uses_timezone_aware_timestamp():
+    event = make_event()
+    assert event.occurred_at.tzinfo is not None
+    assert event.occurred_at.utcoffset() is not None
+
+
+def test_audit_event_rejects_naive_timestamp():
+    with pytest.raises(ValueError, match="fuso horário"):
+        make_event(occurred_at=datetime(2026, 11, 26, 12, 0, 0))
+
+
+def test_audit_event_rejects_blank_required_fields():
+    with pytest.raises(ValueError, match="actor_subject"):
+        make_event(actor_subject="   ")
+
+
+def test_audit_event_rejects_unknown_outcome():
+    with pytest.raises(ValueError, match="outcome"):
+        make_event(outcome="pending")
+
+
+def test_sink_appends_events_and_returns_immutable_snapshot():
+    sink = InMemoryAuditSink()
+    first = make_event()
+    sink.append(first)
+    snapshot = sink.list_events()
+    sink.append(make_event(action="financeiro:update"))
+    assert snapshot == (first,)
+    assert len(sink.list_events()) == 2
+    assert isinstance(sink.list_events(), tuple)
+
+
+def test_audit_event_is_immutable():
+    event = make_event()
+    with pytest.raises(FrozenInstanceError):
+        event.action = "usuarios:update_profile"
+
+
+def test_sink_rejects_non_audit_objects():
+    sink = InMemoryAuditSink()
+    with pytest.raises(TypeError, match="AuditEvent"):
+        sink.append({"action": "financeiro:create"})
