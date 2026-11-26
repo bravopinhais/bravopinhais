@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Request, status
+from fastapi import APIRouter, Depends, Request, status
+
+from app.core.authorization import AuthenticatedPrincipal, require_capability_dependency
 
 from .schemas import MotivoAcerto, MotivoAcertoInput
 from .service import MotivosAcertoService
@@ -14,15 +16,26 @@ def get_service(request: Request) -> MotivosAcertoService:
 
 
 @router.get("", response_model=list[MotivoAcerto])
-def list_reasons(request: Request):
+def list_reasons(
+    request: Request,
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("motivos_estoque:read")),
+):
     return get_service(request).list()
 
 
 @router.post("", response_model=MotivoAcerto, status_code=status.HTTP_201_CREATED)
-def create_reason(data: MotivoAcertoInput, request: Request):
+def create_reason(
+    data: MotivoAcertoInput,
+    request: Request,
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("motivos_estoque:create")),
+):
     return get_service(request).create(data)
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_reason(item_id: str, request: Request):
+def delete_reason(
+    item_id: str,
+    request: Request,
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("motivos_estoque:delete")),
+):
     get_service(request).delete(item_id)
