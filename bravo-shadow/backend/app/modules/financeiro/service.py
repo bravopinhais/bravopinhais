@@ -21,11 +21,24 @@ class FinanceiroService:
         self.repository.add(item.id, item)
         return item
 
-    def update(self, item_id: str, data: FinanceiroInput) -> FinanceiroTitulo:
-        if not self.repository.exists(item_id):
+    def update(self, item_id: str, data: FinanceiroInput, expected_version: int) -> FinanceiroTitulo:
+        current = self.repository.get(item_id)
+        if current is None:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Título não encontrado.")
-        item = FinanceiroTitulo(id=item_id, **data.model_dump())
-        self.repository.replace(item_id, item)
+        item = FinanceiroTitulo(id=item_id, version=expected_version, **data.model_dump())
+        compare_and_swap = getattr(self.repository, "replace_if_version", None)
+        if compare_and_swap is None:
+            raise HTTPException(status_code=503, detail="Repositório sem suporte a controle de versão.")
+        result = compare_and_swap(item_id, item, expected_version)
+        if result == 0:
+            raise HTTPException(status_code=404, detail="Título não encontrado.")
+        if result == -1:
+            raise HTTPException(status_code=409, detail="O título foi alterado por outra operação. Recarregue os dados.")
+        if isinstance(result, int):
+            saved = self.repository.get(item_id)
+            if saved is not None:
+                return saved
+            return item.model_copy(update={"version": result})
         return item
 
     def delete(self, item_id: str) -> None:
