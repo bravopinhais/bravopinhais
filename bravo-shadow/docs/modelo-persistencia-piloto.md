@@ -172,3 +172,12 @@ O arquivo [`sql-piloto-financeiro.sql`](./sql-piloto-financeiro.sql) registra o 
 - Não adicionar unicidade a `codigo` até a regra de duplicidade ser confirmada.
 - Não aplicar esse DDL em qualquer projeto hospedado ou de produção.
 - Depois de gerar a migration, revisar o SQL completo e validar com reset local desde banco vazio.
+
+
+## Concorrência e unicidade do código
+
+A edição de Plano de Contas e Financeiro usa compare-and-swap por `version`: o PostgreSQL atualiza somente quando o valor de `version` ainda corresponde ao `If-Match` recebido. O resultado da atualização já contém a nova versão, portanto a API devolve a entidade submetida com essa versão sem executar uma segunda leitura. Registro inexistente retorna 404; versão concorrente obsoleta retorna 409.
+
+O código do Plano de Contas é comparado sem diferenciar maiúsculas/minúsculas na API. O rascunho SQL inclui índice único em `lower(codigo)` para garantir a mesma regra no banco e impedir duplicidade em requisições simultâneas. A validação prévia da API melhora a mensagem, mas a restrição do banco é a garantia final.
+
+Essas alterações continuam sendo especificação/rascunho: o SQL não foi aplicado e os testes não foram executados.
