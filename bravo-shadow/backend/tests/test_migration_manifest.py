@@ -87,11 +87,19 @@ def test_manifest_hash_is_deterministic_for_same_inputs():
     assert first.records == second.records
 
 
-def test_manifest_hash_changes_when_importer_version_changes():
+def test_batch_identity_and_manifest_hash_change_when_importer_version_changes():
     first = build()
     second = build(importer_version="1.2.1")
 
-    assert first.batch_id == second.batch_id
+    assert first.batch_id != second.batch_id
+    assert first.manifest_hash != second.manifest_hash
+
+
+def test_batch_identity_and_manifest_hash_change_when_mapping_version_changes():
+    first = build()
+    second = build(mapping_version="1.0.1")
+
+    assert first.batch_id != second.batch_id
     assert first.manifest_hash != second.manifest_hash
 
 
