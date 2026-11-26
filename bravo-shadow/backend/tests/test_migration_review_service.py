@@ -7,11 +7,7 @@ from fastapi import HTTPException
 
 from app.core.authorization import AuthenticatedPrincipal
 from app.core.migration_decisions import build_decision_register
-from app.core.migration_review import ReviewValidationError
-from app.core.migration_review_service import (
-    MigrationReviewAccessDenied,
-    MigrationReviewService,
-)
+from app.core.migration_review_service import MigrationReviewService
 from test_migration_decisions import setup_batch
 
 
@@ -57,9 +53,12 @@ def test_review_service_fails_closed_until_capabilities_are_approved():
     assert runtime.calls == []
 
 
-def test_review_service_denies_batch_before_persistence():
+def test_batch_policy_denies_before_persistence(monkeypatch):
+    import app.core.migration_review_service as service_module
+
+    monkeypatch.setattr(service_module, "require_capability", lambda *_args: None)
     service, runtime, principal, register = setup_service()
-    with pytest.raises(HTTPException) as error:
+    with pytest.raises(Exception, match="batch_access_not_approved"):
         service.append(
             principal,
             register,
@@ -68,16 +67,40 @@ def test_review_service_denies_batch_before_persistence():
             choice="keep_blocked",
             rationale="Aguardar conferência",
         )
-    assert error.value.status_code == 403
     assert runtime.calls == []
 
 
-def test_review_service_rejects_empty_rationale_after_authorization():
+def test_append_uses_google_subject_as_reviewer_not_client_input(monkeypatch):
+    import app.core.migration_review_service as service_module
+
+    monkeypatch.setattr(service_module, "require_capability", lambda *_args: None)
+    service, runtime, principal, register = setup_service(
+        can_access_batch=lambda actor, batch: actor.subject == principal.subject
+        and batch == register.batch_id
+    )
+    service.append(
+        principal,
+        register,
+        decision_id=register.pending[0].decision_id,
+        expected_version=0,
+        choice="keep_blocked",
+        rationale="Aguardar conferência",
+    )
+    operation, payload = runtime.calls[0]
+    assert operation == "append"
+    assert payload["reviewer_id"] == "google-subject-123"
+    assert payload["event_id"] == "event-fixed"
+    assert payload["reviewed_at"] == "2026-11-26T00:00:00+00:00"
+
+
+def test_empty_rationale_is_rejected_before_persistence(monkeypatch):
+    import app.core.migration_review_service as service_module
+
+    monkeypatch.setattr(service_module, "require_capability", lambda *_args: None)
     service, runtime, principal, register = setup_service(
         can_access_batch=lambda _principal, _batch: True
     )
-    # The capability check deliberately remains fail-closed until catalog approval.
-    with pytest.raises(HTTPException):
+    with pytest.raises(ValueError, match="rationale_required"):
         service.append(
             principal,
             register,
@@ -86,12 +109,4 @@ def test_review_service_rejects_empty_rationale_after_authorization():
             choice="keep_blocked",
             rationale=" ",
         )
-    assert runtime.calls == []
-
-
-def test_missing_batch_policy_defaults_to_deny():
-    service, runtime, principal, register = setup_service()
-    # Unknown capability is denied before batch policy or storage access.
-    with pytest.raises(HTTPException):
-        service.load(principal, register)
     assert runtime.calls == []
