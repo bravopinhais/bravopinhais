@@ -32,7 +32,8 @@
 
 - O serviço atual permite atualizar `perfil` e `status` por meio do mesmo `UsuarioInput`.
 - O serviço permite excluir qualquer usuário encontrado.
-- Existe agora `PostgresUsuariosRepository.update_administrative_state`, que bloqueia a tabela em modo `SHARE ROW EXCLUSIVE`, lê o alvo, conta Admins ativos e rejeita a remoção do último. A operação atualiza perfil/status e chama `append_in_transaction` com a mesma conexão.
+- Existe `PostgresUsuariosRepository.update_administrative_state`, que bloqueia a tabela em modo `SHARE ROW EXCLUSIVE`, lê o alvo, conta Admins ativos e rejeita a remoção do último. A operação atualiza perfil/status e chama `append_in_transaction` com a mesma conexão.
+- `UsuariosService.update_administrative_state` agora constrói o evento a partir do principal verificado, impede que o ator altere o próprio perfil/status e delega apenas se o repositório implementar a operação transacional. O adaptador em memória retorna 503 sem alterar o usuário.
 - Os métodos CRUD genéricos continuam usando unidades de trabalho independentes. A nova operação administrativa é uma exceção explícita e usa uma única unidade de trabalho para bloqueio, contagem, atualização e auditoria.
 - O contrato de gestão de usuários e o plano de refatoração propõem separar dados cadastrais de alterações administrativas, mas essa separação ainda não está implementada.
 
@@ -53,7 +54,7 @@ Uma verificação simples seguida de atualização não basta: duas operações 
 
 1. Aprovar o contrato de gestão de usuários e a regra de cadastro inicial (Ativo, Inativo ou Pendente).
 2. Definir formalmente quais perfis podem cadastrar, editar dados, alterar perfil/status, desativar e excluir usuários.
-3. Concluído parcialmente: operação atômica isolada no adaptador PostgreSQL; falta serviço, adaptador em memória e integração HTTP.
+3. Concluído parcialmente: operação atômica no adaptador PostgreSQL e delegação no serviço; o adaptador em memória falha fechado. Falta integração HTTP.
 4. Testes unitários simulados adicionados; falta teste de integração PostgreSQL local e teste concorrente real para último Admin.
 5. Confirmar a configuração do provedor Google e manter as rotas condicionadas à identidade verificada e às capacidades formalmente aprovadas.
 
