@@ -40,6 +40,7 @@ def test_report_summarizes_each_collection_and_global_totals():
             "m2",
             mapping=ExistingSourceMapping("sha256:m2", "resident-2"),
         ),
+        candidate("moradores", "m3"),
         candidate("categorias", "c1", collision=True),
     )
     result = run_migration_preflight(envelope, candidates)
@@ -50,7 +51,7 @@ def test_report_summarizes_each_collection_and_global_totals():
 
     assert report.valid is True
     assert moradores.envelope_records == 3
-    assert moradores.candidates == 2
+    assert moradores.candidates == 3
     assert moradores.ready == 2
     assert moradores.already_applied == 1
     assert moradores.not_planned == 0
