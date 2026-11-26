@@ -18,7 +18,7 @@ Fonte: inspeção estática de `index.html` na branch `upgrade/project-hardening
 | Acerto de Estoque | `acertos_estoque`, `estoque`, `motivos_acerto_estoque` | Entrada/saída atualiza saldo; histórico guarda produtoId, quantidade, tipo, data e motivo textual. Exclusão não estorna saldo no original. Auditoria em `auditoria-estoque-inventario-acertos.md` | Alta |
 | Gestão de Documentos | `documentos`, `categorias` | Pasta textual, título, nome original e conteúdo deflate/Base64; visualizar, baixar, editar e excluir. Auditoria em `auditoria-gestao-documentos.md` | Média |
 | Central de Relatórios & DRE | `financeiro`, `plano_contas` | DRE soma todos os títulos, sem filtro por data/status; totais gerais incluem títulos sem conta. Não equivale a caixa realizado | Alta |
-| Gestão de Usuários | `usuarios` | Cadastro, perfis, edição, exclusão e administração de acesso | Crítica |
+| Gestão de Usuários | `usuarios` | Perfil com e-mail, nome, loja, cargo, perfil e status; senha local excluída do desenho sombra. Auditoria em `auditoria-gestao-usuarios.md` | Crítica |
 
 ## Serviços transversais observados
 
@@ -42,7 +42,7 @@ Fonte: inspeção estática de `index.html` na branch `upgrade/project-hardening
 5. **Financeiro**: paridade inicial com os cinco campos encontrados; depois avaliar evolução funcional aprovada.
 6. **Documentos**: arquivos, metadados, categorias e armazenamento.
 7. **Dashboard e DRE**: reconstruir indicadores depois de validar as fontes de dados e explicitar limitações da soma atual.
-8. **Gestão de usuários**: somente após definir e testar o contrato de identidade, autenticação e autorização atual.
+8. **Gestão de usuários**: perfil e vínculo de e-mail modelados na sombra; integração Google, validação de token e autorização continuam pendentes.
 
 A ordem poderá mudar conforme dependências reais e risco operacional.
 
