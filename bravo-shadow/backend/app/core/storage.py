@@ -11,9 +11,12 @@ from app.core.postgres_repositories import (
 )
 from app.core.repositories import InMemoryCollectionRepository
 from app.modules.acertos_estoque.service import AcertosEstoqueService
+from app.modules.categorias.service import CategoriasService
+from app.modules.documentos.service import DocumentosService
 from app.modules.estoque.service import EstoqueService
 from app.modules.financeiro.service import FinanceiroService
 from app.modules.formas_monetarias.service import FormasMonetariasService
+from app.modules.motivos_acerto.service import MotivosAcertoService
 from app.modules.plano_contas.service import PlanoContasService
 
 StorageBackend = Literal["memory", "postgres"]
@@ -32,6 +35,9 @@ class StorageServices:
     plano_contas: PlanoContasService
     estoque: EstoqueService
     acertos_estoque: AcertosEstoqueService
+    categorias: CategoriasService
+    motivos_acerto: MotivosAcertoService
+    documentos: DocumentosService
 
 
 def build_storage_services(
@@ -41,8 +47,8 @@ def build_storage_services(
     """Cria serviços isolados; nunca altera singletons ou estado global.
 
     No modo PostgreSQL, a fábrica é obrigatória e só será chamada durante
-    operações de repositório. Estoque e movimentos seguem em memória até que
-    o adaptador transacional específico seja implementado e testado.
+    operações de repositório. Estoque/movimentos e os módulos de catálogo
+    continuam em memória até seus adaptadores serem implementados e testados.
     """
     if backend == "memory":
         formas_repository = InMemoryCollectionRepository()
@@ -74,6 +80,9 @@ def build_storage_services(
         repository=InMemoryCollectionRepository(),
         inventory_service=estoque,
     )
+    categorias = CategoriasService(repository=InMemoryCollectionRepository())
+    motivos_acerto = MotivosAcertoService(repository=InMemoryCollectionRepository())
+    documentos = DocumentosService(repository=InMemoryCollectionRepository())
 
     return StorageServices(
         formas_monetarias=formas_monetarias,
@@ -81,4 +90,7 @@ def build_storage_services(
         plano_contas=plano_contas,
         estoque=estoque,
         acertos_estoque=acertos_estoque,
+        categorias=categorias,
+        motivos_acerto=motivos_acerto,
+        documentos=documentos,
     )
