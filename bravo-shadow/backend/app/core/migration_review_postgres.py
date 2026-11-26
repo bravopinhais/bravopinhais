@@ -53,6 +53,7 @@ class PostgresReviewLedgerStore:
         return tuple(sorted(
             (
                 item.decision_id,
+                register.manifest_hash,
                 item.kind,
                 item.status,
                 item.requires_human,
@@ -226,13 +227,13 @@ class PostgresReviewLedgerStore:
         cursor = self._run(
             connection,
             """
-            SELECT decision_id, decision_kind, decision_status,
+            SELECT decision_id, manifest_hash, decision_kind, decision_status,
                    requires_human, automatic_action
             FROM bravo_shadow.migration_review_decisions
-            WHERE batch_key = %s AND manifest_hash = %s
+            WHERE batch_key = %s
             ORDER BY decision_id
             """,
-            (register.batch_id, register.manifest_hash),
+            (register.batch_id,),
         )
         rows = tuple(tuple(row) for row in cursor.fetchall())
         cursor.close()
