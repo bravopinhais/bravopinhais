@@ -54,3 +54,8 @@ A API não está conectada ao Supabase, não recebe tokens, não lê nem grava d
 ## Testes
 
 Há testes automatizados em `backend/tests` para os CRUDs, integridade entre Plano de Contas e Financeiro e perfis de usuário. Foram escritos, mas ainda não executados neste ambiente.
+
+
+## Revisão de arquitetura
+
+Consulte [`docs/revisao-integracao-arquitetura.md`](../docs/revisao-integracao-arquitetura.md) para a matriz de dependências, riscos prioritários e critérios de prontidão. A API continua em memória e não deve receber dados reais.
