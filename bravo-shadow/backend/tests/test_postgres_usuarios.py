@@ -78,3 +78,66 @@ def test_postgres_storage_wires_user_profiles_without_connecting():
     services = build_storage_services("postgres", connection_factory=unexpected_connection)
 
     assert isinstance(services.usuarios.repository, PostgresUsuariosRepository)
+
+
+
+class UniqueViolation(Exception):
+    sqlstate = "23505"
+
+    def __init__(self, constraint_name):
+        self.diag = type("Diagnostic", (), {"constraint_name": constraint_name})()
+
+
+class FailingCursor(Cursor):
+    def __init__(self, connection, error):
+        super().__init__(connection)
+        self.error = error
+
+    def execute(self, sql, params=()):
+        self.connection.calls.append((sql, params))
+        raise self.error
+
+
+class FailingConnection(Connection):
+    def __init__(self, error):
+        super().__init__()
+        self.error = error
+
+    def cursor(self):
+        return FailingCursor(self, self.error)
+
+
+def test_postgres_translates_only_email_unique_constraint_to_conflict():
+    from fastapi import HTTPException
+    import pytest
+
+    connection = FailingConnection(UniqueViolation("usuarios_email_ci_uidx"))
+    repository = PostgresUsuariosRepository(factory(connection))
+
+    with pytest.raises(HTTPException) as error:
+        repository.add("usr_2", Usuario(
+            id="usr_2", email="person@example.com", nome="Pessoa",
+            loja="Bravo", cargo="Conselho", perfil="Operador", status="Ativo",
+        ))
+
+    assert error.value.status_code == 409
+    assert connection.rollbacks == 1
+    assert connection.closed == 1
+
+
+def test_postgres_does_not_mask_other_unique_constraint_violations():
+    import pytest
+
+    error = UniqueViolation("usuarios_pkey")
+    connection = FailingConnection(error)
+    repository = PostgresUsuariosRepository(factory(connection))
+
+    with pytest.raises(UniqueViolation) as raised:
+        repository.add("usr_2", Usuario(
+            id="usr_2", email="person@example.com", nome="Pessoa",
+            loja="Bravo", cargo="Conselho", perfil="Operador", status="Ativo",
+        ))
+
+    assert raised.value is error
+    assert connection.rollbacks == 1
+    assert connection.closed == 1
