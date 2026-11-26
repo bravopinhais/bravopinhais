@@ -284,3 +284,13 @@ No modo PostgreSQL, a edição cadastral de um produto bloqueia a linha com `FOR
 - A busca por nome/apartamento e o filtro por bloco continuam sem alteração funcional.
 - Foram acrescentados testes de normalização, rejeição de campo obrigatório só com espaços e compatibilidade com campos opcionais vazios. Os testes ainda não foram executados.
 - O cadastro contém dados pessoais (inclusive CPF e contato). Antes de qualquer dado real, continuam obrigatórios autenticação Google validada no backend, matriz de autorização aprovada, banco privado com grants mínimos e definição de retenção/acesso. Nenhuma dessas proteções foi presumida como concluída nesta revisão.
+
+
+## Revisão de integridade — Fornecedores
+
+- Os campos obrigatórios `cnpj` e `razaoSocial` removem espaços externos na criação e atualização. Valores vazios ou compostos apenas por espaços são rejeitados pelo limite mínimo após a normalização.
+- A pontuação e a representação informada do CNPJ são preservadas; não há conversão automática para somente dígitos nem validação dos dígitos verificadores nesta etapa. Isso evita alterar identificadores legados e não impede cadastro histórico atualmente aceito pela API.
+- Não foi criada unicidade de CNPJ nem bloqueio de duplicidade. Antes disso, será necessário identificar registros duplicados existentes e confirmar a regra operacional para matriz/filial, fornecedores repetidos ou cadastros históricos.
+- Razão social não é convertida para maiúsculas/minúsculas; apenas espaços externos são removidos.
+- Foram acrescentados testes para normalização no POST/PUT, rejeição de CNPJ em branco e preservação do formato pontuado. Os testes ainda não foram executados.
+- A tabela de fornecedores contém identificador empresarial. Antes de importar dados reais, manter as proteções de banco privado, autenticação e autorização server-side pendentes já documentadas.
