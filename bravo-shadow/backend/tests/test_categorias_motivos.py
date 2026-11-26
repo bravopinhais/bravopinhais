@@ -1,60 +1,50 @@
 from fastapi.testclient import TestClient
 
-from app.main import app, create_app
+from app.core.authentication import get_current_principal
+from app.core.authorization import AuthenticatedPrincipal
+from app.main import create_app
 
 
-client = TestClient(app)
+def build_client(profile: str | None = None) -> TestClient:
+    application = create_app(storage_backend="memory")
+    if profile is not None:
+        async def authenticated_principal() -> AuthenticatedPrincipal:
+            return AuthenticatedPrincipal(
+                subject="google-test-subject",
+                email="teste@example.com",
+                profile=profile,
+                account_status="Ativo",
+            )
+        application.dependency_overrides[get_current_principal] = authenticated_principal
+    return TestClient(application)
 
 
-def setup_function():
-    app.state.services.categorias._items.clear()
-    app.state.services.motivos_acerto._items.clear()
+def test_category_and_reason_routes_require_authentication():
+    client = build_client()
+    requests = [
+        ("GET", "/api/v1/categorias", None),
+        ("POST", "/api/v1/categorias", {"nome": "Financeiro"}),
+        ("DELETE", "/api/v1/categorias/1", None),
+        ("GET", "/api/v1/motivos-acerto-estoque", None),
+        ("POST", "/api/v1/motivos-acerto-estoque", {"nome": "Quebra"}),
+        ("DELETE", "/api/v1/motivos-acerto-estoque/1", None),
+    ]
+    for method, path, payload in requests:
+        response = client.request(method, path, json=payload)
+        assert response.status_code == 401, (method, path, response.text)
 
 
-def test_categories_crud():
-    created = client.post("/api/v1/categorias", json={"nome": "Financeiro"})
-    assert created.status_code == 201
-    item = created.json()
-    assert client.get("/api/v1/categorias").json()[0]["nome"] == "Financeiro"
-    assert client.delete("/api/v1/categorias/" + item["id"]).status_code == 204
-    assert client.delete("/api/v1/categorias/" + item["id"]).status_code == 404
-
-
-def test_adjustment_reasons_crud():
-    created = client.post("/api/v1/motivos-acerto-estoque", json={"nome": "Quebra"})
-    assert created.status_code == 201
-    item = created.json()
-    assert client.get("/api/v1/motivos-acerto-estoque").json()[0]["nome"] == "Quebra"
-    assert client.delete("/api/v1/motivos-acerto-estoque/" + item["id"]).status_code == 204
-
-
-def test_names_are_required():
-    assert client.post("/api/v1/categorias", json={"nome": ""}).status_code == 422
-    assert client.post("/api/v1/motivos-acerto-estoque", json={}).status_code == 422
-
-
-def test_catalog_services_are_isolated_between_app_instances():
-    first = TestClient(create_app())
-    second = TestClient(create_app())
-
-    category = first.post("/api/v1/categorias", json={"nome": "Documentos"}).json()
-    reason = first.post("/api/v1/motivos-acerto-estoque", json={"nome": "Avaria"}).json()
-
-    assert first.get("/api/v1/categorias").json()[0]["id"] == category["id"]
-    assert first.get("/api/v1/motivos-acerto-estoque").json()[0]["id"] == reason["id"]
-    assert second.get("/api/v1/categorias").json() == []
-    assert second.get("/api/v1/motivos-acerto-estoque").json() == []
-
-
-def test_category_and_reason_names_are_trimmed():
-    category = client.post("/api/v1/categorias", json={"nome": "  Financeiro  "})
-    reason = client.post("/api/v1/motivos-acerto-estoque", json={"nome": "  Quebra  "})
-    assert category.status_code == 201
-    assert reason.status_code == 201
-    assert category.json()["nome"] == "Financeiro"
-    assert reason.json()["nome"] == "Quebra"
-
-
-def test_category_and_reason_names_reject_whitespace_only():
-    assert client.post("/api/v1/categorias", json={"nome": "   "}).status_code == 422
-    assert client.post("/api/v1/motivos-acerto-estoque", json={"nome": "   "}).status_code == 422
+def test_category_and_reason_routes_deny_both_profiles_until_approval():
+    requests = [
+        ("GET", "/api/v1/categorias", None),
+        ("POST", "/api/v1/categorias", {"nome": "Financeiro"}),
+        ("DELETE", "/api/v1/categorias/1", None),
+        ("GET", "/api/v1/motivos-acerto-estoque", None),
+        ("POST", "/api/v1/motivos-acerto-estoque", {"nome": "Quebra"}),
+        ("DELETE", "/api/v1/motivos-acerto-estoque/1", None),
+    ]
+    for profile in ("Admin", "Operador"):
+        client = build_client(profile)
+        for method, path, payload in requests:
+            response = client.request(method, path, json=payload)
+            assert response.status_code == 403, (profile, method, path, response.text)
