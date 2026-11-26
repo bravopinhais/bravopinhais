@@ -329,3 +329,15 @@ Revisão estática dos decorators dos 15 routers de negócio e do router de iden
 3. Aplicar dependências de autenticação e capacidade a cada rota, começando por Usuários e módulos sensíveis.
 4. Criar testes de integração 401, 403 e acesso permitido para cada grupo de rotas.
 5. Só então expor os endpoints de Dashboard e relatórios.
+
+
+## Achado prioritário — provisionamento do primeiro Admin
+
+A revisão do schema, serviço, router e testes de Usuários confirmou que:
+
+- `UsuarioInput` permite `perfil=Admin` e `status=Ativo`.
+- `POST /api/v1/usuarios` e `PUT /api/v1/usuarios/{item_id}` não exigem identidade autenticada nem capacidade administrativa.
+- O teste `test_create_and_get_profile_by_email` cria um Admin por chamada HTTP sem Bearer token. Esse teste documenta o comportamento atual, não um comportamento seguro.
+- O backend padrão usa armazenamento em memória; portanto, criar um primeiro Admin nesse modo não é provisionamento persistente.
+
+**Bloqueio:** não implementar bootstrap via endpoint HTTP, não confiar em primeiro login e não permitir que o payload do cliente escolha o perfil. O desenho recomendado de provisionamento fora da API está em `docs/provisionamento-primeiro-admin.md`. A implementação depende de PostgreSQL local de sombra, transação atômica, e-mail explicitamente autorizado pelo responsável e proteção das rotas de Usuários.
