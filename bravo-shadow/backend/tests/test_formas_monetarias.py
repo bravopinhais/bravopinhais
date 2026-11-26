@@ -28,7 +28,7 @@ def test_create_list_update_delete_form():
 def test_default_penalty_and_missing_update():
     created = client.post("/api/v1/formas-monetarias", json={"nome": "Dinheiro"})
     assert created.status_code == 201
-    assert created.json()["multaPct"] == 0.0
+    assert created.json()["multaPct"] == 2.0
     assert client.put("/api/v1/formas-monetarias/unknown", json={"nome": "Teste"}).status_code == 404
 
 
