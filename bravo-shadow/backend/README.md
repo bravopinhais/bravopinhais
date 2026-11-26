@@ -29,8 +29,10 @@ No Windows, ative o ambiente com `.venv\\Scripts\\activate`.
 | Financeiro | `GET/POST /api/v1/financeiro`, `PUT/DELETE /api/v1/financeiro/{id}` |
 | Formas Monetárias | `GET/POST /api/v1/formas-monetarias`, `PUT/DELETE /api/v1/formas-monetarias/{id}` |
 | Contas Bancárias | `GET/POST /api/v1/contas-bancarias`, `PUT/DELETE /api/v1/contas-bancarias/{id}` |
+| Fornecedores | `GET/POST /api/v1/fornecedores`, `PUT/DELETE /api/v1/fornecedores/{id}` |
+| Empregados | `GET/POST /api/v1/empregados`, `PUT/DELETE /api/v1/empregados/{id}` |
 
-Os quatro módulos usam armazenamento temporário em memória. O verificador de exclusão do Plano de Contas consulta os títulos financeiros mantidos no mesmo processo da API.
+Os seis módulos usam armazenamento temporário em memória. O verificador de exclusão do Plano de Contas consulta os títulos financeiros mantidos no mesmo processo da API.
 
 ## Limites desta etapa
 
