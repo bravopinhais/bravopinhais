@@ -13,7 +13,7 @@ Fonte: inspeção estática de `index.html` na branch `upgrade/project-hardening
 | Moradores & Unidades | `moradores` | Bloco, apartamento e nome obrigatórios; contato, CPF/RG, pet e vaga opcionais; filtros por bloco/nome e importação em lote JSON (não upload XLSX/CSV). Auditoria em `auditoria-moradores-unidades.md` | Alta |
 | Fornecedores | `fornecedores` | CNPJ e razão social obrigatórios; CRUD. Auditoria em `auditoria-fornecedores-empregados.md` | Média |
 | Empregados | `empregados` | Nome e cargo obrigatórios; empresa, endereço, telefone e contato de emergência opcionais; CRUD. Auditoria em `auditoria-fornecedores-empregados.md` | Média |
-| Pastas & Categorias | `categorias`, `motivos_acerto_estoque`, `estoque` | Pastas gerais, motivos de ajuste e relações com itens | Média |
+| Pastas & Categorias | `categorias`, `motivos_acerto_estoque` | Pastas (`id`, `nome`) usadas textualmente em `documentos.pasta`; motivos (`id`, `nome`) sem vínculo por ID confirmado nos acertos. Auditoria em `auditoria-pastas-categorias-motivos.md` | Média |
 | Estoque & Inventário | `estoque` | Quantidade, mínimo/máximo, fotos, filtros, scanner e gráfico | Alta |
 | Acerto de Estoque | `acertos_estoque`, `estoque`, `motivos_acerto_estoque`, `documentos` | Ajustes, justificativas e exclusão de acertos | Alta |
 | Gestão de Documentos | `documentos`, `categorias` | Pastas, títulos, arquivos compactados, visualização e download | Média |
