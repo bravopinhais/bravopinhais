@@ -73,3 +73,8 @@ Foi introduzido `app/core/repositories.py` com o contrato `CollectionRepository`
 O serviço de Acertos de Estoque deixou de acessar diretamente o dicionário privado do serviço de Estoque: a atualização de saldo passa por `update_quantity`. Isso melhora o isolamento entre módulos, mas **não cria atomicidade** no adaptador em memória. A operação transacional de saldo + histórico continua sendo requisito obrigatório para o adaptador PostgreSQL e bloqueia qualquer uso com dados reais.
 
 Compatibilidade temporária: o atributo `_items` continua exposto internamente pelos serviços para que os testes atuais possam limpar o adaptador em memória. Código novo deve usar os métodos do repositório, não manipular esse atributo.
+
+
+## Preparação transacional e valores financeiros
+
+O contrato financeiro usa `Decimal` com precisão máxima de 14 dígitos e 2 casas decimais, alinhado ao futuro `numeric(14,2)` do PostgreSQL. O módulo `app/core/transactions.py` define os ports `TransactionalInventoryRepository` e `UnitOfWork` para a futura gravação atômica de movimentos de estoque. Eles ainda não possuem implementação PostgreSQL; os serviços ativos continuam em memória e a movimentação atual ainda não é ACID.
