@@ -40,25 +40,22 @@ def test_name_is_required_and_trimmed():
     assert created.json()["nome"] == "PIX"
 
 
-def test_penalty_must_be_between_zero_and_one_hundred():
+def test_penalty_preserves_legacy_unbounded_numeric_behavior():
+    # O HTML original aceita valores numéricos sem min/max; não impor limites novos.
     for value in (-0.01, 100.01):
         response = client.post(
             "/api/v1/formas-monetarias",
             json={"nome": "Teste", "multaPct": value},
         )
-        assert response.status_code == 422
-
-    for value in (0, 100):
-        response = client.post(
-            "/api/v1/formas-monetarias",
-            json={"nome": "Limite", "multaPct": value},
-        )
         assert response.status_code == 201
+        assert response.json()["multaPct"] == value
 
 
-def test_name_cannot_exceed_one_hundred_characters():
+def test_name_has_no_new_maximum_length_restriction():
+    name = "x" * 150
     response = client.post(
         "/api/v1/formas-monetarias",
-        json={"nome": "x" * 101},
+        json={"nome": name},
     )
-    assert response.status_code == 422
+    assert response.status_code == 201
+    assert response.json()["nome"] == name
