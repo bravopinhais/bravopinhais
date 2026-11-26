@@ -66,3 +66,19 @@ A inspeção do manifesto encontrou uma incompatibilidade de modelo: o identific
 **Correção aplicada:** `batchId` agora inclui as versões do envelope, formato do manifesto, canonicalização, importador e mapeamento. Testes cobrem mudança de versão do importador e do mapeamento, além da repetibilidade para entradas idênticas. O SQL de controle continua compatível porque mantém `batch_id` como chave primária e não exige alteração de coluna.
 
 Essa mudança é de identidade lógica e não executa importação nem altera dados.
+
+
+## 7. Máquina de estados pura adicionada
+
+Foi criada `backend/app/core/migration_batch_state.py` com validação fail-closed, sem persistência:
+- `prepared → approved → applying → applied → verified`;
+- falha pode ser registrada nos estados de execução permitidos;
+- rollback somente após aplicação;
+- `failed` e `rolled_back` são terminais;
+- aprovação exige revisor, data e hash exatamente igual ao manifesto;
+- `applying` exige hash do dry-run idêntico ao hash aprovado;
+- todos os estados exigem ambiente `local_disposable` ou `ci_ephemeral`.
+
+Os testes em `backend/tests/test_migration_batch_state.py` cobrem fluxo válido, hash divergente, ambiente proibido, rollback prematuro, estados terminais e imutabilidade.
+
+**Limite importante:** isso é regra de domínio em memória. Antes de uso persistente, o adaptador PostgreSQL deverá executar a leitura com `SELECT ... FOR UPDATE`, validar e atualizar o estado dentro da mesma transação. A função pura, sozinha, não oferece bloqueio concorrente nem autorização de usuário.
