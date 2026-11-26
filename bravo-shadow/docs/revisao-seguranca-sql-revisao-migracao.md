@@ -81,3 +81,17 @@ Os mocks Python não substituem esses testes. Eles ainda precisam ser executados
 ## Conclusão
 
 O rascunho é uma base conservadora, mas ainda não está pronto para aplicação. Os pontos mais importantes a resolver são: separar owner/runtime, forçar RLS, garantir igualdade dos hashes por constraints e ligar o ator da revisão ao principal autenticado em uma camada de serviço. O sistema original permanece fora do escopo desta alteração.
+
+
+## 7. Isolamento transacional e concorrência do ledger
+
+O adaptador depende de transações PostgreSQL com isolamento **READ COMMITTED** (padrão do PostgreSQL). A fábrica de conexão deve preservar esse nível; qualquer alteração global para REPEATABLE READ ou SERIALIZABLE precisa ser validada com testes de concorrência antes de uso.
+
+Ordem de bloqueios obrigatória:
+1. `initialize` bloqueia a linha do lote (`migration_review_batches`) com `FOR UPDATE`.
+2. `append` bloqueia primeiro a mesma linha do lote e depois a linha da decisão, sempre nessa ordem.
+3. A trava do lote serializa gravações dentro do mesmo lote. Isso reduz paralelismo, mas evita que duas revisões diferentes devolvam snapshots intermediários e mantém uma ordem de bloqueio consistente com a inicialização.
+4. A versão esperada continua sendo verificada após os bloqueios. A constraint `UNIQUE (batch_key, decision_id, version)` permanece como última barreira.
+5. A consulta prévia de `event_id` melhora a mensagem de erro, mas não substitui a PK global `PRIMARY KEY (event_id)`: eventos com mesmo ID concorrendo em lotes diferentes ainda dependem dessa constraint, cujo conflito deve abortar e reverter a transação inteira.
+
+Não presumir que mocks comprovam bloqueios reais. A validação definitiva exige duas conexões PostgreSQL locais independentes, com testes concorrentes para mesmo lote/decisão, mesmo lote/decisões diferentes, IDs de evento repetidos em lotes distintos, rollback após conflito e repetição de inicialização. Nenhum desses testes reais foi executado nesta etapa.
