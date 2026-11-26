@@ -36,6 +36,10 @@ A leitura identificada consulta `condominio_dados`, registro `id = principal`, s
 
 O modelo atual aparenta concentrar o estado da aplicação em um payload amplo. É necessário mapear seu formato, tamanho, chaves, concorrência e regras de atualização antes de decidir se e como normalizar dados.
 
+## Divergência que exige confirmação
+
+A leitura estática também encontrou a função legada `realizarLogin` com comparação de `senhaHash`. Isso diverge da orientação atual do projeto de utilizar identificação Google/e-mail. Não será feita qualquer alteração de autenticação nesta etapa. Antes de migrar esse fluxo, será necessário confirmar qual implementação está efetivamente ativa no ambiente utilizado e localizar a integração Google correspondente.
+
 ## Pontos ainda não auditados
 
 - Estrutura completa de `DEFAULT_DATA` e de cada coleção.
