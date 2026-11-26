@@ -91,3 +91,10 @@ Os nomes abaixo são sugestões canônicas. Antes da implementação, devem ser 
 ## Próximo bloqueio de decisão
 
 A implementação não deve avançar para atribuição de capacidades aos perfis sem aprovação explícita da matriz Admin/Operador. Enquanto isso, o trabalho seguro é revisão estática, testes isolados e preparação de ambiente local; não ativar routers nem conectar dados reais.
+
+
+## Implementação de segurança — negação por padrão
+
+Em 26/11/2026, a implementação foi alinhada ao estado de aprovação descrito neste documento: como a matriz Admin/Operador ainda não foi aprovada, **nenhum dos dois perfis recebe capacidades**. A identidade Google válida e o cadastro ativo são necessários, mas não suficientes para autorizar operações. As dependências de capacidade retornam 403 para ambos os perfis até aprovação explícita e implementação revisada da matriz.
+
+Isso evita que a proposta de catálogo seja interpretada como concessão automática ao perfil Admin. Não significa que todas as rotas já estejam protegidas: a auditoria de rotas continua válida e os routers de negócio ainda precisam declarar dependências de autenticação e capacidade antes de qualquer uso com dados reais.
