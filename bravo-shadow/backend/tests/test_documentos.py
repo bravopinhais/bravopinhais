@@ -1,4 +1,6 @@
-from fastapi.testclient import TestClient
+import pytest\nfrom fastapi import HTTPException\nfrom fastapi.testclient import TestClient
+
+from app.modules.categorias.schemas import CategoriaInput
 
 from app.main import app, create_app
 
@@ -59,10 +61,10 @@ def test_documents_are_isolated_between_app_instances():
 
 
 def test_document_category_link_and_restrict_delete():
-    category = client.post("/api/v1/categorias", json={"nome": "Atas"}).json()
+    category = app.state.services.categorias.create(CategoriaInput(nome="Atas"))
     created = client.post(
         "/api/v1/documentos",
-        json=payload(categoriaId=category["id"], pasta="Nome antigo"),
+        json=payload(categoriaId=category.id, pasta="Nome antigo"),
     )
     assert created.status_code == 201
     document = created.json()
@@ -111,7 +113,7 @@ def test_document_category_id_is_trimmed_before_lookup():
     category = client.post("/api/v1/categorias", json={"nome": "Atas"}).json()
     response = client.post(
         "/api/v1/documentos",
-        json=payload(categoriaId=f"  {category['id']}  "),
+        json=payload(categoriaId=f"  {category.id}  "),
     )
     assert response.status_code == 201
     assert response.json()["categoriaId"] == category["id"]
