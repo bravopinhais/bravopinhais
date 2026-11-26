@@ -72,27 +72,20 @@ def test_frontend_exposes_first_api_integrated_module() -> None:
 
 
 def test_app_instances_do_not_share_pilot_storage() -> None:
+    from app.modules.formas_monetarias.schemas import FormaMonetariaInput
+
     first_app = create_app(storage_backend="memory")
     second_app = create_app(storage_backend="memory")
+    first_service = first_app.state.services.formas_monetarias
+    second_service = second_app.state.services.formas_monetarias
 
-    first_client = TestClient(first_app)
-    second_client = TestClient(second_app)
+    first_service.create(FormaMonetariaInput(nome="Dinheiro - app 1", multaPct=2))
+    assert len(first_service.list()) == 1
+    assert second_service.list() == []
 
-    created = first_client.post(
-        "/api/v1/formas-monetarias",
-        json={"nome": "Dinheiro - app 1", "multaPct": 2},
-    )
-    assert created.status_code == 201
-    assert len(first_client.get("/api/v1/formas-monetarias").json()) == 1
-    assert second_client.get("/api/v1/formas-monetarias").json() == []
-
-    created_second = second_client.post(
-        "/api/v1/formas-monetarias",
-        json={"nome": "Dinheiro - app 2", "multaPct": 2},
-    )
-    assert created_second.status_code == 201
-    assert len(first_client.get("/api/v1/formas-monetarias").json()) == 1
-    assert len(second_client.get("/api/v1/formas-monetarias").json()) == 1
+    second_service.create(FormaMonetariaInput(nome="Dinheiro - app 2", multaPct=2))
+    assert len(first_service.list()) == 1
+    assert len(second_service.list()) == 1
 
 
 def test_app_instances_keep_financial_services_separate() -> None:
