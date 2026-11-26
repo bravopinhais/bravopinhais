@@ -75,3 +75,14 @@ O isolamento de serviços por instância está agora aplicado aos 15 routers. Is
 ## Integridade do original
 
 Esta revisão não altera o `index.html` original nem configura conexão com o banco de produção.
+
+
+## Gate de autorização PostgreSQL identificado na revisão
+
+O SQL atual habilita RLS nas 15 tabelas, não cria policies e revoga grants de `public`, `anon`, `authenticated` e `service_role`. Isso mantém as tabelas fora do acesso padrão da Data API, mas também bloqueia uma role de API comum mesmo que receba privilégios SQL de tabela: RLS sem policy aplicável nega as linhas. Antes de habilitar `BRAVO_STORAGE_BACKEND=postgres`, definir e testar uma role customizada e policies explícitas para ela. Não usar `BYPASSRLS` nem superusuário como atalho de produção.
+
+O modo PostgreSQL atual instancia adaptadores para todos os 14 módulos com repositório próprio. Portanto, um usuário de API não pode receber GRANTs apenas nas três tabelas financeiras. A matriz de privilégios deve cobrir as 15 tabelas, com exceção deliberada de UPDATE/DELETE em `acertos_estoque`, cujo histórico deve permanecer imutável.
+
+## Proteção de saldo de estoque
+
+No adaptador PostgreSQL, a edição geral do produto agora bloqueia a linha com `FOR UPDATE` e verifica a existência de movimentos. Se houver histórico, a quantidade não pode ser alterada pelo CRUD cadastral; mudanças de saldo devem ocorrer pelo fluxo transacional de acerto. Isso impede que uma edição de cadastro reescreva o saldo sem registrar movimento.
