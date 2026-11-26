@@ -192,3 +192,27 @@ O adaptador usa a tabela `bravo_shadow.formas_monetarias` e os campos `id`, `nom
 O DDL da tabela foi acrescentado ao rascunho `sql-piloto-financeiro.sql`, com RLS habilitado e sem grants para clientes da Data API. **Continua sendo apenas rascunho**: não foi criada migration pela CLI, não houve conexão com PostgreSQL/Supabase e nenhuma tabela foi criada.
 
 Foram acrescentados testes unitários com conexão/cursor falsos para mapear os campos, executar o CRUD e verificar 404 em atualização/exclusão de registros ausentes. Esses testes ainda precisam ser executados na CI; o fake não substitui teste real na stack PostgreSQL local.
+
+
+## Extensão do rascunho SQL — Estoque e Acertos de Estoque
+
+O rascunho SQL foi ampliado para incluir as tabelas `bravo_shadow.estoque` e `bravo_shadow.acertos_estoque`, com os campos correspondentes aos schemas atuais da API:
+
+- Estoque mantém marca, linha, fabricante e data de cadastro, além dos campos legados de identificação e foto compactada.
+- Acertos preserva data/hora, tipo, produto, quantidade, motivo textual e o identificador opcional do motivo.
+- A FK de acerto para produto usa `ON DELETE RESTRICT`, preservando o histórico e impedindo apagar um produto que já possui movimentos.
+- A tabela de acertos não cria ainda FK para `motivo_id`, pois o catálogo de motivos continua em memória e não existe tabela PostgreSQL correspondente neste corte.
+- Ambas as tabelas habilitam RLS e revogam acesso da Data API, mantendo o acesso pretendido exclusivamente no backend.
+
+### Regra transacional obrigatória para implementação
+
+A criação de um acerto deve executar dentro de uma única transação PostgreSQL:
+
+1. Selecionar o produto por ID com `FOR UPDATE`.
+2. Retornar 404 se o produto não existir.
+3. Calcular o novo saldo; em Saída, retornar 409 se a quantidade solicitada exceder o saldo disponível.
+4. Atualizar o saldo e incrementar `version`.
+5. Inserir o acerto com o mesmo ID/data gerados pela aplicação.
+6. Confirmar a transação; qualquer falha antes do commit deve reverter saldo e histórico juntos.
+
+O contrato de serviço atual ainda executa as duas operações separadamente em memória. O SQL ampliado é somente especificação: **não foi aplicado, não é migration e não habilita PostgreSQL para esses módulos**. Antes da ativação, será necessário implementar adaptadores DB-API, testes com PostgreSQL local isolado e migration criada pela Supabase CLI. A CLI/Docker não estão disponíveis no ambiente de trabalho atual, portanto essa validação local ainda não foi feita.
