@@ -1,4 +1,7 @@
-from pydantic import BaseModel, ConfigDict, Field
+from datetime import date
+
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
 
 class EstoqueInput(BaseModel):
     model_config = ConfigDict(extra='forbid')
@@ -14,6 +17,30 @@ class EstoqueInput(BaseModel):
     linha: str = ''
     fabricante: str = ''
     dataCadastro: str = ''
+
+    @field_validator(
+        "item", "etiqueta", "fotoNome", "marca", "linha", "fabricante",
+        mode="before",
+    )
+    @classmethod
+    def trim_product_text(cls, value):
+        return value.strip() if isinstance(value, str) else value
+
+    @field_validator("dataCadastro", mode="before")
+    @classmethod
+    def validate_registration_date(cls, value):
+        if value is None:
+            return ""
+        if not isinstance(value, str):
+            return value
+        normalized = value.strip()
+        if not normalized:
+            return ""
+        try:
+            return date.fromisoformat(normalized).isoformat()
+        except ValueError as exc:
+            raise ValueError("A data de cadastro deve estar no formato AAAA-MM-DD.") from exc
+
 
 class EstoqueItem(EstoqueInput):
     id: str
