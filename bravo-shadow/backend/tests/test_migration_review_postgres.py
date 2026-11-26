@@ -83,6 +83,9 @@ class FakeCursor:
                 ],
                 key=lambda row: (row[1], row[3]),
             )
+        elif query.startswith("SELECT event_id FROM bravo_shadow.migration_review_events"):
+            (event_id,) = params
+            self.one = (event_id,) if any(row[0] == event_id for row in db.events) else None
         elif query.startswith("SELECT COALESCE(MAX(version), 0)"):
             batch_key, decision_id = params
             versions = [
@@ -221,3 +224,19 @@ def test_postgres_adapter_rejects_null_review_timestamp():
 
     with pytest.raises(ReviewValidationError, match="stored_ledger_binding_or_integrity_error"):
         store.load(register)
+
+
+
+def test_postgres_adapter_rejects_event_id_already_used_in_another_batch():
+    register, decision_id, database, store = setup_store()
+    store.initialize(register)
+    database.events.append((
+        "globally-used-event", "another-decision", "another-batch",
+        register.manifest_hash, 1, "other@example.test", "keep_blocked",
+        "Evento de outro lote.", "2026-11-26T16:00:00-03:00",
+    ))
+
+    with pytest.raises(ReviewValidationError, match="duplicate_review_event_id"):
+        store.append(register, **event_args(decision_id, "globally-used-event", 0))
+
+    assert len(database.events) == 1
