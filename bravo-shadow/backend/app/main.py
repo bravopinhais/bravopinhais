@@ -31,6 +31,7 @@ from app.modules.empregados.router import router as empregados_router
 from app.modules.formas_monetarias.router import router as formas_monetarias_router
 from app.modules.plano_contas.router import router as plano_contas_router
 from app.modules.usuarios.router import router as usuarios_router
+from app.modules.configuracoes.router import router as configuracoes_router
 
 
 def create_app(
@@ -153,6 +154,7 @@ def create_app(
     application.include_router(acertos_estoque_router)
     application.include_router(documentos_router)
     application.include_router(usuarios_router)
+    application.include_router(configuracoes_router)
 
     # CORS permanece fechado até definir a allowlist dos ambientes.
     # Não habilitar origem curinga em produção.
