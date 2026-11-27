@@ -57,6 +57,8 @@ jobs:
           grep -q 'action.textContent="Atualizando..."' _site/index.html
           grep -q 'action.setAttribute("aria-busy","true")' _site/index.html
           grep -q 'action.removeAttribute("aria-busy")' _site/index.html
+          grep -q 'action.textContent="Excluindo..."' _site/index.html
+          grep -q 'action.removeAttribute("aria-busy")' _site/index.html
           grep -q 'window.addEventListener("hashchange"' _site/index.html
           grep -q '<h1 id="page-title" tabindex="-1">' _site/index.html
           grep -q 'getElementById("page-title").focus({preventScroll:true})' _site/index.html
