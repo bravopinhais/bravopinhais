@@ -16,6 +16,12 @@ O diretório `BRAVO_SHADOW_USERS` é apenas uma variável de ambiente para homol
 
 O Worker também não implementa os módulos de negócio da API FastAPI. O endpoint de saúde e a validação de identidade servem somente para medir a compatibilidade do caminho de autenticação.
 
+## Testes automatizados
+
+A suíte Node.js cobre 13 cenários, incluindo assinatura RS256 válida e adulterada, audience incorreta, e-mail não verificado, token expirado ou emitido no futuro, token malformado, usuário ausente/inativo e usuário sintético ativo. A consulta de certificados é simulada nos testes; nenhum request externo é feito pela suíte.
+
+O GitHub Actions executa esses testes no branch `bravo-shadow`. A aprovação automatizada valida a lógica isolada, mas não substitui a medição no runtime Cloudflare.
+
 ## Executar localmente
 
 Requer Node.js e Wrangler. Na pasta deste pacote:
