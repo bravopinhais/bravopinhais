@@ -262,3 +262,50 @@ def test_unknown_user_state_fails_closed_without_audit():
     assert connection.updated is False
     assert sink.calls == []
     assert connection.rollbacks == 1
+
+
+@pytest.mark.parametrize(
+    "event",
+    [
+        AuditEvent(
+            actor_subject="google-subject-admin",
+            action="usuarios:update_administracao",
+            entity_type="usuario",
+            entity_id="usr_target",
+        ),
+        AuditEvent(
+            actor_subject="google-subject-admin",
+            action="usuarios:desativar",
+            entity_type="usuario",
+            entity_id="usr_other",
+        ),
+        AuditEvent(
+            actor_subject="google-subject-admin",
+            action="usuarios:desativar",
+            entity_type="usuario",
+            entity_id="usr_target",
+            outcome="denied",
+        ),
+    ],
+)
+def test_deactivation_rejects_mismatched_audit_event_before_opening_connection(event):
+    def unexpected_connection():
+        pytest.fail("Evento incompatível deve ser rejeitado antes da conexão.")
+
+    with pytest.raises(ValueError, match="evento de auditoria"):
+        PostgresUsuariosRepository(unexpected_connection).deactivate_user(
+            "usr_target", event=event, audit_sink=AuditSink()
+        )
+
+
+def test_deactivation_requires_transactional_audit_sink_before_opening_connection():
+    def unexpected_connection():
+        pytest.fail("Sink sem transação deve ser rejeitado antes da conexão.")
+
+    with pytest.raises(TypeError, match="append_in_transaction"):
+        PostgresUsuariosRepository(unexpected_connection).deactivate_user(
+            "usr_target",
+            event=make_deactivation_event(),
+            audit_sink=object(),
+        )
+
