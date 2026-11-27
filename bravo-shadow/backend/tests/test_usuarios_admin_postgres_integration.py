@@ -247,3 +247,123 @@ def test_real_postgres_concurrent_demotions_preserve_one_active_admin(postgres_u
 
     assert remaining_admins == 1
     assert audit_count == 1
+
+
+
+def _deactivation_event(user_id: str) -> AuditEvent:
+    return AuditEvent(
+        actor_subject="google-integration-test",
+        action="usuarios:desativar",
+        entity_type="usuario",
+        entity_id=user_id,
+    )
+
+
+def test_real_postgres_deactivates_without_deleting_and_audits_atomically(postgres_users_database):
+    database_url = postgres_users_database
+    _insert_user(database_url, "usr_to_deactivate", "deactivate@example.test")
+    _insert_user(database_url, "usr_other_admin", "other-admin@example.test")
+
+    _repository(database_url).deactivate_user(
+        "usr_to_deactivate",
+        event=_deactivation_event("usr_to_deactivate"),
+        audit_sink=_audit_sink(database_url),
+    )
+
+    with psycopg.connect(database_url) as connection:
+        user_row = connection.execute(
+            "SELECT id, perfil, status, version FROM bravo_shadow.usuarios WHERE id = %s",
+            ("usr_to_deactivate",),
+        ).fetchone()
+        audit = connection.execute(
+            "SELECT actor_subject, action, entity_type, entity_id, outcome "
+            "FROM bravo_shadow.audit_events WHERE entity_id = %s",
+            ("usr_to_deactivate",),
+        ).fetchone()
+
+    assert user_row == ("usr_to_deactivate", "Admin", "Inativo", 2)
+    assert audit == (
+        "google-integration-test",
+        "usuarios:desativar",
+        "usuario",
+        "usr_to_deactivate",
+        "success",
+    )
+
+
+def test_real_postgres_refuses_to_deactivate_last_admin(postgres_users_database):
+    database_url = postgres_users_database
+    _insert_user(database_url, "usr_only_admin", "only-admin@example.test")
+
+    with pytest.raises(HTTPException) as error:
+        _repository(database_url).deactivate_user(
+            "usr_only_admin",
+            event=_deactivation_event("usr_only_admin"),
+            audit_sink=_audit_sink(database_url),
+        )
+
+    assert error.value.status_code == 409
+    with psycopg.connect(database_url) as connection:
+        user_row = connection.execute(
+            "SELECT perfil, status, version FROM bravo_shadow.usuarios WHERE id = %s",
+            ("usr_only_admin",),
+        ).fetchone()
+        audit_count = connection.execute(
+            "SELECT count(*) FROM bravo_shadow.audit_events"
+        ).fetchone()[0]
+
+    assert user_row == ("Admin", "Ativo", 1)
+    assert audit_count == 0
+
+
+def test_real_postgres_deactivation_audit_failure_rolls_back_status(postgres_users_database):
+    database_url = postgres_users_database
+    _insert_user(database_url, "usr_deactivate_rollback", "deactivate-rollback@example.test")
+    _insert_user(database_url, "usr_deactivate_peer", "deactivate-peer@example.test")
+
+    with psycopg.connect(database_url, autocommit=True) as connection:
+        connection.execute(
+            """
+            CREATE FUNCTION bravo_shadow.reject_deactivation_audit() RETURNS trigger
+            LANGUAGE plpgsql AS $$
+            BEGIN
+                RAISE EXCEPTION 'forced deactivation audit failure';
+            END;
+            $$
+            """
+        )
+        connection.execute(
+            """
+            CREATE TRIGGER reject_deactivation_audit_before_insert
+            BEFORE INSERT ON bravo_shadow.audit_events
+            FOR EACH ROW EXECUTE FUNCTION bravo_shadow.reject_deactivation_audit()
+            """
+        )
+
+    try:
+        with pytest.raises(psycopg.Error, match="forced deactivation audit failure"):
+            _repository(database_url).deactivate_user(
+                "usr_deactivate_rollback",
+                event=_deactivation_event("usr_deactivate_rollback"),
+                audit_sink=_audit_sink(database_url),
+            )
+
+        with psycopg.connect(database_url) as connection:
+            user_row = connection.execute(
+                "SELECT status, version FROM bravo_shadow.usuarios WHERE id = %s",
+                ("usr_deactivate_rollback",),
+            ).fetchone()
+            audit_count = connection.execute(
+                "SELECT count(*) FROM bravo_shadow.audit_events"
+            ).fetchone()[0]
+        assert user_row == ("Ativo", 1)
+        assert audit_count == 0
+    finally:
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            connection.execute(
+                "DROP TRIGGER IF EXISTS reject_deactivation_audit_before_insert "
+                "ON bravo_shadow.audit_events"
+            )
+            connection.execute(
+                "DROP FUNCTION IF EXISTS bravo_shadow.reject_deactivation_audit()"
+            )
