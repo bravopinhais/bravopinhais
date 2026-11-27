@@ -123,7 +123,6 @@ def test_audit_failure_does_not_turn_permission_denial_into_success():
 
 
 def build_failure_client(monkeypatch, sink):
-    from app import main as main_module
     from app.main import create_app
 
     monkeypatch.setattr(
@@ -141,6 +140,9 @@ def build_failure_client(monkeypatch, sink):
     def unexpected_failure():
         raise RuntimeError("sensitive database detail must not be returned")
 
+    # A aplicação monta a interface estática em "/" por último; no teste,
+    # colocar a rota de teste antes desse mount para alcançar a API.
+    application.router.routes.insert(-1, application.router.routes.pop())
     return TestClient(application, raise_server_exceptions=False)
 
 
