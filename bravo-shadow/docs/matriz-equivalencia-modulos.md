@@ -64,7 +64,10 @@ No Shadow, os 15 domínios aparecem na navegação, mas a própria interface inf
 - [x] Principais incompatibilidades já identificadas nos seis lotes, incluindo preservação de IDs, datas históricas, movimentos de estoque, referências textuais e arquivos Gzip.
 - [ ] Inventário completo de campos por tela e formulário para todos os módulos.
 - [ ] Inventário de regras de negócio e validações por operação.
-- [x] Mapa estrutural de coleções e dependências consolidado em `revisao-consolidada-dependencias-fase0.md`.\n- [x] Conferência estática dos formulários e gravações do legado para os principais vínculos; evidências e linhas do código registradas em `evidencias-relacionamentos-legado-fase0.md`.\n- [ ] Confronto do mapa com payload persistido autorizado, campos históricos e extensões da instalação ativa.\n- [ ] Aprovação de política para órfãos, duplicidades e vínculos ambíguos.
+- [x] Mapa estrutural de coleções e dependências consolidado em `revisao-consolidada-dependencias-fase0.md`.
+- [x] Conferência estática dos formulários e gravações do legado para os principais vínculos; evidências e linhas do código registradas em `evidencias-relacionamentos-legado-fase0.md`.
+- [ ] Confronto do mapa com payload persistido autorizado, campos históricos e extensões da instalação ativa.
+- [ ] Aprovação de política para órfãos, duplicidades e vínculos ambíguos.
 - [ ] Inventário de relatórios, importações/exportações e formatos de arquivos.
 - [ ] Matriz de permissões por operação aprovada.
 - [ ] Critérios de aceite e reconciliação definidos por módulo.
@@ -136,7 +139,8 @@ Referência: `auditoria-gestao-usuarios.md`.
 
 - [x] Auditoria estática específica de Dashboard/Relatórios/DRE registrada e critérios mínimos de aceite detalhados.
 - [x] Auditoria estática específica de Gestão de Usuários registrada e bloqueios de identidade/autorização detalhados.
-- [x] Implementar serviço agregado e endpoint de resumo do Dashboard, protegido por `dashboard:read` e coberto por testes HTTP e unitários.\n- [ ] Integrar a interface ao endpoint e implementar agrupamentos de DRE somente após aprovação de fórmulas e campos.
+- [x] Implementar serviço agregado e endpoint de resumo do Dashboard, protegido por `dashboard:read` e coberto por testes HTTP e unitários.
+- [ ] Integrar a interface ao endpoint e implementar agrupamentos de DRE somente após aprovação de fórmulas e campos.
 - [ ] Aprovar matriz de capacidades e procedimento do primeiro administrador.
 - [ ] Integrar validação Google no servidor sem alterar a tela de login nesta fase.
 - [ ] Executar testes de aceitação em navegador e persistência descartável após revisão das migrations/policies.
@@ -329,4 +333,10 @@ A API Shadow possui leitura por GET, cadastro POST e atualização cadastral PUT
 
 Capacidades de usuários são restritas ao Admin; Operador não recebe usuarios:read/create/update/delete/deactivate. O método interno de alteração de perfil/status não está exposto por rota. A interface Shadow é apenas um painel de pré-requisitos, sem chamadas de rede nem controles de gestão ativos.
 
-Pendências: ligar a UI à autenticação Google e API HTTPS; definir e documentar provisionamento inicial de Admin e aprovação de cadastro; decidir se/como expor alteração de perfil/status com autorização e auditoria; completar a interface administrativa após essas decisões. Não reintroduzir senha local, reset local ou auto-registro.\n\n## Integração transversal — fundação HTTP (27/11/2026)\n\nAdicionado `frontend/js/bravo-api.js`, cliente HTTP comum para futura comunicação com API Shadow. Valida HTTPS (exceto localhost), restringe caminhos a `/api/v1/`, injeta Bearer fornecido pela sessão em memória, não usa cookies, cache ou redirects e padroniza erro/request ID.\n\nAinda não integrado ao HTML/telas. Bloqueios objetivos: API HTTPS isolada inexistente; CORS do FastAPI permanece fechado; URL do preview Shadow não definida; backend seleciona memória por padrão e precisa de PostgreSQL explicitamente configurado para persistência; Google Client ID/origens precisam ser configurados por ambiente. Não habilitar módulos até resolver estes itens sem tocar na produção.
+Pendências: ligar a UI à autenticação Google e API HTTPS; definir e documentar provisionamento inicial de Admin e aprovação de cadastro; decidir se/como expor alteração de perfil/status com autorização e auditoria; completar a interface administrativa após essas decisões. Não reintroduzir senha local, reset local ou auto-registro.
+
+## Integração transversal — fundação HTTP (27/11/2026)
+
+Adicionado `frontend/js/bravo-api.js`, cliente HTTP comum para futura comunicação com API Shadow. Valida HTTPS (exceto localhost), restringe caminhos a `/api/v1/`, injeta Bearer fornecido pela sessão em memória, não usa cookies, cache ou redirects e padroniza erro/request ID.
+
+Ainda não integrado ao HTML/telas. Bloqueios objetivos: API HTTPS isolada inexistente; CORS do FastAPI permanece fechado; URL do preview Shadow não definida; backend seleciona memória por padrão e precisa de PostgreSQL explicitamente configurado para persistência; Google Client ID/origens precisam ser configurados por ambiente. Não habilitar módulos até resolver estes itens sem tocar na produção.
