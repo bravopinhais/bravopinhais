@@ -150,3 +150,22 @@ def test_unit_of_work_closes_invalid_connection_when_close_is_available():
 
     assert connection.closes == 1
     assert work.connection is None
+
+class InvalidConnectionCloseFails:
+    def close(self):
+        raise RuntimeError("close falhou")
+
+
+def test_unit_of_work_preserves_invalid_connection_error_if_close_fails():
+    connection = InvalidConnectionCloseFails()
+    work = PostgresUnitOfWork(lambda: connection)
+
+    try:
+        work.__enter__()
+    except TypeError as error:
+        assert "commit, rollback e close" in str(error)
+    else:
+        raise AssertionError("A conexão incompleta deveria ser rejeitada")
+
+    assert work.connection is None
+
