@@ -15,6 +15,7 @@ from app.core.migration_source_records_postgres import (
     SourceRecordLink,
 )
 from app.core.migration_transaction import MigrationApplyCommand
+from app.core.migration_target_payload_contract import validate_target_payload
 
 
 # Only columns present in the reviewed Shadow SQL draft are accepted.
