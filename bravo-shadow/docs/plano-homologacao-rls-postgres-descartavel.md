@@ -547,3 +547,89 @@ Essas condições continuam dependendo da camada de serviço e de transações t
 6. Só depois preparar uma proposta SQL para revisão. Este documento não autoriza executar DDL.
 
 Nenhuma role, membership, policy, grant, função, trigger ou migration foi criada. Nenhum banco persistente ou remoto foi conectado ou alterado.
+
+## 16. Comparação arquitetural de identidades PostgreSQL — 27/11/2026
+
+### 16.1 Premissas verificadas no código
+
+A fábrica em `backend/app/core/postgres_connection.py` abre uma conexão nova por chamada. `PostgresUnitOfWork` administra commit/rollback/close dessa conexão. O composition root injeta atualmente a mesma fábrica nos repositórios e no `PostgresAuditSink`.
+
+A auditoria possui dois contratos distintos:
+- `append(event)` abre uma unidade de trabalho própria, usada inclusive para registrar negações de autorização.
+- `append_in_transaction(connection, event)` usa a conexão física recebida do repositório, sem commit/rollback/close. A desativação e a alteração administrativa de usuário dependem disso para manter alteração e auditoria na mesma transação.
+
+Assim, trocar apenas a fábrica do sink por outra credencial não separa a identidade usada no INSERT transacional: nesse caminho, a operação continua usando a conexão do repositório de usuários.
+
+### 16.2 Alternativa A — uma identidade runtime para os módulos da API
+
+**Desenho:** uma role privada sem ownership, sem atributos administrativos e sem privilégios de migration; recebe somente os privilégios SQL necessários aos adaptadores runtime aprovados. Uma identidade distinta de owner/migrator permanece fora do processo web.
+
+**Vantagens**
+- Menor alteração no composition root e nas unidades de trabalho atuais.
+- Mantém naturalmente a atomicidade de alteração de usuário + evento de auditoria.
+- Menor número de secrets, pools, fábricas e caminhos operacionais.
+- Menor custo inicial de testes e observabilidade.
+
+**Riscos e limites**
+- A role acumula a união dos privilégios de todos os módulos; uma injeção SQL ou comprometimento do processo pode alcançar essa união.
+- RLS aplicada à role única limita o conjunto de tabelas/linhas acessíveis, mas não cria isolamento entre módulos do mesmo backend.
+- GRANTs de tabela não expressam regras como último Admin, proibição de auto-desativação, nem a regra de saldo somente via movimentação.
+- O runtime ainda precisa de INSERT em `audit_events` para manter a atomicidade atual, além de UPDATE em `usuarios` para operações administrativas.
+
+**Adequação:** alternativa mais simples para uma primeira integração controlada, se o risco residual de uma identidade runtime compartilhada for explicitamente aceito e compensado por validação de entrada, autorização HTTP, queries parametrizadas, limites de rede, auditoria e testes.
+
+### 16.3 Alternativa B — identidades runtime separadas por domínio/operação
+
+**Desenho:** credenciais distintas para grupos de repositórios, por exemplo cadastros, financeiro, estoque e administração de usuários, com privilégios e pools independentes. A identidade de migration continua separada de todas as identidades runtime.
+
+**Vantagens**
+- Reduz o alcance de uma credencial comprometida ao conjunto de tabelas/operações daquele domínio.
+- Permite revisar e rotacionar credenciais por domínio.
+- Facilita demonstrar menor privilégio e atribuir operações a contextos técnicos específicos.
+
+**Riscos e custos**
+- Exige múltiplas fábricas/pools, seleção explícita de identidade por operação e testes que provem ausência de herança cruzada.
+- A transação de desativação/alteração administrativa precisa atualizar `usuarios` e inserir `audit_events` atomicamente. Uma credencial de usuários sem INSERT em auditoria não consegue executar o fluxo atual.
+- Conceder INSERT em auditoria à identidade de usuários mantém uma permissão cruzada intencional. Separar completamente exige redesenho, por exemplo uma função SQL estreita e cuidadosamente protegida que execute a mudança e o evento na mesma transação, ou um padrão outbox com semântica assíncrona e reconciliação.
+- Uma função `SECURITY DEFINER` não é solução automática: exigiria owner não-runtime, `search_path` fixo, nomes qualificados, validação estrita de argumentos, EXECUTE mínimo e testes negativos de escalada.
+- Um outbox assíncrono muda o significado de “auditoria gravada”: o evento pode estar pendente de publicação. Precisaria de idempotência, retry, monitoramento e política para falha permanente.
+- Mais identidades aumentam a superfície de configuração, rotação, vazamento de segredo e erro de roteamento.
+
+**Adequação:** melhor isolamento potencial, mas não é compatível como simples troca de configuração com a arquitetura transacional atual. Exige projeto de implementação e homologação próprios.
+
+### 16.4 Comparação resumida
+
+| Critério | A — runtime compartilhado | B — runtime por domínio |
+|---|---|---|
+| Complexidade inicial | Menor | Maior |
+| Número de credenciais runtime | Uma | Várias |
+| Blast radius de credencial | União dos módulos | Menor por domínio, se sem herança |
+| Atomicidade usuário + auditoria | Preservada pelo fluxo atual | Exige privilégio cruzado ou redesenho |
+| Rotação independente por domínio | Não | Sim |
+| Mudanças no composition root | Pequenas | Relevantes |
+| Testes de privilégio | Uma matriz runtime | Matriz por identidade e combinações |
+| RLS | Escopo da identidade runtime | Escopo por role/domínio, se policies forem separadas |
+| Adequação ao código atual | Mais próxima | Exige refatoração |
+
+### 16.5 Direção técnica recomendada para avaliação
+
+A recomendação de menor risco de mudança, **não uma autorização de implantação**, é evoluir em fases:
+
+1. Manter owner/migrator fora do processo web em qualquer alternativa.
+2. Para um primeiro piloto futuro, avaliar a alternativa A com role runtime sem ownership/BYPASSRLS/CREATEROLE/CREATEDB, sem DDL, com grants explícitos por tabela/operação e testes de negação em conexões independentes.
+3. Registrar formalmente que essa primeira fase não oferece isolamento SQL entre módulos e que a credencial runtime possui o conjunto combinado de privilégios.
+4. Antes de qualquer produção, decidir se esse risco residual é aceitável. Se não for, não liberar a alternativa A: projetar a alternativa B e resolver a atomicidade de auditoria antes de escrever DDL.
+5. Não misturar a credencial de migration com qualquer identidade usada pelo servidor HTTP.
+
+A alternativa B oferece melhor contenção em princípio, mas só se as credenciais não herdarem privilégios entre si e os fluxos transacionais forem redesenhados corretamente. Sem isso, a separação seria cosmética ou quebraria operações.
+
+### 16.6 Decisões ainda não tomadas
+
+- Não foi escolhida uma arquitetura final.
+- Não foi aprovada a aceitação do blast radius da role runtime compartilhada.
+- Não foi definido se a auditoria administrativa deverá usar função controlada, privilégio cruzado mínimo ou outbox.
+- Não foram definidos nomes finais de roles, pools, grants, policies ou owners.
+- Não foram criadas roles, memberships, grants, policies, funções, triggers ou migrations.
+- Nenhum banco foi conectado ou alterado.
+
+**Portão de segurança:** a comparação é documental. Qualquer fixture com roles privadas, teste de privilégios efetivos ou DDL de homologação exigirá autorização explícita prévia e permanecerá restrita ao PostgreSQL local descartável.
