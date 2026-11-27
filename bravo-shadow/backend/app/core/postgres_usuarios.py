@@ -84,6 +84,16 @@ class PostgresUsuariosRepository:
             (item_id,), fetch="one",
         ))
 
+    def find_by_email(self, normalized_email: str) -> list[Usuario]:
+        """Busca no máximo dois resultados; duplicidade deve bloquear autenticação."""
+        rows = self._query(
+            f"SELECT {self._columns} FROM {self._table} "
+            "WHERE lower(email) = %s ORDER BY id LIMIT 2",
+            (normalized_email.strip().lower(),),
+            fetch="all",
+        )
+        return [self._entity(row) for row in rows]
+
     def exists(self, item_id: str) -> bool:
         return self.get(item_id) is not None
 
