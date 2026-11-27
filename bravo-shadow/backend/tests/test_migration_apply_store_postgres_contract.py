@@ -10,6 +10,7 @@ from app.core.migration_apply_store_postgres import (
     REQUIRED_TARGET_COLUMNS,
     TARGET_COLUMNS,
     MigrationApplyStorePostgres,
+    NON_BLANK_REQUIRED_COLUMNS,
 )
 
 
@@ -22,6 +23,11 @@ def test_required_columns_are_a_subset_of_the_target_allowlist():
     for collection, required in REQUIRED_TARGET_COLUMNS.items():
         assert collection in TARGET_COLUMNS
         assert set(required) <= set(TARGET_COLUMNS[collection])
+
+def test_nonblank_text_contract_is_a_subset_of_required_columns():
+    assert set(NON_BLANK_REQUIRED_COLUMNS) == set(REQUIRED_TARGET_COLUMNS)
+    for collection, columns in NON_BLANK_REQUIRED_COLUMNS.items():
+        assert set(columns) <= set(REQUIRED_TARGET_COLUMNS[collection])
 
 
 @pytest.mark.parametrize(
