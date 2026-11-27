@@ -29,7 +29,8 @@ def test_all_user_management_routes_require_authentication():
         ("GET", "/api/v1/usuarios/id-teste", None),
         ("POST", "/api/v1/usuarios", {"email":"novo@example.com", "nome":"Pessoa", "cargo":"Conselho"}),
         ("PUT", "/api/v1/usuarios/id-teste", {"nome":"Pessoa atualizada"}),
-        ("DELETE", "/api/v1/usuarios/id-teste", None),\n        ("POST", "/api/v1/usuarios/id-teste/desativar", None),
+        ("DELETE", "/api/v1/usuarios/id-teste", None),
+        ("POST", "/api/v1/usuarios/id-teste/desativar", None),
     ]
     for method, path, payload in requests:
         assert client.request(method, path, json=payload).status_code == 401
@@ -40,14 +41,14 @@ def test_both_profiles_are_denied_user_management_until_matrix_approval():
         ("GET", "/api/v1/usuarios", None),
         ("GET", "/api/v1/usuarios/id-teste", None),
         ("POST", "/api/v1/usuarios", {"email":"novo@example.com", "nome":"Pessoa", "cargo":"Conselho"}),
-        ("PUT", "/api/v1/usuarios/id-teste", {"email":"novo@example.com", "nome":"Pessoa", "cargo":"Conselho"}),
+        ("PUT", "/api/v1/usuarios/id-teste", {"nome":"Pessoa atualizada"}),
         ("DELETE", "/api/v1/usuarios/id-teste", None),
+        ("POST", "/api/v1/usuarios/id-teste/desativar", None),
     ]
     for profile in ("Admin", "Operador"):
         client = build_client(profile)
         for method, path, payload in requests:
             assert client.request(method, path, json=payload).status_code == 403
-
 
 def test_user_service_crud_email_uniqueness_and_status():
     service = UsuariosService()
