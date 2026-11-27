@@ -1410,11 +1410,65 @@ function renderComprasConsumoReport(report){
  const products=document.getElementById("cc-product-rows");
  if(products)products.innerHTML=report.produtos.length?report.produtos.map(row=>'<tr><td><strong>'+escapeHTML(row.produto)+'</strong><div class="form-hint">'+escapeHTML(row.etiqueta||"")+' · '+escapeHTML(row.marca||"")+'</div></td><td>'+escapeHTML(row.setor)+'</td><td>'+ccNumber(row.compras)+' '+escapeHTML(row.unidade)+'</td><td>'+ccNumber(row.consumo)+' '+escapeHTML(row.unidade)+'</td><td>'+ccNumber(row.perdasAjustes)+' '+escapeHTML(row.unidade)+'</td><td>'+ccNumber(row.diferenca)+' '+escapeHTML(row.unidade)+'</td><td>'+ccNumber(row.estoqueAtual)+' '+escapeHTML(row.unidade)+'</td><td>'+(row.coberturaMeses===null?"—":ccNumber(row.coberturaMeses,2)+" meses")+'</td><td>'+escapeHTML(row.situacao)+'</td></tr>').join(""):'<tr><td colspan="9" class="empty-state">Nenhum produto encontrado para os filtros.</td></tr>';
 }
+let comprasConsumoApiClient=null,comprasConsumoSequence=0,comprasConsumoController=null,comprasConsumoLastReport=null;
+function comprasConsumoSetStatus(message,kind=""){const node=document.getElementById("cc-status");if(node){node.textContent=message;node.className="api-status"+(kind?" "+kind:"");}}
+function comprasConsumoApplyPermissions(){
+ const allowed=hasBravoCapability("relatorios:read"),form=document.getElementById("cc-filters");
+ if(form)form.querySelectorAll("input,select").forEach(input=>{input.disabled=!allowed;});
+ const query=document.getElementById("cc-query"),exportButton=document.getElementById("cc-export");
+ if(query)query.disabled=!allowed||!comprasConsumoApiClient;
+ if(exportButton)exportButton.disabled=!allowed||!comprasConsumoApiClient;
+}
+function comprasConsumoValidateReport(report){
+ const numeric=["compras","consumo","perdasAjustes","valorComprado","valorConsumido"];
+ if(!report||typeof report!=="object"||!report.kpis||!Array.isArray(report.evolucaoMensal)||!Array.isArray(report.produtos))throw new Error("A API retornou um relatório em formato inesperado.");
+ if(!numeric.every(key=>Number.isFinite(Number(report.kpis[key])))||!Number.isInteger(Number(report.kpis.produtosEmAlerta)))throw new Error("Os indicadores do relatório são inválidos.");
+ if(!report.evolucaoMensal.every(row=>row&&typeof row.mes==="string"&&["quantidadeComprada","quantidadeConsumida","valorComprado","valorConsumido"].every(key=>Number.isFinite(Number(row[key])))))throw new Error("A evolução mensal retornada é inválida.");
+ const fields=["produtoId","produto","etiqueta","marca","setor","unidade","situacao"],values=["compras","outrasEntradas","consumo","perdasAjustes","diferenca","estoqueAtual","mediaMensal","valorComprado","valorConsumido"];
+ if(!report.produtos.every(row=>row&&fields.every(key=>typeof row[key]==="string")&&values.every(key=>Number.isFinite(Number(row[key])))&&(row.coberturaMeses===null||Number.isFinite(Number(row.coberturaMeses)))))throw new Error("O detalhamento por produto retornado é inválido.");
+ return report;
+}
+function renderComprasConsumoReport(report){
+ comprasConsumoValidateReport(report);comprasConsumoLastReport=report;
+ comprasConsumoSetStatus("Relatório atualizado · "+(report.dataInicio||"início disponível")+" a "+(report.dataFim||"data atual"),"ok");
+ const metrics=document.getElementById("cc-metrics"),k=report.kpis;
+ if(metrics)metrics.innerHTML=[["Compras",ccNumber(k.compras),ccCurrency(k.valorComprado)],["Consumo",ccNumber(k.consumo),ccCurrency(k.valorConsumido)],["Perdas / ajustes",ccNumber(k.perdasAjustes),"Quantidade no período"],["Produtos em alerta",ccNumber(k.produtosEmAlerta,0),"Reposição ou cobertura baixa"]].map(([label,value,foot])=>'<article class="metric"><div class="metric-label">'+label+'</div><div class="metric-value">'+value+'</div><div class="metric-foot">'+foot+'</div></article>').join("");
+ const monthly=document.getElementById("cc-monthly-rows");
+ if(monthly)monthly.innerHTML=report.evolucaoMensal.length?report.evolucaoMensal.map(row=>'<tr><td>'+escapeHTML(row.mes)+'</td><td>'+ccNumber(row.quantidadeComprada)+'</td><td>'+ccNumber(row.quantidadeConsumida)+'</td><td>'+ccCurrency(row.valorComprado)+'</td><td>'+ccCurrency(row.valorConsumido)+'</td></tr>').join(""):'<tr><td colspan="5" class="empty-state">Nenhuma movimentação no período.</td></tr>';
+ const products=document.getElementById("cc-product-rows");
+ if(products)products.innerHTML=report.produtos.length?report.produtos.map(row=>'<tr><td><strong>'+escapeHTML(row.produto)+'</strong><div class="form-hint">'+escapeHTML(row.etiqueta||"")+' · '+escapeHTML(row.marca||"")+'</div></td><td>'+escapeHTML(row.setor)+'</td><td>'+ccNumber(row.compras)+' '+escapeHTML(row.unidade)+'</td><td>'+ccNumber(row.consumo)+' '+escapeHTML(row.unidade)+'</td><td>'+ccNumber(row.perdasAjustes)+' '+escapeHTML(row.unidade)+'</td><td>'+ccNumber(row.diferenca)+' '+escapeHTML(row.unidade)+'</td><td>'+ccNumber(row.estoqueAtual)+' '+escapeHTML(row.unidade)+'</td><td>'+(row.coberturaMeses===null?"—":ccNumber(row.coberturaMeses,2)+" meses")+'</td><td>'+escapeHTML(row.situacao)+'</td></tr>').join(""):'<tr><td colspan="9" class="empty-state">Nenhum produto encontrado para os filtros.</td></tr>';
+}
+function comprasConsumoQueryPath(){
+ const form=document.getElementById("cc-filters");if(!form)throw new Error("Filtros do relatório indisponíveis.");
+ const start=form.elements.data_inicio.value,end=form.elements.data_fim.value;
+ if(start&&end&&start>end)throw new Error("A data inicial não pode ser posterior à data final.");
+ const query=buildComprasConsumoQuery(form);return "/api/v1/compras-consumo"+(query?"?"+query:"");
+}
+async function loadComprasConsumo(api){
+ const sequence=++comprasConsumoSequence;comprasConsumoController?.abort();comprasConsumoController=new AbortController();
+ comprasConsumoSetStatus("Consultando relatório autorizado…");const button=document.getElementById("cc-query");if(button)button.disabled=true;
+ try{const report=await api.get(comprasConsumoQueryPath(),{signal:comprasConsumoController.signal});if(sequence!==comprasConsumoSequence||moduloAtual!=="compras_consumo")return;renderComprasConsumoReport(report);}
+ catch(error){if(error?.name==="AbortError"||sequence!==comprasConsumoSequence)return;comprasConsumoSetStatus(error?.status===403?"Seu perfil não possui relatorios:read.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível consultar o relatório."),"err");}
+ finally{comprasConsumoApplyPermissions();}
+}
+async function exportComprasConsumo(api){
+ if(!hasBravoCapability("relatorios:read")){comprasConsumoSetStatus("Seu perfil não possui relatorios:read.","err");return;}
+ const button=document.getElementById("cc-export");if(button)button.disabled=true;
+ try{
+  const path=comprasConsumoQueryPath().replace("/api/v1/compras-consumo","/api/v1/compras-consumo/export.csv");
+  const blob=await api.get(path,{responseType:"blob"});if(!(blob instanceof Blob))throw new Error("A API não retornou um arquivo CSV válido.");
+  const url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download="compras-consumo.csv";link.hidden=true;document.body.append(link);link.click();link.remove();URL.revokeObjectURL(url);
+  comprasConsumoSetStatus("Exportação CSV concluída.","ok");
+ }catch(error){comprasConsumoSetStatus(error?.status===403?"Seu perfil não possui relatorios:read.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível exportar o CSV."),"err");}
+ finally{comprasConsumoApplyPermissions();}
+}
+window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function")return;comprasConsumoApiClient=api;comprasConsumoApplyPermissions();});
+window.addEventListener("bravo:session-ended",()=>{comprasConsumoApiClient=null;comprasConsumoSequence++;comprasConsumoController?.abort();comprasConsumoController=null;comprasConsumoLastReport=null;if(moduloAtual==="compras_consumo")comprasConsumoView();});
 function comprasConsumoView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
   <div class="api-toolbar"><div><strong style="font-size:13px">Análise de compras, consumo e estoque</strong><div class="api-status" id="cc-status" role="status" aria-live="polite">Relatório protegido · aguardando sessão Google</div></div><span class="tag">Somente leitura</span></div>
-  <div class="notice" style="margin:16px 0 18px"><div class="notice-icon">▤</div><div><strong>Relatório preparado para integração</strong><p>Os filtros e indicadores abaixo representam o contrato funcional do relatório. Nenhum dado é exibido ou calculado localmente. A consulta depende de sessão Google ativa e da capacidade <code>relatorios:read</code>.</p></div></div>
+  <div class="notice" style="margin:16px 0 18px"><div class="notice-icon">▤</div><div><strong>Relatório autenticado · somente leitura</strong><p>Indicadores e detalhamentos serão carregados da API Shadow com a capacidade <code>relatorios:read</code>. Quantidades e valores são calculados pelo serviço, não pelo navegador.</p></div></div>
   <form class="api-form" id="cc-filters" aria-describedby="cc-filter-hint">
    <div class="field"><label for="cc-start">Data inicial</label><input id="cc-start" name="data_inicio" type="date" disabled></div>
    <div class="field"><label for="cc-end">Data final</label><input id="cc-end" name="data_fim" type="date" disabled></div>
@@ -1423,7 +1477,7 @@ function comprasConsumoView(){
    <div class="field"><label for="cc-order">Ordenar por</label><select id="cc-order" name="ordenar" disabled><option value="maior_consumo">Maior consumo</option><option value="maior_compra">Maior compra</option><option value="diferenca">Diferença</option><option value="menor_cobertura">Menor cobertura</option><option value="nome">Nome</option></select></div>
    <div class="field"><label><input type="checkbox" name="tratar_todas_entradas_como_compras" disabled> Considerar todas as entradas como compras</label></div>
    <div class="field"><label><input type="checkbox" name="incluir_inativos" disabled> Incluir produtos inativos</label></div>
-   <div class="row-actions"><button class="action-btn primary" type="button" disabled>Consultar relatório</button><button class="action-btn" type="button" disabled>Exportar CSV</button><button class="action-btn" type="button" disabled>Imprimir / PDF</button></div>
+   <div class="row-actions"><button id="cc-query" class="action-btn primary" type="submit" disabled>Consultar relatório</button><button id="cc-export" class="action-btn" type="button" disabled>Exportar CSV</button><button class="action-btn" type="button" disabled>Imprimir / PDF</button></div>
   </form>
   <p class="form-hint" id="cc-filter-hint">Filtros bloqueados até a integração da sessão autenticada. O endpoint de consulta é somente leitura.</p>
   <div class="section-head"><h2>Indicadores do período</h2><span>Sem dados até autenticação</span></div>
@@ -1632,7 +1686,7 @@ function openModule(id){
   document.getElementById("view").innerHTML='<section class="panel module-view" role="alert"><div><div class="big-icon">⛨</div><span class="eyebrow">Acesso restrito</span><h2>Permissão de consulta não concedida</h2><p>Seu perfil Bravo não possui a capacidade necessária para visualizar este módulo. Solicite a revisão do acesso a um administrador.</p><span class="tag">Acesso negado · sem consulta à API</span></div></section>';
   return;
  }
- moduloAtual=id;if(id!=="dashboard"){dashboardRequestSequence+=1;dashboardRequestController?.abort();dashboardRequestController=null;}if(id!=="financeiro"){financeiroRequestSequence+=1;financeiroRequestController?.abort();financeiroRequestController=null;}if(id!=="plano_contas"){planoContasRequestSequence+=1;planoContasRequestController?.abort();planoContasRequestController=null;}if(id!=="contas_bancarias"){contasBancariasRequestSequence+=1;contasBancariasRequestController?.abort();contasBancariasRequestController=null;}if(id!=="formas_monetarias"){formasMonetariasRequestSequence+=1;formasMonetariasRequestController?.abort();formasMonetariasRequestController=null;}if(id!=="relatorios"){relatoriosRequestSequence+=1;relatoriosRequestController?.abort();relatoriosRequestController=null;}
+ moduloAtual=id;if(id!=="dashboard"){dashboardRequestSequence+=1;dashboardRequestController?.abort();dashboardRequestController=null;}if(id!=="financeiro"){financeiroRequestSequence+=1;financeiroRequestController?.abort();financeiroRequestController=null;}if(id!=="plano_contas"){planoContasRequestSequence+=1;planoContasRequestController?.abort();planoContasRequestController=null;}if(id!=="contas_bancarias"){contasBancariasRequestSequence+=1;contasBancariasRequestController?.abort();contasBancariasRequestController=null;}if(id!=="formas_monetarias"){formasMonetariasRequestSequence+=1;formasMonetariasRequestController?.abort();formasMonetariasRequestController=null;}if(id!=="relatorios"){relatoriosRequestSequence+=1;relatoriosRequestController?.abort();relatoriosRequestController=null;}if(id!=="compras_consumo"){comprasConsumoSequence+=1;comprasConsumoController?.abort();comprasConsumoController=null;}
  document.querySelectorAll("[data-module]").forEach(el=>{if(el.closest("#navigation")){if(el.dataset.module===id)el.setAttribute("aria-current","page");else el.removeAttribute("aria-current")}});
  document.getElementById("breadcrumb").textContent=item.name;
  document.getElementById("page-title").textContent=item.title;
