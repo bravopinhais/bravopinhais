@@ -29,6 +29,22 @@ if grep -Eq '^[[:space:]]*\[remotes\.' supabase/config.toml; then
   fail "A configuração contém bloco de remoto."
 fi
 
+# Não permitir que credenciais/URLs remotas herdadas do shell confundam
+# uma futura alteração do script ou da CLI. Os nomes são verificados sem
+# imprimir seus valores.
+for variable in \
+  SUPABASE_ACCESS_TOKEN \
+  SUPABASE_URL \
+  SUPABASE_DB_URL \
+  SUPABASE_DB_PASSWORD \
+  SUPABASE_SERVICE_ROLE_KEY \
+  BRAVO_DATABASE_URL \
+  BRAVO_SHADOW_TEST_DATABASE_URL; do
+  if [[ -n "${!variable-}" ]]; then
+    fail "A variável de ambiente $variable está definida. Limpe o ambiente remoto antes de continuar."
+  fi
+done
+
 command -v supabase >/dev/null 2>&1 || fail "Supabase CLI não instalado."
 command -v docker >/dev/null 2>&1 || fail "Docker não instalado."
 docker info >/dev/null 2>&1 || fail "Docker não está iniciado ou não está acessível."
