@@ -17,7 +17,7 @@ def list_residents(
     bloco: str | None = None,
     busca: str | None = None,
     _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("moradores:read")),
- ) -> list[MoradorResumo]:
+) -> list[MoradorResumo]:
     return [MoradorResumo(id=item.id, bloco=item.bloco, apartamento=item.apartamento, nome=item.nome) for item in get_service(request).list(bloco=bloco, busca=busca)]
 
 
