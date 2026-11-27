@@ -179,6 +179,35 @@ function usuariosView(){
   <div class="dashboard-gate-note"><span class="dot"></span><span>Nenhum perfil ou privilégio será habilitado automaticamente. A integração usará o Google diretamente; faltam o Client ID público correto, as origens autorizadas e a aprovação explícita da matriz de permissões.</span></div>
  </section>`;
 }
+function comprasConsumoView(){
+ const view=document.getElementById("view");
+ view.innerHTML=`<section class="panel">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Análise de compras, consumo e estoque</strong><div class="api-status" id="cc-status" role="status" aria-live="polite">Relatório protegido · aguardando sessão Google</div></div><span class="tag">Somente leitura</span></div>
+  <div class="notice" style="margin:16px 0 18px"><div class="notice-icon">▤</div><div><strong>Relatório preparado para integração</strong><p>Os filtros e indicadores abaixo representam o contrato funcional do relatório. Nenhum dado é exibido ou calculado localmente. A consulta depende de sessão Google ativa e da capacidade <code>relatorios:read</code>.</p></div></div>
+  <form class="api-form" id="cc-filters" aria-describedby="cc-filter-hint">
+   <div class="field"><label for="cc-start">Data inicial</label><input id="cc-start" name="data_inicio" type="date" disabled></div>
+   <div class="field"><label for="cc-end">Data final</label><input id="cc-end" name="data_fim" type="date" disabled></div>
+   <div class="field"><label for="cc-sector">Setor</label><input id="cc-sector" name="setor" maxlength="120" placeholder="Todos os setores" disabled></div>
+   <div class="field"><label for="cc-search">Produto, etiqueta ou marca</label><input id="cc-search" name="busca" maxlength="160" placeholder="Pesquisar produto" disabled></div>
+   <div class="field"><label for="cc-order">Ordenar por</label><select id="cc-order" name="ordenar" disabled><option value="maior_consumo">Maior consumo</option><option value="maior_compra">Maior compra</option><option value="diferenca">Diferença</option><option value="menor_cobertura">Menor cobertura</option><option value="nome">Nome</option></select></div>
+   <div class="field"><label><input type="checkbox" name="tratar_todas_entradas_como_compras" disabled> Considerar todas as entradas como compras</label></div>
+   <div class="field"><label><input type="checkbox" name="incluir_inativos" disabled> Incluir produtos inativos</label></div>
+   <div class="row-actions"><button class="action-btn primary" type="button" disabled>Consultar relatório</button><button class="action-btn" type="button" disabled>Exportar CSV</button><button class="action-btn" type="button" disabled>Imprimir / PDF</button></div>
+  </form>
+  <p class="form-hint" id="cc-filter-hint">Filtros bloqueados até a integração da sessão autenticada. O endpoint de consulta é somente leitura.</p>
+  <div class="section-head"><h2>Indicadores do período</h2><span>Sem dados até autenticação</span></div>
+  <div class="metrics dashboard-metrics" aria-label="Indicadores aguardando autenticação">
+   <article class="metric"><div class="metric-label">Compras</div><div class="metric-value">—</div><div class="metric-foot">Quantidade e valor comprado</div></article>
+   <article class="metric"><div class="metric-label">Consumo</div><div class="metric-value">—</div><div class="metric-foot">Quantidade e valor consumido</div></article>
+   <article class="metric"><div class="metric-label">Perdas / ajustes</div><div class="metric-value">—</div><div class="metric-foot">Movimentos classificados</div></article>
+   <article class="metric"><div class="metric-label">Produtos em alerta</div><div class="metric-value">—</div><div class="metric-foot">Reposição ou cobertura baixa</div></article>
+  </div>
+  <div class="section-head"><h2>Evolução mensal</h2><span>Até 12 meses</span></div>
+  <div class="data-table-wrap"><table class="data-table"><caption>Evolução mensal de compras e consumo</caption><thead><tr><th scope="col">Mês</th><th scope="col">Compras</th><th scope="col">Consumo</th><th scope="col">Valor comprado</th><th scope="col">Valor consumido</th></tr></thead><tbody><tr><td colspan="5" class="empty-state">Aguardando consulta autorizada.</td></tr></tbody></table></div>
+  <div class="section-head"><h2>Detalhamento por produto</h2><span>Saldo, diferença e cobertura</span></div>
+  <div class="data-table-wrap"><table class="data-table"><caption>Compras e consumo por produto</caption><thead><tr><th scope="col">Produto</th><th scope="col">Setor</th><th scope="col">Compras</th><th scope="col">Consumo</th><th scope="col">Perdas</th><th scope="col">Diferença</th><th scope="col">Estoque</th><th scope="col">Cobertura</th><th scope="col">Situação</th></tr></thead><tbody><tr><td colspan="9" class="empty-state">Os produtos serão exibidos após autenticação e consulta à API.</td></tr></tbody></table></div>
+ </section>`;
+}
 function configuracoesView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
@@ -220,6 +249,7 @@ function openModule(id){
  if(id==="dashboard"){view.innerHTML=dashboardMarkup;location.hash="";return}
  if(id==="formas_monetarias"){location.hash=id;formasView();return}
  if(id==="usuarios"){location.hash=id;usuariosView();return}
+ if(id==="compras_consumo"){location.hash=id;comprasConsumoView();return}
  if(id==="configuracoes"){location.hash=id;configuracoesView();return}
  view.innerHTML='<section class="panel module-view"><div><div class="big-icon">◇</div><span class="eyebrow">Módulo mapeado · Bravo Shadow</span><h2>'+item.title+'</h2><p>'+item.desc+'</p><span class="tag">Estrutura visual inicial · Funcionalidade ainda não migrada</span></div></section>';
  location.hash=id;
