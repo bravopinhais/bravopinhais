@@ -76,24 +76,24 @@ class DocumentoInput(BaseModel):
                 raise ValueError("Formato de arquivo não permitido.")
             signatures = {
                 "pdf": content.startswith(b"%PDF-"),
-                "png": content.startswith(b"\\x89PNG\\r\\n\\x1a\\n"),
-                "jpg": content.startswith(b"\\xff\\xd8\\xff"),
-                "jpeg": content.startswith(b"\\xff\\xd8\\xff"),
+                "png": content.startswith(b"\x89PNG\r\n\x1a\n"),
+                "jpg": content.startswith(b"\xff\xd8\xff"),
+                "jpeg": content.startswith(b"\xff\xd8\xff"),
                 "gif": content.startswith((b"GIF87a", b"GIF89a")),
                 "webp": len(content) >= 12 and content[:4] == b"RIFF" and content[8:12] == b"WEBP",
                 "doc": content.startswith(bytes.fromhex("D0CF11E0A1B11AE1")),
                 "xls": content.startswith(bytes.fromhex("D0CF11E0A1B11AE1")),
-                "docx": content.startswith(b"PK\\x03\\x04"),
-                "xlsx": content.startswith(b"PK\\x03\\x04"),
-                "odt": content.startswith(b"PK\\x03\\x04"),
-                "ods": content.startswith(b"PK\\x03\\x04"),
+                "docx": content.startswith(b"PK\x03\x04"),
+                "xlsx": content.startswith(b"PK\x03\x04"),
+                "odt": content.startswith(b"PK\x03\x04"),
+                "ods": content.startswith(b"PK\x03\x04"),
             }
             if extension in {"txt", "csv"}:
                 try:
                     content.decode("utf-8-sig")
                 except UnicodeDecodeError as exc:
                     raise ValueError("Arquivos TXT/CSV precisam estar codificados em UTF-8.") from exc
-                if b"\\x00" in content:
+                if b"\x00" in content:
                     raise ValueError("Arquivos TXT/CSV não podem conter bytes nulos.")
             elif not signatures.get(extension, False):
                 raise ValueError("O conteúdo não corresponde ao formato indicado no nome do arquivo.")
