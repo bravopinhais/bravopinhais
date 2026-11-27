@@ -191,9 +191,9 @@ alter table bravo_shadow.financeiro enable row level security;
 create table if not exists bravo_shadow.estoque (
     id text primary key,
     item text not null,
-    quantidade integer not null default 1,
-    minimo integer not null default 0,
-    maximo integer not null default 0,
+    quantidade numeric(14, 3) not null default 1 check (quantidade >= 0),
+    minimo numeric(14, 3) not null default 0 check (minimo >= 0),
+    maximo numeric(14, 3) not null default 0 check (maximo >= 0),
     etiqueta text not null default '',
     foto_nome text not null default '',
     foto_compactada_gzip text not null default '',
@@ -201,6 +201,12 @@ create table if not exists bravo_shadow.estoque (
     linha text not null default '',
     fabricante text not null default '',
     data_cadastro date null,
+    setor text not null default 'Geral / Não definido',
+    unidade text not null default 'un',
+    valor_unitario numeric(14, 2) not null default 0 check (valor_unitario >= 0),
+    status text not null default 'Ativo' check (status in ('Ativo', 'Inativo')),
+    cor text not null default '',
+    foto_path text not null default '',
     created_at timestamptz not null default now(),
     updated_at timestamptz not null default now(),
     version bigint not null default 1 check (version >= 1)
@@ -208,6 +214,9 @@ create table if not exists bravo_shadow.estoque (
 
 create index if not exists estoque_item_idx
     on bravo_shadow.estoque (item);
+
+create index if not exists estoque_setor_status_idx
+    on bravo_shadow.estoque (setor, status, item, id);
 
 -- Catálogos com IDs estáveis para manter os vínculos referenciais.
 create table if not exists bravo_shadow.categorias (
@@ -263,7 +272,7 @@ create table if not exists bravo_shadow.acertos_estoque (
     data timestamptz not null,
     tipo text not null check (tipo in ('Entrada', 'Saída')),
     produto_id text not null,
-    quantidade integer not null check (quantidade > 0),
+    quantidade numeric(14, 3) not null check (quantidade > 0),
     motivo text not null,
     motivo_id text null,
     created_at timestamptz not null default now(),
