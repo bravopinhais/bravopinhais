@@ -121,3 +121,27 @@ def test_ambiguous_duplicate_internal_email_is_denied():
         )
 
     assert error.value.status_code == 403
+
+
+def test_malformed_internal_email_is_ignored_and_access_is_denied():
+    from types import SimpleNamespace
+
+    class MalformedUsersService:
+        def list(self):
+            return [
+                SimpleNamespace(email=None, status="Ativo", perfil="Admin"),
+                SimpleNamespace(email=[], status="Ativo", perfil="Admin"),
+            ]
+
+    with pytest.raises(HTTPException) as error:
+        principal_from_google_claims(
+            {
+                "sub": "google-subject-2",
+                "email": "admin@example.com",
+                "email_verified": True,
+            },
+            MalformedUsersService(),
+        )
+
+    assert error.value.status_code == 403
+    assert error.value.detail == "Usuário não cadastrado ou inativo no Bravo."
