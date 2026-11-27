@@ -69,8 +69,13 @@ class DocumentoInput(BaseModel):
         return value
 
 
-class Documento(DocumentoInput):
+class Documento(BaseModel):
     id: str
+    pasta: str
+    categoriaId: str | None = None
+    titulo: str
+    nomeArquivo: str
+    arquivoCompactadoGzip: str
 
 
 class DocumentoResumo(BaseModel):
