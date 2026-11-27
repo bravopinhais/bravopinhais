@@ -33,6 +33,13 @@ def test_reader_accepts_utf8_json_and_returns_frozen_envelope():
     assert result.validation.valid is True
     assert result.byte_length == len(raw)
     assert result.raw_file_sha256 == hashlib.sha256(raw).hexdigest()
+    assert result.source_inventory.valid_collection_container is True
+    assert [item.name for item in result.source_inventory.collections] == ["categorias", "moradores"]
+    moradores = result.source_inventory.collections[1]
+    assert moradores.records_total == 1
+    assert moradores.records_missing_id == 0
+    assert moradores.duplicate_ids == 0
+    assert {field.name for field in moradores.fields} == {"id", "nome"}
     assert result.envelope["collections"]["moradores"][0]["id"] == "0001"
     assert isinstance(result.envelope["collections"]["moradores"], tuple)
     with pytest.raises(TypeError):
