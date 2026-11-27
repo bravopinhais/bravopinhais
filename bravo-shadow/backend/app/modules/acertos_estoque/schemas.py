@@ -1,6 +1,7 @@
+from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
 
 class AcertoInput(BaseModel):
@@ -8,7 +9,7 @@ class AcertoInput(BaseModel):
 
     tipo: Literal["Entrada", "Saída"]
     produtoId: str = Field(min_length=1)
-    quantidade: int = Field(gt=0)
+    quantidade: Decimal = Field(gt=0, max_digits=14, decimal_places=3)
     motivo: str = Field(min_length=1)
     motivoId: str | None = None
 
@@ -26,6 +27,10 @@ class AcertoInput(BaseModel):
             normalized = value.strip()
             return normalized or None
         return value
+
+    @field_serializer("quantidade", when_used="json")
+    def serialize_quantity(self, value: Decimal) -> float:
+        return float(value)
 
 
 class Acerto(AcertoInput):
