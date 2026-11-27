@@ -19,6 +19,22 @@ DECLARE
     relation_oid oid;
     role_name text;
     expected_roles text[] := ARRAY['anon', 'authenticated', 'service_role'];
+    expected_foreign_keys text[] := ARRAY[
+        'financeiro_plano_conta_fk',
+        'documentos_categoria_fk',
+        'acertos_estoque_produto_fk',
+        'acertos_estoque_motivo_fk',
+        'migration_source_records_first_batch_fk',
+        'migration_source_records_last_batch_fk',
+        'migration_batch_recovery_manifest_fk',
+        'migration_batch_recovery_source_fk',
+        'migration_batch_recovery_approval_actor_binding_fk',
+        'migration_executions_batch_manifest_fk',
+        'migration_apply_approvals_execution_fk',
+        'migration_review_decisions_batch_manifest_fk',
+        'migration_review_events_decision_manifest_fk'
+    ];
+    missing_foreign_keys text[];
     missing_roles text[];
     missing_tables text[];
     bad_tables text[];
@@ -49,6 +65,22 @@ BEGIN
 
     IF missing_tables IS NOT NULL THEN
         RAISE EXCEPTION 'Tabelas ausentes: %', missing_tables;
+    END IF;
+
+    SELECT array_agg(expected_name)
+      INTO missing_foreign_keys
+      FROM unnest(expected_foreign_keys) AS expected_name
+     WHERE NOT EXISTS (
+        SELECT 1
+          FROM pg_constraint
+         WHERE conname = expected_name
+           AND contype = 'f'
+           AND convalidated
+           AND connamespace = 'bravo_shadow'::regnamespace
+     );
+
+    IF missing_foreign_keys IS NOT NULL THEN
+        RAISE EXCEPTION 'FKs ausentes ou não validadas: %', missing_foreign_keys;
     END IF;
 
     FOREACH table_name IN ARRAY expected_tables LOOP
@@ -135,7 +167,7 @@ BEGIN
         RAISE EXCEPTION 'Restrições de aprovação exclusivamente dry-run ausentes/não validadas.';
     END IF;
 
-    RAISE NOTICE 'OK: % tabelas presentes; RLS habilitado; sem policies ou grants às roles comuns; auditoria e aprovação pré-importação verificadas.',
-        cardinality(expected_tables);
+    RAISE NOTICE 'OK: % tabelas e % FKs presentes; RLS habilitado; sem policies ou grants às roles comuns; auditoria e aprovação pré-importação verificadas.',
+        cardinality(expected_tables), cardinality(expected_foreign_keys);
 END;
 $$;
