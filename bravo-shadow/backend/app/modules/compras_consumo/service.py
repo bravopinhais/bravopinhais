@@ -73,13 +73,17 @@ def _month_range(start: date | None, end: date | None, observed: list[str]) -> l
         end = max(observed_dates)
     if start is None or end is None:
         return []
-    cursor = date(start.year, start.month, 1)
-    last = date(end.year, end.month, 1)
-    result: list[str] = []
-    while cursor <= last and len(result) < 120:
-        result.append(cursor.strftime("%Y-%m"))
-        cursor = date(cursor.year + (cursor.month == 12), 1 if cursor.month == 12 else cursor.month + 1, 1)
-    return result[-12:]
+    first_index = start.year * 12 + start.month - 1
+    last_index = end.year * 12 + end.month - 1
+    if first_index > last_index:
+        return []
+    # Compute the trailing window arithmetically: long historical ranges must
+    # still return the latest 12 months, not the first 120 months encountered.
+    window_start = max(first_index, last_index - 11)
+    return [
+        date(index // 12, index % 12 + 1, 1).strftime("%Y-%m")
+        for index in range(window_start, last_index + 1)
+    ]
 
 
 class ComprasConsumoService:
