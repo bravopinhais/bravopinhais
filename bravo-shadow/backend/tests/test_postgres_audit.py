@@ -134,3 +134,11 @@ def test_append_in_transaction_propagates_error_without_owning_transaction():
     assert connection.rollbacks == 0
     assert connection.closes == 0
     assert connection.cursor_instance.closed is True
+
+@pytest.mark.parametrize("connection", [None, object(), {"cursor": "not-callable"}])
+def test_append_in_transaction_rejects_invalid_connection(connection):
+    sink = PostgresAuditSink(lambda: pytest.fail("factory não deve ser usada"))
+
+    with pytest.raises(TypeError, match="conexão DB-API"):
+        sink.append_in_transaction(connection, make_event())
+
