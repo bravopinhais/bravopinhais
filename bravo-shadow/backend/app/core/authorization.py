@@ -60,7 +60,7 @@ def has_capability(
     capability: str,
 ) -> bool:
     """Retorna False em qualquer situação desconhecida ou não confiável."""
-    if principal is None:
+    if not isinstance(principal, AuthenticatedPrincipal):
         return False
     if principal.account_status != "Ativo":
         return False
@@ -114,6 +114,7 @@ def require_capability_dependency(capability: str):
             sink = getattr(services, "audit_sink", None)
             if (
                 sink is not None
+                and isinstance(principal, AuthenticatedPrincipal)
                 and isinstance(principal.subject, str)
                 and principal.subject.strip()
             ):
