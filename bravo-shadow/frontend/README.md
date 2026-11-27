@@ -310,22 +310,19 @@ Não habilitar a importação antes de adicionar prévia, validação, deduplica
 CPF/RG e contatos são dados pessoais. Não utilizar dados reais em homologação; limitar acesso, logs e exportações conforme a política do condomínio.
 
 
-## Fornecedores
+## Fornecedores — integração autenticada na Shadow (27/11/2026)
 
-A tela Shadow apresenta cadastro, pesquisa e tabela de fornecedores com os dois campos identificados no legado: CNPJ e Razão Social. Campos e ações ficam desabilitados até integração da sessão Google/Bearer com API HTTPS isolada. Não há dados fictícios nem chamadas automáticas.
+A tela utiliza o cliente HTTP da sessão Google/Bearer entregue em `bravo:session-ready`. Consulta `GET /api/v1/fornecedores` com `fornecedores:read`, permite cadastro por `POST` com `fornecedores:create` e edição por `PUT /api/v1/fornecedores/{id}` com `fornecedores:update`. Os campos permanecem estritamente os identificados no legado: CNPJ e Razão Social. A pesquisa é local; a listagem valida o formato da resposta e renderiza os dados com `textContent`.
 
-### Contrato da API
+A interface não expõe exclusão física, mesmo que a rota DELETE exista, pois o serviço/repositório atual não demonstra proteção referencial nem política de retenção para fornecedores vinculados a registros financeiros. O estado é limpo e consultas pendentes são canceladas no logout.
 
-- `GET /api/v1/fornecedores` — `fornecedores:read`.
-- `POST /api/v1/fornecedores` — `fornecedores:create`.
-- `PUT /api/v1/fornecedores/{id}` — `fornecedores:update`.
-- `DELETE /api/v1/fornecedores/{id}` — `fornecedores:delete`.
+O formulário bloqueia envios concorrentes, desabilita os campos durante a gravação e distingue gravação concluída de falha ao atualizar a lista. Erros 401/403/503 são tratados separadamente. A autorização efetiva permanece no backend.
 
-Campos obrigatórios: `cnpj` e `razaoSocial`. O schema remove espaços nas extremidades e recusa campos extras. Admin e Operador possuem CRUD no catálogo de permissões atual.
+### Limites que impedem ativação com dados reais
 
-### Limites que impedem ativação imediata
+O schema remove espaços nas extremidades e recusa campos extras, mas não valida dígitos verificadores do CNPJ nem impede duplicidade. O repositório PostgreSQL não evidencia índice único por CNPJ. Atualizações não exigem If-Match/ETag, embora o banco incremente uma versão interna. Criação e edição ainda não possuem trilha de auditoria específica. A exclusão é física e não há verificação de vínculos com compras ou outros registros; por isso continua indisponível na interface. O contrato não contém contato, endereço, inscrição estadual ou dados bancários; não presumir esses campos sem confirmar o legado.
 
-O serviço atual não valida CNPJ nem detecta duplicidade. O repositório PostgreSQL não evidencia índice único por CNPJ. A exclusão é física e não há verificação de vínculos com compras ou outros registros. Embora o adapter incremente uma versão interna em atualizações, o router não exige If-Match/ETag. O contrato não contém contato, endereço, inscrição estadual ou dados bancários; não presumir esses campos sem confirmar o legado.
+A integração representa código na branch Shadow, não homologação produtiva: não ativa o bootstrap Google, não configura hospedagem, não acessa dados reais e não promove alterações para a branch principal.
 
 
 ## Empregados
