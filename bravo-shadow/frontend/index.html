@@ -475,6 +475,7 @@ function estoqueApplyPermissions(){
  const form=document.getElementById("est-form");if(!form)return;
  const allowed=estoqueCan(estoqueEditingId?"update":"create");
  form.querySelectorAll("input,select").forEach(input=>{input.disabled=!allowed||input.type==="file";});
+ const photoPath=document.getElementById("est-foto-path");if(photoPath)photoPath.disabled=true;
  const save=document.getElementById("est-save");if(save){save.disabled=!allowed;save.textContent=estoqueEditingId?"Salvar alterações":"Salvar produto";}
  const cancel=document.getElementById("est-cancel");if(cancel)cancel.hidden=!estoqueEditingId;
  for(const id of ["est-search","est-filter","est-sector-filter"]){const el=document.getElementById(id);if(el)el.disabled=!estoqueCan("read");}
