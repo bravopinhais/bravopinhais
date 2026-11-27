@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request, status
 
 from app.core.authorization import require_capability_dependency
-from .schemas import Documento, DocumentoInput
+from .schemas import Documento, DocumentoInput, DocumentoResumo
 from .service import DocumentosService
 
 router = APIRouter(prefix="/api/v1/documentos", tags=["Gestão de Documentos"])
@@ -13,11 +13,11 @@ def get_service(request: Request) -> DocumentosService:
 
 @router.get(
     "",
-    response_model=list[Documento],
+    response_model=list[DocumentoResumo],
     dependencies=[Depends(require_capability_dependency("documentos:read"))],
 )
 def list_documents(request: Request):
-    return get_service(request).list()
+    return get_service(request).list_metadata()
 
 
 @router.get(
