@@ -26,7 +26,7 @@ def test_financeiro_numeric_amount_is_flagged_for_review():
     assessment = next(item for item in report.assessments if item.key == "financeiro")
     assert assessment.status == "review_required"
     assert "valor" not in assessment.type_mismatches
-    assert any("centavos exatos" in reason for reason in assessment.review_reasons)
+    assert any("preservação decimal exata" in reason for reason in assessment.review_reasons)
 
 
 def test_document_codec_risk_is_explicit_even_when_shape_matches():
