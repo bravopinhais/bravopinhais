@@ -51,3 +51,11 @@ O rascunho aplica `ENABLE ROW LEVEL SECURITY` e `FORCE ROW LEVEL SECURITY` à ta
 ## Limites desta revisão
 
 Nenhuma migration foi criada ou aplicada. Nenhuma role, policy, grant, membership, segredo ou variável de ambiente foi criada ou alterada. Nenhum banco foi acessado. O login Google, a interface original, a matriz de permissões e o fluxo de produção permanecem inalterados.
+
+## Evidência automatizada complementar — 27/11/2026
+
+O commit `96e4b47152b0167b2ac9bf056cff103c6b158767` acrescentou dois testes de contrato para o rascunho de auditoria: confirmação de RLS habilitado/forçado e revogações explícitas, além da ausência de GRANT e policies no texto SQL.
+
+A execução GitHub Actions `45983529674` concluiu os trabalhos Backend e Docker com sucesso. O backend reportou **562 testes aprovados, 1 aviso de depreciação e nenhuma falha**. O trabalho Docker concluiu construção, inicialização do contêiner e smoke test de interface/API.
+
+Esta evidência valida os contratos automatizados do repositório e o comportamento do contêiner de demonstração. **Não** comprova privilégios efetivos em um banco compartilhado, não aplica o rascunho SQL e não autoriza integração operacional ou produção. A revisão de roles, memberships, grants e policies ainda depende de execução controlada em PostgreSQL local descartável.
