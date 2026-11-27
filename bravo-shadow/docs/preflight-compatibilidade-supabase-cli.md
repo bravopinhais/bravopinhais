@@ -74,16 +74,23 @@ psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -f scripts/validar-catalogo-local.sql
 de negócio nem altera dados ou schema. Ele interrompe com erro se encontrar:
 tabelas esperadas ausentes, RLS desabilitado, policies inesperadas, privilégios
 de tabela/schema para `anon`, `authenticated` ou `service_role`, ausência de
-FORCE RLS na auditoria, triggers append-only ausentes/desabilitados ou
+FORCE RLS na auditoria, triggers append-only ausentes/desabilitados,
 constraints que impedem autorização de escrita na aprovação pré-importação,
-as 13 FKs críticas, 15 índices únicos críticos e 31 índices de consulta
-ausentes, inválidos ou ainda não prontos para uso.
+as 13 FKs críticas, 15 índices únicos, 31 índices de consulta, 59 CHECKs
+nomeados, 25 campos NOT NULL críticos e 10 DEFAULTs críticos ausentes,
+inválidos, divergentes ou ainda não prontos para uso.
 
-A auditoria é uma verificação de catálogo direcionada às 27 tabelas, 13 FKs e
-15 índices únicos críticos definidos nas migrations atuais. Para cada índice
-único, confirma `indisunique`, `indisvalid` e `indisready`, incluindo índices
-funcionais de código de plano de contas e e-mail de usuário. Não substitui
-revisão manual dos demais índices, tipos, triggers ou comportamento da aplicação.
+A auditoria é uma verificação de catálogo direcionada às 27 tabelas, 13 FKs,
+15 índices únicos e 31 índices de consulta definidos nas migrations atuais.
+Para cada índice único, confirma `indisunique`, `indisvalid` e `indisready`,
+incluindo índices funcionais de código de plano de contas e e-mail de usuário.
+Para índices de consulta, confirma existência, `indisvalid` e `indisready`,
+além de vínculo a uma tabela esperada do schema. Também verifica os 59 CHECKs
+nomeados e validados, 25 campos críticos com `NOT NULL` e 10 expressões
+`DEFAULT` críticas. Os CHECKs inline sem nome explícito e os demais campos
+NOT NULL/DEFAULT ainda exigem conferência complementar; a auditoria não
+substitui revisão manual de planos de consulta, tipos, triggers ou comportamento
+da aplicação.
 
 Depois da execução, ainda será necessário revisar FKs, índices, constraints,
 triggers e resultados de cada migration, registrar falhas e corrigir os
