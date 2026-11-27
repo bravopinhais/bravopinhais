@@ -271,3 +271,12 @@ A auditoria foi corrigida para separar explicitamente:
 - matriz de perfis ainda deny-by-default.
 
 A execução CI `45902675530` concluiu com sucesso para o commit corretivo `9e2d0f87656e58fcf1be282d5e93cae0823fce88`. As alterações documentais desta correção foram feitas depois dessa execução e ainda precisam de uma execução própria para serem cobertas pelo CI.
+
+
+## Atualização do baseline de produção — 2026-11-27
+
+A fotografia histórica acima foi complementada pela inspeção do `index.html` atualmente presente na branch `main`. A lista atual contém 17 módulos de navegação e recursos transversais adicionais de sessão Google, sincronização/offline, backup criptografado, histórico/saúde do sistema, IA, anexos, scanner, checklist, exportações e experiência PWA.
+
+A baseline, os SHAs consultados, o estado atual da interface/API Shadow, as lacunas imediatas e os critérios de aceite estão registrados em **[baseline-paridade-producao-2026-11-27.md](baseline-paridade-producao-2026-11-27.md)**.
+
+A partir desta data, a paridade deve ser medida contra essa baseline atual, não apenas contra a fotografia antiga da branch `upgrade/project-hardening`. O documento novo é um inventário estático; não representa homologação nem autorização de migração.
