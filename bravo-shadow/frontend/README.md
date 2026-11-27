@@ -248,18 +248,18 @@ A persistência PostgreSQL possui adapter, mas o modo padrão continua sendo mem
 
 ## Plano de Contas
 
-A tela Shadow agora representa o fluxo do legado: código, nome da conta e tipo Receita/Despesa, com listagem ordenada por código e filtros visuais previstos. Os campos permanecem desabilitados até a autenticação Google ser integrada; não há chamadas de API nem dados fictícios.
+A tela Shadow oferece consulta, cadastro e edição autenticados para o Plano de Contas, com código, nome e tipo Receita/Despesa. A listagem é ordenada pelo código e possui pesquisa e filtro local. A exclusão física não é oferecida na interface.
 
-### Contrato existente
+### Contrato e capacidades
 
 - `GET /api/v1/plano-contas` — `plano_contas:read`.
 - `POST /api/v1/plano-contas` — `plano_contas:create`.
-- `PUT /api/v1/plano-contas/{id}` — `plano_contas:update`, exige `If-Match` / ETag.
-- `DELETE /api/v1/plano-contas/{id}` — `plano_contas:delete`.
+- `PUT /api/v1/plano-contas/{id}` — `plano_contas:update`, exige ETag forte em `If-Match`.
+- `DELETE /api/v1/plano-contas/{id}` — `plano_contas:delete`, disponível somente pela API autorizada e protegido contra referências financeiras.
 
-Código (1–30 caracteres) e nome (2–160 caracteres) são obrigatórios; tipo é Receita ou Despesa. O serviço verifica duplicidade de código e o PostgreSQL possui proteção de unicidade. A exclusão depende de verificação de títulos financeiros vinculados e retorna conflito quando há referências. O perfil Operador tem leitura; escrita é restrita ao Admin.
+Código (1–30 caracteres) e nome (2–160 caracteres) são obrigatórios; tipo é Receita ou Despesa. O serviço verifica duplicidade de código e o PostgreSQL possui proteção de unicidade. Operador tem somente leitura; escrita é restrita ao Admin.
 
-O contrato não possui hierarquia de contas, conta-pai, centro de custo, níveis sintético/analítico ou natureza adicional. A API usa versionamento otimista para edição. Auditoria transacional específica de CRUD não foi confirmada; não habilitar gravações antes da revisão de auditoria e integração segura.
+As mutações HTTP exigem PostgreSQL e auditoria append-only na mesma transação da alteração. O sink ausente, o repositório em memória ou falta de método auditado retornam 503 sem confirmar alteração. A edição usa compare-and-swap por versão e registra auditoria na mesma unidade transacional. A exclusão pela API também exige auditoria transacional e preserva a integridade referencial dos títulos financeiros.
 
 
 ## Condomínio & Conselho
@@ -473,13 +473,15 @@ Inclusão, edição, exclusão e baixa permanecem desabilitadas. Não há chamad
 
 **Limites do contrato atual:** o título possui tipo, conta opcional, histórico e valor. Não há vencimento, competência, baixa, pagamento parcial, recorrência ou conciliação. A tabela não inventa esses campos nem calcula indicadores que o backend não fornece.
 
-## Plano de Contas — consulta integrada
+## Plano de Contas — consulta e manutenção autenticadas
 
-A tela do Plano de Contas utiliza o cliente HTTP entregue pelo evento de sessão Google e consulta exclusivamente `GET /api/v1/plano-contas`, protegido pela capacidade `plano_contas:read`. A resposta é validada antes da renderização; código, nome e tipo são inseridos como texto, sem interpretar conteúdo recebido como HTML. Pesquisa por código/nome e filtro por Receita/Despesa atuam localmente sobre a lista autorizada.
+A tela utiliza o cliente HTTP entregue pela sessão Google. A consulta exige `plano_contas:read`; cadastro e edição exigem, respectivamente, `plano_contas:create` e `plano_contas:update`. Os dados retornados são validados e renderizados com `textContent`; pesquisa e filtro atuam localmente. O formulário cria contas com código, nome e tipo. Na edição, o tipo é preservado e não pode ser alterado pela interface, evitando reclassificação inadvertida de lançamentos históricos.
 
-Ao encerrar a sessão, a lista em memória é limpa e requisições pendentes são canceladas. A navegação para outro módulo também invalida a consulta anterior. Cadastro, edição e exclusão continuam desabilitados, embora existam rotas correspondentes no backend. Nenhum dado fictício é apresentado.
+A edição envia o valor de versão recebido na listagem como ETag forte em `If-Match`. Conflitos 409/428 são apresentados e provocam recarga da lista. A interface não oferece exclusão física. Dados em memória são limpos e consultas canceladas no logout.
 
-A integração está preparada no código da branch Shadow, mas depende da API HTTPS isolada, da configuração explícita do bootstrap Google e da concessão de `plano_contas:read`. Não houve publicação nem alteração na aplicação original.
+No backend, as rotas HTTP de criação, edição e exclusão exigem métodos de repositório auditados e sink persistente. O PostgreSQL grava a alteração de negócio e o evento append-only na mesma transação; falha de auditoria reverte a alteração. O modo memória não dispõe desse mecanismo e retorna 503 para mutações HTTP. A exclusão via API verifica vínculos financeiros e também é protegida pela integridade referencial do banco.
+
+A integração é código da branch Shadow; não ativa o bootstrap Google, não configura hospedagem, não consulta dados reais e não representa homologação produtiva.
 
 ### Relacionamento entre Financeiro e Plano de Contas
 
