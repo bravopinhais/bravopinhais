@@ -121,3 +121,27 @@ def test_report_rejects_reversed_date_range():
             data_inicio=date(2026, 11, 30),
             data_fim=date(2026, 11, 1),
         )
+
+
+def test_monthly_evolution_returns_latest_twelve_months_for_long_history():
+    report = service(
+        [product()],
+        [movement("Entrada", "1.000", "Compra", data="2026-11-05")],
+    ).report(
+        data_inicio=date(2000, 1, 1),
+        data_fim=date(2026, 11, 30),
+    )
+
+    months = [row.mes for row in report.evolucaoMensal]
+    assert len(months) == 12
+    assert months[0] == "2025-12"
+    assert months[-1] == "2026-11"
+
+
+def test_monthly_evolution_handles_reversed_observed_window_without_dates():
+    report = service(
+        [product()],
+        [],
+    ).report()
+
+    assert report.evolucaoMensal == []
