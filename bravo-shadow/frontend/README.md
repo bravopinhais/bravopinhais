@@ -250,3 +250,19 @@ O schema aceita multa de 0 a 100%, com no máximo duas casas decimais. O perfil 
 A tela foi colocada em modo somente visual porque o helper anterior fazia `fetch` sem o cabeçalho `Authorization: Bearer`. A autenticação Google ainda não está conectada ao frontend; portanto, não se deve tentar contornar a proteção nem habilitar os formulários.
 
 A persistência PostgreSQL possui adapter, mas o modo padrão continua sendo memória. Sem selecionar e provisionar PostgreSQL no ambiente isolado, os registros são voláteis. O serviço também não implementa verificação de referências antes da exclusão nem auditoria transacional específica. A integração financeira do percentual de multa ainda precisa ser confirmada no domínio de títulos.
+
+
+## Plano de Contas
+
+A tela Shadow agora representa o fluxo do legado: código, nome da conta e tipo Receita/Despesa, com listagem ordenada por código e filtros visuais previstos. Os campos permanecem desabilitados até a autenticação Google ser integrada; não há chamadas de API nem dados fictícios.
+
+### Contrato existente
+
+- `GET /api/v1/plano-contas` — `plano_contas:read`.
+- `POST /api/v1/plano-contas` — `plano_contas:create`.
+- `PUT /api/v1/plano-contas/{id}` — `plano_contas:update`, exige `If-Match` / ETag.
+- `DELETE /api/v1/plano-contas/{id}` — `plano_contas:delete`.
+
+Código (1–30 caracteres) e nome (2–160 caracteres) são obrigatórios; tipo é Receita ou Despesa. O serviço verifica duplicidade de código e o PostgreSQL possui proteção de unicidade. A exclusão depende de verificação de títulos financeiros vinculados e retorna conflito quando há referências. O perfil Operador tem leitura; escrita é restrita ao Admin.
+
+O contrato não possui hierarquia de contas, conta-pai, centro de custo, níveis sintético/analítico ou natureza adicional. A API usa versionamento otimista para edição. Auditoria transacional específica de CRUD não foi confirmada; não habilitar gravações antes da revisão de auditoria e integração segura.
