@@ -148,5 +148,5 @@ def test_recovery_event_id_is_idempotency_key_not_sequence_workaround():
     sql = re.sub(r"\\s+", " ", _sql().lower())
 
     assert "event_id é chave de idempotência global" in sql
-    assert "comparar todos os campos do evento existente" in sql
-    assert "nunca gerar nova sequência" in sql
+    assert "comparar todos os" in sql and "campos do evento existente" in sql
+    assert "nunca gerar nova" in sql and "sequência para mascarar" in sql
