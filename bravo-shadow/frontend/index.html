@@ -119,12 +119,12 @@ function formasView(){
  if(IS_STATIC_PREVIEW){view.innerHTML=`<section class="panel module-view"><div><div class="big-icon">◉</div><span class="eyebrow">Preview estático · GitHub Pages</span><h2>Formas Monetárias</h2><p>Esta publicação permite avaliar o visual e a navegação. O GitHub Pages não executa a API FastAPI; por isso, cadastro, edição e exclusão ficam indisponíveis neste preview.</p><span class="tag">API não conectada · Nenhuma operação enviada</span></div></section>`;return}
  view.innerHTML=`<section class="panel">
   <div class="api-toolbar"><div><strong style="font-size:13px">Cadastro de formas monetárias</strong><div class="api-status" id="formas-status" role="status" aria-live="polite" aria-atomic="true" tabindex="-1">Carregando dados da API...</div></div><button type="button" class="action-btn" data-action="reload" aria-label="Atualizar formas monetárias">↻ Atualizar</button></div>
-  <form class="api-form" id="forma-form">
+  <form class="api-form" id="forma-form" aria-describedby="forma-hint">
    <div class="field"><label for="forma-nome">Nome da forma monetária</label><input id="forma-nome" name="nome" required placeholder="Ex.: Dinheiro, PIX, Cartão"></div>
    <div class="field"><label for="forma-multa">Multa (%)</label><input id="forma-multa" name="multaPct" type="number" min="0" max="100" step="0.01" value="2" required></div>
    <button class="action-btn primary" type="submit" id="forma-submit">Cadastrar</button><button class="action-btn" type="button" id="forma-cancel-edit" data-action="cancel-edit" hidden>Cancelar edição</button>
   </form>
-  <div class="form-hint">Os registros ficam temporariamente na memória do serviço Python e são apagados quando o processo reinicia. Não use dados de produção.</div>
+  <div class="form-hint" id="forma-hint">Os registros ficam temporariamente na memória do serviço Python e são apagados quando o processo reinicia. Não use dados de produção.</div>
   <div class="data-table-wrap"><table class="data-table"><caption>Formas monetárias cadastradas</caption><thead><tr><th scope="col">Forma monetária</th><th scope="col">Multa (%)</th><th scope="col">Ações</th></tr></thead><tbody id="formas-rows"><tr><td colspan="3" class="empty-state">Carregando...</td></tr></tbody></table></div>
  </section>`;
  carregarFormas();
