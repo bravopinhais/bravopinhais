@@ -80,7 +80,7 @@ jobs:
           grep -q 'form?.getAttribute("aria-busy")==="true")return;resetFormaForm();setFormasStatus("Edição cancelada; nenhuma alteração foi enviada.");document.getElementById("forma-nome")?.focus()' _site/index.html
           grep -q 'event.key!=="Escape"||!formaEmEdicao' _site/index.html
           grep -q 'Edição cancelada pelo teclado; nenhuma alteração foi enviada.' _site/index.html
-          grep -q 'cancel.hidden=false' _site/index.html
+          grep -q 'document.getElementById("forma-cancel-edit").hidden=false' _site/index.html
           grep -q 'if(cancel)cancel.hidden=true' _site/index.html
           grep -q 'if(form.getAttribute("aria-busy")==="true")return' _site/index.html
           grep -q 'form.setAttribute("aria-busy","true")' _site/index.html
