@@ -274,6 +274,26 @@ function configuracoesView(){
   <p class="form-hint">Os estados não são presumidos nem gravados por esta tela. Ao conectar a sessão, a tabela será carregada da API. Apenas Admin poderá alterar módulos; Operador terá consulta. Alterações não concedem permissões.</p>
  </section>`;
 }
+function pastasView(){
+ const view=document.getElementById("view");
+ view.innerHTML=`<section class="panel">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Pastas, categorias e motivos de estoque</strong><div class="api-status" id="pastas-status" role="status" aria-live="polite">Aguardando sessão Google e API Shadow</div></div><span class="tag">Cadastros de apoio</span></div>
+  <div class="notice" style="margin:16px 0 18px"><div class="notice-icon">▤</div><div><strong>Organização de documentos e inventário</strong><p>As categorias organizam documentos; os motivos classificam entradas e saídas do estoque. A exclusão é bloqueada pelo servidor quando há documentos ou acertos vinculados.</p></div></div>
+  <div class="section-head"><h2>Pastas e categorias</h2><span>Documentos</span></div>
+  <form class="api-form" id="pastas-category-form">
+   <div class="field"><label for="pastas-category-name">Nome da pasta / categoria</label><input id="pastas-category-name" name="nome" maxlength="120" required placeholder="Ex.: Contratos, Assembleias, Notas fiscais" disabled></div>
+   <button class="action-btn primary" type="button" disabled>Cadastrar pasta</button>
+  </form>
+  <div class="data-table-wrap"><table class="data-table"><caption>Pastas e categorias cadastradas</caption><thead><tr><th scope="col">Nome</th><th scope="col">Vínculos</th><th scope="col">Ações</th></tr></thead><tbody id="pastas-category-rows"><tr><td colspan="3" class="empty-state">Aguardando consulta autorizada à API de categorias.</td></tr></tbody></table></div>
+  <div class="section-head"><h2>Motivos de acerto de estoque</h2><span>Entradas e saídas</span></div>
+  <form class="api-form" id="pastas-reason-form">
+   <div class="field"><label for="pastas-reason-name">Nome do motivo</label><input id="pastas-reason-name" name="nome" maxlength="120" required placeholder="Ex.: Compra, Consumo, Perda, Avaria" disabled></div>
+   <button class="action-btn primary" type="button" disabled>Cadastrar motivo</button>
+  </form>
+  <div class="data-table-wrap"><table class="data-table"><caption>Motivos de acerto cadastrados</caption><thead><tr><th scope="col">Motivo</th><th scope="col">Vínculos</th><th scope="col">Ações</th></tr></thead><tbody id="pastas-reason-rows"><tr><td colspan="3" class="empty-state">Aguardando consulta autorizada à API de motivos de estoque.</td></tr></tbody></table></div>
+  <p class="form-hint">A API já oferece consulta e cadastro para as duas listas. Exclusões exigem as capacidades administrativas correspondentes e são recusadas quando existem vínculos. Os controles permanecem desativados até a integração segura da sessão autenticada; nenhum registro é presumido.</p>
+ </section>`;
+}
 function openModule(id){
  const item=modules[id];if(!item)return;moduloAtual=id;
  document.querySelectorAll("[data-module]").forEach(el=>{if(el.closest("#navigation")){if(el.dataset.module===id)el.setAttribute("aria-current","page");else el.removeAttribute("aria-current")}});
@@ -286,6 +306,7 @@ function openModule(id){
  if(id==="formas_monetarias"){location.hash=id;formasView();return}
  if(id==="usuarios"){location.hash=id;usuariosView();return}
  if(id==="compras_consumo"){location.hash=id;comprasConsumoView();return}
+ if(id==="categorias"){location.hash=id;pastasView();return}
  if(id==="configuracoes"){location.hash=id;configuracoesView();return}
  view.innerHTML='<section class="panel module-view"><div><div class="big-icon">◇</div><span class="eyebrow">Módulo mapeado · Bravo Shadow</span><h2>'+item.title+'</h2><p>'+item.desc+'</p><span class="tag">Estrutura visual inicial · Funcionalidade ainda não migrada</span></div></section>';
  location.hash=id;
