@@ -116,7 +116,7 @@ function formasView(){
  const view=document.getElementById("view");
  if(IS_STATIC_PREVIEW){view.innerHTML=`<section class="panel module-view"><div><div class="big-icon">◉</div><span class="eyebrow">Preview estático · GitHub Pages</span><h2>Formas Monetárias</h2><p>Esta publicação permite avaliar o visual e a navegação. O GitHub Pages não executa a API FastAPI; por isso, cadastro, edição e exclusão ficam indisponíveis neste preview.</p><span class="tag">API não conectada · Nenhuma operação enviada</span></div></section>`;return}
  view.innerHTML=`<section class="panel">
-  <div class="api-toolbar"><div><strong style="font-size:13px">Cadastro de formas monetárias</strong><div class="api-status" id="formas-status">Carregando dados da API...</div></div><button class="action-btn" data-action="reload">↻ Atualizar</button></div>
+  <div class="api-toolbar"><div><strong style="font-size:13px">Cadastro de formas monetárias</strong><div class="api-status" id="formas-status" role="status" aria-live="polite" aria-atomic="true">Carregando dados da API...</div></div><button class="action-btn" data-action="reload">↻ Atualizar</button></div>
   <form class="api-form" id="forma-form">
    <div class="field"><label for="forma-nome">Nome da forma monetária</label><input id="forma-nome" name="nome" required placeholder="Ex.: Dinheiro, PIX, Cartão"></div>
    <div class="field"><label for="forma-multa">Multa (%)</label><input id="forma-multa" name="multaPct" type="number" step="0.01" value="2"></div>
