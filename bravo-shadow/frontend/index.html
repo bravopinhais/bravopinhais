@@ -188,7 +188,7 @@ document.addEventListener("click",async event=>{
  const nav=event.target.closest("[data-module]");if(nav){openModule(nav.dataset.module);return}
  const action=event.target.closest("[data-action]");if(!action||moduloAtual!=="formas_monetarias")return;
  const id=action.dataset.id;
- if(action.dataset.action==="cancel-edit"){resetFormaForm();setFormasStatus("Edição cancelada; nenhuma alteração foi enviada.");return}
+ if(action.dataset.action==="cancel-edit"){const form=document.getElementById("forma-form");if(form?.getAttribute("aria-busy")==="true")return;resetFormaForm();setFormasStatus("Edição cancelada; nenhuma alteração foi enviada.");document.getElementById("forma-nome")?.focus();return}
  if(action.dataset.action==="reload"){action.disabled=true;action.textContent="Atualizando...";action.setAttribute("aria-busy","true");try{await carregarFormas()}finally{action.disabled=false;action.textContent="↻ Atualizar";action.removeAttribute("aria-busy")}return}
  if(action.dataset.action==="edit"){
   const item=formasMonetarias.find(row=>row.id===id);if(!item)return;
@@ -199,6 +199,7 @@ document.addEventListener("click",async event=>{
   action.disabled=true;action.textContent="Excluindo...";action.setAttribute("aria-busy","true");try{await apiRequest("/formas-monetarias/"+encodeURIComponent(id),{method:"DELETE"});await carregarFormas();setFormasStatus("Registro excluído do ambiente sombra.","ok")}catch(error){setFormasStatus(error.message,"err")}finally{action.disabled=false;action.textContent="Excluir";action.removeAttribute("aria-busy")}
  }
 });
+document.addEventListener("keydown",event=>{if(event.key!=="Escape"||!formaEmEdicao)return;const form=document.getElementById("forma-form");if(form?.getAttribute("aria-busy")==="true")return;event.preventDefault();resetFormaForm();setFormasStatus("Edição cancelada pelo teclado; nenhuma alteração foi enviada.");document.getElementById("forma-nome")?.focus()});
 document.addEventListener("submit",event=>{if(event.target.id==="forma-form")salvarForma(event)});
 window.addEventListener("hashchange",()=>{
  const id=location.hash.slice(1);
