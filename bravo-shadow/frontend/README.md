@@ -292,7 +292,9 @@ Campos: nome, CNPJ, razão social, endereço, bairro, cidade, UF, CEP, telefone,
 
 Campos: nome, cargo, Bloco/Ap e telefone. Admin possui CRUD; Operador somente leitura.
 
-Há adapters PostgreSQL para os dois cadastros, mas o serviço atual não implementa auditoria de negócio transacional específica. A atualização do singleton do condomínio não expõe If-Match/versão no contrato HTTP. Não habilitar gravações até revisar auditoria e concorrência.
+O cadastro do condomínio permanece sem gravação pela interface nesta etapa. Para o Conselho, a interface Shadow consome as rotas autenticadas de consulta, cadastro e edição, verifica as capacidades `conselheiros:read/create/update`, pesquisa localmente por nome/cargo/BlocoAp e renderiza os valores com `textContent`. Os dados em memória e consultas pendentes são descartados ao encerrar a sessão. O formulário usa somente os campos do schema: nome, cargo, Bloco/Ap e telefone.
+
+A exclusão física (`DELETE /api/v1/conselheiros/{id}`) não é oferecida na interface. Embora o backend tenha adapter PostgreSQL, o serviço ainda não registra auditoria de negócio transacional específica para criação/edição; não habilitar o módulo com dados reais nem considerar pronto para produção até implementar e validar essa trilha. O contrato também não contempla mandato, início/fim de gestão, atas, eleições ou anexos.
 
 
 ## Moradores & Unidades
