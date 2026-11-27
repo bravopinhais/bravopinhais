@@ -93,3 +93,33 @@ def test_empty_collection_is_not_misreported_as_missing_schema_fields():
     assert result.status == "empty_source_collection"
     assert result.missing_required == ()
     assert result.fields == ()
+
+
+def test_two_source_collections_cannot_silently_merge_into_one_target():
+    inventory = inspect_source_collections({
+        "categoriasA": [{"id": "1", "nome": "A"}],
+        "categoriasB": [{"id": "2", "nome": "B"}],
+    })
+
+    report = assess_source_compatibility(
+        inventory,
+        source_to_target={
+            "categoriasA": "categorias",
+            "categoriasB": "categorias",
+        },
+    )
+
+    assert report.mapping_conflicts == ("categorias",)
+    assert all(item.status == "review_required" for item in report.assessments)
+
+
+def test_explicit_empty_mapping_does_not_fall_back_to_guessed_names():
+    inventory = inspect_source_collections({
+        "categorias": [{"id": "1", "nome": "A"}],
+    })
+
+    report = assess_source_compatibility(inventory, source_to_target={})
+
+    assert report.assessments == ()
+    assert report.unmapped_source_collections == ("categorias",)
+    assert len(report.unmapped_target_collections) == 9
