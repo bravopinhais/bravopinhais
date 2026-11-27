@@ -64,11 +64,13 @@ def has_capability(
         return False
     if principal.account_status != "Ativo":
         return False
+    if not isinstance(principal.profile, str):
+        return False
     if not isinstance(principal.subject, str) or not isinstance(principal.email, str):
         return False
     if not principal.subject.strip() or not principal.email.strip():
         return False
-    if capability not in CAPABILITIES:
+    if not isinstance(capability, str) or capability not in CAPABILITIES:
         return False
     return capability in ROLE_CAPABILITIES.get(principal.profile, frozenset())
 
