@@ -15,6 +15,10 @@ class DbConnection(Protocol):
 ConnectionT = TypeVar("ConnectionT", bound=DbConnection)
 
 
+class CommitOutcomeUnknown(RuntimeError):
+    """O servidor pode ter confirmado o COMMIT, mas a confirmação não chegou."""
+
+
 class PostgresUnitOfWork:
     """Gerencia commit/rollback/close de uma conexão por unidade de trabalho.
 
@@ -76,14 +80,18 @@ class PostgresUnitOfWork:
                 try:
                     connection.commit()
                 except BaseException as commit_error:
-                    primary_error = commit_error
+                    outcome_error = CommitOutcomeUnknown(
+                        "postgres_commit_outcome_unknown"
+                    )
+                    primary_error = outcome_error
                     try:
                         connection.rollback()
                     except BaseException as rollback_error:
                         self._note_cleanup_failure(
-                            primary_error, "rollback após falha no commit", rollback_error
+                            primary_error, "rollback após resultado desconhecido do commit",
+                            rollback_error
                         )
-                    raise
+                    raise outcome_error from commit_error
         finally:
             try:
                 connection.close()
