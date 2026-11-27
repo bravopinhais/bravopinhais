@@ -238,3 +238,15 @@ Regras de segurança:
 - A tabela `bravo_shadow.module_settings` foi incluída no DDL piloto e no rascunho específico, ambos não executados. RLS habilitado, privilégios revogados e nenhum GRANT/POLICY adicionado.
 
 Testes unitários sintéticos foram adicionados para catálogo, Admin/Operador, proteção do módulo Configurações e operação em massa; não foram executados. A interface visual ainda não está conectada a esses endpoints. O estado implementado é de API/backend, não de paridade completa.
+
+
+### Complemento de persistência e auditoria
+
+Foi acrescentado `backend/tests/test_postgres_module_settings.py` com cenários sintéticos para:
+- leitura dos estados persistidos;
+- alteração individual e auditoria usando a mesma conexão;
+- rollback da alteração quando a gravação da auditoria falha;
+- validação de correspondência um-para-um entre alterações em massa e eventos;
+- confirmação única da transação em operação em massa.
+
+Os testes foram adicionados ao repositório, mas permanecem sem execução conforme a orientação vigente. Isso amplia a cobertura planejada; não representa validação executada.
