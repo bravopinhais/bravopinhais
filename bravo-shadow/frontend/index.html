@@ -398,10 +398,47 @@ function planoContasView(){
    <li>O backend bloqueia exclusão quando existem lançamentos financeiros vinculados.</li>
    <li>O backend exige versão esperada para edição, evitando sobrescrever alterações concorrentes.</li>
    <li>O modelo atual não possui hierarquia pai/filho, centro de custo, natureza contábil adicional ou nível sintético/analítico.</li>
-   <li>A interface permanece sem chamadas à API até a autenticação Google enviar o Bearer token validado.</li>
+   <li>A listagem é somente leitura; cadastro, edição e exclusão permanecem bloqueados nesta etapa.</li>
   </ul>
  </section>`;
+ bindPlanoContasFilters();
+ if(planoContasApiClient)void loadPlanoContas(planoContasApiClient);
 }
+
+let planoContasApiClient=null,planoContasRequestSequence=0,planoContasRequestController=null,planoContasAccounts=[];
+function renderPlanoContasRows(){
+ const tbody=document.getElementById("pc-rows");if(!tbody)return;
+ const search=(document.getElementById("pc-search")?.value||"").trim().toLocaleLowerCase("pt-BR");
+ const type=document.getElementById("pc-filter-type")?.value||"";
+ const filtered=planoContasAccounts.filter(item=>{const hay=[item.codigo,item.nome,item.tipo].filter(Boolean).join(" ").toLocaleLowerCase("pt-BR");return(!search||hay.includes(search))&&(!type||item.tipo===type);});
+ tbody.replaceChildren();
+ if(!filtered.length){const row=document.createElement("tr"),cell=document.createElement("td");cell.colSpan=4;cell.className="empty-state";cell.textContent=planoContasAccounts.length?"Nenhuma conta corresponde aos filtros.":"Nenhuma conta do plano cadastrada.";row.append(cell);tbody.append(row);return;}
+ for(const item of filtered){const row=document.createElement("tr");for(const value of [item.codigo,item.nome,item.tipo,"Somente leitura"]){const cell=document.createElement("td");cell.textContent=value;row.append(cell);}tbody.append(row);}
+}
+async function loadPlanoContas(api){
+ const status=document.getElementById("pc-status");if(!status||!api||typeof api.get!=="function")return;
+ const sequence=++planoContasRequestSequence;planoContasRequestController?.abort();planoContasRequestController=new AbortController();
+ status.textContent="Consultando contas com a permissão plano_contas:read…";status.className="api-status";
+ try{
+  const data=await api.get("/api/v1/plano-contas",{signal:planoContasRequestController.signal});
+  if(sequence!==planoContasRequestSequence||moduloAtual!=="plano_contas")return;
+  if(!Array.isArray(data)||data.some(item=>!item||typeof item!=="object"||typeof item.codigo!=="string"||typeof item.nome!=="string"||!["Receita","Despesa"].includes(item.tipo)))throw new Error("A API retornou uma lista de contas inválida.");
+  planoContasAccounts=data;const search=document.getElementById("pc-search"),type=document.getElementById("pc-filter-type");if(search)search.disabled=false;if(type)type.disabled=false;
+  renderPlanoContasRows();status.textContent=data.length+" conta(s) carregada(s) · consulta somente leitura";status.className="api-status ok";
+ }catch(error){
+  if(error?.name==="AbortError"||sequence!==planoContasRequestSequence)return;
+  planoContasAccounts=[];renderPlanoContasRows();const search=document.getElementById("pc-search"),type=document.getElementById("pc-filter-type");if(search)search.disabled=true;if(type)type.disabled=true;
+  status.textContent=error?.status===403?"A conta autenticada não possui a capacidade plano_contas:read.":error?.status===401?"Sessão não autorizada ou expirada. Entre novamente.":(error?.message||"Não foi possível consultar o Plano de Contas.");status.className="api-status err";
+ }
+}
+function bindPlanoContasFilters(){
+ const search=document.getElementById("pc-search"),type=document.getElementById("pc-filter-type");
+ if(search&&search.dataset.bound!=="true"){search.dataset.bound="true";search.addEventListener("input",renderPlanoContasRows);}
+ if(type&&type.dataset.bound!=="true"){type.dataset.bound="true";type.addEventListener("change",renderPlanoContasRows);}
+}
+window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function")return;planoContasApiClient=api;if(moduloAtual==="plano_contas")void loadPlanoContas(api);});
+window.addEventListener("bravo:session-ended",()=>{planoContasApiClient=null;planoContasRequestSequence+=1;planoContasRequestController?.abort();planoContasRequestController=null;planoContasAccounts=[];if(moduloAtual==="plano_contas")planoContasView();});
+
 let financeiroApiClient = null;
 let financeiroRequestSequence = 0;
 let financeiroRequestController = null;
@@ -860,7 +897,7 @@ function documentosView(){
 }
 
 function openModule(id){
- const item=modules[id];if(!item)return;moduloAtual=id;if(id!=="dashboard"){dashboardRequestSequence+=1;dashboardRequestController?.abort();dashboardRequestController=null;}if(id!=="financeiro"){financeiroRequestSequence+=1;financeiroRequestController?.abort();financeiroRequestController=null;}
+ const item=modules[id];if(!item)return;moduloAtual=id;if(id!=="dashboard"){dashboardRequestSequence+=1;dashboardRequestController?.abort();dashboardRequestController=null;}if(id!=="financeiro"){financeiroRequestSequence+=1;financeiroRequestController?.abort();financeiroRequestController=null;}if(id!=="plano_contas"){planoContasRequestSequence+=1;planoContasRequestController?.abort();planoContasRequestController=null;}
  document.querySelectorAll("[data-module]").forEach(el=>{if(el.closest("#navigation")){if(el.dataset.module===id)el.setAttribute("aria-current","page");else el.removeAttribute("aria-current")}});
  document.getElementById("breadcrumb").textContent=item.name;
  document.getElementById("page-title").textContent=item.title;
