@@ -53,6 +53,8 @@ def principal_from_google_claims(
             detail="Identidade Google inválida ou e-mail não verificado.",
         )
 
+    # Canonicaliza o identificador opaco antes de colocá-lo no principal/auditoria.
+    subject = subject.strip()
     normalized_email = email.strip().lower()
     # Cadastros inconsistentes não podem transformar uma identidade válida
     # em erro 500; somente e-mails internos textuais participam da resolução.
