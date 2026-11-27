@@ -206,6 +206,43 @@ function fornecedoresView(){
   </ul>
  </section>`;
 }
+function empregadosView(){
+ const view=document.getElementById("view");
+ view.innerHTML=`<section class="panel">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Empregados</strong><div class="api-status" id="emp-status" role="status" aria-live="polite">Aguardando autenticação Google e API HTTPS Shadow</div></div><span class="tag">Cadastro de equipe</span></div>
+  <div class="notice" style="margin:14px 0 18px"><div class="notice-icon">♧</div><div><strong>Cadastro funcional e contato de emergência</strong><p>O formulário preserva os campos do Bravo original. Endereço, telefone e contato de emergência são dados pessoais e devem ter acesso restrito.</p></div></div>
+  <div class="section-head"><h2>Novo empregado</h2><span>Campos do cadastro original</span></div>
+  <form class="api-form" id="emp-form" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+   <div class="field"><label for="emp-nome">Nome completo</label><input id="emp-nome" name="nome" required maxlength="160" placeholder="Nome do empregado" disabled></div>
+   <div class="field"><label for="emp-cargo">Função / Cargo</label><input id="emp-cargo" name="cargo" required maxlength="160" placeholder="Função exercida" disabled></div>
+   <div class="field"><label for="emp-empresa">Empresa</label><input id="emp-empresa" name="empresa" maxlength="200" placeholder="Empresa vinculada" disabled></div>
+   <div class="field"><label for="emp-telefone">Telefone</label><input id="emp-telefone" name="telefone" maxlength="40" placeholder="Telefone de contato" disabled></div>
+   <div class="field" style="grid-column:1/-1"><label for="emp-endereco">Endereço</label><input id="emp-endereco" name="endereco" maxlength="300" placeholder="Endereço" disabled></div>
+   <div class="field"><label for="emp-emergencia-nome">Nome do contato de emergência</label><input id="emp-emergencia-nome" name="contatoEmergenciaNome" maxlength="160" disabled></div>
+   <div class="field"><label for="emp-emergencia-tel">Telefone de emergência</label><input id="emp-emergencia-tel" name="contatoEmergenciaTel" maxlength="40" disabled></div>
+   <div style="grid-column:1/-1;display:flex;justify-content:flex-end"><button type="button" class="action-btn primary" disabled>Salvar empregado</button></div>
+  </form>
+  <p class="form-hint">Nome e cargo são obrigatórios. Os demais campos são opcionais. Nenhuma informação de salário, documento, jornada ou vínculo trabalhista foi acrescentada, pois não consta no formulário legado inspecionado.</p>
+ </section>
+ <section class="panel" style="margin-top:16px">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Equipe cadastrada</strong><div class="api-status">Consulta autenticada pendente</div></div><span class="tag">Consulta</span></div>
+  <div class="api-form" style="grid-template-columns:minmax(0,1fr) auto;align-items:end">
+   <div class="field"><label for="emp-search">Pesquisar por nome, cargo ou empresa</label><input id="emp-search" name="busca" placeholder="Digite para localizar" disabled></div>
+   <button type="button" class="action-btn" disabled>Pesquisar</button>
+  </div>
+  <div class="data-table-wrap"><table class="data-table"><caption>Empregados cadastrados</caption><thead><tr><th scope="col">Nome / Função</th><th scope="col">Empresa</th><th scope="col">Endereço</th><th scope="col">Telefone</th><th scope="col">Contato de emergência</th><th scope="col">Ações</th></tr></thead><tbody id="emp-rows"><tr><td colspan="6" class="empty-state">Aguardando consulta autenticada. Nenhum empregado fictício será exibido.</td></tr></tbody></table></div>
+ </section>
+ <section class="panel" style="margin-top:16px">
+  <div class="section-head" style="margin-top:0"><h2>Regras e pontos de atenção</h2><span>Contrato Shadow</span></div>
+  <ul style="margin:0;padding-left:18px;color:var(--soft);font-size:12px;line-height:1.9">
+   <li>Admin e Operador possuem leitura, cadastro, edição e exclusão no catálogo atual de permissões.</li>
+   <li>A API exige nome e cargo; os cinco campos restantes são opcionais e as strings são aparadas.</li>
+   <li>A exclusão é física; não foi identificada trilha de desligamento, retenção ou proteção contra referências.</li>
+   <li>O PostgreSQL incrementa versão interna na edição, mas a API não exige If-Match/ETag.</li>
+   <li>Não há filtros, paginação ou busca no endpoint de listagem atual.</li>
+  </ul>
+ </section>`;
+}
 function moradoresView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
@@ -569,6 +606,7 @@ function openModule(id){
  if(id==="condominio"){location.hash=id;condominioView();return}
  if(id==="moradores"){location.hash=id;moradoresView();return}
  if(id==="fornecedores"){location.hash=id;fornecedoresView();return}
+ if(id==="empregados"){location.hash=id;empregadosView();return}
   if(id==="plano_contas"){location.hash=id;planoContasView();return}
   if(id==="financeiro"){location.hash=id;financeiroView();return}
  if(id==="contas_bancarias"){location.hash=id;contasBancariasView();return}
