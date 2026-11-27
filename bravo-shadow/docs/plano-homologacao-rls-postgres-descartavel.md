@@ -108,3 +108,21 @@ Até aprovação explícita e homologação isolada:
 - não habilitar dual-write, cutover ou qualquer fluxo de migração operacional.
 
 **Conclusão:** o repositório possui uma base útil de testes de integridade do ledger e uma inspeção de catálogo somente leitura. A prova de RLS e privilégios efetivos continua pendente; este documento organiza a próxima homologação sem antecipar alterações de segurança no banco.
+
+## 6. Decisão de arquitetura pendente: runtime de revisão x auditoria
+
+A documentação existente descreve dois escopos que não devem ser confundidos:
+
+- **Runtime de revisão:** precisa consultar lotes/decisões/eventos e, conforme o desenho atual, inserir eventos de revisão. O serviço de revisão usa um adaptador próprio e permanece desativado.
+- **Auditoria técnica geral:** o backend possui um `PostgresAuditSink` para eventos de auditoria da aplicação, com escrita transacional. Esse fluxo não é automaticamente o mesmo que o ledger de revisão humana.
+
+Antes da Fase B, a matriz deve declarar explicitamente se haverá:
+1. uma role privada de runtime para o ledger de revisão, com SELECT no escopo aprovado e INSERT somente em `migration_review_events`; e
+2. uma role distinta para o sink de auditoria geral, com INSERT somente na tabela de auditoria técnica; ou
+3. um desenho consolidado, acompanhado de justificativa de menor privilégio e testes que provem que um fluxo não consegue ler ou alterar os dados do outro.
+
+Não criar simultaneamente roles `runtime`, `writer` e `reader` apenas porque aparecem em documentos diferentes. Primeiro mapear cada adaptador real, tabela e operação. Uma role de leitura separada só é necessária se existir consumidor de leitura independente; não presumir sua necessidade.
+
+**Recomendação para revisão, ainda não aprovada nem implementada:** manter owner/migrator separado de todas as credenciais de processo; manter o runtime de revisão com SELECT nas tabelas do ledger e INSERT apenas em events; manter a auditoria técnica geral com credencial de escrita isolada, caso o sink seja habilitado em PostgreSQL. A role e os grants finais dependem da confirmação dos adaptadores e de revisão explícita.
+
+Esta decisão é um bloqueio de desenho para a Fase B. Nenhuma role, membership, policy ou grant é criada por esta documentação.
