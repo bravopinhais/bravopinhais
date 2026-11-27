@@ -39,7 +39,7 @@ def build_test_client(principal: AuthenticatedPrincipal | None = None, audit_sin
 
     @router.get(
         "/protected",
-        dependencies=[Depends(require_capability_dependency("financeiro:read"))],
+        dependencies=[Depends(require_capability_dependency("usuarios:read"))],
     )
     async def protected_resource():
         return {"ok": True}
@@ -53,14 +53,14 @@ def test_protected_route_returns_401_without_identity():
     assert response.status_code == 401
 
 
-def test_protected_route_returns_403_for_operator_until_matrix_is_approved():
+def test_protected_route_returns_403_for_operator_user_administration():
     response = build_test_client(make_principal("Operador")).get("/protected")
     assert response.status_code == 403
 
 
-def test_protected_route_returns_403_for_admin_until_matrix_is_approved():
+def test_protected_route_allows_admin_user_administration():
     response = build_test_client(make_principal("Admin")).get("/protected")
-    assert response.status_code == 403
+    assert response.status_code == 200
 
 
 def test_protected_route_rejects_unknown_capability_even_for_admin():
@@ -97,7 +97,7 @@ class RecordingAuditSink:
 
 def test_authenticated_permission_denial_is_audited_without_personal_payload():
     sink = RecordingAuditSink()
-    principal = make_principal("Admin")
+    principal = make_principal("Operador")
 
     response = build_test_client(principal, sink).get("/protected")
 
@@ -105,7 +105,7 @@ def test_authenticated_permission_denial_is_audited_without_personal_payload():
     assert len(sink.events) == 1
     event = sink.events[0]
     assert event.actor_subject == principal.subject
-    assert event.action == "financeiro:read"
+    assert event.action == "usuarios:read"
     assert event.entity_type == "authorization"
     assert event.entity_id is None
     assert event.outcome == "denied"
@@ -117,7 +117,7 @@ def test_audit_failure_does_not_turn_permission_denial_into_success(caplog):
     sink = RecordingAuditSink(fail=True)
 
     with caplog.at_level("ERROR", logger="bravo.audit.authorization"):
-        response = build_test_client(make_principal("Admin"), sink).get("/protected")
+        response = build_test_client(make_principal("Operador"), sink).get("/protected")
 
     assert response.status_code == 403
     assert "req_test_authorization" in caplog.text
@@ -188,7 +188,7 @@ def test_dependency_rejects_missing_or_malformed_principal_without_audit_crash()
 
     @application.get(
         "/protected-none",
-        dependencies=[Depends(require_capability_dependency("financeiro:read"))],
+        dependencies=[Depends(require_capability_dependency("usuarios:read"))],
     )
     async def protected_none():
         return {"ok": True}
