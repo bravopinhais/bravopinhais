@@ -14,7 +14,7 @@ O CRUD cadastral não pode atribuir ou modificar privilégios. Perfil e status s
 | GET `/api/v1/usuarios/{id}` | — | Consulta usuário; exige `usuarios:read` |
 | POST `/api/v1/usuarios` | `email, nome, loja?, cargo` | Cria sempre como `Operador` e `Ativo`; exige `usuarios:create` |
 | PUT `/api/v1/usuarios/{id}` | Um ou mais entre `nome, loja, cargo` | Atualiza somente cadastro; preserva e-mail, perfil e status; exige `usuarios:update` |
-| DELETE `/api/v1/usuarios/{id}` | — | Ainda é exclusão física legada; exige `usuarios:delete`; matriz de permissões continua fechada |
+| DELETE `/api/v1/usuarios/{id}` | — | Retorna 410 Gone; exclusão física bloqueada pela API |\n| POST `/api/v1/usuarios/{id}/desativar` | — | Marca `status=Inativo`, preserva o registro e grava auditoria na mesma transação; exige `usuarios:deactivate` |
 
 Os schemas cadastrais rejeitam campos extras. Assim, tentativa de enviar `perfil`, `status` ou substituir o `email` no PUT não faz parte do contrato e deve retornar erro de validação. No POST, perfil/status não são aceitos e o servidor define os valores iniciais seguros.
 
