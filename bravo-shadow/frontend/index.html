@@ -560,55 +560,135 @@ window.addEventListener("bravo:session-ended",()=>{
  empregadosApiClient=null;empregadosItems=[];empregadosRequestSequence++;empregadosRequestController?.abort();empregadosRequestController=null;empregadoEditingId=null;
  if(moduloAtual==="empregados")empregadosView();
 });
+let moradoresApiClient=null,moradoresItems=[],moradoresRequestSequence=0,moradoresRequestController=null,moradorEditingId=null;
+function moradoresCan(action){return hasBravoCapability("moradores:"+action);}
+function moradoresSetStatus(message,kind=""){const node=document.getElementById("mor-status");if(node){node.textContent=message;node.className="api-status"+(kind?" "+kind:"");}}
+function moradoresApplyPermissions(){
+ const form=document.getElementById("mor-form");if(!form)return;
+ const allowed=moradorEditingId?moradoresCan("update"):moradoresCan("create");
+ form.querySelectorAll("input").forEach(input=>input.disabled=!allowed);
+ const save=form.querySelector('button[type="submit"]');if(save){save.disabled=!allowed;save.textContent=moradorEditingId?"Salvar alterações":"Salvar morador";}
+ const block=document.getElementById("mor-filter-block"),search=document.getElementById("mor-filter-search"),filter=document.getElementById("mor-filter-submit");
+ if(block)block.disabled=!moradoresCan("read");if(search)search.disabled=!moradoresCan("read");if(filter)filter.disabled=!moradoresCan("read");
+}
+function moradoresRenderRows(){
+ const tbody=document.getElementById("mor-rows");if(!tbody)return;tbody.replaceChildren();
+ if(!moradoresItems.length){const row=document.createElement("tr"),cell=document.createElement("td");cell.colSpan=4;cell.className="empty-state";cell.textContent="Nenhum morador encontrado para os filtros informados.";row.append(cell);tbody.append(row);return;}
+ for(const item of moradoresItems){
+  const row=document.createElement("tr");
+  for(const value of [item.bloco,item.apartamento,item.nome]){const cell=document.createElement("td");cell.textContent=value;row.append(cell);}
+  const actions=document.createElement("td"),wrap=document.createElement("div");wrap.className="row-actions";
+  if(moradoresCan("update")){const edit=document.createElement("button");edit.type="button";edit.className="action-btn";edit.textContent="Ver / editar";edit.addEventListener("click",()=>void moradoresStartEdit(item.id));wrap.append(edit);}
+  actions.append(wrap);row.append(actions);tbody.append(row);
+ }
+}
+async function moradoresLoad(api){
+ const sequence=++moradoresRequestSequence;moradoresRequestController?.abort();moradoresRequestController=new AbortController();
+ const bloco=(document.getElementById("mor-filter-block")?.value||"").trim(),busca=(document.getElementById("mor-filter-search")?.value||"").trim();
+ const params=new URLSearchParams();if(bloco)params.set("bloco",bloco);if(busca)params.set("busca",busca);
+ const path="/api/v1/moradores"+(params.toString()?"?"+params.toString():"");
+ moradoresSetStatus("Consultando moradores autorizados…");
+ try{
+  const data=await api.get(path,{signal:moradoresRequestController.signal});
+  if(sequence!==moradoresRequestSequence||moduloAtual!=="moradores")return;
+  if(!Array.isArray(data)||data.some(item=>!item||["id","bloco","apartamento","nome"].some(key=>typeof item[key]!=="string")))throw new Error("A API retornou uma lista de moradores inválida.");
+  moradoresItems=data;moradoresRenderRows();moradoresSetStatus(data.length+" morador(es) localizado(s) · lista sem CPF/RG ou contatos","ok");
+ }catch(error){
+  if(error?.name==="AbortError"||sequence!==moradoresRequestSequence)return;
+  moradoresItems=[];moradoresRenderRows();moradoresSetStatus(error?.status===403?"Seu perfil não possui moradores:read.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível consultar moradores."),"err");
+ }
+}
+async function moradoresStartEdit(id){
+ if(!moradoresCan("update")||!moradoresApiClient)return;
+ moradoresSetStatus("Carregando detalhes do cadastro…");
+ try{
+  const item=await moradoresApiClient.get("/api/v1/moradores/"+encodeURIComponent(id));
+  if(!item||item.id!==id)throw new Error("A API retornou um cadastro inválido.");
+  moradorEditingId=id;
+  for(const key of ["bloco","apartamento","nome","email","telefone","cpf","petNome","vagaGaragem"]){const input=document.querySelector('[name="mor-'+key+'"]');if(input)input.value=item[key]||"";}
+  const cancel=document.getElementById("mor-cancel");if(cancel)cancel.hidden=false;
+  document.getElementById("mor-form-title").textContent="Detalhes / editar morador";
+  moradoresApplyPermissions();moradoresSetStatus("Detalhes carregados. CPF/RG e contatos são dados pessoais; revise antes de salvar.");
+  document.getElementById("mor-name").focus();
+ }catch(error){moradoresSetStatus(error?.status===403?"Acesso negado aos detalhes do morador.":(error?.message||"Não foi possível carregar o cadastro."),"err");}
+}
+function moradoresResetForm(){
+ const form=document.getElementById("mor-form");if(!form)return;form.reset();moradorEditingId=null;
+ const cancel=document.getElementById("mor-cancel");if(cancel)cancel.hidden=true;
+ const title=document.getElementById("mor-form-title");if(title)title.textContent="Novo morador / unidade";
+ moradoresApplyPermissions();
+}
+async function moradoresSave(event){
+ event.preventDefault();if(!moradoresApiClient)return;
+ const editing=Boolean(moradorEditingId),action=editing?"update":"create";
+ if(!moradoresCan(action)){moradoresSetStatus("Seu perfil não possui autorização para esta operação.","err");return;}
+ const data={};for(const key of ["bloco","apartamento","nome","email","telefone","cpf","petNome","vagaGaragem"]){const input=document.querySelector('[name="mor-'+key+'"]');data[key]=(input?.value||"").trim();}
+ if(!data.bloco||!data.apartamento||!data.nome){moradoresSetStatus("Bloco, apartamento e nome são obrigatórios.","err");return;}
+ const save=document.querySelector('#mor-form button[type="submit"]');if(save)save.disabled=true;
+ moradoresSetStatus(editing?"Salvando alterações…":"Cadastrando morador…");
+ try{
+  if(editing)await moradoresApiClient.put("/api/v1/moradores/"+encodeURIComponent(moradorEditingId),data);
+  else await moradoresApiClient.post("/api/v1/moradores",data);
+  moradoresResetForm();await moradoresLoad(moradoresApiClient);
+  moradoresSetStatus(editing?"Cadastro atualizado.":"Morador cadastrado com sucesso.","ok");
+ }catch(error){moradoresSetStatus(error?.status===403?"A API negou a operação: permissão insuficiente.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível salvar o cadastro."),"err");}
+ finally{moradoresApplyPermissions();}
+}
 function moradoresView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
-  <div class="api-toolbar"><div><strong style="font-size:13px">Moradores & Unidades</strong><div class="api-status" id="mor-status" role="status" aria-live="polite">Aguardando autenticação Google e API HTTPS Shadow</div></div><span class="tag">Cadastro residencial</span></div>
-  <div class="notice" style="margin:14px 0 18px"><div class="notice-icon">⌂</div><div><strong>Cadastro e vínculo com unidade</strong><p>Organize moradores por bloco e apartamento, mantendo contato, documento, pet e vaga de garagem. CPF/RG e contatos são dados pessoais: acesso e exportação devem respeitar as permissões do Bravo.</p></div></div>
-  <div class="section-head"><h2>Novo morador / unidade</h2><span>Campos do cadastro original</span></div>
+  <div class="api-toolbar"><div><strong style="font-size:13px">Moradores & Unidades</strong><div class="api-status" id="mor-status" role="status" aria-live="polite">Aguardando sessão Google e API Shadow</div></div><span class="tag">Cadastro residencial</span></div>
+  <div class="notice" style="margin:14px 0 18px"><div class="notice-icon">⌂</div><div><strong>Cadastro e vínculo com unidade</strong><p>O cadastro mantém bloco, apartamento, nome, e-mail, telefone, CPF/RG, pet e vaga. A tabela não carrega documentos nem contatos; os detalhes são consultados individualmente ao abrir um cadastro.</p></div></div>
+  <div class="section-head"><h2 id="mor-form-title">Novo morador / unidade</h2><span>Campos do cadastro original</span></div>
   <form class="api-form" id="mor-form" style="grid-template-columns:repeat(2,minmax(0,1fr))">
-   <div class="field"><label for="mor-bloco">Bloco</label><input id="mor-bloco" name="bloco" required maxlength="80" disabled></div>
-   <div class="field"><label for="mor-ap">Apartamento</label><input id="mor-ap" name="apartamento" required maxlength="80" disabled></div>
-   <div class="field"><label for="mor-name">Nome completo</label><input id="mor-name" name="nome" required maxlength="160" disabled></div>
-   <div class="field"><label for="mor-email">E-mail</label><input id="mor-email" name="email" type="email" maxlength="254" disabled></div>
-   <div class="field"><label for="mor-phone">Telefone / WhatsApp</label><input id="mor-phone" name="telefone" maxlength="40" disabled></div>
-   <div class="field"><label for="mor-cpf">CPF / RG</label><input id="mor-cpf" name="cpf" maxlength="40" disabled></div>
-   <div class="field"><label for="mor-pet">Pet (espécie / nome)</label><input id="mor-pet" name="petNome" maxlength="120" disabled></div>
-   <div class="field"><label for="mor-garage">Vaga / estacionamento</label><input id="mor-garage" name="vagaGaragem" maxlength="80" disabled></div>
-   <div style="grid-column:1/-1;display:flex;justify-content:flex-end"><button type="button" class="action-btn primary" disabled>Salvar morador</button></div>
+   <div class="field"><label for="mor-bloco">Bloco</label><input id="mor-bloco" name="mor-bloco" required maxlength="80" disabled></div>
+   <div class="field"><label for="mor-ap">Apartamento</label><input id="mor-ap" name="mor-apartamento" required maxlength="80" disabled></div>
+   <div class="field"><label for="mor-name">Nome completo</label><input id="mor-name" name="mor-nome" required maxlength="160" disabled></div>
+   <div class="field"><label for="mor-email">E-mail</label><input id="mor-email" name="mor-email" type="email" maxlength="254" disabled></div>
+   <div class="field"><label for="mor-phone">Telefone / WhatsApp</label><input id="mor-phone" name="mor-telefone" maxlength="40" disabled></div>
+   <div class="field"><label for="mor-cpf">CPF / RG</label><input id="mor-cpf" name="mor-cpf" maxlength="40" disabled></div>
+   <div class="field"><label for="mor-pet">Pet (espécie / nome)</label><input id="mor-pet" name="mor-petNome" maxlength="120" disabled></div>
+   <div class="field"><label for="mor-garage">Vaga / estacionamento</label><input id="mor-garage" name="mor-vagaGaragem" maxlength="80" disabled></div>
+   <div style="grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px"><button type="button" id="mor-cancel" class="action-btn" hidden>Cancelar edição</button><button type="submit" class="action-btn primary" disabled>Salvar morador</button></div>
   </form>
-  <p class="form-hint">A API exige bloco, apartamento e nome. A gravação ficará bloqueada até integração do token Google como Bearer e revisão das regras de unidade/duplicidade.</p>
+  <p class="form-hint">Bloco, apartamento e nome são obrigatórios. CPF/RG permanece como texto, sem validação de formato no contrato atual.</p>
  </section>
  <section class="panel" style="margin-top:16px">
-  <div class="api-toolbar"><div><strong style="font-size:13px">Pesquisar e filtrar moradores</strong><div class="api-status">Filtros previstos: bloco, nome ou apartamento</div></div><span class="tag">Consulta</span></div>
+  <div class="api-toolbar"><div><strong style="font-size:13px">Pesquisar e filtrar moradores</strong><div class="api-status">Filtros da API: bloco e nome/apartamento</div></div><span class="tag">Consulta minimizada</span></div>
   <form class="api-form" id="mor-filter-form" style="grid-template-columns:repeat(2,minmax(0,1fr))">
    <div class="field"><label for="mor-filter-block">Bloco</label><input id="mor-filter-block" name="bloco" placeholder="Todos os blocos" disabled></div>
    <div class="field"><label for="mor-filter-search">Nome ou apartamento</label><input id="mor-filter-search" name="busca" placeholder="Pesquisar cadastro" disabled></div>
-   <div style="grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px"><button type="button" class="action-btn" disabled>Limpar filtros</button><button type="button" class="action-btn primary" disabled>Pesquisar</button></div>
+   <div style="grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px"><button type="button" id="mor-filter-clear" class="action-btn">Limpar filtros</button><button type="button" id="mor-filter-submit" class="action-btn primary" disabled>Pesquisar</button></div>
   </form>
-  <div class="data-table-wrap"><table class="data-table"><caption>Cadastro de moradores por unidade</caption><thead><tr><th scope="col">Bloco / Apartamento</th><th scope="col">Morador / E-mail</th><th scope="col">CPF / RG</th><th scope="col">Telefone</th><th scope="col">Pet</th><th scope="col">Vaga</th><th scope="col">Ações</th></tr></thead><tbody id="mor-rows"><tr><td colspan="7" class="empty-state">Aguardando consulta autenticada. Nenhum dado pessoal fictício será exibido.</td></tr></tbody></table></div>
-  <p class="form-hint">O backend atual filtra por bloco e por nome/apartamento. A pesquisa não contempla e-mail, telefone ou CPF.</p>
+  <div class="data-table-wrap"><table class="data-table"><caption>Moradores por unidade — sem CPF/RG e contatos</caption><thead><tr><th scope="col">Bloco</th><th scope="col">Apartamento</th><th scope="col">Morador</th><th scope="col">Ações</th></tr></thead><tbody id="mor-rows"><tr><td colspan="4" class="empty-state">Aguardando consulta autenticada. Nenhum dado fictício será exibido.</td></tr></tbody></table></div>
+  <p class="form-hint">A API retorna somente identificador, bloco, apartamento e nome nesta listagem. Os demais dados são obtidos por consulta individual autenticada.</p>
  </section>
  <section class="panel" style="margin-top:16px">
-  <div class="api-toolbar"><div><strong style="font-size:13px">Importação de moradores</strong><div class="api-status">CSV / TXT — recurso do sistema original</div></div><span class="tag">Importação em lote</span></div>
-  <div class="notice" style="margin:14px 0"><div class="notice-icon">⇧</div><div><strong>Importação protegida</strong><p>O legado reconhece cabeçalhos de bloco, apartamento/unidade, nome, e-mail, telefone, CPF/RG, pet e vaga. O envio está desabilitado até existir prévia, validação por linha, tratamento de duplicidades e confirmação do lote.</p></div></div>
-  <div class="api-form" style="grid-template-columns:minmax(0,1fr) auto;align-items:end">
-   <div class="field"><label for="mor-csv">Arquivo CSV ou TXT</label><input id="mor-csv" type="file" accept=".csv,.txt,text/csv,text/plain" disabled></div>
-   <button type="button" class="action-btn primary" disabled>Validar e importar</button>
-  </div>
-  <p class="form-hint">A rota `POST /api/v1/moradores/importar` recebe um lote JSON. O serviço atual não retorna erros por linha nem garante atomicidade do lote; não habilitar importação antes de corrigir esses pontos.</p>
+  <div class="api-toolbar"><div><strong style="font-size:13px">Importação de moradores</strong><div class="api-status">CSV / TXT — ainda indisponível</div></div><span class="tag">Importação em lote</span></div>
+  <div class="notice" style="margin:14px 0"><div class="notice-icon">⇧</div><div><strong>Importação mantida bloqueada</strong><p>O endpoint atual não limita tamanho do lote, não entrega erros por linha e não garante atomicidade. Não será chamado até existir prévia, validação, reconciliação de duplicidades e gravação transacional.</p></div></div>
+  <div class="api-form" style="grid-template-columns:minmax(0,1fr) auto;align-items:end"><div class="field"><label for="mor-csv">Arquivo CSV ou TXT</label><input id="mor-csv" type="file" accept=".csv,.txt,text/csv,text/plain" disabled></div><button type="button" class="action-btn primary" disabled>Validar e importar</button></div>
  </section>
- <section class="panel" style="margin-top:16px">
-  <div class="section-head" style="margin-top:0"><h2>Regras e lacunas identificadas</h2><span>Proteção de dados</span></div>
-  <ul style="margin:0;padding-left:18px;color:var(--soft);font-size:12px;line-height:1.9">
-   <li>Bloco, apartamento e nome são obrigatórios; demais campos são opcionais.</li>
-   <li>Não existe vínculo relacional com uma tabela de unidades nem restrição de unidade única no contrato inspecionado.</li>
-   <li>Exclusão é física e não foi identificada regra de retenção/histórico.</li>
-   <li>Listagem carrega a coleção inteira antes de filtrar; não há paginação.</li>
-   <li>O CPF/RG é armazenado como texto sem validação de formato, o que preserva o padrão legado, mas exige proteção de acesso.</li>
-  </ul>
- </section>`;
+ <section class="panel" style="margin-top:16px"><div class="section-head" style="margin-top:0"><h2>Limites e proteção de dados</h2><span>Contrato atual</span></div><ul style="margin:0;padding-left:18px;color:var(--soft);font-size:12px;line-height:1.9">
+  <li>A listagem da API retorna somente bloco, apartamento, nome e ID; CPF/RG e contatos ficam na consulta individual autenticada.</li>
+  <li>Não existe vínculo relacional com tabela de unidades nem restrição de unidade única; o sistema não presume ocupação exclusiva.</li>
+  <li>CPF/RG é armazenado como texto sem validação de formato ou unicidade.</li>
+  <li>Exclusão física continua sem botão na interface; retenção e histórico de desligamento ainda precisam ser definidos.</li>
+  <li>O endpoint não oferece paginação e os filtros atuais não incluem e-mail, telefone ou CPF.</li>
+ </ul></section>`;
+ document.getElementById("mor-form").addEventListener("submit",moradoresSave);
+ document.getElementById("mor-cancel").addEventListener("click",()=>{moradoresResetForm();moradoresSetStatus("Edição cancelada.");});
+ document.getElementById("mor-filter-submit").addEventListener("click",()=>{if(moradoresApiClient)void moradoresLoad(moradoresApiClient);});
+ document.getElementById("mor-filter-clear").addEventListener("click",()=>{document.getElementById("mor-filter-block").value="";document.getElementById("mor-filter-search").value="";if(moradoresApiClient)void moradoresLoad(moradoresApiClient);});
+ moradoresApplyPermissions();if(moradoresApiClient)void moradoresLoad(moradoresApiClient);
 }
+window.addEventListener("bravo:session-ready",event=>{
+ const api=event.detail?.api;if(!api||typeof api.get!=="function")return;moradoresApiClient=api;
+ if(moduloAtual==="moradores")void moradoresLoad(api);moradoresApplyPermissions();
+});
+window.addEventListener("bravo:session-ended",()=>{
+ moradoresApiClient=null;moradoresItems=[];moradoresRequestSequence++;moradoresRequestController?.abort();moradoresRequestController=null;moradorEditingId=null;
+ if(moduloAtual==="moradores")moradoresView();
+});
 function planoContasView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
