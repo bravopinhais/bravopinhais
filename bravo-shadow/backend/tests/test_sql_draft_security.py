@@ -38,7 +38,7 @@ def test_schema_access_is_revoked_from_public_and_supabase_api_roles():
 
 
 def test_draft_does_not_create_grants_or_permissive_policies():
-    sql = re.sub(r"--[^\\n]*", "", _sql()).lower()
+    sql = re.sub(r"--[^\n]*", "", _sql()).lower()
 
     assert not re.search(r"\bgrant\s+", sql)
     assert not re.search(r"\bcreate\s+policy\s+", sql)
