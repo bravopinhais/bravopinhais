@@ -32,6 +32,7 @@ jobs:
   container-build:
     name: Docker / build de demonstração
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Baixar repositório
         uses: actions/checkout@v6
@@ -58,6 +59,7 @@ jobs:
   backend-tests:
     name: Backend / Python 3.11 + PostgreSQL descartável
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     services:
       postgres:
         image: postgres:16
