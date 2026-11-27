@@ -169,3 +169,45 @@ Antes de conceder privilégios, será necessário decidir se o backend usará um
 **Decisão recomendada para a próxima revisão:** não criar ainda roles writer/reader independentes para auditoria. Primeiro fechar a fronteira de conexão: (a) uma role única de API, com grants mínimos agregados e RLS apropriada, ou (b) múltiplas connection factories com transação coordenada/atômica para operações que escrevem negócio e auditoria. A opção (b) não deve ser implementada sem projeto transacional específico. A role do ledger de revisão permanece separada e inativa até existir adaptador efetivamente conectado.
 
 Nenhuma fábrica de conexão foi alterada e nenhuma role ou permissão foi criada nesta etapa.
+
+## 8. Matriz CRUD observada nos adaptadores atuais
+
+Esta matriz foi extraída dos métodos SQL dos repositórios PostgreSQL. Ela representa o que o código tenta executar hoje; não representa grants concedidos nem autorização de negócio. `SELECT` inclui listagem, busca, verificação de existência e consultas de referência.
+
+| Tabela | SELECT | INSERT | UPDATE | DELETE | Observação |
+|---|:---:|:---:|:---:|:---:|---|
+| `plano_contas` | Sim | Sim | Sim | Sim | Atualização também usa controle otimista de versão. |
+| `financeiro` | Sim | Sim | Sim | Sim | Consulta referências do plano de contas. |
+| `formas_monetarias` | Sim | Sim | Sim | Sim | CRUD convencional. |
+| `moradores` | Sim | Sim | Sim | Sim | CRUD convencional. |
+| `fornecedores` | Sim | Sim | Sim | Sim | CRUD convencional. |
+| `empregados` | Sim | Sim | Sim | Sim | CRUD convencional. |
+| `contas_bancarias` | Sim | Sim | Sim | Sim | CRUD convencional. |
+| `condominio` | Sim | Sim | Sim | Não | O adaptador não oferece exclusão. |
+| `conselheiros` | Sim | Sim | Sim | Sim | CRUD convencional. |
+| `categorias` | Sim | Sim | Sim | Sim | Exclusão usa helper compartilhado com verificação de referências. |
+| `motivos_acerto` | Sim | Sim | Sim | Sim | Exclusão usa helper compartilhado com verificação de referências. |
+| `documentos` | Sim | Sim | Sim | Sim | Exclusão usa helper compartilhado; há verificação de vínculo com categoria. |
+| `estoque` | Sim | Sim | Sim | Sim | Edição bloqueia alteração direta do saldo após movimentação; exclusão verifica referências. |
+| `acertos_estoque` | Sim | Sim | Não | Não | Histórico imutável: edição/exclusão são recusadas pela camada Python. |
+| `usuarios` | Sim | Sim | Sim | Não | Exclusão física retorna HTTP 410; desativação e alteração administrativa usam UPDATE e lock de tabela. |
+| `audit_events` | Não | Sim | Não | Não | Sink oferece somente INSERT; não implementa leitura. |
+
+### Leitura de segurança da matriz
+
+1. **A role única de API, se escolhida, não pode receber `DELETE` irrestrito em todas as tabelas.** `condominio`, `acertos_estoque`, `usuarios` e `audit_events` não necessitam de DELETE conforme o código atual.
+2. **`acertos_estoque` requer INSERT e SELECT, sem UPDATE/DELETE.** O movimento é histórico; a alteração de saldo ocorre no fluxo transacional que atualiza `estoque` e insere o acerto.
+3. **`audit_events` requer INSERT para o sink.** O sink não precisa de SELECT/UPDATE/DELETE. A leitura administrativa de auditoria, se vier a existir, deverá ser desenhada como consumidor separado e aprovado.
+4. **`usuarios` requer SELECT/INSERT/UPDATE e capacidade de lock compatível com as operações administrativas atuais.** A permissão SQL de DELETE não é necessária. O lock `SHARE ROW EXCLUSIVE` deve ser incluído no teste de compatibilidade de privilégios; não presumir que grants de tabela o resolvam.
+5. **As demais tabelas apresentam CRUD no código.** Isso não significa que todo usuário do sistema possa executar todas as operações: a camada de autorização HTTP continua sendo uma fronteira independente e atualmente permanece fechada por padrão.
+6. **Privilégios de schema, sequences, funções, ownership, memberships e RLS ainda precisam ser verificados.** A matriz não autoriza `GRANT ALL`, ownership ao runtime, `BYPASSRLS`, nem memberships em roles privilegiadas.
+
+### Lacunas antes de transformar a matriz em SQL
+
+- Confirmar no DDL final se os IDs são fornecidos pela aplicação ou gerados por sequences; conceder `USAGE` em sequences somente onde necessário.
+- Inspecionar triggers, funções, views, foreign keys e cascatas que possam exigir privilégios indiretos.
+- Testar `SET ROLE`, memberships herdadas, owner bypass, `BYPASSRLS`, RLS habilitada/forçada e acesso por `PUBLIC`, `anon`, `authenticated` e `service_role`.
+- Testar cada operação permitida e negada com conexões independentes por role no PostgreSQL descartável, inclusive rollback de auditoria e desativação de usuário.
+- Resolver o lock de `usuarios` e a atomicidade entre atualização cadastral e INSERT em `audit_events` antes de qualquer separação de credenciais.
+
+**Status:** matriz de código documentada; matriz de privilégios do banco ainda não aprovada. Nenhum DDL, grant, role, policy ou migration foi executado nesta etapa.
