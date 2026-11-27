@@ -33,3 +33,58 @@ jobs:
           node-version: 22
       - name: Run isolated Worker smoke tests
         run: node --test
+
+  local-runtime:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bravo-shadow/deploy/cloudflare-worker
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Wrangler
+        run: npm install --no-audit --no-fund
+      - name: Start Worker locally (no deployment)
+        run: |
+          npx wrangler dev --local --ip 127.0.0.1 --port 8787 > /tmp/bravo-wrangler.log 2>&1 &
+          echo $! > /tmp/bravo-wrangler.pid
+          for attempt in $(seq 1 30); do
+            if curl --silent --fail http://127.0.0.1:8787/api/v1/health > /tmp/bravo-health.json; then
+              break
+            fi
+            sleep 2
+          done
+          if [ ! -s /tmp/bravo-health.json ]; then
+            cat /tmp/bravo-wrangler.log
+            exit 1
+          fi
+          node --input-type=module -e '
+            import fs from "node:fs";
+            const health = JSON.parse(fs.readFileSync("/tmp/bravo-health.json", "utf8"));
+            if (health.status !== "ok" || health.service !== "bravo-shadow-auth-proof" || health.storage !== "none") {
+              throw new Error("Resposta de saúde inesperada: " + JSON.stringify(health));
+            }
+          '
+      - name: Verify auth gate and CORS in local runtime
+        run: |
+          auth_status=$(curl --silent --output /tmp/bravo-auth.json --write-out "%{http_code}" http://127.0.0.1:8787/api/v1/auth/me)
+          test "$auth_status" = "401"
+          allowed_status=$(curl --silent --output /dev/null --write-out "%{http_code}" -X OPTIONS \
+            -H "Origin: https://bravopinhais.github.io" http://127.0.0.1:8787/api/v1/auth/me)
+          test "$allowed_status" = "204"
+          denied_status=$(curl --silent --output /dev/null --write-out "%{http_code}" -X OPTIONS \
+            -H "Origin: https://example.invalid" http://127.0.0.1:8787/api/v1/auth/me)
+          test "$denied_status" = "403"
+      - name: Show local runtime logs on failure
+        if: failure()
+        run: cat /tmp/bravo-wrangler.log
+      - name: Stop local Worker
+        if: always()
+        run: |
+          if [ -f /tmp/bravo-wrangler.pid ]; then
+            kill "$(cat /tmp/bravo-wrangler.pid)" 2>/dev/null || true
+          fi
