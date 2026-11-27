@@ -98,11 +98,14 @@ usuarios:{name:"Gestão de Usuários",title:"Gestão de Usuários",desc:"Perfis 
 };
 const dashboardMarkup=document.getElementById("view").innerHTML;
 const API_BASE="/api/v1";
+const IS_STATIC_PREVIEW=location.hostname.endsWith("github.io");
+if(IS_STATIC_PREVIEW){const env=document.querySelector(".env");if(env)env.innerHTML='<span class="dot"></span> PREVIEW ESTÁTICO · GITHUB PAGES';}
 let formasMonetarias=[];
 let formaEmEdicao=null;
 let moduloAtual="dashboard";
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
 async function apiRequest(path,options={}){
+ if(IS_STATIC_PREVIEW)throw new Error("Preview visual do GitHub Pages: a API FastAPI não está hospedada neste endereço.");
  const response=await fetch(API_BASE+path,{...options,headers:{"Content-Type":"application/json",...(options.headers||{})}});
  if(!response.ok){let detail="Não foi possível concluir a operação.";try{const body=await response.json();detail=body.detail||detail}catch{}throw new Error(typeof detail==="string"?detail:JSON.stringify(detail))}
  if(response.status===204)return null;
@@ -110,6 +113,7 @@ async function apiRequest(path,options={}){
 }
 function formasView(){
  const view=document.getElementById("view");
+ if(IS_STATIC_PREVIEW){view.innerHTML=`<section class="panel module-view"><div><div class="big-icon">◉</div><span class="eyebrow">Preview estático · GitHub Pages</span><h2>Formas Monetárias</h2><p>Esta publicação permite avaliar o visual e a navegação. O GitHub Pages não executa a API FastAPI; por isso, cadastro, edição e exclusão ficam indisponíveis neste preview.</p><span class="tag">API não conectada · Nenhuma operação enviada</span></div></section>`;return}
  view.innerHTML=`<section class="panel">
   <div class="api-toolbar"><div><strong style="font-size:13px">Cadastro de formas monetárias</strong><div class="api-status" id="formas-status">Carregando dados da API...</div></div><button class="action-btn" data-action="reload">↻ Atualizar</button></div>
   <form class="api-form" id="forma-form">
