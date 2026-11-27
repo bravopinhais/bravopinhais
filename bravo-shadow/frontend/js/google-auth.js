@@ -151,7 +151,10 @@ export async function initializeGoogleSession({
         !user ||
         typeof user.email !== "string" ||
         user.status !== "Ativo" ||
-        typeof user.profile !== "string"
+        typeof user.profile !== "string" ||
+        !Array.isArray(user.capabilities) ||
+        user.capabilities.some((capability) => typeof capability !== "string" || !capability.trim()) ||
+        new Set(user.capabilities).size !== user.capabilities.length
       ) {
         throw new Error("A API não confirmou um usuário ativo cadastrado no Bravo.");
       }
@@ -163,6 +166,7 @@ export async function initializeGoogleSession({
         email: user.email,
         profile: user.profile,
         status: user.status,
+        capabilities: Object.freeze([...user.capabilities]),
       });
 
       onAuthenticated({
