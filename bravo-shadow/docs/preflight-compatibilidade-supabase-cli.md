@@ -37,16 +37,16 @@ bash scripts/homologar-local.sh
 ```
 
 O script:
-1. exige a configuração local `bravo-shadow-local`;
-2. interrompe se detectar marcador de projeto Supabase vinculado ou bloco de remoto;
-3. exige Supabase CLI e Docker disponíveis e Docker iniciado;
-4. inicia a stack local com `supabase start`;
-5. recria **apenas o banco local** e aplica as migrations com
-   `supabase db reset` (sem `--linked`);
-6. consulta o histórico com `supabase migration list`.
+1. exige que a branch Git atual seja exatamente `bravo-shadow`;
+2. exige a configuração local `bravo-shadow-local`;
+3. interrompe se detectar marcador de projeto Supabase vinculado ou bloco de remoto;
+4. exige Supabase CLI e Docker disponíveis e Docker iniciado;
+5. inicia a stack local com `supabase start`;
+6. recria **apenas o banco local** com `supabase db reset --local`;
+7. consulta o histórico com `supabase migration list --local`.
 
 O script não instala ferramentas, não executa `supabase link`,
-`supabase db push`, não usa credenciais remotas e não importa dados. Se uma
+`supabase db push), não usa credenciais remotas e não importa dados. Se uma
 verificação de segurança falhar, ele para sem tentar corrigir vínculo ou
 configuração automaticamente.
 
@@ -65,5 +65,5 @@ corrigir os arquivos. Os testes automatizados não foram executados.
 ## Proibições permanentes deste fluxo
 
 Não executar `supabase link`, `supabase db push`,
-`supabase db reset --linked`, nem fornecer credencial remota.
+`supabase db reset --linked), nem fornecer credencial remota.
 Não importar dados reais, não criar projeto hospedado e não publicar Shadow.
