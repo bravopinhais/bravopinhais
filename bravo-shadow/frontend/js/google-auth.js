@@ -14,17 +14,36 @@ function loadGoogleIdentityServices() {
   googleSdkPromise = new Promise((resolve, reject) => {
     const existing = document.querySelector('script[data-bravo-google-identity]');
     const script = existing || document.createElement("script");
+    let settled = false;
 
-    const fail = () => {
-      googleSdkPromise = undefined;
-      reject(new Error("Não foi possível carregar a autenticação Google."));
+    const cleanup = () => {
+      clearTimeout(timeoutId);
+      script.removeEventListener("load", onLoad);
+      script.removeEventListener("error", onError);
     };
+    const finish = (error) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      if (error) {
+        googleSdkPromise = undefined;
+        reject(error);
+      } else {
+        resolve(window.google.accounts.id);
+      }
+    };
+    const onLoad = () => {
+      if (window.google?.accounts?.id) finish();
+      else finish(new Error("O Google Identity Services carregou sem disponibilizar a API."));
+    };
+    const onError = () => finish(new Error("Não foi possível carregar a autenticação Google."));
+    const timeoutId = setTimeout(
+      () => finish(new Error("Tempo esgotado ao carregar a autenticação Google.")),
+      15000,
+    );
 
-    script.addEventListener("load", () => {
-      if (window.google?.accounts?.id) resolve(window.google.accounts.id);
-      else fail();
-    }, { once: true });
-    script.addEventListener("error", fail, { once: true });
+    script.addEventListener("load", onLoad);
+    script.addEventListener("error", onError);
 
     if (!existing) {
       script.src = "https://accounts.google.com/gsi/client";
@@ -48,6 +67,9 @@ function validateApiBase(apiBase) {
   if (url.protocol !== "https:" && !(url.protocol === "http:" && localHost)) {
     throw new Error("A API de autenticação precisa usar HTTPS.");
   }
+  if (url.username || url.password || url.search || url.hash) {
+    throw new Error("A URL da API não pode conter credenciais, parâmetros ou fragmentos.");
+  }
   return url.href.replace(/\/+$/, "");
 }
 
@@ -63,8 +85,11 @@ export async function initializeGoogleSession({
   onAuthenticated,
   onError = () => {},
 }) {
-  if (!clientId || typeof clientId !== "string") {
-    throw new Error("O Client ID público do Google não foi configurado.");
+  if (
+    typeof clientId !== "string" ||
+    !/^\d+-[a-z0-9-]+\.apps\.googleusercontent\.com$/i.test(clientId.trim())
+  ) {
+    throw new Error("O Client ID público do Google não foi configurado corretamente.");
   }
   if (!(buttonElement instanceof HTMLElement)) {
     throw new Error("O espaço do botão Google não foi encontrado.");
@@ -75,8 +100,13 @@ export async function initializeGoogleSession({
   let idToken = null;
   let currentUser = null;
   let disposed = false;
+  let authAttempt = 0;
+  let activeRequest = null;
 
   const clearSession = () => {
+    authAttempt += 1;
+    activeRequest?.abort();
+    activeRequest = null;
     idToken = null;
     currentUser = null;
     googleId.disableAutoSelect();
@@ -90,6 +120,13 @@ export async function initializeGoogleSession({
       return;
     }
 
+    const attempt = ++authAttempt;
+    activeRequest?.abort();
+    activeRequest = new AbortController();
+    const requestController = activeRequest;
+    idToken = null;
+    currentUser = null;
+
     try {
       const response = await fetch(apiRoot + "/api/v1/auth/me", {
         method: "GET",
@@ -97,6 +134,7 @@ export async function initializeGoogleSession({
         cache: "no-store",
         credentials: "omit",
         referrerPolicy: "no-referrer",
+        signal: requestController.signal,
       });
 
       if (!response.ok) {
@@ -118,7 +156,8 @@ export async function initializeGoogleSession({
         throw new Error("A API não confirmou um usuário ativo cadastrado no Bravo.");
       }
 
-      if (disposed) return;
+      if (disposed || attempt !== authAttempt) return;
+      activeRequest = null;
       idToken = credential;
       currentUser = Object.freeze({
         email: user.email,
@@ -133,8 +172,11 @@ export async function initializeGoogleSession({
         signOut: clearSession,
       });
     } catch (error) {
+      if (disposed || attempt !== authAttempt) return;
       clearSession();
-      onError(error instanceof Error ? error : new Error("Falha na autenticação."));
+      if (error?.name !== "AbortError") {
+        onError(error instanceof Error ? error : new Error("Falha na autenticação."));
+      }
     }
   };
 
