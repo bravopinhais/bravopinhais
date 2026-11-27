@@ -42,7 +42,8 @@ class PostgresEstoqueRepository(_InventoryPostgresBase):
     _table = "bravo_shadow.estoque"
     _columns = (
         "id, item, quantidade, minimo, maximo, etiqueta, foto_nome, "
-        "foto_compactada_gzip, marca, linha, fabricante, data_cadastro"
+        "foto_compactada_gzip, marca, linha, fabricante, data_cadastro, "
+        "setor, unidade, valor_unitario, status, cor, foto_path"
     )
 
     @staticmethod
@@ -55,6 +56,8 @@ class PostgresEstoqueRepository(_InventoryPostgresBase):
             maximo=row[4], etiqueta=row[5], fotoNome=row[6],
             fotoCompactadaGzip=row[7], marca=row[8], linha=row[9],
             fabricante=row[10], dataCadastro=registered,
+            setor=row[12], unidade=row[13], valorUnitario=row[14],
+            status=row[15], cor=row[16], fotoPath=row[17],
         )
 
     def list(self) -> list[EstoqueItem]:
@@ -78,15 +81,17 @@ class PostgresEstoqueRepository(_InventoryPostgresBase):
         return (
             item.item, item.quantidade, item.minimo, item.maximo, item.etiqueta,
             item.fotoNome, item.fotoCompactadaGzip, item.marca, item.linha,
-            item.fabricante, item.dataCadastro or None,
+            item.fabricante, item.dataCadastro or None, item.setor, item.unidade,
+            item.valorUnitario, item.status, item.cor, item.fotoPath,
         )
 
     def add(self, item_id: str, item: EstoqueItem) -> None:
         self._query(
             f"INSERT INTO {self._table} "
             "(id, item, quantidade, minimo, maximo, etiqueta, foto_nome, "
-            "foto_compactada_gzip, marca, linha, fabricante, data_cadastro) "
-            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            "foto_compactada_gzip, marca, linha, fabricante, data_cadastro, "
+            "setor, unidade, valor_unitario, status, cor, foto_path) "
+            "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
             (item_id, *self._values(item)),
         )
 
@@ -125,6 +130,8 @@ class PostgresEstoqueRepository(_InventoryPostgresBase):
                     f"UPDATE {self._table} SET item = %s, quantidade = %s, minimo = %s, "
                     "maximo = %s, etiqueta = %s, foto_nome = %s, foto_compactada_gzip = %s, "
                     "marca = %s, linha = %s, fabricante = %s, data_cadastro = %s, "
+                    "setor = %s, unidade = %s, valor_unitario = %s, status = %s, "
+                    "cor = %s, foto_path = %s, "
                     f"updated_at = now(), version = version + 1 WHERE id = %s",
                     (*values, item_id),
                 )
@@ -204,7 +211,7 @@ class PostgresAcertosEstoqueRepository(_InventoryPostgresBase):
         )
 
     def register_movement(
-        self, *, product_id: str, movement: Acerto, delta: int,
+        self, *, product_id: str, movement: Acerto, delta: Any,
         allow_negative: bool = False,
     ) -> Acerto:
         """Bloqueia o produto e grava saldo + histórico no mesmo commit."""
