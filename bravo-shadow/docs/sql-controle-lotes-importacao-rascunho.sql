@@ -195,10 +195,21 @@ FROM PUBLIC, anon, authenticated, service_role;
 -- 7. Não criar policies/grants usando service_role como atalho.
 -- 8. Interrupção em applying/applied sem prova conclusiva deve ir para
 --    needs_review, estado terminal. Nunca reabrir ou repetir o mesmo lote.
--- 9. Recovery exige evento append-only com revisor, justificativa, referência
+-- 9. Concorrência de recovery: dentro de uma única transação, primeiro bloquear
+--    a linha-pai em migration_batches com SELECT ... FOR UPDATE; validar status
+--    needs_review, source_system e manifest_hash; só então calcular
+--    COALESCE(MAX(sequence_no), 0) + 1 e inserir o evento. O lock deve ser
+--    mantido até COMMIT. A UNIQUE(batch_id, sequence_no) é a última barreira
+--    contra duplicidade, não substitui o lock. Se houver conflito, abortar a
+--    transação e recarregar o histórico; nunca sobrescrever evento existente.
+--    event_id é chave de idempotência global: em repetição, comparar todos os
+--    campos do evento existente; aceitar somente se forem idênticos, caso
+--    contrário rejeitar como conflito de idempotência. Nunca gerar nova
+--    sequência para mascarar uma repetição conflitante.
+-- 10. Recovery exige evento append-only com revisor, justificativa, referência
 --    e SHA-256 da evidência. O evento não muda status nem reabre o lote.
 --    confirmed_not_committed exige prova da ausência de commit;
 --    rollback_verified exige prova da reversão integral;
 --    partial_or_unknown mantém o bloqueio.
--- 10. Novo apply sempre exige novo lote/manifesto aprovado. Este arquivo
+-- 11. Novo apply sempre exige novo lote/manifesto aprovado. Este arquivo
 --     não cria nem altera tabelas funcionais do Bravo.
