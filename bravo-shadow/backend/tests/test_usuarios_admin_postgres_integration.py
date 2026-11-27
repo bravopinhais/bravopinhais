@@ -28,6 +28,7 @@ def _guard_test_database(url: str) -> None:
             "o banco descartável dedicado."
         )
     parsed = urlparse(url)
+    database = parsed.path.lstrip("/")
     if parsed.scheme not in {"postgres", "postgresql"}:
         raise RuntimeError("A URL de integração precisa usar PostgreSQL.")
     if parsed.hostname not in {"localhost", "127.0.0.1", "::1"}:
