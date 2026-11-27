@@ -70,7 +70,6 @@ def deactivate_user(
 ) -> None:
     get_service(request).deactivate(
         item_id,
-        actor_subject=principal.subject,
-        actor_email=principal.email,
+        actor=principal,
         request_id=getattr(request.state, "request_id", None),
     )
