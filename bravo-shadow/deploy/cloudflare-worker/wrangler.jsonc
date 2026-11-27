@@ -3,10 +3,10 @@
   "name": "bravo-shadow-auth-proof",
   "main": "src/index.js",
   "compatibility_date": "2026-11-27",
-  "workers_dev": true,
+  "workers_dev": false,
   "vars": {
     "GOOGLE_CLIENT_ID": "846780362249-mrg8k8hh8q9vcmmm4cbophuk4tcjdsu9.apps.googleusercontent.com",
-    "BRAVO_ALLOWED_ORIGIN": "https://bravopinhais.github.io",
+    "BRAVO_ALLOWED_ORIGIN": "https://shadow-preview.invalid",
     "BRAVO_SHADOW_USERS": "{}"
   }
 }
