@@ -279,3 +279,74 @@ A leitura conjunta de `storage.py`, `PostgresUnitOfWork`, dos adaptadores e dos 
 - Regressão: manter testes que verificam commit único, rollback em falha e idempotência de desativação.
 
 **Decisão pendente:** a fronteira atual favorece uma identidade SQL transacional comum para domínio e auditoria de usuário, ou uma arquitetura transacional redesenhada antes de separar credenciais. Não conceder grants adicionais nem alterar connection factories para antecipar essa decisão.
+
+
+## 11. Privilégios mínimos por operação e blast radius da role de API
+
+A matriz CRUD anterior descreve verbos por tabela, mas ainda é grosseira para aprovar grants. A leitura dos comandos SQL mostra que algumas operações precisam de subconjuntos diferentes de colunas e que outras dependem de regras de negócio que um grant comum não consegue expressar.
+
+### 11.1 Operações reais e escopo mínimo candidato
+
+| Fluxo | Leitura necessária | Escrita necessária | Limite que o grant não garante |
+|---|---|---|---|
+| Listar/consultar produtos | Colunas projetadas por `PostgresEstoqueRepository._columns` | Nenhuma | Não restringe quais produtos o usuário da aplicação pode consultar; isso depende da autorização da aplicação/RLS. |
+| Cadastrar produto | Nenhuma leitura explícita no INSERT | INSERT nas colunas fornecidas pelo adaptador: id, item, quantidade, minimo, maximo, etiqueta, foto_nome, foto_compactada_gzip, marca, linha, fabricante, data_cadastro | INSERT amplo permite criar produto com saldo inicial arbitrário; a regra de negócio precisa validar isso no serviço. |
+| Editar cadastro do produto | quantidade em `estoque`; existência de movimento em `acertos_estoque`; SELECT FOR UPDATE no produto | UPDATE de campos cadastrais e também quantidade, updated_at e version pelo SQL atual | O grant não consegue dizer “quantidade só pode ser alterada se ainda não houver movimentos”. Essa condição hoje está no código Python. |
+| Registrar movimento de estoque | SELECT quantidade e lock de linha em `estoque` | UPDATE de quantidade, updated_at, version em `estoque`; INSERT em `acertos_estoque` | A role que pode atualizar quantidade diretamente também pode tentar fazê-lo fora do fluxo de movimento. O grant não obriga o UPDATE a estar acompanhado do INSERT histórico. |
+| Consultar histórico de estoque | Colunas de `acertos_estoque` usadas pela listagem/busca | Nenhuma | SELECT amplo permite leitura do histórico inteiro à identidade SQL; escopo por usuário/loja exige RLS ou autorização no serviço. |
+| Criar usuário | Nenhuma leitura explícita no INSERT | INSERT em id, email, nome, loja, cargo, perfil, status | INSERT direto pode criar usuário com perfil/status arbitrário se o serviço não validar a operação. |
+| Editar cadastro de usuário | SELECT usado por listagem/busca e verificações administrativas | UPDATE de email, nome, loja, cargo, perfil, status, updated_at e version no método replace | UPDATE de tabela permite alterar perfil e status, não apenas dados cadastrais. |
+| Desativar usuário | LOCK da tabela; SELECT perfil/status por id com FOR UPDATE | UPDATE status, updated_at e version; INSERT em audit_events na mesma conexão/transação | Grant não impõe “não desativar a si próprio”, “não desativar o último Admin” nem atomicidade com auditoria fora da transação atual. |
+| Alterar perfil/status administrativo | LOCK da tabela; SELECT de perfil/status e contagem de administradores ativos | UPDATE perfil, status, updated_at e version; INSERT em audit_events na mesma transação | Uma permissão UPDATE nesses campos também permite outras combinações de perfil/status se o caminho SQL puder ser chamado sem validação de serviço. |
+| Registrar auditoria independente | Nenhuma | INSERT em audit_events | INSERT não prova que o evento representa uma ação legítima; a identidade do ator e o conteúdo precisam ser derivados/validados no backend. |
+
+A tabela é um mapa de operações observadas, não uma lista pronta de GRANT. Antes de convertê-la em SQL, conferir novamente todas as colunas, predicates, joins e projeções de cada adaptador e os métodos de serviço que chamam cada operação.
+
+### 11.2 Onde privilégios por coluna ajudam — e onde não ajudam
+
+O PostgreSQL permite conceder SELECT, INSERT e UPDATE em colunas específicas. Isso pode reduzir o alcance de uma credencial em comparação com grants de tabela inteira. Exemplos para avaliação futura:
+
+- O fluxo de movimento de estoque precisa atualizar `quantidade`, `updated_at` e `version`; a edição cadastral usa um conjunto maior de colunas.
+- A desativação de usuário atualiza `status`, `updated_at` e `version`; a edição administrativa atualiza `perfil`, `status`, `updated_at` e `version`; o replace cadastral atualiza também email, nome, loja e cargo.
+- INSERT por coluna pode restringir quais campos cada operação pode preencher, desde que o adaptador e os defaults do DDL sejam compatíveis.
+
+**Limite essencial:** privilégios por coluna não criam identidades distintas por método. Se a mesma role receber a união dos privilégios necessários a todos os métodos, qualquer código executado com essa conexão poderá tentar usar essa união. Além disso, um grant de UPDATE na tabela inteira prevalece sobre a tentativa de restringir colunas por grants menores; a futura matriz deve evitar concessões de tabela mais amplas que anulem o recorte.
+
+Privilégios por coluna também não expressam condições como “só atualizar saldo quando não existir histórico”, “não reduzir o número de administradores ativos”, “não alterar o próprio usuário” ou “só inserir auditoria correspondente à alteração da mesma transação”. Essas regras precisam continuar protegidas no serviço e, quando necessário, ser reforçadas por políticas/rotinas SQL desenhadas e testadas especificamente. RLS não substitui automaticamente validação de transições de estado.
+
+### 11.3 Blast radius de uma única role de API
+
+Uma role compartilhada pelos 15 repositórios de domínio, gestão de usuários e sink de auditoria acumularia a união dos privilégios necessários a todos esses fluxos. Se houver comprometimento dessa credencial ou execução indevida de SQL no backend, o impacto potencial não fica limitado ao módulo que originou a chamada.
+
+Os limites mais importantes identificados:
+
+1. **Estoque:** a role precisa de UPDATE no saldo para registrar movimentos e também INSERT no histórico. Com UPDATE amplo em `estoque`, o banco não distingue o caminho autorizado de movimento de uma alteração direta de saldo.
+2. **Usuários:** a role precisa alterar perfil/status em operações administrativas e inserir auditoria atomicamente. Se também possuir UPDATE amplo para edição cadastral, a credencial consegue combinar alterações de campos que deveriam ter fluxos e validações diferentes.
+3. **Auditoria:** INSERT em `audit_events` permite produzir eventos, mas não garante por si só que cada evento corresponda a uma operação real. A role não deve receber SELECT, UPDATE ou DELETE sem requisito separado.
+4. **Domínio:** a união de CRUD dos demais repositórios aumenta o conjunto de tabelas acessíveis mesmo quando uma requisição utiliza apenas um módulo.
+5. **RLS:** uma única identidade SQL compartilhada não separa automaticamente os limites de confiança entre módulos. Policies baseadas em identidade de sessão só ajudam se o contexto de usuário for autenticado, não for falsificável pelo cliente e for estabelecido de modo seguro em cada transação.
+
+### 11.4 Alternativas arquiteturais para reduzir o alcance
+
+| Alternativa | Benefício | Custo/risco | Situação |
+|---|---|---|---|
+| Uma role única de API com grants mínimos agregados | Preserva o modelo de conexão e as transações atômicas atuais; menor mudança inicial | Blast radius agregado; permissões de uma operação ficam disponíveis a todos os caminhos que compartilham a credencial | Possível, mas exige aceitar explicitamente o risco residual e provar os grants |
+| Roles/fábricas por domínio ou fronteira de confiança | Reduz o conjunto de tabelas/colunas disponível em cada conexão | Exige separar composição e garantir que operações multi-repositório usem a mesma identidade/conexão quando precisam de atomicidade | Preferível para isolamento, mas não implementado |
+| Rotinas SQL controladas para operações sensíveis | Pode expor apenas operações estreitas, como movimentar saldo ou desativar usuário com auditoria | Exige desenhar funções/rotinas, identidade do chamador, validação, ownership seguro e testes de RLS; EXECUTE passa a ser uma superfície privilegiada | Alternativa futura; não criar nesta etapa |
+| Outbox/transação coordenada para separar auditoria | Pode separar credenciais e consumidores sem perder rastreabilidade eventual | Muda a semântica de atomicidade imediata, exige reprocessamento, idempotência e monitoramento | Não atende automaticamente ao contrato atômico atual; requer decisão de produto/arquitetura |
+
+**Recomendação técnica para a próxima revisão:** não aprovar uma role única apenas com base na matriz CRUD. Primeiro classificar as operações sensíveis (movimento de estoque, edição de produto, desativação e alteração administrativa de usuários), decidir se o blast radius agregado é aceitável e comparar uma role única com credenciais separadas por fronteira. Se a role única for mantida, avaliar grants por coluna onde compatíveis e documentar explicitamente as regras que continuam dependendo do backend. Se houver separação, preservar uma única conexão/identidade dentro de cada transação atômica ou redesenhar formalmente o fluxo.
+
+### 11.5 Testes adicionais obrigatórios antes de aprovar grants
+
+- Para cada grant por coluna proposto, executar a operação permitida e provar que UPDATE/INSERT em colunas não concedidas falha.
+- Provar que nenhum grant de tabela amplo neutraliza os grants por coluna.
+- Testar `SELECT ... FOR UPDATE` e `LOCK TABLE ... IN SHARE ROW EXCLUSIVE MODE` com a role candidata, pois a compatibilidade dos locks não deve ser inferida somente da matriz CRUD.
+- Provar que a role de movimento consegue executar UPDATE de saldo + INSERT de histórico atomicamente e que o INSERT falho reverte o saldo.
+- Provar que nenhuma outra operação exposta à mesma role consegue alterar o saldo sem registrar histórico; se isso não puder ser garantido por grants, registrar a limitação e avaliar rotina SQL controlada.
+- Provar que a role administrativa consegue desativar/alterar usuário e inserir auditoria na mesma transação, e que falha da auditoria reverte a alteração.
+- Provar que operações de usuário sem autorização não podem alterar perfil/status mesmo que a role SQL tenha os privilégios técnicos necessários.
+- Verificar `session_user` e `current_user` nos caminhos sensíveis, sem registrar credenciais ou tokens.
+- Executar testes negativos de SELECT/INSERT/UPDATE/DELETE/TRUNCATE/DDL para cada identidade e verificar memberships transitivas e bypass de RLS.
+
+**Status:** mapa de privilégios por operação e blast radius documentado; nenhuma role, grant, policy, função, migration ou connection factory foi criada/alterada. A decisão entre role agregada e separação por fronteira continua pendente de revisão explícita.
