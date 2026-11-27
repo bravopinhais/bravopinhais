@@ -141,6 +141,7 @@ class MigrationApplyStorePostgres:
         unknown = set(payload) - set(allowed)
         if unknown:
             raise ValueError("payload contém campos não permitidos: " + ", ".join(sorted(unknown)))
+        validate_target_payload(target_collection, payload)
         required = REQUIRED_TARGET_COLUMNS[target_collection]
         missing = set(required) - set(payload)
         if missing:
