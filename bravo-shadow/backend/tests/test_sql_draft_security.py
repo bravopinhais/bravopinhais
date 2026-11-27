@@ -83,7 +83,7 @@ def _audit_sql() -> str:
 
 
 def test_audit_sql_draft_enables_and_forces_rls_without_opening_access():
-    sql = re.sub(r"--[^\\n]*", "", _audit_sql()).lower()
+    sql = re.sub(r"--[^\n]*", "", _audit_sql()).lower()
 
     assert "alter table bravo_shadow.audit_events enable row level security;" in sql
     assert "alter table bravo_shadow.audit_events force row level security;" in sql
@@ -93,9 +93,9 @@ def test_audit_sql_draft_enables_and_forces_rls_without_opening_access():
 
 
 def test_audit_sql_draft_has_no_grants_or_policies():
-    sql = re.sub(r"--[^\\n]*", "", _audit_sql()).lower()
+    sql = re.sub(r"--[^\n]*", "", _audit_sql()).lower()
 
-    assert not re.search(r"\\bgrant\\s+", sql)
-    assert not re.search(r"\\bcreate\\s+policy\\s+", sql)
+    assert not re.search(r"\bgrant\s+", sql)
+    assert not re.search(r"\bcreate\s+policy\s+", sql)
     assert "create table if not exists bravo_shadow.audit_events" in sql
     assert "outcome in ('success', 'denied', 'failure')" in sql
