@@ -29,7 +29,7 @@ from app.core.migration_source_integrity import (
 @dataclass(frozen=True, slots=True)
 class CompleteMigrationReadiness:
     status: str
-    source_integrity: SourceIntegrityReport
+    source_integrity: SourceIntegrityReport | None
     integrated_assessment: IntegratedMigrationPreflight
     batch_readiness: MigrationReadinessReport
     blocking_reasons: tuple[str, ...]
