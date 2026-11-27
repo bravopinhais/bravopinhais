@@ -204,6 +204,77 @@ function contasBancariasView(){
  </section>`;
  if(contasBancariasApiClient)void loadContasBancarias(contasBancariasApiClient);
 }
+let councilApiClient=null,councilItems=[],councilRequestSequence=0,councilRequestController=null,councilEditingId=null;
+function councilCan(action){return hasBravoCapability("conselheiros:"+action);}
+function councilStatus(message,kind=""){const node=document.getElementById("council-status");if(node){node.textContent=message;node.className="api-status"+(kind?" "+kind:"");}}
+function councilApplyPermissions(){
+ const form=document.getElementById("council-form");if(!form)return;
+ const canWrite=councilCan(councilEditingId?"update":"create");
+ form.querySelectorAll("input").forEach(input=>{input.disabled=!canWrite;});
+ const save=document.getElementById("council-save");if(save){save.disabled=!canWrite;save.textContent=councilEditingId?"Salvar alterações":"Adicionar conselheiro";}
+ const cancel=document.getElementById("council-cancel");if(cancel)cancel.hidden=!councilEditingId;
+ const search=document.getElementById("council-search");if(search)search.disabled=!councilCan("read");
+}
+function councilResetForm(){
+ const form=document.getElementById("council-form");if(form)form.reset();
+ councilEditingId=null;councilApplyPermissions();
+}
+function councilRenderRows(){
+ const tbody=document.getElementById("council-rows");if(!tbody)return;
+ tbody.replaceChildren();
+ const term=(document.getElementById("council-search")?.value||"").trim().toLocaleLowerCase("pt-BR");
+ const filtered=councilItems.filter(item=>[item.nome,item.cargo,item.BlocoAp].some(value=>String(value||"").toLocaleLowerCase("pt-BR").includes(term)));
+ if(!filtered.length){const row=document.createElement("tr"),cell=document.createElement("td");cell.colSpan=5;cell.className="empty-state";cell.textContent=councilItems.length?"Nenhum conselheiro corresponde à pesquisa.":"Nenhum conselheiro cadastrado.";row.append(cell);tbody.append(row);return;}
+ for(const item of filtered){
+  const row=document.createElement("tr");
+  for(const value of [item.nome,item.cargo,item.BlocoAp||"—",item.telefone||"—"]){const cell=document.createElement("td");cell.textContent=value;row.append(cell);}
+  const actions=document.createElement("td"),wrap=document.createElement("div");wrap.className="row-actions";
+  if(councilCan("update")){const edit=document.createElement("button");edit.type="button";edit.className="action-btn";edit.textContent="Editar";edit.addEventListener("click",()=>councilStartEdit(item.id));wrap.append(edit);}
+  actions.append(wrap);row.append(actions);tbody.append(row);
+ }
+}
+function councilStartEdit(id){
+ const item=councilItems.find(entry=>entry.id===id);if(!item||!councilCan("update"))return;
+ councilEditingId=id;
+ document.getElementById("council-name").value=item.nome;
+ document.getElementById("council-role").value=item.cargo;
+ document.getElementById("council-unit").value=item.BlocoAp||"";
+ document.getElementById("council-phone").value=item.telefone||"";
+ councilApplyPermissions();councilStatus("Editando integrante. Revise os dados e salve.");
+ document.getElementById("council-name").focus();
+}
+async function councilLoad(api){
+ const sequence=++councilRequestSequence;councilRequestController?.abort();councilRequestController=new AbortController();
+ councilStatus("Consultando integrantes autorizados…");
+ try{
+  const data=await api.get("/api/v1/conselheiros",{signal:councilRequestController.signal});
+  if(sequence!==councilRequestSequence||moduloAtual!=="condominio")return;
+  if(!Array.isArray(data)||data.some(item=>!item||typeof item.id!=="string"||typeof item.nome!=="string"||typeof item.cargo!=="string"||typeof (item.BlocoAp??"")!=="string"||typeof (item.telefone??"")!=="string"))throw new Error("A API retornou uma lista de conselheiros inválida.");
+  councilItems=data;councilRenderRows();councilStatus(data.length+" integrante(s) carregado(s) · consulta autorizada","ok");
+ }catch(error){
+  if(error?.name==="AbortError"||sequence!==councilRequestSequence)return;
+  councilItems=[];councilRenderRows();councilStatus(error?.status===403?"Seu perfil não possui conselheiros:read.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível consultar o conselho."),"err");
+ }
+}
+async function councilSave(event){
+ event.preventDefault();if(!councilApiClient)return;
+ const wasEditing=Boolean(councilEditingId),action=wasEditing?"update":"create";
+ if(!councilCan(action)){councilStatus("Seu perfil não possui autorização para esta operação.","err");return;}
+ const data={nome:document.getElementById("council-name").value.trim(),cargo:document.getElementById("council-role").value.trim(),BlocoAp:document.getElementById("council-unit").value.trim(),telefone:document.getElementById("council-phone").value.trim()};
+ if(!data.nome||!data.cargo){councilStatus("Preencha nome e cargo.","err");return;}
+ const save=document.getElementById("council-save");if(save)save.disabled=true;
+ councilStatus(wasEditing?"Salvando alterações…":"Cadastrando integrante…");
+ try{
+  if(wasEditing)await councilApiClient.put("/api/v1/conselheiros/"+encodeURIComponent(councilEditingId),data);
+  else await councilApiClient.post("/api/v1/conselheiros",data);
+  councilResetForm();await councilLoad(councilApiClient);councilStatus(wasEditing?"Integrante atualizado.":"Integrante cadastrado.","ok");
+ }catch(error){
+  councilStatus(error?.status===403?"Seu perfil não possui autorização para esta operação.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível salvar o integrante."),"err");
+ }finally{councilApplyPermissions();}
+}
+window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function")return;councilApiClient=api;if(moduloAtual==="condominio")void councilLoad(api);});
+window.addEventListener("bravo:session-ended",()=>{councilApiClient=null;councilRequestSequence+=1;councilRequestController?.abort();councilRequestController=null;councilItems=[];councilEditingId=null;if(moduloAtual==="condominio")condominioView();});
+
 function condominioView(){
  const view=document.getElementById("view");
  const fields=[
@@ -224,13 +295,14 @@ function condominioView(){
   <div class="api-toolbar"><div><strong style="font-size:13px">Corpo diretivo / Conselho</strong><div class="api-status" id="council-status" role="status" aria-live="polite">Aguardando consulta autorizada</div></div><span class="tag">Composição do conselho</span></div>
   <form class="api-form" id="council-form" style="grid-template-columns:repeat(2,minmax(0,1fr))">
    <div class="field"><label for="council-name">Nome</label><input id="council-name" name="nome" required maxlength="160" disabled></div>
-   <div class="field"><label for="council-role">Cargo</label><input id="council-role" name="cargo" required maxlength="120" placeholder="Ex.: Síndico" disabled></div>
+   <div class="field"><label for="council-role">Cargo</label><input id="council-role" name="cargo" required maxlength="120" disabled></div>
    <div class="field"><label for="council-unit">Bloco / Apartamento</label><input id="council-unit" name="BlocoAp" maxlength="80" disabled></div>
    <div class="field"><label for="council-phone">Telefone</label><input id="council-phone" name="telefone" maxlength="40" disabled></div>
-   <div style="grid-column:1/-1;display:flex;justify-content:flex-end"><button type="button" class="action-btn primary" disabled>Adicionar conselheiro</button></div>
+   <div style="grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px"><button id="council-cancel" type="button" class="action-btn" hidden>Cancelar edição</button><button id="council-save" type="submit" class="action-btn primary" disabled>Adicionar conselheiro</button></div>
   </form>
+  <div class="api-toolbar"><input id="council-search" type="search" placeholder="Buscar por nome, cargo ou bloco/apartamento" aria-label="Buscar conselheiros" disabled></div>
   <div class="data-table-wrap"><table class="data-table"><caption>Integrantes do conselho</caption><thead><tr><th scope="col">Nome</th><th scope="col">Cargo</th><th scope="col">Bloco / Apartamento</th><th scope="col">Telefone</th><th scope="col">Ações</th></tr></thead><tbody id="council-rows"><tr><td colspan="5" class="empty-state">Aguardando consulta autenticada. Nenhum integrante fictício será exibido.</td></tr></tbody></table></div>
-  <p class="form-hint">Admin pode cadastrar, editar e excluir. Operador possui somente leitura. As operações permanecem bloqueadas até autenticação e revisão da auditoria.</p>
+  <p class="form-hint">Admin pode cadastrar e editar; Operador possui somente leitura. A exclusão física não é oferecida. O backend ainda precisa de auditoria de negócio transacional antes do uso produtivo.</p>
  </section>
  <section class="panel" style="margin-top:16px">
   <div class="section-head" style="margin-top:0"><h2>Limites e cuidados</h2><span>Estado do backend</span></div>
@@ -241,6 +313,11 @@ function condominioView(){
    <li>Não há validação formal de CNPJ, CEP ou telefone no schema atual; não adicionar regras que alterem dados legados sem homologação.</li>
   </ul>
  </section>`;
+ const councilForm=document.getElementById("council-form");if(councilForm)councilForm.addEventListener("submit",councilSave);
+ document.getElementById("council-cancel")?.addEventListener("click",()=>{councilResetForm();councilStatus("Edição cancelada.");});
+ document.getElementById("council-search")?.addEventListener("input",councilRenderRows);
+ councilApplyPermissions();
+ if(councilApiClient)void councilLoad(councilApiClient);
 }
 let fornecedoresApiClient=null,fornecedoresItems=[],fornecedoresRequestSequence=0,fornecedoresRequestController=null,fornecedorEditingId=null;
 function fornecedoresCan(capability){return hasBravoCapability("fornecedores:"+capability);}
