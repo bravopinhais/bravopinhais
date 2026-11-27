@@ -144,7 +144,7 @@ function resetFormaForm(){
  form.reset();form.elements.multaPct.value="2";document.getElementById("forma-submit").textContent="Cadastrar";
 }
 async function salvarForma(event){
- event.preventDefault();const form=event.currentTarget;const nome=form.elements.nome.value.trim();const multaPct=Number(form.elements.multaPct.value);
+ event.preventDefault();const form=event.currentTarget;if(form.getAttribute("aria-busy")==="true")return;const nome=form.elements.nome.value.trim();const multaPct=Number(form.elements.multaPct.value);
  if(!nome||!Number.isFinite(multaPct)||multaPct<0||multaPct>100){setFormasStatus("Informe um nome e uma multa entre 0 e 100%.","err");return}
  const button=document.getElementById("forma-submit");button.disabled=true;button.textContent="Salvando...";form.setAttribute("aria-busy","true");
  try{
