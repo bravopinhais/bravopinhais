@@ -16,6 +16,24 @@ class PostgresUsuariosRepository:
     def __init__(self, connection_factory: Callable[[], Any]) -> None:
         self._uow = PostgresUnitOfWork(connection_factory)
 
+    @staticmethod
+    def _close_cursor(cursor: Any) -> None:
+        """Fecha o cursor sem esconder uma falha anterior da consulta."""
+        import sys
+
+        try:
+            cursor.close()
+        except BaseException as close_error:
+            primary_error = sys.exception()
+            if primary_error is None:
+                raise
+            add_note = getattr(primary_error, "add_note", None)
+            if callable(add_note):
+                add_note(
+                    "Falha secundária durante fechamento do cursor: "
+                    f"{type(close_error).__name__}."
+                )
+
     def _query(self, sql: str, params: tuple[Any, ...] = (), *, fetch: str = "none"):
         try:
             with self._uow as uow:
@@ -31,7 +49,7 @@ class PostgresUsuariosRepository:
                         return cursor.fetchone()
                     return cursor.rowcount
                 finally:
-                    cursor.close()
+                    self._close_cursor(cursor)
         except Exception as exc:
             if (
                 getattr(exc, "sqlstate", None) == "23505"
@@ -158,7 +176,7 @@ class PostgresUsuariosRepository:
                     raise HTTPException(status_code=404, detail="Usuário não encontrado.")
                 audit_sink.append_in_transaction(connection, event)
             finally:
-                cursor.close()
+                self._close_cursor(cursor)
 
     def update_administrative_state(
         self,
@@ -243,7 +261,7 @@ class PostgresUsuariosRepository:
                         )
                     audit_sink.append_in_transaction(connection, event)
                 finally:
-                    cursor.close()
+                    self._close_cursor(cursor)
         except Exception as exc:
             if (
                 getattr(exc, "sqlstate", None) == "23505"

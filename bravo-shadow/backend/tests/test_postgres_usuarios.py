@@ -141,3 +141,33 @@ def test_postgres_does_not_mask_other_unique_constraint_violations():
     assert raised.value is error
     assert connection.rollbacks == 1
     assert connection.closed == 1
+
+
+
+class CloseFailingCursor(FailingCursor):
+    def close(self):
+        raise RuntimeError("cursor close failed")
+
+
+class CloseFailingConnection(FailingConnection):
+    def cursor(self):
+        return CloseFailingCursor(self, self.error)
+
+
+def test_repository_preserves_query_error_when_cursor_close_also_fails():
+    import pytest
+
+    original_error = UniqueViolation("usuarios_pkey")
+    connection = CloseFailingConnection(original_error)
+    repository = PostgresUsuariosRepository(factory(connection))
+
+    with pytest.raises(UniqueViolation) as raised:
+        repository.add("usr_2", Usuario(
+            id="usr_2", email="person@example.com", nome="Pessoa",
+            loja="Bravo", cargo="Conselho", perfil="Operador", status="Ativo",
+        ))
+
+    assert raised.value is original_error
+    assert any("fechamento do cursor" in note for note in original_error.__notes__)
+    assert connection.rollbacks == 1
+    assert connection.closed == 1
