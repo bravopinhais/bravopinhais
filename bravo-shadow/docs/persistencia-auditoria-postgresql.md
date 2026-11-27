@@ -96,3 +96,9 @@ A API agora gera um identificador `req_<uuid>` no middleware, guarda-o em `reque
 Foram adicionados testes para formato, unicidade entre requisições e rejeição de tentativa de falsificação pelo cabeçalho de entrada. **Esses testes foram escritos, mas não executados nesta etapa.**
 
 **Limite explícito:** isso ainda não preenche `AuditEvent.request_id`. As rotas/serviços de negócio não recebem nem propagam esse contexto no momento. O próximo passo seguro é passar o valor do middleware explicitamente do endpoint ao serviço e ao evento, sem aceitar `actor_subject`, perfil ou e-mail do corpo/cabeçalhos. Até essa integração, o cabeçalho ajuda a correlação HTTP, mas não oferece rastreabilidade da auditoria ponta a ponta.
+
+### Propagação para desativação lógica — código preparado
+
+O endpoint de desativação lógica agora encaminha `request.state.request_id` ao serviço; o serviço o inclui em `AuditEvent.request_id`. O identificador vem exclusivamente do middleware server-side. Foi atualizado o teste unitário do serviço para conferir a presença do valor no evento.
+
+Essa ligação cobre somente o fluxo de desativação lógica. A alteração administrativa de perfil/status ainda não tem rota e não foi conectada. A capacidade `usuarios:deactivate` continua sem concessão na matriz; portanto, o endpoint permanece bloqueado para Admin e Operador. A integração não ativa permissões nem conecta o sink PostgreSQL.
