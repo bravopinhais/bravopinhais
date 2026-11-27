@@ -1,7 +1,8 @@
 """Autenticação Google para a API Bravo Shadow.
 
 A camada valida o ID token no servidor e vincula o e-mail verificado
-a um cadastro interno ativo. Ainda não está conectada aos routers.
+a um cadastro interno ativo. Os routers usam get_current_principal
+como dependência de identidade antes de autorizar operações.
 """
 import os
 from collections.abc import Callable, Mapping
