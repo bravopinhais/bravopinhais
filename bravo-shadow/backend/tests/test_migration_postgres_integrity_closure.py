@@ -156,6 +156,71 @@ def test_provenance_adapter_columns_and_identity_constraints_match_control_ddl()
         r"unique\s*\(\s*destination_collection\s*,\s*destination_id\s*\)",
         body, re.IGNORECASE,
     )
+    assert re.search(
+        r"check\s*\(\s*length\s*\(\s*btrim\(\s*source_system\s*\)\s*\)\s*>\s*0",
+        body, re.IGNORECASE,
+    )
+    assert re.search(
+        r"check\s*\(\s*source_record_hash\s*~\s*'\^\[0-9a-f\]\{64\}\
+
+def test_authenticated_audit_insert_matches_all_required_sql_columns():
+    ddl = _read("sql-auditoria-rascunho.sql")
+    adapter = (CORE / "migration_apply_store_postgres.py").read_text(encoding="utf-8")
+    columns = set(_columns(_table_body(ddl, "audit_events")))
+    used = {
+        "event_id", "occurred_at", "actor_subject", "action",
+        "entity_type", "entity_id", "outcome", "request_id",
+    }
+    assert columns == used
+    assert re.search(
+        r"INSERT\s+INTO\s+bravo_shadow\.audit_events\s*\((.*?)\)\s*VALUES",
+        adapter, re.IGNORECASE | re.DOTALL,
+    )
+
+
+def test_apply_authorization_and_lifecycle_fields_match_control_ddl():
+    batch_ddl = _read("sql-controle-lotes-importacao-rascunho.sql")
+    execution_ddl = _read("sql-execucao-aprovacao-apply-rascunho.sql")
+    authorization = (CORE / "migration_apply_authorization_postgres.py").read_text(encoding="utf-8")
+    transaction = (CORE / "migration_transaction.py").read_text(encoding="utf-8")
+    batch_columns = set(_columns(_table_body(batch_ddl, "migration_batches")))
+    execution_columns = set(_columns(_table_body(execution_ddl, "migration_executions")))
+    approval_columns = set(_columns(_table_body(execution_ddl, "migration_apply_approvals")))
+    assert {"batch_id", "manifest_hash", "source_system", "environment", "status", "approved_manifest_hash"} <= batch_columns
+    assert {"execution_id", "batch_id", "manifest_hash", "plan_sha256", "environment", "status"} <= execution_columns
+    assert {"execution_id", "batch_id", "manifest_hash", "plan_sha256", "decision", "reviewer_subject"} <= approval_columns
+    for token in ("migration_batches", "migration_executions", "migration_apply_approvals", "FOR UPDATE"):
+        assert token.lower() in authorization.lower()
+    for token in ("status = 'applying'", "status = 'applied'", "finished_at", "started_at"):
+        assert token in transaction
+
+
+def test_lifecycle_states_written_by_coordinator_are_allowed_by_both_check_constraints():
+    batch_ddl = _table_body(_read("sql-controle-lotes-importacao-rascunho.sql"), "migration_batches")
+    execution_ddl = _table_body(_read("sql-execucao-aprovacao-apply-rascunho.sql"), "migration_executions")
+    for status in ("approved", "applying", "applied"):
+        assert f"'{status}'" in batch_ddl
+        assert f"'{status}'" in execution_ddl
+
+
+def test_target_only_foreign_keys_are_explicitly_not_claimed_as_legacy_mappings():
+    sql = _read("sql-piloto-financeiro.sql").lower()
+    reconciliation = (CORE / "migration_reference_reconciliation.py").read_text(encoding="utf-8")
+    assert "references bravo_shadow.categorias (id)" in sql
+    assert "references bravo_shadow.motivos_acerto (id)" in sql
+    assert "documentos_categoria" not in reconciliation
+    assert "acertos_estoque_motivo" not in reconciliation
+",
+        body, re.IGNORECASE,
+    )
+    assert re.search(
+        r"foreign\s+key\s*\(\s*first_batch_id\s*,\s*source_system\s*\)",
+        body, re.IGNORECASE,
+    )
+    assert re.search(
+        r"foreign\s+key\s*\(\s*last_verified_batch_id\s*,\s*source_system\s*\)",
+        body, re.IGNORECASE,
+    )
 
 
 def test_authenticated_audit_insert_matches_all_required_sql_columns():
