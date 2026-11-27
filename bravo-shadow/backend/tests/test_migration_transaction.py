@@ -86,6 +86,10 @@ def test_write_unit_uses_one_connection_and_commits_all_steps():
             "success_event",
             ["reserve", "business", "source_map", "success_event"],
         ),
+        (
+            "audit_event",
+            ["reserve", "business", "source_map", "success_event", "audit_event"],
+        ),
     ],
 )
 def test_failure_at_any_step_rolls_back_entire_unit(failed_step, expected_calls):
