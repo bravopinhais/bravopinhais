@@ -320,3 +320,13 @@ A Shadow mantém GET/POST em /api/v1/acertos-estoque, protegidos por acertos_est
 Na persistência PostgreSQL, o produto é bloqueado com SELECT FOR UPDATE; valida saldo não negativo; atualiza quantidade e insere histórico na mesma transação. Não há rotas PUT/DELETE; o service recusa exclusão e recomenda movimento compensatório. A interface Shadow foi adicionada com formulário, histórico e explicação de integridade, mas permanece desabilitada e sem chamadas de rede.
 
 Lacunas: histórico/listagem sem filtros ou paginação; busca do produto e catálogo de motivos ainda não ligados à tela; scanner, anexos/evidências, aprovação e auditoria explícita do movimento não confirmados. O legado permitia apagar movimento sem recompor saldo; esse comportamento destrutivo não foi replicado.
+
+## Usuários — atualização da paridade (27/11/2026)
+
+O legado apresenta login, senha/redefinição local e CRUD de usuários com login, nome, e-mail, loja/unidade, cargo e ações de senha/edição/exclusão. Esses mecanismos de senha local e login próprio não serão migrados: o Bravo Shadow usa identidade Google e vincula e-mail verificado a um único usuário interno Ativo; perfil/capacidades são internos. Não há auto-cadastro.
+
+A API Shadow possui leitura por GET, cadastro POST e atualização cadastral PUT. O cadastro comum força perfil Operador e status Ativo; atualização só altera nome, loja e cargo, sem trocar e-mail ou privilégios. DELETE retorna HTTP 410; desativação lógica é feita por POST /{id}/desativar, com auditoria na mesma transação PostgreSQL, sem auto-desativação e com proteção ao último Admin ativo.
+
+Capacidades de usuários são restritas ao Admin; Operador não recebe usuarios:read/create/update/delete/deactivate. O método interno de alteração de perfil/status não está exposto por rota. A interface Shadow é apenas um painel de pré-requisitos, sem chamadas de rede nem controles de gestão ativos.
+
+Pendências: ligar a UI à autenticação Google e API HTTPS; definir e documentar provisionamento inicial de Admin e aprovação de cadastro; decidir se/como expor alteração de perfil/status com autorização e auditoria; completar a interface administrativa após essas decisões. Não reintroduzir senha local, reset local ou auto-registro.
