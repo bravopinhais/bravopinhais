@@ -187,19 +187,23 @@ class ComprasConsumoService:
 
         observed_months = [m.month for m in valid_movements]
         all_period_months = _month_range(data_inicio, data_fim, observed_months)
-        # The monthly average must use the full requested period, even though
-        # the chart/table intentionally displays only its latest 12 months.
-        if data_inicio is not None and data_fim is not None:
+        # Average uses the full period; only the displayed monthly series is
+        # capped at 12 months.
+        observed_dates = [date.fromisoformat(month + "-01") for month in set(observed_months)]
+        period_start = (
+            date(data_inicio.year, data_inicio.month, 1)
+            if data_inicio is not None
+            else min(observed_dates) if observed_dates else None
+        )
+        period_end = (
+            date(data_fim.year, data_fim.month, 1)
+            if data_fim is not None
+            else max(observed_dates) if observed_dates else None
+        )
+        if period_start is not None and period_end is not None:
             month_count = (
-                (data_fim.year - data_inicio.year) * 12
-                + data_fim.month - data_inicio.month + 1
-            )
-        elif all_period_months:
-            month_count = (
-                (date.fromisoformat(all_period_months[-1] + "-01").year
-                 - date.fromisoformat(all_period_months[0] + "-01").year) * 12
-                + date.fromisoformat(all_period_months[-1] + "-01").month
-                - date.fromisoformat(all_period_months[0] + "-01").month + 1
+                (period_end.year - period_start.year) * 12
+                + period_end.month - period_start.month + 1
             )
         else:
             month_count = 1
