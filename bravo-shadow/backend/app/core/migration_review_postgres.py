@@ -40,8 +40,16 @@ class PostgresReviewLedgerStore:
         try:
             cursor.execute(sql, params)
             return cursor
-        except Exception:
-            cursor.close()
+        except Exception as primary_error:
+            try:
+                cursor.close()
+            except BaseException as close_error:
+                add_note = getattr(primary_error, "add_note", None)
+                if callable(add_note):
+                    add_note(
+                        "Falha secundária durante fechamento do cursor: "
+                        f"{type(close_error).__name__}."
+                    )
             raise
 
     @staticmethod

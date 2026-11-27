@@ -299,3 +299,27 @@ def test_postgres_adapter_locks_batch_before_decision_during_append():
         and "FOR UPDATE" in statement
     )
     assert batch_lock < decision_lock
+
+
+def test_postgres_review_store_preserves_query_error_when_cursor_close_fails():
+    original_error = RuntimeError("query failed")
+
+    class FailingCursor:
+        def execute(self, sql, params=()):
+            raise original_error
+
+        def close(self):
+            raise OSError("cursor close failed")
+
+    class Connection:
+        def cursor(self):
+            return FailingCursor()
+
+    with pytest.raises(RuntimeError) as raised:
+        PostgresReviewLedgerStore._run(Connection(), "SELECT 1")
+
+    assert raised.value is original_error
+    assert any(
+        "fechamento do cursor" in note
+        for note in getattr(original_error, "__notes__", ())
+    )
