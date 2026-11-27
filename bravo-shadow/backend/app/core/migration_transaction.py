@@ -43,7 +43,7 @@ def execute_migration_write_unit(
     unit_of_work_factory: Callable[[], PostgresUnitOfWork],
     operations: MigrationWriteOperations[DestinationT],
 ) -> DestinationT:
-    """Run reserve, business insert, source map and success event atomically.
+    """Run reserve, business insert, provenance and both event trails atomically.
 
     PostgresUnitOfWork owns commit/rollback/close. If any callback raises,
     the context manager rolls the complete unit back. The caller must persist
@@ -58,4 +58,5 @@ def execute_migration_write_unit(
         destination = operations.write_business(connection)
         operations.write_source_map(connection, destination)
         operations.append_success_event(connection, destination)
+        operations.append_audit_event(connection, destination)
         return destination
