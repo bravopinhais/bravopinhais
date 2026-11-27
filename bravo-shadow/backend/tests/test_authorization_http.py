@@ -119,3 +119,57 @@ def test_audit_failure_does_not_turn_permission_denial_into_success():
     response = build_test_client(make_principal("Admin"), sink).get("/protected")
 
     assert response.status_code == 403
+
+
+
+def build_failure_client(monkeypatch, sink):
+    from app import main as main_module
+    from app.main import create_app
+
+    monkeypatch.setattr(
+        "app.core.authorization.ROLE_CAPABILITIES",
+        {"Admin": frozenset({"dashboard:read"}), "Operador": frozenset()},
+    )
+    application = create_app(storage_backend="memory")
+    application.state.services = SimpleNamespace(audit_sink=sink)
+    application.dependency_overrides[get_current_principal] = lambda: make_principal()
+
+    @application.get(
+        "/test-unexpected-failure",
+        dependencies=[Depends(require_capability_dependency("dashboard:read"))],
+    )
+    def unexpected_failure():
+        raise RuntimeError("sensitive database detail must not be returned")
+
+    return TestClient(application, raise_server_exceptions=False)
+
+
+def test_unexpected_authenticated_failure_is_audited_with_minimal_fields(monkeypatch):
+    sink = RecordingAuditSink()
+    client = build_failure_client(monkeypatch, sink)
+
+    response = client.get("/test-unexpected-failure")
+
+    assert response.status_code == 500
+    assert response.json()["detail"] == "Erro interno do servidor."
+    assert "sensitive database detail" not in response.text
+    assert len(sink.events) == 1
+    event = sink.events[0]
+    assert event.actor_subject == "google-test-subject"
+    assert event.action == "http:unhandled_exception"
+    assert event.entity_type == "request"
+    assert event.entity_id is None
+    assert event.outcome == "failure"
+    assert event.request_id == response.headers["X-Request-ID"]
+    assert not hasattr(event, "email")
+
+
+def test_audit_sink_failure_does_not_expose_original_exception(monkeypatch):
+    sink = RecordingAuditSink(fail=True)
+    client = build_failure_client(monkeypatch, sink)
+
+    response = client.get("/test-unexpected-failure")
+
+    assert response.status_code == 500
+    assert response.json()["detail"] == "Erro interno do servidor."
+    assert "sensitive database detail" not in response.text
