@@ -58,13 +58,18 @@ class PostgresAuditSink:
                     event.request_id,
                 ),
             )
-        except BaseException:
+        except BaseException as insert_error:
             # Um erro ao liberar o cursor não pode esconder a falha original
             # do INSERT (ou uma interrupção) que motivou o fechamento.
             try:
                 cursor.close()
-            except BaseException:
-                pass
+            except BaseException as close_error:
+                add_note = getattr(insert_error, "add_note", None)
+                if callable(add_note):
+                    add_note(
+                        "Falha secundária durante fechamento do cursor: "
+                        f"{type(close_error).__name__}."
+                    )
             raise
         else:
             # Sem falha no INSERT, erro ao fechar o cursor deve ser propagado
