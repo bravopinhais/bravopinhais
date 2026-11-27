@@ -130,6 +130,11 @@ class PostgresUsuariosRepository:
                 if current is None:
                     raise HTTPException(status_code=404, detail="Usuário não encontrado.")
                 perfil, current_status = current
+                if perfil not in ("Admin", "Operador") or current_status not in ("Ativo", "Inativo"):
+                    raise HTTPException(
+                        status_code=409,
+                        detail="Estado cadastral inválido; desativação bloqueada.",
+                    )
                 if current_status == "Inativo":
                     return
                 if perfil == "Admin":
