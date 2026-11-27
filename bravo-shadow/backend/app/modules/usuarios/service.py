@@ -4,6 +4,7 @@ from uuid import uuid4
 from fastapi import HTTPException, status
 
 from app.core.audit import AuditEvent
+from app.core.authorization import AuthenticatedPrincipal
 from app.core.repositories import CollectionRepository, InMemoryCollectionRepository
 from .schemas import (
     Usuario, UsuarioAdministracaoInput, UsuarioCadastroInput,
@@ -87,23 +88,28 @@ class UsuariosService:
             return updated
 
     def deactivate(
-        self, item_id: str, *, actor_subject: str, actor_email: str,
+        self, item_id: str, *, actor: AuthenticatedPrincipal,
         request_id: str | None = None,
     ) -> None:
         """Desativa sem apagar o cadastro; exige auditoria na mesma transação."""
-        if not actor_subject or not actor_subject.strip():
+        if (not isinstance(actor, AuthenticatedPrincipal) or actor.account_status != "Ativo"):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Identidade autenticada inválida ou inativa.",
+            )
+        if not isinstance(actor.subject, str) or not actor.subject.strip():
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Identidade autenticada inválida.",
             )
-        if not actor_email or not actor_email.strip():
+        if not isinstance(actor.email, str) or not actor.email.strip():
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="E-mail autenticado inválido.",
             )
 
         current = self.get(item_id)
-        if current.email.strip().lower() == actor_email.strip().lower():
+        if current.email.strip().lower() == actor.email.strip().lower():
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Não é permitido desativar a própria conta.",
@@ -118,7 +124,7 @@ class UsuariosService:
             )
 
         event = AuditEvent(
-            actor_subject=actor_subject.strip(),
+            actor_subject=actor.subject.strip(),
             action="usuarios:desativar",
             entity_type="usuario",
             entity_id=item_id,
