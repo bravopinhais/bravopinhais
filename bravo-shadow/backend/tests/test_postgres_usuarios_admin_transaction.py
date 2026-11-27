@@ -154,3 +154,81 @@ def test_missing_user_does_not_update_or_audit():
     assert connection.updated is False
     assert sink.calls == []
     assert connection.rollbacks == 1
+
+
+
+def make_deactivation_event():
+    return AuditEvent(
+        actor_subject="google-subject-admin",
+        action="usuarios:desativar",
+        entity_type="usuario",
+        entity_id="usr_target",
+    )
+
+
+def test_deactivation_preserves_user_and_audits_in_same_transaction():
+    connection = Connection(target=("Operador", "Ativo"))
+    sink = AuditSink()
+    make_repository(connection).deactivate_user(
+        "usr_target", event=make_deactivation_event(), audit_sink=sink
+    )
+
+    assert connection.updated is True
+    assert sink.calls[0][0] is connection
+    assert sink.calls[0][1].action == "usuarios:desativar"
+    assert connection.commits == 1
+    assert connection.rollbacks == 0
+    assert connection.closes == 1
+
+
+def test_last_active_admin_cannot_be_deactivated():
+    connection = Connection(target=("Admin", "Ativo"), active_admins=1)
+    sink = AuditSink()
+
+    with pytest.raises(HTTPException) as error:
+        make_repository(connection).deactivate_user(
+            "usr_target", event=make_deactivation_event(), audit_sink=sink
+        )
+
+    assert error.value.status_code == 409
+    assert connection.updated is False
+    assert sink.calls == []
+    assert connection.commits == 0
+    assert connection.rollbacks == 1
+
+
+def test_deactivation_audit_failure_rolls_back_status_change():
+    connection = Connection(target=("Operador", "Ativo"))
+    sink = AuditSink(fail=True)
+
+    with pytest.raises(RuntimeError, match="audit insert failed"):
+        make_repository(connection).deactivate_user(
+            "usr_target", event=make_deactivation_event(), audit_sink=sink
+        )
+
+    assert connection.updated is True
+    assert connection.commits == 0
+    assert connection.rollbacks == 1
+    assert connection.closes == 1
+
+
+def test_missing_user_cannot_be_deactivated_or_audited():
+    connection = Connection(target=None)
+    sink = AuditSink()
+
+    with pytest.raises(HTTPException) as error:
+        make_repository(connection).deactivate_user(
+            "usr_missing",
+            event=AuditEvent(
+                actor_subject="google-subject-admin",
+                action="usuarios:desativar",
+                entity_type="usuario",
+                entity_id="usr_missing",
+            ),
+            audit_sink=sink,
+        )
+
+    assert error.value.status_code == 404
+    assert connection.updated is False
+    assert sink.calls == []
+    assert connection.rollbacks == 1
