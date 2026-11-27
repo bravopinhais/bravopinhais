@@ -436,3 +436,9 @@ O Worker Cloudflare de prova agora está com `workers_dev=false`, origem CORS de
 O FastAPI agora aceita a variável `BRAVO_CORS_ORIGINS` como lista separada por vírgulas de origens exatas. Sem valor, CORS continua fechado. Curinga `*`, credenciais/cookies, caminhos, query strings e origens HTTP públicas são rejeitados; HTTP é permitido somente em localhost para desenvolvimento. Métodos e cabeçalhos são limitados aos usados pela API e `ETag`/`X-Request-ID` são expostos.
 
 O valor permanece vazio no `.env.example`; não foi inventada nem autorizada uma origem de preview. Ao definir hospedagem, preencher apenas com a origem HTTPS exata do frontend Shadow.
+
+## Plano de homologação gratuita — Render + Supabase
+
+Foi preparado `render.yaml` para um único serviço Docker no Render Free, servindo frontend e API na mesma origem HTTPS, com deploy automático desligado e branch `bravo-shadow`. O PostgreSQL fica em projeto Supabase Free isolado, sem usar Supabase Auth. O guia `docs/guia-homologacao-gratuita.md` descreve os passos manuais, secrets, OAuth, limitações e critérios de liberação.
+
+Este material não cria contas ou recursos: nenhum deploy, banco, migration ou credencial foi criado/aplicado. A combinação gratuita é somente para homologação com dados sintéticos: Render adormece após inatividade e Supabase Free pode pausar por baixa atividade, não oferece backups automáticos e tem limite de 500 MB.
