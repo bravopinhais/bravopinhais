@@ -1777,3 +1777,41 @@ Revisão estática dos adaptadores PostgreSQL e serviços, sem conexão com banc
 - Financeiro e Plano de Contas usam atualização compare-and-swap por versão nos fluxos de atualização; o serviço falha fechado se o repositório não oferecer esse contrato.
 
 **Limites e itens para homologação:** esta inspeção de código e os testes com conexões fake não comprovam o comportamento de locks, constraints, isolamento ou permissões no PostgreSQL real. Verificações de vínculo feitas em operações compostas (por exemplo, checagem de referência antes de exclusão) ainda precisam ser confrontadas com constraints no banco descartável. Não assumir atomicidade global entre serviços ou tabelas fora das operações que explicitamente compartilham a mesma conexão. Nenhuma migration, grant, role ou conexão externa foi executada nesta revisão.
+
+
+### Seção 31 — exclusões e integridade referencial (27/11/2026)
+
+Revisão estática dos repositórios, serviços, testes e do rascunho `docs/sql-piloto-financeiro.sql`. O arquivo SQL declara expressamente que é um rascunho, não uma migration executável; a fixture opt-in de estoque o aplica somente no PostgreSQL local descartável.
+
+**Chaves estrangeiras explícitas encontradas no rascunho:**
+
+| Relação | Regra declarada | Efeito esperado |
+|---|---|---|
+| `financeiro.plano_conta_id → plano_contas.id` | `ON DELETE RESTRICT` | Impede apagar conta ainda referenciada por lançamentos. |
+| `documentos.categoria_id → categorias.id` | `ON DELETE RESTRICT` | Impede apagar categoria utilizada por documento. |
+| `acertos_estoque.produto_id → estoque.id` | `ON DELETE RESTRICT` | Preserva produto enquanto houver histórico de movimentos. |
+| `acertos_estoque.motivo_id → motivos_acerto.id` | `ON DELETE RESTRICT` | Impede apagar motivo utilizado em movimento. |
+
+Não foram encontradas cláusulas `ON DELETE CASCADE` no rascunho examinado. Isso é evidência do arquivo atual, não de um banco implantado ou de futuras migrations.
+
+**Comportamento dos adaptadores observado:**
+
+- Plano de Contas verifica referências financeiras no serviço antes de excluir; o repositório também converte SQLSTATE `23503` em HTTP 409. A verificação do serviço e o DELETE são transações separadas, então a FK RESTRICT é a barreira final contra corrida.
+- Financeiro converte violação de FK ao criar/atualizar referência para HTTP 409. A exclusão de título não tem dependentes declarados no rascunho.
+- Categorias e motivos usam helper de exclusão que converte `23503` em HTTP 409. Os testes de catálogo existentes simulam a exceção com conexão fake; não comprovam a constraint real.
+- Documentos converte `23503` ao criar/atualizar categoria inexistente e na exclusão vinculada.
+- Estoque converte `23503` ao excluir produto com movimentações. O histórico de acertos bloqueia UPDATE/DELETE na camada Python e a FK protege produto/motivo no banco.
+
+**Lacuna de evidência:** a suíte de integração real de estoque executa o rascunho SQL em banco descartável e testa rollback e concorrência de movimentos, mas os testes de exclusão de catálogo usam conexões fake. Não foi identificada, nesta revisão, prova de integração real que tente excluir cada pai referenciado e confirme a rejeição pela FK. Também não foi identificada prova real da concorrência entre a checagem de referência do Plano de Contas e a exclusão.
+
+**Cadastros sem relações declaradas:** moradores, fornecedores, empregados e contas bancárias não possuem FKs de dependência no rascunho SQL atual. Os repositórios fazem DELETE direto e não traduzem SQLSTATE `23503` em resposta 409. Antes de criar vínculos entre esses cadastros e outros módulos, mapear a relação no DDL e adicionar tratamento consistente de conflito; não inventar dependências que o modelo atual não declara.
+
+**Testes de aceite a acrescentar no PostgreSQL descartável:**
+
+1. Criar documento sintético e confirmar que excluir sua categoria falha com `23503` e deixa ambos os registros intactos.
+2. Criar acerto sintético e confirmar que excluir produto ou motivo referenciado falha com `23503`, preservando o histórico.
+3. Criar título financeiro referenciando conta e confirmar que excluir a conta falha com `23503`; repetir com duas transações concorrentes para cobrir a janela entre consulta de referência e DELETE.
+4. Confirmar que a exclusão de registros sem referência continua funcionando.
+5. Verificar que os endpoints convertem os conflitos de FK esperados em HTTP 409, sem expor detalhes SQL.
+
+**Status:** regras de FK e tratamento de erro revisados estaticamente; testes reais de exclusão ainda pendentes. Nenhuma migration, grant, role, policy, DDL remoto ou conexão externa foi executada nesta etapa.
