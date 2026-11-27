@@ -111,3 +111,73 @@ def test_service_rejects_missing_authenticated_actor_identity(actor_subject, act
 
     assert error.value.status_code == 401
     assert repository.call is None
+
+
+
+class DeactivationRepository:
+    def __init__(self, user):
+        self.user = user
+        self.call = None
+
+    def get(self, item_id):
+        return self.user if item_id == self.user.id else None
+
+    def deactivate_user(self, item_id, **kwargs):
+        self.call = (item_id, kwargs)
+
+
+class TransactionalAuditSink:
+    def append_in_transaction(self, connection, event):
+        raise AssertionError("O serviço apenas injeta o sink; o repositório controla a transação.")
+
+
+def test_service_deactivates_another_user_with_bound_audit_event():
+    repository = DeactivationRepository(user())
+    sink = TransactionalAuditSink()
+    service = UsuariosService(repository=repository, audit_sink=sink)
+
+    service.deactivate(
+        "usr_target",
+        actor_subject="google-subject-admin",
+        actor_email="admin@example.com",
+    )
+
+    item_id, kwargs = repository.call
+    assert item_id == "usr_target"
+    assert kwargs["event"].actor_subject == "google-subject-admin"
+    assert kwargs["event"].action == "usuarios:desativar"
+    assert kwargs["event"].entity_type == "usuario"
+    assert kwargs["event"].entity_id == "usr_target"
+    assert kwargs["audit_sink"] is sink
+
+
+def test_service_blocks_self_deactivation():
+    repository = DeactivationRepository(user("ADMIN@example.com"))
+    service = UsuariosService(
+        repository=repository, audit_sink=TransactionalAuditSink()
+    )
+
+    with pytest.raises(HTTPException) as error:
+        service.deactivate(
+            "usr_target",
+            actor_subject="google-subject-admin",
+            actor_email=" admin@example.com ",
+        )
+
+    assert error.value.status_code == 403
+    assert repository.call is None
+
+
+def test_service_fails_closed_when_audited_deactivation_is_unavailable():
+    repository = DeactivationRepository(user())
+    service = UsuariosService(repository=repository)
+
+    with pytest.raises(HTTPException) as error:
+        service.deactivate(
+            "usr_target",
+            actor_subject="google-subject-admin",
+            actor_email="admin@example.com",
+        )
+
+    assert error.value.status_code == 503
+    assert repository.call is None
