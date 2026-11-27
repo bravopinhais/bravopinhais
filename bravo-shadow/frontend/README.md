@@ -144,3 +144,10 @@ Os controles permanecem desabilitados até a integração segura da sessão Goog
 A interface agora contém funções de apresentação que validam a estrutura básica da resposta da API, formatam quantidades e valores em pt-BR, montam a query string dos filtros e renderizam indicadores, evolução mensal e detalhamento por produto usando escape de HTML para textos recebidos. Os alvos de renderização estão identificados na tela.
 
 Essas funções são preparação de integração: não foram conectadas a uma sessão Google, não fazem chamadas de rede e não habilitam os controles. A consulta e a exportação continuam bloqueadas até existir uma API HTTPS Shadow independente e uma sessão autenticada com `relatorios:read`. Nenhum dado de exemplo é apresentado como real.
+
+
+### Pastas & Categorias — estrutura de interface
+
+A tela do módulo foi separada em duas áreas funcionais: pastas/categorias de documentos e motivos de acerto de estoque. Cada área apresenta formulário de cadastro, tabela de registros e estado vazio explícito. A documentação da tela informa a regra de proteção contra exclusão de categorias referenciadas por documentos e de motivos referenciados por movimentos de estoque.
+
+Os formulários e ações permanecem desativados enquanto a sessão Google e a API HTTPS Shadow não estiverem integradas. As rotas de consulta/cadastro já existem no backend (`/api/v1/categorias` e `/api/v1/motivos-acerto-estoque`); não foi criada chamada de rede sem token, nem foram exibidos dados fictícios.
