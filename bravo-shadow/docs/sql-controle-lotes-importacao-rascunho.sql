@@ -72,6 +72,141 @@ CREATE INDEX IF NOT EXISTS migration_batches_status_created_idx
 CREATE INDEX IF NOT EXISTS migration_batches_snapshot_idx
     ON bravo_shadow.migration_batches (source_system, snapshot_hash);
 
+-- Decisão humana sobre lote interrompido. Este histórico não reabre o lote,
+-- não altera status e não autoriza reaplicação; apenas registra evidência.
+CREATE TABLE IF NOT EXISTS bravo_shadow.migration_batch_recovery_events (
+    event_id text PRIMARY KEY,
+    batch_id text NOT NULL,
+    source_system text NOT NULL,
+    manifest_hash text NOT NULL,
+    sequence_no integer NOT NULL,
+    outcome text NOT NULL,
+    reviewer_id text NOT NULL,
+    rationale text NOT NULL,
+    evidence_reference text NOT NULL,
+    evidence_sha256 text NOT NULL,
+    reviewed_at timestamptz NOT NULL,
+    recorded_at timestamptz NOT NULL DEFAULT now(),
+
+    CONSTRAINT migration_batch_recovery_event_id_nonempty
+        CHECK (length(btrim(event_id)) > 0),
+    CONSTRAINT migration_batch_recovery_sequence_positive
+        CHECK (sequence_no > 0),
+    CONSTRAINT migration_batch_recovery_outcome_allowed
+        CHECK (outcome IN (
+            'confirmed_committed',
+            'confirmed_not_committed',
+            'partial_or_unknown',
+            'rollback_verified'
+        )),
+    CONSTRAINT migration_batch_recovery_reviewer_nonempty
+        CHECK (length(btrim(reviewer_id)) > 0),
+    CONSTRAINT migration_batch_recovery_rationale_nonempty
+        CHECK (length(btrim(rationale)) > 0),
+    CONSTRAINT migration_batch_recovery_evidence_nonempty
+        CHECK (length(btrim(evidence_reference)) > 0),
+    CONSTRAINT migration_batch_recovery_evidence_hash_format
+        CHECK (evidence_sha256 ~ '^[0-9a-f]{64}
+-- Não armazena payload de origem nem dados pessoais: somente identidade,
+-- hash e endereço lógico do registro de destino.
+CREATE TABLE IF NOT EXISTS bravo_shadow.migration_source_records (
+    source_system text NOT NULL,
+    source_collection text NOT NULL,
+    legacy_id text NOT NULL,
+    destination_collection text NOT NULL,
+    destination_id text NOT NULL,
+    source_record_hash text NOT NULL,
+    first_batch_id text NOT NULL,
+    last_verified_batch_id text NULL,
+    created_at timestamptz NOT NULL DEFAULT now(),
+    updated_at timestamptz NOT NULL DEFAULT now(),
+
+    CONSTRAINT migration_source_records_pk
+        PRIMARY KEY (source_system, source_collection, legacy_id),
+    CONSTRAINT migration_source_records_source_nonempty
+        CHECK (
+            length(btrim(source_system)) > 0
+            AND length(btrim(source_collection)) > 0
+            AND length(btrim(legacy_id)) > 0
+        ),
+    CONSTRAINT migration_source_records_destination_nonempty
+        CHECK (
+            length(btrim(destination_collection)) > 0
+            AND length(btrim(destination_id)) > 0
+        ),
+    CONSTRAINT migration_source_records_hash_format
+        CHECK (source_record_hash ~ '^[0-9a-f]{64}$'),
+    CONSTRAINT migration_source_records_first_batch_fk
+        FOREIGN KEY (first_batch_id, source_system)
+        REFERENCES bravo_shadow.migration_batches(batch_id, source_system)
+        ON DELETE RESTRICT,
+    CONSTRAINT migration_source_records_last_batch_fk
+        FOREIGN KEY (last_verified_batch_id, source_system)
+        REFERENCES bravo_shadow.migration_batches(batch_id, source_system)
+        ON DELETE RESTRICT,
+    CONSTRAINT migration_source_records_destination_unique
+        UNIQUE (destination_collection, destination_id)
+);
+
+CREATE INDEX IF NOT EXISTS migration_source_records_first_batch_idx
+    ON bravo_shadow.migration_source_records (first_batch_id);
+
+CREATE INDEX IF NOT EXISTS migration_source_records_last_verified_idx
+    ON bravo_shadow.migration_source_records (last_verified_batch_id)
+    WHERE last_verified_batch_id IS NOT NULL;
+
+-- Segurança: este rascunho não concede permissões. RLS bloqueia roles comuns
+-- até que políticas específicas sejam desenhadas e aprovadas.
+ALTER TABLE bravo_shadow.migration_batches ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bravo_shadow.migration_source_records ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bravo_shadow.migration_batch_recovery_events ENABLE ROW LEVEL SECURITY;
+
+REVOKE ALL ON SCHEMA bravo_shadow FROM PUBLIC, anon, authenticated, service_role;
+REVOKE ALL ON TABLE
+    bravo_shadow.migration_batches,
+    bravo_shadow.migration_source_records,
+    bravo_shadow.migration_batch_recovery_events
+FROM PUBLIC, anon, authenticated, service_role;
+
+-- NOTAS DE IMPLEMENTAÇÃO OBRIGATÓRIAS:
+-- 1. A aplicação deve validar a transição de status sob lock; CHECK não
+--    substitui a máquina de estados nem a aprovação do manifesto.
+-- 2. Apply exige status approved, approved_manifest_hash = manifest_hash,
+--    ambiente descartável e hash idêntico ao dry-run aprovado.
+-- 3. As FKs compostas garantem que first_batch_id e last_verified_batch_id
+--    pertençam ao mesmo source_system do vínculo. Inserção do registro funcional
+--    e da linha source_records ocorre na mesma transação; sem proveniência parcial.
+-- 4. Em conflito de hash, destino ou identidade, nunca executar UPDATE
+--    automático do vínculo. Exigir decisão registrada e novo dry-run.
+-- 5. Atualizar last_verified_batch_id somente após verificação completa.
+-- 6. Não implementar exclusão automática/rollback por DELETE genérico.
+-- 7. Não criar policies/grants usando service_role como atalho.
+-- 8. Interrupção em applying/applied deve ir manualmente para needs_review
+--    quando não houver prova suficiente para concluir ou repetir com segurança.
+--    needs_review é terminal: exige reconciliação e novo lote aprovado; nunca
+--    reabrir nem repetir o mesmo lote automaticamente.
+-- 9. Recovery exige evento append-only com revisor, justificativa e referência
+--    + SHA-256 da evidência; o evento nunca muda o status nem reabre o lote.
+--    confirmed_not_committed exige prova da ausência de commit; rollback_verified
+--    exige prova da reversão integral; partial_or_unknown mantém o bloqueio.
+-- 10. Um novo apply sempre exige novo lote/manifesto aprovado. Este arquivo
+--     não cria nem altera tabelas funcionais do Bravo.
+),
+    CONSTRAINT migration_batch_recovery_manifest_fk
+        FOREIGN KEY (batch_id, manifest_hash)
+        REFERENCES bravo_shadow.migration_batches(batch_id, manifest_hash)
+        ON DELETE RESTRICT,
+    CONSTRAINT migration_batch_recovery_source_fk
+        FOREIGN KEY (batch_id, source_system)
+        REFERENCES bravo_shadow.migration_batches(batch_id, source_system)
+        ON DELETE RESTRICT,
+    CONSTRAINT migration_batch_recovery_sequence_unique
+        UNIQUE (batch_id, sequence_no)
+);
+
+CREATE INDEX IF NOT EXISTS migration_batch_recovery_history_idx
+    ON bravo_shadow.migration_batch_recovery_events (batch_id, sequence_no);
+
 -- Não armazena payload de origem nem dados pessoais: somente identidade,
 -- hash e endereço lógico do registro de destino.
 CREATE TABLE IF NOT EXISTS bravo_shadow.migration_source_records (
