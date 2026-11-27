@@ -26,3 +26,11 @@ class MoradorImport(MoradorInput):
 
 class MoradorImportBatch(BaseModel):
     moradores: list[MoradorImport] = Field(default_factory=list)
+
+
+class MoradorResumo(BaseModel):
+    """Campos mínimos para a tabela; documentos e contatos ficam fora da listagem."""
+    id: str
+    bloco: str
+    apartamento: str
+    nome: str
