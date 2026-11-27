@@ -190,6 +190,7 @@ document.addEventListener("click",async event=>{
  const nav=event.target.closest("[data-module]");if(nav){openModule(nav.dataset.module);return}
  const action=event.target.closest("[data-action]");if(!action||moduloAtual!=="formas_monetarias")return;
  const id=action.dataset.id;
+ const formaForm=document.getElementById("forma-form");if(formaForm?.getAttribute("aria-busy")==="true")return;
  if(action.dataset.action==="cancel-edit"){const form=document.getElementById("forma-form");if(form?.getAttribute("aria-busy")==="true")return;resetFormaForm();setFormasStatus("Edição cancelada; nenhuma alteração foi enviada.");document.getElementById("forma-nome")?.focus();return}
  if(action.dataset.action==="reload"){action.disabled=true;action.textContent="Atualizando...";action.setAttribute("aria-busy","true");try{await carregarFormas()}finally{action.disabled=false;action.textContent="↻ Atualizar";action.removeAttribute("aria-busy")}return}
  if(action.dataset.action==="edit"){
