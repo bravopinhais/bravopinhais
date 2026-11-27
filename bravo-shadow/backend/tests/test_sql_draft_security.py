@@ -101,6 +101,7 @@ def test_audit_sql_draft_has_no_grants_or_policies():
     assert "outcome in ('success', 'denied', 'failure')" in sql
 
 
+
 INSPECTION_SQL_PATH = (
     Path(__file__).resolve().parents[2]
     / "docs"
@@ -113,21 +114,21 @@ def _inspection_sql() -> str:
 
 
 def test_postgres_inspection_script_is_explicitly_read_only():
-    sql = re.sub(r"--[^\\n]*", "", _inspection_sql()).strip()
+    sql = re.sub(r"--[^\n]*", "", _inspection_sql()).strip()
 
-    assert re.search(r"^begin\\s+read\\s+only\\s*;", sql, re.IGNORECASE)
+    assert re.search(r"^begin\s+read\s+only\s*;", sql, re.IGNORECASE)
     statements = [statement.strip() for statement in sql.split(";") if statement.strip()]
     assert statements
     for statement in statements:
         assert re.match(
-            r"^(?:BEGIN\\s+READ\\s+ONLY|SELECT|COMMIT)\\b",
+            r"^(?:BEGIN\s+READ\s+ONLY|SELECT|COMMIT)\b",
             statement,
             re.IGNORECASE,
         ), f"Unexpected non-read-only SQL statement: {statement[:80]}"
 
 
 def test_postgres_inspection_script_covers_effective_security_catalogs():
-    sql = re.sub(r"--[^\\n]*", "", _inspection_sql()).lower()
+    sql = re.sub(r"--[^\n]*", "", _inspection_sql()).lower()
 
     for required in (
         "from pg_roles",
