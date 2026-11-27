@@ -59,12 +59,18 @@ def principal_from_google_claims(
     normalized_email = email.strip().lower()
     # Cadastros inconsistentes não podem transformar uma identidade válida
     # em erro 500; somente e-mails internos textuais participam da resolução.
-    matches = [
-        user
-        for user in users_service.list()
-        if isinstance(getattr(user, "email", None), str)
-        and user.email.strip().lower() == normalized_email
-    ]
+    lookup = getattr(users_service, "find_by_email", None)
+    if callable(lookup):
+        matches = lookup(normalized_email)
+    else:
+        # Compatibilidade com adapters/fakes legados; o serviço oficial usa
+        # busca indexada no PostgreSQL e evita carregar toda a tabela.
+        matches = [
+            user
+            for user in users_service.list()
+            if isinstance(getattr(user, "email", None), str)
+            and user.email.strip().lower() == normalized_email
+        ]
     if len(matches) != 1 or matches[0].status != "Ativo":
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
