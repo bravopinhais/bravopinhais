@@ -348,3 +348,22 @@ O schema remove espaços nas extremidades e recusa campos extras. Admin e Operad
 ### Limites que impedem ativação imediata
 
 A exclusão atual é física, sem fluxo de desligamento/arquivamento ou verificação de referências. O router não exige If-Match/ETag apesar da versão interna no repositório. A listagem retorna a coleção inteira, sem filtros ou paginação. Não foram identificados no formulário legado campos de salário, documentos, jornada ou vínculo trabalhista; não devem ser acrescentados sem validação funcional. Endereço e contatos, especialmente o contato de emergência, exigem restrição de acesso e minimização de exposição.
+
+
+## Estoque & Inventário
+
+A interface Shadow foi criada para o cadastro de produtos e consulta de inventário, preservando os campos do contrato atual: item, etiqueta/código, quantidade, mínimo, máximo, foto (nome e conteúdo Gzip/Base64), marca, linha, fabricante, data de cadastro, setor, unidade, valor unitário, status, cor e referência da foto. Inclui estrutura visual para indicadores de estoque adequado/crítico/excedente, filtros e tabela de inventário. Controles permanecem desabilitados até integração segura Google/Bearer e API HTTPS isolada; não há dados fictícios nem chamadas de rede.
+
+### Contrato e regras atuais
+
+- GET /api/v1/estoque — estoque:read.
+- POST /api/v1/estoque — estoque:create.
+- PUT /api/v1/estoque/{id} — estoque:update.
+- DELETE /api/v1/estoque/{id} — estoque:delete.
+- Quantidade, mínimo e máximo aceitam até três casas decimais; valor unitário, duas. A data de cadastro, quando informada, deve ser válida no formato AAAA-MM-DD.
+- O service bloqueia alteração direta de saldo quando há movimentos e bloqueia exclusão de produto referenciado por movimentações. Ajustes de saldo devem passar por /api/v1/acertos-estoque.
+- Admin e Operador possuem CRUD de produtos no catálogo atual; capacidades de acerto são separadas.
+
+### Paridade ainda pendente
+
+A tela ainda não integra fotos, armazenamento externo, scanner por câmera/código de barras, impressão de etiquetas, checklist, relatórios por setor ou histórico de movimentações. A listagem da API não expõe filtros nem paginação. Não habilitar ações até integrar autenticação e definir o tratamento de arquivos, concorrência, auditoria e operações de exclusão.
