@@ -143,4 +143,6 @@ def require_capability_dependency(capability: str):
             request.state.authenticated_subject = principal.subject.strip()
         return principal
 
+    # Metadado explícito para auditorias automatizadas da árvore de rotas.
+    dependency.__bravo_required_capability__ = capability
     return dependency
