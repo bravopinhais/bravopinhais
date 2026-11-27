@@ -1,4 +1,4 @@
-from app.core.postgres import PostgresUnitOfWork
+from app.core.postgres import CommitOutcomeUnknown, PostgresUnitOfWork
 
 
 class FakeConnection:
@@ -49,8 +49,10 @@ def test_unit_of_work_rolls_back_if_commit_fails_and_still_closes():
     try:
         with PostgresUnitOfWork(lambda: connection):
             pass
-    except RuntimeError as error:
-        assert str(error) == "commit falhou"
+    except CommitOutcomeUnknown as error:
+        assert str(error) == "postgres_commit_outcome_unknown"
+        assert isinstance(error.__cause__, RuntimeError)
+        assert str(error.__cause__) == "commit falhou"
     else:
         raise AssertionError("A falha do commit deveria ser propagada")
     assert connection.commits == 1
@@ -83,8 +85,9 @@ def test_unit_of_work_preserves_commit_error_when_rollback_fails():
     try:
         with PostgresUnitOfWork(lambda: connection):
             pass
-    except RuntimeError as error:
-        assert str(error) == "commit falhou"
+    except CommitOutcomeUnknown as error:
+        assert str(error) == "postgres_commit_outcome_unknown"
+        assert isinstance(error.__cause__, RuntimeError)
         assert any("rollback" in note for note in error.__notes__)
     else:
         raise AssertionError("A falha original do commit deveria ser propagada")
@@ -118,8 +121,9 @@ def test_unit_of_work_preserves_commit_error_when_connection_close_fails():
     try:
         with PostgresUnitOfWork(lambda: connection):
             pass
-    except RuntimeError as error:
-        assert str(error) == "commit falhou"
+    except CommitOutcomeUnknown as error:
+        assert str(error) == "postgres_commit_outcome_unknown"
+        assert isinstance(error.__cause__, RuntimeError)
         assert any("fechamento" in note for note in error.__notes__)
     else:
         raise AssertionError("A falha original do commit deveria ser propagada")
