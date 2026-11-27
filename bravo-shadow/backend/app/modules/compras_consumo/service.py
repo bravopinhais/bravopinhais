@@ -68,7 +68,7 @@ def _is_loss_reason(reason: str) -> bool:
 def _month_range(start: date | None, end: date | None, observed: list[str]) -> list[str]:
     if start is None or end is None:
         months = sorted(set(observed))
-        return months[-12:]
+        return months
     cursor = date(start.year, start.month, 1)
     last = date(end.year, end.month, 1)
     result: list[str] = []
@@ -101,7 +101,6 @@ class ComprasConsumoService:
 
         products = self._estoque.list()
         movements = self._acertos.list()
-        product_by_id = {item.id: item for item in products}
         normalized_search = (busca or "").strip().casefold()
         normalized_sector = (setor or "").strip().casefold()
 
@@ -178,8 +177,9 @@ class ComprasConsumoService:
                     bucket["valor_consumido"] += value
                     monthly[record.month]["valor_consumido"] += value
 
-        period_months = _month_range(data_inicio, data_fim, [m.month for m in valid_movements])
-        month_count = max(len(period_months), 1)
+        all_period_months = _month_range(data_inicio, data_fim, [m.month for m in valid_movements])
+        month_count = max(len(all_period_months), 1)
+        period_months = all_period_months[-12:]
         rows: list[ComprasConsumoProduto] = []
         for product_id, product in selected_products.items():
             values = buckets[product_id]
@@ -243,8 +243,8 @@ class ComprasConsumoService:
         month_rows = [
             ComprasConsumoMes(
                 mes=month,
-                quantidadeComprada=monthly[month]["quantidade_comprada"],
-                quantidadeConsumida=monthly[month]["quantidade_consumida"],
+                quantidadeComprada=monthly[month]["quantidade_comprada"] if compatible else ZERO,
+                quantidadeConsumida=monthly[month]["quantidade_consumida"] if compatible else ZERO,
                 valorComprado=monthly[month]["valor_comprado"].quantize(MONEY),
                 valorConsumido=monthly[month]["valor_consumido"].quantize(MONEY),
             )
