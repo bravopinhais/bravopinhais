@@ -119,21 +119,13 @@ Esses controles melhoram a robustez do cliente, mas **não significam que o logi
 Não foram executados testes JavaScript ou workflows nesta etapa, conforme orientação de não executar testes por enquanto.
 
 
-## Configurações — API preparada, interface pendente
+## Configurações — integração da interface autenticada (27/11/2026)
 
-O backend oferece `GET /api/v1/configuracoes/modulos`, `PATCH /api/v1/configuracoes/modulos/{key}` e `POST /api/v1/configuracoes/modulos/acao-em-massa`. Admin ativo pode alterar visibilidade; Operador pode apenas consultar. A interface ainda não consome esses endpoints porque o bootstrap Google/API HTTPS segue desligado. Não exibir toggles operacionais como se estivessem persistidos enquanto a sessão e a API não estiverem conectadas.
+A tela consome `GET /api/v1/configuracoes/modulos` com a sessão Google/Bearer, valida o catálogo dos 17 módulos e apresenta nome, grupo e estado retornados pelo backend. Admin ativo com `configuracoes:update` pode alterar individualmente por `PATCH /api/v1/configuracoes/modulos/{key}`; Operador com `configuracoes:read` possui somente leitura. O módulo Configurações permanece obrigatório e não pode ser desativado.
 
+Cada alteração individual exige confirmação explícita. A interface não expõe a ação em massa, evita inserir conteúdo da API como HTML, trata 401/403/503, cancela consultas e limpa o estado no logout. A gravação depende da persistência PostgreSQL e da auditoria transacional: no backend em memória, alterações são recusadas com indisponibilidade administrativa auditada. A tela não presume persistência nem altera permissões de usuários.
 
-## Tela de Configurações — primeira estrutura visual
-
-A navegação principal e o dashboard agora incluem acesso à tela de Configurações. A tela apresenta o catálogo dos 17 módulos, separação por grupo e as ações administrativas previstas. Os controles de ativação em massa permanecem desabilitados e os estados são identificados como aguardando API: não são valores carregados nem simulam persistência.
-
-A interface não envia alterações porque ainda não existe sessão Google conectada ao frontend nem API HTTPS isolada configurada. A próxima integração deverá carregar `GET /api/v1/configuracoes/modulos` com o token da sessão e habilitar controles somente conforme as capacidades retornadas/permitidas pelo backend. O backend continua sendo a autoridade; Operador só consulta e Admin altera.
-
-
-## Navegação funcional mapeada
-
-A navegação Shadow agora inclui também `Compras x Consumo`, alinhada ao catálogo de 17 módulos da baseline. O item abre a estrutura do módulo, mas ainda não representa a tela de relatório concluída. A tela de Configurações permanece em modo seguro: não consulta nem altera estados enquanto não houver URL HTTPS isolada da API e sessão Google validada no navegador.
+A flag de estado do módulo é administrativa e, no estado atual, não revoga por si só capacidades nem bloqueia diretamente rotas. A autorização efetiva continua no backend. A tabela `module_settings` existe apenas no DDL preparado; nenhuma migration foi aplicada. A integração é código da Shadow, não homologação nem autorização de ativação em produção.
 
 
 ## Compras x Consumo — primeira interface do relatório
