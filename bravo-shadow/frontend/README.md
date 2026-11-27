@@ -118,3 +118,10 @@ Não foram executados testes JavaScript ou workflows nesta etapa, conforme orien
 ## Configurações — API preparada, interface pendente
 
 O backend oferece `GET /api/v1/configuracoes/modulos`, `PATCH /api/v1/configuracoes/modulos/{key}` e `POST /api/v1/configuracoes/modulos/acao-em-massa`. Admin ativo pode alterar visibilidade; Operador pode apenas consultar. A interface ainda não consome esses endpoints porque o bootstrap Google/API HTTPS segue desligado. Não exibir toggles operacionais como se estivessem persistidos enquanto a sessão e a API não estiverem conectadas.
+
+
+## Tela de Configurações — primeira estrutura visual
+
+A navegação principal e o dashboard agora incluem acesso à tela de Configurações. A tela apresenta o catálogo dos 17 módulos, separação por grupo e as ações administrativas previstas. Os controles de ativação em massa permanecem desabilitados e os estados são identificados como aguardando API: não são valores carregados nem simulam persistência.
+
+A interface não envia alterações porque ainda não existe sessão Google conectada ao frontend nem API HTTPS isolada configurada. A próxima integração deverá carregar `GET /api/v1/configuracoes/modulos` com o token da sessão e habilitar controles somente conforme as capacidades retornadas/permitidas pelo backend. O backend continua sendo a autoridade; Operador só consulta e Admin altera.
