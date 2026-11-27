@@ -78,6 +78,12 @@ Os mocks Python não substituem esses testes. Eles ainda precisam ser executados
 - Não criar policies/grants até a estratégia RLS e a matriz de permissões estarem aprovadas.
 - Não iniciar importação, dual-write ou cutover.
 
+## 8. Verificação estática adicional do DDL geral
+
+O rascunho `sql-piloto-financeiro.sql` declara 15 tabelas. A revisão estática confirma que as 15 recebem `ENABLE ROW LEVEL SECURITY`, que o acesso ao schema `bravo_shadow` é revogado de `PUBLIC`, `anon`, `authenticated` e `service_role`, e que o arquivo não contém comandos executáveis `GRANT` nem `CREATE POLICY`. Foram acrescentadas verificações automatizadas estáticas em `backend/tests/test_sql_draft_security.py` para esses pontos.
+
+Essas verificações leem o texto SQL; não fazem parsing completo, não conectam ao PostgreSQL e não comprovam o comportamento efetivo das roles. `FORCE ROW LEVEL SECURITY`, owner/runtime separados, policies mínimas e grants privados continuam pendentes da estratégia formal e dos testes em PostgreSQL local descartável. Nenhum acesso foi habilitado.
+
 ## Conclusão
 
 O rascunho é uma base conservadora, mas ainda não está pronto para aplicação. Os pontos mais importantes a resolver são: separar owner/runtime, forçar RLS, garantir igualdade dos hashes por constraints e ligar o ator da revisão ao principal autenticado em uma camada de serviço. O sistema original permanece fora do escopo desta alteração.
