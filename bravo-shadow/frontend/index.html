@@ -1419,6 +1419,14 @@ function comprasConsumoApplyPermissions(){
  if(query)query.disabled=!allowed||!comprasConsumoApiClient;
  if(exportButton)exportButton.disabled=!allowed||!comprasConsumoApiClient;
 }
+function comprasConsumoClearReport(){
+ comprasConsumoLastReport=null;
+ const metrics=document.getElementById("cc-metrics");
+ if(metrics)metrics.innerHTML=["Compras","Consumo","Perdas / ajustes","Produtos em alerta"].map(label=>'<article class="metric"><div class="metric-label">'+label+'</div><div class="metric-value">—</div><div class="metric-foot">Aguardando consulta autorizada</div></article>').join("");
+ const monthly=document.getElementById("cc-monthly-rows"),products=document.getElementById("cc-product-rows");
+ if(monthly)monthly.innerHTML='<tr><td colspan="5" class="empty-state">Aguardando consulta autorizada.</td></tr>';
+ if(products)products.innerHTML='<tr><td colspan="9" class="empty-state">Aguardando consulta autorizada.</td></tr>';
+}
 function comprasConsumoValidateReport(report){
  const numeric=["compras","consumo","perdasAjustes","valorComprado","valorConsumido"];
  if(!report||typeof report!=="object"||!report.kpis||!Array.isArray(report.evolucaoMensal)||!Array.isArray(report.produtos))throw new Error("A API retornou um relatório em formato inesperado.");
@@ -1446,7 +1454,7 @@ function comprasConsumoQueryPath(){
 }
 async function loadComprasConsumo(api){
  const sequence=++comprasConsumoSequence;comprasConsumoController?.abort();comprasConsumoController=new AbortController();
- comprasConsumoSetStatus("Consultando relatório autorizado…");const button=document.getElementById("cc-query");if(button)button.disabled=true;
+ comprasConsumoClearReport();comprasConsumoSetStatus("Consultando relatório autorizado…");const button=document.getElementById("cc-query");if(button)button.disabled=true;
  try{const report=await api.get(comprasConsumoQueryPath(),{signal:comprasConsumoController.signal});if(sequence!==comprasConsumoSequence||moduloAtual!=="compras_consumo")return;renderComprasConsumoReport(report);}
  catch(error){if(error?.name==="AbortError"||sequence!==comprasConsumoSequence)return;comprasConsumoSetStatus(error?.status===403?"Seu perfil não possui relatorios:read.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível consultar o relatório."),"err");}
  finally{comprasConsumoApplyPermissions();}
