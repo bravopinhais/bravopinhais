@@ -160,3 +160,23 @@ A navegação abre uma tela própria para o módulo documental, com campos de pa
 A tela permanece desabilitada e não envia arquivos enquanto não houver sessão Google integrada e API HTTPS Shadow isolada. A API atual oferece consulta, cadastro, edição e exclusão protegidos por capacidades, mas o conteúdo Gzip/Base64 ainda é armazenado diretamente no registro PostgreSQL. Não há nesta etapa armazenamento externo, URLs assinadas, pré-visualização por MIME, gestão de órfãos ou otimização de arquivos. Esses recursos não são presumidos como concluídos.
 
 A implementação visual não define ainda limite de tamanho, allowlist de tipos, verificação de conteúdo, política de retenção nem estratégia de storage. Esses requisitos precisam ser fechados antes de habilitar upload. Nenhum dado real ou arquivo foi carregado e nenhum teste foi executado.
+
+
+## Relatórios & DRE — primeira estrutura visual
+
+A navegação abre uma tela própria para o Demonstrativo do Resultado do Exercício, com período, seleção de plano de contas, resumo de receitas/despesas/resultado líquido e detalhamento separado por contas de receita e despesa. Os comandos de consulta e exportação permanecem desabilitados até integração real.
+
+### Regra legada observada
+
+A implementação de produção inspecionada consolida os lançamentos financeiros classificados como `Receber` e `Pagar`, agrupa valores por `planoContaId` e apresenta as contas do Plano de Contas separadas por tipo `Receita` e `Despesa`. O resultado líquido é calculado como total de receitas menos total de despesas. A tela legada não apresenta filtro de período nessa função.
+
+### Lacunas para a paridade
+
+Não foi encontrado um router dedicado de relatórios no backend Shadow. A interface ainda não consulta API. Antes de implementar o cálculo, é necessário definir com precisão:
+- se a DRE considera títulos lançados, pagos/recebidos ou ambos, e qual data determina o período;
+- tratamento de cancelados, estornos, inadimplência e pagamentos parciais;
+- inclusão/exclusão de contas sem movimento, subcontas e lançamentos sem plano vinculado;
+- agrupamento por competência ou caixa, e consistência com os totais do módulo Financeiro;
+- exportação PDF/Excel, filtros e trilha de auditoria da consulta.
+
+Nenhum total fictício é exibido. O backend, os filtros e as exportações não foram declarados concluídos; não houve execução de testes nem acesso a dados de produção.
