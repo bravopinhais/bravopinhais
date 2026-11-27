@@ -72,17 +72,15 @@ No servidor, a API valida assinatura, emissor, audiência e expiração do ID to
 
 A tela de login original permanece intocada.
 
-## Gestão de Usuários — estado da interface
+## Gestão de Usuários — administração autenticada na Shadow (27/11/2026)
 
-A navegação da Gestão de Usuários apresenta um painel de pré-requisitos, sem botões de cadastro, edição ou desativação enquanto a sessão Google do navegador não estiver conectada e a matriz de permissões continuar fechada. O painel identifica separadamente:
+A tela agora utiliza o cliente HTTP entregue pelo evento `bravo:session-ready` e consulta `GET /api/v1/usuarios` somente com `usuarios:read`. A listagem valida o contrato e apresenta nome, e-mail Google, cargo, perfil e status. A pesquisa é local e os dados em memória são descartados e as consultas abortadas no encerramento da sessão.
 
-- sessão Google do navegador ainda não conectada;
-- consulta bloqueada pela ausência de `usuarios:read`;
-- cadastro/edição sem capacidades concedidas;
-- desativação lógica protegida por `usuarios:deactivate` ainda não concedida;
-- exclusão física desabilitada pela API (HTTP 410).
+O cadastro usa `POST /api/v1/usuarios` com `usuarios:create` e aceita somente e-mail, nome, unidade/loja e cargo. O backend fixa o novo usuário como `Operador/Ativo`; não há campo para criar Admin, senha local ou auto cadastro. O e-mail é a chave de associação com a identidade Google verificada e não pode ser alterado pela tela.
 
-Esse estado é intencional: a interface não consulta nem altera usuários com identidade ausente, não inventa dados e não concede permissões por perfil. Para avançar, é necessário configurar a URL HTTPS da API e aprovar explicitamente a matriz de permissões. A tela de login original permanece intocada.
+A edição usa `PUT /api/v1/usuarios/{id}` com `usuarios:update` e altera exclusivamente nome, unidade/loja e cargo. Perfil, status e e-mail ficam fora do formulário. A desativação lógica usa `POST /api/v1/usuarios/{id}/desativar`, exige `usuarios:deactivate` e confirmação explícita, preserva o registro e depende da auditoria na mesma transação PostgreSQL. A interface não permite desativar a própria conta, reativar usuários ou excluir fisicamente.
+
+A API continua sendo a autoridade final: bloqueia o último Admin ativo, nega usuários sem capacidade e recusa desativação auditada quando o armazenamento não oferece persistência transacional. Alterações privilegiadas de perfil/status permanecem fora das rotas públicas e da interface. A integração é código da Shadow; não ativa o bootstrap Google, não configura hospedagem, não consulta dados reais e não representa homologação produtiva. A tela de login original permanece intocada.
 
 ## Acessibilidade da navegação
 
