@@ -289,7 +289,7 @@ class PostgresReviewLedgerStore:
             (register.batch_id,),
         )
         rows = tuple(tuple(row) for row in cursor.fetchall())
-        cursor.close()
+        self._close_cursor(cursor)
         if rows != self._expected_decisions(register):
             raise ReviewValidationError("stored_decision_snapshot_mismatch")
 
@@ -304,7 +304,7 @@ class PostgresReviewLedgerStore:
             (register.batch_id,),
         )
         batch = cursor.fetchone()
-        cursor.close()
+        self._close_cursor(cursor)
         if batch is None:
             raise ReviewValidationError("review_batch_not_initialized")
         if str(batch[0]).strip() != register.manifest_hash:
@@ -323,7 +323,7 @@ class PostgresReviewLedgerStore:
             (register.batch_id,),
         )
         rows = cursor.fetchall()
-        cursor.close()
+        self._close_cursor(cursor)
 
         if any(
             not isinstance(row, (tuple, list))
