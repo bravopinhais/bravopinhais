@@ -216,3 +216,21 @@ Os campos, filtros, gravação e ações permanecem desabilitados até existir s
 O contrato atual possui apenas tipo, vínculo opcional com Plano de Contas, histórico, valor e versão. Não há datas de vencimento/competência, liquidação, pagamentos parciais, recorrência, baixa ou conciliação. A exclusão física exige uma política explícita de confirmação e auditoria antes de habilitar a ação na interface.
 
 O serviço tem adapters em memória e PostgreSQL; o modo padrão da API continua em memória, e PostgreSQL só é selecionado por configuração explícita. A integração de sessão e a persistência hospedada seguem pendentes.
+
+
+## Contas Bancárias / Caixa
+
+A navegação abre agora uma tela própria para o módulo, alinhada ao contrato observado no legado e no backend: identificação do banco e saldo informado, com listagem das contas. A tela distingue explicitamente saldo informado de saldo conciliado ou calculado.
+
+Os controles de cadastro permanecem desabilitados até integração com sessão Google e API HTTPS Shadow. Não são disparadas chamadas e nenhuma conta de exemplo é exibida.
+
+### Contrato existente
+
+- `GET /api/v1/contas-bancarias` — consulta, capacidade `contas_bancarias:read`.
+- `POST /api/v1/contas-bancarias` — cadastro, capacidade `contas_bancarias:create`.
+- `PUT /api/v1/contas-bancarias/{id}` — atualização, capacidade `contas_bancarias:update`.
+- `DELETE /api/v1/contas-bancarias/{id}` — exclusão física, capacidade `contas_bancarias:delete`.
+
+O schema contém somente `banco` e `saldo` (Decimal com duas casas), além do identificador. A matriz atual permite ao perfil Operador somente leitura neste módulo; Admin possui as capacidades cadastradas.
+
+O contrato não representa extrato, caixa operacional, movimentações, transferências, conciliação, fechamento ou saldo calculado. A exclusão física também não verifica vínculos. Esses recursos não devem ser sugeridos como disponíveis até sua implementação e validação.
