@@ -1457,7 +1457,7 @@ async function exportComprasConsumo(api){
  try{
   const path=comprasConsumoQueryPath().replace("/api/v1/compras-consumo","/api/v1/compras-consumo/export.csv");
   const blob=await api.get(path,{responseType:"blob"});if(!(blob instanceof Blob))throw new Error("A API não retornou um arquivo CSV válido.");
-  const url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download="compras-consumo.csv";link.hidden=true;document.body.append(link);link.click();link.remove();URL.revokeObjectURL(url);
+  const url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download="compras-consumo.csv";link.hidden=true;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
   comprasConsumoSetStatus("Exportação CSV concluída.","ok");
  }catch(error){comprasConsumoSetStatus(error?.status===403?"Seu perfil não possui relatorios:read.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível exportar o CSV."),"err");}
  finally{comprasConsumoApplyPermissions();}
