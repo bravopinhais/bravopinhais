@@ -74,3 +74,28 @@ def test_stock_movement_history_is_marked_immutable_for_api_role():
     assert "não deve receber" in sql
     assert "delete em bravo_shadow.acertos_estoque" in sql
     assert "movimentos compensatórios" in sql
+
+AUDIT_SQL_PATH = Path(__file__).resolve().parents[2] / "docs" / "sql-auditoria-rascunho.sql"
+
+
+def _audit_sql() -> str:
+    return AUDIT_SQL_PATH.read_text(encoding="utf-8")
+
+
+def test_audit_sql_draft_enables_and_forces_rls_without_opening_access():
+    sql = re.sub(r"--[^\\n]*", "", _audit_sql()).lower()
+
+    assert "alter table bravo_shadow.audit_events enable row level security;" in sql
+    assert "alter table bravo_shadow.audit_events force row level security;" in sql
+
+    for role in ("public", "anon", "authenticated", "service_role"):
+        assert f"revoke all on table bravo_shadow.audit_events from {role};" in sql
+
+
+def test_audit_sql_draft_has_no_grants_or_policies():
+    sql = re.sub(r"--[^\\n]*", "", _audit_sql()).lower()
+
+    assert not re.search(r"\\bgrant\\s+", sql)
+    assert not re.search(r"\\bcreate\\s+policy\\s+", sql)
+    assert "create table if not exists bravo_shadow.audit_events" in sql
+    assert "outcome in ('success', 'denied', 'failure')" in sql
