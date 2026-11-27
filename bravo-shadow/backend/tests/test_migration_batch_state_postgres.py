@@ -62,7 +62,7 @@ class FakeCursor:
             if row and row[1] == manifest_hash and row[3] == old_status:
                 row[3] = status
                 row[4:7] = [approved_by, approved_at, approved_hash]
-                row[7] = finished_status in {"applied", "verified", "failed", "rolled_back"}
+                row[7] = finished_status in {"applied", "verified", "failed", "rolled_back", "needs_review"}
                 self.one = (batch_id,)
             else:
                 self.one = None
@@ -168,8 +168,7 @@ def test_postgres_adapter_rolls_back_when_update_loses_race():
 
 def test_postgres_adapter_persists_needs_review_as_terminal_state():
     database, connection, store = setup_store()
-    store.transition("batch-1", "failed")
-    # Use a fresh approved/applying batch to model an interrupted apply.
+    # Seed an already-approved batch to model an interrupted apply.
     database.rows["batch-1"][3] = "approved"
     database.rows["batch-1"][4:7] = [
         "reviewer@example.test", datetime(2026, 11, 26, 18, 30), HASH
@@ -179,8 +178,9 @@ def test_postgres_adapter_persists_needs_review_as_terminal_state():
 
     assert reviewed.status == "needs_review"
     assert database.rows["batch-1"][3] == "needs_review"
+    assert database.rows["batch-1"][7] is True
     update = next(
         statement for statement in connection.statements
         if statement.startswith("UPDATE bravo_shadow.migration_batches")
     )
-    assert "needs_review" in update or "finished_at = CASE" in update
+    assert "'needs_review'" in update
