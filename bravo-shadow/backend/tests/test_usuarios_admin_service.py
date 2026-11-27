@@ -87,14 +87,25 @@ def test_memory_repository_fails_closed_for_admin_changes():
 
 
 @pytest.mark.parametrize(
-    ("actor_subject", "actor_email"),
+    "actor",
     [
-        ("", "admin@example.com"),
-        ("google-subject-admin", ""),
-        ("   ", "admin@example.com"),
+        None,
+        object(),
+        AuthenticatedPrincipal(
+            subject="google-subject-admin", email="admin@example.com",
+            profile="Admin", account_status="Inativo",
+        ),
+        AuthenticatedPrincipal(
+            subject=" ", email="admin@example.com",
+            profile="Admin", account_status="Ativo",
+        ),
+        AuthenticatedPrincipal(
+            subject="google-subject-admin", email=" ",
+            profile="Admin", account_status="Ativo",
+        ),
     ],
 )
-def test_service_rejects_missing_authenticated_actor_identity(actor_subject, actor_email):
+def test_service_rejects_missing_or_invalid_authenticated_actor(actor):
     repository = TransactionalRepository(user())
     service = UsuariosService(repository=repository)
 
@@ -102,12 +113,30 @@ def test_service_rejects_missing_authenticated_actor_identity(actor_subject, act
         service.update_administrative_state(
             "usr_target",
             UsuarioAdministracaoInput(perfil="Operador", status="Inativo"),
-            actor_subject=actor_subject,
-            actor_email=actor_email,
+            actor=actor,
             audit_sink=object(),
         )
 
     assert error.value.status_code == 401
+    assert repository.call is None
+
+
+def test_service_rejects_non_admin_actor_for_administrative_change():
+    repository = TransactionalRepository(user())
+    service = UsuariosService(repository=repository)
+
+    with pytest.raises(HTTPException) as error:
+        service.update_administrative_state(
+            "usr_target",
+            UsuarioAdministracaoInput(perfil="Operador", status="Inativo"),
+            actor=AuthenticatedPrincipal(
+                subject="google-subject-operator", email="operator@example.com",
+                profile="Operador", account_status="Ativo",
+            ),
+            audit_sink=object(),
+        )
+
+    assert error.value.status_code == 403
     assert repository.call is None
 
 

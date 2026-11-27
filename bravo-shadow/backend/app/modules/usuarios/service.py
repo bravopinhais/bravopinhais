@@ -152,9 +152,7 @@ class UsuariosService:
         item_id: str,
         data: UsuarioAdministracaoInput,
         *,
-        actor: AuthenticatedPrincipal | None = None,
-        actor_subject: str | None = None,
-        actor_email: str | None = None,
+        actor: AuthenticatedPrincipal,
         audit_sink,
     ) -> None:
         """Executa alteração privilegiada somente em repositório transacional.
@@ -163,28 +161,26 @@ class UsuariosService:
         auditoria na mesma transação; adaptadores sem esse contrato falham
         fechados, sem mutar o cadastro.
         """
-        if actor is not None:
-            if not isinstance(actor, AuthenticatedPrincipal) or actor.account_status != "Ativo":
-                raise HTTPException(
-                    status_code=status.HTTP_401_UNAUTHORIZED,
-                    detail="Identidade autenticada inválida ou inativa.",
-                )
-            actor_subject = actor.subject
-            actor_email = actor.email
-
-        if not isinstance(actor_subject, str) or not actor_subject.strip():
+        if (
+            not isinstance(actor, AuthenticatedPrincipal)
+            or actor.account_status != "Ativo"
+            or not isinstance(actor.subject, str)
+            or not actor.subject.strip()
+            or not isinstance(actor.email, str)
+            or not actor.email.strip()
+        ):
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Identidade autenticada inválida.",
+                detail="Identidade autenticada inválida ou inativa.",
             )
-        if not isinstance(actor_email, str) or not actor_email.strip():
+        if actor.profile != "Admin":
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="E-mail autenticado inválido.",
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Somente Admin pode alterar perfil ou status de usuários.",
             )
 
         current = self.get(item_id)
-        if current.email.strip().lower() == actor_email.strip().lower():
+        if current.email.strip().lower() == actor.email.strip().lower():
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Não é permitido alterar o próprio perfil ou status.",
@@ -198,7 +194,7 @@ class UsuariosService:
             )
 
         event = AuditEvent(
-            actor_subject=actor_subject.strip(),
+            actor_subject=actor.subject.strip(),
             action="usuarios:update_administracao",
             entity_type="usuario",
             entity_id=item_id,
