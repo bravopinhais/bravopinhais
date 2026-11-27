@@ -457,3 +457,29 @@ A inspeção dos testes existentes separou testes de serviço, testes de adaptad
 Não considerar a fronteira de estoque comprovada até existir evidência PostgreSQL real para rollback do INSERT de histórico e concorrência de movimentos. Não considerar o modelo de usuário concluído até cobrir a corrida entre desativação e alteração administrativa e a idempotência concorrente. Não considerar RLS/grants validados com base apenas na execução do script de catálogo em banco vazio.
 
 **Status:** auditoria estática dos testes concluída. As lacunas foram especificadas; nenhum teste novo foi executado ou criado nesta etapa, nenhum DDL foi aplicado e nenhum banco foi acessado.
+
+## 14. Evidência de integração concorrente e limites ainda não homologados
+
+### Execuções confirmadas
+
+- Commit `e6faf3e6b1985a3c82c803fe9d06bbfe2ea3c208`: suíte de estoque em PostgreSQL descartável; workflow concluído com sucesso.
+- Commit `58867a6154058e797d8eaf49243ef9c86535e4e9`: edição de produto concorrente com movimentação incluída; workflow concluído com sucesso. O log registrou **567 testes aprovados e 1 aviso**.
+- Commit `a9b3ce1249b4f451cd9b4882dd1cac611a3204c9`: desativação concorrente de dois administradores incluída; workflow concluído com sucesso. O log registrou **568 testes aprovados e 1 aviso**.
+- Execução do último commit: https://github.com/bravopinhais/bravopinhais/actions/runs/45991754931
+
+### Cobertura confirmada no ambiente descartável
+
+- Estoque: rollback do saldo quando a gravação do histórico falha.
+- Estoque: duas saídas concorrentes não produzem saldo negativo nem histórico duplicado.
+- Estoque: edição de produto e movimentação concorrentes preservam uma das ordens serializadas permitidas.
+- Usuários: alteração administrativa concorrente preserva ao menos um Admin ativo.
+- Usuários: desativação concorrente preserva ao menos um Admin ativo e grava somente a auditoria da operação confirmada.
+- Usuários: falha na gravação de auditoria reverte a alteração administrativa ou a desativação.
+
+### Limites desta evidência
+
+Esses testes exercitam os adaptadores com conexões PostgreSQL reais e DDL de teste. Eles não comprovam o modelo final de privilégios, pois não executam a aplicação sob uma role runtime candidata nem homologam grants, memberships, policies ou bypass RLS.
+
+Também não comprovam autenticação Google, identidade de sessão em produção, API pública para administração de usuários ou isolamento de credenciais. Esses itens permanecem pendentes e bloqueados até aprovação explícita do modelo de roles e da arquitetura de runtime.
+
+Nenhuma migration foi aplicada a banco persistente. Nenhuma role, policy, grant ou membership do desenho final foi criada. O CI usa somente o PostgreSQL 16 efêmero `bravo_shadow_test`.
