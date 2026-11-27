@@ -442,12 +442,14 @@ let dashboardRequestSequence = 0;
 let dashboardRequestController = null;
 
 function formatDashboardCount(value){
+ if(value===null||value===undefined||value==="")return "—";
  const number=Number(value);
  return Number.isSafeInteger(number)&&number>=0
   ? new Intl.NumberFormat("pt-BR").format(number)
   : "—";
 }
 function formatDashboardCurrency(value){
+ if(value===null||value===undefined||value==="")return "—";
  const number=Number(value);
  return Number.isFinite(number)
   ? new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(number)
@@ -474,7 +476,7 @@ async function loadDashboardSummary(api){
    total_documentos:formatDashboardCount(data.total_documentos),
    valor_receber:formatDashboardCurrency(data.valor_receber),
    valor_pagar:formatDashboardCurrency(data.valor_pagar),
-   cadastros_auxiliares:formatDashboardCount(Number(data.total_contas_plano)+Number(data.total_formas_monetarias)),
+   cadastros_auxiliares:formatDashboardCount(data.total_contas_plano==null||data.total_formas_monetarias==null?null:Number(data.total_contas_plano)+Number(data.total_formas_monetarias)),
    total_contas_plano:formatDashboardCount(data.total_contas_plano),
    total_fornecedores:formatDashboardCount(data.total_fornecedores),
    total_empregados:formatDashboardCount(data.total_empregados)
