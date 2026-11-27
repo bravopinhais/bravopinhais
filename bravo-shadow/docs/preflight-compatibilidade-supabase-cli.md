@@ -77,7 +77,7 @@ de tabela/schema para `anon`, `authenticated` ou `service_role`, ausência de
 FORCE RLS na auditoria, triggers append-only ausentes/desabilitados ou
 constraints que impedem autorização de escrita na aprovação pré-importação,
 as 13 FKs críticas, 15 índices únicos críticos e 31 índices de consulta
- ausentes, inválidos ou ainda não prontos para uso.
+ausentes, inválidos ou ainda não prontos para uso.
 
 A auditoria é uma verificação de catálogo direcionada às 27 tabelas, 13 FKs e
 15 índices únicos críticos definidos nas migrations atuais. Para cada índice
