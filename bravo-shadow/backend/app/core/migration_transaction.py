@@ -21,14 +21,18 @@ class MigrationWriteOperations(Generic[DestinationT]):
     reserve_batch must lock/check the batch and its approval/manifest binding.
     write_business inserts the domain row without silently overwriting.
     write_source_map records the source identity and destination link.
-    append_success_event adds the success evidence. Each callback must use
-    only the supplied connection and must not commit, rollback, or reconnect.
+    append_success_event adds migration-specific success evidence, while
+    append_audit_event writes the corresponding global audit_events record.
+    Both use only the supplied connection and must not commit, rollback, or
+    reconnect. This keeps business data, provenance and both event trails
+    atomic; calling PostgresAuditSink.append() here would break that guarantee.
     """
 
     reserve_batch: Callable[[object], None]
     write_business: Callable[[object], DestinationT]
     write_source_map: Callable[[object, DestinationT], None]
     append_success_event: Callable[[object, DestinationT], None]
+    append_audit_event: Callable[[object, DestinationT], None]
 
 
 class MigrationTransactionError(RuntimeError):
