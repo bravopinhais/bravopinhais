@@ -5,6 +5,7 @@ from typing import Any
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from app.core.audit import AuditEvent
@@ -33,6 +34,41 @@ from app.modules.plano_contas.router import router as plano_contas_router
 from app.modules.usuarios.router import router as usuarios_router
 from app.modules.configuracoes.router import router as configuracoes_router
 
+
+def _configured_cors_origins() -> list[str]:
+    """Lê allowlist CORS exata; vazio mantém CORS completamente fechado."""
+    from urllib.parse import urlsplit
+
+    raw = os.getenv("BRAVO_CORS_ORIGINS", "")
+    origins: list[str] = []
+    for item in raw.split(","):
+        candidate = item.strip()
+        if not candidate:
+            continue
+        if candidate == "*":
+            raise StorageConfigurationError("CORS curinga não é permitido no Bravo Shadow.")
+        try:
+            parsed = urlsplit(candidate)
+            hostname = parsed.hostname
+        except ValueError as exc:
+            raise StorageConfigurationError("Origem CORS inválida.") from exc
+        local_http = parsed.scheme == "http" and hostname in {"localhost", "127.0.0.1", "::1"}
+        if (
+            parsed.scheme != "https" and not local_http
+            or not hostname
+            or parsed.username
+            or parsed.password
+            or parsed.path not in ("", "/")
+            or parsed.query
+            or parsed.fragment
+        ):
+            raise StorageConfigurationError(
+                "CORS aceita somente origens HTTPS exatas (HTTP apenas em localhost)."
+            )
+        origin = f"{parsed.scheme}://{parsed.netloc}"
+        if origin not in origins:
+            origins.append(origin)
+    return origins
 
 def create_app(
     storage_backend: str | None = None,
@@ -64,7 +100,17 @@ def create_app(
         title="Bravo Shadow API",
         description="API paralela do Bravo — ambiente de desenvolvimento e homologação.",
         version="0.1.0",
-    )
+    )    cors_origins = _configured_cors_origins()
+    if cors_origins:
+        application.add_middleware(
+            CORSMiddleware,
+            allow_origins=cors_origins,
+            allow_credentials=False,
+            allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+            allow_headers=["Authorization", "Content-Type", "If-Match", "If-None-Match"],
+            expose_headers=["ETag", "X-Request-ID"],
+            max_age=600,
+        )
     @application.middleware("http")
     async def assign_request_id(request: Request, call_next):
         # O identificador é sempre gerado pelo servidor; cabeçalhos recebidos
