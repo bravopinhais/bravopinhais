@@ -36,7 +36,7 @@ def test_functional_baseline_contains_final_stock_shape_without_followup_alter()
 def test_sensitive_schemas_remain_unexposed_and_without_runtime_grants():
     for name in EXPECTED:
         sql = (MIGRATIONS / name).read_text().lower()
-        assert not re.search(r"^\\s*grant\\s", sql, re.IGNORECASE | re.MULTILINE)
+        assert not re.search(r"^\s*grant\s", sql, re.IGNORECASE | re.MULTILINE)
         assert "from public" in sql or "from public," in sql
 
 def test_apply_environment_is_constrained_and_preimport_never_authorizes_writes():
