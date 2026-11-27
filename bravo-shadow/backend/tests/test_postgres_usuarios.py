@@ -52,7 +52,9 @@ def factory(connection):
     return lambda: connection
 
 
-def test_user_repository_maps_and_persists_google_email_profile_only():
+def test_user_repository_reads_admin_but_generic_insert_is_cadastral_only():
+    import pytest
+
     row = ("usr_1", "person@example.com", "Pessoa", "Bravo", "Operador", "Admin", "Ativo")
     connection = Connection(row=row)
     repository = PostgresUsuariosRepository(factory(connection))
@@ -68,13 +70,46 @@ def test_user_repository_maps_and_persists_google_email_profile_only():
     assert "google_subject" not in repository._columns.lower()
     assert not hasattr(repository, "link_google_subject")
     assert "google_subject" not in connection.calls[0][0].lower()
-    repository.add("usr_2", item)
-    assert connection.calls[1][1] == (
-        "usr_2", "person@example.com", "Pessoa", "Bravo", "Operador", "Admin", "Ativo"
+
+    with pytest.raises(ValueError, match="somente Operador/Ativo"):
+        repository.add("usr_2", item)
+    assert len(connection.calls) == 1
+    assert connection.commits == 1
+
+
+def test_postgres_generic_insert_forces_only_cadastral_profile():
+    connection = Connection()
+    repository = PostgresUsuariosRepository(factory(connection))
+    item = Usuario(
+        id="usr_2", email="person@example.com", nome="Pessoa",
+        loja="Bravo", cargo="Operador", perfil="Operador", status="Ativo",
     )
-    assert "google_subject" not in connection.calls[1][0].lower()
-    assert "senha" not in connection.calls[1][0].lower()
-    assert connection.commits == 2
+
+    repository.add("usr_2", item)
+
+    assert connection.calls[0][1] == (
+        "usr_2", "person@example.com", "Pessoa", "Bravo", "Operador", "Operador", "Ativo"
+    )
+    assert "google_subject" not in connection.calls[0][0].lower()
+    assert "senha" not in connection.calls[0][0].lower()
+    assert connection.commits == 1
+
+
+def test_postgres_generic_replace_is_blocked_before_opening_connection():
+    import pytest
+
+    connection = Connection()
+    repository = PostgresUsuariosRepository(factory(connection))
+    item = Usuario(
+        id="usr_1", email="person@example.com", nome="Pessoa",
+        loja="Bravo", cargo="Operador", perfil="Admin", status="Ativo",
+    )
+
+    with pytest.raises(RuntimeError, match="Substituição genérica"):
+        repository.replace("usr_1", item)
+
+    assert connection.calls == []
+    assert connection.commits == 0
 
 
 def test_postgres_storage_wires_user_profiles_without_connecting():

@@ -88,21 +88,24 @@ class PostgresUsuariosRepository:
         return self.get(item_id) is not None
 
     def add(self, item_id: str, item: Usuario) -> None:
+        """Insere somente usuário comum; privilégios exigem fluxo dedicado."""
+        if item.perfil != "Operador" or item.status != "Ativo":
+            raise ValueError(
+                "Criação genérica aceita somente Operador/Ativo; "
+                "privilégios exigem operação administrativa controlada."
+            )
         self._query(
             f"INSERT INTO {self._table} (id, email, nome, loja, cargo, perfil, status) "
             "VALUES (%s, %s, %s, %s, %s, %s, %s)",
-            (item_id, item.email, item.nome, item.loja, item.cargo, item.perfil, item.status),
+            (item_id, item.email, item.nome, item.loja, item.cargo, "Operador", "Ativo"),
         )
 
     def replace(self, item_id: str, item: Usuario) -> None:
-        changed = self._query(
-            f"UPDATE {self._table} SET email = %s, nome = %s, loja = %s, cargo = %s, "
-            "perfil = %s, status = %s, updated_at = now(), version = version + 1 "
-            "WHERE id = %s",
-            (item.email, item.nome, item.loja, item.cargo, item.perfil, item.status, item_id),
+        """Bloqueia substituição ampla que poderia sobrescrever estado privilegiado."""
+        raise RuntimeError(
+            "Substituição genérica de usuário desabilitada no PostgreSQL; "
+            "use update_cadastral ou a operação administrativa transacional."
         )
-        if not changed:
-            raise HTTPException(status_code=404, detail="Usuário não encontrado.")
 
     def update_cadastral(
         self,
