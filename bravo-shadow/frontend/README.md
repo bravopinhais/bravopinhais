@@ -494,3 +494,11 @@ A integração está preparada no código da branch Shadow, mas depende da API H
 Na listagem financeira, a interface consulta também `GET /api/v1/plano-contas` para resolver `planoContaId` em código e nome da conta. Essa consulta auxiliar usa a mesma sessão autenticada e sua própria autorização `plano_contas:read`. Se a permissão ou a consulta auxiliar não estiver disponível, a listagem de títulos continua funcionando e exibe o identificador interno como alternativa; não transforma uma falha auxiliar em falha do Financeiro.
 
 A pesquisa financeira considera histórico, tipo, identificador e nome/código resolvido. Os dados auxiliares ficam apenas em memória e são descartados ao encerrar a sessão. Ambas as consultas são canceladas quando a tela deixa de ser atual; não há gravação nem alteração de vínculos.
+
+## Contas Bancárias — consulta autenticada somente leitura
+
+A tela consulta exclusivamente `GET /api/v1/contas-bancarias` após receber a sessão Google autenticada. O endpoint exige `contas_bancarias:read`. A resposta é validada quanto a identificador, nome do banco e saldo numérico antes de renderizar a tabela; valores são formatados em BRL e conteúdo textual é inserido via `textContent`.
+
+O saldo é apresentado como **saldo informado**, conforme o contrato atual, e não como saldo conciliado, extrato ou cálculo de movimentações. A tela não inventa agência, número de conta, instituição por código ou datas de saldo. Cadastro, edição e exclusão permanecem bloqueados; a API possui rotas de gravação, mas não são chamadas pela interface.
+
+A consulta é cancelada ao sair do módulo e ao encerrar a sessão. A lista em memória é limpa no logout. O módulo depende da API HTTPS isolada, do bootstrap Google habilitado explicitamente e da permissão `contas_bancarias:read`; nenhuma publicação foi realizada.
