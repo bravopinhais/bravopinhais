@@ -11,18 +11,19 @@ from typing import Literal
 
 BatchStatus = Literal[
     "prepared", "approved", "applying", "applied",
-    "verified", "failed", "rolled_back",
+    "verified", "failed", "rolled_back", "needs_review",
 ]
 
 ALLOWED_ENVIRONMENTS = frozenset({"local_disposable", "ci_ephemeral"})
 TRANSITIONS: dict[str, frozenset[str]] = {
     "prepared": frozenset({"approved", "failed"}),
     "approved": frozenset({"applying", "failed"}),
-    "applying": frozenset({"applied", "failed"}),
-    "applied": frozenset({"verified", "failed", "rolled_back"}),
+    "applying": frozenset({"applied", "failed", "needs_review"}),
+    "applied": frozenset({"verified", "failed", "rolled_back", "needs_review"}),
     "verified": frozenset({"rolled_back"}),
     "failed": frozenset(),
     "rolled_back": frozenset(),
+    "needs_review": frozenset(),
 }
 
 
