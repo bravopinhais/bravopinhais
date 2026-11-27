@@ -34,7 +34,6 @@ A interface deve ser reconhecível como Bravo: modo noturno fixo, visual profiss
 
 Este documento define o contrato visual. A interface será construída após o inventário de fluxos e componentes do original, evitando criar telas fictícias ou controles sem funcionalidade.
 
-
 ## Primeiro módulo conectado à API
 
 O módulo **Formas Monetárias** já utiliza a API relativa `/api/v1/formas-monetarias` para listar, cadastrar, editar e excluir registros. A interface apresenta estados de carregamento e erro, valida o nome e a multa (0–100%) e escapa os valores exibidos.
@@ -43,25 +42,35 @@ O backend deste módulo ainda utiliza armazenamento em memória. Os registros s�
 
 Os demais módulos continuam identificados como estrutura visual até que seus contratos e fluxos sejam conectados individualmente.
 
-
 ## Dashboard — integração visual segura
 
 A tela inicial apresenta o contrato do resumo protegido `GET /api/v1/dashboard/resumo`, mas mantém os indicadores indisponíveis até a integração da sessão Google no navegador. A API exige um ID token Google no cabeçalho Bearer e a capacidade `dashboard:read`; a matriz de perfis continua fechada por padrão.
 
-A interface não inventa valores, não interpreta falha de autenticação como zero e não tenta armazenar tokens em `localStorage` ou em variáveis globais. A próxima etapa técnica é integrar o provedor de sessão Google já aprovado, transmitir o token de forma efêmera e só então renderizar o resumo após resposta autorizada. A autenticação visual/login não foi redesenhada nesta etapa.
+A interface não inventa valores, não interpreta falha de autenticação como zero e não tenta armazenar tokens em `localStorage` ou em variáveis globais. O próximo passo é conectar o bootstrap de sessão à URL HTTPS da API e só então renderizar o resumo após resposta autorizada.
 
+## Autenticação Google — módulo cliente preparado, bootstrap pendente
 
-## Dependência pendente — sessão Google no navegador
+A decisão confirmada para o Bravo Shadow é usar autenticação Google diretamente, sem Supabase Auth e sem login por senha local.
 
-A revisão do código disponível não identificou um bootstrap cliente do Google Identity Services nem um módulo de sessão que forneça o ID token à interface. O arquivo legado `js/auth.js` do original contém formulário de usuário/senha e não deve ser reutilizado, pois esse fluxo foi descontinuado como requisito do Bravo.
+O módulo `js/google-auth.js` **já existe** e:
+- carrega o Google Identity Services;
+- recebe o ID token em memória;
+- consulta `GET /api/v1/auth/me` com Bearer token;
+- só aceita usuário que a API confirme como cadastrado e ativo;
+- não grava token em `localStorage`, `sessionStorage` ou cookies;
+- não concede perfil nem permissões no navegador.
 
-A API sombra já valida ID token Google no servidor (`GOOGLE_CLIENT_ID`, assinatura, emissor, audiência e expiração por meio de `google-auth`) e vincula o e-mail verificado a um usuário interno ativo. A interface não deve receber segredo de cliente, simular token, guardar token em `localStorage` ou aceitar identidade informada manualmente.
+**O módulo ainda não está conectado à tela.** A página `index.html` não importa esse módulo nem apresenta o botão Google. O bootstrap foi mantido desligado porque ainda não existe uma URL HTTPS de API hospedada e validada para o ambiente sombra. O GitHub Pages hospeda apenas arquivos estáticos; não executa FastAPI nem PostgreSQL. Não apontar o frontend para a API de produção.
 
-**Decisão confirmada para o Bravo Shadow:** usar autenticação Google diretamente, sem introduzir Supabase Auth como provedor de login. O Client ID OAuth público já foi fornecido pelo responsável pelo sistema; ele não é um segredo e não substitui a validação no servidor. O módulo `js/google-auth.js` agora carrega o Google Identity Services, recebe a credencial em memória e consulta `GET /api/v1/auth/me` com Bearer token. Só considera autenticado o usuário que a API confirmar como cadastrado e ativo. O token não é gravado em `localStorage`, `sessionStorage` ou cookies. A integração ainda depende da URL HTTPS da API e da configuração das origens autorizadas no projeto OAuth. O GitHub Pages hospeda somente os arquivos estáticos e não executa a API FastAPI; portanto, o login completo não deve ser considerado operacional no preview enquanto a API não tiver hospedagem disponível. A tela de login original não foi modificada.
+O Client ID OAuth público já foi informado e está configurado no artefato de prova do Worker. Ele pode ser publicado no frontend; o Client Secret nunca deve ser incluído em HTML, JavaScript ou repositório. Ainda é necessário conferir as origens JavaScript autorizadas no projeto Google OAuth antes de ativar o botão.
+
+No servidor, a API valida assinatura, emissor, audiência e expiração do ID token com `google-auth`, exige e-mail verificado e vincula a identidade a um único cadastro interno ativo. Usuário desconhecido, inativo ou duplicado é recusado. O perfil vem do cadastro Bravo, não dos dados declarados pelo navegador.
+
+A tela de login original permanece intocada.
 
 ## Gestão de Usuários — estado da interface
 
-A navegação da Gestão de Usuários apresenta um painel de pré-requisitos, sem botões de cadastro, edição ou desativação enquanto a sessão Google do navegador não estiver integrada e a matriz de permissões continuar fechada. O painel identifica separadamente:
+A navegação da Gestão de Usuários apresenta um painel de pré-requisitos, sem botões de cadastro, edição ou desativação enquanto a sessão Google do navegador não estiver conectada e a matriz de permissões continuar fechada. O painel identifica separadamente:
 
 - sessão Google do navegador ainda não conectada;
 - consulta bloqueada pela ausência de `usuarios:read`;
@@ -69,7 +78,7 @@ A navegação da Gestão de Usuários apresenta um painel de pré-requisitos, se
 - desativação lógica protegida por `usuarios:deactivate` ainda não concedida;
 - exclusão física desabilitada pela API (HTTP 410).
 
-Esse estado é intencional: a interface não consulta nem altera usuários com identidade ausente, não inventa dados e não concede permissões por perfil. Para avançar, é necessário conectar a URL HTTPS da API ao módulo de sessão e aprovar explicitamente a matriz de permissões. A tela de login original permanece intocada.
+Esse estado é intencional: a interface não consulta nem altera usuários com identidade ausente, não inventa dados e não concede permissões por perfil. Para avançar, é necessário configurar a URL HTTPS da API e aprovar explicitamente a matriz de permissões. A tela de login original permanece intocada.
 
 ## Acessibilidade da navegação
 

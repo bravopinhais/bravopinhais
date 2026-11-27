@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from threading import RLock
 from uuid import uuid4
 
