@@ -582,3 +582,12 @@ A listagem oferece pesquisa por descrição/código/marca/linha/fabricante, filt
 O formulário preserva a referência e os metadados de foto existentes durante a edição, mas não oferece upload, conversão Gzip/Base64 nem alteração de referência de arquivo. Exclusão física não é oferecida pela interface. O backend impede alteração do saldo quando há movimentações; o saldo deve ser ajustado por `POST /api/v1/acertos-estoque`, que registra movimento e saldo atomicamente no adapter PostgreSQL. O frontend de inventário ainda não substitui a tela de Acertos de Estoque nem integra scanner por câmera, impressão de etiquetas, checklist, anexos, paginação ou relatórios por setor.
 
 A sessão encerrada invalida e aborta consultas pendentes e limpa os produtos em memória. Nenhuma execução automatizada ou publicação foi feita nesta etapa.
+
+
+## Acertos de Estoque — entradas, saídas e histórico
+
+A tela consome os catálogos autorizados de produtos (`GET /api/v1/estoque`) e motivos (`GET /api/v1/motivos-acerto-estoque`), além do histórico (`GET /api/v1/acertos-estoque`). Cada consulta respeita sua capacidade independente: `estoque:read`, `motivos_estoque:read` e `acertos_estoque:read`. O formulário registra movimentos por `POST /api/v1/acertos-estoque`, exigindo `acertos_estoque:create`; o motivo é enviado com ID e nome conforme o schema. Somente produtos com status Ativo são oferecidos para novas movimentações.
+
+A interface valida o formato das listas recebidas, quantidade positiva com até três casas decimais e saldo conhecido antes de enviar uma saída. A validação do navegador é apenas auxiliar: o backend relê o saldo com bloqueio `FOR UPDATE`, recusa saldo negativo e grava a alteração do produto e o registro de movimento na mesma transação PostgreSQL. O histórico é somente leitura e as movimentações não podem ser editadas ou apagadas; correções devem ser registradas por movimento compensatório.
+
+As consultas são canceladas e os dados em memória descartados ao encerrar a sessão. A listagem mostra data/hora, tipo, produto, quantidade e motivo. Não foram incluídos aprovação, scanner, anexos/evidências, paginação ou filtros avançados, pois não fazem parte do contrato integrado nesta etapa. A tela depende da API HTTPS Shadow, do bootstrap Google explicitamente habilitado e das permissões do perfil; não houve execução automatizada nem publicação.
