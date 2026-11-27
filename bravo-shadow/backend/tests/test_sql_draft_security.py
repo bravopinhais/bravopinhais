@@ -99,3 +99,46 @@ def test_audit_sql_draft_has_no_grants_or_policies():
     assert not re.search(r"\bcreate\s+policy\s+", sql)
     assert "create table if not exists bravo_shadow.audit_events" in sql
     assert "outcome in ('success', 'denied', 'failure')" in sql
+
+
+INSPECTION_SQL_PATH = (
+    Path(__file__).resolve().parents[2]
+    / "docs"
+    / "verificar-privilegios-rls-somente-leitura.sql"
+)
+
+
+def _inspection_sql() -> str:
+    return INSPECTION_SQL_PATH.read_text(encoding="utf-8")
+
+
+def test_postgres_inspection_script_is_explicitly_read_only():
+    sql = re.sub(r"--[^\\n]*", "", _inspection_sql()).strip()
+
+    assert re.search(r"^begin\\s+read\\s+only\\s*;", sql, re.IGNORECASE)
+    statements = [statement.strip() for statement in sql.split(";") if statement.strip()]
+    assert statements
+    for statement in statements:
+        assert re.match(
+            r"^(?:BEGIN\\s+READ\\s+ONLY|SELECT|COMMIT)\\b",
+            statement,
+            re.IGNORECASE,
+        ), f"Unexpected non-read-only SQL statement: {statement[:80]}"
+
+
+def test_postgres_inspection_script_covers_effective_security_catalogs():
+    sql = re.sub(r"--[^\\n]*", "", _inspection_sql()).lower()
+
+    for required in (
+        "from pg_roles",
+        "from pg_auth_members",
+        "from pg_class",
+        "from pg_policies",
+        "information_schema.role_table_grants",
+        "has_table_privilege",
+        "has_schema_privilege",
+        "has_sequence_privilege",
+        "has_function_privilege",
+        "aclexplode",
+    ):
+        assert required in sql
