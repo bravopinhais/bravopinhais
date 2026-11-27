@@ -180,3 +180,19 @@ def test_empty_or_non_json_target_payload_is_rejected():
         build(target_payloads={FINGERPRINT: {}})
     with pytest.raises(TypeError):
         build(target_payloads={FINGERPRINT: {"unexpected": object()}})
+
+def test_non_finite_target_payload_is_rejected():
+    with pytest.raises(ValueError):
+        build(target_payloads={FINGERPRINT: {"saldo": float("nan")}})
+
+
+def test_target_payload_is_detached_from_caller_mapping():
+    payload = {"detalhes": {"cor": "azul"}}
+    command = build(target_payloads={FINGERPRINT: payload})[0]
+    payload["detalhes"]["cor"] = "vermelho"
+    assert command.target_payload["detalhes"]["cor"] == "azul"
+
+
+def test_duplicate_matching_source_identity_is_rejected():
+    with pytest.raises(ValueError, match="duplicated"):
+        build(collections={SOURCE_COLLECTION: [SOURCE_RECORD, SOURCE_RECORD]})
