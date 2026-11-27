@@ -367,3 +367,19 @@ A interface Shadow foi criada para o cadastro de produtos e consulta de inventá
 ### Paridade ainda pendente
 
 A tela ainda não integra fotos, armazenamento externo, scanner por câmera/código de barras, impressão de etiquetas, checklist, relatórios por setor ou histórico de movimentações. A listagem da API não expõe filtros nem paginação. Não habilitar ações até integrar autenticação e definir o tratamento de arquivos, concorrência, auditoria e operações de exclusão.
+
+## Acerto de Estoque
+
+A interface Shadow inclui o formulário de entrada/saída e o histórico de movimentações. Tipo, produto, quantidade e motivo são obrigatórios. Quantidade aceita até três casas decimais e deve ser positiva. A data/hora é gerada pelo backend.
+
+### API e integridade
+
+- GET /api/v1/acertos-estoque — acertos_estoque:read.
+- POST /api/v1/acertos-estoque — acertos_estoque:create.
+- GET /api/v1/motivos-acerto-estoque — motivos_estoque:read (catálogo de motivos).
+- Admin e Operador têm leitura e criação de movimentos.
+- Entrada incrementa e saída decrementa saldo. Saída acima do saldo retorna HTTP 409.
+- No PostgreSQL, saldo e histórico são gravados na mesma transação, com SELECT FOR UPDATE no produto.
+- Não há rotas de edição ou exclusão. O service rejeita exclusão e orienta movimento compensatório.
+
+A interface permanece bloqueada, sem rede ou dados fictícios, até integração da sessão Google/Bearer e API HTTPS isolada. Scanner, anexos, aprovação, filtros/paginação e auditoria explícita do movimento ainda precisam de evolução.
