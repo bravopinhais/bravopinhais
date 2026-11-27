@@ -145,3 +145,37 @@ def test_malformed_internal_email_is_ignored_and_access_is_denied():
 
     assert error.value.status_code == 403
     assert error.value.detail == "Usuário não cadastrado ou inativo no Bravo."
+
+
+
+def test_google_identity_uses_targeted_email_lookup_when_available():
+    from types import SimpleNamespace
+
+    class TargetedUsersService:
+        def __init__(self):
+            self.requested_email = None
+
+        def find_by_email(self, email):
+            self.requested_email = email
+            return [
+                SimpleNamespace(
+                    email="admin@example.com", status="Ativo", perfil="Admin"
+                )
+            ]
+
+        def list(self):
+            raise AssertionError("Autenticação não deve listar todos os usuários.")
+
+    users = TargetedUsersService()
+    principal = principal_from_google_claims(
+        {
+            "sub": "google-subject-targeted",
+            "email": " ADMIN@example.com ",
+            "email_verified": True,
+        },
+        users,
+    )
+
+    assert users.requested_email == "admin@example.com"
+    assert principal.email == "admin@example.com"
+    assert principal.profile == "Admin"
