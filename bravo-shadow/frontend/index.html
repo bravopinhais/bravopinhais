@@ -1280,26 +1280,84 @@ function configuracoesView(){
   <p class="form-hint">Os estados não são presumidos nem gravados por esta tela. Ao conectar a sessão, a tabela será carregada da API. Apenas Admin poderá alterar módulos; Operador terá consulta. Alterações não concedem permissões.</p>
  </section>`;
 }
+let catalogApiClient=null,categoriesItems=[],reasonsItems=[],catalogSequence=0,catalogController=null;
+function catalogCan(key,action){return hasBravoCapability(key+":"+action);}
+function catalogStatus(id,message,kind=""){const node=document.getElementById(id);if(node){node.textContent=message;node.className="api-status"+(kind?" "+kind:"");}}
+function catalogRenderRows(tbodyId,items,emptyText){
+ const tbody=document.getElementById(tbodyId);if(!tbody)return;tbody.replaceChildren();
+ if(!items.length){const row=document.createElement("tr"),cell=document.createElement("td");cell.className="empty-state";cell.textContent=emptyText;row.append(cell);tbody.append(row);return;}
+ for(const item of items){const row=document.createElement("tr"),cell=document.createElement("td");cell.textContent=item.nome;row.append(cell);tbody.append(row);}
+}
+function catalogApplyPermissions(){
+ const categoryInput=document.getElementById("pastas-category-name"),categorySave=document.getElementById("pastas-category-save");
+ const reasonInput=document.getElementById("pastas-reason-name"),reasonSave=document.getElementById("pastas-reason-save");
+ if(categoryInput)categoryInput.disabled=!catalogCan("categorias","create");
+ if(categorySave)categorySave.disabled=!catalogCan("categorias","create");
+ if(reasonInput)reasonInput.disabled=!catalogCan("motivos_estoque","create");
+ if(reasonSave)reasonSave.disabled=!catalogCan("motivos_estoque","create");
+}
+async function catalogLoad(api){
+ const sequence=++catalogSequence;catalogController?.abort();catalogController=new AbortController();
+ const tasks=[
+  ["categorias","/api/v1/categorias","pastas-category-rows","pastas-category-status"],
+  ["motivos_estoque","/api/v1/motivos-acerto-estoque","pastas-reason-rows","pastas-reason-status"]
+ ];
+ await Promise.all(tasks.map(async([key,path,tbody,statusId])=>{
+  if(!catalogCan(key,"read")){if(key==="categorias")categoriesItems=[];else reasonsItems=[];catalogRenderRows(tbody,[],"Seu perfil não possui permissão de consulta.");catalogStatus(statusId,"Acesso não autorizado para "+key+".","err");return;}
+  catalogStatus(statusId,"Consultando cadastro autorizado…");
+  try{
+   const data=await api.get(path,{signal:catalogController.signal});
+   if(sequence!==catalogSequence||moduloAtual!=="categorias")return;
+   if(!Array.isArray(data)||data.some(item=>!item||typeof item.id!=="string"||typeof item.nome!=="string"||!item.nome.trim()))throw new Error("A API retornou uma lista inválida.");
+   if(key==="categorias")categoriesItems=data;else reasonsItems=data;
+   catalogRenderRows(tbody,data,"Nenhum registro cadastrado.");catalogStatus(statusId,data.length+" registro(s) carregado(s).","ok");
+  }catch(error){
+   if(error?.name==="AbortError"||sequence!==catalogSequence)return;
+   if(key==="categorias")categoriesItems=[];else reasonsItems=[];
+   catalogRenderRows(tbody,[],"Não foi possível carregar os registros.");
+   catalogStatus(statusId,error?.status===403?"Acesso negado pela API.":error?.status===401?"Sessão expirada.":(error?.message||"Falha na consulta."),"err");
+  }
+ }));
+}
+async function catalogCreate(key,path,inputId,statusId){
+ const api=catalogApiClient;if(!api)return;
+ if(!catalogCan(key,"create")){catalogStatus(statusId,"Seu perfil não possui autorização para cadastrar.","err");return;}
+ const input=document.getElementById(inputId),name=input?.value.trim();if(!name){catalogStatus(statusId,"Informe um nome válido.","err");input?.focus();return;}
+ const button=input.closest("form")?.querySelector('button[type="submit"]');if(button)button.disabled=true;
+ catalogStatus(statusId,"Salvando cadastro…");
+ try{
+  await api.post(path,{nome:name});input.value="";
+  await catalogLoad(api);catalogStatus(statusId,"Cadastro salvo com sucesso.","ok");
+ }catch(error){catalogStatus(statusId,error?.status===403?"Seu perfil não possui autorização para cadastrar.":error?.status===401?"Sessão expirada.":(error?.message||"Não foi possível salvar o cadastro."),"err");}
+ finally{catalogApplyPermissions();}
+}
 function pastasView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
-  <div class="api-toolbar"><div><strong style="font-size:13px">Pastas, categorias e motivos de estoque</strong><div class="api-status" id="pastas-status" role="status" aria-live="polite">Aguardando sessão Google e API Shadow</div></div><span class="tag">Cadastros de apoio</span></div>
-  <div class="notice" style="margin:16px 0 18px"><div class="notice-icon">▤</div><div><strong>Organização de documentos e inventário</strong><p>As categorias organizam documentos; os motivos classificam entradas e saídas do estoque. A exclusão é bloqueada pelo servidor quando há documentos ou acertos vinculados.</p></div></div>
+  <div class="api-toolbar"><div><strong style="font-size:13px">Pastas, categorias e motivos de estoque</strong><div class="api-status">Cadastros independentes · permissões próprias</div></div><span class="tag">Cadastros de apoio</span></div>
+  <div class="notice" style="margin:16px 0 18px"><div class="notice-icon">▤</div><div><strong>Organização de documentos e inventário</strong><p>As categorias organizam documentos; os motivos classificam entradas e saídas do estoque. Cada lista usa sua própria capacidade de leitura e cadastro.</p></div></div>
   <div class="section-head"><h2>Pastas e categorias</h2><span>Documentos</span></div>
   <form class="api-form" id="pastas-category-form">
-   <div class="field"><label for="pastas-category-name">Nome da pasta / categoria</label><input id="pastas-category-name" name="nome" maxlength="120" required placeholder="Ex.: Contratos, Assembleias, Notas fiscais" disabled></div>
-   <button class="action-btn primary" type="button" disabled>Cadastrar pasta</button>
+   <div class="field"><label for="pastas-category-name">Nome da pasta / categoria</label><input id="pastas-category-name" name="nome" maxlength="120" required placeholder="Nome da categoria" disabled></div>
+   <button id="pastas-category-save" class="action-btn primary" type="submit" disabled>Cadastrar pasta</button>
   </form>
-  <div class="data-table-wrap"><table class="data-table"><caption>Pastas e categorias cadastradas</caption><thead><tr><th scope="col">Nome</th><th scope="col">Vínculos</th><th scope="col">Ações</th></tr></thead><tbody id="pastas-category-rows"><tr><td colspan="3" class="empty-state">Aguardando consulta autorizada à API de categorias.</td></tr></tbody></table></div>
+  <div class="api-status" id="pastas-category-status" role="status" aria-live="polite">Aguardando consulta autorizada.</div>
+  <div class="data-table-wrap"><table class="data-table"><caption>Pastas e categorias cadastradas</caption><thead><tr><th scope="col">Nome</th></tr></thead><tbody id="pastas-category-rows"><tr><td class="empty-state">Aguardando consulta autorizada à API de categorias.</td></tr></tbody></table></div>
   <div class="section-head"><h2>Motivos de acerto de estoque</h2><span>Entradas e saídas</span></div>
   <form class="api-form" id="pastas-reason-form">
-   <div class="field"><label for="pastas-reason-name">Nome do motivo</label><input id="pastas-reason-name" name="nome" maxlength="120" required placeholder="Ex.: Compra, Consumo, Perda, Avaria" disabled></div>
-   <button class="action-btn primary" type="button" disabled>Cadastrar motivo</button>
+   <div class="field"><label for="pastas-reason-name">Nome do motivo</label><input id="pastas-reason-name" name="nome" maxlength="120" required placeholder="Compra, consumo, perda ou avaria" disabled></div>
+   <button id="pastas-reason-save" class="action-btn primary" type="submit" disabled>Cadastrar motivo</button>
   </form>
-  <div class="data-table-wrap"><table class="data-table"><caption>Motivos de acerto cadastrados</caption><thead><tr><th scope="col">Motivo</th><th scope="col">Vínculos</th><th scope="col">Ações</th></tr></thead><tbody id="pastas-reason-rows"><tr><td colspan="3" class="empty-state">Aguardando consulta autorizada à API de motivos de estoque.</td></tr></tbody></table></div>
-  <p class="form-hint">A API já oferece consulta e cadastro para as duas listas. Exclusões exigem as capacidades administrativas correspondentes e são recusadas quando existem vínculos. Os controles permanecem desativados até a integração segura da sessão autenticada; nenhum registro é presumido.</p>
+  <div class="api-status" id="pastas-reason-status" role="status" aria-live="polite">Aguardando consulta autorizada.</div>
+  <div class="data-table-wrap"><table class="data-table"><caption>Motivos de acerto cadastrados</caption><thead><tr><th scope="col">Nome</th></tr></thead><tbody id="pastas-reason-rows"><tr><td class="empty-state">Aguardando consulta autorizada à API de motivos de estoque.</td></tr></tbody></table></div>
+  <p class="form-hint">A interface oferece consulta e cadastro. Exclusão física não é disponibilizada; embora o backend confira vínculos, a remoção permanece fora da interface. O contrato atual não oferece edição.</p>
  </section>`;
+ document.getElementById("pastas-category-form")?.addEventListener("submit",event=>{event.preventDefault();void catalogCreate("categorias","/api/v1/categorias","pastas-category-name","pastas-category-status");});
+ document.getElementById("pastas-reason-form")?.addEventListener("submit",event=>{event.preventDefault();void catalogCreate("motivos_estoque","/api/v1/motivos-acerto-estoque","pastas-reason-name","pastas-reason-status");});
+ catalogApplyPermissions();if(catalogApiClient)void catalogLoad(catalogApiClient);
 }
+window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function"||typeof api.post!=="function")return;catalogApiClient=api;if(moduloAtual==="categorias")void catalogLoad(api);});
+window.addEventListener("bravo:session-ended",()=>{catalogApiClient=null;catalogSequence+=1;catalogController?.abort();catalogController=null;categoriesItems=[];reasonsItems=[];if(moduloAtual==="categorias")pastasView();});
 
 let relatoriosApiClient=null,relatoriosRequestSequence=0,relatoriosRequestController=null;
 const dreCurrency=value=>Number.isFinite(Number(value))?new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(value)):"—";
