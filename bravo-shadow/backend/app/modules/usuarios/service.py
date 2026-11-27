@@ -15,8 +15,10 @@ class UsuariosService:
     def __init__(
         self,
         repository: CollectionRepository[Usuario, str] | None = None,
+        audit_sink=None,
     ) -> None:
         self.repository = repository if repository is not None else InMemoryCollectionRepository()
+        self.audit_sink = audit_sink
         self._items = getattr(self.repository, "_items", {})
         self._email_lock = RLock()
 
@@ -83,6 +85,45 @@ class UsuariosService:
             )
             self.repository.replace(item_id, updated)
             return updated
+
+    def deactivate(
+        self, item_id: str, *, actor_subject: str, actor_email: str
+    ) -> None:
+        """Desativa sem apagar o cadastro; exige auditoria na mesma transação."""
+        if not actor_subject or not actor_subject.strip():
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Identidade autenticada inválida.",
+            )
+        if not actor_email or not actor_email.strip():
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="E-mail autenticado inválido.",
+            )
+
+        current = self.get(item_id)
+        if current.email.strip().lower() == actor_email.strip().lower():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Não é permitido desativar a própria conta.",
+            )
+        operation = getattr(self.repository, "deactivate_user", None)
+        if not callable(operation) or not callable(
+            getattr(self.audit_sink, "append_in_transaction", None)
+        ):
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Desativação auditada indisponível neste armazenamento.",
+            )
+
+        event = AuditEvent(
+            actor_subject=actor_subject.strip(),
+            action="usuarios:desativar",
+            entity_type="usuario",
+            entity_id=item_id,
+            outcome="success",
+        )
+        operation(item_id, event=event, audit_sink=self.audit_sink)
 
     def delete(self, item_id: str) -> None:
         self.get(item_id)
