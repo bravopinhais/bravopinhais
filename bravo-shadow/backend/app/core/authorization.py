@@ -43,14 +43,45 @@ CAPABILITIES = frozenset(
     }
 )
 
-# A matriz Admin/Operador ainda não foi aprovada pelo responsável do Bravo.
-# Por segurança, nenhum perfil recebe capacidades implicitamente. A aprovação
-# deverá ser registrada e implementada em alteração isolada, acompanhada de testes.
+# Matriz aprovada pelo responsável do Bravo (2026-11-27).
+# Admin: todas as capacidades explicitamente cadastradas em CAPABILITIES.
+# Operador: rotina operacional; configurações e administração de usuários são
+# somente leitura (quando aplicável) ou negadas. O backend é a fonte de verdade.
 # Movimentos de estoque não possuem UPDATE/DELETE no catálogo.
+ADMIN_CAPABILITIES = CAPABILITIES
+
+OPERATOR_CAPABILITIES = frozenset(
+    {
+        "dashboard:read",
+        # Consulta de cadastros/configurações, sem poder alterá-los.
+        "condominio:read",
+        "conselheiros:read",
+        "plano_contas:read",
+        "formas_monetarias:read",
+        "contas_bancarias:read",
+        "categorias:read",
+        "motivos_estoque:read",
+        # Operação diária.
+        "financeiro:read", "financeiro:create", "financeiro:update",
+        "financeiro:delete",
+        "moradores:read", "moradores:create", "moradores:update",
+        "moradores:delete", "moradores:import",
+        "fornecedores:read", "fornecedores:create", "fornecedores:update",
+        "fornecedores:delete",
+        "empregados:read", "empregados:create", "empregados:update",
+        "empregados:delete",
+        "estoque:read", "estoque:create", "estoque:update", "estoque:delete",
+        "acertos_estoque:read", "acertos_estoque:create",
+        "documentos:read", "documentos:create", "documentos:update",
+        "documentos:delete",
+        "relatorios:read",
+    }
+)
+
 ROLE_CAPABILITIES = MappingProxyType(
     {
-        "Admin": frozenset(),
-        "Operador": frozenset(),
+        "Admin": ADMIN_CAPABILITIES,
+        "Operador": OPERATOR_CAPABILITIES,
     }
 )
 
