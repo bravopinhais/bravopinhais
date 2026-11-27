@@ -519,3 +519,8 @@ O relatório apresenta quantidade e valor total de títulos Receber/Pagar, difer
 **Limites deliberados:** o contrato financeiro não possui datas de competência, vencimento, pagamento/recebimento ou status de liquidação. Portanto, a consulta inclui todos os títulos cadastrados, sem filtro temporal ou de situação. Não oferece DRE contábil por competência, realizado versus previsto, inadimplência, conciliação bancária ou exportação PDF/Excel. A diferença entre Receber e Pagar não é saldo em caixa nem saldo bancário. A interface valida a resposta, usa `textContent`, cancela requisições obsoletas e limpa os dados em memória no encerramento da sessão.
 
 A implementação está na branch Shadow, mas não foi ativada em hospedagem nem conectada a dados de produção. Depende da API HTTPS isolada, do bootstrap Google explicitamente habilitado e da capacidade `relatorios:read`.
+
+
+## Autenticação Google e autorização central
+
+A cadeia de autenticação, vínculo com cadastro ativo e cobertura de capacidades dos routers está registrada em [Auditoria de autenticação Google e autorização de rotas](../docs/auditoria-autenticacao-google-autorizacao-rotas.md). A autenticação valida o ID token no backend e resolve o perfil exclusivamente pelo usuário interno ativo. A interface não concede permissões; cada endpoint de negócio aplica sua capacidade no servidor. O bootstrap segue opt-in e não foi ativado nesta revisão.
