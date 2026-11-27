@@ -36,7 +36,7 @@ Este documento define o contrato visual. A interface será construída após o i
 
 ## Primeiro módulo conectado à API
 
-O módulo **Formas Monetárias** já utiliza a API relativa `/api/v1/formas-monetarias` para listar, cadastrar, editar e excluir registros. A interface apresenta estados de carregamento e erro, valida o nome e a multa (0–100%) e escapa os valores exibidos.
+O backend do módulo **Formas Monetárias** possui rotas protegidas de consulta, cadastro, edição e exclusão. A tela Shadow foi deliberadamente bloqueada até a integração do ID token Google: a implementação anterior fazia chamadas sem enviar `Authorization: Bearer`, o que não satisfaz o contrato de autenticação. Nenhuma chamada é disparada pela tela atual; nome e multa (0–100%, até duas casas) são apresentados como campos desabilitados.
 
 O backend deste módulo ainda utiliza armazenamento em memória. Os registros são exclusivos do processo do ambiente sombra e são perdidos quando ele reinicia. Isso não é persistência definitiva nem integração com o banco de produção.
 
@@ -234,3 +234,19 @@ Os controles de cadastro permanecem desabilitados até integração com sessão 
 O schema contém somente `banco` e `saldo` (Decimal com duas casas), além do identificador. A matriz atual permite ao perfil Operador somente leitura neste módulo; Admin possui as capacidades cadastradas.
 
 O contrato não representa extrato, caixa operacional, movimentações, transferências, conciliação, fechamento ou saldo calculado. A exclusão física também não verifica vínculos. Esses recursos não devem ser sugeridos como disponíveis até sua implementação e validação.
+
+
+## Formas Monetárias — bloqueio preventivo da interface
+
+O contrato legado contém nome e percentual de multa. O backend Shadow expõe:
+
+- `GET /api/v1/formas-monetarias` — `formas_monetarias:read`.
+- `POST /api/v1/formas-monetarias` — `formas_monetarias:create`.
+- `PUT /api/v1/formas-monetarias/{id}` — `formas_monetarias:update`.
+- `DELETE /api/v1/formas-monetarias/{id}` — `formas_monetarias:delete`.
+
+O schema aceita multa de 0 a 100%, com no máximo duas casas decimais. O perfil Operador tem leitura; alterações são restritas ao perfil Admin.
+
+A tela foi colocada em modo somente visual porque o helper anterior fazia `fetch` sem o cabeçalho `Authorization: Bearer`. A autenticação Google ainda não está conectada ao frontend; portanto, não se deve tentar contornar a proteção nem habilitar os formulários.
+
+A persistência PostgreSQL possui adapter, mas o modo padrão continua sendo memória. Sem selecionar e provisionar PostgreSQL no ambiente isolado, os registros são voláteis. O serviço também não implementa verificação de referências antes da exclusão nem auditoria transacional específica. A integração financeira do percentual de multa ainda precisa ser confirmada no domínio de títulos.
