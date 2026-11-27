@@ -138,7 +138,7 @@ function renderFormasRows(){
  body.innerHTML=formasMonetarias.map(item=>`<tr><td><strong>${escapeHTML(item.nome)}</strong></td><td>${Number(item.multaPct).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}%</td><td><div class="row-actions"><button type="button" class="action-btn" data-action="edit" data-id="${escapeHTML(item.id)}" aria-label="Editar ${escapeHTML(item.nome)}">Editar</button><button type="button" class="action-btn danger" data-action="delete" data-id="${escapeHTML(item.id)}" aria-label="Excluir ${escapeHTML(item.nome)}">Excluir</button></div></td></tr>`).join("");
 }
 async function carregarFormas(){
- try{formasMonetarias=await apiRequest("/formas-monetarias");renderFormasRows();setFormasStatus("API conectada · "+formasMonetarias.length+" registro(s)","ok");return true}
+ try{formasMonetarias=await apiRequest("/formas-monetarias");const edicaoPerdida=Boolean(formaEmEdicao&&!formasMonetarias.some(item=>item.id===formaEmEdicao));if(edicaoPerdida)resetFormaForm();renderFormasRows();setFormasStatus(edicaoPerdida?"A forma que estava em edição não existe mais na lista. A edição foi cancelada.":"API conectada · "+formasMonetarias.length+" registro(s)",edicaoPerdida?"err":"ok");return true}
  catch(error){setFormasStatus("Falha ao carregar: "+error.message,"err");const body=document.getElementById("formas-rows");if(body)body.innerHTML='<tr><td colspan="3" class="empty-state">Não foi possível carregar os registros. Verifique se a API está disponível.</td></tr>';return false}
 }
 function resetFormaForm(){
