@@ -164,3 +164,23 @@ def test_postgres_adapter_rolls_back_when_update_loses_race():
         store.transition("batch-1", "approved", approval=approval())
 
     assert database.rows == before
+
+
+def test_postgres_adapter_persists_needs_review_as_terminal_state():
+    database, connection, store = setup_store()
+    store.transition("batch-1", "failed")
+    # Use a fresh approved/applying batch to model an interrupted apply.
+    database.rows["batch-1"][3] = "approved"
+    database.rows["batch-1"][4:7] = [
+        "reviewer@example.test", datetime(2026, 11, 26, 18, 30), HASH
+    ]
+    store.transition("batch-1", "applying", expected_manifest_hash=HASH)
+    reviewed = store.transition("batch-1", "needs_review")
+
+    assert reviewed.status == "needs_review"
+    assert database.rows["batch-1"][3] == "needs_review"
+    update = next(
+        statement for statement in connection.statements
+        if statement.startswith("UPDATE bravo_shadow.migration_batches")
+    )
+    assert "needs_review" in update or "finished_at = CASE" in update
