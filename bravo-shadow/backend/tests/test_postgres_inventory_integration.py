@@ -273,3 +273,102 @@ def test_real_postgres_serializes_product_edit_with_movement(postgres_inventory_
         assert product == (6, "Produto sintético editado", "Marca teste")
     else:
         assert product == (3, "Item sintético de integração", "")
+
+
+@pytest.mark.parametrize(
+    "relationship",
+    ["document_category", "stock_product", "stock_reason", "financial_account"],
+)
+def test_real_postgres_restricts_deletion_of_referenced_parent(
+    postgres_inventory_database, relationship
+):
+    """FK RESTRICT deve bloquear exclusão e preservar pai e filho."""
+    database_url = postgres_inventory_database
+    suffix = uuid4().hex
+    parent_id = f"parent-{suffix}"
+    child_id = f"child-{suffix}"
+
+    with psycopg.connect(database_url) as connection:
+        if relationship == "document_category":
+            connection.execute(
+                "INSERT INTO bravo_shadow.categorias (id, nome) VALUES (%s, %s)",
+                (parent_id, "Categoria sintética"),
+            )
+            connection.execute(
+                """
+                INSERT INTO bravo_shadow.documentos
+                    (id, titulo, nome_arquivo, arquivo_compactado_gzip, categoria_id)
+                VALUES (%s, %s, %s, %s, %s)
+                """,
+                (child_id, "Documento sintético", "teste.txt", "conteudo-sintetico", parent_id),
+            )
+            delete_sql = "DELETE FROM bravo_shadow.categorias WHERE id = %s"
+            parent_table, child_table = "categorias", "documentos"
+            child_fk = "categoria_id"
+        elif relationship == "stock_product":
+            _insert_product(database_url, parent_id, 7)
+            connection.execute(
+                """
+                INSERT INTO bravo_shadow.acertos_estoque
+                    (id, data, tipo, produto_id, quantidade, motivo)
+                VALUES (%s, now(), 'Saída', %s, 1, %s)
+                """,
+                (child_id, parent_id, "Motivo sintético"),
+            )
+            delete_sql = "DELETE FROM bravo_shadow.estoque WHERE id = %s"
+            parent_table, child_table = "estoque", "acertos_estoque"
+            child_fk = "produto_id"
+        elif relationship == "stock_reason":
+            connection.execute(
+                "INSERT INTO bravo_shadow.motivos_acerto (id, nome) VALUES (%s, %s)",
+                (parent_id, "Motivo sintético"),
+            )
+            _insert_product(database_url, f"product-{suffix}", 7)
+            connection.execute(
+                """
+                INSERT INTO bravo_shadow.acertos_estoque
+                    (id, data, tipo, produto_id, quantidade, motivo, motivo_id)
+                VALUES (%s, now(), 'Saída', %s, 1, %s, %s)
+                """,
+                (child_id, f"product-{suffix}", "Motivo sintético", parent_id),
+            )
+            delete_sql = "DELETE FROM bravo_shadow.motivos_acerto WHERE id = %s"
+            parent_table, child_table = "motivos_acerto", "acertos_estoque"
+            child_fk = "motivo_id"
+        else:
+            connection.execute(
+                """
+                INSERT INTO bravo_shadow.plano_contas (id, codigo, nome, tipo)
+                VALUES (%s, %s, %s, 'Despesa')
+                """,
+                (parent_id, f"TEST-{suffix}", "Conta sintética"),
+            )
+            connection.execute(
+                """
+                INSERT INTO bravo_shadow.financeiro
+                    (id, tipo, plano_conta_id, historico, valor)
+                VALUES (%s, 'Pagar', %s, %s, 10.00)
+                """,
+                (child_id, parent_id, "Lançamento sintético"),
+            )
+            delete_sql = "DELETE FROM bravo_shadow.plano_contas WHERE id = %s"
+            parent_table, child_table = "plano_contas", "financeiro"
+            child_fk = "plano_conta_id"
+
+        with pytest.raises(psycopg.errors.ForeignKeyViolation) as error:
+            connection.execute(delete_sql, (parent_id,))
+        assert error.value.sqlstate == "23503"
+        connection.rollback()
+
+    with psycopg.connect(database_url) as connection:
+        parent_count = connection.execute(
+            f"SELECT count(*) FROM bravo_shadow.{parent_table} WHERE id = %s",
+            (parent_id,),
+        ).fetchone()[0]
+        child_count = connection.execute(
+            f"SELECT count(*) FROM bravo_shadow.{child_table} WHERE id = %s AND {child_fk} = %s",
+            (child_id, parent_id),
+        ).fetchone()[0]
+
+    assert parent_count == 1
+    assert child_count == 1
