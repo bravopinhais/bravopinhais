@@ -1667,7 +1667,7 @@ function relatoriosView(){
 window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function")return;relatoriosApiClient=api;if(moduloAtual==="relatorios")void loadDre(api);});
 window.addEventListener("bravo:session-ended",()=>{relatoriosApiClient=null;relatoriosRequestSequence+=1;relatoriosRequestController?.abort();relatoriosRequestController=null;if(moduloAtual==="relatorios")relatoriosView();});
 
-let documentosApiClient=null,documentosRequestSequence=0,documentosRequestController=null,documentosCategorySequence=0,documentosCategoryController=null,documentosDownloadSequence=0,documentosDownloadController=null,documentosItems=[],documentosCategories=[],documentosEditingId=null;
+let documentosApiClient=null,documentosRequestSequence=0,documentosRequestController=null,documentosCategorySequence=0,documentosCategoryController=null,documentosDownloadSequence=0,documentosDownloadController=null,documentosItems=[],documentosCategories=[],documentosEditingId=null,documentosEditingCategoryId=null,documentosEditingFolder="Geral",documentosCategoryTouched=false;
 const DOCUMENTOS_MAX_BYTES=5*1024*1024;
 const DOCUMENTOS_ALLOWED_EXTENSIONS=new Set(["pdf","png","jpg","jpeg","gif","webp","txt","csv","doc","docx","xls","xlsx","odt","ods"]);
 function documentosSetStatus(message,kind=""){const node=document.getElementById("documentos-status");if(node){node.textContent=message;node.className="api-status"+(kind?" "+kind:"");}}
@@ -1710,11 +1710,12 @@ async function documentosLoadCategories(api){
  catch(error){if(error?.name==="AbortError"||sequence!==documentosCategorySequence)return;documentosSetStatus("Pastas indisponíveis: "+(error?.message||"falha de consulta"),"err");}
 }
 function documentosStartReplacement(item){
- if(!hasBravoCapability("documentos:update"))return;documentosEditingId=item.id;const form=document.getElementById("documentos-form");if(!form)return;
+ if(!hasBravoCapability("documentos:update"))return;documentosEditingId=item.id;documentosEditingCategoryId=item.categoriaId||null;documentosEditingFolder=item.pasta;documentosCategoryTouched=false;const form=document.getElementById("documentos-form");if(!form)return;
+ if(item.categoriaId&&!Array.from(form.elements.categoriaId.options).some(option=>option.value===item.categoriaId))form.elements.categoriaId.add(new Option(item.pasta,item.categoriaId));
  form.elements.titulo.value=item.titulo;form.elements.categoriaId.value=item.categoriaId||"";form.elements.arquivo.value="";form.querySelector('[type="submit"]').textContent="Substituir documento";
  documentosSetStatus("Substituição selecionada: escolha o novo arquivo. O original permanece salvo até a confirmação da API.");form.scrollIntoView({behavior:"smooth",block:"start"});
 }
-function documentosResetForm(){documentosEditingId=null;const form=document.getElementById("documentos-form");if(!form)return;form.reset();const button=form.querySelector('[type="submit"]');if(button)button.textContent="Salvar documento";documentosApplyPermissions();}
+function documentosResetForm(){documentosEditingId=null;documentosEditingCategoryId=null;documentosEditingFolder="Geral";documentosCategoryTouched=false;const form=document.getElementById("documentos-form");if(!form)return;form.reset();const button=form.querySelector('[type="submit"]');if(button)button.textContent="Salvar documento";documentosApplyPermissions();}
 function documentosBytesToBase64(bytes){let binary="";for(let offset=0;offset<bytes.length;offset+=0x8000)binary+=String.fromCharCode(...bytes.subarray(offset,Math.min(offset+0x8000,bytes.length)));return btoa(binary);}
 async function documentosCompress(file){
  if(!(file instanceof File)||!file.size)throw new Error("Selecione um arquivo que não esteja vazio.");
@@ -1731,8 +1732,9 @@ async function documentosSubmit(event){
  const file=form.elements.arquivo.files?.[0];if(!file){documentosSetStatus("Selecione o arquivo original. Para substituir, escolha o novo arquivo antes de salvar.","err");return;}
  const submit=form.querySelector('[type="submit"]');if(submit)submit.disabled=true;
  try{
-  const categoriaId=form.elements.categoriaId.value||null,category=documentosCategories.find(item=>item.id===categoriaId);
-  const payload={pasta:category?.nome||"Geral",categoriaId,titulo:form.elements.titulo.value.trim(),nomeArquivo:file.name,arquivoCompactadoGzip:await documentosCompress(file)};
+  const selectedCategoryId=form.elements.categoriaId.value||null,categoriaId=editing&&!documentosCategoryTouched?documentosEditingCategoryId:selectedCategoryId,category=documentosCategories.find(item=>item.id===categoriaId);
+  const pasta=category?.nome||(editing&&!documentosCategoryTouched?documentosEditingFolder:"Geral");
+  const payload={pasta,categoriaId,titulo:form.elements.titulo.value.trim(),nomeArquivo:file.name,arquivoCompactadoGzip:await documentosCompress(file)};
   const result=editing?await api.put("/api/v1/documentos/"+encodeURIComponent(documentosEditingId),payload):await api.post("/api/v1/documentos",payload);
   if(!result||typeof result.id!=="string")throw new Error("A API não confirmou o cadastro do documento.");
   documentosResetForm();documentosSetStatus(editing?"Documento substituído com sucesso.":"Documento cadastrado com sucesso.","ok");await documentosLoad(api);
@@ -1752,6 +1754,7 @@ async function documentosDownload(id,api){
  try{
   const item=await api.get("/api/v1/documentos/"+encodeURIComponent(id),{signal:documentosDownloadController.signal});if(sequence!==documentosDownloadSequence||moduloAtual!=="documentos")return;
   if(!item||typeof item.arquivoCompactadoGzip!=="string"||typeof item.nomeArquivo!=="string")throw new Error("A API não retornou o arquivo esperado.");
+  if(item.arquivoCompactadoGzip.length>8*1024*1024)throw new Error("O arquivo legado ultrapassa o limite de leitura desta tela.");
   const binary=atob(item.arquivoCompactadoGzip),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
   const blob=await documentosDecompress(bytes);if(sequence!==documentosDownloadSequence||moduloAtual!=="documentos")return;
   const url=URL.createObjectURL(new Blob([blob],{type:"application/octet-stream"})),link=document.createElement("a");link.href=url;link.download=item.nomeArquivo;link.hidden=true;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
@@ -1759,7 +1762,7 @@ async function documentosDownload(id,api){
  }catch(error){if(error?.name==="AbortError"||sequence!==documentosDownloadSequence)return;documentosSetStatus(error?.status===403?"Seu perfil não possui documentos:read.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível baixar o documento."),"err");}
 }
 window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function")return;documentosApiClient=api;documentosApplyPermissions();if(moduloAtual==="documentos"){void documentosLoad(api);void documentosLoadCategories(api);}});
-window.addEventListener("bravo:session-ended",()=>{documentosApiClient=null;documentosRequestSequence++;documentosCategorySequence++;documentosDownloadSequence++;documentosRequestController?.abort();documentosCategoryController?.abort();documentosDownloadController?.abort();documentosRequestController=null;documentosCategoryController=null;documentosDownloadController=null;documentosItems=[];documentosCategories=[];documentosEditingId=null;if(moduloAtual==="documentos")documentosView();});
+window.addEventListener("bravo:session-ended",()=>{documentosApiClient=null;documentosRequestSequence++;documentosCategorySequence++;documentosDownloadSequence++;documentosRequestController?.abort();documentosCategoryController?.abort();documentosDownloadController?.abort();documentosRequestController=null;documentosCategoryController=null;documentosDownloadController=null;documentosItems=[];documentosCategories=[];documentosEditingId=null;documentosEditingCategoryId=null;documentosEditingFolder="Geral";documentosCategoryTouched=false;if(moduloAtual==="documentos")documentosView();});
 function documentosView(){
  const view=document.getElementById("view");
  view.innerHTML=\`<section class="panel">
@@ -1781,6 +1784,7 @@ function documentosView(){
  document.getElementById("documentos-form")?.addEventListener("reset",()=>{documentosEditingId=null;setTimeout(()=>{const button=document.getElementById("documentos-save");if(button)button.textContent="Salvar documento";},0);});
  document.getElementById("documentos-search")?.addEventListener("input",documentosRenderRows);
  document.getElementById("documentos-filter-folder")?.addEventListener("change",documentosRenderRows);
+ document.getElementById("documentos-folder")?.addEventListener("change",()=>{documentosCategoryTouched=true;});
  documentosRenderCategories();documentosRenderRows();documentosApplyPermissions();
  if(documentosApiClient){void documentosLoad(documentosApiClient);void documentosLoadCategories(documentosApiClient);}
 }
