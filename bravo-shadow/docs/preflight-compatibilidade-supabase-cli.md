@@ -75,10 +75,10 @@ de negócio nem altera dados ou schema. Ele interrompe com erro se encontrar:
 tabelas esperadas ausentes, RLS desabilitado, policies inesperadas, privilégios
 de tabela/schema para `anon`, `authenticated` ou `service_role`, ausência de
 FORCE RLS na auditoria, triggers append-only ausentes/desabilitados ou
-constraints que impedem autorização de escrita na aprovação pré-importação.
+constraints que impedem autorização de escrita na aprovação pré-importação e as 13 FKs críticas definidas nas migrations.
 
-A auditoria é uma verificação de catálogo direcionada aos 27 objetos/tabelas
-definidos nas migrations atuais; não substitui revisão manual de cada FK,
+A auditoria é uma verificação de catálogo direcionada às 27 tabelas e às 13 FKs
+críticas definidas nas migrations atuais; não substitui revisão manual de cada
 índice, tipo, trigger ou comportamento da aplicação.
 
 Depois da execução, ainda será necessário revisar FKs, índices, constraints,
