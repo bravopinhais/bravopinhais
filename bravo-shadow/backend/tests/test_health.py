@@ -112,3 +112,29 @@ def test_app_instances_keep_financial_services_separate(monkeypatch) -> None:
     assert response.status_code == 201
     assert len(first_client.get("/api/v1/plano-contas").json()) == 1
     assert second_client.get("/api/v1/plano-contas").json() == []
+
+def test_request_id_is_generated_by_server_and_returned_in_response():
+    import re
+
+    response = client.get("/api/v1/health")
+
+    request_id = response.headers.get("X-Request-ID")
+    assert request_id is not None
+    assert re.fullmatch(r"req_[0-9a-f]{32}", request_id)
+
+
+def test_client_cannot_choose_server_request_id():
+    response = client.get(
+        "/api/v1/health",
+        headers={"X-Request-ID": "req_forged-by-client"},
+    )
+
+    assert response.headers["X-Request-ID"] != "req_forged-by-client"
+    assert response.headers["X-Request-ID"].startswith("req_")
+
+
+def test_each_request_receives_a_distinct_request_id():
+    first = client.get("/api/v1/health")
+    second = client.get("/api/v1/health")
+
+    assert first.headers["X-Request-ID"] != second.headers["X-Request-ID"]
