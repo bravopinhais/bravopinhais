@@ -78,3 +78,13 @@ O adaptador também expõe `append_in_transaction(connection, event)`. Esse mét
 O método `append(event)` continua disponível para uma transação independente, útil em contextos isolados, mas não garante atomicidade com uma operação de negócio que use outra conexão. Não usar esse caminho como substituto da gravação integrada em operações críticas.
 
 Foram acrescentados testes unitários simulados para verificar que `append_in_transaction` não assume a propriedade da conexão, inclusive quando o INSERT falha. Os testes ainda não foram executados e não substituem testes de integração com PostgreSQL local. Nenhum serviço ou router foi conectado ao adaptador.
+
+## Revisão de rastreabilidade e minimização — 26/11/2026
+
+A revisão confirmou que `AuditEvent` contém somente oito campos explícitos: `actor_subject`, `action`, `entity_type`, `entity_id`, `outcome`, `request_id`, `event_id` e `occurred_at`. Foram adicionados testes de contrato para impedir a inclusão acidental de campos livres como e-mail ou metadata/token.
+
+**Limitação atual de correlação:** embora o evento aceite `request_id`, as rotas de usuários revisadas ainda não o preenchem a partir de um contexto de requisição. Portanto, não afirmar que há rastreabilidade ponta a ponta por request ID. A futura integração deve gerar/validar um identificador no limite HTTP, armazená-lo em contexto confiável e propagá-lo ao serviço; nunca aceitar um ID de ator ou payload de auditoria enviado pelo cliente.
+
+**Classificação do identificador:** `actor_subject` evita gravar e-mail, mas o `sub` Google continua sendo um identificador pseudônimo vinculável a uma pessoa. Deve receber proteção, controle de leitura e prazo de retenção definidos; não é dado anônimo.
+
+Os testes adicionados ainda não foram executados nesta etapa. O sink PostgreSQL permanece desconectado da aplicação, e o SQL continua rascunho não aplicado.
