@@ -103,6 +103,7 @@ const API_BASE="/api/v1";
 const IS_STATIC_PREVIEW=location.hostname.endsWith("github.io");
 if(IS_STATIC_PREVIEW){const env=document.querySelector(".env");if(env)env.innerHTML='<span class="dot"></span> PREVIEW ESTÁTICO · GITHUB PAGES';}
 let formasMonetarias=[];
+let formasListaDesatualizada=false;
 let formaEmEdicao=null;
 let moduloAtual="dashboard";
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
@@ -136,11 +137,11 @@ function setFormasStatus(message,kind=""){
 function renderFormasRows(){
  const body=document.getElementById("formas-rows");if(!body)return;
  if(!formasMonetarias.length){body.innerHTML='<tr><td colspan="3" class="empty-state">Nenhuma forma monetária cadastrada neste ambiente.</td></tr>';return}
- body.innerHTML=formasMonetarias.map(item=>`<tr><td><strong>${escapeHTML(item.nome)}</strong></td><td>${Number(item.multaPct).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}%</td><td><div class="row-actions"><button type="button" class="action-btn" data-action="edit" data-id="${escapeHTML(item.id)}" aria-label="Editar ${escapeHTML(item.nome)}">Editar</button><button type="button" class="action-btn danger" data-action="delete" data-id="${escapeHTML(item.id)}" aria-label="Excluir ${escapeHTML(item.nome)}">Excluir</button></div></td></tr>`).join("");
+ body.innerHTML=formasMonetarias.map(item=>`<tr><td><strong>${escapeHTML(item.nome)}</strong></td><td>${Number(item.multaPct).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}%</td><td><div class="row-actions"><button type="button" class="action-btn" data-action="edit" data-id="${escapeHTML(item.id)}" aria-label="Editar ${escapeHTML(item.nome)}"${formasListaDesatualizada?" disabled":""}>Editar</button><button type="button" class="action-btn danger" data-action="delete" data-id="${escapeHTML(item.id)}" aria-label="Excluir ${escapeHTML(item.nome)}"${formasListaDesatualizada?" disabled":""}>Excluir</button></div></td></tr>`).join("");
 }
 async function carregarFormas(){
- try{formasMonetarias=await apiRequest("/formas-monetarias");const edicaoPerdida=Boolean(formaEmEdicao&&!formasMonetarias.some(item=>item.id===formaEmEdicao));if(edicaoPerdida)resetFormaForm();renderFormasRows();setFormasStatus(edicaoPerdida?"A forma que estava em edição não existe mais na lista. A edição foi cancelada.":"API conectada · "+formasMonetarias.length+" registro(s)",edicaoPerdida?"err":"ok");return true}
- catch(error){const possuiListaAnterior=formasMonetarias.length>0;if(possuiListaAnterior){renderFormasRows();setFormasStatus("Falha ao atualizar: "+error.message+" · Exibindo a última lista carregada; os dados podem estar desatualizados.","err")}else{setFormasStatus("Falha ao carregar: "+error.message,"err");const body=document.getElementById("formas-rows");if(body)body.innerHTML='<tr><td colspan="3" class="empty-state">Não foi possível carregar os registros. Verifique se a API está disponível.</td></tr>'}return false}
+ try{formasMonetarias=await apiRequest("/formas-monetarias");formasListaDesatualizada=false;const edicaoPerdida=Boolean(formaEmEdicao&&!formasMonetarias.some(item=>item.id===formaEmEdicao));if(edicaoPerdida)resetFormaForm();renderFormasRows();setFormasStatus(edicaoPerdida?"A forma que estava em edição não existe mais na lista. A edição foi cancelada.":"API conectada · "+formasMonetarias.length+" registro(s)",edicaoPerdida?"err":"ok");return true}
+ catch(error){const possuiListaAnterior=formasMonetarias.length>0;if(possuiListaAnterior){formasListaDesatualizada=true;renderFormasRows();setFormasStatus("Falha ao atualizar: "+error.message+" · Exibindo a última lista carregada; os dados podem estar desatualizados.","err")}else{setFormasStatus("Falha ao carregar: "+error.message,"err");const body=document.getElementById("formas-rows");if(body)body.innerHTML='<tr><td colspan="3" class="empty-state">Não foi possível carregar os registros. Verifique se a API está disponível.</td></tr>'}return false}
 }
 function resetFormaForm(){
  formaEmEdicao=null;const form=document.getElementById("forma-form");if(!form)return;
@@ -191,6 +192,7 @@ document.addEventListener("click",async event=>{
  const nav=event.target.closest("[data-module]");if(nav){openModule(nav.dataset.module);return}
  const action=event.target.closest("[data-action]");if(!action||moduloAtual!=="formas_monetarias")return;
  const id=action.dataset.id;
+ if(formasListaDesatualizada&&["edit","delete"].includes(action.dataset.action)){setFormasStatus("A lista exibida pode estar desatualizada. Atualize antes de editar ou excluir registros.","err");return}
  const formaForm=document.getElementById("forma-form");if(formaForm?.getAttribute("aria-busy")==="true")return;
  if(action.dataset.action==="cancel-edit"){const form=document.getElementById("forma-form");if(form?.getAttribute("aria-busy")==="true")return;resetFormaForm();setFormasStatus("Edição cancelada; nenhuma alteração foi enviada.");document.getElementById("forma-nome")?.focus();return}
  if(action.dataset.action==="reload"){const edicaoCancelada=Boolean(formaEmEdicao);if(edicaoCancelada)resetFormaForm();action.disabled=true;action.textContent="Atualizando...";action.setAttribute("aria-busy","true");try{const atualizada=await carregarFormas();if(edicaoCancelada)setFormasStatus(atualizada?"Lista atualizada; a edição anterior foi cancelada para evitar salvar dados desatualizados.":"Edição cancelada; não foi possível atualizar a lista. Tente novamente.",atualizada?"ok":"err")}finally{action.disabled=false;action.textContent="↻ Atualizar";action.removeAttribute("aria-busy")}return}
