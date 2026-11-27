@@ -68,3 +68,95 @@ O commit `79631f3620972e58753ff873886b82f522bec04c` corrigiu as expressões regu
 O aviso restante vem do alias `anyio.abc.BlockingPortal` usado pelo `starlette.testclient`; não causou falha nesta execução. Os erros “forced integration rollback”, “forced deferred commit failure”, “forced audit failure” e “forced deactivation audit failure” aparecem nos logs como cenários intencionais dos testes de falha/rollback, não como falhas da suíte.
 
 Esta revalidação confirma a correção dos testes e o estado da suíte automatizada. Continua sem executar o rascunho SQL, criar roles/policies/grants ou acessar banco compartilhado/produção.
+
+
+## Roteiro de inspeção somente leitura — PostgreSQL local descartável
+
+Este roteiro complementa a especificação de RLS existente. As consultas abaixo são exclusivamente de catálogo (SELECT): não criam roles, não alteram grants e não aplicam policies. Executar somente depois de existir uma instância PostgreSQL local descartável e uma migration previamente revisada. Não apontar para Supabase hospedado, produção ou banco compartilhado.
+
+### 1. Atributos de roles
+
+~~~sql
+SELECT rolname, rolsuper, rolinherit, rolcreaterole, rolcreatedb,
+       rolcanlogin, rolreplication, rolbypassrls
+FROM pg_roles
+ORDER BY rolname;
+~~~
+
+Critério: a identidade runtime não pode ser superuser, possuir BYPASSRLS, CREATEDB ou CREATEROLE. Registrar também se pode fazer login e se herda memberships.
+
+### 2. Memberships e caminhos de herança
+
+~~~sql
+SELECT member.rolname AS member_role,
+       granted.rolname AS granted_role,
+       m.admin_option,
+       pg_has_role(member.oid, granted.oid, 'MEMBER') AS is_member,
+       pg_has_role(member.oid, granted.oid, 'USAGE') AS inherits_privileges
+FROM pg_auth_members AS m
+JOIN pg_roles AS member ON member.oid = m.member
+JOIN pg_roles AS granted ON granted.oid = m.roleid
+ORDER BY member.rolname, granted.rolname;
+~~~
+
+Critério: nenhuma membership runtime pode levar, direta ou indiretamente, a owner, migrator, superuser ou role com BYPASSRLS. Investigar todo caminho transitivo, não apenas associação direta.
+
+### 3. Ownership, RLS e policies do schema privado
+
+~~~sql
+SELECT n.nspname AS schema_name,
+       c.relname AS table_name,
+       owner.rolname AS table_owner,
+       c.relrowsecurity AS rls_enabled,
+       c.relforcerowsecurity AS rls_forced
+FROM pg_class AS c
+JOIN pg_namespace AS n ON n.oid = c.relnamespace
+JOIN pg_roles AS owner ON owner.oid = c.relowner
+WHERE n.nspname = 'bravo_shadow'
+  AND c.relkind IN ('r', 'p')
+ORDER BY c.relname;
+
+SELECT schemaname, tablename, policyname, permissive,
+       roles, cmd, qual, with_check
+FROM pg_policies
+WHERE schemaname = 'bravo_shadow'
+ORDER BY tablename, policyname;
+~~~
+
+Critério: conferir tabela por tabela. Policies devem nomear explicitamente as roles aprovadas; qualquer policy PUBLIC, condição ampla ou expressão inesperada bloqueia a homologação até revisão.
+
+### 4. Grants explícitos e privilégios efetivos
+
+~~~sql
+SELECT grantee, table_schema, table_name, privilege_type, is_grantable
+FROM information_schema.role_table_grants
+WHERE table_schema = 'bravo_shadow'
+ORDER BY table_name, grantee, privilege_type;
+
+SELECT n.nspname AS schema_name,
+       r.rolname AS role_name,
+       has_schema_privilege(r.oid, n.oid, 'USAGE') AS can_use_schema,
+       has_schema_privilege(r.oid, n.oid, 'CREATE') AS can_create_in_schema
+FROM pg_namespace AS n
+CROSS JOIN pg_roles AS r
+WHERE n.nspname = 'bravo_shadow'
+ORDER BY r.rolname;
+~~~
+
+Critério: avaliar privilégios efetivos e herdados para cada identidade aprovada. Não concluir segurança apenas pela ausência de grants diretos; considerar memberships, ownership, privilégios de PUBLIC, sequences e funções.
+
+### 5. Checklist de operações negativas e positivas
+
+Após os nomes e grants serem aprovados, conectar-se usando credenciais independentes de cada role (não usar apenas SET ROLE a partir de superuser) e testar com dados sintéticos em transações descartáveis:
+
+- runtime: SELECT apenas nas tabelas aprovadas; INSERT somente nas tabelas aprovadas; UPDATE/DELETE/TRUNCATE/DDL negados onde não previstos;
+- writer de auditoria: INSERT permitido somente se esse desenho for aprovado; SELECT/UPDATE/DELETE/TRUNCATE/DDL negados;
+- reader de auditoria: SELECT limitado ao escopo aprovado; toda escrita negada;
+- anon, authenticated, service_role e PUBLIC: sem acesso ao schema privado;
+- role migrator/owner: validar separadamente o comportamento de FORCE ROW LEVEL SECURITY, sem reutilizar sua credencial na API.
+
+Não executar testes destrutivos em uma instância que contenha qualquer dado não descartável. A transação ROLLBACK é uma proteção adicional, não substitui o isolamento da instância. Não incluir senha, token ou string de conexão em logs ou documentação.
+
+### 6. Evidência e critério de saída
+
+Guardar versão PostgreSQL, commit da migration testada, comandos executados, resultados de catálogo e resultados de cada tentativa permitida/negada. O aceite exige revisão independente da matriz completa e ausência de privilégios indiretos inesperados. Até lá, o SQL permanece rascunho e a integração PostgreSQL continua bloqueada.
