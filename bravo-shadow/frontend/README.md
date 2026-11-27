@@ -57,7 +57,7 @@ A revisão do código disponível não identificou um bootstrap cliente do Googl
 
 A API sombra já valida ID token Google no servidor (`GOOGLE_CLIENT_ID`, assinatura, emissor, audiência e expiração por meio de `google-auth`) e vincula o e-mail verificado a um usuário interno ativo. A interface não deve receber segredo de cliente, simular token, guardar token em `localStorage` ou aceitar identidade informada manualmente.
 
-**Próximo insumo necessário para concluir a integração:** identificar e aprovar o provedor Google efetivamente usado no ambiente ativo (ou fornecer sua configuração pública de cliente/redirect URI e fluxo autorizado). Até essa confirmação, o Dashboard permanece em estado indisponível e protegido. A tela de login original não foi modificada.
+**Decisão confirmada para o Bravo Shadow:** usar autenticação Google diretamente, sem introduzir Supabase Auth como provedor de login. A API continuará validando o ID token no servidor. Para concluir a conexão do navegador, ainda são necessários o Client ID OAuth público correto e a lista de origens autorizadas do ambiente sombra; esses valores não serão inventados nem inseridos como segredo no repositório. Até essa configuração, o Dashboard permanece indisponível e protegido. A tela de login original não foi modificada.
 
 ## Gestão de Usuários — estado da interface
 
