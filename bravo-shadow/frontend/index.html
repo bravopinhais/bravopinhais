@@ -402,6 +402,95 @@ function planoContasView(){
   </ul>
  </section>`;
 }
+let financeiroApiClient = null;
+let financeiroRequestSequence = 0;
+let financeiroRequestController = null;
+let financeiroTitles = [];
+
+function formatFinanceiroCurrency(value){
+ if(value===null||value===undefined||value==="")return "—";
+ const number=Number(value);
+ return Number.isFinite(number)
+  ? new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(number)
+  : "—";
+}
+function renderFinanceiroRows(){
+ const tbody=document.getElementById("fin-rows");
+ if(!tbody)return;
+ const search=(document.getElementById("fin-search")?.value||"").trim().toLocaleLowerCase("pt-BR");
+ const type=document.getElementById("fin-filter-type")?.value||"";
+ const filtered=financeiroTitles.filter(item=>{
+  const haystack=[item.historico,item.planoContaId,item.tipo].filter(Boolean).join(" ").toLocaleLowerCase("pt-BR");
+  return (!search||haystack.includes(search))&&(!type||item.tipo===type);
+ });
+ tbody.replaceChildren();
+ if(!filtered.length){
+  const row=document.createElement("tr"),cell=document.createElement("td");
+  cell.colSpan=5;cell.className="empty-state";
+  cell.textContent=financeiroTitles.length?"Nenhum título corresponde aos filtros.":"Nenhum título financeiro cadastrado.";
+  row.append(cell);tbody.append(row);return;
+ }
+ for(const item of filtered){
+  const row=document.createElement("tr");
+  const values=[
+   item.tipo==="Receber"?"A receber":item.tipo==="Pagar"?"A pagar":"—",
+   item.planoContaId||"—",
+   typeof item.historico==="string"?item.historico:"—",
+   formatFinanceiroCurrency(item.valor),
+   "Somente leitura"
+  ];
+  for(const value of values){
+   const cell=document.createElement("td");
+   cell.textContent=value;
+   row.append(cell);
+  }
+  tbody.append(row);
+ }
+}
+async function loadFinanceiroTitles(api){
+ const status=document.getElementById("fin-status");
+ if(!status||!api||typeof api.get!=="function")return;
+ const sequence=++financeiroRequestSequence;
+ financeiroRequestController?.abort();
+ financeiroRequestController=new AbortController();
+ status.textContent="Consultando títulos com a permissão financeiro:read…";
+ status.className="api-status";
+ try{
+  const data=await api.get("/api/v1/financeiro",{signal:financeiroRequestController.signal});
+  if(sequence!==financeiroRequestSequence||moduloAtual!=="financeiro")return;
+  if(!Array.isArray(data))throw new Error("A API retornou uma lista financeira inválida.");
+  financeiroTitles=data.filter(item=>item&&typeof item==="object");
+  const search=document.getElementById("fin-search");
+  const type=document.getElementById("fin-filter-type");
+  const filterForm=document.getElementById("fin-filters");
+  if(search)search.disabled=false;
+  if(type)type.disabled=false;
+  if(filterForm)filterForm.querySelector('button[type="submit"]')?.setAttribute("disabled","");
+  if(search)search.addEventListener("input",renderFinanceiroRows,{once:false});
+  if(type)type.addEventListener("change",renderFinanceiroRows,{once:false});
+  renderFinanceiroRows();
+  status.textContent=financeiroTitles.length+" título(s) carregado(s) · consulta somente leitura";
+  status.className="api-status ok";
+ }catch(error){
+  if(error?.name==="AbortError"||sequence!==financeiroRequestSequence)return;
+  financeiroTitles=[];
+  renderFinanceiroRows();
+  const message=error?.status===403
+   ?"A conta autenticada não possui a capacidade financeiro:read."
+   :error?.status===401
+    ?"Sessão não autorizada ou expirada. Entre novamente."
+    :(error?.message||"Não foi possível consultar os títulos financeiros.");
+  status.textContent=message;
+  status.className="api-status err";
+ }
+}
+function bindFinanceiroFilters(){
+ const form=document.getElementById("fin-filters");
+ if(!form||form.dataset.bound==="true")return;
+ form.dataset.bound="true";
+ form.addEventListener("submit",event=>{event.preventDefault();renderFinanceiroRows();});
+}
+
 function financeiroView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
@@ -436,7 +525,23 @@ function financeiroView(){
    <li>A exclusão da API é física; precisa de trilha de auditoria e confirmação explícita antes de ser habilitada na interface.</li>
   </ul>
  </section>`;
+ bindFinanceiroFilters();
+ if(financeiroApiClient)void loadFinanceiroTitles(financeiroApiClient);
 }
+window.addEventListener("bravo:session-ready",event=>{
+ const api=event.detail?.api;
+ if(!api||typeof api.get!=="function")return;
+ financeiroApiClient=api;
+ if(moduloAtual==="financeiro")void loadFinanceiroTitles(api);
+});
+window.addEventListener("bravo:session-ended",()=>{
+ financeiroApiClient=null;
+ financeiroRequestSequence+=1;
+ financeiroRequestController?.abort();
+ financeiroRequestController=null;
+ financeiroTitles=[];
+ if(moduloAtual==="financeiro")financeiroView();
+});
 let dashboardApiClient = null;
 let dashboardRequestSequence = 0;
 let dashboardRequestController = null;
@@ -749,7 +854,7 @@ function documentosView(){
 }
 
 function openModule(id){
- const item=modules[id];if(!item)return;moduloAtual=id;if(id!=="dashboard"){dashboardRequestSequence+=1;dashboardRequestController?.abort();dashboardRequestController=null;}
+ const item=modules[id];if(!item)return;moduloAtual=id;if(id!=="dashboard"){dashboardRequestSequence+=1;dashboardRequestController?.abort();dashboardRequestController=null;}if(id!=="financeiro"){financeiroRequestSequence+=1;financeiroRequestController?.abort();financeiroRequestController=null;}
  document.querySelectorAll("[data-module]").forEach(el=>{if(el.closest("#navigation")){if(el.dataset.module===id)el.setAttribute("aria-current","page");else el.removeAttribute("aria-current")}});
  document.getElementById("breadcrumb").textContent=item.name;
  document.getElementById("page-title").textContent=item.title;
