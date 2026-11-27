@@ -60,6 +60,26 @@ REQUIRED_TARGET_COLUMNS: dict[str, tuple[str, ...]] = {
     "acertos_estoque": ("data", "tipo", "produto_id", "quantidade", "motivo"),
 }
 
+# Required textual fields must contain meaningful content; SQL NOT NULL alone
+# would still accept an empty or whitespace-only legacy value.
+NON_BLANK_REQUIRED_COLUMNS: dict[str, tuple[str, ...]] = {
+    "formas_monetarias": ("nome",),
+    "plano_contas": ("codigo", "nome", "tipo"),
+    "financeiro": ("tipo", "historico"),
+    "moradores": ("bloco", "apartamento", "nome"),
+    "fornecedores": ("cnpj", "razao_social"),
+    "empregados": ("nome", "cargo"),
+    "contas_bancarias": ("banco",),
+    "condominio": (),
+    "conselheiros": ("nome", "cargo"),
+    "usuarios": ("email", "nome", "cargo"),
+    "estoque": ("item",),
+    "categorias": ("nome",),
+    "motivos_acerto": ("nome",),
+    "documentos": ("titulo", "nome_arquivo", "arquivo_compactado_gzip"),
+    "acertos_estoque": ("tipo", "produto_id", "motivo"),
+}
+
 
 class MigrationApplyStorePostgres:
     """Implements PersistedMigrationApplyStore without owning connection lifecycle."""
@@ -147,6 +167,15 @@ class MigrationApplyStorePostgres:
         if missing:
             raise ValueError(
                 "payload sem campos obrigatórios: " + ", ".join(sorted(missing))
+            )
+        blank = {
+            column for column in NON_BLANK_REQUIRED_COLUMNS[target_collection]
+            if not isinstance(payload[column], str) or not payload[column].strip()
+        }
+        if blank:
+            raise ValueError(
+                "payload com campos textuais obrigatórios vazios: "
+                + ", ".join(sorted(blank))
             )
         supplied_id = payload.get("id")
         if supplied_id is not None and supplied_id != destination_id:
