@@ -87,3 +87,15 @@ def test_audit_event_does_not_accept_unreviewed_payload_fields():
 def test_audit_event_accepts_each_supported_outcome(outcome):
     event = make_event(outcome=outcome)
     assert event.outcome == outcome
+
+
+@pytest.mark.parametrize("event_id", ["", "   ", None, [], {}])
+def test_audit_event_rejects_invalid_event_id(event_id):
+    with pytest.raises(ValueError, match="event_id"):
+        make_event(event_id=event_id)
+
+
+@pytest.mark.parametrize("occurred_at", [None, "2026-11-26T12:00:00Z", 123, []])
+def test_audit_event_rejects_non_datetime_timestamp(occurred_at):
+    with pytest.raises(ValueError, match="data/hora válida"):
+        make_event(occurred_at=occurred_at)

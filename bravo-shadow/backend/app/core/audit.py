@@ -40,6 +40,10 @@ class AuditEvent:
                 raise ValueError(f"{name} deve ser omitido ou uma string não vazia.")
         if self.outcome not in ("success", "denied", "failure"):
             raise ValueError("outcome inválido.")
+        if not isinstance(self.event_id, str) or not self.event_id.strip():
+            raise ValueError("event_id deve ser uma string não vazia.")
+        if not isinstance(self.occurred_at, datetime):
+            raise ValueError("occurred_at deve ser uma data/hora válida.")
         if self.occurred_at.tzinfo is None or self.occurred_at.utcoffset() is None:
             raise ValueError("occurred_at deve conter fuso horário.")
 
