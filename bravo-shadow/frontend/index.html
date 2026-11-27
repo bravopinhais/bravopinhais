@@ -1781,7 +1781,7 @@ function documentosView(){
   <div class="notice" style="margin-top:16px"><div class="notice-icon">ⓘ</div><div><strong>Limites preservados nesta etapa</strong><p>O arquivo continua armazenado como Gzip/Base64 no banco; não há armazenamento externo, URL assinada, pré-visualização ou recuperação de órfãos. Exclusão física não é oferecida na interface. O download é entregue como anexo genérico, sem execução/visualização no navegador.</p></div></div>
  </section>\`;
  document.getElementById("documentos-form")?.addEventListener("submit",documentosSubmit);
- document.getElementById("documentos-form")?.addEventListener("reset",()=>{documentosEditingId=null;setTimeout(()=>{const button=document.getElementById("documentos-save");if(button)button.textContent="Salvar documento";},0);});
+ document.getElementById("documentos-form")?.addEventListener("reset",()=>{documentosEditingId=null;documentosEditingCategoryId=null;documentosEditingFolder="Geral";documentosCategoryTouched=false;setTimeout(()=>{const button=document.getElementById("documentos-save");if(button)button.textContent="Salvar documento";},0);});
  document.getElementById("documentos-search")?.addEventListener("input",documentosRenderRows);
  document.getElementById("documentos-filter-folder")?.addEventListener("change",documentosRenderRows);
  document.getElementById("documentos-folder")?.addEventListener("change",()=>{documentosCategoryTouched=true;});
