@@ -1,7 +1,8 @@
-"""Fundação isolada para eventos de auditoria do Bravo Shadow.
+"""Tipos e contrato mínimo de auditoria do Bravo Shadow.
 
-Este módulo não é conectado aos routers nem à aplicação. Em memória, serve
-apenas para desenvolvimento/testes; não oferece persistência ou retenção.
+O sink PostgreSQL é injetado pelo composition root quando o backend postgres
+é selecionado e usado por operações que exigem auditoria. O modo memory não
+configura persistência de auditoria; InMemoryAuditSink serve apenas a testes.
 """
 from __future__ import annotations
 
