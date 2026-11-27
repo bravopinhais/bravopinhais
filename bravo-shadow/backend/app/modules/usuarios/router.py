@@ -54,3 +54,19 @@ def delete_user(
     _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("usuarios:delete")),
 ) -> None:
     get_service(request).delete(item_id)
+
+
+
+@router.post("/{item_id}/desativar", status_code=status.HTTP_204_NO_CONTENT)
+def deactivate_user(
+    request: Request,
+    item_id: str,
+    principal: AuthenticatedPrincipal = Depends(
+        require_capability_dependency("usuarios:deactivate")
+    ),
+) -> None:
+    get_service(request).deactivate(
+        item_id,
+        actor_subject=principal.subject,
+        actor_email=principal.email,
+    )
