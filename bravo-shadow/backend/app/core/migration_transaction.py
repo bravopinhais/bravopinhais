@@ -7,7 +7,8 @@ from typing import Any, Protocol
 from app.core.authorization import AuthenticatedPrincipal
 from app.core.migration_apply_authorization_postgres import (
     load_locked_apply_authorization,
-)\nfrom app.core.postgres import (
+)
+from app.core.postgres import (
     CommitOutcomeUnknown as PostgresCommitOutcomeUnknown,
     PostgresUnitOfWork,
 )

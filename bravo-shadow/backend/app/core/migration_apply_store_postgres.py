@@ -1,4 +1,4 @@
-"""Concrete PostgreSQL store for the opt-in Bravo Shadow migration apply unit.
+"""Concrete PostgreSQL store for the opt-in persisted-approval apply contract.
 
 All SQL uses the caller-owned transaction connection. Target table and column
 identifiers come exclusively from the static allowlist below; record values
@@ -39,7 +39,7 @@ TARGET_COLUMNS: dict[str, tuple[str, ...]] = {
 
 
 class MigrationApplyStorePostgres:
-    """Implements MigrationApplyStore without owning connection lifecycle."""
+    """Implements PersistedMigrationApplyStore without owning connection lifecycle."""
 
     def __init__(self) -> None:
         self._provenance = PostgresSourceRecordStore()
