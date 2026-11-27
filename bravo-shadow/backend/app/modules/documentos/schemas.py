@@ -2,7 +2,9 @@ import base64
 import binascii
 import zlib
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pathlib import PurePath
+
+from pydantic import BaseModel, ConfigDict, Field, ValidationInfo, field_validator
 
 MAX_DOCUMENT_BYTES = 5 * 1024 * 1024
 MAX_COMPRESSED_BASE64_CHARS = 8 * 1024 * 1024
@@ -28,7 +30,7 @@ class DocumentoInput(BaseModel):
     @field_validator("nomeArquivo")
     @classmethod
     def validate_filename(cls, value: str) -> str:
-        if value in {".", ".."} or any(char in value for char in ("/", "\\", "\x00")):
+        if value in {".", ".."} or any(char in value for char in ("/", "\\", "\x00")) or any(ord(char) < 32 or ord(char) == 127 for char in value):
             raise ValueError("O nome do arquivo não pode conter caminhos.")
         return value
 
@@ -41,7 +43,7 @@ class DocumentoInput(BaseModel):
 
     @field_validator("arquivoCompactadoGzip")
     @classmethod
-    def validate_gzip_base64(cls, value: str) -> str:
+    def validate_gzip_base64(cls, value: str, info: ValidationInfo) -> str:
         try:
             compressed = base64.b64decode(value, validate=True)
         except (binascii.Error, ValueError) as exc:
@@ -64,6 +66,37 @@ class DocumentoInput(BaseModel):
                 raise ValueError("O conteúdo não é um arquivo Gzip íntegro.")
             if not content:
                 raise ValueError("O arquivo original não pode estar vazio.")
+            filename = info.data.get("nomeArquivo", "")
+            extension = PurePath(filename).suffix.lower().lstrip(".")
+            allowed = {
+                "pdf", "png", "jpg", "jpeg", "gif", "webp",
+                "txt", "csv", "doc", "docx", "xls", "xlsx", "odt", "ods",
+            }
+            if extension not in allowed:
+                raise ValueError("Formato de arquivo não permitido.")
+            signatures = {
+                "pdf": content.startswith(b"%PDF-"),
+                "png": content.startswith(b"\\x89PNG\\r\\n\\x1a\\n"),
+                "jpg": content.startswith(b"\\xff\\xd8\\xff"),
+                "jpeg": content.startswith(b"\\xff\\xd8\\xff"),
+                "gif": content.startswith((b"GIF87a", b"GIF89a")),
+                "webp": len(content) >= 12 and content[:4] == b"RIFF" and content[8:12] == b"WEBP",
+                "doc": content.startswith(bytes.fromhex("D0CF11E0A1B11AE1")),
+                "xls": content.startswith(bytes.fromhex("D0CF11E0A1B11AE1")),
+                "docx": content.startswith(b"PK\\x03\\x04"),
+                "xlsx": content.startswith(b"PK\\x03\\x04"),
+                "odt": content.startswith(b"PK\\x03\\x04"),
+                "ods": content.startswith(b"PK\\x03\\x04"),
+            }
+            if extension in {"txt", "csv"}:
+                try:
+                    content.decode("utf-8-sig")
+                except UnicodeDecodeError as exc:
+                    raise ValueError("Arquivos TXT/CSV precisam estar codificados em UTF-8.") from exc
+                if b"\\x00" in content:
+                    raise ValueError("Arquivos TXT/CSV não podem conter bytes nulos.")
+            elif not signatures.get(extension, False):
+                raise ValueError("O conteúdo não corresponde ao formato indicado no nome do arquivo.")
         except zlib.error as exc:
             raise ValueError("O conteúdo Gzip é inválido ou está corrompido.") from exc
         return value
