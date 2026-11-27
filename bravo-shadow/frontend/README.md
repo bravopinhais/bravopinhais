@@ -529,3 +529,13 @@ A cadeia de autenticação, vínculo com cadastro ativo e cobertura de capacidad
 ### Capacidades efetivas na sessão
 
 A resposta autenticada de `GET /api/v1/auth/me` inclui `capabilities`, calculada no backend a partir do perfil Bravo ativo e da matriz explícita `ROLE_CAPABILITIES`. O módulo `google-auth.js` exige que a propriedade seja uma lista válida, sem valores vazios ou duplicados, e a congela na sessão entregue aos módulos. Essa lista pode orientar a apresentação de controles, mas não autoriza operações: cada endpoint continua validando sua capacidade no servidor. Ausência ou formato inválido da lista impede a abertura da sessão; nenhuma permissão é presumida no navegador.
+
+
+
+## Visibilidade dos módulos por capacidade da sessão
+
+A navegação lateral e os cartões de acesso rápido agora são filtrados pela lista `capabilities` recebida em `bravo:session-ready`. O mapa central associa cada módulo à sua capacidade de leitura: Dashboard, Condomínio, Plano de Contas, Financeiro, Formas Monetárias, Contas Bancárias, Moradores, Fornecedores, Empregados, Estoque, Acerto de Estoque, Compras x Consumo, Documentos, Relatórios, Usuários e Configurações. Pastas & Categorias é exibido quando há leitura de categorias ou de motivos de acerto, pois reúne essas duas áreas.
+
+A tentativa de abrir por hash ou chamada de navegação um módulo sem capacidade também é bloqueada e apresenta aviso de acesso restrito, sem iniciar a consulta do módulo. No encerramento da sessão, a lista de permissões em memória é descartada, a navegação volta ao estado neutro e a visibilidade anterior é restaurada. Sem sessão confirmada, o preview estático mantém o mapa visual atual, sem habilitar operações.
+
+**Importante:** esta etapa controla apenas visibilidade e navegação de leitura. Não habilita automaticamente formulários, edição, exclusão, importação, exportação ou outros comandos de gravação. Esses controles continuam desabilitados até que cada fluxo de negócio seja integrado e revisado; a API sempre valida as capacidades no servidor.
