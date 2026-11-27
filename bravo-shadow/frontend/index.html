@@ -138,7 +138,7 @@ function financeiroView(){
   <div class="api-toolbar"><div><strong style="font-size:13px">Títulos cadastrados</strong><div class="api-status">Consulta protegida · financeiro:read</div></div><span class="tag">Lista completa</span></div>
   <form class="api-form" id="fin-filters" style="grid-template-columns:minmax(0,2fr) minmax(150px,1fr) auto">
    <div class="field"><label for="fin-search">Pesquisar histórico ou conta</label><input id="fin-search" name="busca" placeholder="Pesquisar" disabled></div>
-   <div class="field"><label for="fin-filter-type">Tipo de título</label><select id="fin-filter-type" name="tipo"><option value="">Todos</option><option value="Receber">Receber</option><option value="Pagar">Pagar</option></select></div>
+   <div class="field"><label for="fin-filter-type">Tipo de título</label><select id="fin-filter-type" name="tipo" disabled><option value="">Todos</option><option value="Receber">Receber</option><option value="Pagar">Pagar</option></select></div>
    <button class="action-btn" type="submit" disabled>Filtrar</button>
   </form>
   <div class="data-table-wrap"><table class="data-table"><caption>Títulos financeiros cadastrados</caption><thead><tr><th scope="col">Tipo</th><th scope="col">Conta do Plano</th><th scope="col">Histórico</th><th scope="col">Valor</th><th scope="col">Ações</th></tr></thead><tbody id="fin-rows"><tr><td colspan="5" class="empty-state">Aguardando consulta autorizada. Nenhum dado de exemplo é exibido.</td></tr></tbody></table></div>
