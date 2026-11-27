@@ -383,3 +383,21 @@ A interface Shadow inclui o formulário de entrada/saída e o histórico de movi
 - Não há rotas de edição ou exclusão. O service rejeita exclusão e orienta movimento compensatório.
 
 A interface permanece bloqueada, sem rede ou dados fictícios, até integração da sessão Google/Bearer e API HTTPS isolada. Scanner, anexos, aprovação, filtros/paginação e auditoria explícita do movimento ainda precisam de evolução.
+
+## Usuários e controle de acesso
+
+A tela Shadow mantém o módulo bloqueado até a integração da sessão Google validada e da API HTTPS isolada. Não há formulário de senha local, redefinição de senha local ou cadastro público. A identidade é autenticada pelo Google; o e-mail verificado deve corresponder a um único cadastro interno Bravo e somente status Ativo autoriza acesso. Perfil e capacidades vêm do cadastro interno.
+
+### API e salvaguardas observadas
+
+- GET /api/v1/usuarios e GET /api/v1/usuarios/{id}: usuarios:read.
+- POST /api/v1/usuarios: usuarios:create; cria cadastro comum como Operador/Ativo, sem aceitar perfil/status enviados pelo cliente.
+- PUT /api/v1/usuarios/{id}: usuarios:update; altera somente nome, loja e cargo, preservando e-mail, perfil e status.
+- POST /api/v1/usuarios/{id}/desativar: usuarios:deactivate; desativação lógica com auditoria na mesma transação PostgreSQL.
+- DELETE /api/v1/usuarios/{id}: HTTP 410; exclusão física bloqueada.
+- Operador não possui capacidades de usuários; administração é restrita ao perfil Admin.
+- Desativação impede auto-desativação e o repositório impede desativar o último Admin ativo.
+
+### Pendências
+
+A interface ainda não está ligada à API. A alteração administrativa de perfil/status existe como método interno, mas não está exposta por rota; não criar tela que prometa essa ação. O cadastro cria Operador ativo, então provisionamento inicial de Admin e processo de aprovação de novas contas precisam permanecer controlados fora do auto-cadastro. Não habilitar operações antes da integração Google/Bearer.
