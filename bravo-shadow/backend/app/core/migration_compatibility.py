@@ -43,6 +43,8 @@ class CollectionAssessment:
     fields: tuple[FieldAssessment, ...]
     missing_required: tuple[str, ...]
     missing_optional: tuple[str, ...]
+    partially_populated_required: tuple[str, ...]
+    partially_populated_optional: tuple[str, ...]
     unexpected_source_fields: tuple[str, ...]
 
 
@@ -147,6 +149,20 @@ def assess_source_compatibility(
         mapped_targets.add(target_name)
         source_fields = {item.name: item for item in source.fields}
         target_fields = {item.name: item for item in target.fields}
+        if source.records_total == 0:
+            assessments.append(CollectionAssessment(
+                source_collection=source_name,
+                target_collection=target_name,
+                source_records=0,
+                status="empty_source_collection",
+                fields=(),
+                missing_required=(),
+                missing_optional=(),
+                partially_populated_required=(),
+                partially_populated_optional=(),
+                unexpected_source_fields=(),
+            ))
+            continue
         field_results = tuple(
             _assess_field(source_fields[field_name], target_field)
             for field_name, target_field in sorted(target_fields.items())
@@ -160,10 +176,23 @@ def assess_source_compatibility(
             name for name, field in target_fields.items()
             if not field.required and name not in source_fields
         ))
+        partially_required = tuple(sorted(
+            name for name, field in target_fields.items()
+            if field.required and name in source_fields
+            and source_fields[name].records_present < source.records_total
+        ))
+        partially_optional = tuple(sorted(
+            name for name, field in target_fields.items()
+            if not field.required and name in source_fields
+            and source_fields[name].records_present < source.records_total
+        ))
         unexpected = tuple(sorted(set(source_fields) - set(target_fields)))
         has_type_issue = any(item.status != "compatible" for item in field_results)
-        status = "review_required" if missing_required or has_type_issue or unexpected else (
-            "compatible_with_optional_gaps" if missing_optional else "compatible"
+        status = "review_required" if (
+            missing_required or partially_required or has_type_issue or unexpected
+        ) else (
+            "compatible_with_optional_gaps"
+            if missing_optional or partially_optional else "compatible"
         )
         assessments.append(CollectionAssessment(
             source_collection=source_name,
@@ -173,6 +202,8 @@ def assess_source_compatibility(
             fields=field_results,
             missing_required=missing_required,
             missing_optional=missing_optional,
+            partially_populated_required=partially_required,
+            partially_populated_optional=partially_optional,
             unexpected_source_fields=unexpected,
         ))
 
