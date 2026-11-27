@@ -758,3 +758,133 @@ Em banco PostgreSQL local exclusivamente descartável, uma fase futura poderá:
 - A preferência técnica pela função controlada é uma recomendação documental, não decisão de produto nem autorização de execução.
 - A matriz Admin/Operador permanece vazia; os endpoints administrativos continuam protegidos por deny-by-default.
 - Nenhum banco persistente, Supabase hospedado ou produção foi conectado ou alterado.
+
+## 18. Contrato proposto da função administrativa controlada — 27/11/2026
+
+**Status:** especificação conceitual para revisão. Não contém DDL executável e não autoriza criar função, role, policy, grant ou migration.
+
+### 18.1 Escopo funcional mínimo
+
+A primeira função deve cobrir somente a alteração administrativa de perfil/status de um usuário existente. Não deve ser uma função genérica de escrita, nem receber nome de tabela, coluna, SQL, JSON livre, ação arbitrária ou payload de auditoria.
+
+Operações permitidas no contrato:
+- alterar `perfil` somente entre `Admin` e `Operador`;
+- alterar `status` somente entre `Ativo` e `Inativo`;
+- não permitir exclusão física;
+- não alterar e-mail, nome, loja, cargo ou identificador;
+- impedir remoção/desativação do último Admin ativo;
+- impedir autoalteração de perfil/status no backend, antes de chamar a função.
+
+A função não deve ser criada para desativação lógica até que o fluxo específico seja revisado separadamente. O primeiro piloto recomendado é a alteração administrativa que hoje já exige evento de auditoria na mesma transação.
+
+### 18.2 Assinatura conceitual
+
+Uma assinatura estreita possível, sujeita à revisão do schema real e dos tipos existentes:
+
+```text
+bravo_shadow.admin_update_user(
+  target_user_id,
+  new_profile,
+  new_status,
+  actor_google_subject,
+  request_id,
+  event_id
+)
+```
+
+- `target_user_id`: identificador interno do usuário alvo.
+- `new_profile`: enumeração fechada `Admin` ou `Operador`.
+- `new_status`: enumeração fechada `Ativo` ou `Inativo`.
+- `actor_google_subject`: subject do principal Google validado no backend, nunca recebido diretamente do navegador.
+- `request_id`: identificador gerado no middleware do servidor; pode ser nulo se o contrato de evento permitir.
+- `event_id`: identificador técnico único gerado no backend para idempotência/diagnóstico.
+
+A ação de auditoria deve ser constante dentro da função (`usuarios:update_administracao`), assim como `entity_type = 'usuario'` e `outcome = 'success'`. O identificador da entidade deve ser o próprio `target_user_id`. Timestamp deve ser produzido no banco com relógio UTC/timestamptz, não aceito do chamador. Não aceitar e-mail, perfil do ator, resultado, timestamp ou conteúdo livre como parâmetros.
+
+A assinatura é ilustrativa: não foi confirmada a tipagem definitiva de `usuarios.id` nem do `event_id` na tabela final. Esses tipos devem ser conferidos antes de qualquer migration.
+
+### 18.3 Fronteira de confiança do ator
+
+O banco não valida por si só o token Google nessa proposta. A função recebe o subject que o backend confiável derivou de `AuthenticatedPrincipal`, após validar identidade, status cadastral e capacidade.
+
+Regras obrigatórias:
+- A rota futura deve exigir a capacidade administrativa específica; a matriz Admin/Operador permanece deny-by-default até aprovação.
+- O serviço futuro deve receber somente `AuthenticatedPrincipal`, nunca `actor_subject`/e-mail independentes vindos de parâmetros HTTP ou de payload.
+- O backend deve obter o subject do principal autenticado e validar a proibição de autoalteração usando o vínculo interno confiável.
+- A função pode validar que o subject não é nulo/vazio e impor tamanho/formato razoável, mas isso **não prova autenticidade Google**.
+- Não usar `SET LOCAL`, variável de sessão ou GUC como se fosse prova criptográfica do ator: a própria role runtime pode, em geral, definir valores de sessão. Isso só serve como contexto de correlação se o modelo de ameaça aceitar a confiança no backend.
+- Se o requisito incluir resistência a um backend comprometido ou SQL arbitrário executado pela credencial runtime, o parâmetro actor não é suficiente. Será necessário um mecanismo verificável pelo banco (por exemplo, assertion assinada com chave fora do banco e validação criptográfica controlada) ou rever a fronteira de confiança. Isso é uma decisão arquitetural separada, não presumir que SECURITY DEFINER resolve.
+
+### 18.4 Sequência transacional obrigatória
+
+Dentro de uma única chamada/transação:
+1. Validar todos os argumentos e rejeitar valores fora das enumerações.
+2. Adquirir bloqueio que serialize alterações administrativas concorrentes. A estratégia deve proteger o cálculo do último Admin; não depender apenas de um SELECT sem lock.
+3. Buscar o alvo sob bloqueio e retornar erro controlado se não existir.
+4. Calcular se a operação remove um Admin ativo (Admin/Ativo para qualquer estado que não seja Admin/Ativo).
+5. Se remover, contar Admins ativos dentro da mesma região serializada; rejeitar quando o total for menor ou igual a um.
+6. Aplicar UPDATE somente se o estado realmente mudar, incrementando `version` e atualizando `updated_at` conforme o contrato existente.
+7. Inserir o evento mínimo de auditoria na mesma transação, com ação/tipo/resultado fixos e ator/request/event IDs validados.
+8. Retornar resultado mínimo; nunca devolver payload de auditoria ou dados desnecessários.
+9. Qualquer falha no UPDATE ou INSERT deve abortar a transação completa. Não capturar erro de auditoria para continuar e não converter falha em sucesso.
+
+A função não deve efetuar COMMIT/ROLLBACK próprio: a transação é controlada pela conexão chamadora. A chamada deve participar da unidade de trabalho existente.
+
+### 18.5 Idempotência e concorrência
+
+- Definir uma constraint UNIQUE para `event_id` no destino final antes de depender dela como chave idempotente; o draft atual precisa ser verificado quanto à existência dessa constraint.
+- Uma repetição com o mesmo `event_id` não pode produzir uma segunda alteração administrativa nem um segundo evento contraditório. Definir se a repetição devolve o resultado original ou erro de conflito; não usar `ON CONFLICT DO NOTHING` sem verificar que o evento anterior corresponde exatamente à mesma operação.
+- A proteção do último Admin deve ser testada com duas sessões independentes tentando remover Admins diferentes simultaneamente. Exatamente uma operação pode remover um Admin quando há dois ativos; a outra deve ser bloqueada, mantendo pelo menos um Admin ativo.
+- Testar também duas chamadas concorrentes para o mesmo alvo e reenvio após timeout do cliente, pois o cliente pode não saber se o commit ocorreu.
+
+### 18.6 Privilégios e RLS — desenho a validar
+
+A função `SECURITY DEFINER` deve pertencer a uma role dedicada NOLOGIN, sem atributos administrativos, sem ser owner das tabelas e sem membership concedida à role runtime.
+
+A role proprietária da função deve receber apenas os privilégios de tabela/coluna e as policies RLS estritamente necessários à operação. Como o draft prevê FORCE ROW LEVEL SECURITY, não presumir que o owner da função contornará RLS: a execução deve ser testada com a role definer efetiva e policies explícitas, limitadas ao objeto/ação. Não adicionar policy ampla ou `USING (true)` para fazer a função funcionar.
+
+A role runtime:
+- recebe EXECUTE apenas na assinatura aprovada;
+- não recebe UPDATE direto em `usuarios` para as colunas administrativas cobertas;
+- não recebe INSERT direto em `audit_events` para esse fluxo;
+- não recebe membership na role definer;
+- não recebe CREATE no schema, ownership, BYPASSRLS, SUPERUSER ou grants herdados equivalentes.
+
+A role definer:
+- não tem LOGIN;
+- não tem CREATE ROLE, CREATEDB, SUPERUSER ou BYPASSRLS;
+- não é proprietária do schema/tabelas;
+- recebe somente UPDATE das colunas necessárias e INSERT na tabela de auditoria, mais permissões RLS correspondentes;
+- não é compartilhada com outras funções de negócio.
+
+A função deve fixar `search_path` para schemas confiáveis, qualificar todas as tabelas e funções, revogar EXECUTE de PUBLIC e conceder apenas à role runtime escolhida. Dependências futuras não podem ser resolvidas por objetos controlados por runtime.
+
+### 18.7 Cenários negativos de homologação
+
+Em sessões reais independentes, provar:
+1. Runtime consegue executar a função aprovada.
+2. Runtime não consegue UPDATE direto em `usuarios` nas colunas administrativas.
+3. Runtime não consegue INSERT/UPDATE/DELETE/TRUNCATE direto em `audit_events`.
+4. Runtime não consegue executar overloads ou funções auxiliares não autorizadas.
+5. PUBLIC, anon, authenticated e service_role não conseguem executar a função nem acessar o schema privado.
+6. Runtime não consegue assumir a role definer via SET ROLE, membership direta ou transitiva.
+7. Role definer não consegue ler/escrever tabelas fora do escopo mínimo, criar objetos ou alterar grants.
+8. Argumentos inválidos, subject vazio, ação/estado não permitido, alvo inexistente e evento inconsistente são rejeitados.
+9. Falha forçada no INSERT de auditoria reverte integralmente a alteração administrativa.
+10. Falha/timeout/repetição com o mesmo event_id não duplica ou contradiz a operação.
+11. Corrida de último Admin preserva ao menos um Admin ativo.
+12. Alteração de search_path da sessão não redireciona referências da função para objetos não confiáveis.
+
+### 18.8 Critérios para sair da especificação
+
+Antes de qualquer implementação, precisam ser aprovados:
+- requisito de ameaça (backend confiável versus backend potencialmente comprometido);
+- vínculo persistente de identidade Google `sub` ↔ usuário interno;
+- tipo definitivo dos identificadores e constraint idempotente;
+- estratégia de lock e comportamento de repetição;
+- owner dedicado, grants de coluna, policies RLS da role definer e EXECUTE da role runtime;
+- tratamento de erros SQL sem vazar detalhes ao cliente;
+- testes de integração em PostgreSQL descartável com credenciais independentes;
+- revisão de segurança independente da função e de todas as dependências.
+
+**Nenhuma implementação foi autorizada ou executada nesta etapa.** A função, roles, policies, grants, migrations, vínculos de identidade e rotas continuam inexistentes/não ativados. A matriz de capacidades segue vazia.
