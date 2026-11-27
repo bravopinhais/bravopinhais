@@ -21,10 +21,10 @@ class PostgresUsuariosRepository:
         """Fecha o cursor sem esconder uma falha anterior da consulta."""
         import sys
 
+        primary_error = sys.exception()
         try:
             cursor.close()
         except BaseException as close_error:
-            primary_error = sys.exception()
             if primary_error is None:
                 raise
             add_note = getattr(primary_error, "add_note", None)
