@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS bravo_shadow.migration_batches (
     CONSTRAINT migration_batches_status_allowed
         CHECK (status IN (
             'prepared', 'approved', 'applying', 'applied',
-            'verified', 'failed', 'rolled_back'
+            'verified', 'failed', 'rolled_back', 'needs_review'
         )),
     CONSTRAINT migration_batches_versions_nonempty
         CHECK (
@@ -144,4 +144,8 @@ FROM PUBLIC, anon, authenticated, service_role;
 -- 5. Atualizar last_verified_batch_id somente após verificação completa.
 -- 6. Não implementar exclusão automática/rollback por DELETE genérico.
 -- 7. Não criar policies/grants usando service_role como atalho.
--- 8. Este arquivo não cria nem altera tabelas funcionais do Bravo.
+-- 8. Interrupção em applying/applied deve ir manualmente para needs_review
+--    quando não houver prova suficiente para concluir ou repetir com segurança.
+--    needs_review é terminal: exige reconciliação e novo lote aprovado; nunca
+--    reabrir nem repetir o mesmo lote automaticamente.
+-- 9. Este arquivo não cria nem altera tabelas funcionais do Bravo.
