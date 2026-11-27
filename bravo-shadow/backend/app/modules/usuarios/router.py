@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request, status
 
 from app.core.authorization import AuthenticatedPrincipal, require_capability_dependency
-from .schemas import Usuario, UsuarioInput
+from .schemas import (\n    Usuario, UsuarioCadastroInput, UsuarioDadosCadastraisUpdateInput,\n)
 from .service import UsuariosService
 
 router = APIRouter(prefix="/api/v1/usuarios", tags=["Usuários"])
