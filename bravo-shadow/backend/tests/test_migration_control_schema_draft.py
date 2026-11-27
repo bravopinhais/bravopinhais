@@ -145,8 +145,8 @@ def test_recovery_append_requires_parent_lock_and_sequence_conflict_guard():
 
 
 def test_recovery_event_id_is_idempotency_key_not_sequence_workaround():
-    sql = _sql().lower()
+    sql = re.sub(r"\\s+", " ", _sql().lower())
 
     assert "event_id é chave de idempotência global" in sql
     assert "comparar todos os campos do evento existente" in sql
-    assert "nunca gerar nova" in sql
+    assert "nunca gerar nova sequência" in sql
