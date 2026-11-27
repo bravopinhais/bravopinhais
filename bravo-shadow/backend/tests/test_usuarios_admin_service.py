@@ -136,8 +136,7 @@ def test_service_deactivates_another_user_with_bound_audit_event():
 
     service.deactivate(
         "usr_target",
-        actor_subject="google-subject-admin",
-        actor_email="admin@example.com",
+        actor=AuthenticatedPrincipal(subject="google-subject-admin", email="admin@example.com", profile="Admin", account_status="Ativo"),
         request_id="req_0123456789abcdef0123456789abcdef",
     )
 
@@ -160,8 +159,7 @@ def test_service_blocks_self_deactivation():
     with pytest.raises(HTTPException) as error:
         service.deactivate(
             "usr_target",
-            actor_subject="google-subject-admin",
-            actor_email=" admin@example.com ",
+            actor=AuthenticatedPrincipal(subject="google-subject-admin", email=" admin@example.com ", profile="Admin", account_status="Ativo"),
         )
 
     assert error.value.status_code == 403
@@ -175,8 +173,7 @@ def test_service_fails_closed_when_audited_deactivation_is_unavailable():
     with pytest.raises(HTTPException) as error:
         service.deactivate(
             "usr_target",
-            actor_subject="google-subject-admin",
-            actor_email="admin@example.com",
+            actor=AuthenticatedPrincipal(subject="google-subject-admin", email="admin@example.com", profile="Admin", account_status="Ativo"),
         )
 
     assert error.value.status_code == 503
