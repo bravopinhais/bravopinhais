@@ -174,6 +174,38 @@ function condominioView(){
   </ul>
  </section>`;
 }
+function fornecedoresView(){
+ const view=document.getElementById("view");
+ view.innerHTML=`<section class="panel">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Fornecedores</strong><div class="api-status" id="for-status" role="status" aria-live="polite">Aguardando autenticação Google e API HTTPS Shadow</div></div><span class="tag">Cadastro de fornecedores</span></div>
+  <div class="notice" style="margin:14px 0 18px"><div class="notice-icon">▣</div><div><strong>Identificação fiscal e razão social</strong><p>O cadastro original utiliza CNPJ e Razão Social. A tela mantém esses campos sem acrescentar informações obrigatórias que não existem no contrato legado.</p></div></div>
+  <div class="section-head"><h2>Novo fornecedor</h2><span>Campos do sistema original</span></div>
+  <form class="api-form" id="for-form" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+   <div class="field"><label for="for-cnpj">CNPJ</label><input id="for-cnpj" name="cnpj" required maxlength="32" placeholder="CNPJ do fornecedor" disabled></div>
+   <div class="field"><label for="for-razao">Razão Social</label><input id="for-razao" name="razaoSocial" required maxlength="200" placeholder="Razão social cadastrada" disabled></div>
+   <div style="grid-column:1/-1;display:flex;justify-content:flex-end"><button type="button" class="action-btn primary" disabled>Salvar fornecedor</button></div>
+  </form>
+  <p class="form-hint">Ambos os campos são obrigatórios. A API remove espaços nas extremidades, mas ainda não valida dígitos verificadores do CNPJ nem impede CNPJs duplicados.</p>
+ </section>
+ <section class="panel" style="margin-top:16px">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Pesquisar fornecedores</strong><div class="api-status">Pesquisa local prevista por CNPJ ou razão social</div></div><span class="tag">Consulta</span></div>
+  <div class="api-form" style="grid-template-columns:minmax(0,1fr) auto;align-items:end">
+   <div class="field"><label for="for-search">CNPJ ou razão social</label><input id="for-search" name="busca" placeholder="Digite para localizar" disabled></div>
+   <button type="button" class="action-btn" disabled>Pesquisar</button>
+  </div>
+  <div class="data-table-wrap"><table class="data-table"><caption>Fornecedores cadastrados</caption><thead><tr><th scope="col">CNPJ</th><th scope="col">Razão Social</th><th scope="col">Ações</th></tr></thead><tbody id="for-rows"><tr><td colspan="3" class="empty-state">Aguardando consulta autenticada. Nenhum fornecedor fictício será exibido.</td></tr></tbody></table></div>
+ </section>
+ <section class="panel" style="margin-top:16px">
+  <div class="section-head" style="margin-top:0"><h2>Regras e pontos de atenção</h2><span>Contrato Shadow</span></div>
+  <ul style="margin:0;padding-left:18px;color:var(--soft);font-size:12px;line-height:1.9">
+   <li>Admin e Operador possuem leitura, cadastro, edição e exclusão no catálogo atual de permissões.</li>
+   <li>Não há validação formal do CNPJ nem unicidade por CNPJ no service/schema inspecionados.</li>
+   <li>A exclusão é física; não foi identificada proteção contra fornecedores referenciados por compras ou lançamentos.</li>
+   <li>O adapter PostgreSQL incrementa versão interna na edição, mas a API não exige If-Match/ETag.</li>
+   <li>Não foram identificados campos de contato, endereço, inscrição estadual ou dados bancários no contrato legado deste módulo.</li>
+  </ul>
+ </section>`;
+}
 function moradoresView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
@@ -536,6 +568,7 @@ function openModule(id){
  if(id==="dashboard"){dashboardView();location.hash="";return}
  if(id==="condominio"){location.hash=id;condominioView();return}
  if(id==="moradores"){location.hash=id;moradoresView();return}
+ if(id==="fornecedores"){location.hash=id;fornecedoresView();return}
   if(id==="plano_contas"){location.hash=id;planoContasView();return}
   if(id==="financeiro"){location.hash=id;financeiroView();return}
  if(id==="contas_bancarias"){location.hash=id;contasBancariasView();return}
