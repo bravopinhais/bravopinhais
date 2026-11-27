@@ -101,7 +101,8 @@ def create_app(
         title="Bravo Shadow API",
         description="API paralela do Bravo — ambiente de desenvolvimento e homologação.",
         version="0.1.0",
-    )    cors_origins = _configured_cors_origins()
+    )
+    cors_origins = _configured_cors_origins()
     if cors_origins:
         application.add_middleware(
             CORSMiddleware,
