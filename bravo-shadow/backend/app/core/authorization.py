@@ -39,6 +39,7 @@ CAPABILITIES = frozenset(
         "acertos_estoque:read", "acertos_estoque:create",
         "documentos:read", "documentos:create", "documentos:update", "documentos:delete",
         "relatorios:read",
+        "configuracoes:read", "configuracoes:update",
         "usuarios:read", "usuarios:create", "usuarios:update", "usuarios:delete", "usuarios:deactivate",
     }
 )
@@ -75,6 +76,7 @@ OPERATOR_CAPABILITIES = frozenset(
         "documentos:read", "documentos:create", "documentos:update",
         "documentos:delete",
         "relatorios:read",
+        "configuracoes:read",
     }
 )
 
