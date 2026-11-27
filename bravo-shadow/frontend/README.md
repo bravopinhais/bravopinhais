@@ -180,3 +180,21 @@ Não foi encontrado um router dedicado de relatórios no backend Shadow. A inter
 - exportação PDF/Excel, filtros e trilha de auditoria da consulta.
 
 Nenhum total fictício é exibido. O backend, os filtros e as exportações não foram declarados concluídos; não houve execução de testes nem acesso a dados de produção.
+
+
+## Dashboard Executivo — ampliação da estrutura visual
+
+A tela inicial foi reorganizada em quatro blocos: indicadores executivos, visão financeira, acesso rápido aos módulos e panorama operacional, além de uma área explícita para alertas e acompanhamento. O layout não apresenta valores simulados e mantém os estados como indisponíveis até autenticação e conexão com a API Shadow.
+
+### Contrato real atualmente disponível
+
+O endpoint protegido `GET /api/v1/dashboard/resumo` retorna:
+- quantidades de formas monetárias, contas do plano, títulos financeiros, produtos, moradores, fornecedores, empregados e documentos;
+- quantidade e valor agregado de títulos classificados como `Receber` e `Pagar`;
+- diferença entre o valor a receber e o valor a pagar.
+
+A tela separa os campos existentes dos indicadores que ainda exigem serviços específicos. O endpoint não entrega séries temporais, vencimentos, inadimplência, fluxo de caixa, alertas de estoque, pendências de sincronização ou gráficos. Esses dados não são calculados no navegador nem apresentados como se estivessem disponíveis.
+
+O resumo atual percorre os serviços de listagem e agrega valores na camada de serviço. Antes de conectar em escala, é necessário avaliar agregações SQL, paginação/contagens eficientes e consistência transacional, evitando carregar coleções completas de documentos e demais registros apenas para contar.
+
+A tela continua sem bootstrap Google/API HTTPS, e nenhum request é disparado. Nenhum dado de produção é consultado.
