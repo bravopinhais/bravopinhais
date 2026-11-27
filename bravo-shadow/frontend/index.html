@@ -138,8 +138,8 @@ function renderFormasRows(){
  body.innerHTML=formasMonetarias.map(item=>`<tr><td><strong>${escapeHTML(item.nome)}</strong></td><td>${Number(item.multaPct).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}%</td><td><div class="row-actions"><button type="button" class="action-btn" data-action="edit" data-id="${escapeHTML(item.id)}" aria-label="Editar ${escapeHTML(item.nome)}">Editar</button><button type="button" class="action-btn danger" data-action="delete" data-id="${escapeHTML(item.id)}" aria-label="Excluir ${escapeHTML(item.nome)}">Excluir</button></div></td></tr>`).join("");
 }
 async function carregarFormas(){
- try{formasMonetarias=await apiRequest("/formas-monetarias");renderFormasRows();setFormasStatus("API conectada · "+formasMonetarias.length+" registro(s)","ok")}
- catch(error){setFormasStatus("Falha ao carregar: "+error.message,"err");const body=document.getElementById("formas-rows");if(body)body.innerHTML='<tr><td colspan="3" class="empty-state">Não foi possível carregar os registros. Verifique se a API está disponível.</td></tr>'}
+ try{formasMonetarias=await apiRequest("/formas-monetarias");renderFormasRows();setFormasStatus("API conectada · "+formasMonetarias.length+" registro(s)","ok");return true}
+ catch(error){setFormasStatus("Falha ao carregar: "+error.message,"err");const body=document.getElementById("formas-rows");if(body)body.innerHTML='<tr><td colspan="3" class="empty-state">Não foi possível carregar os registros. Verifique se a API está disponível.</td></tr>';return false}
 }
 function resetFormaForm(){
  formaEmEdicao=null;const form=document.getElementById("forma-form");if(!form)return;
@@ -153,7 +153,7 @@ async function salvarForma(event){
   const payload={nome,multaPct};
   if(formaEmEdicao)await apiRequest("/formas-monetarias/"+encodeURIComponent(formaEmEdicao),{method:"PUT",body:JSON.stringify(payload)});
   else await apiRequest("/formas-monetarias",{method:"POST",body:JSON.stringify(payload)});
-  resetFormaForm();await carregarFormas();setFormasStatus("Registro salvo na API sombra.","ok");
+  resetFormaForm();const listaAtualizada=await carregarFormas();if(listaAtualizada)setFormasStatus("Registro salvo na API sombra.","ok");else setFormasStatus("Registro salvo, mas a lista não foi atualizada. Use Atualizar para tentar novamente.","err");
  }catch(error){setFormasStatus(error.message,"err")}finally{button.disabled=false;button.textContent=formaEmEdicao?"Salvar edição":"Cadastrar";form.removeAttribute("aria-busy")}
 }
 function usuariosView(){
