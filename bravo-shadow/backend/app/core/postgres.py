@@ -33,6 +33,12 @@ class PostgresUnitOfWork:
         connection = self._connection_factory()
         required_methods = ("commit", "rollback", "close")
         if any(not callable(getattr(connection, name, None)) for name in required_methods):
+            close = getattr(connection, "close", None)
+            if callable(close):
+                try:
+                    close()
+                except Exception:
+                    pass
             raise TypeError(
                 "A connection_factory deve retornar uma conexão com commit, rollback e close chamáveis."
             )

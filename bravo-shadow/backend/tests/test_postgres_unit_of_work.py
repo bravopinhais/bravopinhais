@@ -127,3 +127,26 @@ def test_unit_of_work_rejects_invalid_connection_returned_by_factory():
         else:
             raise AssertionError("A conexão inválida deveria ser rejeitada")
         assert work.connection is None
+
+
+class InvalidConnectionWithClose:
+    def __init__(self):
+        self.closes = 0
+
+    def close(self):
+        self.closes += 1
+
+
+def test_unit_of_work_closes_invalid_connection_when_close_is_available():
+    connection = InvalidConnectionWithClose()
+    work = PostgresUnitOfWork(lambda: connection)
+
+    try:
+        work.__enter__()
+    except TypeError as error:
+        assert "commit, rollback e close" in str(error)
+    else:
+        raise AssertionError("A conexão incompleta deveria ser rejeitada")
+
+    assert connection.closes == 1
+    assert work.connection is None
