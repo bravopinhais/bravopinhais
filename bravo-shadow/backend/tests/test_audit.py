@@ -81,3 +81,9 @@ def test_audit_event_does_not_accept_unreviewed_payload_fields():
         make_event(email="person@example.com")
     with pytest.raises(TypeError):
         make_event(metadata={"token": "must-not-be-stored"})
+
+
+@pytest.mark.parametrize("outcome", ["success", "denied", "failure"])
+def test_audit_event_accepts_each_supported_outcome(outcome):
+    event = make_event(outcome=outcome)
+    assert event.outcome == outcome
