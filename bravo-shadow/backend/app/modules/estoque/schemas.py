@@ -45,7 +45,7 @@ class EstoqueInput(BaseModel):
         normalized = value.strip()
         if not normalized:
             return ""
-        if re.fullmatch(r"\\d{4}-\\d{2}-\\d{2}", normalized) is None:
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", normalized) is None:
             raise ValueError("A data de cadastro deve estar no formato AAAA-MM-DD.")
         try:
             return date.fromisoformat(normalized).isoformat()
