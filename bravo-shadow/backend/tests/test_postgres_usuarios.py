@@ -171,3 +171,17 @@ def test_repository_preserves_query_error_when_cursor_close_also_fails():
     assert any("fechamento do cursor" in note for note in getattr(original_error, "__notes__", ()))
     assert connection.rollbacks == 1
     assert connection.closed == 1
+
+
+def test_postgres_user_repository_blocks_physical_delete_without_opening_connection():
+    import pytest
+    from fastapi import HTTPException
+
+    def unexpected_connection():
+        raise AssertionError("Exclusão física não deve abrir conexão.")
+
+    repository = PostgresUsuariosRepository(unexpected_connection)
+    with pytest.raises(HTTPException) as error:
+        repository.delete("usr_1")
+
+    assert error.value.status_code == 410

@@ -105,9 +105,11 @@ class PostgresUsuariosRepository:
             raise HTTPException(status_code=404, detail="Usuário não encontrado.")
 
     def delete(self, item_id: str) -> None:
-        changed = self._query(f"DELETE FROM {self._table} WHERE id = %s", (item_id,))
-        if not changed:
-            raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+        """Impede exclusão física mesmo em chamadas diretas ao repositório."""
+        raise HTTPException(
+            status_code=410,
+            detail="Exclusão física indisponível. Use a operação de desativação lógica.",
+        )
 
     def deactivate_user(
         self,
