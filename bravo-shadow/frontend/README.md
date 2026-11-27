@@ -469,3 +469,14 @@ Após autenticação, a API continua sendo a autoridade para confirmar cadastro,
 O shell encaminha os eventos `bravo:session-ready` e `bravo:session-ended`. O evento de sessão pronta contém um cliente HTTP com métodos de API e o perfil confirmado; não contém o ID token. O Dashboard usa esse cliente apenas para a rota de resumo protegida. A navegação invalida/cancela consultas pendentes, e o encerramento da sessão limpa a referência do cliente e repõe os indicadores indisponíveis.
 
 O endpoint é agregado no backend e não devolve nomes, e-mails ou textos de documentos. A leitura não concede permissões: a autorização continua no servidor, por meio da capacidade `dashboard:read`.
+
+
+## Financeiro — listagem autenticada somente leitura
+
+A tela de Contas a Pagar / Receber consulta `GET /api/v1/financeiro` somente após receber o cliente da sessão Google autenticada. A rota exige a capacidade `financeiro:read`; os erros 401 e 403 são apresentados sem converter falhas em lista vazia bem-sucedida.
+
+A tabela mostra tipo, identificador da conta do Plano de Contas, histórico e valor em BRL. O conteúdo recebido é inserido com `textContent`, sem interpretar históricos como HTML. Pesquisa textual e filtro por tipo são locais, aplicados somente à lista retornada pela API.
+
+Inclusão, edição, exclusão e baixa permanecem desabilitadas. Não há chamadas POST, PUT ou DELETE no fluxo do módulo. A consulta é cancelada ao sair do módulo ou encerrar a sessão; respostas antigas não atualizam a tela após a navegação.
+
+**Limites do contrato atual:** o título possui tipo, conta opcional, histórico e valor. Não há vencimento, competência, baixa, pagamento parcial, recorrência ou conciliação. A tabela não inventa esses campos nem calcula indicadores que o backend não fornece.
