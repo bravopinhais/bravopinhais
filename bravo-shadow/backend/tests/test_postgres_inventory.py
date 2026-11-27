@@ -69,6 +69,7 @@ def test_stock_repository_maps_extended_origin_fields():
     connection = Connection(rows=[(
         "est_1", "Lâmpada", 7, 2, 20, "etq", "foto.jpg", "gzip",
         "Marca", "Linha", "Fabricante", date(2026, 11, 26),
+        "Portaria", "un", 12.50, "Ativo", "Branco", "anexos/foto-1",
     )])
     repository = PostgresEstoqueRepository(factory(connection))
 
@@ -78,7 +79,9 @@ def test_stock_repository_maps_extended_origin_fields():
         id="est_1", item="Lâmpada", quantidade=7, minimo=2, maximo=20,
         etiqueta="etq", fotoNome="foto.jpg", fotoCompactadaGzip="gzip",
         marca="Marca", linha="Linha", fabricante="Fabricante",
-        dataCadastro="2026-11-26",
+        dataCadastro="2026-11-26", setor="Portaria", unidade="un",
+        valorUnitario=12.50, status="Ativo", cor="Branco",
+        fotoPath="anexos/foto-1",
     )
     assert connection.commits == 1
     assert connection.closed == 1
@@ -210,3 +213,21 @@ def test_postgres_movement_repository_returns_404_for_missing_immutable_record()
     with pytest.raises(HTTPException) as error:
         repository.delete("missing")
     assert error.value.status_code == 404
+
+
+
+def test_stock_repository_preserves_fractional_quantities_and_legacy_metadata():
+    from decimal import Decimal
+
+    item = EstoqueItem(
+        id="est_fraction", item="Produto fracionado",
+        quantidade=Decimal("1.375"), minimo=Decimal("0.250"),
+        maximo=Decimal("4.500"), unidade="kg", valorUnitario=Decimal("9.90"),
+        setor="DML", status="Inativo", cor="Azul", fotoPath="anexos/item",
+    )
+
+    assert item.quantidade == Decimal("1.375")
+    assert item.minimo == Decimal("0.250")
+    assert item.maximo == Decimal("4.500")
+    assert item.valorUnitario == Decimal("9.90")
+    assert item.status == "Inativo"
