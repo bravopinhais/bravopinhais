@@ -48,7 +48,7 @@
     <div id="view" aria-live="polite" aria-atomic="true">
       <section class="panel dashboard-gate" aria-labelledby="dashboard-api-title">
         <div class="dashboard-gate-head"><div><div class="eyebrow">Dashboard · API protegida</div><h2 id="dashboard-api-title">Indicadores aguardando autenticação</h2></div><span class="tag">Sem dados fictícios</span></div>
-        <p>O resumo do Dashboard já existe na API sombra em <code>/api/v1/dashboard/resumo</code> e exige a capacidade <strong>dashboard:read</strong>. A interface ainda não recebe a sessão Google validada para enviar o ID token Bearer.</p>
+        <p>O resumo do Dashboard já existe na API sombra em <code>/api/v1/dashboard/resumo</code> e exige a capacidade <strong>dashboard:read</strong>. A interface ainda não recebe o ID token da autenticação Google para enviar no cabeçalho Bearer.</p>
         <div class="metrics dashboard-metrics" aria-label="Indicadores indisponíveis">
           <article class="metric"><div class="metric-label">Títulos a receber</div><div class="metric-value">—</div><div class="metric-foot">Aguardando sessão autorizada</div></article>
           <article class="metric"><div class="metric-label">Títulos a pagar</div><div class="metric-value">—</div><div class="metric-foot">Aguardando sessão autorizada</div></article>
@@ -162,16 +162,16 @@ function usuariosView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
   <div class="api-toolbar"><div><strong style="font-size:13px">Acesso e cadastro de usuários</strong><div class="api-status">Módulo em preparação segura</div></div><span class="tag">Sem operações liberadas</span></div>
-  <div class="notice" style="margin:16px 0 18px"><div class="notice-icon">⌁</div><div><strong>Integração Google pendente</strong><p>A interface ainda não recebeu o ID token da sessão Google. Sem essa identidade validada, a lista de usuários não será consultada nem serão enviados cadastros ou alterações.</p></div></div>
+  <div class="notice" style="margin:16px 0 18px"><div class="notice-icon">⌁</div><div><strong>Integração Google pendente</strong><p>A integração será feita diretamente com a autenticação Google. O ID token ainda não está disponível no navegador; sem essa identidade validada, a lista de usuários não será consultada nem serão enviados cadastros ou alterações.</p></div></div>
   <div class="section-head"><h2>Pré-requisitos de acesso</h2><span>Estado atual do Shadow</span></div>
   <div class="data-table-wrap"><table class="data-table" style="min-width:0"><tbody>
-   <tr><th scope="row">Sessão Google no navegador</th><td><span class="tag">Pendente · provedor não identificado</span></td></tr>
+   <tr><th scope="row">Sessão Google no navegador</th><td><span class="tag">Pendente · configuração do cliente Google</span></td></tr>
    <tr><th scope="row">Consulta de usuários</th><td><span class="tag">Bloqueada · usuarios:read não concedida</span></td></tr>
    <tr><th scope="row">Cadastro e edição</th><td><span class="tag">Bloqueados · matriz de perfis fechada</span></td></tr>
    <tr><th scope="row">Desativação lógica</th><td><span class="tag">Protegida · usuarios:deactivate não concedida</span></td></tr>
    <tr><th scope="row">Exclusão física</th><td><span class="tag">Desabilitada pela API · HTTP 410</span></td></tr>
   </tbody></table></div>
-  <div class="dashboard-gate-note"><span class="dot"></span><span>Nenhum perfil ou privilégio será habilitado automaticamente. A próxima integração depende da confirmação do provedor Google ativo e da aprovação explícita da matriz de permissões.</span></div>
+  <div class="dashboard-gate-note"><span class="dot"></span><span>Nenhum perfil ou privilégio será habilitado automaticamente. A integração usará o Google diretamente; faltam o Client ID público correto, as origens autorizadas e a aprovação explícita da matriz de permissões.</span></div>
  </section>`;
 }
 function openModule(id){
