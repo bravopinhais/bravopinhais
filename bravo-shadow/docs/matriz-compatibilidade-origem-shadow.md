@@ -32,6 +32,7 @@ O campo `version` de Plano de Contas é metadado controlado pelo Shadow e não f
 - `review_required`: campo obrigatório ausente ou parcialmente preenchido, tipo incompatível/conversão pendente ou campo de origem sem destino mapeado.
 - `empty_source_collection`: coleção presente, mas sem registros; não é tratada como esquema ausente nem como prova de compatibilidade dos campos.
 - Coleção de origem sem mapeamento e destino sem coleção de origem aparecem separadamente no relatório.
+- Duas coleções de origem apontando para o mesmo destino geram conflito explícito e bloqueiam ambas; não há mesclagem automática.
 
 Campos extras são bloqueadores de revisão, não são descartados. Para `saldo` decimal, texto decimal é aceito para avaliação preliminar; número JSON exige revisão porque não comprova preservação de precisão. Para `multaPct`, o destino é numérico e a avaliação exige número JSON.
 
@@ -49,6 +50,6 @@ Campos extras são bloqueadores de revisão, não são descartados. Para `saldo`
 - `backend/app/core/migration_compatibility.py`: contratos declarativos e avaliador puro.
 - `backend/app/core/migration_source_inventory.py`: inventário agregado e privado.
 - `backend/app/core/migration_envelope_reader.py`: inclui o inventário na leitura validada do envelope.
-- `backend/tests/test_migration_compatibility.py`: casos sintéticos para correspondência exata, campos obrigatórios ausentes, decimal numérico, campos extras e alias explícito.
+- `backend/tests/test_migration_compatibility.py`: casos sintéticos para correspondência exata, campos obrigatórios ausentes/parciais, coleção vazia, decimal numérico, campos extras, alias explícito e colisão de mapeamento.
 
 **Não realizado:** leitura de arquivo real, conexão com banco, migração SQL, execução de testes, importação ou deploy.
