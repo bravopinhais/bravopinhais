@@ -119,6 +119,41 @@ async function apiRequest(path,options={}){
  if(response.status===204)return null;
  return response.json();
 }
+function financeiroView(){
+ const view=document.getElementById("view");
+ view.innerHTML=`<section class="panel">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Contas a Pagar / Receber</strong><div class="api-status" id="fin-status" role="status" aria-live="polite">Aguardando sessão Google e API HTTPS Shadow</div></div><span class="tag">Cadastro financeiro</span></div>
+  <div class="notice" style="margin:14px 0 18px"><div class="notice-icon">◫</div><div><strong>Lançamentos financeiros</strong><p>Cadastro e manutenção de títulos, classificados como Receber ou Pagar, vinculados ao Plano de Contas, com histórico e valor. A interface não consulta nem altera dados enquanto a autenticação e a API isolada não estiverem integradas.</p></div></div>
+  <div class="section-head"><h2>Novo título</h2><span>Campos identificados no sistema original</span></div>
+  <form class="api-form" id="fin-form" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+   <div class="field"><label for="fin-type">Tipo</label><select id="fin-type" name="tipo" disabled><option value="Receber">Receber</option><option value="Pagar">Pagar</option></select></div>
+   <div class="field"><label for="fin-account">Conta do Plano de Contas</label><select id="fin-account" name="planoContaId" disabled><option value="">Carregamento após autenticação</option></select></div>
+   <div class="field"><label for="fin-history">Histórico</label><input id="fin-history" name="historico" maxlength="500" placeholder="Descrição do lançamento" required disabled></div>
+   <div class="field"><label for="fin-value">Valor (R$)</label><input id="fin-value" name="valor" type="number" step="0.01" inputmode="decimal" placeholder="0,00" required disabled></div>
+   <div style="grid-column:1/-1;display:flex;justify-content:flex-end"><button class="action-btn primary" type="submit" disabled>Salvar título</button></div>
+  </form>
+  <p class="form-hint">O vínculo será selecionado a partir das contas carregadas do módulo Plano de Contas. O backend valida a referência e rejeita contas inexistentes.</p>
+ </section>
+ <section class="panel" style="margin-top:16px">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Títulos cadastrados</strong><div class="api-status">Consulta protegida · financeiro:read</div></div><span class="tag">Lista completa</span></div>
+  <form class="api-form" id="fin-filters" style="grid-template-columns:minmax(0,2fr) minmax(150px,1fr) auto">
+   <div class="field"><label for="fin-search">Pesquisar histórico ou conta</label><input id="fin-search" name="busca" placeholder="Pesquisar" disabled></div>
+   <div class="field"><label for="fin-filter-type">Tipo de título</label><select id="fin-filter-type" name="tipo"><option value="">Todos</option><option value="Receber">Receber</option><option value="Pagar">Pagar</option></select></div>
+   <button class="action-btn" type="submit" disabled>Filtrar</button>
+  </form>
+  <div class="data-table-wrap"><table class="data-table"><caption>Títulos financeiros cadastrados</caption><thead><tr><th scope="col">Tipo</th><th scope="col">Conta do Plano</th><th scope="col">Histórico</th><th scope="col">Valor</th><th scope="col">Ações</th></tr></thead><tbody id="fin-rows"><tr><td colspan="5" class="empty-state">Aguardando consulta autorizada. Nenhum dado de exemplo é exibido.</td></tr></tbody></table></div>
+  <p class="form-hint">A edição usa controle de versão (ETag / If-Match) para impedir que uma alteração sobrescreva silenciosamente uma versão mais recente.</p>
+ </section>
+ <section class="panel" style="margin-top:16px">
+  <div class="section-head" style="margin-top:0"><h2>Regras e limites atuais</h2><span>Contrato verificado</span></div>
+  <ul style="margin:0;padding-left:18px;color:var(--soft);font-size:12px;line-height:1.9">
+   <li>Tipo limitado a Receber ou Pagar.</li><li>Histórico obrigatório e valor decimal com duas casas.</li>
+   <li>Conta do Plano de Contas opcional; quando informada, deve existir.</li>
+   <li>Não há campos de vencimento, competência, baixa, pagamento parcial, recorrência ou conciliação no contrato atual.</li>
+   <li>A exclusão da API é física; precisa de trilha de auditoria e confirmação explícita antes de ser habilitada na interface.</li>
+  </ul>
+ </section>`;
+}
 function dashboardView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel dashboard-gate" aria-labelledby="dashboard-api-title">
@@ -383,6 +418,7 @@ function openModule(id){
  document.getElementById("page-title").focus({preventScroll:true});
  const view=document.getElementById("view");
  if(id==="dashboard"){dashboardView();location.hash="";return}
+ if(id==="financeiro"){location.hash=id;financeiroView();return}
  if(id==="formas_monetarias"){location.hash=id;formasView();return}
  if(id==="usuarios"){location.hash=id;usuariosView();return}
  if(id==="compras_consumo"){location.hash=id;comprasConsumoView();return}
