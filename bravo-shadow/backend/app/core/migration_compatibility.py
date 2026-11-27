@@ -162,8 +162,8 @@ def assess_source_compatibility(
         ))
         unexpected = tuple(sorted(set(source_fields) - set(target_fields)))
         has_type_issue = any(item.status != "compatible" for item in field_results)
-        status = "review_required" if missing_required or has_type_issue else (
-            "compatible_with_optional_gaps" if missing_optional or unexpected else "compatible"
+        status = "review_required" if missing_required or has_type_issue or unexpected else (
+            "compatible_with_optional_gaps" if missing_optional else "compatible"
         )
         assessments.append(CollectionAssessment(
             source_collection=source_name,
