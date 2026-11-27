@@ -72,4 +72,5 @@ def deactivate_user(
         item_id,
         actor_subject=principal.subject,
         actor_email=principal.email,
+        request_id=getattr(request.state, "request_id", None),
     )
