@@ -49,7 +49,7 @@ def test_unexpected_source_fields_are_never_silently_dropped():
 
     result = assess_source_compatibility(inventory).assessments[0]
 
-    assert result.status == "compatible_with_optional_gaps"
+    assert result.status == "review_required"
     assert result.unexpected_source_fields == ("legadoExtra",)
 
 
