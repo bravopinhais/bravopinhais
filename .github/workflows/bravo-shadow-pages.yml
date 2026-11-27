@@ -64,6 +64,10 @@ jobs:
           grep -q 'a edição anterior foi cancelada para evitar salvar dados desatualizados' _site/index.html
           grep -q 'const possuiListaAnterior=formasMonetarias.length>0' _site/index.html
           grep -q 'Exibindo a última lista carregada; os dados podem estar desatualizados.' _site/index.html
+          grep -q 'let formasListaDesatualizada=false' _site/index.html
+          grep -q 'formasListaDesatualizada=true;renderFormasRows()' _site/index.html
+          grep -q 'formasListaDesatualizada=false;const edicaoPerdida' _site/index.html
+          grep -q 'A lista exibida pode estar desatualizada. Atualize antes de editar ou excluir registros.' _site/index.html
           grep -q 'Registro salvo, mas a lista não foi atualizada. Use Atualizar para tentar novamente.' _site/index.html
           grep -q 'tabindex="-1"' _site/index.html
           grep -q 'Exclusão concluída, mas a lista não foi atualizada. Use Atualizar para tentar novamente.' _site/index.html
