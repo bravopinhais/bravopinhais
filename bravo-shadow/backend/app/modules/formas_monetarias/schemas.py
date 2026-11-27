@@ -5,7 +5,7 @@ class FormaMonetariaInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     nome: str = Field(min_length=1)
-    multaPct: float = 2.0
+    multaPct: float = Field(default=2.0, ge=0, le=100, allow_inf_nan=False)
 
     @field_validator("nome")
     @classmethod
