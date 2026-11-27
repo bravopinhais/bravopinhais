@@ -59,3 +59,12 @@ O commit `96e4b47152b0167b2ac9bf056cff103c6b158767` acrescentou dois testes de c
 A execução GitHub Actions `45983529674` concluiu os trabalhos Backend e Docker com sucesso. O backend reportou **562 testes aprovados, 1 aviso de depreciação e nenhuma falha**. O trabalho Docker concluiu construção, inicialização do contêiner e smoke test de interface/API.
 
 Esta evidência valida os contratos automatizados do repositório e o comportamento do contêiner de demonstração. **Não** comprova privilégios efetivos em um banco compartilhado, não aplica o rascunho SQL e não autoriza integração operacional ou produção. A revisão de roles, memberships, grants e policies ainda depende de execução controlada em PostgreSQL local descartável.
+
+
+## Revalidação após correção das expressões regulares — 27/11/2026
+
+O commit `79631f3620972e58753ff873886b82f522bec04c` corrigiu as expressões regulares usadas pelos testes estáticos para remover comentários SQL e detectar comandos `GRANT` e `CREATE POLICY`. A execução GitHub Actions `45986569334` concluiu ambos os trabalhos com sucesso: **562 testes aprovados, 1 aviso de depreciação e nenhuma falha** no backend; construção da imagem Docker, inicialização do contêiner e smoke test de interface/API também aprovados.
+
+O aviso restante vem do alias `anyio.abc.BlockingPortal` usado pelo `starlette.testclient`; não causou falha nesta execução. Os erros “forced integration rollback”, “forced deferred commit failure”, “forced audit failure” e “forced deactivation audit failure” aparecem nos logs como cenários intencionais dos testes de falha/rollback, não como falhas da suíte.
+
+Esta revalidação confirma a correção dos testes e o estado da suíte automatizada. Continua sem executar o rascunho SQL, criar roles/policies/grants ou acessar banco compartilhado/produção.
