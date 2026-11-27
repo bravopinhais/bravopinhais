@@ -40,7 +40,7 @@ class FakeCursor:
         elif query.startswith("SELECT destination_collection"):
             stored = self.connection.records.get(key)
             self.result = stored[:3] if stored else None
-        elif query.startswith("UPDATE bravo_shadow.migration_source_records AS source"):
+        elif query.startswith("WITH verified_batch AS"):
             (
                 verified_batch_id, verified_source_system, batch_id,
                 update_batch_id, source_system, source_collection, legacy_id,
