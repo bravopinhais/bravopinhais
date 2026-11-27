@@ -1,50 +1,69 @@
-# Guia de homologação gratuita — Bravo Shadow
+# Guia de homologação local e gratuita — Bravo Shadow
 
 Data: 27/11/2026
 
-## Arquitetura escolhida para preparação
+## Decisão de ambiente
 
-- **Render Free:** um único serviço Docker executa FastAPI e serve `frontend/` na mesma origem HTTPS. Isso evita separar UI/API e não exige CORS entre elas.
-- **Supabase Free:** PostgreSQL isolado do Shadow, sem usar autenticação Supabase. O login continua sendo Google Identity Services + vínculo com o cadastro interno Bravo.
-- **Git:** branch `bravo-shadow` exclusivamente. O Blueprint aponta para essa branch e `autoDeployTrigger: off` para impedir deploy automático a cada commit.
-- **Produção:** nenhum domínio, banco, credencial ou serviço de produção deve ser conectado.
+A homologação atual está limitada a recursos locais e descartáveis. Não depende de Render, Supabase hospedado, Vercel, Railway, cartão de crédito ou serviço externo.
 
-## Arquivo preparado
+- Repositório: `bravopinhais/bravopinhais`.
+- Branch permitida: `bravo-shadow`.
+- PostgreSQL: instância local descartável gerenciada pelo Supabase CLI/Docker.
+- Projeto local: `bravo-shadow-local`, definido em `supabase/config.toml`.
+- Dados: exclusivamente fixture sintética versionada em `backend/fixtures/migration_homologation_synthetic.json`.
+- Produção: nenhuma conexão, segredo, URL, migração ou publicação de produção é permitida.
 
-`render.yaml` define um único Web Service Docker gratuito na região Ohio, `rootDir: bravo-shadow`, health check `/api/v1/health`, PostgreSQL obrigatório e deploy automático desligado. O primeiro deploy somente ocorre se alguém conectar o repositório e confirmar a criação do Blueprint no painel Render.
+Não criar projeto remoto nem vincular o CLI a um projeto hospedado. O arquivo local `supabase/.temp/project-ref`, qualquer bloco `[remotes.*]` ou URL remota no ambiente são condições para interromper o procedimento.
 
-`BRAVO_DATABASE_URL` é `sync: false`: deve ser informada diretamente no cofre de variáveis do Render, nunca no Git. O valor de `BRAVO_CORS_ORIGINS` fica vazio porque frontend e API serão servidos pela mesma origem.
+## Pré-requisitos locais
 
-## Configuração manual necessária (não executada)
+- Git.
+- Docker instalado e iniciado.
+- Supabase CLI instalado.
+- Python e dependências do backend instaladas para a avaliação da fixture.
+- Checkout atualizado e confirmado na branch `bravo-shadow`.
 
-1. Criar/selecionar uma conta Render no plano Free e conectar o repositório com acesso somente à branch `bravo-shadow`, se a permissão permitir.
-2. No painel Render, usar o Blueprint `bravo-shadow/render.yaml`. Conferir antes de confirmar que o serviço é `bravo-shadow-homologacao`, plano Free, região Ohio, branch `bravo-shadow` e auto deploy desligado.
-3. Criar um projeto Supabase no plano Free, nomeado claramente como homologação Bravo Shadow, em região próxima disponível. Não ativar Supabase Auth.
-4. Guardar a connection string PostgreSQL desse projeto e inserir apenas no secret `BRAVO_DATABASE_URL` do Render. Não compartilhar a URL em chat ou commit.
-5. Confirmar `BRAVO_STORAGE_BACKEND=postgres` e `GOOGLE_CLIENT_ID` no Render. Não inserir credenciais de produção.
-6. Após criação manual do serviço, copiar a origem HTTPS `onrender.com` gerada e adicioná-la às origens JavaScript autorizadas do OAuth Client Google. Não usar o domínio de produção.
-7. Manter CORS vazio enquanto frontend e API estiverem na mesma origem. Se futuramente forem separados, configurar somente a origem HTTPS exata do frontend.
-8. Antes de qualquer uso, revisar e aplicar exclusivamente as migrations Shadow no banco vazio, confirmar schema isolado e verificar `/api/v1/health`.
+O procedimento não instala ferramentas automaticamente. Se algum pré-requisito faltar, interrompa e prepare o ambiente antes de prosseguir.
 
-## Limitações do plano gratuito
+## Etapas
 
-- Render Free suspende o processo após 15 minutos sem tráfego; o primeiro acesso posterior pode levar cerca de um minuto para acordar.
-- Render Free tem limite de horas mensais compartilhado pelo workspace e armazenamento de arquivos efêmero. Não guardar anexos no disco local.
-- Supabase Free fornece 500 MB por projeto, não inclui backups automáticos e pode pausar o projeto após uma semana de baixa atividade.
-- A combinação é somente para desenvolvimento/homologação e demonstração com dados sintéticos. Não é adequada para operação real, dados pessoais de moradores, documentos ou rotina condominial.
+### 1. Confirmar fixture e relatório
 
-## Critérios para liberar a próxima fase
+A fixture é sintética, pequena e sem dados pessoais. Ela exercita os vínculos legados confirmados entre Financeiro/Plano de Contas e Acertos de Estoque/Estoque. O relatório deve continuar indicando revisão obrigatória para conversões e contratos de domínio ainda não aprovados.
 
-- Origem HTTPS Shadow independente confirmada.
-- Banco PostgreSQL vazio e exclusivo, com backups/exportação definidos antes de qualquer dado não sintético.
-- Google OAuth com origem Shadow autorizada e callback/validação conferidos.
-- Migrations revisadas e aplicadas somente no schema Shadow.
-- Health check, autenticação, autorização e persistência validados no ambiente isolado.
+A avaliação integrada é somente leitura e não precisa de banco. A validação automatizada correspondente está em `backend/tests/test_migration_homologation_fixture.py`; os testes ainda não foram executados nesta entrega.
 
-## Estado desta entrega
+### 2. Conferir isolamento
 
-- Blueprint e guia foram versionados na branch `bravo-shadow`.
-- Nenhuma conta, projeto Supabase, serviço Render, banco ou deploy foi criado.
-- Nenhuma migration foi aplicada.
-- Nenhuma credencial ou dado real foi adicionado.
-- O deploy automático está desligado no Blueprint.
+No diretório `bravo-shadow`, conferir:
+- branch exatamente `bravo-shadow`;
+- `supabase/config.toml` com `project_id = "bravo-shadow-local"`;
+- ausência de vínculo em `supabase/.temp/project-ref` e `.supabase/.temp/project-ref`;
+- ausência de remotes no arquivo de configuração;
+- ausência de variáveis de conexão/segredos remotos no ambiente do processo.
+
+Se qualquer condição for incerta, não iniciar os serviços.
+
+### 3. Preparar PostgreSQL local descartável
+
+O script `scripts/homologar-local.sh` verifica a branch, a configuração local e o Docker antes de executar `supabase start`, `supabase db reset --local` e `supabase migration list --local`.
+
+**Atenção:** `db reset --local` recria o banco local e remove os dados nele existentes. Executar somente em ambiente descartável, sem dados úteis. O script não usa `--linked`, não cria projeto hospedado e não importa a fixture.
+
+### 4. Homologação de schema e privilégios
+
+Depois que o PostgreSQL local estiver preparado, seguir `plano-homologacao-rls-postgres-descartavel.md`. A inspeção de catálogos somente leitura pode preceder a prova de roles. Criação de roles, memberships, grants, policies e execução de testes destrutivos de integração continuam condicionadas à aprovação específica do desenho e do escopo.
+
+### 5. Ensaio de aplicação
+
+Não faz parte desta etapa. Exige revisão do DDL e adaptador, critérios de domínio aprovados, plano de reversão e aprovação explícita vinculada aos hashes do lote e ao banco descartável. Nenhum dossiê ou relatório de prontidão concede essa autorização.
+
+## Limites e estado
+
+- Nenhum serviço hospedado ou banco remoto deve ser criado.
+- Nenhum dado real deve ser usado.
+- Nenhuma importação, deploy público, cutover ou alteração na branch de produção está autorizada.
+- O script local é destrutivo apenas para o banco local configurado; conferir o alvo antes de executá-lo.
+- O estado do ambiente local não foi verificado nesta alteração; nenhum comando Docker/Supabase ou teste foi executado.
+
+A homologação local é gratuita no sentido de não exigir infraestrutura hospedada paga; Docker e ferramentas locais continuam sujeitos aos requisitos e recursos da máquina.
