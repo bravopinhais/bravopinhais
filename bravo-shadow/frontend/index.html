@@ -1483,7 +1483,7 @@ async function usuariosDeactivate(id){
  if(user.email.toLowerCase()===(bravoCurrentUser?.email||"").toLowerCase()){usuariosStatus("Não é permitido desativar a própria conta.","err");return;}
  if(!window.confirm("Desativar o acesso de "+user.nome+" ("+user.email+")? O cadastro será preservado e o acesso Google será bloqueado. Esta ação exige auditoria persistente."))return;
  usuariosSaving=true;usuariosApplyPermissions();usuariosStatus("Solicitando desativação auditada…");
- try{await usuariosApiClient.post("/api/v1/usuarios/"+encodeURIComponent(id)+"/desativar",{});await usuariosLoad(usuariosApiClient);usuariosStatus("Usuário desativado. O cadastro foi preservado.","ok");}
+ try{await usuariosApiClient.post("/api/v1/usuarios/"+encodeURIComponent(id)+"/desativar");await usuariosLoad(usuariosApiClient);usuariosStatus("Usuário desativado. O cadastro foi preservado.","ok");}
  catch(error){usuariosStatus(error?.status===409?"A operação foi bloqueada para preservar o último Admin ativo.":error?.status===503?"Desativação auditada indisponível. Nenhuma alteração foi confirmada.":error?.status===403?"A API negou a desativação.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível desativar o usuário."),"err");}
  finally{usuariosSaving=false;usuariosApplyPermissions();}
 }
