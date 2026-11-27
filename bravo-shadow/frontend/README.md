@@ -137,3 +137,10 @@ A navegação Shadow agora inclui também `Compras x Consumo`, alinhada ao catá
 A navegação abre agora um painel próprio com filtros previstos no contrato da API (período, setor, busca, ordenação e opções de classificação), indicadores de compras/consumo/perdas/alertas, evolução mensal e detalhamento por produto. A interface não inventa valores nem simula gráficos ou resultados.
 
 Os controles permanecem desabilitados até a integração segura da sessão Google no navegador. O backend expõe consulta protegida por `relatorios:read` e exportação CSV; a interface visual ainda não está conectada a esses endpoints. Impressão/PDF e renderização de dados reais continuam pendentes. O GitHub Pages estático não hospeda a API FastAPI.
+
+
+### Compras x Consumo — renderização preparada
+
+A interface agora contém funções de apresentação que validam a estrutura básica da resposta da API, formatam quantidades e valores em pt-BR, montam a query string dos filtros e renderizam indicadores, evolução mensal e detalhamento por produto usando escape de HTML para textos recebidos. Os alvos de renderização estão identificados na tela.
+
+Essas funções são preparação de integração: não foram conectadas a uma sessão Google, não fazem chamadas de rede e não habilitam os controles. A consulta e a exportação continuam bloqueadas até existir uma API HTTPS Shadow independente e uma sessão autenticada com `relatorios:read`. Nenhum dado de exemplo é apresentado como real.
