@@ -27,6 +27,22 @@ def test_stock_numeric_rejects_scale_overflow_and_negative(value):
 def test_stock_numeric_accepts_three_decimal_places():
     validate_target_payload("estoque", {"quantidade": "12.345", "minimo": 0})
 
+@pytest.mark.parametrize("value", [
+    Decimal("1E+13"),
+    Decimal("-1E+12"),
+])
+def test_numeric_precision_counts_positive_decimal_exponents(value):
+    with pytest.raises(TargetPayloadContractError, match="numeric_precision_or_scale_exceeded"):
+        validate_target_payload("financeiro", {"valor": value})
+
+def test_numeric_precision_accepts_maximum_integer_digits_and_exponent_zero():
+    validate_target_payload("financeiro", {"valor": Decimal("1E+12")})
+    validate_target_payload("financeiro", {"valor": Decimal("0E+100")})
+
+def test_finite_float_rejects_integer_outside_float_range():
+    with pytest.raises(TargetPayloadContractError, match="finite_float_required"):
+        validate_target_payload("formas_monetarias", {"multa_pct": 10 ** 1000})
+
 @pytest.mark.parametrize("value", ["2026-02-30", "27/11/2026", "2026-11-27T00:00:00"])
 def test_stock_date_requires_real_iso_calendar_date(value):
     with pytest.raises(TargetPayloadContractError):
