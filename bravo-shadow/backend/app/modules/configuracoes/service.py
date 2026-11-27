@@ -90,7 +90,8 @@ class ConfiguracoesService:
         self.repository.set_state_audited(
             key, enabled, event=event, audit_sink=self.audit_sink
         )
-        return next(item for item in self.list_modules() if item.chave == key)
+        name, group = MODULE_BY_KEY[key][1], MODULE_BY_KEY[key][2]
+        return ModuloEstado(chave=key, nome=name, grupo=group, ativo=enabled)
 
     def apply_bulk(
         self, action: str, *, actor: AuthenticatedPrincipal,
