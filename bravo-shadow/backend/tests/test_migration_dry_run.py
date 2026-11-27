@@ -41,3 +41,21 @@ def test_invalid_approval_and_ambiguous_mapping_are_rejected():
         build_migration_dry_run(manifest(),replace(approval(),eligible_for_dry_run=False),{"products":[]},source_to_target={"products":"estoque"})
     with pytest.raises(ValueError):
         build_migration_dry_run(manifest(),approval(),{"a":[],"b":[]},source_to_target={"a":"estoque","b":"estoque"})
+
+
+def test_accepts_immutable_envelope_mappings():
+    from types import MappingProxyType
+    report = build_migration_dry_run(
+        manifest(), approval(),
+        MappingProxyType({"products": (MappingProxyType({"id": "1", "name": "x"}),)}),
+        source_to_target={"products": "estoque"},
+    )
+    assert report.planned_inserts == 1
+
+def test_missing_mapped_collection_is_not_silently_empty():
+    with pytest.raises(ValueError):
+        build_migration_dry_run(manifest(), approval(), {}, source_to_target={"products": "estoque"})
+
+def test_invalid_destination_snapshot_is_rejected():
+    with pytest.raises(ValueError):
+        build_migration_dry_run(manifest(), approval(), {"products": []}, source_to_target={"products": "estoque"}, existing_target_ids={"estoque": [None]})

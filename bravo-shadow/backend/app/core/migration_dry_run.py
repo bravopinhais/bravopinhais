@@ -51,8 +51,19 @@ class DryRunReport:
     decisions: tuple[RecordDecision, ...]
     discrepancies: tuple[Discrepancy, ...]
 
+def _json_value(value: Any) -> Any:
+    if isinstance(value, Mapping):
+        if any(not isinstance(key, str) for key in value):
+            raise TypeError("chaves de registro devem ser texto.")
+        return {key: _json_value(item) for key, item in value.items()}
+    if isinstance(value, (list, tuple)):
+        return [_json_value(item) for item in value]
+    if value is None or isinstance(value, (str, bool, int, float)):
+        return value
+    raise TypeError("valor de registro não é JSON compatível.")
+
 def _hash(value: Any) -> str:
-    raw = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
+    raw = json.dumps(_json_value(value), ensure_ascii=False, sort_keys=True, separators=(",", ":"), allow_nan=False).encode("utf-8")
     return hashlib.sha256(raw).hexdigest()
 
 def _identity_hash(system: str, collection: str, legacy_id: str) -> str:
@@ -90,15 +101,27 @@ def build_migration_dry_run(
     for link in existing_source_links:
         if not isinstance(link, ExistingSourceLink):
             raise TypeError("vínculo de origem inválido.")
+        if any(not isinstance(item, str) or not item for item in (link.source_system, link.source_collection, link.legacy_id)):
+            raise ValueError("identidade de proveniência inválida.")
+        if not isinstance(link.record_sha256, str) or len(link.record_sha256) != 64 or any(c not in "0123456789abcdef" for c in link.record_sha256):
+            raise ValueError("hash de proveniência inválido.")
         key = (link.source_system, link.source_collection, link.legacy_id)
         if key in links:
             raise ValueError("snapshot de vínculos contém identidade duplicada.")
         links[key] = link.record_sha256
-    target_ids = {name: set(ids) for name, ids in (existing_target_ids or {}).items()}
+    target_ids = {}
+    for name, ids in (existing_target_ids or {}).items():
+        if not isinstance(name, str) or not isinstance(ids, (list, tuple, set, frozenset)):
+            raise ValueError("snapshot de IDs do destino inválido.")
+        if any(not isinstance(item, str) or not item for item in ids):
+            raise ValueError("ID do destino deve ser texto não vazio.")
+        target_ids[name] = set(ids)
     counts = {k: 0 for k in ("planned_insert","already_applied","conflict_changed_source","destination_id_collision","invalid_record","duplicate_source_identity")}
     decisions, seen, total = [], set(), 0
     for src, dst in sorted(mapping.items()):
-        records = collections.get(src, ())
+        if src not in collections:
+            raise ValueError("coleção mapeada ausente: " + src)
+        records = collections[src]
         if not isinstance(records, (list, tuple)):
             raise ValueError("coleção ausente ou inválida: " + src)
         for record in records:
