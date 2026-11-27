@@ -46,11 +46,16 @@ def make_operations(expected_connection, calls, *, fail_at=None):
         assert destination["table"] == "fornecedores"
         record("success_event", connection)
 
+    def append_audit(connection, destination):
+        assert destination["id"] == "legacy-17"
+        record("audit_event", connection)
+
     return MigrationWriteOperations(
         reserve_batch=reserve,
         write_business=write_business,
         write_source_map=write_source_map,
         append_success_event=append_event,
+        append_audit_event=append_audit,
     )
 
 
@@ -65,7 +70,7 @@ def test_write_unit_uses_one_connection_and_commits_all_steps():
     )
 
     assert result == {"table": "fornecedores", "id": "legacy-17"}
-    assert calls == ["reserve", "business", "source_map", "success_event"]
+    assert calls == ["reserve", "business", "source_map", "success_event", "audit_event"]
     assert connection.commits == 1
     assert connection.rollbacks == 0
     assert connection.closes == 1
@@ -113,4 +118,5 @@ def test_unit_does_not_emit_success_event_when_business_insert_fails():
 
     assert "source_map" not in calls
     assert "success_event" not in calls
+    assert "audit_event" not in calls
     assert connection.rollbacks == 1
