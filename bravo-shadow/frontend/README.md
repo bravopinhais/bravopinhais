@@ -57,7 +57,7 @@ A revisão do código disponível não identificou um bootstrap cliente do Googl
 
 A API sombra já valida ID token Google no servidor (`GOOGLE_CLIENT_ID`, assinatura, emissor, audiência e expiração por meio de `google-auth`) e vincula o e-mail verificado a um usuário interno ativo. A interface não deve receber segredo de cliente, simular token, guardar token em `localStorage` ou aceitar identidade informada manualmente.
 
-**Decisão confirmada para o Bravo Shadow:** usar autenticação Google diretamente, sem introduzir Supabase Auth como provedor de login. A API continuará validando o ID token no servidor. Para concluir a conexão do navegador, ainda são necessários o Client ID OAuth público correto e a lista de origens autorizadas do ambiente sombra; esses valores não serão inventados nem inseridos como segredo no repositório. Até essa configuração, o Dashboard permanece indisponível e protegido. A tela de login original não foi modificada.
+**Decisão confirmada para o Bravo Shadow:** usar autenticação Google diretamente, sem introduzir Supabase Auth como provedor de login. O Client ID OAuth público já foi fornecido pelo responsável pelo sistema; ele não é um segredo e não substitui a validação no servidor. O módulo `js/google-auth.js` agora carrega o Google Identity Services, recebe a credencial em memória e consulta `GET /api/v1/auth/me` com Bearer token. Só considera autenticado o usuário que a API confirmar como cadastrado e ativo. O token não é gravado em `localStorage`, `sessionStorage` ou cookies. A integração ainda depende da URL HTTPS da API e da configuração das origens autorizadas no projeto OAuth. O GitHub Pages hospeda somente os arquivos estáticos e não executa a API FastAPI; portanto, o login completo não deve ser considerado operacional no preview enquanto a API não tiver hospedagem disponível. A tela de login original não foi modificada.
 
 ## Gestão de Usuários — estado da interface
 
@@ -69,7 +69,7 @@ A navegação da Gestão de Usuários apresenta um painel de pré-requisitos, se
 - desativação lógica protegida por `usuarios:deactivate` ainda não concedida;
 - exclusão física desabilitada pela API (HTTP 410).
 
-Esse estado é intencional: a interface não consulta nem altera usuários com identidade ausente, não inventa dados e não concede permissões por perfil. Para avançar, é necessário identificar o provedor Google usado no ambiente ativo e aprovar explicitamente a matriz de permissões. A tela de login original permanece intocada.
+Esse estado é intencional: a interface não consulta nem altera usuários com identidade ausente, não inventa dados e não concede permissões por perfil. Para avançar, é necessário conectar a URL HTTPS da API ao módulo de sessão e aprovar explicitamente a matriz de permissões. A tela de login original permanece intocada.
 
 ## Acessibilidade da navegação
 
