@@ -94,3 +94,33 @@ def test_blank_incoming_hash_is_rejected():
             existing_mapping=None,
             destination_id_exists=False,
         )
+
+
+@pytest.mark.parametrize(
+    "mapping",
+    [
+        ExistingSourceMapping(None, "mor_1"),
+        ExistingSourceMapping(123, "mor_1"),
+        ExistingSourceMapping("sha256:abc", None),
+        ExistingSourceMapping("sha256:abc", 123),
+    ],
+)
+def test_malformed_existing_mapping_fails_closed(mapping):
+    decision = classify_source_identity(
+        incoming_hash="sha256:abc",
+        existing_mapping=mapping,
+        destination_id_exists=False,
+    )
+    assert decision.classification == "mapping_inconsistent"
+    assert decision.may_insert is False
+    assert decision.destination_id is None
+
+
+@pytest.mark.parametrize("value", ["true", 1, None])
+def test_destination_collision_flag_must_be_boolean(value):
+    with pytest.raises(TypeError, match="destination_id_exists"):
+        classify_source_identity(
+            incoming_hash="sha256:abc",
+            existing_mapping=None,
+            destination_id_exists=value,
+        )
