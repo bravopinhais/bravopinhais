@@ -24,6 +24,7 @@ from app.core.postgres_inventory import (
     PostgresEstoqueRepository,
 )
 from app.core.postgres_usuarios import PostgresUsuariosRepository
+from app.core.postgres_module_settings import PostgresModuleSettingsRepository
 from app.core.postgres_audit import PostgresAuditSink
 from app.core.postgres_repositories import (
     PostgresFinanceiroRepository,
@@ -46,6 +47,7 @@ from app.modules.moradores.service import MoradoresService
 from app.modules.motivos_acerto.service import MotivosAcertoService
 from app.modules.plano_contas.service import PlanoContasService
 from app.modules.usuarios.service import UsuariosService
+from app.modules.configuracoes.service import ConfiguracoesService
 
 StorageBackend = Literal["memory", "postgres"]
 
@@ -73,7 +75,15 @@ class StorageServices:
     condominio: CondominioService
     conselheiros: ConselheirosService
     usuarios: UsuariosService
+    configuracoes: ConfiguracoesService
     audit_sink: Any | None
+
+
+class _InMemoryModuleSettingsRepository:
+    """Snapshot de configuração para leitura; mutações exigem PostgreSQL auditado."""
+
+    def list_states(self) -> dict[str, bool]:
+        return {}
 
 
 def build_storage_services(
@@ -105,6 +115,7 @@ def build_storage_services(
         condominio_repository = InMemoryCollectionRepository()
         conselheiros_repository = InMemoryCollectionRepository()
         usuarios_repository = InMemoryCollectionRepository()
+        module_settings_repository = _InMemoryModuleSettingsRepository()
     elif backend == "postgres":
         if connection_factory is None:
             raise StorageConfigurationError(
@@ -126,6 +137,7 @@ def build_storage_services(
         condominio_repository = PostgresCondominioRepository(connection_factory)
         conselheiros_repository = PostgresConselheirosRepository(connection_factory)
         usuarios_repository = PostgresUsuariosRepository(connection_factory)
+        module_settings_repository = PostgresModuleSettingsRepository(connection_factory)
         audit_sink = PostgresAuditSink(connection_factory)
         movement_repository = acertos_repository
     else:
@@ -165,6 +177,7 @@ def build_storage_services(
     condominio = CondominioService(repository=condominio_repository)
     conselheiros = ConselheirosService(repository=conselheiros_repository)
     usuarios = UsuariosService(repository=usuarios_repository, audit_sink=audit_sink)
+    configuracoes = ConfiguracoesService(repository=module_settings_repository, audit_sink=audit_sink)
 
     return StorageServices(
         formas_monetarias=formas_monetarias,
@@ -182,5 +195,6 @@ def build_storage_services(
         condominio=condominio,
         conselheiros=conselheiros,
         usuarios=usuarios,
+        configuracoes=configuracoes,
         audit_sink=audit_sink,
     )
