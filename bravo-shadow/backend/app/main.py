@@ -31,6 +31,8 @@ from app.modules.fornecedores.router import router as fornecedores_router
 from app.modules.empregados.router import router as empregados_router
 from app.modules.formas_monetarias.router import router as formas_monetarias_router
 from app.modules.plano_contas.router import router as plano_contas_router
+from app.modules.relatorios.router import router as relatorios_router
+from app.modules.relatorios.service import RelatoriosService
 from app.modules.usuarios.router import router as usuarios_router
 from app.modules.configuracoes.router import router as configuracoes_router
 
@@ -173,6 +175,10 @@ def create_app(
         estoque=services.estoque,
         acertos_estoque=services.acertos_estoque,
     )
+    application.state.relatorios_service = RelatoriosService(
+        financeiro=services.financeiro,
+        plano_contas=services.plano_contas,
+    )
     application.state.dashboard_service = DashboardService(
         formas_monetarias=services.formas_monetarias,
         plano_contas=services.plano_contas,
@@ -188,6 +194,7 @@ def create_app(
     application.include_router(dashboard_router)
     application.include_router(compras_consumo_router)
     application.include_router(plano_contas_router)
+    application.include_router(relatorios_router)
     application.include_router(financeiro_router)
     application.include_router(formas_monetarias_router)
     application.include_router(contas_bancarias_router)
