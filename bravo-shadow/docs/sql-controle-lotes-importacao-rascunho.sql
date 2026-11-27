@@ -251,10 +251,19 @@ FROM PUBLIC, anon, authenticated, service_role;
 --    campos do evento existente; aceitar somente se forem idênticos, caso
 --    contrário rejeitar como conflito de idempotência. Nunca gerar nova
 --    sequência para mascarar uma repetição conflitante.
--- 10. Recovery exige evento append-only com revisor, justificativa, referência
---    e SHA-256 da evidência. O evento não muda status nem reabre o lote.
---    confirmed_not_committed exige prova da ausência de commit;
---    rollback_verified exige prova da reversão integral;
---    partial_or_unknown mantém o bloqueio.
+-- 10. Separação de funções: recorded_by registra; reviewer_id avalia o mérito;
+--     approver_id, em tabela separada, aprova ou rejeita. Os três atores devem
+--     ser distintos. Só existe uma aprovação final por evento; rejeição encerra
+--     aquele evento e qualquer correção exige novo evento de recovery.
+--     Para aprovar, bloquear o evento com SELECT ... FOR UPDATE e inserir a
+--     aprovação na mesma transação; UNIQUE(event_id) impede dupla aprovação.
+--     Aprovação é trilha de auditoria: não altera status, não libera lote e não
+--     dispara apply. A imutabilidade efetiva depende de privilégios/trigger na
+--     migration futura; este rascunho sozinho não a garante.
+-- 11. Recovery exige evento append-only com revisor, justificativa, referência
+--     e SHA-256 da evidência. O evento não muda status nem reabre o lote.
+--     confirmed_not_committed exige prova da ausência de commit;
+--     rollback_verified exige prova da reversão integral;
+--     partial_or_unknown mantém o bloqueio.
 -- 12. Novo apply sempre exige novo lote/manifesto aprovado. Este arquivo
 --     não cria nem altera tabelas funcionais do Bravo.
