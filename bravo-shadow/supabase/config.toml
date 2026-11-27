@@ -1,0 +1,3 @@
+# Local-only Supabase CLI project configuration for Bravo Shadow.
+# No remote project_id, remotes, secrets, or production linkage is configured.
+project_id = "bravo-shadow-local"
