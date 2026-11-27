@@ -1,6 +1,7 @@
 import pytest
 from fastapi import HTTPException
 
+from app.core.authorization import AuthenticatedPrincipal
 from app.modules.usuarios.schemas import Usuario, UsuarioAdministracaoInput, UsuarioInput
 from app.modules.usuarios.service import UsuariosService
 
@@ -31,8 +32,7 @@ def test_service_delegates_admin_change_with_bound_audit_event():
     service.update_administrative_state(
         "usr_target",
         UsuarioAdministracaoInput(perfil="Operador", status="Inativo"),
-        actor_subject="google-subject-admin",
-        actor_email="admin@example.com",
+        actor=AuthenticatedPrincipal(subject="google-subject-admin", email="admin@example.com", profile="Admin", account_status="Ativo"),
         audit_sink=object(),
     )
 
@@ -55,8 +55,7 @@ def test_service_blocks_actor_from_changing_own_profile_or_status():
         service.update_administrative_state(
             "usr_target",
             UsuarioAdministracaoInput(perfil="Operador", status="Inativo"),
-            actor_subject="google-subject-admin",
-            actor_email=" admin@example.com ",
+            actor=AuthenticatedPrincipal(subject="google-subject-admin", email=" admin@example.com ", profile="Admin", account_status="Ativo"),
             audit_sink=object(),
         )
 
@@ -77,8 +76,7 @@ def test_memory_repository_fails_closed_for_admin_changes():
         service.update_administrative_state(
             created.id,
             UsuarioAdministracaoInput(perfil="Operador", status="Inativo"),
-            actor_subject="google-subject-admin",
-            actor_email="admin@example.com",
+            actor=AuthenticatedPrincipal(subject="google-subject-admin", email="admin@example.com", profile="Admin", account_status="Ativo"),
             audit_sink=object(),
         )
 
@@ -182,4 +180,14 @@ def test_service_fails_closed_when_audited_deactivation_is_unavailable():
         )
 
     assert error.value.status_code == 503
+    assert repository.call is None
+
+
+@pytest.mark.parametrize("actor", [None, object(), AuthenticatedPrincipal(subject="google-subject-admin", email="admin@example.com", profile="Admin", account_status="Inativo"), AuthenticatedPrincipal(subject=" ", email="admin@example.com", profile="Admin", account_status="Ativo")])
+def test_deactivation_requires_valid_active_authenticated_principal(actor):
+    repository = DeactivationRepository(user())
+    service = UsuariosService(repository=repository, audit_sink=TransactionalAuditSink())
+    with pytest.raises(HTTPException) as error:
+        service.deactivate("usr_target", actor=actor)
+    assert error.value.status_code == 401
     assert repository.call is None
