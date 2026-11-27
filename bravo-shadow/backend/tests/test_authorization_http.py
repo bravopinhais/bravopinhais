@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, FastAPI, HTTPException
+from types import SimpleNamespace
+
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request
 from fastapi.testclient import TestClient
 
 from app.core.authentication import get_current_principal
@@ -17,8 +19,15 @@ def make_principal(profile: str = "Admin") -> AuthenticatedPrincipal:
     )
 
 
-def build_test_client(principal: AuthenticatedPrincipal | None = None) -> TestClient:
+def build_test_client(principal: AuthenticatedPrincipal | None = None, audit_sink=None) -> TestClient:
     application = FastAPI()
+    application.state.services = SimpleNamespace(audit_sink=audit_sink)
+
+    @application.middleware("http")
+    async def request_context(request: Request, call_next):
+        request.state.request_id = "req_test_authorization"
+        return await call_next(request)
+
     router = APIRouter()
 
     async def fake_authentication() -> AuthenticatedPrincipal:
@@ -72,4 +81,41 @@ def test_protected_route_rejects_unknown_capability_even_for_admin():
 
     application.include_router(router)
     response = TestClient(application).get("/protected-unknown")
+    assert response.status_code == 403
+
+
+class RecordingAuditSink:
+    def __init__(self, *, fail=False):
+        self.events = []
+        self.fail = fail
+
+    def append(self, event):
+        if self.fail:
+            raise RuntimeError("audit unavailable")
+        self.events.append(event)
+
+
+def test_authenticated_permission_denial_is_audited_without_personal_payload():
+    sink = RecordingAuditSink()
+    principal = make_principal("Admin")
+
+    response = build_test_client(principal, sink).get("/protected")
+
+    assert response.status_code == 403
+    assert len(sink.events) == 1
+    event = sink.events[0]
+    assert event.actor_subject == principal.subject
+    assert event.action == "financeiro:read"
+    assert event.entity_type == "authorization"
+    assert event.entity_id is None
+    assert event.outcome == "denied"
+    assert event.request_id == "req_test_authorization"
+    assert not hasattr(event, "email")
+
+
+def test_audit_failure_does_not_turn_permission_denial_into_success():
+    sink = RecordingAuditSink(fail=True)
+
+    response = build_test_client(make_principal("Admin"), sink).get("/protected")
+
     assert response.status_code == 403
