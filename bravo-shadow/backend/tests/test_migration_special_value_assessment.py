@@ -11,7 +11,7 @@ def test_financeiro_flags_legacy_number_without_echoing_value():
     assert "10.25" not in repr(report)
 
 def test_literal_and_quantity_constraints_are_checked_without_mutation():
-    record = {"tipo":"entrada", "quantidade":-1}
+    record = {"data":"27/11/2026", "tipo":"entrada", "quantidade":-1}
     before = dict(record)
     report = assess_special_record_values("acertos_estoque", record)
     assert {"invalid_literal", "negative_not_allowed", "numeric_conversion_review", "datetime_timezone_review"} <= codes(report)
