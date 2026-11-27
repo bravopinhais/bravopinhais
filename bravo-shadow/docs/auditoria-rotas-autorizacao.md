@@ -361,3 +361,12 @@ A inspeção acima é leitura de código e de testes; não equivale a teste de p
 ### Decisão de segurança preservada
 
 Não preencher a matriz de perfis por inferência. Até aprovação explícita, as rotas continuam negando todas as capacidades de negócio, mesmo para Admin autenticado e ativo. Não habilitar dados reais, banco remoto, cutover ou publicação pública com base apenas na presença dos decorators.
+
+
+### Ponto de decisão — chave persistente da identidade Google (27/11/2026)
+
+A implementação atual valida o ID token Google e exige `sub`, e-mail e `email_verified=true`. A resolução do cadastro Bravo é feita por comparação do e-mail normalizado, exigindo exatamente um cadastro com status `Ativo`. O `sub` validado é colocado em `AuthenticatedPrincipal` e usado como ator técnico em contexto/auditoria, mas os schemas de cadastro e atualização cadastral de usuários não expõem nem persistem esse identificador.
+
+**Consequência:** hoje, o e-mail verificado é a chave de associação entre a identidade Google e o cadastro interno. Não há evidência nesta revisão de vínculo durável por `sub`. Uma mudança futura de e-mail na conta Google exigiria um processo controlado de reconciliação com o cadastro Bravo; não se deve associar automaticamente uma identidade nova apenas porque ela informa um endereço semelhante.
+
+**Decisão necessária antes de evoluir o modelo:** manter e-mail verificado como chave oficial, com processo administrativo de troca/reconciliação, ou introduzir um campo persistente e único para o `sub` do Google. Não alterar schema, migrations ou registros até essa decisão ser aprovada. O fluxo continua sem senha local e sem permitir que o navegador escolha perfil/status.
