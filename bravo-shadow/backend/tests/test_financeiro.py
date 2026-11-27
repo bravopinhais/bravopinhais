@@ -1,6 +1,7 @@
 from fastapi.testclient import TestClient
 
 from app.main import app
+from pydantic import ValidationError
 
 import pytest
 from types import MappingProxyType
@@ -114,7 +115,7 @@ def test_reject_amount_with_more_than_two_decimal_places():
 
 @pytest.mark.parametrize("valor", ["NaN", "Infinity", "-Infinity"])
 def test_reject_non_finite_financial_amounts(valor):
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         FinanceiroInput(**payload(valor=valor))
 
 
