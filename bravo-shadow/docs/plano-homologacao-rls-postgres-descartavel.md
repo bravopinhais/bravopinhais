@@ -405,3 +405,55 @@ A desativação também confia na autorização da rota para decidir quem pode e
 7. Testar em PostgreSQL descartável que a role candidata não consegue executar UPDATE/DELETE direto no histórico nem DELETE em usuários, e que as operações autorizadas continuam funcionando com os locks e transações atuais.
 
 **Status:** mapeamento de regras de serviço e lacunas documentado. Nenhum endpoint foi adicionado, nenhuma capability foi ativada e nenhum grant, role, policy, função ou migration foi criado ou aplicado.
+
+
+## 13. Auditoria da cobertura de testes transacionais e concorrência
+
+A inspeção dos testes existentes separou testes de serviço, testes de adaptador com conexão simulada e integração com PostgreSQL real. Um teste com conexão simulada confirma a sequência de chamadas e o tratamento esperado do código, mas não comprova locks, isolamento, constraints ou rollback efetivo do servidor PostgreSQL.
+
+### 13.1 Cobertura existente confirmada no código
+
+| Área | Testes encontrados | Tipo de evidência | Limite |
+|---|---|---|---|
+| Movimento de estoque | Atualização de saldo + INSERT de histórico; saída sem saldo; produto inexistente; edição com/sem histórico; histórico imutável | Adaptador com conexão/cursor simulados em `test_postgres_inventory.py`; fluxos HTTP em memória em `test_estoque_acertos.py` | Não é integração real PostgreSQL; não comprova lock concorrente nem rollback provocado por falha do INSERT do histórico. |
+| Alteração administrativa de usuário | Atualização + auditoria, último Admin, falha de auditoria, alvo inexistente | Testes de transação com conexão simulada | Não substitui a suíte de integração, mas cobre rapidamente caminhos e parâmetros. |
+| Alteração administrativa real | Atualização e auditoria atômicas; bloqueio de último Admin; falha de auditoria com rollback; duas despromoções concorrentes | PostgreSQL descartável em `test_usuarios_admin_postgres_integration.py` | A fixture usa os DDLs de rascunho e executa DROP/CREATE de schema; só é permitida no banco local descartável explicitamente opt-in. |
+| Desativação real | Desativação sem DELETE, auditoria atômica, bloqueio de último Admin e rollback após falha de auditoria | PostgreSQL descartável | Não há, nessa suíte, corrida concorrente de duas desativações/despromoções cruzadas além do teste de despromoção concorrente. |
+| Privilégios/RLS reais | Script de inspeção de catálogo somente leitura executado em PostgreSQL 16 descartável vazio | CI valida sintaxe e execução das consultas de catálogo | O banco vazio não contém schema Bravo, roles específicas, grants, policies nem sessões de runtime; não valida autorização efetiva. |
+
+### 13.2 Lacunas prioritárias em estoque
+
+**P0 — rollback quando o INSERT do histórico falha após o UPDATE do saldo.** O teste atual de saldo insuficiente falha antes do UPDATE; portanto, não prova que uma falha na segunda escrita desfaz a primeira. Criar teste de integração PostgreSQL descartável que instale um trigger temporário de rejeição do INSERT em `acertos_estoque`, execute `register_movement`, espere erro e confirme em nova conexão que saldo e histórico permaneceram inalterados. Remover trigger/função em bloco `finally`.
+
+**P0 — duas movimentações concorrentes sobre o mesmo produto.** Abrir duas conexões independentes, sincronizar o início e registrar movimentos que disputem o mesmo saldo. Verificar que o `SELECT ... FOR UPDATE` serializa os cálculos, que nenhum movimento é perdido, que saldo final corresponde à soma dos movimentos confirmados e que cada movimento confirmado possui exatamente um registro histórico. Incluir cenário em que uma saída concorrente excederia o saldo: apenas a combinação permitida deve confirmar.
+
+**P1 — edição cadastral concorrente com movimento.** Executar edição de produto e movimento em conexões independentes. Confirmar que a ordem de locks não permite que a edição sobrescreva um saldo já movimentado nem que um movimento seja aplicado a um estado perdido. Validar o estado final e o histórico.
+
+**P1 — tentativas diretas de mutação do histórico.** Com a role runtime candidata (quando existir e for aprovada), provar que UPDATE e DELETE em `acertos_estoque` falham no PostgreSQL, não apenas que a API responde 405/409. Não criar essa role nesta etapa.
+
+### 13.3 Lacunas prioritárias em usuários e auditoria
+
+**P1 — concorrência entre desativação e alteração administrativa.** Testar transações concorrentes que possam reduzir o conjunto de administradores ativos, incluindo uma desativação e uma despromoção em paralelo. A invariável esperada é manter pelo menos um Admin ativo, sem duplicar auditorias ou deixar atualização sem evento.
+
+**P1 — idempotência concorrente da desativação.** Duas solicitações simultâneas para desativar o mesmo usuário devem produzir estado final Inativo e no máximo um evento de sucesso para a transição efetiva; a segunda chamada deve seguir o contrato idempotente já definido pelo repositório.
+
+**P1 — integridade da trilha.** Confirmar que falhas de auditoria, erros de constraint e rollback deixam usuário e auditoria consistentes, e que não há evento de sucesso órfão ou duplicado.
+
+**P2 — grants efetivos.** Quando houver desenho aprovado e roles candidatas no banco descartável, testar com sessões reais cada operação permitida e negada, incluindo locks, SELECT FOR UPDATE, UPDATE por coluna, INSERT, DELETE, TRUNCATE, DDL, memberships e bypass RLS. O teste não deve conectar-se a produção.
+
+### 13.4 Condições para implementar a suíte de integração de estoque
+
+- Reutilizar a guarda de banco descartável já aplicada na suíte de usuários: opt-in explícito, host local e nome exato `bravo_shadow_test`.
+- Não executar contra produção, homologação compartilhada ou qualquer banco cujo nome/host não passe pela guarda.
+- Usar DDL de estoque e auditoria em fixtures isoladas; evitar dependência da ordem de execução dos testes.
+- Garantir limpeza de triggers/funções temporários em `finally` e limpeza do schema somente dentro do banco descartável protegido.
+- Usar conexões físicas independentes para concorrência; não simular lock com um único objeto compartilhado.
+- Fazer asserções de estado final por uma terceira conexão, depois do término das transações concorrentes.
+- Manter testes determinísticos com barreiras/timeouts, sem depender de `sleep` como mecanismo de sincronização.
+- Registrar separadamente resultado de teste unitário, integração real PostgreSQL e teste de privilégios; um não substitui o outro.
+
+### 13.5 Critério de saída antes da aprovação de grants
+
+Não considerar a fronteira de estoque comprovada até existir evidência PostgreSQL real para rollback do INSERT de histórico e concorrência de movimentos. Não considerar o modelo de usuário concluído até cobrir a corrida entre desativação e alteração administrativa e a idempotência concorrente. Não considerar RLS/grants validados com base apenas na execução do script de catálogo em banco vazio.
+
+**Status:** auditoria estática dos testes concluída. As lacunas foram especificadas; nenhum teste novo foi executado ou criado nesta etapa, nenhum DDL foi aplicado e nenhum banco foi acessado.
