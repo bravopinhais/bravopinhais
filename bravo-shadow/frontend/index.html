@@ -140,7 +140,7 @@ function renderFormasRows(){
 }
 async function carregarFormas(){
  try{formasMonetarias=await apiRequest("/formas-monetarias");const edicaoPerdida=Boolean(formaEmEdicao&&!formasMonetarias.some(item=>item.id===formaEmEdicao));if(edicaoPerdida)resetFormaForm();renderFormasRows();setFormasStatus(edicaoPerdida?"A forma que estava em edição não existe mais na lista. A edição foi cancelada.":"API conectada · "+formasMonetarias.length+" registro(s)",edicaoPerdida?"err":"ok");return true}
- catch(error){setFormasStatus("Falha ao carregar: "+error.message,"err");const body=document.getElementById("formas-rows");if(body)body.innerHTML='<tr><td colspan="3" class="empty-state">Não foi possível carregar os registros. Verifique se a API está disponível.</td></tr>';return false}
+ catch(error){const possuiListaAnterior=formasMonetarias.length>0;if(possuiListaAnterior){renderFormasRows();setFormasStatus("Falha ao atualizar: "+error.message+" · Exibindo a última lista carregada; os dados podem estar desatualizados.","err")}else{setFormasStatus("Falha ao carregar: "+error.message,"err");const body=document.getElementById("formas-rows");if(body)body.innerHTML='<tr><td colspan="3" class="empty-state">Não foi possível carregar os registros. Verifique se a API está disponível.</td></tr>'}return false}
 }
 function resetFormaForm(){
  formaEmEdicao=null;const form=document.getElementById("forma-form");if(!form)return;
