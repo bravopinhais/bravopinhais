@@ -1,0 +1,42 @@
+{
+  "financeiro": [
+    {
+      "id": "fin-syn-001",
+      "tipo": "Receber",
+      "planoContaId": "pc-syn-001",
+      "historico": "Lançamento sintético de homologação",
+      "valor": "125.50"
+    }
+  ],
+  "plano_contas": [
+    {
+      "id": "pc-syn-001",
+      "codigo": "1.01",
+      "nome": "Receitas sintéticas",
+      "tipo": "Receita"
+    }
+  ],
+  "estoque": [
+    {
+      "id": "est-syn-001",
+      "item": "Item sintético de homologação",
+      "quantidade": 10,
+      "minimo": 1,
+      "maximo": 20,
+      "unidade": "un"
+    }
+  ],
+  "acertos_estoque": [
+    {
+      "id": "mov-syn-001",
+      "data": "2026-11-27T10:00:00-03:00",
+      "tipo": "Entrada",
+      "produtoId": "est-syn-001",
+      "quantidade": 2,
+      "motivo": "Movimento sintético"
+    }
+  ],
+  "documentos": [],
+  "categorias": [],
+  "motivos_acerto": []
+}
