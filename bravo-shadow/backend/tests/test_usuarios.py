@@ -28,7 +28,7 @@ def test_all_user_management_routes_require_authentication():
         ("GET", "/api/v1/usuarios", None),
         ("GET", "/api/v1/usuarios/id-teste", None),
         ("POST", "/api/v1/usuarios", {"email":"novo@example.com", "nome":"Pessoa", "cargo":"Conselho"}),
-        ("PUT", "/api/v1/usuarios/id-teste", {"email":"novo@example.com", "nome":"Pessoa", "cargo":"Conselho"}),
+        ("PUT", "/api/v1/usuarios/id-teste", {"nome":"Pessoa atualizada"}),
         ("DELETE", "/api/v1/usuarios/id-teste", None),
     ]
     for method, path, payload in requests:
@@ -137,3 +137,41 @@ def test_administrative_user_schema_requires_explicit_profile_and_status():
     with pytest.raises(ValidationError):
         UsuarioAdministracaoInput(perfil="Root", status="Ativo")
 
+
+
+
+def test_cadastral_service_cannot_assign_privileged_profile_or_status():
+    service = UsuariosService()
+    created = service.create_cadastral(
+        UsuarioCadastroInput(
+            email="novo@example.com", nome="Pessoa", cargo="Conselho"
+        )
+    )
+    assert created.perfil == "Operador"
+    assert created.status == "Ativo"
+
+    updated = service.update_cadastral(
+        created.id, UsuarioDadosCadastraisUpdateInput(nome="Nome atualizado")
+    )
+    assert updated.nome == "Nome atualizado"
+    assert updated.email == "novo@example.com"
+    assert updated.perfil == "Operador"
+    assert updated.status == "Ativo"
+
+
+def test_cadastral_update_preserves_existing_admin_and_inactive_state():
+    service = UsuariosService()
+    existing = service.create(
+        UsuarioInput(
+            email="admin@example.com", nome="Admin", cargo="Gestor",
+            perfil="Admin", status="Inativo",
+        )
+    )
+    updated = service.update_cadastral(
+        existing.id,
+        UsuarioDadosCadastraisUpdateInput(cargo="Conselheiro"),
+    )
+    assert updated.cargo == "Conselheiro"
+    assert updated.perfil == "Admin"
+    assert updated.status == "Inativo"
+    assert updated.email == "admin@example.com"
