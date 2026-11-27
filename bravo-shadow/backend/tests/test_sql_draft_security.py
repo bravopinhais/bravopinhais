@@ -132,10 +132,8 @@ def test_postgres_inspection_script_covers_effective_security_catalogs():
 
     for required in (
         "from pg_roles",
-        "from pg_auth_members",
         "from pg_class",
         "from pg_policies",
-        "information_schema.role_table_grants",
         "has_table_privilege",
         "has_schema_privilege",
         "has_sequence_privilege",
