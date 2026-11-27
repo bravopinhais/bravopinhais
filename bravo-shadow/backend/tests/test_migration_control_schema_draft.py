@@ -30,6 +30,7 @@ def test_draft_declares_only_batch_and_source_provenance_tables():
     assert creates == [
         "bravo_shadow.migration_batches",
         "bravo_shadow.migration_source_records",
+        "bravo_shadow.migration_batch_recovery_events",
     ]
 
 
@@ -105,3 +106,26 @@ def test_sql_does_not_claim_to_enforce_the_future_application_gate():
 
     assert "o futuro importador deverá recusar produção" in sql
     assert "este ddl, isoladamente, não executa essa proteção" in sql
+
+
+
+def test_recovery_events_are_evidence_bound_append_only_records():
+    sql = _sql().lower()
+
+    assert "outcome in (" in sql
+    assert "'confirmed_committed'" in sql
+    assert "'confirmed_not_committed'" in sql
+    assert "'partial_or_unknown'" in sql
+    assert "'rollback_verified'" in sql
+    assert "unique (batch_id, sequence_no)" in sql
+    assert "foreign key (batch_id, manifest_hash)" in sql
+    assert "foreign key (batch_id, source_system)" in sql
+    assert "evidence_sha256 ~ '^[0-9a-f]{64}$'" in sql
+    assert "alter table bravo_shadow.migration_batch_recovery_events enable row level security" in sql
+
+
+def test_recovery_decision_does_not_reopen_or_authorize_same_batch():
+    sql = _sql().lower()
+
+    assert "o evento nunca muda o status nem reabre o lote" in sql
+    assert "um novo apply sempre exige novo lote/manifesto aprovado" in sql
