@@ -591,3 +591,14 @@ A tela consome os catálogos autorizados de produtos (`GET /api/v1/estoque`) e m
 A interface valida o formato das listas recebidas, quantidade positiva com até três casas decimais e saldo conhecido antes de enviar uma saída. A validação do navegador é apenas auxiliar: o backend relê o saldo com bloqueio `FOR UPDATE`, recusa saldo negativo e grava a alteração do produto e o registro de movimento na mesma transação PostgreSQL. O histórico é somente leitura e as movimentações não podem ser editadas ou apagadas; correções devem ser registradas por movimento compensatório.
 
 As consultas são canceladas e os dados em memória descartados ao encerrar a sessão. A listagem mostra data/hora, tipo, produto, quantidade e motivo. Não foram incluídos aprovação, scanner, anexos/evidências, paginação ou filtros avançados, pois não fazem parte do contrato integrado nesta etapa. A tela depende da API HTTPS Shadow, do bootstrap Google explicitamente habilitado e das permissões do perfil; não houve execução automatizada nem publicação.
+
+
+## Compras x Consumo — relatório e exportação autenticados
+
+A tela conecta-se ao endpoint somente leitura `GET /api/v1/compras-consumo` e à exportação `GET /api/v1/compras-consumo/export.csv`, ambos protegidos por `relatorios:read`. Os filtros enviados são período, setor, busca por produto/etiqueta/marca, ordenação, opção de classificar todas as entradas como compras e inclusão de inativos. A validação impede intervalo com data inicial posterior à final. A resposta é validada estruturalmente antes de renderizar KPIs, evolução mensal e produtos; textos recebidos são escapados antes de compor as tabelas.
+
+A exportação baixa o CSV gerado no servidor com os mesmos filtros. O backend neutraliza células que poderiam ser interpretadas como fórmulas por planilhas. A tela não calcula os indicadores localmente, não altera estoque e não cria lançamentos.
+
+**Regras atuais do serviço:** entradas com motivo contendo termos de compra/reposição são classificadas como compras, salvo quando o filtro manda considerar todas as entradas como compras; demais entradas aparecem separadamente. Saídas com motivo contendo perda/avaria/quebra/ajuste/inventário são perdas/ajustes; as demais são consumo. Valores são estimados com o valor unitário atual do produto, não com custo histórico da data do movimento. A cobertura é calculada com base no consumo médio do período e o gráfico/tabela mensal mostra no máximo os 12 meses finais. Se houver unidades incompatíveis, quantidades consolidadas na série mensal são zeradas e o relatório informa a incompatibilidade.
+
+A impressão/PDF permanece desabilitada: o contrato oferece CSV, não PDF. Não há filtro de grupo de produto, centro de custo ou exportação Excel neste endpoint. Consultas são canceladas ao sair do módulo e o estado em memória é descartado ao encerrar a sessão. A integração não foi publicada e não acessa produção.
