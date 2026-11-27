@@ -225,3 +225,20 @@ Os testes de integração existentes cobrem concorrência de append, controle de
 A fixture atual **não** cria roles privadas dedicadas de runtime/writer/reader, não concede privilégios a elas e não cria policies RLS para essas identidades. Também não prova, por conexão autenticada separada, os resultados positivos e negativos da matriz SELECT/INSERT/UPDATE/DELETE/DDL. Portanto, o CI atual não deve ser interpretado como homologação de RLS/grants.
 
 A próxima fase de teste de autorização exigiria uma fixture separada com DDL e roles sintéticas, aprovada explicitamente antes de sua implementação. Até essa aprovação, manter a especificação como desenho não executável e não introduzir roles, grants, memberships ou policies adicionais.
+
+
+## Revisão do serviço de revisão humana — identidade e exposição — 27/11/2026
+
+Foi revisado o serviço `backend/app/core/migration_review_service.py` e seus testes:
+
+- `MigrationReviewService.load/append` exigem as capacidades `migration_review:read` e `migration_review:append` antes de chamar o adaptador.
+- A política de acesso por lote usa negação por padrão: sem callback aprovado, nenhum lote é acessível.
+- O serviço deriva `reviewer_id` exclusivamente de `AuthenticatedPrincipal.subject`; não recebe identificador de revisor do payload.
+- Identificador do evento e horário são gerados no servidor.
+- A persistência só é chamada depois das verificações de capacidade e acesso ao lote.
+- O teste `test_append_uses_google_subject_as_reviewer_not_client_input` verifica o vínculo do ator ao subject Google.
+- Os testes de ativação confirmam que as capacidades de revisão ainda não estão aprovadas, o serviço não é anexado ao estado da aplicação e nenhuma rota pública de revisão está registrada.
+
+**Conclusão desta revisão estática:** os controles de aplicação estão preparados para falhar fechado e não expõem o fluxo de revisão pela API. Isso não substitui RLS/grants no banco: o adaptador de runtime continua dependendo de privilégios PostgreSQL que ainda não foram criados nem testados com roles independentes.
+
+Nenhuma capacidade foi ativada, rota foi registrada, role foi criada ou conexão de banco foi alterada nesta revisão.
