@@ -508,3 +508,14 @@ A consulta é cancelada ao sair do módulo e ao encerrar a sessão. A lista em m
 A tela consulta exclusivamente `GET /api/v1/formas-monetarias` com a sessão Google autenticada e a capacidade `formas_monetarias:read`. A resposta é validada quanto a identificador, nome e percentual de multa (entre 0 e 100) antes de renderizar. Nome e valores são inseridos como texto; o percentual é formatado com duas casas decimais.
 
 Cadastro, edição e exclusão permanecem desabilitados e não são chamados pela interface. A consulta é cancelada ao navegar para outro módulo; a lista em memória é descartada no encerramento da sessão. O módulo não presume que a multa seja aplicada automaticamente a títulos: apenas exibe o percentual persistido no contrato atual.
+
+
+## Relatórios & DRE — consulta gerencial integrada
+
+A tela consulta exclusivamente `GET /api/v1/relatorios/dre` após receber o cliente HTTP da sessão Google validada. A rota exige `relatorios:read` e agrega os serviços existentes de Financeiro e Plano de Contas, sem duplicar armazenamento e sem executar gravações.
+
+O relatório apresenta quantidade e valor total de títulos Receber/Pagar, diferença aritmética explicitamente identificada como diferença entre títulos e agrupamento por conta vinculada. A classificação principal segue o tipo do título, preservando o comportamento histórico mesmo quando o tipo cadastrado na conta divergir. Títulos sem conta (ou com referência não resolvida) continuam nos totais gerais e são informados separadamente, sem aparecer nas linhas agrupadas. Valores são agregados com Decimal no backend.
+
+**Limites deliberados:** o contrato financeiro não possui datas de competência, vencimento, pagamento/recebimento ou status de liquidação. Portanto, a consulta inclui todos os títulos cadastrados, sem filtro temporal ou de situação. Não oferece DRE contábil por competência, realizado versus previsto, inadimplência, conciliação bancária ou exportação PDF/Excel. A diferença entre Receber e Pagar não é saldo em caixa nem saldo bancário. A interface valida a resposta, usa `textContent`, cancela requisições obsoletas e limpa os dados em memória no encerramento da sessão.
+
+A implementação está na branch Shadow, mas não foi ativada em hospedagem nem conectada a dados de produção. Depende da API HTTPS isolada, do bootstrap Google explicitamente habilitado e da capacidade `relatorios:read`.
