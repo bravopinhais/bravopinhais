@@ -1,42 +1,45 @@
-# Política proposta de desativação de usuários — Bravo Shadow
+# Política de desativação de usuários — Bravo Shadow
 
-**Status: proposta técnica; não aplicada e não exposta por rota.**
+**Status: implementada na API sombra; capacidade ainda não concedida a nenhum perfil.**
 
-## Estado observado no código
+## Estado implementado
 
-- O cadastro possui `status` com valores `Ativo` e `Inativo`.
-- A resolução de identidade Google exige usuário único por e-mail e status ativo; usuário inativo não deve receber principal autenticado.
-- O endpoint legado `DELETE /api/v1/usuarios/{item_id}` ainda chama `UsuariosService.delete()`, que executa exclusão física no repositório.
-- O método transacional `update_administrative_state` já altera perfil/status e registra evento de auditoria na mesma transação PostgreSQL, com proteção do último Admin ativo.
-- Essa operação administrativa ainda não está ligada a rota, e o `PostgresAuditSink` ainda não foi injetado na aplicação.
-- A matriz de capacidades continua fechada; portanto, a rota DELETE existente não é autorizada para Admin ou Operador neste momento.
+- O cadastro mantém os estados `Ativo` e `Inativo`.
+- A autenticação Google só resolve usuário ativo; usuário inativo não recebe principal autenticado.
+- A rota explícita `POST /api/v1/usuarios/{id}/desativar` executa desativação lógica.
+- O registro permanece na tabela; somente o status, `updated_at` e `version` são atualizados.
+- O evento `usuarios:desativar` é inserido pela mesma conexão e transação da mudança.
+- A operação bloqueia auto-desativação e impede desativar o último Admin ativo.
+- Falha ao inserir auditoria reverte a mudança de status.
+- A capacidade `usuarios:deactivate` está declarada, mas Admin e Operador continuam sem capacidades atribuídas. O endpoint não está liberado.
+- O DELETE legado responde 410 Gone e não realiza exclusão física.
+- No armazenamento em memória, a operação auditada falha fechado com 503.
 
-## Decisão técnica recomendada
+## Regras operacionais
 
-1. Tratar desligamento de acesso como **desativação lógica**: manter o registro e alterar `status = 'Inativo'`.
-2. Registrar a ação em `audit_events` na mesma transação que altera o status.
-3. Impedir desativar/rebaixar o último Admin ativo; a proteção transacional existente deve ser reaproveitada.
-4. Impedir autoalteração de perfil/status, conforme a proteção já existente no serviço.
-5. Preservar o e-mail Google e o histórico do usuário; não criar campo de senha ou credencial local.
-6. Reservar exclusão física para procedimento excepcional de retenção/privacidade, com política própria e aprovação explícita — não como ação comum da tela administrativa.
+1. Desligamento de acesso deve usar desativação lógica: manter o cadastro e alterar `status = 'Inativo'`.
+2. Preservar e-mail Google, identidade, referências e histórico.
+3. Nunca permitir que o último Admin ativo seja desativado.
+4. Impedir auto-desativação.
+5. Não criar senha local nem credencial paralela ao Google.
+6. Exclusão física fica fora da API comum e exige procedimento excepcional de retenção/privacidade, com aprovação explícita.
 
-## Pré-requisitos antes de implementar
+## Limites e pré-requisitos para liberar
 
-- Definir se o endpoint DELETE será removido, responderá como desativação lógica, ou será substituído por ação explícita de desativar. Não mudar o significado HTTP sem alinhar o contrato do frontend.
-- Injetar um `PostgresAuditSink` na aplicação apenas quando houver conexão PostgreSQL configurada e grants mínimos revisados; não conectar o sink em memória nem criar fallback silencioso.
-- Garantir que as alterações de perfil/status só ocorram pelo método transacional auditado, não pelo PUT cadastral legado.
-- Rever o PUT legado: hoje `UsuarioInput` aceita perfil/status junto dos dados cadastrais. Antes de liberar qualquer capacidade de atualização, separar os campos cadastrais dos administrativos para que não exista caminho alternativo sem auditoria.
-- Adicionar testes HTTP para identidade, permissão, autoalteração, último Admin, auditoria e comportamento de listagem/consulta após desativação.
-- Não habilitar capacidades de perfil até aprovação explícita da matriz de permissões.
+- A matriz de permissões Admin/Operador precisa ser aprovada antes de conceder `usuarios:deactivate`.
+- O ambiente PostgreSQL precisa ter schema e tabela de auditoria preparados e grants mínimos revisados. Nenhuma migration, role, policy ou grant foi aplicado por esta implementação.
+- A interface ainda precisa receber a sessão Google validada e apresentar ação explícita de desativação com confirmação.
+- Os testes de integração usam PostgreSQL descartável e DDL de teste; não demonstram que um banco de produção esteja configurado.
+- O endpoint não deve ser liberado enquanto a API não estiver usando a persistência PostgreSQL e o sink de auditoria configurado.
 
 ## Não fazer nesta etapa
 
-- Não alterar a rota DELETE atual nem seu comportamento sem decisão de compatibilidade.
-- Não aplicar SQL, migration ou grants.
-- Não ativar permissões administrativas.
-- Não apagar, importar ou modificar dados reais.
+- Não habilitar capacidades de perfil sem aprovação explícita.
+- Não aplicar SQL, migration, roles, policies ou grants.
 - Não conectar banco de produção.
+- Não importar, apagar ou modificar dados reais.
+- Não redesenhar a tela de login nem criar autenticação por senha.
 
-## Critério de aceite futuro
+## Critério de aceite
 
-Uma desativação aprovada deve deixar o registro consultável para auditoria, bloquear autenticação futura do usuário inativo, manter exatamente um Admin ativo ou mais, e confirmar/reverter alteração e evento de auditoria como uma única transação.
+Uma desativação autorizada deve preservar o registro, bloquear autenticação futura do usuário inativo, manter pelo menos um Admin ativo e confirmar/reverter status e evento de auditoria como uma única transação.
