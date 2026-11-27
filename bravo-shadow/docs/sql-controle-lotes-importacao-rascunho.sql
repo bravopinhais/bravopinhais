@@ -128,6 +128,7 @@ CREATE TABLE IF NOT EXISTS bravo_shadow.migration_batch_recovery_events (
     manifest_hash text NOT NULL,
     sequence_no integer NOT NULL,
     outcome text NOT NULL,
+    recorded_by text NOT NULL,
     reviewer_id text NOT NULL,
     rationale text NOT NULL,
     evidence_reference text NOT NULL,
@@ -146,8 +147,12 @@ CREATE TABLE IF NOT EXISTS bravo_shadow.migration_batch_recovery_events (
             'partial_or_unknown',
             'rollback_verified'
         )),
+    CONSTRAINT migration_batch_recovery_recorder_nonempty
+        CHECK (length(btrim(recorded_by)) > 0),
     CONSTRAINT migration_batch_recovery_reviewer_nonempty
         CHECK (length(btrim(reviewer_id)) > 0),
+    CONSTRAINT migration_batch_recovery_recorder_reviewer_distinct
+        CHECK (recorded_by <> reviewer_id),
     CONSTRAINT migration_batch_recovery_rationale_nonempty
         CHECK (length(btrim(rationale)) > 0),
     CONSTRAINT migration_batch_recovery_evidence_nonempty
@@ -163,23 +168,63 @@ CREATE TABLE IF NOT EXISTS bravo_shadow.migration_batch_recovery_events (
         REFERENCES bravo_shadow.migration_batches(batch_id, source_system)
         ON DELETE RESTRICT,
     CONSTRAINT migration_batch_recovery_sequence_unique
-        UNIQUE (batch_id, sequence_no)
+        UNIQUE (batch_id, sequence_no),
+    CONSTRAINT migration_batch_recovery_approval_binding_unique
+        UNIQUE (event_id, recorded_by, reviewer_id)
 );
 
 CREATE INDEX IF NOT EXISTS migration_batch_recovery_history_idx
     ON bravo_shadow.migration_batch_recovery_events (batch_id, sequence_no);
+
+-- Aprovação independente: um segundo ator confirma ou rejeita o evento.
+-- A aprovação também é append-only; uma rejeição exige novo evento de recovery.
+CREATE TABLE IF NOT EXISTS bravo_shadow.migration_batch_recovery_approvals (
+    approval_id text PRIMARY KEY,
+    event_id text NOT NULL,
+    recorded_by text NOT NULL,
+    reviewer_id text NOT NULL,
+    approver_id text NOT NULL,
+    decision text NOT NULL,
+    rationale text NOT NULL,
+    approved_at timestamptz NOT NULL,
+    recorded_at timestamptz NOT NULL DEFAULT now(),
+
+    CONSTRAINT migration_batch_recovery_approval_id_nonempty
+        CHECK (length(btrim(approval_id)) > 0),
+    CONSTRAINT migration_batch_recovery_approval_actors_distinct
+        CHECK (
+            approver_id <> recorded_by
+            AND approver_id <> reviewer_id
+        ),
+    CONSTRAINT migration_batch_recovery_approval_decision_allowed
+        CHECK (decision IN ('approved', 'rejected')),
+    CONSTRAINT migration_batch_recovery_approval_rationale_nonempty
+        CHECK (length(btrim(rationale)) > 0),
+    CONSTRAINT migration_batch_recovery_approval_event_unique
+        UNIQUE (event_id),
+    CONSTRAINT migration_batch_recovery_approval_actor_binding_fk
+        FOREIGN KEY (event_id, recorded_by, reviewer_id)
+        REFERENCES bravo_shadow.migration_batch_recovery_events
+            (event_id, recorded_by, reviewer_id)
+        ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS migration_batch_recovery_approvals_history_idx
+    ON bravo_shadow.migration_batch_recovery_approvals (event_id, approved_at);
 
 -- Segurança: este rascunho não concede permissões. RLS bloqueia roles comuns
 -- até que políticas específicas sejam desenhadas e aprovadas.
 ALTER TABLE bravo_shadow.migration_batches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bravo_shadow.migration_source_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bravo_shadow.migration_batch_recovery_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bravo_shadow.migration_batch_recovery_approvals ENABLE ROW LEVEL SECURITY;
 
 REVOKE ALL ON SCHEMA bravo_shadow FROM PUBLIC, anon, authenticated, service_role;
 REVOKE ALL ON TABLE
     bravo_shadow.migration_batches,
     bravo_shadow.migration_source_records,
-    bravo_shadow.migration_batch_recovery_events
+    bravo_shadow.migration_batch_recovery_events,
+    bravo_shadow.migration_batch_recovery_approvals
 FROM PUBLIC, anon, authenticated, service_role;
 
 -- NOTAS DE IMPLEMENTAÇÃO OBRIGATÓRIAS:
@@ -211,5 +256,5 @@ FROM PUBLIC, anon, authenticated, service_role;
 --    confirmed_not_committed exige prova da ausência de commit;
 --    rollback_verified exige prova da reversão integral;
 --    partial_or_unknown mantém o bloqueio.
--- 11. Novo apply sempre exige novo lote/manifesto aprovado. Este arquivo
+-- 12. Novo apply sempre exige novo lote/manifesto aprovado. Este arquivo
 --     não cria nem altera tabelas funcionais do Bravo.
