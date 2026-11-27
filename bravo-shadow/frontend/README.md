@@ -480,3 +480,11 @@ A tabela mostra tipo, identificador da conta do Plano de Contas, histórico e va
 Inclusão, edição, exclusão e baixa permanecem desabilitadas. Não há chamadas POST, PUT ou DELETE no fluxo do módulo. A consulta é cancelada ao sair do módulo ou encerrar a sessão; respostas antigas não atualizam a tela após a navegação.
 
 **Limites do contrato atual:** o título possui tipo, conta opcional, histórico e valor. Não há vencimento, competência, baixa, pagamento parcial, recorrência ou conciliação. A tabela não inventa esses campos nem calcula indicadores que o backend não fornece.
+
+## Plano de Contas — consulta integrada
+
+A tela do Plano de Contas utiliza o cliente HTTP entregue pelo evento de sessão Google e consulta exclusivamente `GET /api/v1/plano-contas`, protegido pela capacidade `plano_contas:read`. A resposta é validada antes da renderização; código, nome e tipo são inseridos como texto, sem interpretar conteúdo recebido como HTML. Pesquisa por código/nome e filtro por Receita/Despesa atuam localmente sobre a lista autorizada.
+
+Ao encerrar a sessão, a lista em memória é limpa e requisições pendentes são canceladas. A navegação para outro módulo também invalida a consulta anterior. Cadastro, edição e exclusão continuam desabilitados, embora existam rotas correspondentes no backend. Nenhum dado fictício é apresentado.
+
+A integração está preparada no código da branch Shadow, mas depende da API HTTPS isolada, da configuração explícita do bootstrap Google e da concessão de `plano_contas:read`. Não houve publicação nem alteração na aplicação original.
