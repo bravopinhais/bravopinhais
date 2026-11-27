@@ -44,6 +44,15 @@ def test_financial_and_inventory_integrity_constraints_are_present():
     assert "lower(btrim(email))" in sql
 
 
+def test_plan_account_case_insensitive_unique_index_is_in_the_unapplied_draft():
+    sql = _sql().lower()
+
+    assert "create unique index if not exists plano_contas_codigo_ci_uidx" in sql
+    assert "on bravo_shadow.plano_contas (lower(codigo))" in sql
+    assert "rascunho de sql" in sql
+    assert "ainda não é uma migration executável" in sql
+
+
 def test_stock_movement_history_is_marked_immutable_for_api_role():
     sql = _sql().lower()
 
