@@ -168,6 +168,6 @@ def test_repository_preserves_query_error_when_cursor_close_also_fails():
         ))
 
     assert raised.value is original_error
-    assert any("fechamento do cursor" in note for note in original_error.__notes__)
+    assert any("fechamento do cursor" in note for note in getattr(original_error, "__notes__", ()))
     assert connection.rollbacks == 1
     assert connection.closed == 1
