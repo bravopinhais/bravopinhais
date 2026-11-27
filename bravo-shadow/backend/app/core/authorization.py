@@ -93,13 +93,43 @@ def require_capability_dependency(capability: str):
     verifica a capacidade. A função é uma ferramenta de integração; não
     protege rotas até ser declarada explicitamente em cada endpoint.
     """
-    from fastapi import Depends
+    import logging
+
+    from fastapi import Depends, Request
+    from app.core.audit import AuditEvent
     from app.core.authentication import get_current_principal
 
+    logger = logging.getLogger("bravo.audit.authorization")
+
     def dependency(
+        request: Request,
         principal: AuthenticatedPrincipal = Depends(get_current_principal),
     ) -> AuthenticatedPrincipal:
-        require_capability(principal, capability)
+        try:
+            require_capability(principal, capability)
+        except HTTPException:
+            # Só registrar quando há principal Google validado e subject útil.
+            # Falhas de autenticação sem principal não recebem ator fictício.
+            sink = getattr(request.app.state.services, "audit_sink", None)
+            if (
+                sink is not None
+                and isinstance(principal.subject, str)
+                and principal.subject.strip()
+            ):
+                event = AuditEvent(
+                    actor_subject=principal.subject.strip(),
+                    action=capability,
+                    entity_type="authorization",
+                    outcome="denied",
+                    request_id=getattr(request.state, "request_id", None),
+                )
+                try:
+                    sink.append(event)
+                except Exception:
+                    # A negação continua sendo 403; não mascarar nem liberar
+                    # a operação por falha no registro da auditoria.
+                    logger.exception("Falha ao persistir evento de negação de autorização.")
+            raise
         return principal
 
     return dependency
