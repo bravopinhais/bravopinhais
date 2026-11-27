@@ -5,7 +5,7 @@ year, time, or timezone. It performs no I/O or persistence.
 """
 from __future__ import annotations
 from dataclasses import dataclass
-from datetime import date
+from datetime import datetime
 from typing import Literal
 
 DateRule = Literal["iso_ymd_v1", "pt_br_dmy_v1"]
@@ -34,7 +34,7 @@ def normalize_legacy_date(raw_value: str, *, rule_id: DateRule | None = None) ->
         return DateNormalization(raw_value, None, "not_attempted", rule_id)
     fmt = "%Y-%m-%d" if rule_id == "iso_ymd_v1" else "%d/%m/%Y"
     try:
-        parsed = date.strptime(raw_value, fmt)
+        parsed = datetime.strptime(raw_value, fmt).date()
     except (ValueError, TypeError):
         return DateNormalization(raw_value, None, "invalid", rule_id)
     if parsed.strftime(fmt) != raw_value:
