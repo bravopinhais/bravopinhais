@@ -195,7 +195,7 @@ document.addEventListener("click",async event=>{
  if(action.dataset.action==="reload"){action.disabled=true;action.textContent="Atualizando...";action.setAttribute("aria-busy","true");try{await carregarFormas()}finally{action.disabled=false;action.textContent="↻ Atualizar";action.removeAttribute("aria-busy")}return}
  if(action.dataset.action==="edit"){
   const item=formasMonetarias.find(row=>row.id===id);if(!item)return;
-  formaEmEdicao=item.id;const form=document.getElementById("forma-form");form.elements.nome.value=item.nome;form.elements.multaPct.value=item.multaPct;document.getElementById("forma-submit").textContent="Salvar edição";document.getElementById("forma-cancel-edit").hidden=false;form.elements.nome.focus();return
+  formaEmEdicao=item.id;const form=document.getElementById("forma-form");form.elements.nome.value=item.nome;form.elements.multaPct.value=item.multaPct;document.getElementById("forma-submit").textContent="Salvar edição";document.getElementById("forma-cancel-edit").hidden=false;setFormasStatus("Editando forma monetária: "+item.nome+". Altere os campos e salve ou cancele a edição.");form.elements.nome.focus();return
  }
  if(action.dataset.action==="delete"){
   const item=formasMonetarias.find(row=>row.id===id);if(!item||!confirm("Excluir a forma monetária \""+item.nome+"\" deste ambiente sombra?"))return;
