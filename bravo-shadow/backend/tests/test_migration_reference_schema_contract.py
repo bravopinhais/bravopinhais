@@ -77,12 +77,18 @@ def test_confirmed_legacy_reference_rules_map_to_real_source_payload_fields():
         ("financeiro", "planoContaId"): ("financeiro", "plano_conta_id"),
         ("acertos_estoque", "produtoId"): ("acertos_estoque", "produto_id"),
     }
-    assert {
-        (rule.source_collection, rule.source_field)
+    actual = {
+        (rule.source_collection, rule.source_field):
+            (rule.target_collection, rule.target_field, rule.optional)
         for rule in CONFIRMED_REFERENCE_RULES
-    } == set(mapping)
+    }
+    assert actual == {
+        ("financeiro", "planoContaId"): ("plano_contas", "id", True),
+        ("acertos_estoque", "produtoId"): ("estoque", "id", False),
+    }
+    assert set(actual) == set(mapping)
     assert all(
-        source_field and target_column
+        source_collection and source_field and target_collection and target_column
         for (source_collection, source_field), (target_collection, target_column)
         in mapping.items()
     )
