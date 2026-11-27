@@ -355,6 +355,9 @@ def test_real_postgres_restricts_deletion_of_referenced_parent(
             parent_table, child_table = "plano_contas", "financeiro"
             child_fk = "plano_conta_id"
 
+        # Persistir pai e filho antes da tentativa; o rollback abaixo deve
+        # desfazer somente o DELETE rejeitado, não os dados do cenário.
+        connection.commit()
         with pytest.raises(psycopg.errors.ForeignKeyViolation) as error:
             connection.execute(delete_sql, (parent_id,))
         assert error.value.sqlstate == "23503"
