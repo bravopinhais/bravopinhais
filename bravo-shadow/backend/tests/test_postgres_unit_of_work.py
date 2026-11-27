@@ -56,3 +56,37 @@ def test_unit_of_work_rolls_back_if_commit_fails_and_still_closes():
     assert connection.commits == 1
     assert connection.rollbacks == 1
     assert connection.closes == 1
+
+class RollbackFailConnection(FakeConnection):
+    def rollback(self):
+        self.rollbacks += 1
+        raise RuntimeError("rollback falhou")
+
+
+def test_unit_of_work_still_closes_when_rollback_fails_after_body_error():
+    connection = RollbackFailConnection()
+    try:
+        with PostgresUnitOfWork(lambda: connection):
+            raise ValueError("erro original")
+    except RuntimeError as error:
+        assert str(error) == "rollback falhou"
+    else:
+        raise AssertionError("A falha no rollback deveria ser propagada")
+    assert connection.commits == 0
+    assert connection.rollbacks == 1
+    assert connection.closes == 1
+
+
+def test_unit_of_work_still_closes_when_rollback_fails_after_commit_error():
+    connection = RollbackFailConnection(commit_error=RuntimeError("commit falhou"))
+    try:
+        with PostgresUnitOfWork(lambda: connection):
+            pass
+    except RuntimeError as error:
+        assert str(error) == "rollback falhou"
+    else:
+        raise AssertionError("A falha no rollback deveria ser propagada")
+    assert connection.commits == 1
+    assert connection.rollbacks == 1
+    assert connection.closes == 1
+
