@@ -38,7 +38,7 @@ class AuditEvent:
             value = getattr(self, name)
             if value is not None and (not isinstance(value, str) or not value.strip()):
                 raise ValueError(f"{name} deve ser omitido ou uma string não vazia.")
-        if self.outcome not in ("success", "denied", "failure"):
+        if not isinstance(self.outcome, str) or self.outcome not in ("success", "denied", "failure"):
             raise ValueError("outcome inválido.")
         if not isinstance(self.event_id, str) or not self.event_id.strip():
             raise ValueError("event_id deve ser uma string não vazia.")

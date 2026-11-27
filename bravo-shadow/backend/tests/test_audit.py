@@ -110,8 +110,10 @@ def test_audit_event_rejects_non_datetime_timestamp(occurred_at):
         ("entity_type", {}),
         ("entity_id", 123),
         ("request_id", []),
+        ("outcome", None),
         ("outcome", []),
         ("outcome", {}),
+        ("outcome", 1),
     ],
 )
 def test_audit_event_rejects_malformed_field_types(field, value):
