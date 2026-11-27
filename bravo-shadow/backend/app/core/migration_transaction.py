@@ -9,23 +9,18 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
-from app.core.postgres import PostgresUnitOfWork
+from app.core.postgres import CommitOutcomeUnknown, PostgresUnitOfWork
 
 DestinationT = TypeVar("DestinationT")
 
 
 @dataclass(frozen=True, slots=True)
 class MigrationWriteOperations(Generic[DestinationT]):
-    """Persistence steps that a domain-specific PostgreSQL adapter must supply.
+    """Persistence steps supplied by a domain-specific PostgreSQL adapter.
 
-    reserve_batch must lock/check the batch and its approval/manifest binding.
-    write_business inserts the domain row without silently overwriting.
-    write_source_map records the source identity and destination link.
-    append_success_event adds migration-specific success evidence, while
-    append_audit_event writes the corresponding global audit_events record.
-    Both use only the supplied connection and must not commit, rollback, or
-    reconnect. This keeps business data, provenance and both event trails
-    atomic; calling PostgresAuditSink.append() here would break that guarantee.
+    The success callbacks use the same transaction connection. Failure and
+    unknown-outcome callbacks run only after that connection is closed and
+    must persist sanitized metadata in a separate transaction.
     """
 
     reserve_batch: Callable[[object], None]
@@ -34,23 +29,30 @@ class MigrationWriteOperations(Generic[DestinationT]):
     append_success_event: Callable[[object, DestinationT], None]
     append_audit_event: Callable[[object, DestinationT], None]
     append_failure_event: Callable[[BaseException], None]
+    append_unknown_outcome_event: Callable[[CommitOutcomeUnknown], None]
 
 
 class MigrationTransactionError(RuntimeError):
     """Raised when a migration unit cannot obtain its transaction connection."""
 
 
+def _add_secondary_note(primary_error: BaseException, label: str, secondary: BaseException) -> None:
+    add_note = getattr(primary_error, "add_note", None)
+    if callable(add_note):
+        add_note(f"{label}: {type(secondary).__name__}.")
+
+
 def execute_migration_write_unit(
     unit_of_work_factory: Callable[[], PostgresUnitOfWork],
     operations: MigrationWriteOperations[DestinationT],
 ) -> DestinationT:
-    """Run the write unit atomically and record failures after rollback.
+    """Run one atomic write and classify transaction outcomes conservatively.
 
-    The failure callback runs only after PostgresUnitOfWork has rolled back and
-    released its connection. It must open its own transaction and record only
-    metadata (batch/request IDs, stage and sanitized error code), never source
-    payloads or credentials. If failure auditing also fails, the original
-    migration exception remains primary and receives a diagnostic note.
+    A failure before COMMIT is recorded only after rollback/connection cleanup.
+    A COMMIT exception is different: PostgreSQL may have committed even when
+    the client did not receive the acknowledgement. Such cases are recorded
+    as outcome-unknown and must be quarantined/reconciled; they are never
+    reported as confirmed failures or retried automatically.
     """
     try:
         with unit_of_work_factory() as unit:
@@ -64,14 +66,23 @@ def execute_migration_write_unit(
             operations.append_success_event(connection, destination)
             operations.append_audit_event(connection, destination)
             return destination
+    except CommitOutcomeUnknown as unknown_error:
+        try:
+            operations.append_unknown_outcome_event(unknown_error)
+        except BaseException as audit_error:
+            _add_secondary_note(
+                unknown_error,
+                "Falha adicional ao registrar resultado desconhecido do COMMIT",
+                audit_error,
+            )
+        raise
     except BaseException as migration_error:
         try:
             operations.append_failure_event(migration_error)
         except BaseException as audit_error:
-            add_note = getattr(migration_error, "add_note", None)
-            if callable(add_note):
-                add_note(
-                    "Falha adicional ao persistir auditoria de falha: "
-                    f"{type(audit_error).__name__}."
-                )
+            _add_secondary_note(
+                migration_error,
+                "Falha adicional ao persistir auditoria de falha",
+                audit_error,
+            )
         raise
