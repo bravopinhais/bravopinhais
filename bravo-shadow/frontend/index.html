@@ -72,6 +72,7 @@
         <button class="module-card" data-module="documentos"><span class="card-icon">▧</span><strong>Gestão de Documentos</strong><small>Arquivos, pastas e visualização</small></button>
         <button class="module-card" data-module="relatorios"><span class="card-icon">▥</span><strong>Relatórios & DRE</strong><small>Indicadores e demonstrativos</small></button>
         <button class="module-card" data-module="usuarios"><span class="card-icon">♙</span><strong>Gestão de Usuários</strong><small>Perfis e permissões — em auditoria</small></button>
+        <button class="module-card" data-module="configuracoes"><span class="card-icon">⚙</span><strong>Configurações</strong><small>Módulos, preferências e administração</small></button>
       </div>
       <div class="section-head"><h2>Fundação da nova arquitetura</h2><span>Visão técnica</span></div>
       <div class="panel"><strong style="font-size:13px">Frontend unificado → API FastAPI → serviços de domínio → camada de persistência</strong><p>A conexão dos indicadores será concluída junto da integração segura da sessão Google no navegador e da aprovação da matriz de permissões. Até lá, os dados permanecem indisponíveis na interface.</p></div>
@@ -96,7 +97,8 @@ estoque:{name:"Estoque & Inventário",title:"Estoque & Inventário",desc:"Produt
 acerto_estoque:{name:"Acerto de Estoque",title:"Acerto de Estoque",desc:"Ajustes de inventário e registro de justificativas."},
 documentos:{name:"Gestão de Documentos",title:"Gestão de Documentos",desc:"Arquivos, pastas, visualização e download."},
 relatorios:{name:"Relatórios & DRE",title:"Central de Relatórios & DRE",desc:"Relatórios gerenciais e demonstrativo de resultados."},
-usuarios:{name:"Gestão de Usuários",title:"Gestão de Usuários",desc:"Perfis e administração de acesso. Autenticação será integrada após auditoria."}
+usuarios:{name:"Gestão de Usuários",title:"Gestão de Usuários",desc:"Perfis e administração de acesso. Autenticação será integrada após auditoria."},
+configuracoes:{name:"Configurações",title:"Configurações",desc:"Ativação de módulos, preferências administrativas e auditoria."}
 };
 const dashboardMarkup=document.getElementById("view").innerHTML;
 const API_BASE="/api/v1";
@@ -174,6 +176,36 @@ function usuariosView(){
   <div class="dashboard-gate-note"><span class="dot"></span><span>Nenhum perfil ou privilégio será habilitado automaticamente. A integração usará o Google diretamente; faltam o Client ID público correto, as origens autorizadas e a aprovação explícita da matriz de permissões.</span></div>
  </section>`;
 }
+function configuracoesView(){
+ const view=document.getElementById("view");
+ view.innerHTML=`<section class="panel">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Administração dos módulos</strong><div class="api-status" id="config-status" role="status" aria-live="polite">API disponível no backend · sessão ainda não conectada</div></div><span class="tag">Controles bloqueados</span></div>
+  <div class="notice" style="margin:16px 0 18px"><div class="notice-icon">⚙</div><div><strong>Configurações protegidas</strong><p>A API já possui consulta, alteração individual e ações em massa. A interface ainda não envia operações: falta conectar uma sessão Google validada e uma API HTTPS exclusiva do ambiente Shadow.</p></div></div>
+  <div class="section-head"><h2>Catálogo de módulos</h2><span>17 áreas mapeadas</span></div>
+  <div class="data-table-wrap"><table class="data-table" style="min-width:0"><thead><tr><th scope="col">Módulo</th><th scope="col">Grupo</th><th scope="col">Estado</th></tr></thead><tbody>
+   <tr><td>Dashboard Executivo</td><td>Gestão</td><td><span class="tag">Aguardando API</span></td></tr>
+   <tr><td>Dados do Condomínio</td><td>Cadastros</td><td><span class="tag">Aguardando API</span></td></tr>
+   <tr><td>Plano de Contas</td><td>Financeiro</td><td><span class="tag">Aguardando API</span></td></tr>
+   <tr><td>Pagar / Receber</td><td>Financeiro</td><td><span class="tag">Aguardando API</span></td></tr>
+   <tr><td>Formas Monetárias</td><td>Financeiro</td><td><span class="tag">Aguardando API</span></td></tr>
+   <tr><td>Contas Bancárias</td><td>Financeiro</td><td><span class="tag">Aguardando API</span></td></tr>
+   <tr><td>DRE &amp; Relatórios</td><td>Gestão</td><td><span class="tag">Aguardando API</span></td></tr>
+   <tr><td>Moradores &amp; Unidades</td><td>Cadastros</td><td><span class="tag">Aguardando API</span></td></tr>
+   <tr><td>Fornecedores</td><td>Cadastros</td><td><span class="tag">Aguardando API</span></td></tr>
+   <tr><td>Empregados</td><td>Cadastros</td><td><span class="tag">Aguardando API</span></td></tr>
+   <tr><td>Estoque &amp; Fotos</td><td>Estoque</td><td><span class="tag">Aguardando API</span></td></tr>
+   <tr><td>Acerto de Estoque</td><td>Estoque</td><td><span class="tag">Aguardando API</span></td></tr>
+   <tr><td>Compras x Consumo</td><td>Estoque</td><td><span class="tag">Aguardando API</span></td></tr>
+   <tr><td>Pastas</td><td>Documentos</td><td><span class="tag">Aguardando API</span></td></tr>
+   <tr><td>Documentos Gzip</td><td>Documentos</td><td><span class="tag">Aguardando API</span></td></tr>
+   <tr><td><strong>Configurações</strong></td><td>Sistema</td><td><span class="tag">Sempre ativo</span></td></tr>
+   <tr><td>Utilizadores</td><td>Sistema</td><td><span class="tag">Aguardando API</span></td></tr>
+  </tbody></table></div>
+  <div class="section-head"><h2>Ações administrativas</h2><span>Disponíveis após autenticação</span></div>
+  <div class="api-toolbar"><button class="action-btn" type="button" disabled>Ativar todos</button><button class="action-btn danger" type="button" disabled>Desativar módulos operacionais</button></div>
+  <p class="form-hint">Os estados não são presumidos nem gravados por esta tela. Ao conectar a sessão, a tabela será carregada da API. Apenas Admin poderá alterar módulos; Operador terá consulta. Alterações não concedem permissões.</p>
+ </section>`;
+}
 function openModule(id){
  const item=modules[id];if(!item)return;moduloAtual=id;
  document.querySelectorAll("[data-module]").forEach(el=>{if(el.closest("#navigation")){if(el.dataset.module===id)el.setAttribute("aria-current","page");else el.removeAttribute("aria-current")}});
@@ -185,6 +217,7 @@ function openModule(id){
  if(id==="dashboard"){view.innerHTML=dashboardMarkup;location.hash="";return}
  if(id==="formas_monetarias"){location.hash=id;formasView();return}
  if(id==="usuarios"){location.hash=id;usuariosView();return}
+ if(id==="configuracoes"){location.hash=id;configuracoesView();return}
  view.innerHTML='<section class="panel module-view"><div><div class="big-icon">◇</div><span class="eyebrow">Módulo mapeado · Bravo Shadow</span><h2>'+item.title+'</h2><p>'+item.desc+'</p><span class="tag">Estrutura visual inicial · Funcionalidade ainda não migrada</span></div></section>';
  location.hash=id;
 }
