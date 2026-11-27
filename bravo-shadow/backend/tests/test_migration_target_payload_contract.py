@@ -53,3 +53,19 @@ def test_enums_are_exact_literals(value):
 def test_text_fields_do_not_implicitly_stringify():
     with pytest.raises(TargetPayloadContractError):
         validate_target_payload("estoque", {"item": 123})
+
+@pytest.mark.parametrize("collection,column", [
+    ("financeiro", "historico"),
+    ("estoque", "item"),
+    ("documentos", "titulo"),
+    ("acertos_estoque", "quantidade"),
+])
+def test_non_nullable_columns_reject_explicit_null(collection, column):
+    with pytest.raises(TargetPayloadContractError, match="null_not_allowed"):
+        validate_target_payload(collection, {column: None})
+
+def test_nullable_foreign_keys_and_stock_date_keep_explicit_null():
+    validate_target_payload("financeiro", {"plano_conta_id": None})
+    validate_target_payload("documentos", {"categoria_id": None})
+    validate_target_payload("estoque", {"data_cadastro": None})
+    validate_target_payload("acertos_estoque", {"motivo_id": None})
