@@ -546,3 +546,10 @@ A tentativa de abrir por hash ou chamada de navegação um módulo sem capacidad
 O módulo Fornecedores passou a consumir a API autenticada: consulta em `GET /api/v1/fornecedores`, criação em `POST /api/v1/fornecedores` com `fornecedores:create` e edição em `PUT /api/v1/fornecedores/{id}` com `fornecedores:update`. O formulário usa apenas CNPJ e Razão Social, conforme o schema atual. A interface aplica as capacidades da sessão, trata respostas 401/403, evita inserir valores da API como HTML, cancela consultas obsoletas e limpa o estado ao encerrar a sessão.
 
 A exclusão permanece desabilitada: embora exista rota protegida, ela remove fisicamente o registro e ainda não há proteção de referências ou retenção. Também permanecem pendentes validação de dígitos do CNPJ e unicidade no banco; portanto, esta integração não deve ser considerada pronta para uso produtivo nem conectada a dados reais. A API é a autoridade final de autorização.
+
+
+## Empregados — consulta, cadastro e edição na Shadow
+
+O módulo Empregados passou a consumir a API autenticada: consulta em `GET /api/v1/empregados`, criação em `POST /api/v1/empregados` com `empregados:create` e edição em `PUT /api/v1/empregados/{id}` com `empregados:update`. O formulário mantém somente os campos do contrato atual: nome, cargo, empresa, endereço, telefone e contato de emergência. A tabela aplica minimização visual e exibe apenas nome, cargo e empresa; a pesquisa local usa esses mesmos campos.
+
+A interface verifica as capacidades da sessão, trata 401/403, renderiza dados recebidos com `textContent`, cancela consultas obsoletas e descarta os dados em memória ao encerrar a sessão. A exclusão permanece desabilitada porque a rota atual remove fisicamente o registro e não há fluxo de desligamento/retenção. O backend ainda não oferece autorização por campo: esconder endereço e contatos na tabela reduz exposição casual, mas não substitui uma política de acesso aos dados pessoais. A integração depende exclusivamente da API Shadow configurada e não habilita produção.
