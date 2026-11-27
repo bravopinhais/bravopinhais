@@ -242,38 +242,118 @@ function condominioView(){
   </ul>
  </section>`;
 }
+let fornecedoresApiClient=null,fornecedoresItems=[],fornecedoresRequestSequence=0,fornecedoresRequestController=null,fornecedorEditingId=null;
+function fornecedoresCan(capability){return hasBravoCapability("fornecedores:"+capability);}
+function fornecedoresSetStatus(message,kind=""){const node=document.getElementById("for-status");if(node){node.textContent=message;node.className="api-status"+(kind?" "+kind:"");}}
+function fornecedoresApplyPermissions(){
+ const form=document.getElementById("for-form");if(!form)return;
+ const canCreate=fornecedoresCan("create"),canUpdate=fornecedoresCan("update");
+ form.querySelectorAll("input").forEach(input=>{input.disabled=!(fornecedorEditingId?canUpdate:canCreate);});
+ const save=form.querySelector('button[type="submit"]');if(save){save.disabled=!(fornecedorEditingId?canUpdate:canCreate);save.textContent=fornecedorEditingId?"Salvar alterações":"Salvar fornecedor";}
+ const search=document.getElementById("for-search");if(search)search.disabled=!fornecedoresCan("read");
+}
+function fornecedoresRenderRows(){
+ const tbody=document.getElementById("for-rows");if(!tbody)return;
+ tbody.replaceChildren();
+ const term=(document.getElementById("for-search")?.value||"").trim().toLocaleLowerCase("pt-BR");
+ const filtered=fornecedoresItems.filter(item=>!term||item.cnpj.toLocaleLowerCase("pt-BR").includes(term)||item.razaoSocial.toLocaleLowerCase("pt-BR").includes(term));
+ if(!filtered.length){const row=document.createElement("tr"),cell=document.createElement("td");cell.colSpan=3;cell.className="empty-state";cell.textContent=fornecedoresItems.length?"Nenhum fornecedor corresponde à pesquisa.":"Nenhum fornecedor cadastrado.";row.append(cell);tbody.append(row);return;}
+ for(const item of filtered){
+  const row=document.createElement("tr");
+  for(const value of [item.cnpj,item.razaoSocial]){const cell=document.createElement("td");cell.textContent=value;row.append(cell);}
+  const actions=document.createElement("td"),wrap=document.createElement("div");wrap.className="row-actions";
+  if(fornecedoresCan("update")){const edit=document.createElement("button");edit.type="button";edit.className="action-btn";edit.textContent="Editar";edit.addEventListener("click",()=>fornecedoresStartEdit(item.id));wrap.append(edit);}
+  actions.append(wrap);row.append(actions);tbody.append(row);
+ }
+}
+function fornecedoresStartEdit(id){
+ const item=fornecedoresItems.find(entry=>entry.id===id);if(!item||!fornecedoresCan("update"))return;
+ fornecedorEditingId=id;
+ document.getElementById("for-cnpj").value=item.cnpj;
+ document.getElementById("for-razao").value=item.razaoSocial;
+ const cancel=document.getElementById("for-cancel");if(cancel)cancel.hidden=false;
+ fornecedoresApplyPermissions();fornecedoresSetStatus("Editando fornecedor. Revise os dados e salve as alterações.");
+ document.getElementById("for-cnpj").focus();
+}
+function fornecedoresResetForm(){
+ const form=document.getElementById("for-form");if(!form)return;
+ form.reset();fornecedorEditingId=null;
+ const cancel=document.getElementById("for-cancel");if(cancel)cancel.hidden=true;
+ fornecedoresApplyPermissions();
+}
+async function fornecedoresLoad(api){
+ const sequence=++fornecedoresRequestSequence;fornecedoresRequestController?.abort();fornecedoresRequestController=new AbortController();
+ fornecedoresSetStatus("Consultando fornecedores autorizados…");
+ try{
+  const data=await api.get("/api/v1/fornecedores",{signal:fornecedoresRequestController.signal});
+  if(sequence!==fornecedoresRequestSequence||moduloAtual!=="fornecedores")return;
+  if(!Array.isArray(data)||data.some(item=>!item||typeof item.id!=="string"||typeof item.cnpj!=="string"||typeof item.razaoSocial!=="string"))throw new Error("A API retornou uma lista de fornecedores inválida.");
+  fornecedoresItems=data;fornecedoresRenderRows();
+  fornecedoresSetStatus(data.length+" fornecedor(es) carregado(s) · consulta autorizada","ok");
+ }catch(error){
+  if(error?.name==="AbortError"||sequence!==fornecedoresRequestSequence)return;
+  fornecedoresItems=[];fornecedoresRenderRows();
+  fornecedoresSetStatus(error?.status===403?"Seu perfil não possui fornecedores:read.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível consultar fornecedores."),"err");
+ }
+}
+async function fornecedoresSave(event){
+ event.preventDefault();
+ const form=document.getElementById("for-form");if(!form||!fornecedoresApiClient)return;
+ const capability=fornecedorEditingId?"update":"create";
+ if(!fornecedoresCan(capability)){fornecedoresSetStatus("Seu perfil não possui autorização para esta operação.","err");return;}
+ const data={cnpj:document.getElementById("for-cnpj").value.trim(),razaoSocial:document.getElementById("for-razao").value.trim()};
+ if(!data.cnpj||!data.razaoSocial){fornecedoresSetStatus("Preencha CNPJ e Razão Social.","err");return;}
+ const save=form.querySelector('button[type="submit"]');if(save)save.disabled=true;
+ fornecedoresSetStatus(fornecedorEditingId?"Salvando alterações…":"Cadastrando fornecedor…");
+ try{
+  if(fornecedorEditingId)await fornecedoresApiClient.put("/api/v1/fornecedores/"+encodeURIComponent(fornecedorEditingId),data);
+  else await fornecedoresApiClient.post("/api/v1/fornecedores",data);
+  fornecedoresResetForm();
+  await fornecedoresLoad(fornecedoresApiClient);
+  fornecedoresSetStatus(fornecedorEditingId?"Fornecedor atualizado.":"Fornecedor salvo com sucesso.","ok");
+ }catch(error){
+  fornecedoresSetStatus(error?.status===403?"A API negou a operação: permissão insuficiente.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível salvar o fornecedor."),"err");
+ }finally{fornecedoresApplyPermissions();}
+}
 function fornecedoresView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
-  <div class="api-toolbar"><div><strong style="font-size:13px">Fornecedores</strong><div class="api-status" id="for-status" role="status" aria-live="polite">Aguardando autenticação Google e API HTTPS Shadow</div></div><span class="tag">Cadastro de fornecedores</span></div>
-  <div class="notice" style="margin:14px 0 18px"><div class="notice-icon">▣</div><div><strong>Identificação fiscal e razão social</strong><p>O cadastro original utiliza CNPJ e Razão Social. A tela mantém esses campos sem acrescentar informações obrigatórias que não existem no contrato legado.</p></div></div>
-  <div class="section-head"><h2>Novo fornecedor</h2><span>Campos do sistema original</span></div>
+  <div class="api-toolbar"><div><strong style="font-size:13px">Fornecedores</strong><div class="api-status" id="for-status" role="status" aria-live="polite">Aguardando sessão Google e API Shadow</div></div><span class="tag">Cadastro de fornecedores</span></div>
+  <div class="notice" style="margin:14px 0 18px"><div class="notice-icon">▣</div><div><strong>Cadastro e edição protegidos</strong><p>O cadastro utiliza exclusivamente os campos existentes no contrato do Bravo: CNPJ e Razão Social. A API valida o formato básico e exige a capacidade correspondente no servidor.</p></div></div>
+  <div class="section-head"><h2 id="for-form-title">Novo fornecedor</h2><span>Campos do sistema original</span></div>
   <form class="api-form" id="for-form" style="grid-template-columns:repeat(2,minmax(0,1fr))">
    <div class="field"><label for="for-cnpj">CNPJ</label><input id="for-cnpj" name="cnpj" required maxlength="32" placeholder="CNPJ do fornecedor" disabled></div>
    <div class="field"><label for="for-razao">Razão Social</label><input id="for-razao" name="razaoSocial" required maxlength="200" placeholder="Razão social cadastrada" disabled></div>
-   <div style="grid-column:1/-1;display:flex;justify-content:flex-end"><button type="button" class="action-btn primary" disabled>Salvar fornecedor</button></div>
+   <div style="grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px"><button type="button" id="for-cancel" class="action-btn" hidden>Cancelar edição</button><button type="submit" class="action-btn primary" disabled>Salvar fornecedor</button></div>
   </form>
-  <p class="form-hint">Ambos os campos são obrigatórios. A API remove espaços nas extremidades, mas ainda não valida dígitos verificadores do CNPJ nem impede CNPJs duplicados.</p>
+  <p class="form-hint">A edição preserva o identificador do registro. A exclusão permanece indisponível nesta etapa porque a rota atual remove fisicamente o cadastro e ainda não possui proteção de referência/retenção.</p>
  </section>
  <section class="panel" style="margin-top:16px">
-  <div class="api-toolbar"><div><strong style="font-size:13px">Pesquisar fornecedores</strong><div class="api-status">Pesquisa local prevista por CNPJ ou razão social</div></div><span class="tag">Consulta</span></div>
+  <div class="api-toolbar"><div><strong style="font-size:13px">Pesquisar fornecedores</strong><div class="api-status">Pesquisa local por CNPJ ou Razão Social</div></div><span class="tag">Consulta</span></div>
   <div class="api-form" style="grid-template-columns:minmax(0,1fr) auto;align-items:end">
-   <div class="field"><label for="for-search">CNPJ ou razão social</label><input id="for-search" name="busca" placeholder="Digite para localizar" disabled></div>
-   <button type="button" class="action-btn" disabled>Pesquisar</button>
+   <div class="field"><label for="for-search">CNPJ ou Razão Social</label><input id="for-search" name="busca" placeholder="Digite para localizar" disabled></div>
+   <button type="button" id="for-search-clear" class="action-btn">Limpar</button>
   </div>
   <div class="data-table-wrap"><table class="data-table"><caption>Fornecedores cadastrados</caption><thead><tr><th scope="col">CNPJ</th><th scope="col">Razão Social</th><th scope="col">Ações</th></tr></thead><tbody id="for-rows"><tr><td colspan="3" class="empty-state">Aguardando consulta autenticada. Nenhum fornecedor fictício será exibido.</td></tr></tbody></table></div>
  </section>
- <section class="panel" style="margin-top:16px">
-  <div class="section-head" style="margin-top:0"><h2>Regras e pontos de atenção</h2><span>Contrato Shadow</span></div>
-  <ul style="margin:0;padding-left:18px;color:var(--soft);font-size:12px;line-height:1.9">
-   <li>Admin e Operador possuem leitura, cadastro, edição e exclusão no catálogo atual de permissões.</li>
-   <li>Não há validação formal do CNPJ nem unicidade por CNPJ no service/schema inspecionados.</li>
-   <li>A exclusão é física; não foi identificada proteção contra fornecedores referenciados por compras ou lançamentos.</li>
-   <li>O adapter PostgreSQL incrementa versão interna na edição, mas a API não exige If-Match/ETag.</li>
-   <li>Não foram identificados campos de contato, endereço, inscrição estadual ou dados bancários no contrato legado deste módulo.</li>
-  </ul>
- </section>`;
+ <section class="panel" style="margin-top:16px"><div class="section-head" style="margin-top:0"><h2>Limites atuais</h2><span>Transparência</span></div><p>O contrato atual não valida dígitos verificadores nem impede CNPJs duplicados. Antes de usar o cadastro em produção, será necessário acrescentar validação e unicidade também no banco de dados. A API continua sendo a autoridade de autorização.</p></section>`;
+ const form=document.getElementById("for-form");form.addEventListener("submit",fornecedoresSave);
+ document.getElementById("for-cancel").addEventListener("click",()=>{fornecedoresResetForm();fornecedoresSetStatus("Edição cancelada.");});
+ document.getElementById("for-search").addEventListener("input",fornecedoresRenderRows);
+ document.getElementById("for-search-clear").addEventListener("click",()=>{document.getElementById("for-search").value="";fornecedoresRenderRows();});
+ fornecedoresApplyPermissions();
+ if(fornecedoresApiClient)void fornecedoresLoad(fornecedoresApiClient);
 }
+window.addEventListener("bravo:session-ready",event=>{
+ const api=event.detail?.api;if(!api||typeof api.get!=="function")return;
+ fornecedoresApiClient=api;
+ if(moduloAtual==="fornecedores")void fornecedoresLoad(api);
+ fornecedoresApplyPermissions();
+});
+window.addEventListener("bravo:session-ended",()=>{
+ fornecedoresApiClient=null;fornecedoresItems=[];fornecedoresRequestSequence++;fornecedoresRequestController?.abort();fornecedoresRequestController=null;fornecedorEditingId=null;
+ if(moduloAtual==="fornecedores")fornecedoresView();
+});
 function acertoEstoqueView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
