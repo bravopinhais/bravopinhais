@@ -160,8 +160,9 @@ def test_provenance_adapter_columns_and_identity_constraints_match_control_ddl()
         r"check\s*\(\s*length\s*\(\s*btrim\(\s*source_system\s*\)\s*\)\s*>\s*0",
         body, re.IGNORECASE,
     )
-    assert re.search(
-        r"check\s*\(\s*source_record_hash\s*~\s*'\^\[0-9a-f\]\{64\}\
+    assert "source_record_hash ~ '^[0-9a-f]{64}$'" in body
+    assert "FOREIGN KEY (first_batch_id, source_system)" in body
+    assert "FOREIGN KEY (last_verified_batch_id, source_system)" in body
 
 def test_authenticated_audit_insert_matches_all_required_sql_columns():
     ddl = _read("sql-auditoria-rascunho.sql")
