@@ -1056,3 +1056,89 @@ A sessão de teste do function owner serve para provar seus limites de privilég
 ### 20.8 Estado
 
 Esta seção descreve apenas privilégios pretendidos. Nenhuma role conceitual foi criada; nenhum GRANT/REVOKE foi aplicado; nenhuma policy foi escrita ou aplicada; nenhuma função foi criada; nenhuma credencial foi provisionada; nenhum banco foi conectado. A matriz de capacidades do produto continua deny-by-default.
+
+## 21. Identidade do ator e fronteira de confiança — 27/11/2026
+
+**Status:** análise de ameaça e decisão de arquitetura pendente. Nenhum mecanismo de assinatura, segredo ou validação foi implementado.
+
+### 21.1 O que cada camada consegue provar
+
+| Camada | Evidência que consegue validar | O que não prova sozinha |
+|---|---|---|
+| Navegador | Dados enviados pelo usuário e sessão visual | Identidade Google confiável; ator de auditoria |
+| Backend | Assinatura/claims do ID token Google, issuer, audience, expiração e vínculo com cadastro interno, quando implementados corretamente | Integridade contra comprometimento total do próprio backend |
+| PostgreSQL | Restrições de schema, integridade, transação, grants, RLS e argumentos recebidos | Que um texto actor_google_subject corresponde a um token Google válido |
+| Função SECURITY DEFINER | Operação SQL estreita sob privilégios do owner | Autenticidade do ator se receber apenas um subject em texto |
+
+Conclusão: actor_google_subject é confiável somente na medida em que a fronteira que o fornece é confiável. A função não deve ser descrita como validadora de token Google.
+
+### 21.2 Ameaça A — navegador ou cliente malicioso
+
+A defesa obrigatória é:
+1. O backend valida o token Google, incluindo assinatura, issuer, audience e expiração.
+2. O backend resolve o subject validado para o cadastro interno e confirma status/capacidade.
+3. O ator é derivado exclusivamente de AuthenticatedPrincipal.subject.
+4. Qualquer actor, actor_subject, e-mail, perfil ou reviewer enviado no body é ignorado ou rejeitado; nunca sobrescreve o principal.
+5. A API gera request_id e event_id no servidor.
+6. A chamada SQL recebe apenas os campos mínimos derivados do principal validado e do contexto do servidor.
+
+Testes negativos obrigatórios: body com subject de outro usuário, e-mail de outro usuário, perfil Admin forjado, actor ausente ou extra; todos devem falhar ou ser ignorados sem alterar o ator registrado. O evento persistido deve conter exatamente o subject do principal validado.
+
+**Resultado esperado:** o navegador não consegue escolher o ator da auditoria. Esse controle depende do backend e de sua validação Google, não da função SQL isoladamente.
+
+### 21.3 Ameaça B — runtime/backend comprometido
+
+Se a role runtime possui EXECUTE na função e pode enviar livremente actor_google_subject, um invasor que controle integralmente esse processo pode chamar a função passando o subject de outra pessoa. RLS e SECURITY DEFINER não resolvem esse problema: a função recebe um texto válido do ponto de vista do tipo SQL, mas sem prova criptográfica de origem.
+
+O desenho atual, portanto, protege contra falsificação pelo cliente quando o backend está íntegro; não oferece, por si só, proteção contra comprometimento total do backend/runtime.
+
+### 21.4 Alternativas para o limite de confiança
+
+| Alternativa | Propriedade | Limite / custo |
+|---|---|---|
+| A. Confiar no backend validado | Simples; subject derivado do principal Google e chamada SQL restrita | Runtime comprometido pode falsificar o ator |
+| B. Verificar JWT Google dentro do banco | Banco verifica assinatura/claims do token original | Complexidade de JWKS, rotação, audience/issuer, relógio, extensões e disponibilidade; token não deve ser armazenado em auditoria |
+| C. Assertion interna assinada, verificada no banco | Banco verifica assinatura e claims de uma declaração curta | Exige emissor confiável, chave privada isolada do runtime, chave pública/rotação e proteção contra replay |
+| D. Serviço de autorização/assinatura separado | Pode validar o token Google e emitir assertion vinculada à operação | Mais componentes, disponibilidade e operação; o serviço não pode aceitar subject arbitrário do runtime |
+
+Uma assertion interna segura precisaria, no mínimo, vincular criptograficamente:
+- subject Google validado;
+- operação exata e recurso alvo;
+- perfil/capacidade relevante, se aplicável;
+- instante de emissão e expiração curta;
+- identificador único anti-replay;
+- audience destinada à função/serviço Bravo Shadow.
+
+A função teria que verificar assinatura, audience, expiração, operação/alvo e uso único/replay dentro da transação. A chave privada não pode estar disponível à role SQL runtime nem ao navegador. Se a API puder pedir ao signer que assine qualquer subject sem validação independente do token, a separação não agrega a garantia pretendida.
+
+### 21.5 Direção recomendada para o piloto descartável
+
+Para o primeiro piloto local, manter a Alternativa A como hipótese explícita de confiança: backend é o validador de identidade Google; PostgreSQL protege a operação e reduz privilégios, mas não autentica independentemente o ator. O piloto não deve alegar resistência a comprometimento total do backend.
+
+Antes de produção ou ambiente compartilhado, fazer decisão formal sobre o threat model:
+- Se o risco de backend comprometido estiver fora do escopo aceito, documentar essa confiança e manter os controles de validação, capability, EXECUTE mínimo e auditoria.
+- Se o banco precisar rejeitar chamadas de um runtime comprometido que tente falsificar o ator, não liberar a função com subject em texto como única evidência; projetar e homologar alternativa B, C ou D separadamente.
+
+Não escolher JWT no banco ou assertion assinada por conveniência sem protótipo, revisão de chave, rotação, replay e testes negativos. Não adicionar segredo ao frontend, variáveis públicas, SQL versionado ou role runtime.
+
+### 21.6 Critérios de teste e aceite
+
+**Com backend íntegro:**
+- Token Google inválido, expirado, issuer/audience incorretos: negar antes do SQL.
+- Usuário interno inativo ou sem capability: negar antes do SQL.
+- Subject/e-mail enviado no body não altera o ator.
+- Evento registra subject do principal validado e IDs gerados no servidor.
+- Falha na auditoria reverte integralmente a alteração administrativa.
+
+**Com conexão SQL runtime independente:**
+- EXECUTE não concede UPDATE/INSERT direto nas tabelas.
+- Argumentos fora do contrato, IDs vazios e enumerações inválidas são rejeitados.
+- Não há função genérica nem SQL dinâmico.
+- Replay de assertion (se alternativa assinada for adotada) é rejeitado atomicamente.
+- O runtime não consegue assumir a role owner nem acessar credencial/chave privada.
+
+**Limite da prova:** testes de aplicação com principal sintético validam o contrato do serviço, mas não provam validação criptográfica Google real. Testes SQL com sessão runtime provam grants/RLS, mas não provam origem Google do subject. As duas evidências são distintas e ambas precisam ser registradas.
+
+### 21.7 Estado e bloqueios
+
+Nenhum token Google foi consultado ou armazenado. Nenhuma chave, segredo, assertion, serviço signer ou verificador JWT foi criado. Nenhuma função SQL, role, policy, grant ou migration foi implementada/aplicada. Nenhum banco foi conectado. A alternativa A é uma hipótese para piloto descartável, não uma autorização para produção; a proteção contra runtime comprometido permanece explicitamente não resolvida.
