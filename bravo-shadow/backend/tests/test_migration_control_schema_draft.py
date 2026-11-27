@@ -131,3 +131,22 @@ def test_recovery_decision_does_not_reopen_or_authorize_same_batch():
 
     assert "o evento nunca muda o status nem reabre o lote" in sql
     assert "um novo apply sempre exige novo lote/manifesto aprovado" in sql
+
+
+
+def test_recovery_append_requires_parent_lock_and_sequence_conflict_guard():
+    sql = _sql().lower()
+
+    assert "select ... for update" in sql
+    assert "coalesce(max(sequence_no), 0) + 1" in sql
+    assert "unique (batch_id, sequence_no)" in sql
+    assert "lock deve ser" in sql
+    assert "nunca sobrescrever evento existente" in sql
+
+
+def test_recovery_event_id_is_idempotency_key_not_sequence_workaround():
+    sql = _sql().lower()
+
+    assert "event_id é chave de idempotência global" in sql
+    assert "comparar todos os campos do evento existente" in sql
+    assert "nunca gerar nova" in sql
