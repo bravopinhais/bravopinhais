@@ -62,6 +62,8 @@ jobs:
           grep -q 'A forma que estava em edição não existe mais na lista. A edição foi cancelada.' _site/index.html
           grep -q 'Editando forma monetária: ' _site/index.html
           grep -q 'a edição anterior foi cancelada para evitar salvar dados desatualizados' _site/index.html
+          grep -q 'const possuiListaAnterior=formasMonetarias.length>0' _site/index.html
+          grep -q 'Exibindo a última lista carregada; os dados podem estar desatualizados.' _site/index.html
           grep -q 'Registro salvo, mas a lista não foi atualizada. Use Atualizar para tentar novamente.' _site/index.html
           grep -q 'tabindex="-1"' _site/index.html
           grep -q 'Exclusão concluída, mas a lista não foi atualizada. Use Atualizar para tentar novamente.' _site/index.html
