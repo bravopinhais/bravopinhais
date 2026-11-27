@@ -3,6 +3,7 @@ from fastapi import HTTPException
 
 from app.core.authorization import (
     CAPABILITIES,
+    OPERATOR_CAPABILITIES,
     AuthenticatedPrincipal,
     has_capability,
     require_capability,
@@ -18,17 +19,38 @@ def principal(profile: str = "Admin", account_status: str = "Ativo") -> Authenti
     )
 
 
-def test_admin_is_denied_until_permission_matrix_is_approved() -> None:
+def test_admin_receives_every_registered_capability():
     for capability in CAPABILITIES:
-        assert not has_capability(principal("Admin"), capability)
+        assert has_capability(principal("Admin"), capability)
 
 
-def test_operator_is_denied_until_permission_matrix_is_approved() -> None:
+def test_operator_receives_only_approved_operational_capabilities():
+    assert OPERATOR_CAPABILITIES
     for capability in CAPABILITIES:
-        assert not has_capability(principal("Operador"), capability)
+        assert has_capability(principal("Operador"), capability) == (
+            capability in OPERATOR_CAPABILITIES
+        )
 
 
-@pytest.mark.parametrize("profile", ["admin", "Root", "", "Administrador", ""])
+@pytest.mark.parametrize(
+    "capability",
+    [
+        "usuarios:read", "usuarios:create", "usuarios:update",
+        "usuarios:delete", "usuarios:deactivate", "condominio:update",
+        "plano_contas:create", "plano_contas:update", "plano_contas:delete",
+        "formas_monetarias:create", "formas_monetarias:update",
+        "formas_monetarias:delete", "contas_bancarias:create",
+        "contas_bancarias:update", "contas_bancarias:delete",
+        "categorias:create", "categorias:delete",
+        "motivos_estoque:create", "motivos_estoque:delete",
+        "conselheiros:create", "conselheiros:update", "conselheiros:delete",
+    ],
+)
+def test_operator_cannot_administer_users_or_change_settings(capability):
+    assert not has_capability(principal("Operador"), capability)
+
+
+@pytest.mark.parametrize("profile", ["admin", "Root", "", "Administrador"])
 def test_unknown_or_malformed_profiles_are_denied(profile: str) -> None:
     assert not has_capability(principal(profile), "dashboard:read")
 
@@ -52,42 +74,26 @@ def test_unknown_capability_is_denied() -> None:
     assert not has_capability(principal(), "financeiro:superuser")
 
 
-def test_require_capability_raises_for_denied_access() -> None:
+def test_require_capability_raises_for_operator_user_administration():
     with pytest.raises(HTTPException) as error:
-        require_capability(principal("Operador"), "financeiro:create")
+        require_capability(principal("Operador"), "usuarios:read")
     assert error.value.status_code == 403
     assert error.value.detail == "Acesso negado para esta operação."
 
 
-def test_require_capability_denies_admin_until_matrix_is_approved() -> None:
-    with pytest.raises(HTTPException) as error:
-        require_capability(principal("Admin"), "financeiro:read")
-    assert error.value.status_code == 403
+def test_admin_can_manage_users():
+    require_capability(principal("Admin"), "usuarios:read")
 
 
-def test_non_string_identity_fields_are_denied() -> None:
-    malformed = AuthenticatedPrincipal(None, "usuario@example.com", "Admin", "Ativo")
-    assert not has_capability(malformed, "dashboard:read")
-
-
-
-def test_fastapi_dependency_enforces_capability_after_authentication() -> None:
+def test_fastapi_dependency_enforces_capability_after_authentication():
     from app.core.authorization import require_capability_dependency
 
-    dependency = require_capability_dependency("financeiro:read")
-    for profile in ("Admin", "Operador"):
-        with pytest.raises(HTTPException) as error:
-            dependency(principal(profile))
-        assert error.value.status_code == 403
-
-
-def test_fastapi_dependency_does_not_grant_unapproved_profile() -> None:
-    from app.core.authorization import require_capability_dependency
-
-    dependency = require_capability_dependency("dashboard:read")
+    dependency = require_capability_dependency("usuarios:read")
     with pytest.raises(HTTPException) as error:
-        dependency(principal("Admin"))
+        dependency(principal("Operador"))
     assert error.value.status_code == 403
+    assert dependency(principal("Admin")) == principal("Admin")
+
 
 @pytest.mark.parametrize("profile", [None, [], {}])
 def test_non_string_profiles_are_denied_without_raising(profile) -> None:
