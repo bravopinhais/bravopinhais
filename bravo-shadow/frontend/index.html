@@ -122,7 +122,7 @@ function contasBancariasView(){
  </section>
  <section class="panel" style="margin-top:16px">
   <div class="api-toolbar"><div><strong style="font-size:13px">Contas cadastradas</strong><div class="api-status">Consulta protegida · contas_bancarias:read</div></div><span class="tag">Resumo cadastral</span></div>
-  <div class="data-table-wrap"><table class="data-table"><caption>Contas bancárias e saldos informados</caption><thead><tr><th scope="col">Banco / identificação</th><th scope="col">Saldo informado</th><th scope="col">Ações</th></tr></thead><tbody id="cb-rows"><tr><td colspan="3" class="empty-state">Aguardando consulta autorizada. Nenhuma conta fictícia é exibida.</td></tr></tbody></table></div>
+  <div class="data-table-wrap"><table class="data-table"><caption>Contas bancárias e saldos informados</caption><thead><tr><th scope="col">Banco / identificação</th><th scope="col">Saldo informado</th><th scope="col">Acesso</th></tr></thead><tbody id="cb-rows"><tr><td colspan="3" class="empty-state">Aguardando consulta autorizada. Nenhuma conta fictícia é exibida.</td></tr></tbody></table></div>
  </section>
  <section class="panel" style="margin-top:16px">
   <div class="section-head" style="margin-top:0"><h2>O que ainda não é movimentação bancária</h2><span>Limites do contrato</span></div>
@@ -465,9 +465,7 @@ async function loadFinanceiroTitles(api){
   const filterForm=document.getElementById("fin-filters");
   if(search)search.disabled=false;
   if(type)type.disabled=false;
-  if(filterForm)filterForm.querySelector('button[type="submit"]')?.setAttribute("disabled","");
-  if(search)search.addEventListener("input",renderFinanceiroRows,{once:false});
-  if(type)type.addEventListener("change",renderFinanceiroRows,{once:false});
+  if(filterForm){const filterButton=filterForm.querySelector('button[type="submit"]');if(filterButton)filterButton.disabled=false;}
   renderFinanceiroRows();
   status.textContent=financeiroTitles.length+" título(s) carregado(s) · consulta somente leitura";
   status.className="api-status ok";
@@ -489,13 +487,15 @@ function bindFinanceiroFilters(){
  if(!form||form.dataset.bound==="true")return;
  form.dataset.bound="true";
  form.addEventListener("submit",event=>{event.preventDefault();renderFinanceiroRows();});
+ document.getElementById("fin-search")?.addEventListener("input",renderFinanceiroRows);
+ document.getElementById("fin-filter-type")?.addEventListener("change",renderFinanceiroRows);
 }
 
 function financeiroView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
   <div class="api-toolbar"><div><strong style="font-size:13px">Contas a Pagar / Receber</strong><div class="api-status" id="fin-status" role="status" aria-live="polite">Aguardando sessão Google e API HTTPS Shadow</div></div><span class="tag">Cadastro financeiro</span></div>
-  <div class="notice" style="margin:14px 0 18px"><div class="notice-icon">◫</div><div><strong>Lançamentos financeiros</strong><p>Cadastro e manutenção de títulos, classificados como Receber ou Pagar, vinculados ao Plano de Contas, com histórico e valor. A interface não consulta nem altera dados enquanto a autenticação e a API isolada não estiverem integradas.</p></div></div>
+  <div class="notice" style="margin:14px 0 18px"><div class="notice-icon">◫</div><div><strong>Lançamentos financeiros</strong><p>Cadastro e manutenção de títulos, classificados como Receber ou Pagar, vinculados ao Plano de Contas, com histórico e valor. A listagem será habilitada somente após autenticação e autorização. Inclusão, edição e exclusão permanecem bloqueadas nesta etapa.</p></div></div>
   <div class="section-head"><h2>Novo título</h2><span>Campos identificados no sistema original</span></div>
   <form class="api-form" id="fin-form" style="grid-template-columns:repeat(2,minmax(0,1fr))">
    <div class="field"><label for="fin-type">Tipo</label><select id="fin-type" name="tipo" disabled><option value="Receber">Receber</option><option value="Pagar">Pagar</option></select></div>
@@ -514,7 +514,7 @@ function financeiroView(){
    <button class="action-btn" type="submit" disabled>Filtrar</button>
   </form>
   <div class="data-table-wrap"><table class="data-table"><caption>Títulos financeiros cadastrados</caption><thead><tr><th scope="col">Tipo</th><th scope="col">Conta do Plano</th><th scope="col">Histórico</th><th scope="col">Valor</th><th scope="col">Ações</th></tr></thead><tbody id="fin-rows"><tr><td colspan="5" class="empty-state">Aguardando consulta autorizada. Nenhum dado de exemplo é exibido.</td></tr></tbody></table></div>
-  <p class="form-hint">A edição usa controle de versão (ETag / If-Match) para impedir que uma alteração sobrescreva silenciosamente uma versão mais recente.</p>
+  <p class="form-hint">Esta etapa habilita somente consulta. Inclusão, edição, exclusão e baixa não são oferecidas pela interface.</p>
  </section>
  <section class="panel" style="margin-top:16px">
   <div class="section-head" style="margin-top:0"><h2>Regras e limites atuais</h2><span>Contrato verificado</span></div>
