@@ -1692,3 +1692,41 @@ A aprovação da CI valida os testes automatizados e o smoke test do contêiner;
 5. Somente após aprovação explícita, desenhar a exposição de uma rota administrativa com dependência de capacidade e auditoria.
 
 **Estado final desta etapa:** correção cadastral e endurecimento dos métodos de escrita concluídos; identidade administrativa baseada exclusivamente em principal confiável; CI aprovada. A administração continua não exposta e a garantia global de último Admin ainda depende da homologação completa de todos os escritores e privilégios no banco.
+
+## 28. Identidade PostgreSQL de runtime e limites do teste de roles — 27/11/2026
+
+**Status:** revisão estática concluída; identidade de runtime e privilégios efetivos permanecem pendentes. Nenhuma role, grant, policy ou conexão remota foi criada.
+
+### 28.1 O que foi confirmado no código
+
+- `create_postgres_connection_factory()` recebe `BRAVO_DATABASE_URL` e abre conexões Psycopg com `application_name=bravo-shadow-api`; não fixa nome de usuário/role nem valida atributos PostgreSQL da identidade conectada.
+- `build_storage_services("postgres", ...)` injeta a mesma fábrica nos repositórios PostgreSQL dos módulos da aplicação. A credencial configurada nessa URL é, portanto, uma fronteira importante para todos esses adaptadores.
+- O desenho em `docs/desenho-autorizacao-postgresql.md` propõe separar owner/migrator e runtime, mas é uma proposta, não uma configuração implementada.
+- A matriz em `docs/matriz-roles-permissoes-revisao-migracao.md` também permanece proposta. Não se deve inferir que `bravo_shadow_runtime` ou um login técnico já existam.
+
+### 28.2 O que o teste recente realmente prova
+
+O teste `test_real_postgres_client_roles_cannot_access_users_without_explicit_grants` executa `SET ROLE` para `anon`, `authenticated` e `service_role` dentro da conexão de teste e verifica ausência de `USAGE` no schema `bravo_shadow` e erro SQLSTATE `42501` ao consultar `bravo_shadow.usuarios`.
+
+Isso é uma evidência útil de negação por padrão no PostgreSQL descartável preparado pela CI. Não prova:
+- que essas roles tenham a mesma configuração em qualquer projeto Supabase ou banco remoto;
+- que o backend esteja conectado como uma identidade runtime dedicada;
+- que o login runtime não seja owner, superuser, membro de role privilegiada ou `BYPASSRLS`;
+- que todos os grants, memberships, policies e privilégios efetivos estejam corretos no ambiente futuro.
+
+O script `docs/verificar-privilegios-rls-somente-leitura.sql` é uma inspeção de catálogo; sua execução na CI também ocorre somente no PostgreSQL descartável.
+
+### 28.3 Portão obrigatório antes de habilitar PostgreSQL no ambiente
+
+1. Definir e aprovar o login técnico do backend e a role de grupo correspondente.
+2. Em PostgreSQL local descartável, conectar com credenciais independentes como o próprio login runtime — não apenas usar `SET ROLE` a partir de uma conexão privilegiada.
+3. Registrar `session_user` e `current_user`; verificar `rolsuper`, `rolbypassrls`, `rolcreaterole`, `rolcreatedb`, ownership e memberships herdadas/assumíveis.
+4. Verificar privilégios efetivos por schema, tabela, sequence e função; conferir policies RLS e `FORCE ROW LEVEL SECURITY`.
+5. Provar operações permitidas e negadas para todos os adaptadores que `build_storage_services()` instancia, incluindo tentativas de DDL, TRUNCATE, alteração de grants e escrita fora do escopo.
+6. Só depois aprovar a forma de fornecer a URL/segredo ao backend. Não armazenar credenciais no frontend ou no repositório.
+
+### 28.4 Evidência da execução automatizada
+
+A execução GitHub Actions `45997490822` foi consultada novamente em 27/11/2026 e permanecia `in_progress`: o job Docker/smoke test estava `success`, enquanto o job Backend/PostgreSQL descartável ainda não tinha conclusão. Não registrar aprovação dos testes dessa execução até obter seu resultado final.
+
+**Conclusão:** a revisão identificou com precisão a ausência de uma identidade runtime PostgreSQL definida e validada no código. A configuração continua deliberadamente não implementada; o banco de produção permanece desconectado e sem alterações.
