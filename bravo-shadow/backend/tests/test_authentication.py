@@ -18,6 +18,36 @@ def make_user(services, email="admin@example.com", profile="Admin", account_stat
     return services.usuarios.create(data)
 
 
+def test_google_token_verifier_uses_configured_client_id_as_audience(monkeypatch):
+    from app.core.authentication import verify_google_id_token
+    from google.oauth2 import id_token
+
+    calls = {}
+
+    def fake_verify(token, request, audience):
+        calls.update(token=token, request=request, audience=audience)
+        return {"sub": "google-subject"}
+
+    monkeypatch.setenv("GOOGLE_CLIENT_ID", "bravo-client-id.apps.googleusercontent.com")
+    monkeypatch.setattr(id_token, "verify_oauth2_token", fake_verify)
+
+    claims = verify_google_id_token("google-id-token")
+
+    assert claims == {"sub": "google-subject"}
+    assert calls["token"] == "google-id-token"
+    assert calls["audience"] == "bravo-client-id.apps.googleusercontent.com"
+    assert calls["request"] is not None
+
+
+def test_google_token_verifier_fails_closed_without_client_id(monkeypatch):
+    from app.core.authentication import verify_google_id_token
+
+    monkeypatch.delenv("GOOGLE_CLIENT_ID", raising=False)
+
+    with pytest.raises(RuntimeError, match="GOOGLE_CLIENT_ID"):
+        verify_google_id_token("google-id-token")
+
+
 def test_verified_google_email_resolves_internal_profile_and_status():
     services = build_storage_services("memory")
     make_user(services)
