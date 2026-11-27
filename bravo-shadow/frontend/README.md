@@ -70,3 +70,12 @@ A navegação da Gestão de Usuários apresenta um painel de pré-requisitos, se
 - exclusão física desabilitada pela API (HTTP 410).
 
 Esse estado é intencional: a interface não consulta nem altera usuários com identidade ausente, não inventa dados e não concede permissões por perfil. Para avançar, é necessário identificar o provedor Google usado no ambiente ativo e aprovar explicitamente a matriz de permissões. A tela de login original permanece intocada.
+
+## Preview visual pelo GitHub Pages
+
+O ambiente sombra publica a pasta `bravo-shadow/frontend/` como site estático por meio do workflow `.github/workflows/bravo-shadow-pages.yml`, acionado por alterações no frontend da branch `bravo-shadow` ou manualmente.
+
+- O endereço esperado para este repositório é `https://bravopinhais.github.io/bravopinhais/`, após o primeiro deploy bem-sucedido e a ativação do GitHub Pages com origem **GitHub Actions** nas configurações do repositório.
+- O preview identifica o host `github.io` e desabilita chamadas à API; em Formas Monetárias apresenta aviso em vez de tentar cadastrar/editar/excluir.
+- O GitHub Pages hospeda apenas arquivos estáticos. Não executa FastAPI, não fornece PostgreSQL e não habilita autenticação nem permissões.
+- O endereço só deve ser considerado disponível depois de o workflow concluir o deploy. Se o repositório ainda não tiver Pages habilitado, ativar em **Settings → Pages → Build and deployment → Source: GitHub Actions**.
