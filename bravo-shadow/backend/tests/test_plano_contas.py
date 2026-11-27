@@ -1,6 +1,7 @@
 import pytest
 from fastapi import HTTPException
 from fastapi.testclient import TestClient
+from pydantic import ValidationError
 
 from app.core.authentication import get_current_principal
 from app.core.authorization import AuthenticatedPrincipal
@@ -67,9 +68,9 @@ def test_account_code_and_name_are_trimmed_and_required():
     created = build_service().create(PlanoContaInput(**payload(codigo="  2.1  ", nome="  Fundo de Reserva  ")))
     assert created.codigo == "2.1"
     assert created.nome == "Fundo de Reserva"
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         PlanoContaInput(**payload(codigo="   "))
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         PlanoContaInput(**payload(nome="   "))
 
 
@@ -111,5 +112,5 @@ def test_delete_allowed_only_after_reference_check_returns_false():
 
 
 def test_invalid_type_is_rejected():
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationError):
         PlanoContaInput(**payload(tipo="Transferência"))
