@@ -295,6 +295,22 @@ function pastasView(){
  </section>`;
 }
 
+function relatoriosView(){
+ const view=document.getElementById("view");
+ view.innerHTML=`<section class="panel">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Demonstrativo do Resultado do Exercício</strong><div class="api-status" id="dre-status" role="status" aria-live="polite">Aguardando sessão Google e API Shadow</div></div><span class="tag">Relatório gerencial</span></div>
+  <div class="notice" style="margin:16px 0 18px"><div class="notice-icon">▥</div><div><strong>DRE vinculada ao Plano de Contas</strong><p>O legado consolida receitas e despesas dos lançamentos financeiros e apresenta o resultado líquido do exercício, detalhado por conta contábil/gerencial. Nenhum valor será estimado ou preenchido sem consulta autorizada.</p></div></div>
+  <div class="api-toolbar"><div class="field"><label for="dre-period-start">Período inicial</label><input id="dre-period-start" type="date" disabled></div><div class="field"><label for="dre-period-end">Período final</label><input id="dre-period-end" type="date" disabled></div><div class="field"><label for="dre-account">Plano de contas</label><select id="dre-account" disabled><option value="">Todas as contas</option></select></div><div class="api-actions"><button class="btn-primary" type="button" disabled>Consultar DRE</button><button class="btn-secondary" type="button" disabled>Exportar PDF</button><button class="btn-secondary" type="button" disabled>Exportar Excel</button></div></div>
+  <div class="section-head" style="margin-top:24px"><h2>Resumo do exercício</h2><span>Valores indisponíveis até integração</span></div>
+  <div class="metric-grid"><article class="metric"><span>Receitas operacionais</span><strong>—</strong><small>Aguardando consulta</small></article><article class="metric"><span>Despesas operacionais</span><strong>—</strong><small>Aguardando consulta</small></article><article class="metric"><span>Resultado líquido</span><strong>—</strong><small>Receitas menos despesas</small></article></div>
+  <div class="section-head" style="margin-top:24px"><h2>Receitas operacionais</h2><span>Por conta do plano</span></div>
+  <div class="table-wrap"><table><thead><tr><th>Código</th><th>Conta</th><th>Valor</th><th>Participação</th></tr></thead><tbody id="dre-revenue-rows"><tr><td colspan="4" class="empty-state">Aguardando dados financeiros autorizados.</td></tr></tbody></table></div>
+  <div class="section-head" style="margin-top:24px"><h2>Despesas operacionais</h2><span>Por conta do plano</span></div>
+  <div class="table-wrap"><table><thead><tr><th>Código</th><th>Conta</th><th>Valor</th><th>Participação</th></tr></thead><tbody id="dre-expense-rows"><tr><td colspan="4" class="empty-state">Aguardando dados financeiros autorizados.</td></tr></tbody></table></div>
+  <div class="notice" style="margin-top:16px"><div class="notice-icon">ⓘ</div><div><strong>Regra do legado identificada</strong><p>O cálculo atual soma lançamentos classificados como Receber e Pagar, associa valores ao plano de contas e calcula resultado líquido como receitas menos despesas. A tela antiga não aplicava filtro de período. A nova versão deverá tornar o período explícito sem alterar silenciosamente a regra contábil nem tratar títulos em aberto como realizados.</p></div></div>
+  <p class="form-hint">A interface ainda não está conectada a um serviço de relatórios. A API dedicada de DRE, o detalhamento por competência/caixa, os filtros, exportações e a conciliação com os lançamentos financeiros precisam ser definidos e homologados antes de habilitar a consulta.</p>
+ </section>`;
+}
 function documentosView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
@@ -329,6 +345,7 @@ function openModule(id){
  if(id==="compras_consumo"){location.hash=id;comprasConsumoView();return}
  if(id==="categorias"){location.hash=id;pastasView();return}
  if(id==="documentos"){location.hash=id;documentosView();return}
+ if(id==="relatorios"){location.hash=id;relatoriosView();return}
  if(id==="configuracoes"){location.hash=id;configuracoesView();return}
  view.innerHTML='<section class="panel module-view"><div><div class="big-icon">◇</div><span class="eyebrow">Módulo mapeado · Bravo Shadow</span><h2>'+item.title+'</h2><p>'+item.desc+'</p><span class="tag">Estrutura visual inicial · Funcionalidade ainda não migrada</span></div></section>';
  location.hash=id;
