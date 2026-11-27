@@ -142,8 +142,9 @@ class UsuariosService:
         item_id: str,
         data: UsuarioAdministracaoInput,
         *,
-        actor_subject: str,
-        actor_email: str,
+        actor: AuthenticatedPrincipal | None = None,
+        actor_subject: str | None = None,
+        actor_email: str | None = None,
         audit_sink,
     ) -> None:
         """Executa alteração privilegiada somente em repositório transacional.
@@ -152,12 +153,21 @@ class UsuariosService:
         auditoria na mesma transação; adaptadores sem esse contrato falham
         fechados, sem mutar o cadastro.
         """
-        if not actor_subject or not actor_subject.strip():
+        if actor is not None:
+            if not isinstance(actor, AuthenticatedPrincipal) or actor.account_status != "Ativo":
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Identidade autenticada inválida ou inativa.",
+                )
+            actor_subject = actor.subject
+            actor_email = actor.email
+
+        if not isinstance(actor_subject, str) or not actor_subject.strip():
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Identidade autenticada inválida.",
             )
-        if not actor_email or not actor_email.strip():
+        if not isinstance(actor_email, str) or not actor_email.strip():
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="E-mail autenticado inválido.",
