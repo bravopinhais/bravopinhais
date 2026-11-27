@@ -120,7 +120,7 @@ function formasView(){
   <form class="api-form" id="forma-form">
    <div class="field"><label for="forma-nome">Nome da forma monetária</label><input id="forma-nome" name="nome" required placeholder="Ex.: Dinheiro, PIX, Cartão"></div>
    <div class="field"><label for="forma-multa">Multa (%)</label><input id="forma-multa" name="multaPct" type="number" min="0" max="100" step="0.01" value="2" required></div>
-   <button class="action-btn primary" type="submit" id="forma-submit">Cadastrar</button>
+   <button class="action-btn primary" type="submit" id="forma-submit">Cadastrar</button><button class="action-btn" type="button" id="forma-cancel-edit" data-action="cancel-edit" hidden>Cancelar edição</button>
   </form>
   <div class="form-hint">Os registros ficam temporariamente na memória do serviço Python e são apagados quando o processo reinicia. Não use dados de produção.</div>
   <div class="data-table-wrap"><table class="data-table"><caption>Formas monetárias cadastradas</caption><thead><tr><th scope="col">Forma monetária</th><th scope="col">Multa (%)</th><th scope="col">Ações</th></tr></thead><tbody id="formas-rows"><tr><td colspan="3" class="empty-state">Carregando...</td></tr></tbody></table></div>
@@ -141,7 +141,7 @@ async function carregarFormas(){
 }
 function resetFormaForm(){
  formaEmEdicao=null;const form=document.getElementById("forma-form");if(!form)return;
- form.reset();form.elements.multaPct.value="2";document.getElementById("forma-submit").textContent="Cadastrar";
+ form.reset();form.elements.multaPct.value="2";document.getElementById("forma-submit").textContent="Cadastrar";const cancel=document.getElementById("forma-cancel-edit");if(cancel)cancel.hidden=true;
 }
 async function salvarForma(event){
  event.preventDefault();const form=event.currentTarget;if(form.getAttribute("aria-busy")==="true")return;const nome=form.elements.nome.value.trim();const multaPct=Number(form.elements.multaPct.value);
@@ -188,10 +188,11 @@ document.addEventListener("click",async event=>{
  const nav=event.target.closest("[data-module]");if(nav){openModule(nav.dataset.module);return}
  const action=event.target.closest("[data-action]");if(!action||moduloAtual!=="formas_monetarias")return;
  const id=action.dataset.id;
+ if(action.dataset.action==="cancel-edit"){resetFormaForm();setFormasStatus("Edição cancelada; nenhuma alteração foi enviada.");return}
  if(action.dataset.action==="reload"){action.disabled=true;action.textContent="Atualizando...";action.setAttribute("aria-busy","true");try{await carregarFormas()}finally{action.disabled=false;action.textContent="↻ Atualizar";action.removeAttribute("aria-busy")}return}
  if(action.dataset.action==="edit"){
   const item=formasMonetarias.find(row=>row.id===id);if(!item)return;
-  formaEmEdicao=item.id;const form=document.getElementById("forma-form");form.elements.nome.value=item.nome;form.elements.multaPct.value=item.multaPct;document.getElementById("forma-submit").textContent="Salvar edição";form.elements.nome.focus();return
+  formaEmEdicao=item.id;const form=document.getElementById("forma-form");form.elements.nome.value=item.nome;form.elements.multaPct.value=item.multaPct;document.getElementById("forma-submit").textContent="Salvar edição";document.getElementById("forma-cancel-edit").hidden=false;form.elements.nome.focus();return
  }
  if(action.dataset.action==="delete"){
   const item=formasMonetarias.find(row=>row.id===id);if(!item||!confirm("Excluir a forma monetária \""+item.nome+"\" deste ambiente sombra?"))return;
