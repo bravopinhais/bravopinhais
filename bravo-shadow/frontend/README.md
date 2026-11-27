@@ -151,3 +151,12 @@ Essas funções são preparação de integração: não foram conectadas a uma s
 A tela do módulo foi separada em duas áreas funcionais: pastas/categorias de documentos e motivos de acerto de estoque. Cada área apresenta formulário de cadastro, tabela de registros e estado vazio explícito. A documentação da tela informa a regra de proteção contra exclusão de categorias referenciadas por documentos e de motivos referenciados por movimentos de estoque.
 
 Os formulários e ações permanecem desativados enquanto a sessão Google e a API HTTPS Shadow não estiverem integradas. As rotas de consulta/cadastro já existem no backend (`/api/v1/categorias` e `/api/v1/motivos-acerto-estoque`); não foi criada chamada de rede sem token, nem foram exibidos dados fictícios.
+
+
+## Gestão de Documentos — primeira estrutura visual
+
+A navegação abre uma tela própria para o módulo documental, com campos de pasta/categoria, título e arquivo, além de busca, filtro por pasta e tabela com nome do arquivo e ações previstas. A interface registra o fluxo observado no legado: inserir/substituir arquivo Gzip/Base64, visualizar e baixar documentos.
+
+A tela permanece desabilitada e não envia arquivos enquanto não houver sessão Google integrada e API HTTPS Shadow isolada. A API atual oferece consulta, cadastro, edição e exclusão protegidos por capacidades, mas o conteúdo Gzip/Base64 ainda é armazenado diretamente no registro PostgreSQL. Não há nesta etapa armazenamento externo, URLs assinadas, pré-visualização por MIME, gestão de órfãos ou otimização de arquivos. Esses recursos não são presumidos como concluídos.
+
+A implementação visual não define ainda limite de tamanho, allowlist de tipos, verificação de conteúdo, política de retenção nem estratégia de storage. Esses requisitos precisam ser fechados antes de habilitar upload. Nenhum dado real ou arquivo foi carregado e nenhum teste foi executado.
