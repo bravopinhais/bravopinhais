@@ -1758,7 +1758,7 @@ async function documentosDownload(id,api){
   documentosSetStatus("Download preparado: "+item.nomeArquivo,"ok");
  }catch(error){if(error?.name==="AbortError"||sequence!==documentosDownloadSequence)return;documentosSetStatus(error?.status===403?"Seu perfil não possui documentos:read.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível baixar o documento."),"err");}
 }
-window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function")return;documentosApiClient=api;if(moduloAtual==="documentos"){void documentosLoad(api);void documentosLoadCategories(api);}});
+window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function")return;documentosApiClient=api;documentosApplyPermissions();if(moduloAtual==="documentos"){void documentosLoad(api);void documentosLoadCategories(api);}});
 window.addEventListener("bravo:session-ended",()=>{documentosApiClient=null;documentosRequestSequence++;documentosCategorySequence++;documentosDownloadSequence++;documentosRequestController?.abort();documentosCategoryController?.abort();documentosDownloadController?.abort();documentosRequestController=null;documentosCategoryController=null;documentosDownloadController=null;documentosItems=[];documentosCategories=[];documentosEditingId=null;if(moduloAtual==="documentos")documentosView();});
 function documentosView(){
  const view=document.getElementById("view");
