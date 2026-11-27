@@ -4,42 +4,45 @@
 
 Manter o frontend estático no GitHub Pages e avaliar o Cloudflare Workers Free como endereço HTTPS para a API sombra. A avaliação não autoriza publicação, conexão com banco real, migração ou alteração do sistema original.
 
-A documentação oficial do Cloudflare informa suporte a FastAPI em Python Workers por meio de ASGI e disponibiliza plano Free com limite de 100.000 requisições por dia e 10 ms de CPU por invocação:
-- https://developers.cloudflare.com/workers/languages/python/packages/fastapi/
-- https://developers.cloudflare.com/workers/platform/pricing/
-- https://developers.cloudflare.com/workers/platform/limits/
+A documentação oficial consultada em 27/11/2026 confirma:
+- FastAPI pode executar em Python Workers por meio do adaptador ASGI: https://developers.cloudflare.com/workers/languages/python/packages/fastapi/
+- O plano Workers Free tem limite de 100.000 requisições por dia e 10 ms de CPU por invocação: https://developers.cloudflare.com/workers/platform/limits/
+- Python Workers usa Pyodide/WebAssembly e requer atenção à compatibilidade de pacotes: https://developers.cloudflare.com/workers/languages/python/packages/
 
-## Compatibilidade que ainda precisa ser provada
+## Prova técnica criada
 
-O backend atual não deve ser publicado diretamente sem uma prova de compatibilidade. As dependências atuais incluem:
+Pacote independente em `bravo-shadow/deploy/cloudflare-worker/`:
+- `wrangler.jsonc`: configuração local do Worker, sem rota pública ou comando de publicação.
+- `src/index.js`: endpoints mínimos de saúde e autenticação.
+- `README.md`: instruções e limites da prova.
 
-- `fastapi`: há exemplo oficial de execução em Python Workers.
-- `google-auth[requests]`: precisa ser verificada quanto a dependências, transporte HTTP e suporte de pacotes Pyodide.
-- `psycopg[binary]`: não deve ser usado no Worker; o modo de armazenamento deve permanecer `memory` durante a prova e nenhuma URL de banco deve ser configurada.
-- `uvicorn[standard]`: Python Workers fornece seu próprio adaptador ASGI; Uvicorn não deve ser presumido como necessário no runtime.
+A prova verifica o ID token Google no servidor usando a chave pública correspondente e Web Crypto, conferindo assinatura RS256, emissor, audiência, expiração, horário de emissão e `email_verified`. Depois consulta um diretório sintético configurado por variável. O CORS aceita somente a origem configurada.
 
-Python Workers executa sobre Pyodide/WebAssembly. A documentação limita pacotes a bibliotecas puras Python, PyEmscripten ou incluídas no Pyodide. O plano Free limita CPU a 10 ms por chamada. A validação criptográfica do ID token e a busca das chaves públicas do Google precisam ser medidas no runtime real antes de aprovar essa hospedagem.
+## Limites deliberados
 
-## Prova técnica isolada — sequência
+- `BRAVO_SHADOW_USERS` começa vazio (`{}`); portanto, nenhum usuário é autorizado por padrão.
+- Não cadastrar e-mails reais nessa variável nem copiar cadastros da produção.
+- O Worker não implementa os módulos de negócio do backend FastAPI.
+- Não há banco, armazenamento persistente, gravação externa ou conexão com o sistema original.
+- Não há Client Secret OAuth no repositório; a verificação de ID token não exige esse segredo.
+- O pacote ainda não foi executado no Wrangler nem medido no runtime Cloudflare.
 
-1. Criar um pacote de implantação próprio em `bravo-shadow/deploy/cloudflare-worker/`, sem alterar a API principal.
-2. Implementar somente endpoints mínimos de saúde e autenticação, mantendo o contrato HTTP compatível com o frontend.
-3. Usar validação de token Google no servidor; nunca aceitar e-mail informado pelo navegador como prova de identidade.
-4. Conferir assinatura, emissor, audiência, expiração e `email_verified`; em seguida consultar cadastro interno ativo.
-5. Configurar CORS para a origem exata do preview Shadow, sem curingas.
-6. Usar apenas dados sintéticos e armazenamento em memória; sem banco de produção e sem gravações externas.
-7. Executar testes locais e de integração, inclusive token inválido, token expirado, e-mail não verificado, usuário inexistente/inativo, CORS e limite de CPU.
-8. Somente depois de evidência positiva, solicitar autorização para conectar uma conta Cloudflare e publicar um Worker de homologação.
+## Próximas validações
+
+1. Executar `npx wrangler dev` localmente e confirmar o endpoint de saúde.
+2. Testar token ausente, assinatura inválida, token expirado, e-mail não verificado e usuário ausente/inativo.
+3. Validar CORS com origem permitida e origem não permitida.
+4. Medir o custo de CPU no runtime real e verificar compatibilidade operacional.
+5. Somente depois de evidência positiva, solicitar autorização para conectar uma conta Cloudflare e publicar um Worker de homologação.
 
 ## Segredos e cobrança
 
 - Não armazenar Client Secret OAuth, chaves de banco ou credenciais no Git.
-- O Client ID público pode ser configurado como variável não secreta; segredos, se futuramente necessários, devem usar o mecanismo de secrets do provedor.
 - Não ativar plano pago, domínio pago, banco, Hyperdrive ou recurso com cobrança.
-- Confirmar que a conta permanece no plano Free e que não existe método de pagamento/upgrade acionado antes de qualquer publicação.
+- Confirmar o plano Free e qualquer configuração de cobrança antes de publicação.
 
 ## Critérios de aprovação
 
-A prova só será considerada aprovada quando houver: build/deploy de teste reproduzível, endpoint HTTPS respondendo, autenticação Google verificada no servidor, bloqueio de usuários não cadastrados/inativos, CORS restrito, testes automatizados passando e confirmação de que nenhuma dependência exige plano pago.
+A prova só será aprovada quando houver execução local reproduzível, endpoint HTTPS respondendo, validação Google no servidor, bloqueio de usuários não cadastrados/inativos, CORS restrito, testes automatizados passando e confirmação de que nenhuma dependência exige plano pago.
 
 Até lá, o login do preview continua identificado como pendente e o sistema original permanece intocado.
