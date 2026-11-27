@@ -1667,7 +1667,7 @@ function relatoriosView(){
 window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function")return;relatoriosApiClient=api;if(moduloAtual==="relatorios")void loadDre(api);});
 window.addEventListener("bravo:session-ended",()=>{relatoriosApiClient=null;relatoriosRequestSequence+=1;relatoriosRequestController?.abort();relatoriosRequestController=null;if(moduloAtual==="relatorios")relatoriosView();});
 
-let documentosApiClient=null,documentosRequestSequence=0,documentosRequestController=null,documentosCategorySequence=0,documentosCategoryController=null,documentosItems=[],documentosCategories=[],documentosEditingId=null;
+let documentosApiClient=null,documentosRequestSequence=0,documentosRequestController=null,documentosCategorySequence=0,documentosCategoryController=null,documentosDownloadSequence=0,documentosDownloadController=null,documentosItems=[],documentosCategories=[],documentosEditingId=null;
 const DOCUMENTOS_MAX_BYTES=5*1024*1024;
 const DOCUMENTOS_ALLOWED_EXTENSIONS=new Set(["pdf","png","jpg","jpeg","gif","webp","txt","csv","doc","docx","xls","xlsx","odt","ods"]);
 function documentosSetStatus(message,kind=""){const node=document.getElementById("documentos-status");if(node){node.textContent=message;node.className="api-status"+(kind?" "+kind:"");}}
@@ -1739,20 +1739,27 @@ async function documentosSubmit(event){
  }catch(error){documentosSetStatus(error?.status===403?"Seu perfil não possui a permissão necessária.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível salvar o documento."),"err");}
  finally{documentosApplyPermissions();}
 }
+async function documentosDecompress(bytes){
+ if(typeof DecompressionStream!=="function")throw new Error("Este navegador não oferece descompressão Gzip.");
+ const reader=new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip")).getReader(),chunks=[];let total=0;
+ try{while(true){const {done,value}=await reader.read();if(done)break;total+=value.byteLength;if(total>DOCUMENTOS_MAX_BYTES){await reader.cancel();throw new Error("O arquivo descompactado excede o limite de 5 MiB.");}chunks.push(value);}}
+ finally{reader.releaseLock();}
+ if(!total)throw new Error("O arquivo descompactado está vazio.");
+ return new Blob(chunks);
+}
 async function documentosDownload(id,api){
- if(!hasBravoCapability("documentos:read"))return;const sequence=++documentosRequestSequence;documentosRequestController?.abort();documentosRequestController=new AbortController();documentosSetStatus("Baixando arquivo…");
+ if(!hasBravoCapability("documentos:read"))return;const sequence=++documentosDownloadSequence;documentosDownloadController?.abort();documentosDownloadController=new AbortController();documentosSetStatus("Baixando arquivo…");
  try{
-  const item=await api.get("/api/v1/documentos/"+encodeURIComponent(id),{signal:documentosRequestController.signal});if(sequence!==documentosRequestSequence||moduloAtual!=="documentos")return;
+  const item=await api.get("/api/v1/documentos/"+encodeURIComponent(id),{signal:documentosDownloadController.signal});if(sequence!==documentosDownloadSequence||moduloAtual!=="documentos")return;
   if(!item||typeof item.arquivoCompactadoGzip!=="string"||typeof item.nomeArquivo!=="string")throw new Error("A API não retornou o arquivo esperado.");
-  if(typeof DecompressionStream!=="function")throw new Error("Este navegador não oferece descompressão Gzip.");
   const binary=atob(item.arquivoCompactadoGzip),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
-  const blob=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"))).blob();if(blob.size>DOCUMENTOS_MAX_BYTES||!blob.size)throw new Error("O arquivo descompactado excede o limite permitido ou está vazio.");
+  const blob=await documentosDecompress(bytes);if(sequence!==documentosDownloadSequence||moduloAtual!=="documentos")return;
   const url=URL.createObjectURL(new Blob([blob],{type:"application/octet-stream"})),link=document.createElement("a");link.href=url;link.download=item.nomeArquivo;link.hidden=true;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
   documentosSetStatus("Download preparado: "+item.nomeArquivo,"ok");
- }catch(error){if(error?.name==="AbortError"||sequence!==documentosRequestSequence)return;documentosSetStatus(error?.status===403?"Seu perfil não possui documentos:read.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível baixar o documento."),"err");}
+ }catch(error){if(error?.name==="AbortError"||sequence!==documentosDownloadSequence)return;documentosSetStatus(error?.status===403?"Seu perfil não possui documentos:read.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível baixar o documento."),"err");}
 }
 window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function")return;documentosApiClient=api;if(moduloAtual==="documentos"){void documentosLoad(api);void documentosLoadCategories(api);}});
-window.addEventListener("bravo:session-ended",()=>{documentosApiClient=null;documentosRequestSequence++;documentosCategorySequence++;documentosRequestController?.abort();documentosCategoryController?.abort();documentosRequestController=null;documentosCategoryController=null;documentosItems=[];documentosCategories=[];documentosEditingId=null;if(moduloAtual==="documentos")documentosView();});
+window.addEventListener("bravo:session-ended",()=>{documentosApiClient=null;documentosRequestSequence++;documentosCategorySequence++;documentosDownloadSequence++;documentosRequestController?.abort();documentosCategoryController?.abort();documentosDownloadController?.abort();documentosRequestController=null;documentosCategoryController=null;documentosDownloadController=null;documentosItems=[];documentosCategories=[];documentosEditingId=null;if(moduloAtual==="documentos")documentosView();});
 function documentosView(){
  const view=document.getElementById("view");
  view.innerHTML=\`<section class="panel">
@@ -1788,7 +1795,7 @@ function openModule(id){
   document.getElementById("view").innerHTML='<section class="panel module-view" role="alert"><div><div class="big-icon">⛨</div><span class="eyebrow">Acesso restrito</span><h2>Permissão de consulta não concedida</h2><p>Seu perfil Bravo não possui a capacidade necessária para visualizar este módulo. Solicite a revisão do acesso a um administrador.</p><span class="tag">Acesso negado · sem consulta à API</span></div></section>';
   return;
  }
- moduloAtual=id;if(id!=="dashboard"){dashboardRequestSequence+=1;dashboardRequestController?.abort();dashboardRequestController=null;}if(id!=="financeiro"){financeiroRequestSequence+=1;financeiroRequestController?.abort();financeiroRequestController=null;}if(id!=="plano_contas"){planoContasRequestSequence+=1;planoContasRequestController?.abort();planoContasRequestController=null;}if(id!=="contas_bancarias"){contasBancariasRequestSequence+=1;contasBancariasRequestController?.abort();contasBancariasRequestController=null;}if(id!=="formas_monetarias"){formasMonetariasRequestSequence+=1;formasMonetariasRequestController?.abort();formasMonetariasRequestController=null;}if(id!=="relatorios"){relatoriosRequestSequence+=1;relatoriosRequestController?.abort();relatoriosRequestController=null;}if(id!=="compras_consumo"){comprasConsumoSequence+=1;comprasConsumoController?.abort();comprasConsumoController=null;}if(id!=="documentos"){documentosRequestSequence++;documentosCategorySequence++;documentosRequestController?.abort();documentosCategoryController?.abort();documentosRequestController=null;documentosCategoryController=null;}
+ moduloAtual=id;if(id!=="dashboard"){dashboardRequestSequence+=1;dashboardRequestController?.abort();dashboardRequestController=null;}if(id!=="financeiro"){financeiroRequestSequence+=1;financeiroRequestController?.abort();financeiroRequestController=null;}if(id!=="plano_contas"){planoContasRequestSequence+=1;planoContasRequestController?.abort();planoContasRequestController=null;}if(id!=="contas_bancarias"){contasBancariasRequestSequence+=1;contasBancariasRequestController?.abort();contasBancariasRequestController=null;}if(id!=="formas_monetarias"){formasMonetariasRequestSequence+=1;formasMonetariasRequestController?.abort();formasMonetariasRequestController=null;}if(id!=="relatorios"){relatoriosRequestSequence+=1;relatoriosRequestController?.abort();relatoriosRequestController=null;}if(id!=="compras_consumo"){comprasConsumoSequence+=1;comprasConsumoController?.abort();comprasConsumoController=null;}if(id!=="documentos"){documentosRequestSequence++;documentosCategorySequence++;documentosDownloadSequence++;documentosRequestController?.abort();documentosCategoryController?.abort();documentosDownloadController?.abort();documentosRequestController=null;documentosCategoryController=null;documentosDownloadController=null;}
  document.querySelectorAll("[data-module]").forEach(el=>{if(el.closest("#navigation")){if(el.dataset.module===id)el.setAttribute("aria-current","page");else el.removeAttribute("aria-current")}});
  document.getElementById("breadcrumb").textContent=item.name;
  document.getElementById("page-title").textContent=item.title;
