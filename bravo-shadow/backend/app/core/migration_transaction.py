@@ -4,7 +4,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Protocol
 
-from app.core.authorization import AuthenticatedPrincipal\nfrom app.core.migration_apply_authorization_postgres import (\n    load_locked_apply_authorization,\n)\nfrom app.core.postgres import (
+from app.core.authorization import AuthenticatedPrincipal
+from app.core.migration_apply_authorization_postgres import (
+    load_locked_apply_authorization,
+)\nfrom app.core.postgres import (
     CommitOutcomeUnknown as PostgresCommitOutcomeUnknown,
     PostgresUnitOfWork,
 )
@@ -203,9 +206,8 @@ def apply_one_record_with_persisted_approval(
     actor_subject, request_id). This API is intentionally not wired to routes.
 
     This is a per-record primitive, not the batch coordinator: it deliberately
-    does not transition batch/execution lifecycle states. A future coordinator
-    must own approved -> applying -> applied/needs_review transitions around
-    the complete batch and must never release these locks before writes.
+    does not transition batch/execution lifecycle states. Use the batch
+    coordinator below when the entire approved execution must be atomic.
     """
     if not isinstance(command, MigrationApplyCommand):
         raise TypeError("comando de aplicação inválido.")
@@ -296,5 +298,201 @@ def apply_one_record_with_persisted_approval(
                 request_id,
             )
         return MigrationApplyResult("applied", command.destination_id, True, True)
+    except PostgresCommitOutcomeUnknown as exc:
+        raise CommitOutcomeUnknown(str(exc)) from exc
+
+
+def apply_batch_with_persisted_approval(
+    connection_factory: Any,
+    store: PersistedMigrationApplyStore,
+    commands: list[MigrationApplyCommand] | tuple[MigrationApplyCommand, ...],
+    principal: AuthenticatedPrincipal,
+    *,
+    request_id: str | None = None,
+) -> tuple[MigrationApplyResult, ...]:
+    """Apply a complete approved batch in one PostgreSQL transaction.
+
+    Authorization locks (batch -> execution -> approval), lifecycle changes,
+    all business inserts, provenance links and authenticated audit events share
+    one connection and one COMMIT. Any ordinary failure rolls the whole batch
+    back to its original approved state. An uncertain COMMIT is never retried
+    automatically; reconciliation is mandatory before another attempt.
+    """
+    if not isinstance(commands, (list, tuple)) or not commands:
+        raise ValueError("lote deve conter ao menos um comando.")
+    if not isinstance(principal, AuthenticatedPrincipal):
+        raise MigrationApplyBlocked("principal autenticado obrigatório.")
+    if (
+        not isinstance(principal.subject, str)
+        or not principal.subject.strip()
+        or principal.account_status != "Ativo"
+    ):
+        raise MigrationApplyBlocked("principal autenticado inválido ou inativo.")
+    if request_id is not None and (
+        not isinstance(request_id, str) or not request_id.strip()
+    ):
+        raise ValueError("request_id deve ser omitido ou uma string não vazia.")
+    if not callable(connection_factory):
+        raise TypeError("connection_factory explícita é obrigatória.")
+    if not callable(getattr(store, "insert_success_event_authenticated", None)):
+        raise TypeError("store deve implementar auditoria com ator autenticado.")
+
+    first = commands[0]
+    _validate(
+        first,
+        MigrationApplyAuthorization(
+            first.manifest_sha256, first.plan_sha256,
+            "local_disposable", "migration_apply", True,
+        ),
+    )
+    source_keys: set[tuple[str, str, str]] = set()
+    destination_keys: set[tuple[str, str]] = set()
+    for command in commands:
+        _validate(
+            command,
+            MigrationApplyAuthorization(
+                first.manifest_sha256, first.plan_sha256,
+                "local_disposable", "migration_apply", True,
+            ),
+        )
+        if (
+            command.batch_id != first.batch_id
+            or command.execution_id != first.execution_id
+            or command.source_system != first.source_system
+            or command.manifest_sha256 != first.manifest_sha256
+            or command.plan_sha256 != first.plan_sha256
+        ):
+            raise MigrationApplyBlocked("batch_commands_must_share_approved_identity_and_hashes")
+        source_key = (command.source_system, command.source_collection, command.legacy_id)
+        destination_key = (command.target_collection, command.destination_id)
+        if source_key in source_keys:
+            raise MigrationApplyBlocked("duplicate_source_identity_in_batch")
+        if destination_key in destination_keys:
+            raise MigrationApplyBlocked("duplicate_destination_identity_in_batch")
+        source_keys.add(source_key)
+        destination_keys.add(destination_key)
+
+    results: list[MigrationApplyResult] = []
+    try:
+        with PostgresUnitOfWork(connection_factory) as work:
+            connection = work.connection
+            if connection is None:
+                raise MigrationApplyError("A conexão PostgreSQL não foi aberta.")
+            if getattr(connection, "autocommit", None) is not False:
+                raise MigrationApplyBlocked("autocommit deve estar desativado.")
+
+            persisted = load_locked_apply_authorization(
+                connection,
+                batch_id=first.batch_id,
+                execution_id=first.execution_id,
+                manifest_sha256=first.manifest_sha256,
+                plan_sha256=first.plan_sha256,
+            )
+            if not persisted.authorized:
+                raise MigrationApplyBlocked(
+                    "apply_persisted_authorization_denied: " + ",".join(persisted.issues)
+                )
+
+            # Both rows are already locked by load_locked_apply_authorization.
+            # Change lifecycle only after all persisted approvals were verified.
+            cursor = connection.cursor()
+            try:
+                cursor.execute(
+                    """UPDATE bravo_shadow.migration_batches
+                       SET status = 'applying', finished_at = NULL
+                       WHERE batch_id = %s AND manifest_hash = %s AND status = 'approved'
+                       RETURNING batch_id""",
+                    (first.batch_id, first.manifest_sha256),
+                )
+                if cursor.fetchone() is None:
+                    raise MigrationApplyBlocked("batch_transition_to_applying_rejected")
+                cursor.execute(
+                    """UPDATE bravo_shadow.migration_executions
+                       SET status = 'applying', started_at = COALESCE(started_at, now()),
+                           finished_at = NULL
+                       WHERE execution_id = %s AND batch_id = %s
+                         AND manifest_hash = %s AND plan_sha256 = %s
+                         AND status = 'approved'
+                       RETURNING execution_id""",
+                    (
+                        first.execution_id, first.batch_id,
+                        first.manifest_sha256, first.plan_sha256,
+                    ),
+                )
+                if cursor.fetchone() is None:
+                    raise MigrationApplyBlocked("execution_transition_to_applying_rejected")
+            finally:
+                cursor.close()
+
+            for command in commands:
+                store.lock_source_identity(
+                    connection, command.source_system,
+                    command.source_collection, command.legacy_id,
+                )
+                existing = store.find_source_link(
+                    connection, command.source_system,
+                    command.source_collection, command.legacy_id,
+                )
+                if existing is not None:
+                    old_hash, old_destination_id = existing
+                    if (
+                        old_hash == command.source_record_sha256
+                        and old_destination_id == command.destination_id
+                    ):
+                        results.append(
+                            MigrationApplyResult("already_applied", old_destination_id, True, False)
+                        )
+                        continue
+                    if old_hash != command.source_record_sha256:
+                        raise MigrationApplyBlocked("conflict_changed_source")
+                    raise MigrationApplyBlocked("conflict_destination_changed")
+
+                if store.target_id_exists(
+                    connection, command.target_collection, command.destination_id
+                ):
+                    raise MigrationApplyBlocked("destination_id_collision")
+                store.insert_target(
+                    connection, command.target_collection,
+                    command.destination_id, command.target_payload,
+                )
+                store.insert_source_link(connection, command)
+                store.insert_success_event_authenticated(
+                    connection, command, command.destination_id,
+                    principal.subject.strip(), request_id,
+                )
+                results.append(
+                    MigrationApplyResult("applied", command.destination_id, True, True)
+                )
+
+            cursor = connection.cursor()
+            try:
+                cursor.execute(
+                    """UPDATE bravo_shadow.migration_executions
+                       SET status = 'applied', finished_at = now()
+                       WHERE execution_id = %s AND batch_id = %s
+                         AND manifest_hash = %s AND plan_sha256 = %s
+                         AND status = 'applying'
+                       RETURNING execution_id""",
+                    (
+                        first.execution_id, first.batch_id,
+                        first.manifest_sha256, first.plan_sha256,
+                    ),
+                )
+                if cursor.fetchone() is None:
+                    raise MigrationApplyBlocked("execution_transition_to_applied_rejected")
+                cursor.execute(
+                    """UPDATE bravo_shadow.migration_batches
+                       SET status = 'applied', finished_at = now()
+                       WHERE batch_id = %s AND manifest_hash = %s
+                         AND status = 'applying'
+                       RETURNING batch_id""",
+                    (first.batch_id, first.manifest_sha256),
+                )
+                if cursor.fetchone() is None:
+                    raise MigrationApplyBlocked("batch_transition_to_applied_rejected")
+            finally:
+                cursor.close()
+
+        return tuple(results)
     except PostgresCommitOutcomeUnknown as exc:
         raise CommitOutcomeUnknown(str(exc)) from exc
