@@ -60,7 +60,10 @@ CREATE TABLE IF NOT EXISTS bravo_shadow.migration_batches (
             )
         ),
     CONSTRAINT migration_batches_id_manifest_unique
-        UNIQUE (batch_id, manifest_hash)
+        UNIQUE (batch_id, manifest_hash),
+    -- Permite que a proveniência referencie somente lotes do mesmo sistema.
+    CONSTRAINT migration_batches_id_source_unique
+        UNIQUE (batch_id, source_system)
 );
 
 CREATE INDEX IF NOT EXISTS migration_batches_status_created_idx
@@ -99,12 +102,12 @@ CREATE TABLE IF NOT EXISTS bravo_shadow.migration_source_records (
     CONSTRAINT migration_source_records_hash_format
         CHECK (source_record_hash ~ '^[0-9a-f]{64}$'),
     CONSTRAINT migration_source_records_first_batch_fk
-        FOREIGN KEY (first_batch_id)
-        REFERENCES bravo_shadow.migration_batches(batch_id)
+        FOREIGN KEY (first_batch_id, source_system)
+        REFERENCES bravo_shadow.migration_batches(batch_id, source_system)
         ON DELETE RESTRICT,
     CONSTRAINT migration_source_records_last_batch_fk
-        FOREIGN KEY (last_verified_batch_id)
-        REFERENCES bravo_shadow.migration_batches(batch_id)
+        FOREIGN KEY (last_verified_batch_id, source_system)
+        REFERENCES bravo_shadow.migration_batches(batch_id, source_system)
         ON DELETE RESTRICT,
     CONSTRAINT migration_source_records_destination_unique
         UNIQUE (destination_collection, destination_id)
@@ -133,8 +136,9 @@ FROM PUBLIC, anon, authenticated, service_role;
 --    substitui a máquina de estados nem a aprovação do manifesto.
 -- 2. Apply exige status approved, approved_manifest_hash = manifest_hash,
 --    ambiente descartável e hash idêntico ao dry-run aprovado.
--- 3. Inserção do registro funcional e da linha source_records ocorre na
---    mesma transação. Não permitir proveniência parcial.
+-- 3. As FKs compostas garantem que first_batch_id e last_verified_batch_id
+--    pertençam ao mesmo source_system do vínculo. Inserção do registro funcional
+--    e da linha source_records ocorre na mesma transação; sem proveniência parcial.
 -- 4. Em conflito de hash, destino ou identidade, nunca executar UPDATE
 --    automático do vínculo. Exigir decisão registrada e novo dry-run.
 -- 5. Atualizar last_verified_batch_id somente após verificação completa.
