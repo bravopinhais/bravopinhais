@@ -84,15 +84,16 @@ Esse estado é intencional: a interface não consulta nem altera usuários com i
 
 O frontend inclui atalho de teclado para pular diretamente ao conteúdo principal, indicador de foco visível para links e botões e uma região de conteúdo com anúncios educados para leitores de tela durante a troca de módulos. O atalho fica oculto visualmente até receber foco.
 
-## Preview visual pelo GitHub Pages
+## Preview visual do Bravo Shadow — publicação bloqueada
 
-O ambiente sombra publica a pasta `bravo-shadow/frontend/` como site estático por meio do workflow `.github/workflows/bravo-shadow-pages.yml`, acionado por alterações no frontend da branch `bravo-shadow` ou manualmente.
+O preview precisa ter origem e endereço independentes da aplicação original. **Não publicar esta pasta no GitHub Pages deste repositório enquanto isso puder substituir ou compartilhar o endereço de produção** `https://bravopinhais.github.io/bravopinhais/`.
 
-- O endereço esperado para este repositório é `https://bravopinhais.github.io/bravopinhais/`, após o primeiro deploy bem-sucedido e a ativação do GitHub Pages com origem **GitHub Actions** nas configurações do repositório.
-- O preview identifica o host `github.io` e desabilita chamadas à API; em Formas Monetárias apresenta aviso em vez de tentar cadastrar/editar/excluir.
-- O GitHub Pages hospeda apenas arquivos estáticos. Não executa FastAPI, não fornece PostgreSQL e não habilita autenticação nem permissões.
-- O endereço só deve ser considerado disponível depois de o workflow concluir o deploy. Se o repositório ainda não tiver Pages habilitado, ativar em **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+- O endereço de produção acima não é um endereço válido para homologação do Shadow.
+- O workflow `.github/workflows/bravo-shadow-pages.yml` não deve ser usado para publicar no endereço de produção.
+- Ainda não existe URL pública de preview Shadow confirmada.
+- O GitHub Pages hospeda apenas arquivos estáticos. Não executa FastAPI nem PostgreSQL e, sozinho, não habilita autenticação nem permissões.
+- Antes de qualquer publicação, será necessário escolher e validar um destino independente, gratuito e sem afetar o original. Nenhum deploy está autorizado por esta documentação.
 
-### Verificações antes da publicação
+### Verificações antes de uma futura publicação
 
-O workflow valida, antes de enviar o artefato ao GitHub Pages, a existência da página inicial, o painel de Gestão de Usuários, a identificação do host `github.io`, o bloqueio de chamadas à API no preview e o estado protegido do Dashboard. Se alguma dessas proteções desaparecer do frontend, a etapa de build falha e o deploy não é iniciado.
+A publicação só poderá ser considerada após confirmar que o destino é distinto do domínio/caminho de produção, que a interface não chama APIs de produção, que não contém dados reais nem segredos e que as verificações automatizadas de segurança passaram. Até lá, o artefato permanece apenas na branch `bravo-shadow`.
