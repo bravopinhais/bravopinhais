@@ -39,6 +39,10 @@ jobs:
           grep -q 'if(IS_STATIC_PREVIEW)throw new Error' _site/index.html
           grep -q 'if(IS_STATIC_PREVIEW){view.innerHTML=' _site/index.html
           grep -q 'Indicadores aguardando autenticação' _site/index.html
+          grep -q 'href="#main-content"' _site/index.html
+          grep -q 'id="main-content" tabindex="-1"' _site/index.html
+          grep -q 'id="view" aria-live="polite" aria-atomic="true"' _site/index.html
+          grep -q 'window.addEventListener("hashchange"' _site/index.html
 
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
