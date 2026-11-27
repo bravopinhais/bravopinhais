@@ -50,6 +50,7 @@ def _configured_cors_origins() -> list[str]:
         try:
             parsed = urlsplit(candidate)
             hostname = parsed.hostname
+            _ = parsed.port  # valida também a faixa numérica da porta
         except ValueError as exc:
             raise StorageConfigurationError("Origem CORS inválida.") from exc
         local_http = parsed.scheme == "http" and hostname in {"localhost", "127.0.0.1", "::1"}
