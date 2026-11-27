@@ -88,3 +88,11 @@ A revisão confirmou que `AuditEvent` contém somente oito campos explícitos: `
 **Classificação do identificador:** `actor_subject` evita gravar e-mail, mas o `sub` Google continua sendo um identificador pseudônimo vinculável a uma pessoa. Deve receber proteção, controle de leitura e prazo de retenção definidos; não é dado anônimo.
 
 Os testes adicionados ainda não foram executados nesta etapa. O sink PostgreSQL permanece desconectado da aplicação, e o SQL continua rascunho não aplicado.
+
+## Contexto HTTP de requisição — etapa inicial
+
+A API agora gera um identificador `req_<uuid>` no middleware, guarda-o em `request.state.request_id` e o devolve no cabeçalho `X-Request-ID`. O valor é sempre criado no servidor; um `X-Request-ID` recebido do cliente é ignorado, evitando que o chamador escolha o identificador usado para correlação interna.
+
+Foram adicionados testes para formato, unicidade entre requisições e rejeição de tentativa de falsificação pelo cabeçalho de entrada. **Esses testes foram escritos, mas não executados nesta etapa.**
+
+**Limite explícito:** isso ainda não preenche `AuditEvent.request_id`. As rotas/serviços de negócio não recebem nem propagam esse contexto no momento. O próximo passo seguro é passar o valor do middleware explicitamente do endpoint ao serviço e ao evento, sem aceitar `actor_subject`, perfil ou e-mail do corpo/cabeçalhos. Até essa integração, o cabeçalho ajuda a correlação HTTP, mas não oferece rastreabilidade da auditoria ponta a ponta.
