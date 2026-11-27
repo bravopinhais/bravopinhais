@@ -133,7 +133,7 @@ function setFormasStatus(message,kind=""){
 function renderFormasRows(){
  const body=document.getElementById("formas-rows");if(!body)return;
  if(!formasMonetarias.length){body.innerHTML='<tr><td colspan="3" class="empty-state">Nenhuma forma monetária cadastrada neste ambiente.</td></tr>';return}
- body.innerHTML=formasMonetarias.map(item=>`<tr><td><strong>${escapeHTML(item.nome)}</strong></td><td>${Number(item.multaPct).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}%</td><td><div class="row-actions"><button class="action-btn" data-action="edit" data-id="${escapeHTML(item.id)}">Editar</button><button class="action-btn danger" data-action="delete" data-id="${escapeHTML(item.id)}">Excluir</button></div></td></tr>`).join("");
+ body.innerHTML=formasMonetarias.map(item=>`<tr><td><strong>${escapeHTML(item.nome)}</strong></td><td>${Number(item.multaPct).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}%</td><td><div class="row-actions"><button type="button" class="action-btn" data-action="edit" data-id="${escapeHTML(item.id)}" aria-label="Editar ${escapeHTML(item.nome)}">Editar</button><button type="button" class="action-btn danger" data-action="delete" data-id="${escapeHTML(item.id)}" aria-label="Excluir ${escapeHTML(item.nome)}">Excluir</button></div></td></tr>`).join("");
 }
 async function carregarFormas(){
  try{formasMonetarias=await apiRequest("/formas-monetarias");renderFormasRows();setFormasStatus("API conectada · "+formasMonetarias.length+" registro(s)","ok")}
