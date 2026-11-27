@@ -289,3 +289,26 @@ Campos: nome, CNPJ, razão social, endereço, bairro, cidade, UF, CEP, telefone,
 Campos: nome, cargo, Bloco/Ap e telefone. Admin possui CRUD; Operador somente leitura.
 
 Há adapters PostgreSQL para os dois cadastros, mas o serviço atual não implementa auditoria de negócio transacional específica. A atualização do singleton do condomínio não expõe If-Match/versão no contrato HTTP. Não habilitar gravações até revisar auditoria e concorrência.
+
+
+## Moradores & Unidades
+
+A tela Shadow apresenta cadastro, filtros, tabela e área de importação, sem realizar chamadas nem exibir dados pessoais fictícios. Todos os campos e ações permanecem desabilitados até a integração Google/Bearer com API HTTPS isolada.
+
+### Contrato da API
+
+- `GET /api/v1/moradores?bloco=&busca=` — `moradores:read`.
+- `POST /api/v1/moradores` — `moradores:create`.
+- `PUT /api/v1/moradores/{id}` — `moradores:update`.
+- `DELETE /api/v1/moradores/{id}` — `moradores:delete`.
+- `POST /api/v1/moradores/importar` — `moradores:import`.
+
+Campos: bloco, apartamento e nome obrigatórios; e-mail, telefone, CPF/RG, pet e vaga de garagem opcionais. Admin e Operador possuem as capacidades de CRUD e importação no catálogo atual.
+
+### Importação e limites
+
+O legado aceita CSV/TXT e procura cabeçalhos equivalentes a bloco, apartamento/unidade, nome, e-mail, telefone, CPF/RG, pet e vaga. O backend recebe lote JSON. O serviço atual insere os registros sequencialmente, sem atomicidade garantida nem relatório de falhas por linha. O parser legado divide colunas por vírgula ou ponto e vírgula de forma simples e não trata corretamente todos os CSVs com campos entre aspas contendo separadores.
+
+Não habilitar a importação antes de adicionar prévia, validação, deduplicação, limites de lote, resultado por linha e garantia transacional. A API também lista toda a coleção antes de aplicar filtros e não expõe paginação. Não há unicidade relacional de unidade nem histórico de exclusão demonstrados no contrato atual.
+
+CPF/RG e contatos são dados pessoais. Não utilizar dados reais em homologação; limitar acesso, logs e exportações conforme a política do condomínio.
