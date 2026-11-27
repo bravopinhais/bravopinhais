@@ -49,6 +49,7 @@ jobs:
           grep -q '<th scope="col">Ações</th>' _site/index.html
           grep -q 'aria-label="Editar ${escapeHTML(item.nome)}"' _site/index.html
           grep -q 'aria-label="Excluir ${escapeHTML(item.nome)}"' _site/index.html
+          grep -q 'id="forma-multa" name="multaPct" type="number" min="0" max="100" step="0.01" value="2" required' _site/index.html
           grep -q 'window.addEventListener("hashchange"' _site/index.html
           grep -q '<h1 id="page-title" tabindex="-1">' _site/index.html
           grep -q 'getElementById("page-title").focus({preventScroll:true})' _site/index.html
