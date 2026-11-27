@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.core.authorization import AuthenticatedPrincipal, require_capability_dependency
 from .schemas import Usuario, UsuarioCadastroInput, UsuarioDadosCadastraisUpdateInput
@@ -53,7 +53,10 @@ def delete_user(
     item_id: str,
     _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("usuarios:delete")),
 ) -> None:
-    get_service(request).delete(item_id)
+    raise HTTPException(
+        status_code=status.HTTP_410_GONE,
+        detail="Exclusão física indisponível. Use a operação de desativação lógica.",
+    )
 
 
 
