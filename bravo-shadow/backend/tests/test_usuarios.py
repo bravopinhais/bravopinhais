@@ -29,7 +29,7 @@ def test_all_user_management_routes_require_authentication():
         ("GET", "/api/v1/usuarios/id-teste", None),
         ("POST", "/api/v1/usuarios", {"email":"novo@example.com", "nome":"Pessoa", "cargo":"Conselho"}),
         ("PUT", "/api/v1/usuarios/id-teste", {"nome":"Pessoa atualizada"}),
-        ("DELETE", "/api/v1/usuarios/id-teste", None),
+        ("DELETE", "/api/v1/usuarios/id-teste", None),\n        ("POST", "/api/v1/usuarios/id-teste/desativar", None),
     ]
     for method, path, payload in requests:
         assert client.request(method, path, json=payload).status_code == 401
