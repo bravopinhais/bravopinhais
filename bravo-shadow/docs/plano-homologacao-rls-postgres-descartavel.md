@@ -246,3 +246,36 @@ Os IDs textuais são fornecidos pela aplicação nos comandos INSERT dos adaptad
 5. Repetir a varredura de sequences, triggers, funções, views e FKs depois de qualquer revisão do DDL, antes de aprovar grants.
 
 **Status:** nenhum grant de sequence, EXECUTE, TRIGGER ou privilégio de ownership foi recomendado ou aplicado. O teste do lock de usuários continua pendente e é um bloqueio explícito para aprovar a role runtime.
+
+## 10. Fronteiras transacionais reais: estoque, usuários e auditoria
+
+A leitura conjunta de `storage.py`, `PostgresUnitOfWork`, dos adaptadores e dos serviços esclareceu um detalhe importante: compartilhar a mesma função `connection_factory` no composition root **não significa compartilhar uma conexão física**. Cada unidade de trabalho chama a fábrica e abre sua própria conexão; a conexão só é compartilhada quando o chamador a passa explicitamente a `append_in_transaction`.
+
+### Fluxos confirmados no código
+
+| Fluxo | Conexão/transação | Operações que precisam coexistir | Implicação |
+|---|---|---|---|
+| Movimento de estoque | Uma unidade de trabalho em `PostgresAcertosEstoqueRepository.register_movement` | SELECT/lock de `estoque`, UPDATE de saldo e INSERT em `acertos_estoque` | A role que executa movimento precisa dos privilégios efetivos nas duas tabelas na mesma transação. Não separar essas operações em fábricas/conexões independentes. |
+| Edição cadastral de produto | Uma unidade de trabalho em `PostgresEstoqueRepository.replace` | SELECT FOR UPDATE em `estoque`, SELECT em `acertos_estoque`, UPDATE em `estoque` | Precisa de leitura do histórico para validar saldo; não precisa UPDATE/DELETE no histórico. |
+| Desativação de usuário | Uma unidade de trabalho em `PostgresUsuariosRepository.deactivate_user` | LOCK/SELECT/UPDATE em `usuarios` e INSERT em `audit_events` via `append_in_transaction(connection, event)` | A mesma identidade SQL precisa executar todas as operações na mesma transação para manter atualização e auditoria atômicas. Falha no INSERT deve reverter a desativação. |
+| Alteração administrativa de usuário | Uma unidade de trabalho em `PostgresUsuariosRepository.update_administrative_state` | LOCK/SELECT/contagem/UPDATE em `usuarios` e INSERT em `audit_events` na mesma conexão | Mesma restrição de identidade e atomicidade da desativação. |
+| Auditoria independente | `PostgresAuditSink.append` abre sua própria unidade de trabalho | INSERT em `audit_events` | Adequado apenas quando o evento não precisa participar da transação de negócio do chamador. Não substitui `append_in_transaction` nos fluxos acima. |
+
+### Consequências para desenho de roles
+
+1. **Não separar o sink de auditoria por credencial apenas trocando sua connection factory.** Se o sink usar uma fábrica/role diferente, `append_in_transaction` ainda executará o INSERT com a conexão fornecida pelo repositório de usuários; a credencial do sink não é usada nesse método.
+2. **Não converter auditoria transacional em chamada independente a `append`.** Isso permitiria que a mudança de usuário fosse confirmada sem o evento ou que o evento fosse confirmado sem a mudança, quebrando a garantia atômica já testada.
+3. **Uma role única de API**, se escolhida, terá de reunir os privilégios mínimos necessários aos adaptadores de domínio e ao INSERT em `audit_events`. Isso é mais simples para a atomicidade atual, mas aumenta o conjunto agregado de privilégios da credencial.
+4. **Separação de credenciais exige mudança arquitetural explícita.** Uma alternativa seria manter a mesma transação/conexão e aceitar uma role composta estritamente limitada aos dois objetos no fluxo administrativo; outra exigiria mecanismo transacional distribuído/outbox e tratamento de consistência. Nenhuma alternativa está implementada ou aprovada.
+5. **O movimento de estoque não grava atualmente um evento em `audit_events` no método `register_movement`.** O histórico operacional é `acertos_estoque`; não presumir que o sink técnico registre esse fluxo até existir requisito e implementação explícitos.
+6. **O sink independente não torna a auditoria geral obrigatória em toda operação.** A presença do objeto no composition root apenas injeta o serviço nos fluxos que o solicitam; não equivale a auditoria automática de todos os CRUDs.
+
+### Testes de transação que devem constar do aceite
+
+- Movimento de estoque: confirmar que falha no INSERT do acerto reverte o UPDATE do saldo; confirmar que concorrência no mesmo produto é serializada pelo lock de linha.
+- Edição de produto: confirmar que a consulta ao histórico e a alteração cadastral observam a mesma transação e não permitem alterar saldo após movimento.
+- Usuários: confirmar que falha de INSERT em `audit_events` reverte UPDATE de status/perfil; verificar lock de tabela com a role runtime candidata.
+- Identidade SQL: registrar `session_user` e `current_user` em cada fluxo, sem credenciais em logs, para provar qual role efetivamente executa o INSERT de auditoria.
+- Regressão: manter testes que verificam commit único, rollback em falha e idempotência de desativação.
+
+**Decisão pendente:** a fronteira atual favorece uma identidade SQL transacional comum para domínio e auditoria de usuário, ou uma arquitetura transacional redesenhada antes de separar credenciais. Não conceder grants adicionais nem alterar connection factories para antecipar essa decisão.
