@@ -60,9 +60,10 @@ def test_user_service_crud_email_uniqueness_and_status():
     assert error.value.status_code == 409
     updated = service.update(user.id, UsuarioInput(email="admin@example.com", nome="Administrador", cargo="Síndico", perfil="Admin", status="Inativo"))
     assert updated.status == "Inativo"
-    service.delete(user.id)
-    with pytest.raises(HTTPException):
-        service.get(user.id)
+    with pytest.raises(HTTPException) as delete_error:
+        service.delete(user.id)
+    assert delete_error.value.status_code == 410
+    assert service.get(user.id).id == user.id
 
 
 def test_user_schema_rejects_local_password_fields_and_normalizes_email():

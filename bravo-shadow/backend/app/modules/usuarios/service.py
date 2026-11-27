@@ -134,8 +134,11 @@ class UsuariosService:
         operation(item_id, event=event, audit_sink=self.audit_sink)
 
     def delete(self, item_id: str) -> None:
-        self.get(item_id)
-        self.repository.delete(item_id)
+        """Bloqueia exclusão física também na camada de serviço."""
+        raise HTTPException(
+            status_code=status.HTTP_410_GONE,
+            detail="Exclusão física indisponível. Use a operação de desativação lógica.",
+        )
 
     def update_administrative_state(
         self,
