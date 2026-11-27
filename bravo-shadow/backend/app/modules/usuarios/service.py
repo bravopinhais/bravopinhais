@@ -26,6 +26,20 @@ class UsuariosService:
     def list(self) -> list[Usuario]:
         return self.repository.list()
 
+    def find_by_email(self, email: str) -> list[Usuario]:
+        """Resolve e-mail sem carregar todo o cadastro quando o adapter oferece busca indexada."""
+        normalized = email.strip().lower()
+        if not normalized:
+            return []
+        operation = getattr(self.repository, "find_by_email", None)
+        if callable(operation):
+            return operation(normalized)
+        return [
+            user for user in self.repository.list()
+            if isinstance(getattr(user, "email", None), str)
+            and user.email.strip().lower() == normalized
+        ]
+
     def get(self, item_id: str) -> Usuario:
         item = self.repository.get(item_id)
         if item is None:
