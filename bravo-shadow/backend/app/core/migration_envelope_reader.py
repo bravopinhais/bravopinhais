@@ -14,6 +14,7 @@ from types import MappingProxyType
 from typing import Any, Mapping
 
 from app.core.migration_envelope import EnvelopeValidation, validate_batch_envelope
+from app.core.migration_source_inventory import SourceInventory, inspect_source_collections
 
 MAX_ENVELOPE_BYTES = 10 * 1024 * 1024
 
@@ -28,6 +29,7 @@ class EnvelopeReadResult:
     validation: EnvelopeValidation
     raw_file_sha256: str
     byte_length: int
+    source_inventory: SourceInventory
 
 
 def _reject_duplicate_keys(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -98,4 +100,5 @@ def read_envelope_bytes(
         validation=validation,
         raw_file_sha256=hashlib.sha256(raw).hexdigest(),
         byte_length=len(raw),
+        source_inventory=inspect_source_collections(parsed["collections"]),
     )
