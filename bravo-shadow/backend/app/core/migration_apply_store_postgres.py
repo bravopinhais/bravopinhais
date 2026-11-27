@@ -38,6 +38,28 @@ TARGET_COLUMNS: dict[str, tuple[str, ...]] = {
 }
 
 
+# Columns that are NOT NULL and have no SQL default in sql-piloto-financeiro.sql.
+# Keep this contract aligned with the draft DDL; nullable/defaulted columns may
+# be omitted so PostgreSQL can apply their declared defaults.
+REQUIRED_TARGET_COLUMNS: dict[str, tuple[str, ...]] = {
+    "formas_monetarias": ("nome",),
+    "plano_contas": ("codigo", "nome", "tipo"),
+    "financeiro": ("tipo", "historico", "valor"),
+    "moradores": ("bloco", "apartamento", "nome"),
+    "fornecedores": ("cnpj", "razao_social"),
+    "empregados": ("nome", "cargo"),
+    "contas_bancarias": ("banco",),
+    "condominio": (),
+    "conselheiros": ("nome", "cargo"),
+    "usuarios": ("email", "nome", "cargo"),
+    "estoque": ("item",),
+    "categorias": ("nome",),
+    "motivos_acerto": ("nome",),
+    "documentos": ("titulo", "nome_arquivo", "arquivo_compactado_gzip"),
+    "acertos_estoque": ("data", "tipo", "produto_id", "quantidade", "motivo"),
+}
+
+
 class MigrationApplyStorePostgres:
     """Implements PersistedMigrationApplyStore without owning connection lifecycle."""
 
@@ -118,6 +140,12 @@ class MigrationApplyStorePostgres:
         unknown = set(payload) - set(allowed)
         if unknown:
             raise ValueError("payload contém campos não permitidos: " + ", ".join(sorted(unknown)))
+        required = REQUIRED_TARGET_COLUMNS[target_collection]
+        missing = set(required) - set(payload)
+        if missing:
+            raise ValueError(
+                "payload sem campos obrigatórios: " + ", ".join(sorted(missing))
+            )
         supplied_id = payload.get("id")
         if supplied_id is not None and supplied_id != destination_id:
             raise ValueError("ID do payload diverge do destino autorizado.")
