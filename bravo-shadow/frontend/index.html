@@ -206,6 +206,55 @@ function fornecedoresView(){
   </ul>
  </section>`;
 }
+function estoqueView(){
+ const view=document.getElementById("view");
+ view.innerHTML=`<section class="panel">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Estoque & Inventário</strong><div class="api-status" id="est-status" role="status" aria-live="polite">Aguardando autenticação Google e API HTTPS Shadow</div></div><span class="tag">Controle de materiais</span></div>
+  <div class="notice" style="margin:14px 0 18px"><div class="notice-icon">▥</div><div><strong>Cadastro, identificação e níveis de estoque</strong><p>Cadastro com marca, linha, fabricante e data de cadastro, além de etiqueta/código, setor, unidade, foto, quantidade e limites. O saldo de produtos com movimentações deve ser alterado exclusivamente pelo módulo Acerto de Estoque.</p></div></div>
+  <div class="section-head"><h2>Novo item / produto</h2><span>Cadastro ampliado</span></div>
+  <form class="api-form" id="est-form" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+   <div class="field"><label for="est-item">Item / descrição</label><input id="est-item" name="item" required maxlength="180" disabled></div>
+   <div class="field"><label for="est-etiqueta">Etiqueta / código de barras</label><input id="est-etiqueta" name="etiqueta" maxlength="100" disabled></div>
+   <div class="field"><label for="est-marca">Marca</label><input id="est-marca" name="marca" maxlength="120" disabled></div>
+   <div class="field"><label for="est-linha">Linha</label><input id="est-linha" name="linha" maxlength="120" disabled></div>
+   <div class="field"><label for="est-fabricante">Fabricante</label><input id="est-fabricante" name="fabricante" maxlength="160" disabled></div>
+   <div class="field"><label for="est-data">Data de cadastro</label><input id="est-data" name="dataCadastro" type="date" disabled></div>
+   <div class="field"><label for="est-setor">Setor</label><input id="est-setor" name="setor" value="Geral / Não definido" maxlength="120" disabled></div>
+   <div class="field"><label for="est-unidade">Unidade de medida</label><select id="est-unidade" name="unidade" disabled><option>un</option><option>cx</option><option>pct</option><option>fr</option><option>gal</option><option>sc</option><option>mg</option><option>g</option><option>kg</option><option>ml</option><option>l</option><option>m</option></select></div>
+   <div class="field"><label for="est-qtd">Quantidade atual</label><input id="est-qtd" name="quantidade" type="number" min="0" step="0.001" value="1" disabled></div>
+   <div class="field"><label for="est-min">Quantidade mínima</label><input id="est-min" name="minimo" type="number" min="0" step="0.001" value="0" disabled></div>
+   <div class="field"><label for="est-max">Quantidade máxima</label><input id="est-max" name="maximo" type="number" min="0" step="0.001" value="0" disabled></div>
+   <div class="field"><label for="est-valor">Valor unitário (R$)</label><input id="est-valor" name="valorUnitario" type="number" min="0" step="0.01" value="0" disabled></div>
+   <div class="field"><label for="est-status">Status</label><select id="est-status" name="status" disabled><option>Ativo</option><option>Inativo</option></select></div>
+   <div class="field"><label for="est-cor">Cor / característica</label><input id="est-cor" name="cor" maxlength="80" disabled></div>
+   <div class="field"><label for="est-foto">Foto do produto</label><input id="est-foto" name="foto" type="file" accept="image/*" disabled></div>
+   <div class="field"><label for="est-foto-path">Referência da foto (armazenamento)</label><input id="est-foto-path" name="fotoPath" maxlength="500" disabled></div>
+   <div style="grid-column:1/-1;display:flex;justify-content:flex-end"><button type="button" class="action-btn primary" disabled>Salvar produto</button></div>
+  </form>
+  <p class="form-hint">Quantidades aceitam até três casas decimais; valor unitário, duas. A edição de saldo com histórico de movimentações é bloqueada pelo serviço. A imagem compactada Gzip/Base64 é aceita pelo schema atual, mas armazenamento externo e gestão de fotos ainda precisam de definição.</p>
+ </section>
+ <section class="panel" style="margin-top:16px">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Visão geral do inventário</strong><div class="api-status">Indicadores dependem da consulta autenticada</div></div><span class="tag">Níveis de estoque</span></div>
+  <div class="stats-grid" style="margin:12px 0"><div class="stat-card"><span>Estoque adequado</span><strong>—</strong></div><div class="stat-card"><span>Estoque crítico</span><strong>—</strong></div><div class="stat-card"><span>Estoque excedente</span><strong>—</strong></div></div>
+  <div class="api-form" style="grid-template-columns:repeat(3,minmax(0,1fr));align-items:end">
+   <div class="field"><label for="est-search">Pesquisar item / código / marca</label><input id="est-search" name="busca" disabled></div>
+   <div class="field"><label for="est-filter">Situação</label><select id="est-filter" disabled><option>Todos</option><option>Adequado</option><option>Crítico</option><option>Excedente</option></select></div>
+   <div class="field"><label for="est-sector-filter">Setor</label><input id="est-sector-filter" disabled></div>
+  </div>
+  <div class="data-table-wrap"><table class="data-table"><caption>Produtos cadastrados</caption><thead><tr><th scope="col">Foto</th><th scope="col">Etiqueta</th><th scope="col">Item</th><th scope="col">Marca / Linha</th><th scope="col">Fabricante</th><th scope="col">Setor</th><th scope="col">Qtd. / Unidade</th><th scope="col">Mín. / Máx.</th><th scope="col">Alerta</th><th scope="col">Ações</th></tr></thead><tbody id="est-rows"><tr><td colspan="10" class="empty-state">Aguardando consulta autenticada. Nenhum produto fictício será exibido.</td></tr></tbody></table></div>
+ </section>
+ <section class="panel" style="margin-top:16px">
+  <div class="section-head" style="margin-top:0"><h2>Recursos e regras de operação</h2><span>Paridade e segurança</span></div>
+  <ul style="margin:0;padding-left:18px;color:var(--soft);font-size:12px;line-height:1.9">
+   <li>O legado possui indicadores de estoque adequado, crítico e excedente, filtro por situação, gráfico de status, foto, etiqueta e edição de cadastro.</li>
+   <li>O backend aceita marca, linha, fabricante, data de cadastro, setor, unidade, valor unitário, status, cor e referência de foto.</li>
+   <li>Produtos com movimentações não podem ter o saldo alterado pelo cadastro; utilizar Acerto de Estoque.</li>
+   <li>Produtos com movimentações não podem ser excluídos pelo serviço atual.</li>
+   <li>Scanner por câmera, impressão de etiquetas, checklist, relatórios por setor e gestão de arquivos/fotos ainda não estão integrados à tela Shadow.</li>
+   <li>Admin e Operador possuem CRUD de produtos na matriz atual; permissões de acerto são separadas.</li>
+  </ul>
+ </section>`;
+}
 function empregadosView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
@@ -607,6 +656,7 @@ function openModule(id){
  if(id==="moradores"){location.hash=id;moradoresView();return}
  if(id==="fornecedores"){location.hash=id;fornecedoresView();return}
  if(id==="empregados"){location.hash=id;empregadosView();return}
+ if(id==="estoque"){location.hash=id;estoqueView();return}
   if(id==="plano_contas"){location.hash=id;planoContasView();return}
   if(id==="financeiro"){location.hash=id;financeiroView();return}
  if(id==="contas_bancarias"){location.hash=id;contasBancariasView();return}
