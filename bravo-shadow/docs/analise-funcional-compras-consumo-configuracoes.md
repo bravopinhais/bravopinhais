@@ -250,3 +250,8 @@ Foi acrescentado `backend/tests/test_postgres_module_settings.py` com cenários 
 - confirmação única da transação em operação em massa.
 
 Os testes foram adicionados ao repositório, mas permanecem sem execução conforme a orientação vigente. Isso amplia a cobertura planejada; não representa validação executada.
+
+
+### Correção da janela de evolução mensal
+
+A geração da série mensal foi ajustada para calcular diretamente os 12 meses finais do período solicitado. Antes, uma proteção de 120 iterações podia fazer uma consulta histórica extensa retornar os primeiros meses processados, em vez dos mais recentes. Foi acrescentado um teste de regressão para um intervalo de 2000 a 2026; ele foi apenas escrito, não executado.
