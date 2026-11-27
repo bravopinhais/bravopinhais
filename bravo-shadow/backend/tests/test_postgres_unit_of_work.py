@@ -63,32 +63,83 @@ class RollbackFailConnection(FakeConnection):
         raise RuntimeError("rollback falhou")
 
 
-def test_unit_of_work_still_closes_when_rollback_fails_after_body_error():
+def test_unit_of_work_preserves_body_error_when_rollback_fails():
     connection = RollbackFailConnection()
     try:
         with PostgresUnitOfWork(lambda: connection):
             raise ValueError("erro original")
-    except RuntimeError as error:
-        assert str(error) == "rollback falhou"
+    except ValueError as error:
+        assert str(error) == "erro original"
+        assert any("rollback" in note for note in error.__notes__)
     else:
-        raise AssertionError("A falha no rollback deveria ser propagada")
+        raise AssertionError("A exceção original deveria ser propagada")
     assert connection.commits == 0
     assert connection.rollbacks == 1
     assert connection.closes == 1
 
 
-def test_unit_of_work_still_closes_when_rollback_fails_after_commit_error():
+def test_unit_of_work_preserves_commit_error_when_rollback_fails():
     connection = RollbackFailConnection(commit_error=RuntimeError("commit falhou"))
     try:
         with PostgresUnitOfWork(lambda: connection):
             pass
     except RuntimeError as error:
-        assert str(error) == "rollback falhou"
+        assert str(error) == "commit falhou"
+        assert any("rollback" in note for note in error.__notes__)
     else:
-        raise AssertionError("A falha no rollback deveria ser propagada")
+        raise AssertionError("A falha original do commit deveria ser propagada")
     assert connection.commits == 1
     assert connection.rollbacks == 1
     assert connection.closes == 1
+
+
+class CloseFailConnection(FakeConnection):
+    def close(self):
+        self.closes += 1
+        raise RuntimeError("close falhou")
+
+
+def test_unit_of_work_preserves_body_error_when_connection_close_fails():
+    connection = CloseFailConnection()
+    try:
+        with PostgresUnitOfWork(lambda: connection):
+            raise ValueError("erro original")
+    except ValueError as error:
+        assert str(error) == "erro original"
+        assert any("fechamento" in note for note in error.__notes__)
+    else:
+        raise AssertionError("A exceção original deveria ser propagada")
+    assert connection.rollbacks == 1
+    assert connection.closes == 1
+
+
+def test_unit_of_work_preserves_commit_error_when_connection_close_fails():
+    connection = CloseFailConnection(commit_error=RuntimeError("commit falhou"))
+    try:
+        with PostgresUnitOfWork(lambda: connection):
+            pass
+    except RuntimeError as error:
+        assert str(error) == "commit falhou"
+        assert any("fechamento" in note for note in error.__notes__)
+    else:
+        raise AssertionError("A falha original do commit deveria ser propagada")
+    assert connection.rollbacks == 1
+    assert connection.closes == 1
+
+
+def test_unit_of_work_propagates_close_error_after_successful_commit():
+    connection = CloseFailConnection()
+    try:
+        with PostgresUnitOfWork(lambda: connection):
+            pass
+    except RuntimeError as error:
+        assert str(error) == "close falhou"
+    else:
+        raise AssertionError("A falha de fechamento deveria ser propagada")
+    assert connection.commits == 1
+    assert connection.rollbacks == 0
+    assert connection.closes == 1
+
 
 def test_unit_of_work_rejects_non_callable_connection_factory():
     for factory in (None, object(), "not-callable"):

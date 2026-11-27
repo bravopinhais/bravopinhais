@@ -45,22 +45,54 @@ class PostgresUnitOfWork:
         self.connection = connection
         return self
 
+    @staticmethod
+    def _note_cleanup_failure(primary_error: BaseException, operation: str, cleanup_error: BaseException) -> None:
+        """Registra falha secundária sem substituir o erro que iniciou a limpeza."""
+        add_note = getattr(primary_error, "add_note", None)
+        if callable(add_note):
+            add_note(
+                f"Falha secundária durante {operation}: "
+                f"{type(cleanup_error).__name__}."
+            )
+
     def __exit__(self, exc_type, exc, traceback) -> bool:
         connection = self.connection
         if connection is None:
             return False
+
+        primary_error = exc
         try:
             if exc_type is not None:
-                connection.rollback()
+                try:
+                    connection.rollback()
+                except BaseException as rollback_error:
+                    if primary_error is None:
+                        primary_error = rollback_error
+                        raise
+                    self._note_cleanup_failure(
+                        primary_error, "rollback", rollback_error
+                    )
             else:
                 try:
                     connection.commit()
-                except Exception:
-                    connection.rollback()
+                except BaseException as commit_error:
+                    primary_error = commit_error
+                    try:
+                        connection.rollback()
+                    except BaseException as rollback_error:
+                        self._note_cleanup_failure(
+                            primary_error, "rollback após falha no commit", rollback_error
+                        )
                     raise
         finally:
             try:
                 connection.close()
+            except BaseException as close_error:
+                if primary_error is None:
+                    raise
+                self._note_cleanup_failure(
+                    primary_error, "fechamento da conexão", close_error
+                )
             finally:
                 self.connection = None
         return False
