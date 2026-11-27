@@ -502,3 +502,9 @@ A tela consulta exclusivamente `GET /api/v1/contas-bancarias` após receber a se
 O saldo é apresentado como **saldo informado**, conforme o contrato atual, e não como saldo conciliado, extrato ou cálculo de movimentações. A tela não inventa agência, número de conta, instituição por código ou datas de saldo. Cadastro, edição e exclusão permanecem bloqueados; a API possui rotas de gravação, mas não são chamadas pela interface.
 
 A consulta é cancelada ao sair do módulo e ao encerrar a sessão. A lista em memória é limpa no logout. O módulo depende da API HTTPS isolada, do bootstrap Google habilitado explicitamente e da permissão `contas_bancarias:read`; nenhuma publicação foi realizada.
+
+## Formas Monetárias — consulta autenticada somente leitura
+
+A tela consulta exclusivamente `GET /api/v1/formas-monetarias` com a sessão Google autenticada e a capacidade `formas_monetarias:read`. A resposta é validada quanto a identificador, nome e percentual de multa (entre 0 e 100) antes de renderizar. Nome e valores são inseridos como texto; o percentual é formatado com duas casas decimais.
+
+Cadastro, edição e exclusão permanecem desabilitados e não são chamados pela interface. A consulta é cancelada ao navegar para outro módulo; a lista em memória é descartada no encerramento da sessão. O módulo não presume que a multa seja aplicada automaticamente a títulos: apenas exibe o percentual persistido no contrato atual.
