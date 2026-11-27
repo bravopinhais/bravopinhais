@@ -80,6 +80,9 @@ if (root) {
             apiBase: settings.apiBase,
             getAuthorizationHeader: session.getAuthorizationHeader,
           });
+          window.dispatchEvent(new CustomEvent("bravo:session-ready", {
+            detail: { api: apiClient, user: session.user },
+          }));
           root.replaceChildren();
           const identity = document.createElement("span");
           identity.className = "api-status ok";
@@ -91,12 +94,14 @@ if (root) {
           signOut.addEventListener("click", () => {
             apiClient = null;
             session.signOut();
+            window.dispatchEvent(new CustomEvent("bravo:session-ended"));
             renderSignedOut("Sessão encerrada.");
           });
           root.append(identity, signOut);
         },
         onError(error) {
           apiClient = null;
+          window.dispatchEvent(new CustomEvent("bravo:session-ended"));
           showStatus(error.message || "Não foi possível autenticar.", "err");
         },
       });
@@ -116,6 +121,7 @@ if (root) {
   window.addEventListener("pagehide", () => {
     disposed = true;
     apiClient = null;
+    window.dispatchEvent(new CustomEvent("bravo:session-ended"));
     sessionController?.dispose();
   }, { once: true });
 }
