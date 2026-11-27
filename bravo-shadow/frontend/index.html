@@ -198,6 +198,11 @@ document.addEventListener("click",async event=>{
  }
 });
 document.addEventListener("submit",event=>{if(event.target.id==="forma-form")salvarForma(event)});
+window.addEventListener("hashchange",()=>{
+ const id=location.hash.slice(1);
+ if(id&&modules[id]&&id!==moduloAtual)openModule(id);
+ else if(!id&&moduloAtual!=="dashboard")openModule("dashboard");
+});
 if(location.hash&&modules[location.hash.slice(1)])openModule(location.hash.slice(1));
 </script>
 </body>
