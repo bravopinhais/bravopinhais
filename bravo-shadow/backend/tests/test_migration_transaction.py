@@ -145,3 +145,24 @@ def test_autocommit_connection_is_rejected():
     with pytest.raises(MigrationApplyBlocked):
         apply_one_record(lambda: conn, store, command, permit)
     assert conn.events == ["rollback", "close"]
+
+
+class CloseFailConnection(FakeConnection):
+    def close(self):
+        self.events.append("close")
+        raise OSError("synthetic close failure")
+
+
+def test_commit_success_followed_by_close_failure_is_not_misreported_as_rollback():
+    conn, store, command, permit = setup(connection=CloseFailConnection())
+    from app.core.postgres import CommitSucceededCleanupError
+    with pytest.raises(CommitSucceededCleanupError):
+        apply_one_record(lambda: conn, store, command, permit)
+    assert conn.events == ["commit", "close"]
+    assert store.events[-3:] == ["insert_target", "insert_link", "insert_success_event"]
+
+
+def test_connection_factory_must_return_complete_dbapi_unit_of_work():
+    _, store, command, permit = setup()
+    with pytest.raises(TypeError, match="commit, rollback e close"):
+        apply_one_record(lambda: object(), store, command, permit)

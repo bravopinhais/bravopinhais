@@ -14,9 +14,11 @@
 - repetição com mesmo hash classificada `already_applied`;
 - hash divergente classificado como conflito e ID de destino sem mapa como colisão;
 - inserção de negócio, vínculo de proveniência e evento de sucesso antes de um único commit;
+- reutilização do `PostgresUnitOfWork` já existente no Bravo, centralizando commit/rollback/close;
 - rollback em falhas anteriores ao commit;
 - `CommitOutcomeUnknown` quando o commit falha, exigindo reconciliação antes de retry;
-- autocommit rejeitado e conexão sempre fechada.
+- falha de fechamento após commit confirmado classificada como `CommitSucceededCleanupError`, sem fingir rollback;
+- autocommit rejeitado e validação da conexão DB-API.
 
 ## Limites importantes
 
@@ -34,3 +36,8 @@ Os testes cobrem sucesso atômico, falha em cada uma das três gravações, idem
 2. Implementar adapter SQL com a mesma conexão e locks determinísticos.
 3. Definir reconciliação de commit incerto e ledger de falha fora da unidade.
 4. Só então avaliar integração isolada e homologação local, mediante autorização específica.
+
+
+## Revisão de integração com a unidade de trabalho existente
+
+A implementação foi ajustada para usar `PostgresUnitOfWork`, em vez de duplicar manualmente a gestão da conexão. Isso preserva a distinção crítica entre commit de resultado incerto e commit confirmado seguido de falha de fechamento. O adapter futuro continua obrigado a passar a mesma conexão em todas as operações e não pode abrir transações próprias.

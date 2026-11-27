@@ -4,6 +4,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Protocol
 
+from app.core.postgres import (
+    CommitOutcomeUnknown as PostgresCommitOutcomeUnknown,
+    PostgresUnitOfWork,
+)
+
 
 class MigrationApplyError(RuntimeError):
     """Base class for a rejected or failed migration unit."""
@@ -13,7 +18,7 @@ class MigrationApplyBlocked(MigrationApplyError):
     """The source identity cannot be safely applied."""
 
 
-class CommitOutcomeUnknown(MigrationApplyError):
+class CommitOutcomeUnknown(PostgresCommitOutcomeUnknown, MigrationApplyError):
     """Commit raised; caller must reconcile state before any retry."""
 
 
@@ -127,53 +132,32 @@ def apply_one_record(
     _validate(command, authorization)
     if not callable(connection_factory):
         raise TypeError("connection_factory explícita é obrigatória.")
-    connection = connection_factory()
-    if connection is None:
-        raise MigrationApplyError("connection_factory não forneceu conexão.")
     try:
-        if getattr(connection, "autocommit", False) is not False:
-            raise MigrationApplyBlocked("autocommit deve estar desativado.")
-        store.lock_batch(connection, command.batch_id, command.execution_id)
-        store.lock_source_identity(
-            connection, command.source_system, command.source_collection, command.legacy_id
-        )
-        existing = store.find_source_link(
-            connection, command.source_system, command.source_collection, command.legacy_id
-        )
-        if existing is not None:
-            old_hash, old_destination_id = existing
-            if old_hash == command.source_record_sha256:
-                connection.commit()
-                return MigrationApplyResult("already_applied", old_destination_id, True, False)
-            raise MigrationApplyBlocked("conflict_changed_source: hash de origem divergente.")
-        if store.target_id_exists(connection, command.target_collection, command.destination_id):
-            raise MigrationApplyBlocked("destination_id_collision: ID já existe sem vínculo de origem.")
-        store.insert_target(
-            connection, command.target_collection, command.destination_id, command.target_payload
-        )
-        store.insert_source_link(connection, command)
-        store.insert_success_event(connection, command, command.destination_id)
-        try:
-            connection.commit()
-        except Exception as exc:
-            try:
-                connection.rollback()
-            except Exception:
-                pass
-            raise CommitOutcomeUnknown(
-                "resultado do commit incerto; consultar mapa e destino antes de qualquer retry."
-            ) from exc
+        with PostgresUnitOfWork(connection_factory) as work:
+            connection = work.connection
+            if connection is None:
+                raise MigrationApplyError("A conexão PostgreSQL não foi aberta.")
+            if getattr(connection, "autocommit", False) is not False:
+                raise MigrationApplyBlocked("autocommit deve estar desativado.")
+            store.lock_batch(connection, command.batch_id, command.execution_id)
+            store.lock_source_identity(
+                connection, command.source_system, command.source_collection, command.legacy_id
+            )
+            existing = store.find_source_link(
+                connection, command.source_system, command.source_collection, command.legacy_id
+            )
+            if existing is not None:
+                old_hash, old_destination_id = existing
+                if old_hash == command.source_record_sha256:
+                    return MigrationApplyResult("already_applied", old_destination_id, True, False)
+                raise MigrationApplyBlocked("conflict_changed_source: hash de origem divergente.")
+            if store.target_id_exists(connection, command.target_collection, command.destination_id):
+                raise MigrationApplyBlocked("destination_id_collision: ID já existe sem vínculo de origem.")
+            store.insert_target(
+                connection, command.target_collection, command.destination_id, command.target_payload
+            )
+            store.insert_source_link(connection, command)
+            store.insert_success_event(connection, command, command.destination_id)
         return MigrationApplyResult("applied", command.destination_id, True, True)
-    except CommitOutcomeUnknown:
-        raise
-    except Exception:
-        try:
-            connection.rollback()
-        except Exception:
-            pass
-        raise
-    finally:
-        try:
-            connection.close()
-        except Exception:
-            pass
+    except PostgresCommitOutcomeUnknown as exc:
+        raise CommitOutcomeUnknown(str(exc)) from exc
