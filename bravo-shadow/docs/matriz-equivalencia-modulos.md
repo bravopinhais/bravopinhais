@@ -292,3 +292,12 @@ O backend Shadow agora declara as capacidades `configuracoes:read` e `configurac
 O catálogo contempla os 17 módulos da baseline. Ativar/desativar é apenas controle de visibilidade; não altera a matriz de autorização nem concede capacidades. Configurações não pode ser desativado. No PostgreSQL, alteração e evento de auditoria são gravados na mesma transação. No modo memória, a leitura usa defaults ativos e mutações são negadas por indisponibilidade de auditoria persistente.
 
 Os testes sintéticos foram adicionados, mas não executados. A tela visual ainda não foi integrada. A tabela `module_settings` está somente no DDL rascunho/piloto; nenhum SQL foi aplicado.
+
+
+## Empregados — atualização da paridade (27/11/2026)
+
+O formulário legado inspecionado contém nome completo e cargo como obrigatórios; empresa, endereço, telefone, nome do familiar/contato de emergência e telefone de emergência como opcionais. A tabela exibe nome/função, empresa, endereço, telefone e contato de emergência, com ações de edição e exclusão. Não foi identificada importação neste módulo.
+
+A Shadow possui schema, service, router e adapter PostgreSQL para os sete campos. Rotas: GET/POST/PUT/DELETE em `/api/v1/empregados`, protegidas por `empregados:read/create/update/delete`. Admin e Operador têm CRUD na matriz atual. O armazenamento PostgreSQL é ligado no construtor de serviços.
+
+A interface visual foi adicionada à navegação Shadow, sem dados fictícios, sem chamadas de rede e com controles desabilitados até integração da autenticação Google/Bearer e API HTTPS isolada. Lacunas: exclusão física sem arquivamento ou verificação de referências; ausência de If-Match/ETag na API; listagem sem filtros/paginação; auditoria de CRUD não confirmada. Endereço e contatos são dados pessoais. Esta atualização é inventário estático, não homologação nem autorização de ativação.
