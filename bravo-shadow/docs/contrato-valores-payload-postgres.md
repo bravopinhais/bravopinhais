@@ -41,3 +41,12 @@ A tabela de proveniência fecha a idempotência no banco com chave primária com
 Uma repetição só é considerada já aplicada quando o hash e o destino permanecem iguais. Mudança no conteúdo, destino divergente, mapeamento malformado ou colisão de ID no destino bloqueiam nova gravação e exigem revisão. O adaptador usa bloqueio transacional por identidade e a persistência de proveniência não retargeta silenciosamente um registro.
 
 Essas proteções foram conferidas por revisão estática e casos sintéticos adicionados. Não houve execução dos testes, conexão PostgreSQL ou importação de dados.
+
+
+## Relatório consolidado de prontidão
+
+O módulo `migration_complete_readiness` reúne, em uma única resposta, o inventário estrutural e de IDs, compatibilidade das coleções, contratos especializados, reconciliação de referências, avaliação de valores, pré-flight do lote e consistência das evidências de exportação/reconciliação. Os bloqueios são deduplicados e ordenados, sem incluir valores de origem ou identificadores dos registros.
+
+Os estados são conservadores: `blocked` quando o pré-flight do lote ou as evidências falham; `review_required` quando resta qualquer pendência estrutural, referencial, de domínio ou de compatibilidade; e `assessment_clear_not_import_authorized` somente quando todas as avaliações fornecidas estão limpas. Mesmo esse último estado não concede autorização de importação: aprovação humana separada, ambiente descartável e controles de execução continuam obrigatórios.
+
+O relatório opera apenas sobre objetos já carregados em memória. Não lê arquivos, não acessa APIs, não conecta banco, não cria payloads, não grava dados e não realiza importação. Testes sintéticos foram adicionados, mas não executados.
