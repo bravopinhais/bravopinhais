@@ -77,7 +77,7 @@ def verify_pre_import_approval(
         add("approval_source_hash_mismatch")
     if evidence.snapshot_hash != manifest.snapshot_hash:
         add("approval_snapshot_hash_mismatch")
-    if evidence.decision not in _ALLOWED_DECISIONS:
+    if not isinstance(evidence.decision, str) or evidence.decision not in _ALLOWED_DECISIONS:
         add("approval_decision_invalid")
     if not isinstance(evidence.reviewer_id, str) or not evidence.reviewer_id.strip():
         add("approval_reviewer_required")
