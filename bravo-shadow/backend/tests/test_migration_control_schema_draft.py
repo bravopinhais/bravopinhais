@@ -31,6 +31,7 @@ def test_draft_declares_only_batch_and_source_provenance_tables():
         "bravo_shadow.migration_batches",
         "bravo_shadow.migration_source_records",
         "bravo_shadow.migration_batch_recovery_events",
+        "bravo_shadow.migration_batch_recovery_approvals",
     ]
 
 
@@ -90,6 +91,7 @@ def test_rls_is_enabled_and_no_grants_or_policies_are_opened():
     assert "revoke all on table" in sql
     revoke_block = sql.split("revoke all on table", 1)[1].split(";", 1)[0]
     assert "bravo_shadow.migration_batch_recovery_events" in revoke_block
+    assert "bravo_shadow.migration_batch_recovery_approvals" in revoke_block
     assert not re.search(r"\bgrant\s+", sql)
     assert not re.search(r"\bcreate\s+policy\s+", sql)
 
@@ -124,6 +126,7 @@ def test_recovery_events_are_evidence_bound_append_only_records():
     assert "foreign key (batch_id, source_system)" in sql
     assert "evidence_sha256 ~ '^[0-9a-f]{64}$'" in sql
     assert "alter table bravo_shadow.migration_batch_recovery_events enable row level security" in sql
+    assert "alter table bravo_shadow.migration_batch_recovery_approvals enable row level security" in sql
 
 
 def test_recovery_decision_does_not_reopen_or_authorize_same_batch():
@@ -150,3 +153,26 @@ def test_recovery_event_id_is_idempotency_key_not_sequence_workaround():
     assert "event_id é chave de idempotência global" in sql
     assert "comparar todos os" in sql and "campos do evento existente" in sql
     assert "nunca gerar nova" in sql and "sequência para mascarar" in sql
+
+
+
+def test_recovery_recording_review_and_approval_are_separate_actors():
+    sql = _sql().lower()
+
+    assert "recorded_by text not null" in sql
+    assert "reviewer_id text not null" in sql
+    assert "approver_id text not null" in sql
+    assert "check (recorded_by <> reviewer_id)" in sql
+    assert "approver_id <> recorded_by" in sql
+    assert "approver_id <> reviewer_id" in sql
+
+
+def test_recovery_approval_is_append_only_and_bound_to_exact_event_actors():
+    sql = _sql().lower()
+
+    assert "create table if not exists bravo_shadow.migration_batch_recovery_approvals" in sql
+    assert "unique (event_id)" in sql
+    assert "foreign key (event_id, recorded_by, reviewer_id)" in sql
+    assert "check (decision in ('approved', 'rejected'))" in sql
+    assert "rejeição encerra" in sql
+    assert "qualquer correção exige novo evento de recovery" in sql
