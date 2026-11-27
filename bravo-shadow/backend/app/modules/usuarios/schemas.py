@@ -59,7 +59,7 @@ class UsuarioDadosCadastraisUpdateInput(BaseModel):
     @classmethod
     def trim_optional_text(cls, value: str | None) -> str | None:
         if value is None:
-            return None
+            raise ValueError("O campo não pode ser nulo quando informado.")
         value = value.strip()
         if not value:
             raise ValueError("O campo não pode ficar vazio.")
