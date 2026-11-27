@@ -125,3 +125,8 @@ O backend oferece `GET /api/v1/configuracoes/modulos`, `PATCH /api/v1/configurac
 A navegação principal e o dashboard agora incluem acesso à tela de Configurações. A tela apresenta o catálogo dos 17 módulos, separação por grupo e as ações administrativas previstas. Os controles de ativação em massa permanecem desabilitados e os estados são identificados como aguardando API: não são valores carregados nem simulam persistência.
 
 A interface não envia alterações porque ainda não existe sessão Google conectada ao frontend nem API HTTPS isolada configurada. A próxima integração deverá carregar `GET /api/v1/configuracoes/modulos` com o token da sessão e habilitar controles somente conforme as capacidades retornadas/permitidas pelo backend. O backend continua sendo a autoridade; Operador só consulta e Admin altera.
+
+
+## Navegação funcional mapeada
+
+A navegação Shadow agora inclui também `Compras x Consumo`, alinhada ao catálogo de 17 módulos da baseline. O item abre a estrutura do módulo, mas ainda não representa a tela de relatório concluída. A tela de Configurações permanece em modo seguro: não consulta nem altera estados enquanto não houver URL HTTPS isolada da API e sessão Google validada no navegador.
