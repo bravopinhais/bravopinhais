@@ -94,6 +94,8 @@ def build_pre_import_manifest(
     """
     if not source.validation.valid:
         raise ValueError("Envelope precisa estar estruturalmente válido.")
+    if integrity.inventory != source.source_inventory:
+        raise ValueError("Relatório de integridade não corresponde ao inventário deste envelope.")
     versions = {
         "contract_version": _required_version("contract_version", contract_version),
         "compatibility_mapping_version": _required_version(
