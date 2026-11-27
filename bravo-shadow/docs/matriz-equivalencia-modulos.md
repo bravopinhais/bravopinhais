@@ -301,3 +301,12 @@ O formulário legado inspecionado contém nome completo e cargo como obrigatóri
 A Shadow possui schema, service, router e adapter PostgreSQL para os sete campos. Rotas: GET/POST/PUT/DELETE em `/api/v1/empregados`, protegidas por `empregados:read/create/update/delete`. Admin e Operador têm CRUD na matriz atual. O armazenamento PostgreSQL é ligado no construtor de serviços.
 
 A interface visual foi adicionada à navegação Shadow, sem dados fictícios, sem chamadas de rede e com controles desabilitados até integração da autenticação Google/Bearer e API HTTPS isolada. Lacunas: exclusão física sem arquivamento ou verificação de referências; ausência de If-Match/ETag na API; listagem sem filtros/paginação; auditoria de CRUD não confirmada. Endereço e contatos são dados pessoais. Esta atualização é inventário estático, não homologação nem autorização de ativação.
+
+
+## Estoque & Inventário — atualização da paridade (27/11/2026)
+
+A inspeção do legado identificou painel com contagens de estoque adequado, crítico e excedente; filtro por situação; gráfico de status; tabela com foto, etiqueta/código, descrição, quantidade, mínimo/máximo, alerta e ações de edição/exclusão. O formulário legado básico inclui código/etiqueta, descrição, quantidade, mínimo, máximo e foto compactada Gzip/Base64. O contrato Shadow já contempla também marca, linha, fabricante, data de cadastro, setor, unidade, valor unitário, status, cor e referência da foto — incluindo os campos adicionais solicitados para rastrear a origem do produto.
+
+A API Shadow possui GET/POST/PUT/DELETE em /api/v1/estoque, com capacidades estoque:read/create/update/delete. Quantidades suportam três casas decimais e valor unitário duas. O service impede alteração direta do saldo após movimentações e impede exclusão quando existem acertos vinculados; o saldo deve ser alterado pelo módulo Acerto de Estoque. O adapter PostgreSQL armazena os campos de produto e serializa a edição com bloqueio de linha.
+
+A nova interface Shadow contempla cadastro ampliado, filtros/indicadores estruturais e tabela. Os controles permanecem desabilitados, sem chamadas de rede ou dados fictícios. Scanner, impressão de etiquetas, fotos/armazenamento externo, checklist, relatórios por setor e integração do histórico ainda não estão conectados. A listagem atual não possui filtros/paginação na API. Esta é uma entrega visual/documental, não homologação nem autorização de ativação.
