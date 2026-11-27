@@ -26,7 +26,13 @@ NUMERIC_COLUMNS: dict[tuple[str, str], tuple[int, int, str]] = {
 }
 DATE_COLUMNS = {("estoque", "data_cadastro")}
 TIMESTAMPTZ_COLUMNS = {("acertos_estoque", "data")}
-NULLABLE_COLUMNS = {\n    ("financeiro", "plano_conta_id"),\n    ("estoque", "data_cadastro"),\n    ("documentos", "categoria_id"),\n    ("acertos_estoque", "motivo_id"),\n}\nENUMS = {
+NULLABLE_COLUMNS = {
+    ("financeiro", "plano_conta_id"),
+    ("estoque", "data_cadastro"),
+    ("documentos", "categoria_id"),
+    ("acertos_estoque", "motivo_id"),
+}
+ENUMS = {
     ("plano_contas", "tipo"): {"Receita", "Despesa"},
     ("financeiro", "tipo"): {"Receber", "Pagar"},
     ("estoque", "status"): {"Ativo", "Inativo"},
