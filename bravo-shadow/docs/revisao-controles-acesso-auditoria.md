@@ -189,3 +189,16 @@ O workflow `.github/workflows/bravo-shadow-tests.yml` agora executa o arquivo `d
 O caminho do script também foi incluído nos filtros de execução por push e pull request, para que alterações nele acionem essa verificação. A execução confirma sintaxe e compatibilidade das consultas com PostgreSQL 16 em uma base vazia; **não** valida a matriz de permissões de aplicação, porque nenhuma migration ou role específica do Bravo Shadow é criada nesse teste.
 
 Esta etapa foi adicionada no commit `a8c7814f0d9096aeb5bc9dc5e59d1eef00fc2ddf` e o filtro de pull request foi completado no commit `bd5aaa6977ef5a87237dc84e6edbbfc02068424e`. A execução do workflow para esses commits ainda precisa concluir antes de registrar resultado. Nenhum banco compartilhado, Supabase hospedado ou produção foi acessado.
+
+
+## Resultado da execução SQL em PostgreSQL 16 descartável — 27/11/2026
+
+A execução GitHub Actions `45987794142`, para o commit `bd5aaa6977ef5a87237dc84e6edbbfc02068424e`, foi concluída com sucesso. A etapa **Executar inspeção SQL somente leitura no PostgreSQL descartável** terminou com sucesso no serviço PostgreSQL 16; o log registrou: `Inspeção de catálogo concluída em PostgreSQL descartável; somente leitura.`
+
+Na mesma execução, a suíte backend concluiu com **564 testes aprovados, 1 aviso de depreciação e nenhuma falha**. O job Docker concluiu build da imagem, inicialização do contêiner e smoke test da interface/API com sucesso.
+
+**Escopo exato do que foi validado:** o script completo foi enviado ao PostgreSQL 16 em uma base descartável vazia, executando as consultas de catálogo sob `BEGIN READ ONLY`. Isso confirma que o SQL é aceito pelo PostgreSQL 16 e que a transação somente leitura conclui. Como a base estava vazia e não recebeu migrations, roles ou policies do Bravo Shadow, a execução não valida privilégios de runtime, RLS real, grants efetivos do desenho futuro ou operações permitidas/negadas por roles específicas.
+
+O aviso de depreciação do `anyio.abc.BlockingPortal` permanece não bloqueante. As mensagens de falha forçada no log PostgreSQL são cenários intencionais dos testes de rollback/auditoria, não falhas da execução.
+
+Nenhum banco compartilhado, Supabase hospedado ou produção foi acessado. Nenhuma role, policy, grant ou migration foi criada ou aplicada.
