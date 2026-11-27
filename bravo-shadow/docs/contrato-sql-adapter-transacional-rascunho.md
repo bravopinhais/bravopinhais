@@ -149,3 +149,14 @@ Testes sintéticos não substituem concorrência real em PostgreSQL. Conforme or
 Nenhum schema, role, grant, policy, trigger ou banco foi alterado. Nenhuma rota chama `apply_one_record`. Nenhuma gravação, dual-write, cutover ou importação ocorreu. Nenhum dado real foi lido ou usado. Produção permanece fora do escopo.
 
 **Próxima etapa segura:** fechar ambiente canônico, persistência da execução, aprovação específica de apply e identidade do ator. Só então desenhar a migration revisada e implementar o adapter atrás da allowlist.
+
+## 10. Decisões de arquitetura consolidadas (rascunho)
+
+As quatro lacunas principais foram resolvidas para orientar o desenho, sem ainda alterar o código:
+
+1. **Ambiente:** manter `local_disposable` e `ci_ephemeral` como enumeração canônica já usada pela máquina de estados. Apply persistente somente em `local_disposable`; `ci_ephemeral` não recebe autorização de gravação. O valor `shadow_local` do núcleo de apply é legado/incompatível e deverá ser substituído antes da integração.
+2. **Execução:** criar `migration_executions`, vinculada a lote + manifesto + hash do plano, com uma execução por combinação lote/plano. A execução terá ator solicitante autenticado, estado e timestamps. Repetir um plano após falha não cria nova execução para contornar o estado; exige novo plano/lote e revisão.
+3. **Aprovação de apply:** criar `migration_apply_approvals` append-only, uma decisão final por execução, vinculada ao hash exato do manifesto e do plano. A aprovação pré-importação `dry_run_only` e o campo genérico `migration_batches.approved_*` não substituem essa autorização específica. O aprovador deve ser diferente do solicitante da execução.
+4. **Ator da auditoria:** usar `AuthenticatedPrincipal.subject` (Google `sub` validado pelo backend) como `actor_subject`. Não aceitar ator do payload. O evento de sucesso deve ser inserido na mesma transação do negócio e da proveniência.
+
+O DDL preliminar das duas novas tabelas está em `docs/sql-execucao-aprovacao-apply-rascunho.sql`. Ainda é desenho não executável. O adapter e `migration_transaction.py` permanecem deliberadamente sem integração: o próximo pacote deverá alinhar os tipos Python, validar a aprovação persistida e implementar o SQL por allowlist fechada, sem ativar rotas.
