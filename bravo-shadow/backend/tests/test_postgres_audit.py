@@ -85,10 +85,6 @@ def test_postgres_sink_rolls_back_when_insert_fails():
     with pytest.raises(RuntimeError, match="insert failed") as raised:
         sink.append(make_event())
 
-    assert any(
-        "fechamento do cursor" in note
-        for note in getattr(raised.value, "__notes__", ())
-    )
     assert connection.commits == 0
     assert connection.rollbacks == 1
     assert connection.closes == 1
@@ -159,9 +155,13 @@ def test_insert_error_is_preserved_when_cursor_close_also_fails():
     connection.cursor_instance = CloseFailCursor(fail=True)
     sink = PostgresAuditSink(lambda: connection)
 
-    with pytest.raises(RuntimeError, match="insert failed"):
+    with pytest.raises(RuntimeError, match="insert failed") as raised:
         sink.append(make_event())
 
+    assert any(
+        "fechamento do cursor" in note
+        for note in getattr(raised.value, "__notes__", ())
+    )
     assert connection.commits == 0
     assert connection.rollbacks == 1
     assert connection.closes == 1
