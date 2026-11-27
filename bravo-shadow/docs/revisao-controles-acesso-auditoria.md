@@ -160,3 +160,14 @@ Não executar testes destrutivos em uma instância que contenha qualquer dado n�
 ### 6. Evidência e critério de saída
 
 Guardar versão PostgreSQL, commit da migration testada, comandos executados, resultados de catálogo e resultados de cada tentativa permitida/negada. O aceite exige revisão independente da matriz completa e ausência de privilégios indiretos inesperados. Até lá, o SQL permanece rascunho e a integração PostgreSQL continua bloqueada.
+
+
+## Script reutilizável de inspeção somente leitura — 27/11/2026
+
+Foi adicionado `docs/verificar-privilegios-rls-somente-leitura.sql`. O arquivo abre uma transação `READ ONLY` e consulta apenas catálogos PostgreSQL: contexto/versão, atributos das roles, memberships efetivas, ownership, flags RLS, policies, privilégios efetivos em tabelas/schema/sequences/funções e ACL do schema.
+
+O script não contém DDL, CREATE ROLE, GRANT, REVOKE, CREATE POLICY ou comandos de alteração. Ele é um instrumento de coleta de evidências, não um teste de autorização completo: tentativas reais de INSERT/UPDATE/DELETE/DDL ainda exigirão conexões separadas com roles previamente aprovadas em uma instância local descartável.
+
+**Commit do script:** `34d4c56022f205921f6b1d42e3d05822a01a0cef`.
+
+Não foi executado contra nenhum banco. Não há roles, policies ou migrations criadas; não houve conexão com Supabase hospedado, banco compartilhado ou produção.
