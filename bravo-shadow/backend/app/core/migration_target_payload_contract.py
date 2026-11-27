@@ -36,6 +36,8 @@ ENUMS = {
     ("plano_contas", "tipo"): {"Receita", "Despesa"},
     ("financeiro", "tipo"): {"Receber", "Pagar"},
     ("estoque", "status"): {"Ativo", "Inativo"},
+    ("usuarios", "perfil"): {"Admin", "Operador"},
+    ("usuarios", "status"): {"Ativo", "Inativo"},
     ("acertos_estoque", "tipo"): {"Entrada", "Saída"},
 }
 _DECIMAL_TEXT = re.compile(r"^-?(?:0|[1-9][0-9]*)(?:\.[0-9]+)?$")
