@@ -937,22 +937,60 @@ function pastasView(){
  </section>`;
 }
 
+let relatoriosApiClient=null,relatoriosRequestSequence=0,relatoriosRequestController=null;
+const dreCurrency=value=>Number.isFinite(Number(value))?new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(Number(value)):"—";
+const dreCount=value=>Number.isSafeInteger(Number(value))&&Number(value)>=0?new Intl.NumberFormat("pt-BR").format(Number(value)):"—";
+function renderDreRows(id,items){
+ const tbody=document.getElementById(id);if(!tbody)return;tbody.replaceChildren();
+ if(!items.length){const row=document.createElement("tr"),cell=document.createElement("td");cell.colSpan=5;cell.className="empty-state";cell.textContent="Nenhum título vinculado a conta nesta classificação.";row.append(cell);tbody.append(row);return;}
+ for(const item of items){const row=document.createElement("tr");for(const value of [item.codigo,item.nome,item.tipo_conta,dreCurrency(item.valor),Number.isFinite(Number(item.participacao_pct))?Number(item.participacao_pct).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+"%":"—"]){const cell=document.createElement("td");cell.textContent=String(value??"—");row.append(cell);}tbody.append(row);}
+}
+function renderDreUnavailable(message){
+ for(const id of ["dre-revenue-rows","dre-expense-rows"]){const body=document.getElementById(id);if(body){body.replaceChildren();const row=document.createElement("tr"),cell=document.createElement("td");cell.colSpan=5;cell.className="empty-state";cell.textContent=message;row.append(cell);body.append(row);}}
+ for(const id of ["dre-revenue-total","dre-expense-total","dre-result-total","dre-revenue-count","dre-expense-count","dre-updated"]){const el=document.getElementById(id);if(el)el.textContent="—";}
+}
+async function loadDre(api){
+ const status=document.getElementById("dre-status");if(!status||!api||typeof api.get!=="function")return;
+ const sequence=++relatoriosRequestSequence;relatoriosRequestController?.abort();relatoriosRequestController=new AbortController();
+ status.textContent="Consultando DRE gerencial autorizada…";status.className="api-status";
+ try{
+  const data=await api.get("/api/v1/relatorios/dre",{signal:relatoriosRequestController.signal});
+  if(sequence!==relatoriosRequestSequence||moduloAtual!=="relatorios")return;
+  const validList=value=>Array.isArray(value)&&value.every(item=>item&&typeof item.codigo==="string"&&typeof item.nome==="string"&&Number.isFinite(Number(item.valor))&&Number.isFinite(Number(item.participacao_pct)));
+  if(!data||typeof data!=="object"||!validList(data.receitas)||!validList(data.despesas)||!["valor_receber","valor_pagar","diferenca_titulos"].every(key=>Number.isFinite(Number(data[key]))))throw new Error("A API retornou um demonstrativo inválido.");
+  document.getElementById("dre-revenue-total").textContent=dreCurrency(data.valor_receber);
+  document.getElementById("dre-expense-total").textContent=dreCurrency(data.valor_pagar);
+  document.getElementById("dre-result-total").textContent=dreCurrency(data.diferenca_titulos);
+  document.getElementById("dre-revenue-count").textContent=dreCount(data.total_titulos_receber)+" título(s)";
+  document.getElementById("dre-expense-count").textContent=dreCount(data.total_titulos_pagar)+" título(s)";
+  document.getElementById("dre-updated").textContent=data.atualizado_em?new Date(data.atualizado_em).toLocaleString("pt-BR"):"—";
+  renderDreRows("dre-revenue-rows",data.receitas);renderDreRows("dre-expense-rows",data.despesas);
+  const note=document.getElementById("dre-criteria");if(note)note.textContent=data.criterio||"Todos os títulos cadastrados, sem filtro temporal.";
+  const orphan=document.getElementById("dre-unlinked");if(orphan)orphan.textContent="Sem conta vinculada: "+dreCount(data.titulos_receber_sem_conta)+" título(s) a receber ("+dreCurrency(data.valor_receber_sem_conta)+") e "+dreCount(data.titulos_pagar_sem_conta)+" título(s) a pagar ("+dreCurrency(data.valor_pagar_sem_conta)+"). Esses valores permanecem nos totais gerais e não são agrupados por conta.";
+  status.textContent="DRE atualizada pela API Shadow · somente leitura";status.className="api-status ok";
+ }catch(error){
+  if(error?.name==="AbortError"||sequence!==relatoriosRequestSequence)return;
+  renderDreUnavailable("Consulta indisponível. Nenhum total foi presumido.");
+  status.textContent=error?.status===403?"A conta autenticada não possui a capacidade relatorios:read.":error?.status===401?"Sessão não autorizada ou expirada. Entre novamente.":(error?.message||"Não foi possível consultar a DRE.");status.className="api-status err";
+ }
+}
 function relatoriosView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
-  <div class="api-toolbar"><div><strong style="font-size:13px">Demonstrativo do Resultado do Exercício</strong><div class="api-status" id="dre-status" role="status" aria-live="polite">Aguardando sessão Google e API Shadow</div></div><span class="tag">Relatório gerencial</span></div>
-  <div class="notice" style="margin:16px 0 18px"><div class="notice-icon">▥</div><div><strong>DRE vinculada ao Plano de Contas</strong><p>O legado consolida receitas e despesas dos lançamentos financeiros e apresenta o resultado líquido do exercício, detalhado por conta contábil/gerencial. Nenhum valor será estimado ou preenchido sem consulta autorizada.</p></div></div>
-  <div class="api-toolbar"><div class="field"><label for="dre-period-start">Período inicial</label><input id="dre-period-start" type="date" disabled></div><div class="field"><label for="dre-period-end">Período final</label><input id="dre-period-end" type="date" disabled></div><div class="field"><label for="dre-account">Plano de contas</label><select id="dre-account" disabled><option value="">Todas as contas</option></select></div><div class="api-actions"><button class="btn-primary" type="button" disabled>Consultar DRE</button><button class="btn-secondary" type="button" disabled>Exportar PDF</button><button class="btn-secondary" type="button" disabled>Exportar Excel</button></div></div>
-  <div class="section-head" style="margin-top:24px"><h2>Resumo do exercício</h2><span>Valores indisponíveis até integração</span></div>
-  <div class="metric-grid"><article class="metric"><span>Receitas operacionais</span><strong>—</strong><small>Aguardando consulta</small></article><article class="metric"><span>Despesas operacionais</span><strong>—</strong><small>Aguardando consulta</small></article><article class="metric"><span>Resultado líquido</span><strong>—</strong><small>Receitas menos despesas</small></article></div>
-  <div class="section-head" style="margin-top:24px"><h2>Receitas operacionais</h2><span>Por conta do plano</span></div>
-  <div class="table-wrap"><table><thead><tr><th>Código</th><th>Conta</th><th>Valor</th><th>Participação</th></tr></thead><tbody id="dre-revenue-rows"><tr><td colspan="4" class="empty-state">Aguardando dados financeiros autorizados.</td></tr></tbody></table></div>
-  <div class="section-head" style="margin-top:24px"><h2>Despesas operacionais</h2><span>Por conta do plano</span></div>
-  <div class="table-wrap"><table><thead><tr><th>Código</th><th>Conta</th><th>Valor</th><th>Participação</th></tr></thead><tbody id="dre-expense-rows"><tr><td colspan="4" class="empty-state">Aguardando dados financeiros autorizados.</td></tr></tbody></table></div>
-  <div class="notice" style="margin-top:16px"><div class="notice-icon">ⓘ</div><div><strong>Regra do legado identificada</strong><p>O cálculo atual soma lançamentos classificados como Receber e Pagar, associa valores ao plano de contas e calcula resultado líquido como receitas menos despesas. A tela antiga não aplicava filtro de período. A nova versão deverá tornar o período explícito sem alterar silenciosamente a regra contábil nem tratar títulos em aberto como realizados.</p></div></div>
-  <p class="form-hint">A interface ainda não está conectada a um serviço de relatórios. A API dedicada de DRE, o detalhamento por competência/caixa, os filtros, exportações e a conciliação com os lançamentos financeiros precisam ser definidos e homologados antes de habilitar a consulta.</p>
+  <div class="api-toolbar"><div><strong style="font-size:13px">Demonstrativo Gerencial de Receitas e Despesas</strong><div class="api-status" id="dre-status" role="status" aria-live="polite">Aguardando sessão Google e API Shadow</div></div><span class="tag">Somente leitura</span></div>
+  <div class="notice" style="margin:16px 0 18px"><div class="notice-icon">▥</div><div><strong>Consolidação vinculada ao Plano de Contas</strong><p>Classificação pelo tipo do título (Receber/Pagar), com agrupamento por conta vinculada. O cálculo é gerencial e reproduz o critério histórico identificado; não é demonstração contábil por competência nem fluxo de caixa realizado.</p></div></div>
+  <div class="section-head"><h2>Resumo de todos os títulos</h2><span id="dre-updated">Aguardando consulta</span></div>
+  <div class="metric-grid"><article class="metric"><span>Valores a receber</span><strong id="dre-revenue-total">—</strong><small id="dre-revenue-count">Aguardando consulta</small></article><article class="metric"><span>Valores a pagar</span><strong id="dre-expense-total">—</strong><small id="dre-expense-count">Aguardando consulta</small></article><article class="metric"><span>Diferença entre títulos</span><strong id="dre-result-total">—</strong><small>Receber menos pagar · não é saldo bancário</small></article></div>
+  <div class="section-head" style="margin-top:24px"><h2>Receitas por conta</h2><span>Classificação pelo título</span></div>
+  <div class="table-wrap"><table><thead><tr><th>Código</th><th>Conta</th><th>Tipo cadastrado</th><th>Valor</th><th>Participação</th></tr></thead><tbody id="dre-revenue-rows"><tr><td colspan="5" class="empty-state">Aguardando dados financeiros autorizados.</td></tr></tbody></table></div>
+  <div class="section-head" style="margin-top:24px"><h2>Despesas por conta</h2><span>Classificação pelo título</span></div>
+  <div class="table-wrap"><table><thead><tr><th>Código</th><th>Conta</th><th>Tipo cadastrado</th><th>Valor</th><th>Participação</th></tr></thead><tbody id="dre-expense-rows"><tr><td colspan="5" class="empty-state">Aguardando dados financeiros autorizados.</td></tr></tbody></table></div>
+  <div class="notice" style="margin-top:16px"><div class="notice-icon">ⓘ</div><div><strong>Critério e limites do relatório</strong><p id="dre-criteria">Aguardando consulta autorizada.</p><p id="dre-unlinked">Títulos sem conta serão mantidos nos totais gerais e informados separadamente.</p><p>O contrato financeiro atual não contém datas de competência, vencimento, liquidação ou cancelamento. Por isso, filtros por período, realizado versus previsto, inadimplência e conciliação bancária não estão disponíveis nesta versão.</p></div></div>
  </section>`;
 }
+window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function")return;relatoriosApiClient=api;if(moduloAtual==="relatorios")void loadDre(api);});
+window.addEventListener("bravo:session-ended",()=>{relatoriosApiClient=null;relatoriosRequestSequence+=1;relatoriosRequestController?.abort();relatoriosRequestController=null;if(moduloAtual==="relatorios")relatoriosView();});
+
 function documentosView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
@@ -974,7 +1012,7 @@ function documentosView(){
 }
 
 function openModule(id){
- const item=modules[id];if(!item)return;moduloAtual=id;if(id!=="dashboard"){dashboardRequestSequence+=1;dashboardRequestController?.abort();dashboardRequestController=null;}if(id!=="financeiro"){financeiroRequestSequence+=1;financeiroRequestController?.abort();financeiroRequestController=null;}if(id!=="plano_contas"){planoContasRequestSequence+=1;planoContasRequestController?.abort();planoContasRequestController=null;}if(id!=="contas_bancarias"){contasBancariasRequestSequence+=1;contasBancariasRequestController?.abort();contasBancariasRequestController=null;}if(id!=="formas_monetarias"){formasMonetariasRequestSequence+=1;formasMonetariasRequestController?.abort();formasMonetariasRequestController=null;}
+ const item=modules[id];if(!item)return;moduloAtual=id;if(id!=="dashboard"){dashboardRequestSequence+=1;dashboardRequestController?.abort();dashboardRequestController=null;}if(id!=="financeiro"){financeiroRequestSequence+=1;financeiroRequestController?.abort();financeiroRequestController=null;}if(id!=="plano_contas"){planoContasRequestSequence+=1;planoContasRequestController?.abort();planoContasRequestController=null;}if(id!=="contas_bancarias"){contasBancariasRequestSequence+=1;contasBancariasRequestController?.abort();contasBancariasRequestController=null;}if(id!=="formas_monetarias"){formasMonetariasRequestSequence+=1;formasMonetariasRequestController?.abort();formasMonetariasRequestController=null;}if(id!=="relatorios"){relatoriosRequestSequence+=1;relatoriosRequestController?.abort();relatoriosRequestController=null;}
  document.querySelectorAll("[data-module]").forEach(el=>{if(el.closest("#navigation")){if(el.dataset.module===id)el.setAttribute("aria-current","page");else el.removeAttribute("aria-current")}});
  document.getElementById("breadcrumb").textContent=item.name;
  document.getElementById("page-title").textContent=item.title;
@@ -996,7 +1034,7 @@ function openModule(id){
  if(id==="compras_consumo"){location.hash=id;comprasConsumoView();return}
  if(id==="categorias"){location.hash=id;pastasView();return}
  if(id==="documentos"){location.hash=id;documentosView();return}
- if(id==="relatorios"){location.hash=id;relatoriosView();return}
+ if(id==="relatorios"){location.hash=id;relatoriosView();if(relatoriosApiClient)void loadDre(relatoriosApiClient);return}
  if(id==="configuracoes"){location.hash=id;configuracoesView();return}
  view.innerHTML='<section class="panel module-view"><div><div class="big-icon">◇</div><span class="eyebrow">Módulo mapeado · Bravo Shadow</span><h2>'+item.title+'</h2><p>'+item.desc+'</p><span class="tag">Estrutura visual inicial · Funcionalidade ainda não migrada</span></div></section>';
  location.hash=id;
