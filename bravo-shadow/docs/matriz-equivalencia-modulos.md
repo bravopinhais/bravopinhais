@@ -310,3 +310,13 @@ A inspeção do legado identificou painel com contagens de estoque adequado, cr�
 A API Shadow possui GET/POST/PUT/DELETE em /api/v1/estoque, com capacidades estoque:read/create/update/delete. Quantidades suportam três casas decimais e valor unitário duas. O service impede alteração direta do saldo após movimentações e impede exclusão quando existem acertos vinculados; o saldo deve ser alterado pelo módulo Acerto de Estoque. O adapter PostgreSQL armazena os campos de produto e serializa a edição com bloqueio de linha.
 
 A nova interface Shadow contempla cadastro ampliado, filtros/indicadores estruturais e tabela. Os controles permanecem desabilitados, sem chamadas de rede ou dados fictícios. Scanner, impressão de etiquetas, fotos/armazenamento externo, checklist, relatórios por setor e integração do histórico ainda não estão conectados. A listagem atual não possui filtros/paginação na API. Esta é uma entrega visual/documental, não homologação nem autorização de ativação.
+
+## Acerto de Estoque — atualização da paridade (27/11/2026)
+
+O legado apresenta histórico com data/hora, tipo, produto, quantidade, motivo e ação de exclusão; formulário de novo movimento com tipo Entrada/Saída, busca de produto por etiqueta/nome, quantidade e motivo. No legado, a exclusão remove o movimento sem recompor saldo, deixando risco de divergência.
+
+A Shadow mantém GET/POST em /api/v1/acertos-estoque, protegidos por acertos_estoque:read/create. O catálogo de motivos é consultado em GET /api/v1/motivos-acerto-estoque. Admin e Operador têm leitura e criação. Quantidade é Decimal positiva com até três casas.
+
+Na persistência PostgreSQL, o produto é bloqueado com SELECT FOR UPDATE; valida saldo não negativo; atualiza quantidade e insere histórico na mesma transação. Não há rotas PUT/DELETE; o service recusa exclusão e recomenda movimento compensatório. A interface Shadow foi adicionada com formulário, histórico e explicação de integridade, mas permanece desabilitada e sem chamadas de rede.
+
+Lacunas: histórico/listagem sem filtros ou paginação; busca do produto e catálogo de motivos ainda não ligados à tela; scanner, anexos/evidências, aprovação e auditoria explícita do movimento não confirmados. O legado permitia apagar movimento sem recompor saldo; esse comportamento destrutivo não foi replicado.
