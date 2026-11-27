@@ -71,6 +71,25 @@ def test_text_fields_do_not_implicitly_stringify():
     with pytest.raises(TargetPayloadContractError):
         validate_target_payload("estoque", {"item": 123})
 
+@pytest.mark.parametrize(("column", "value"), [
+    ("perfil", "admin"),
+    ("perfil", "Administrador"),
+    ("status", "ativo"),
+    ("status", "Bloqueado"),
+])
+def test_user_profile_and_status_reject_values_outside_sql_enums(column, value):
+    with pytest.raises(TargetPayloadContractError, match="enum_literal_invalid"):
+        validate_target_payload("usuarios", {column: value})
+
+@pytest.mark.parametrize(("column", "value"), [
+    ("perfil", "Admin"),
+    ("perfil", "Operador"),
+    ("status", "Ativo"),
+    ("status", "Inativo"),
+])
+def test_user_profile_and_status_accept_exact_sql_enum_literals(column, value):
+    validate_target_payload("usuarios", {column: value})
+
 @pytest.mark.parametrize("collection,column", [
     ("financeiro", "historico"),
     ("estoque", "item"),
