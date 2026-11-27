@@ -1553,4 +1553,86 @@ Não configurar `statement_timeout` ou `lock_timeout` globalmente sem avaliar ou
 A decisão final depende do inventário de todos os escritores e da homologação concorrente. A garantia “sempre existe ao menos um Admin ativo” só pode ser declarada depois desses passos.
 
 Nenhuma tabela/linha de guarda foi criada; nenhum lock, timeout, função, role, policy ou grant foi aplicado. Nenhum teste concorrente foi executado nesta etapa documental e nenhum banco foi conectado ou alterado.
+## 26. Inventário dos caminhos de escrita de usuários — 27/11/2026
+
+**Status:** inspeção estática dos arquivos do backend e dos rascunhos SQL da branch `bravo-shadow`. Esta seção registra os caminhos encontrados e os riscos; não altera código nem banco.
+
+### 26.1 Rotas HTTP encontradas
+
+O router `app/modules/usuarios/router.py` expõe os seguintes caminhos:
+
+| Rota | Capacidade | Caminho de serviço | Efeito sobre perfil/status |
+|---|---|---|---|
+| `GET /api/v1/usuarios` | `usuarios:read` | `list()` | Leitura |
+| `GET /api/v1/usuarios/{id}` | `usuarios:read` | `get()` | Leitura |
+| `POST /api/v1/usuarios` | `usuarios:create` | `create_cadastral()` | Define `Operador/Ativo` no servidor; o payload não aceita perfil/status |
+| `PUT /api/v1/usuarios/{id}` | `usuarios:update` | `update_cadastral()` | Pretende preservar perfil/status; ver risco de escrita obsoleta abaixo |
+| `POST /api/v1/usuarios/{id}/desativar` | `usuarios:deactivate` | `deactivate()` → `deactivate_user()` | Muda status; usa lock de tabela, valida último Admin e grava auditoria na transação |
+| `DELETE /api/v1/usuarios/{id}` | `usuarios:delete` | Resposta 410 | Não executa exclusão física |
+
+Não foi encontrada rota HTTP para `update_administrative_state()`; o próprio serviço registra que a alteração privilegiada permanece fora dos routers. Portanto, o fluxo administrativo de perfil/status não está exposto por esta API nesta revisão.
+
+### 26.2 Escritas no repositório PostgreSQL
+
+Em `app/core/postgres_usuarios.py` foram identificados quatro pontos relevantes:
+
+- `add()`: executa INSERT com `perfil` e `status` recebidos no objeto `Usuario`, sem lock global administrativo.
+- `replace()`: executa UPDATE de e-mail, nome, loja, cargo, perfil e status, incrementando versão, sem lock global administrativo.
+- `deactivate_user()`: adquire `SHARE ROW EXCLUSIVE` na tabela, bloqueia a linha alvo, valida a contagem de Admins ativos e grava auditoria na mesma transação.
+- `update_administrative_state()`: também adquire `SHARE ROW EXCLUSIVE`, bloqueia o alvo, valida o último Admin, atualiza perfil/status e grava auditoria na mesma transação.
+
+Os dois últimos caminhos compartilham hoje a proteção conservadora de lock de tabela. Os dois primeiros são operações genéricas de persistência e não devem ser tratados como caminhos seguros para alteração de privilégios.
+
+### 26.3 Risco concreto: atualização cadastral pode restaurar estado obsoleto
+
+O caminho público `update_cadastral()` lê o usuário atual, monta outro objeto preservando os valores de perfil/status lidos e chama `repository.replace()`. Como `replace()` atualiza também perfil/status, há uma janela de corrida:
+
+1. A atualização cadastral lê `Admin/Ativo`.
+2. Outra transação administrativa rebaixa o usuário para `Operador/Ativo`, sob o lock administrativo, e confirma.
+3. A atualização cadastral grava nome/loja/cargo usando o objeto antigo e também regrava `Admin/Ativo`, sem adquirir o lock comum.
+
+Isso pode desfazer uma alteração administrativa confirmada e contornar a garantia do último Admin. O fato de a rota cadastral não aceitar os campos privilegiados no JSON não elimina o problema: o serviço reenvia os valores antigos ao UPDATE.
+
+**Correção recomendada para implementação futura:** criar uma operação de repositório específica para campos cadastrais, cujo SQL atualize exclusivamente `nome`, `loja`, `cargo`, `updated_at` e `version`. Não incluir `perfil` ou `status` no SET, nem reescrever esses campos a partir de uma leitura anterior. Se for necessário controle de concorrência, usar versão esperada/compare-and-swap para os campos cadastrais, sem transformar a atualização em escritor de privilégios.
+
+### 26.4 Serviços genéricos e caminhos internos
+
+O serviço também contém `create()` e `update()`, que aceitam `UsuarioInput` com perfil/status. Não são chamados diretamente pelo router público examinado, que usa os métodos cadastrais restritos, mas continuam sendo métodos disponíveis no serviço e podem ser reutilizados por código interno ou testes.
+
+- `create()` permite criar um objeto com perfil/status do input e chama `repository.add()`.
+- `update()` permite substituir o objeto completo e chama `repository.replace()`.
+- `create_cadastral()` força `Operador/Ativo` antes de chamar `create()`.
+- `update_cadastral()` preserva os valores lidos, mas, pelo motivo descrito acima, ainda os regrava através de `replace()`.
+- `delete()` no serviço e no repositório bloqueia exclusão física; a rota HTTP também retorna 410.
+
+Direção recomendada: retirar o uso genérico de `create()/update()` do fluxo de usuários persistido, ou torná-los privados/explicitamente restritos ao adaptador em memória de testes. Para PostgreSQL, qualquer criação ou mudança de perfil/status deve passar por operações dedicadas com contrato de autorização, lock, auditoria e idempotência aprovados. A criação comum deve permanecer limitada a Operador/Ativo.
+
+### 26.5 Outros escritores e limites da inspeção
+
+- `storage.py` injeta `PostgresUsuariosRepository` no serviço quando o backend selecionado é PostgreSQL; no modo memória usa `InMemoryCollectionRepository`.
+- `main.py` registra o router de usuários e não adiciona outro router de administração de usuários.
+- Os testes de integração criam usuários por SQL direto como preparação de fixtures no banco local descartável; isso é setup de teste, não um fluxo de aplicação.
+- Os rascunhos SQL definem a tabela e índices, mas não implementam triggers que imponham o protocolo de lock. RLS/revokes sem grants finais não demonstram, por si só, que todos os escritores futuros seguirão o mesmo protocolo.
+- A auditoria de exceções HTTP em `main.py` grava em `audit_events`, não altera a tabela `usuarios`.
+
+Esta inspeção cobriu o router, schemas, service, repositório PostgreSQL, composição de storage, registro de routers, testes de integração e os dois rascunhos SQL citados. Antes de homologar a garantia, ainda é necessário fazer busca global por DML e revisar migrations/rotinas externas que possam escrever na tabela fora deste conjunto.
+
+### 26.6 Testes de aceite que passam a ser obrigatórios
+
+1. Atualização cadastral concorrente com rebaixamento: nenhuma gravação cadastral pode restaurar perfil/status antigo.
+2. Atualização cadastral concorrente com desativação: não pode reativar usuário nem alterar o perfil.
+3. Duas operações administrativas concorrentes em alvos diferentes mantêm exatamente um Admin ativo.
+4. Criação pública sempre resulta em Operador/Ativo, mesmo se o cliente enviar campos extras; campos extras são rejeitados.
+5. Nenhuma rota pública cadastral aceita perfil/status.
+6. Métodos genéricos internos não conseguem gravar perfil/status em PostgreSQL fora do protocolo controlado.
+7. Todos os DML de produção em `usuarios` são inventariados e restritos por grants/roles; fixtures de teste ficam isoladas no banco descartável.
+8. A atualização cadastral altera somente os campos permitidos e mantém versionamento coerente; se usar versão esperada, conflito obsoleto retorna resposta estável sem sobrescrita.
+
+### 26.7 Prioridade e estado
+
+**Prioridade alta antes de abrir o fluxo administrativo:** corrigir o UPDATE cadastral para não regravar perfil/status; restringir os métodos genéricos de escrita; em seguida, centralizar todos os escritores privilegiados no mesmo protocolo de lock e auditoria.
+
+A proteção atual de último Admin nos métodos `deactivate_user()` e `update_administrative_state()` é positiva, mas não basta para declarar a invariante global enquanto `replace()` puder reescrever os mesmos campos sem participar do protocolo.
+
+Nenhuma correção de código foi aplicada, nenhum teste foi executado nesta etapa e nenhum banco foi conectado ou alterado.
 
