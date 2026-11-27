@@ -232,3 +232,33 @@ def test_missing_user_cannot_be_deactivated_or_audited():
     assert connection.updated is False
     assert sink.calls == []
     assert connection.rollbacks == 1
+
+
+
+def test_already_inactive_user_is_idempotent_without_duplicate_audit():
+    connection = Connection(target=("Operador", "Inativo"))
+    sink = AuditSink()
+
+    make_repository(connection).deactivate_user(
+        "usr_target", event=make_deactivation_event(), audit_sink=sink
+    )
+
+    assert connection.updated is False
+    assert sink.calls == []
+    assert connection.commits == 1
+    assert connection.rollbacks == 0
+
+
+def test_unknown_user_state_fails_closed_without_audit():
+    connection = Connection(target=("Root", "Ativo"))
+    sink = AuditSink()
+
+    with pytest.raises(HTTPException) as error:
+        make_repository(connection).deactivate_user(
+            "usr_target", event=make_deactivation_event(), audit_sink=sink
+        )
+
+    assert error.value.status_code == 409
+    assert connection.updated is False
+    assert sink.calls == []
+    assert connection.rollbacks == 1
