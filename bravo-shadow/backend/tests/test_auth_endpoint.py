@@ -10,6 +10,17 @@ def test_auth_me_requires_bearer_token():
     assert response.status_code == 401
 
 
+def test_auth_me_rejects_non_bearer_authorization_scheme():
+    client = TestClient(create_app(storage_backend="memory"))
+
+    response = client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": "Basic dXNlcjpwYXNz"},
+    )
+
+    assert response.status_code == 401
+
+
 def test_auth_me_accepts_verified_google_identity_and_internal_active_user():
     application = create_app(storage_backend="memory")
     application.state.google_token_verifier = lambda token: {
@@ -81,3 +92,29 @@ def test_auth_me_returns_service_unavailable_when_google_is_not_configured(monke
 
     assert response.status_code == 503
     assert response.json()["detail"] == "Autenticação Google não configurada no servidor."
+
+
+def test_auth_me_rejects_google_identity_without_verified_email():
+    application = create_app(storage_backend="memory")
+    application.state.google_token_verifier = lambda token: {
+        "sub": "google-unverified",
+        "email": "admin@example.com",
+        "email_verified": False,
+    }
+    application.state.services.usuarios.create(
+        UsuarioInput(
+            email="admin@example.com",
+            nome="Admin de teste",
+            loja="Bravo Shadow",
+            cargo="Gestor",
+            perfil="Admin",
+            status="Ativo",
+        )
+    )
+
+    response = TestClient(application).get(
+        "/api/v1/auth/me",
+        headers={"Authorization": "Bearer token-de-teste"},
+    )
+
+    assert response.status_code == 401
