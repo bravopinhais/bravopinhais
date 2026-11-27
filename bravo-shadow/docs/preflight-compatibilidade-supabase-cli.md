@@ -77,9 +77,11 @@ de tabela/schema para `anon`, `authenticated` ou `service_role`, ausência de
 FORCE RLS na auditoria, triggers append-only ausentes/desabilitados ou
 constraints que impedem autorização de escrita na aprovação pré-importação e as 13 FKs críticas definidas nas migrations.
 
-A auditoria é uma verificação de catálogo direcionada às 27 tabelas e às 13 FKs
-críticas definidas nas migrations atuais; não substitui revisão manual de cada
-índice, tipo, trigger ou comportamento da aplicação.
+A auditoria é uma verificação de catálogo direcionada às 27 tabelas, 13 FKs e
+15 índices únicos críticos definidos nas migrations atuais. Para cada índice
+único, confirma `indisunique`, `indisvalid` e `indisready`, incluindo índices
+funcionais de código de plano de contas e e-mail de usuário. Não substitui
+revisão manual dos demais índices, tipos, triggers ou comportamento da aplicação.
 
 Depois da execução, ainda será necessário revisar FKs, índices, constraints,
 triggers e resultados de cada migration, registrar falhas e corrigir os
