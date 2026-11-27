@@ -108,6 +108,21 @@ def has_capability(
     return capability in ROLE_CAPABILITIES.get(principal.profile, frozenset())
 
 
+
+def capabilities_for(principal: AuthenticatedPrincipal | None) -> tuple[str, ...]:
+    """Expõe somente capacidades explícitas do perfil interno ativo."""
+    if (
+        not isinstance(principal, AuthenticatedPrincipal)
+        or principal.account_status != "Ativo"
+        or not isinstance(principal.subject, str)
+        or not principal.subject.strip()
+        or not isinstance(principal.email, str)
+        or not principal.email.strip()
+    ):
+        return ()
+    return tuple(sorted(ROLE_CAPABILITIES.get(principal.profile, frozenset())))
+
+
 def require_capability(
     principal: AuthenticatedPrincipal | None,
     capability: str,
