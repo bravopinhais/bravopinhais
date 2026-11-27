@@ -437,6 +437,65 @@ function financeiroView(){
   </ul>
  </section>`;
 }
+let dashboardApiClient = null;
+let dashboardRequestSequence = 0;
+let dashboardRequestController = null;
+
+function formatDashboardCount(value){
+ const number=Number(value);
+ return Number.isSafeInteger(number)&&number>=0
+  ? new Intl.NumberFormat("pt-BR").format(number)
+  : "—";
+}
+function formatDashboardCurrency(value){
+ const number=Number(value);
+ return Number.isFinite(number)
+  ? new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(number)
+  : "—";
+}
+async function loadDashboardSummary(api){
+ const status=document.getElementById("dashboard-status");
+ if(!status||!api||typeof api.get!=="function")return;
+ const sequence=++dashboardRequestSequence;
+ dashboardRequestController?.abort();
+ dashboardRequestController=new AbortController();
+ status.textContent="Consultando resumo autorizado do Dashboard…";
+ status.className="api-status";
+ try{
+  const data=await api.get("/api/v1/dashboard/resumo",{signal:dashboardRequestController.signal});
+  if(sequence!==dashboardRequestSequence||moduloAtual!=="dashboard")return;
+  if(!data||typeof data!=="object")throw new Error("A API retornou um resumo inválido.");
+  const values={
+   total_titulos_receber:formatDashboardCount(data.total_titulos_receber),
+   total_titulos_pagar:formatDashboardCount(data.total_titulos_pagar),
+   diferenca_titulos:formatDashboardCurrency(data.diferenca_titulos),
+   total_produtos_estoque:formatDashboardCount(data.total_produtos_estoque),
+   total_moradores:formatDashboardCount(data.total_moradores),
+   total_documentos:formatDashboardCount(data.total_documentos),
+   valor_receber:formatDashboardCurrency(data.valor_receber),
+   valor_pagar:formatDashboardCurrency(data.valor_pagar),
+   cadastros_auxiliares:formatDashboardCount(Number(data.total_contas_plano)+Number(data.total_formas_monetarias)),
+   total_contas_plano:formatDashboardCount(data.total_contas_plano),
+   total_fornecedores:formatDashboardCount(data.total_fornecedores),
+   total_empregados:formatDashboardCount(data.total_empregados)
+  };
+  Object.entries(values).forEach(([key,value])=>{
+   const target=document.querySelector('[data-summary-field="'+key+'"]');
+   if(target)target.textContent=value;
+  });
+  status.textContent="Resumo atualizado pela API Shadow · somente leitura";
+  status.className="api-status ok";
+ }catch(error){
+  if(error?.name==="AbortError"||sequence!==dashboardRequestSequence)return;
+  const message=error?.status===403
+   ?"A conta autenticada não possui a capacidade dashboard:read."
+   :error?.status===401
+    ?"Sessão não autorizada ou expirada. Entre novamente."
+    :(error?.message||"Não foi possível consultar o Dashboard.");
+  status.textContent=message;
+  status.className="api-status err";
+ }
+}
 function dashboardView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel dashboard-gate" aria-labelledby="dashboard-api-title">
@@ -445,18 +504,18 @@ function dashboardView(){
   <div class="api-toolbar"><span class="api-status" id="dashboard-status" role="status" aria-live="polite">Aguardando sessão Google e API HTTPS isolada</span><span class="tag">Sem dados fictícios</span></div>
   <div class="section-head"><h2>Indicadores executivos</h2><span>Resumo disponível no contrato atual da API</span></div>
   <div class="metrics dashboard-metrics" id="dashboard-metrics">
-   <article class="metric"><div class="metric-label">Títulos a receber</div><div class="metric-value">—</div><div class="metric-foot">Quantidade e valor total</div></article>
-   <article class="metric"><div class="metric-label">Títulos a pagar</div><div class="metric-value">—</div><div class="metric-foot">Quantidade e valor total</div></article>
-   <article class="metric"><div class="metric-label">Diferença entre títulos</div><div class="metric-value">—</div><div class="metric-foot">A receber menos a pagar</div></article>
-   <article class="metric"><div class="metric-label">Produtos cadastrados</div><div class="metric-value">—</div><div class="metric-foot">Catálogo de estoque</div></article>
-   <article class="metric"><div class="metric-label">Moradores cadastrados</div><div class="metric-value">—</div><div class="metric-foot">Cadastro de moradores</div></article>
-   <article class="metric"><div class="metric-label">Documentos cadastrados</div><div class="metric-value">—</div><div class="metric-foot">Acervo documental</div></article>
+   <article class="metric"><div class="metric-label">Títulos a receber</div><div class="metric-value" data-summary-field="total_titulos_receber">—</div><div class="metric-foot">Quantidade e valor total</div></article>
+   <article class="metric"><div class="metric-label">Títulos a pagar</div><div class="metric-value" data-summary-field="total_titulos_pagar">—</div><div class="metric-foot">Quantidade e valor total</div></article>
+   <article class="metric"><div class="metric-label">Diferença entre títulos</div><div class="metric-value" data-summary-field="diferenca_titulos">—</div><div class="metric-foot">A receber menos a pagar</div></article>
+   <article class="metric"><div class="metric-label">Produtos cadastrados</div><div class="metric-value" data-summary-field="total_produtos_estoque">—</div><div class="metric-foot">Catálogo de estoque</div></article>
+   <article class="metric"><div class="metric-label">Moradores cadastrados</div><div class="metric-value" data-summary-field="total_moradores">—</div><div class="metric-foot">Cadastro de moradores</div></article>
+   <article class="metric"><div class="metric-label">Documentos cadastrados</div><div class="metric-value" data-summary-field="total_documentos">—</div><div class="metric-foot">Acervo documental</div></article>
   </div>
   <div class="section-head"><h2>Visão financeira</h2><span>Totais do resumo · sem série histórica</span></div>
   <div class="metrics dashboard-metrics">
-   <article class="metric"><div class="metric-label">Valor a receber</div><div class="metric-value">—</div><div class="metric-foot">Total dos títulos classificados como Receber</div></article>
-   <article class="metric"><div class="metric-label">Valor a pagar</div><div class="metric-value">—</div><div class="metric-foot">Total dos títulos classificados como Pagar</div></article>
-   <article class="metric"><div class="metric-label">Cadastros auxiliares</div><div class="metric-value">—</div><div class="metric-foot">Plano de contas e formas monetárias</div></article>
+   <article class="metric"><div class="metric-label">Valor a receber</div><div class="metric-value" data-summary-field="valor_receber">—</div><div class="metric-foot">Total dos títulos classificados como Receber</div></article>
+   <article class="metric"><div class="metric-label">Valor a pagar</div><div class="metric-value" data-summary-field="valor_pagar">—</div><div class="metric-foot">Total dos títulos classificados como Pagar</div></article>
+   <article class="metric"><div class="metric-label">Cadastros auxiliares</div><div class="metric-value" data-summary-field="cadastros_auxiliares">—</div><div class="metric-foot">Plano de contas e formas monetárias</div></article>
   </div>
   <div class="dashboard-gate-note"><span class="dot"></span><span>O endpoint atual entrega contagens e totais agregados. Não fornece ainda inadimplência, vencidos, fluxo de caixa, evolução temporal, gráficos, alertas de estoque ou comparativos. Esses indicadores não serão simulados.</span></div>
  </section>
@@ -471,15 +530,29 @@ function dashboardView(){
  </div>
  <div class="section-head"><h2>Panorama operacional</h2><span>Indicadores aguardando serviços específicos</span></div>
  <div class="metrics">
-  <article class="metric"><div class="metric-label">Contas do plano</div><div class="metric-value">—</div><div class="metric-foot">Total de contas cadastradas</div></article>
-  <article class="metric"><div class="metric-label">Fornecedores</div><div class="metric-value">—</div><div class="metric-foot">Cadastro de fornecedores</div></article>
-  <article class="metric"><div class="metric-label">Empregados</div><div class="metric-value">—</div><div class="metric-foot">Cadastro de empregados</div></article>
+  <article class="metric"><div class="metric-label">Contas do plano</div><div class="metric-value" data-summary-field="total_contas_plano">—</div><div class="metric-foot">Total de contas cadastradas</div></article>
+  <article class="metric"><div class="metric-label">Fornecedores</div><div class="metric-value" data-summary-field="total_fornecedores">—</div><div class="metric-foot">Cadastro de fornecedores</div></article>
+  <article class="metric"><div class="metric-label">Empregados</div><div class="metric-value" data-summary-field="total_empregados">—</div><div class="metric-foot">Cadastro de empregados</div></article>
  </div>
  <div class="section-head"><h2>Alertas e acompanhamento</h2><span>Não disponíveis no contrato atual</span></div>
  <div class="panel"><strong style="font-size:13px">Central de alertas</strong><p>Vencimentos, inadimplência, saldo mínimo, cobertura de estoque, pendências de sincronização e avisos administrativos exigem consultas específicas e regras de negócio ainda não integradas ao Dashboard. Nenhum alerta será inferido a partir de contagens genéricas.</p></div>
  <div class="section-head"><h2>Fundação da nova arquitetura</h2><span>Ambiente independente</span></div>
  <div class="panel"><strong style="font-size:13px">Frontend unificado → API FastAPI → serviços de domínio → persistência isolada</strong><p>O painel executivo será atualizado por serviços autorizados, com agregações no backend e trilha de auditoria. O sistema original permanece preservado durante a migração sombra.</p></div>`;
 }
+
+window.addEventListener("bravo:session-ready",event=>{
+ const api=event.detail?.api;
+ if(!api||typeof api.get!=="function")return;
+ dashboardApiClient=api;
+ if(moduloAtual==="dashboard")void loadDashboardSummary(api);
+});
+window.addEventListener("bravo:session-ended",()=>{
+ dashboardApiClient=null;
+ dashboardRequestSequence+=1;
+ dashboardRequestController?.abort();
+ dashboardRequestController=null;
+ if(moduloAtual==="dashboard")dashboardView();
+});
 function formasView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
@@ -674,14 +747,14 @@ function documentosView(){
 }
 
 function openModule(id){
- const item=modules[id];if(!item)return;moduloAtual=id;
+ const item=modules[id];if(!item)return;moduloAtual=id;if(id!=="dashboard"){dashboardRequestSequence+=1;dashboardRequestController?.abort();dashboardRequestController=null;}
  document.querySelectorAll("[data-module]").forEach(el=>{if(el.closest("#navigation")){if(el.dataset.module===id)el.setAttribute("aria-current","page");else el.removeAttribute("aria-current")}});
  document.getElementById("breadcrumb").textContent=item.name;
  document.getElementById("page-title").textContent=item.title;
  document.getElementById("page-subtitle").textContent=item.desc;
  document.getElementById("page-title").focus({preventScroll:true});
  const view=document.getElementById("view");
- if(id==="dashboard"){dashboardView();location.hash="";return}
+ if(id==="dashboard"){dashboardView();if(dashboardApiClient)void loadDashboardSummary(dashboardApiClient);location.hash="";return}
  if(id==="condominio"){location.hash=id;condominioView();return}
  if(id==="moradores"){location.hash=id;moradoresView();return}
  if(id==="fornecedores"){location.hash=id;fornecedoresView();return}
