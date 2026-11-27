@@ -55,6 +55,9 @@ jobs:
           grep -q 'return false}' _site/index.html
           grep -q 'const listaAtualizada=await carregarFormas()' _site/index.html
           grep -q 'Registro salvo, mas a lista não foi atualizada. Use Atualizar para tentar novamente.' _site/index.html
+          grep -q 'tabindex="-1"' _site/index.html
+          grep -q 'Exclusão concluída, mas a lista não foi atualizada. Use Atualizar para tentar novamente.' _site/index.html
+          grep -q 'document.getElementById("formas-status")?.focus()' _site/index.html
           grep -q 'id="forma-cancel-edit" data-action="cancel-edit" hidden' _site/index.html
           grep -q 'if(action.dataset.action==="cancel-edit")' _site/index.html
           grep -q 'function formasView(){' _site/index.html
