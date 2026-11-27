@@ -1492,6 +1492,9 @@ function comprasConsumoView(){
   <div class="section-head"><h2>Detalhamento por produto</h2><span>Saldo, diferença e cobertura</span></div>
   <div class="data-table-wrap"><table class="data-table"><caption>Compras e consumo por produto</caption><thead><tr><th scope="col">Produto</th><th scope="col">Setor</th><th scope="col">Compras</th><th scope="col">Consumo</th><th scope="col">Perdas</th><th scope="col">Diferença</th><th scope="col">Estoque</th><th scope="col">Cobertura</th><th scope="col">Situação</th></tr></thead><tbody id="cc-product-rows"><tr><td colspan="9" class="empty-state">Os produtos serão exibidos após autenticação e consulta à API.</td></tr></tbody></table></div>
  </section>`;
+ document.getElementById("cc-filters")?.addEventListener("submit",event=>{event.preventDefault();if(comprasConsumoApiClient)void loadComprasConsumo(comprasConsumoApiClient);});
+ document.getElementById("cc-export")?.addEventListener("click",()=>{if(comprasConsumoApiClient)void exportComprasConsumo(comprasConsumoApiClient);});
+ comprasConsumoApplyPermissions();
 }
 function configuracoesView(){
  const view=document.getElementById("view");
