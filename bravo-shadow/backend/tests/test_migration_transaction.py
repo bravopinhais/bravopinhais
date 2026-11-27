@@ -50,12 +50,16 @@ def make_operations(expected_connection, calls, *, fail_at=None):
         assert destination["id"] == "legacy-17"
         record("audit_event", connection)
 
+    def append_failure(error):
+        calls.append(("failure_event", type(error).__name__, expected_connection.rollbacks))
+
     return MigrationWriteOperations(
         reserve_batch=reserve,
         write_business=write_business,
         write_source_map=write_source_map,
         append_success_event=append_event,
         append_audit_event=append_audit,
+        append_failure_event=append_failure,
     )
 
 
@@ -103,7 +107,8 @@ def test_failure_at_any_step_rolls_back_entire_unit(failed_step, expected_calls)
             operations,
         )
 
-    assert calls == expected_calls
+    assert calls[:len(expected_calls)] == expected_calls
+    assert calls[-1] == ("failure_event", "RuntimeError", 1)
     assert connection.commits == 0
     assert connection.rollbacks == 1
     assert connection.closes == 1
@@ -123,4 +128,33 @@ def test_unit_does_not_emit_success_event_when_business_insert_fails():
     assert "source_map" not in calls
     assert "success_event" not in calls
     assert "audit_event" not in calls
+    assert calls[-1] == ("failure_event", "RuntimeError", 1)
     assert connection.rollbacks == 1
+
+
+def test_failure_audit_error_does_not_hide_original_migration_error():
+    connection = FakeConnection()
+    calls = []
+    operations = make_operations(connection, calls, fail_at="business")
+
+    def broken_failure_audit(error):
+        calls.append(("failure_audit_error", type(error).__name__, connection.rollbacks))
+        raise RuntimeError("failure_audit_unavailable")
+
+    operations = MigrationWriteOperations(
+        reserve_batch=operations.reserve_batch,
+        write_business=operations.write_business,
+        write_source_map=operations.write_source_map,
+        append_success_event=operations.append_success_event,
+        append_audit_event=operations.append_audit_event,
+        append_failure_event=broken_failure_audit,
+    )
+
+    with pytest.raises(RuntimeError, match="failure_at_business") as caught:
+        execute_migration_write_unit(
+            lambda: PostgresUnitOfWork(lambda: connection), operations
+        )
+
+    assert connection.rollbacks == 1
+    assert calls[-1] == ("failure_audit_error", "RuntimeError", 1)
+    assert any("auditoria de falha" in note for note in getattr(caught.value, "__notes__", []))
