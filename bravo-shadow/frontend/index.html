@@ -119,6 +119,35 @@ async function apiRequest(path,options={}){
  if(response.status===204)return null;
  return response.json();
 }
+function contasBancariasView(){
+ const view=document.getElementById("view");
+ view.innerHTML=`<section class="panel">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Contas Bancárias / Caixa</strong><div class="api-status" id="cb-status" role="status" aria-live="polite">Aguardando sessão Google e API HTTPS Shadow</div></div><span class="tag">Cadastro de contas</span></div>
+  <div class="notice" style="margin:14px 0 18px"><div class="notice-icon">▣</div><div><strong>Cadastro e saldo informado</strong><p>O contrato atual guarda o nome do banco e um saldo informado manualmente. Esse valor não é saldo conciliado, extrato bancário nem saldo calculado a partir de movimentações.</p></div></div>
+  <div class="section-head"><h2>Nova conta</h2><span>Campos existentes no legado e na API</span></div>
+  <form class="api-form" id="cb-form" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+   <div class="field"><label for="cb-bank">Banco / identificação</label><input id="cb-bank" name="banco" maxlength="200" placeholder="Nome do banco ou caixa" required disabled></div>
+   <div class="field"><label for="cb-opening">Saldo inicial informado (R$)</label><input id="cb-opening" name="saldo" type="number" step="0.01" inputmode="decimal" placeholder="0,00" required disabled></div>
+   <div style="grid-column:1/-1;display:flex;justify-content:flex-end"><button class="action-btn primary" type="submit" disabled>Salvar conta</button></div>
+  </form>
+  <p class="form-hint">A API aceita valor decimal com duas casas. A gravação permanece bloqueada até a integração segura de autenticação e API.</p>
+ </section>
+ <section class="panel" style="margin-top:16px">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Contas cadastradas</strong><div class="api-status">Consulta protegida · contas_bancarias:read</div></div><span class="tag">Resumo cadastral</span></div>
+  <div class="data-table-wrap"><table class="data-table"><caption>Contas bancárias e saldos informados</caption><thead><tr><th scope="col">Banco / identificação</th><th scope="col">Saldo informado</th><th scope="col">Ações</th></tr></thead><tbody id="cb-rows"><tr><td colspan="3" class="empty-state">Aguardando consulta autorizada. Nenhuma conta fictícia é exibida.</td></tr></tbody></table></div>
+ </section>
+ <section class="panel" style="margin-top:16px">
+  <div class="section-head" style="margin-top:0"><h2>O que ainda não é movimentação bancária</h2><span>Limites do contrato</span></div>
+  <ul style="margin:0;padding-left:18px;color:var(--soft);font-size:12px;line-height:1.9">
+   <li>Não há extrato, lançamentos de entrada/saída ou transferência entre contas.</li>
+   <li>Não há conciliação bancária, saldo calculado ou fechamento de caixa.</li>
+   <li>O módulo Financeiro ainda não vincula títulos a uma conta bancária.</li>
+   <li>Não há agência, número da conta, tipo de conta, instituição identificada por código ou saldo por data.</li>
+   <li>O perfil Operador possui somente leitura neste módulo; operações de cadastro são reservadas ao perfil autorizado.</li>
+   <li>A exclusão atual é física e não possui proteção contra referências financeiras.</li>
+  </ul>
+ </section>`;
+}
 function financeiroView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
@@ -419,6 +448,7 @@ function openModule(id){
  const view=document.getElementById("view");
  if(id==="dashboard"){dashboardView();location.hash="";return}
  if(id==="financeiro"){location.hash=id;financeiroView();return}
+ if(id==="contas_bancarias"){location.hash=id;contasBancariasView();return}
  if(id==="formas_monetarias"){location.hash=id;formasView();return}
  if(id==="usuarios"){location.hash=id;usuariosView();return}
  if(id==="compras_consumo"){location.hash=id;comprasConsumoView();return}
