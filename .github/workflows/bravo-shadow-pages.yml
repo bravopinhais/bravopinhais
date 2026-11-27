@@ -43,6 +43,9 @@ jobs:
           grep -q 'id="main-content" tabindex="-1"' _site/index.html
           grep -q 'id="view" aria-live="polite" aria-atomic="true"' _site/index.html
           grep -q 'window.addEventListener("hashchange"' _site/index.html
+          grep -q '<h1 id="page-title" tabindex="-1">' _site/index.html
+          grep -q 'getElementById("page-title").focus({preventScroll:true})' _site/index.html
+          grep -q 'history.replaceState(null,"",location.pathname+location.search)' _site/index.html
 
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
