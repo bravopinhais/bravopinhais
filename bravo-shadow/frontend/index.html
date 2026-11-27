@@ -509,9 +509,8 @@ async function loadFinanceiroTitles(api){
   financeiroPlanAccounts=new Map();financeiroPlanAccountsStatus="unavailable";
   if(accountsResult.status==="fulfilled"){
    const accounts=accountsResult.value;
-   if(!Array.isArray(accounts)||accounts.some(item=>!item||typeof item.id!=="string"||typeof item.codigo!=="string"||typeof item.nome!=="string"||!["Receita","Despesa"].includes(item.tipo)))throw new Error("A API retornou uma lista de contas inválida.");
-   financeiroPlanAccounts=new Map(accounts.map(item=>[item.id,item]));
-   financeiroPlanAccountsStatus="loaded";
+   const validAccounts=Array.isArray(accounts)&&accounts.every(item=>item&&typeof item.id==="string"&&typeof item.codigo==="string"&&typeof item.nome==="string"&&["Receita","Despesa"].includes(item.tipo));
+   if(validAccounts){financeiroPlanAccounts=new Map(accounts.map(item=>[item.id,item]));financeiroPlanAccountsStatus="loaded";}
   }
   const search=document.getElementById("fin-search");
   const type=document.getElementById("fin-filter-type");
