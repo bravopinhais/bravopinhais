@@ -24,6 +24,7 @@ from app.core.postgres_inventory import (
     PostgresEstoqueRepository,
 )
 from app.core.postgres_usuarios import PostgresUsuariosRepository
+from app.core.postgres_audit import PostgresAuditSink
 from app.core.postgres_repositories import (
     PostgresFinanceiroRepository,
     PostgresFormasMonetariasRepository,
@@ -72,6 +73,7 @@ class StorageServices:
     condominio: CondominioService
     conselheiros: ConselheirosService
     usuarios: UsuariosService
+    audit_sink: Any | None
 
 
 def build_storage_services(
@@ -86,6 +88,7 @@ def build_storage_services(
     adapters PostgreSQL; condomínio, conselho e perfis de usuário também usam PostgreSQL.
     """
     movement_repository = None
+    audit_sink = None
     if backend == "memory":
         formas_repository = InMemoryCollectionRepository()
         financeiro_repository = InMemoryCollectionRepository()
@@ -123,6 +126,7 @@ def build_storage_services(
         condominio_repository = PostgresCondominioRepository(connection_factory)
         conselheiros_repository = PostgresConselheirosRepository(connection_factory)
         usuarios_repository = PostgresUsuariosRepository(connection_factory)
+        audit_sink = PostgresAuditSink(connection_factory)
         movement_repository = acertos_repository
     else:
         raise StorageConfigurationError(
@@ -160,7 +164,7 @@ def build_storage_services(
     contas_bancarias = ContasBancariasService(repository=contas_bancarias_repository)
     condominio = CondominioService(repository=condominio_repository)
     conselheiros = ConselheirosService(repository=conselheiros_repository)
-    usuarios = UsuariosService(repository=usuarios_repository)
+    usuarios = UsuariosService(repository=usuarios_repository, audit_sink=audit_sink)
 
     return StorageServices(
         formas_monetarias=formas_monetarias,
@@ -178,4 +182,5 @@ def build_storage_services(
         condominio=condominio,
         conselheiros=conselheiros,
         usuarios=usuarios,
+        audit_sink=audit_sink,
     )
