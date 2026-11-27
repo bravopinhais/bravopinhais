@@ -467,3 +467,121 @@ def test_real_postgres_cadastral_update_cannot_restore_stale_admin_state(postgre
 
     assert row == ("Nome cadastral atualizado", "Operador", "Ativo", 3)
 
+
+
+def test_real_postgres_mixed_concurrent_demotion_and_deactivation_preserve_admin(
+    postgres_users_database,
+):
+    """As duas operações compartilham a mesma serialização do último Admin."""
+    database_url = postgres_users_database
+    _insert_user(database_url, "usr_mixed_admin_a", "mixed-admin-a@example.test")
+    _insert_user(database_url, "usr_mixed_admin_b", "mixed-admin-b@example.test")
+    barrier = Barrier(2)
+
+    def demote():
+        barrier.wait(timeout=10)
+        try:
+            _repository(database_url).update_administrative_state(
+                "usr_mixed_admin_a",
+                perfil="Operador",
+                status="Ativo",
+                event=_event("usr_mixed_admin_a"),
+                audit_sink=_audit_sink(database_url),
+            )
+            return "committed"
+        except HTTPException as error:
+            if error.status_code != 409:
+                raise
+            return "last_admin_guard"
+
+    def deactivate():
+        barrier.wait(timeout=10)
+        try:
+            _repository(database_url).deactivate_user(
+                "usr_mixed_admin_b",
+                event=_deactivation_event("usr_mixed_admin_b"),
+                audit_sink=_audit_sink(database_url),
+            )
+            return "committed"
+        except HTTPException as error:
+            if error.status_code != 409:
+                raise
+            return "last_admin_guard"
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        demotion = pool.submit(demote)
+        deactivation = pool.submit(deactivate)
+        outcomes = [demotion.result(timeout=20), deactivation.result(timeout=20)]
+
+    assert outcomes.count("committed") == 1
+    assert outcomes.count("last_admin_guard") == 1
+
+    with psycopg.connect(database_url) as connection:
+        active_admins = connection.execute(
+            "SELECT count(*) FROM bravo_shadow.usuarios "
+            "WHERE perfil = 'Admin' AND status = 'Ativo'"
+        ).fetchone()[0]
+        audit_count = connection.execute(
+            "SELECT count(*) FROM bravo_shadow.audit_events"
+        ).fetchone()[0]
+
+    assert active_admins == 1
+    assert audit_count == 1
+
+
+def test_real_postgres_concurrent_cadastral_update_and_demotion_do_not_restore_privileges(
+    postgres_users_database,
+):
+    """UPDATE cadastral e alteração privilegiada podem concorrer sem lost update."""
+    from app.modules.usuarios.schemas import UsuarioDadosCadastraisUpdateInput
+
+    database_url = postgres_users_database
+    _insert_user(database_url, "usr_cadastral_concurrent", "cadastral-concurrent@example.test")
+    _insert_user(
+        database_url,
+        "usr_cadastral_concurrent_guard",
+        "cadastral-concurrent-guard@example.test",
+    )
+    repository = _repository(database_url)
+    barrier = Barrier(2)
+
+    def update_cadastral():
+        barrier.wait(timeout=10)
+        return repository.update_cadastral(
+            "usr_cadastral_concurrent",
+            nome="Nome cadastral concorrente",
+        )
+
+    def demote():
+        barrier.wait(timeout=10)
+        return repository.update_administrative_state(
+            "usr_cadastral_concurrent",
+            perfil="Operador",
+            status="Ativo",
+            event=_event("usr_cadastral_concurrent"),
+            audit_sink=_audit_sink(database_url),
+        )
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        cadastral = pool.submit(update_cadastral)
+        administrative = pool.submit(demote)
+        cadastral.result(timeout=20)
+        administrative.result(timeout=20)
+
+    with psycopg.connect(database_url) as connection:
+        row = connection.execute(
+            "SELECT nome, perfil, status, version FROM bravo_shadow.usuarios "
+            "WHERE id = %s",
+            ("usr_cadastral_concurrent",),
+        ).fetchone()
+        active_admins = connection.execute(
+            "SELECT count(*) FROM bravo_shadow.usuarios "
+            "WHERE perfil = 'Admin' AND status = 'Ativo'"
+        ).fetchone()[0]
+        audit_count = connection.execute(
+            "SELECT count(*) FROM bravo_shadow.audit_events"
+        ).fetchone()[0]
+
+    assert row == ("Nome cadastral concorrente", "Operador", "Ativo", 3)
+    assert active_admins == 1
+    assert audit_count == 1
