@@ -99,18 +99,23 @@ export function createBravoApiClient({ apiBase, getAuthorizationHeader } = {}) {
     }
 
     const contentType = response.headers.get("content-type") || "";
-    let result = null;
+    if (!response.ok) {
+      let errorBody = null;
+      if (contentType.includes("application/json")) {
+        try { errorBody = await response.json(); } catch {}
+      }
+      const detail = typeof errorBody?.detail === "string" ? errorBody.detail : "A API recusou a operação.";
+      throw new BravoApiError(detail, { status: response.status, requestId });
+    }
+
+    if (options.responseType === "blob") return response.blob();
+    if (options.responseType === "text") return response.text();
     if (contentType.includes("application/json")) {
-      try { result = await response.json(); } catch {
+      try { return await response.json(); } catch {
         throw new BravoApiError("A API retornou uma resposta inválida.", { status: response.status, requestId });
       }
     }
-
-    if (!response.ok) {
-      const detail = typeof result?.detail === "string" ? result.detail : "A API recusou a operação.";
-      throw new BravoApiError(detail, { status: response.status, requestId });
-    }
-    return result;
+    return null;
   }
 
   return Object.freeze({
