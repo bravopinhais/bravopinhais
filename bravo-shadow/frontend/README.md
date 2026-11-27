@@ -266,3 +266,26 @@ A tela Shadow agora representa o fluxo do legado: código, nome da conta e tipo 
 Código (1–30 caracteres) e nome (2–160 caracteres) são obrigatórios; tipo é Receita ou Despesa. O serviço verifica duplicidade de código e o PostgreSQL possui proteção de unicidade. A exclusão depende de verificação de títulos financeiros vinculados e retorna conflito quando há referências. O perfil Operador tem leitura; escrita é restrita ao Admin.
 
 O contrato não possui hierarquia de contas, conta-pai, centro de custo, níveis sintético/analítico ou natureza adicional. A API usa versionamento otimista para edição. Auditoria transacional específica de CRUD não foi confirmada; não habilitar gravações antes da revisão de auditoria e integração segura.
+
+
+## Condomínio & Conselho
+
+A tela Shadow agora apresenta os campos institucionais existentes no schema do condomínio e o cadastro do corpo diretivo. Os formulários e ações permanecem desabilitados até a integração Google/Bearer; não há requests automáticos, valores de exemplo ou leitura da produção.
+
+### Condomínio
+
+- `GET /api/v1/condominio` — `condominio:read`.
+- `PUT /api/v1/condominio` — `condominio:update`.
+
+Campos: nome, CNPJ, razão social, endereço, bairro, cidade, UF, CEP, telefone, e-mail, identificadores Copel dos blocos 1–4 e áreas comuns, registro de gás do salão e matrícula Sanepar.
+
+### Conselho
+
+- `GET /api/v1/conselheiros` — `conselheiros:read`.
+- `POST /api/v1/conselheiros` — `conselheiros:create`.
+- `PUT /api/v1/conselheiros/{id}` — `conselheiros:update`.
+- `DELETE /api/v1/conselheiros/{id}` — `conselheiros:delete`.
+
+Campos: nome, cargo, Bloco/Ap e telefone. Admin possui CRUD; Operador somente leitura.
+
+Há adapters PostgreSQL para os dois cadastros, mas o serviço atual não implementa auditoria de negócio transacional específica. A atualização do singleton do condomínio não expõe If-Match/versão no contrato HTTP. Não habilitar gravações até revisar auditoria e concorrência.
