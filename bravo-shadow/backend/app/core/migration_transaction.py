@@ -187,6 +187,15 @@ def apply_one_record_with_persisted_approval(
     """
     if not isinstance(command, MigrationApplyCommand):
         raise TypeError("comando de aplicação inválido.")
+    # Reuse strict command/hash/payload validation; this local shape object is
+    # not an authorization grant. The persisted rows below remain authoritative.
+    _validate(
+        command,
+        MigrationApplyAuthorization(
+            command.manifest_sha256, command.plan_sha256,
+            "local_disposable", "migration_apply", True,
+        ),
+    )
     if not isinstance(principal, AuthenticatedPrincipal):
         raise MigrationApplyBlocked("principal autenticado obrigatório.")
     if (
