@@ -1544,36 +1544,101 @@ function comprasConsumoView(){
  document.getElementById("cc-export")?.addEventListener("click",()=>{if(comprasConsumoApiClient)void exportComprasConsumo(comprasConsumoApiClient);});
  comprasConsumoApplyPermissions();
 }
+let configuracoesApiClient=null,configuracoesItems=[],configuracoesSequence=0,configuracoesController=null,configuracoesSaving=new Set();
+function configuracoesCan(action){return hasBravoCapability("configuracoes:"+action);}
+function configuracoesStatus(message,kind=""){const node=document.getElementById("config-status");if(node){node.textContent=message;node.className="api-status"+(kind?" "+kind:"");}}
+function configuracoesApplyPermissions(){
+ const canRead=configuracoesCan("read"),canUpdate=configuracoesCan("update");
+ const refresh=document.getElementById("config-refresh");if(refresh)refresh.disabled=!canRead||!configuracoesApiClient;
+ const bulkNote=document.getElementById("config-admin-note");if(bulkNote)bulkNote.hidden=canUpdate;
+}
+function configuracoesRenderRows(){
+ const tbody=document.getElementById("config-rows");if(!tbody)return;tbody.replaceChildren();
+ if(!configuracoesItems.length){const row=document.createElement("tr"),cell=document.createElement("td");cell.colSpan=4;cell.className="empty-state";cell.textContent="Nenhum módulo retornado pela API.";row.append(cell);tbody.append(row);return;}
+ for(const item of configuracoesItems){
+  const row=document.createElement("tr");
+  for(const value of [item.nome,item.grupo,item.ativo?"Ativo":"Inativo"]){const cell=document.createElement("td");cell.textContent=value;row.append(cell);}
+  const actionCell=document.createElement("td"),wrap=document.createElement("div");wrap.className="row-actions";
+  if(configuracoesCan("update")&&item.chave!=="configuracoes"){
+   const button=document.createElement("button");button.type="button";button.className="action-btn"+(item.ativo?" danger":" primary");
+   button.textContent=configuracoesSaving.has(item.chave)?"Salvando…":(item.ativo?"Desativar":"Ativar");
+   button.disabled=configuracoesSaving.has(item.chave)||!configuracoesApiClient;
+   button.setAttribute("aria-label",(item.ativo?"Desativar ":"Ativar ")+item.nome);
+   button.addEventListener("click",()=>void configuracoesSetModule(item.chave,!item.ativo));
+   wrap.append(button);
+  }else if(item.chave==="configuracoes"){
+   const fixed=document.createElement("span");fixed.className="tag";fixed.textContent="Obrigatório";wrap.append(fixed);
+  }else{
+   const fixed=document.createElement("span");fixed.className="tag";fixed.textContent=configuracoesCan("read")?"Somente leitura":"Sem acesso";wrap.append(fixed);
+  }
+  actionCell.append(wrap);row.append(actionCell);tbody.append(row);
+ }
+}
+function configuracoesValidateList(data){
+ const expected=new Set(["dashboard","condominio","plano_contas","financeiro","formas_monetarias","contas_bancarias","relatorios","moradores","fornecedores","empregados","estoque","acerto_estoque","compras_consumo","categorias","documentos","configuracoes","usuarios"]);
+ if(!Array.isArray(data)||data.length!==expected.size||data.some(item=>!item||typeof item.chave!=="string"||!expected.has(item.chave)||typeof item.nome!=="string"||typeof item.grupo!=="string"||typeof item.ativo!=="boolean"))throw new Error("A API retornou um catálogo de módulos inválido.");
+ return data;
+}
+async function configuracoesLoad(api){
+ if(!configuracoesCan("read")){configuracoesItems=[];configuracoesRenderRows();configuracoesStatus("Seu perfil não possui configuracoes:read.","err");return;}
+ const sequence=++configuracoesSequence;configuracoesController?.abort();configuracoesController=new AbortController();
+ configuracoesStatus("Consultando estados dos módulos…");
+ try{
+  const data=configuracoesValidateList(await api.get("/api/v1/configuracoes/modulos",{signal:configuracoesController.signal}));
+  if(sequence!==configuracoesSequence||moduloAtual!=="configuracoes")return;
+  configuracoesItems=data;configuracoesRenderRows();configuracoesStatus(data.length+" módulos carregados · consulta autorizada","ok");
+ }catch(error){
+  if(error?.name==="AbortError"||sequence!==configuracoesSequence)return;
+  configuracoesItems=[];configuracoesRenderRows();
+  configuracoesStatus(error?.status===403?"Seu perfil não possui autorização para consultar configurações.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível consultar os módulos."),"err");
+ }
+}
+async function configuracoesSetModule(key,enabled){
+ if(!configuracoesApiClient||!configuracoesCan("update")){configuracoesStatus("Somente Admin autorizado pode alterar estados.","err");return;}
+ if(key==="configuracoes"&&!enabled){configuracoesStatus("O módulo Configurações deve permanecer ativo.","err");return;}
+ const item=configuracoesItems.find(entry=>entry.chave===key);if(!item||configuracoesSaving.has(key))return;
+ const action=enabled?"ativar":"desativar";
+ if(!window.confirm("Confirma "+action+" o módulo "+item.nome+"? Esta configuração não concede nem revoga permissões de usuário."))return;
+ configuracoesSaving.add(key);configuracoesRenderRows();configuracoesStatus("Salvando estado de "+item.nome+"…");
+ try{
+  const updated=await configuracoesApiClient.patch("/api/v1/configuracoes/modulos/"+encodeURIComponent(key),{ativo:enabled});
+  if(!updated||updated.chave!==key||typeof updated.ativo!=="boolean")throw new Error("A API retornou o estado atualizado em formato inválido.");
+  configuracoesItems=configuracoesItems.map(entry=>entry.chave===key?updated:entry);
+  configuracoesStatus(item.nome+" "+(updated.ativo?"ativado":"desativado")+".","ok");
+ }catch(error){
+  configuracoesStatus(error?.status===403?"A API negou a alteração: somente Admin pode configurar módulos.":error?.status===401?"Sessão expirada. Entre novamente.":error?.status===503?"Persistência administrativa auditada indisponível. Nenhuma alteração foi confirmada.":(error?.message||"Não foi possível alterar o módulo."),"err");
+ }finally{configuracoesSaving.delete(key);configuracoesRenderRows();}
+}
+window.addEventListener("bravo:session-ready",event=>{
+ const api=event.detail?.api;if(!api||typeof api.get!=="function")return;
+ configuracoesApiClient=api;configuracoesApplyPermissions();
+ if(moduloAtual==="configuracoes")void configuracoesLoad(api);
+});
+window.addEventListener("bravo:session-ended",()=>{
+ configuracoesApiClient=null;configuracoesSequence++;configuracoesController?.abort();configuracoesController=null;configuracoesItems=[];configuracoesSaving.clear();
+ if(moduloAtual==="configuracoes")configuracoesView();
+});
 function configuracoesView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
-  <div class="api-toolbar"><div><strong style="font-size:13px">Administração dos módulos</strong><div class="api-status" id="config-status" role="status" aria-live="polite">API implementada · endereço e sessão ainda não configurados</div></div><span class="tag">Controles bloqueados</span></div>
-  <div class="notice" style="margin:16px 0 18px"><div class="notice-icon">⚙</div><div><strong>Configurações protegidas</strong><p>A API de Configurações foi implementada no backend, mas este navegador ainda não possui uma sessão Google validada nem um endereço HTTPS exclusivo para a API Shadow. Por segurança, esta tela não tenta consultar nem alterar dados até esses pré-requisitos existirem.</p></div></div>
-  <div class="section-head"><h2>Catálogo de módulos</h2><span>17 áreas mapeadas</span></div>
-  <div class="data-table-wrap"><table class="data-table" style="min-width:0"><thead><tr><th scope="col">Módulo</th><th scope="col">Grupo</th><th scope="col">Estado</th></tr></thead><tbody>
-   <tr><td>Dashboard Executivo</td><td>Gestão</td><td><span class="tag">Aguardando API</span></td></tr>
-   <tr><td>Dados do Condomínio</td><td>Cadastros</td><td><span class="tag">Aguardando API</span></td></tr>
-   <tr><td>Plano de Contas</td><td>Financeiro</td><td><span class="tag">Aguardando API</span></td></tr>
-   <tr><td>Pagar / Receber</td><td>Financeiro</td><td><span class="tag">Aguardando API</span></td></tr>
-   <tr><td>Formas Monetárias</td><td>Financeiro</td><td><span class="tag">Aguardando API</span></td></tr>
-   <tr><td>Contas Bancárias</td><td>Financeiro</td><td><span class="tag">Aguardando API</span></td></tr>
-   <tr><td>DRE &amp; Relatórios</td><td>Gestão</td><td><span class="tag">Aguardando API</span></td></tr>
-   <tr><td>Moradores &amp; Unidades</td><td>Cadastros</td><td><span class="tag">Aguardando API</span></td></tr>
-   <tr><td>Fornecedores</td><td>Cadastros</td><td><span class="tag">Aguardando API</span></td></tr>
-   <tr><td>Empregados</td><td>Cadastros</td><td><span class="tag">Aguardando API</span></td></tr>
-   <tr><td>Estoque &amp; Fotos</td><td>Estoque</td><td><span class="tag">Aguardando API</span></td></tr>
-   <tr><td>Acerto de Estoque</td><td>Estoque</td><td><span class="tag">Aguardando API</span></td></tr>
-   <tr><td>Compras x Consumo</td><td>Estoque</td><td><span class="tag">Aguardando API</span></td></tr>
-   <tr><td>Pastas</td><td>Documentos</td><td><span class="tag">Aguardando API</span></td></tr>
-   <tr><td>Documentos Gzip</td><td>Documentos</td><td><span class="tag">Aguardando API</span></td></tr>
-   <tr><td><strong>Configurações</strong></td><td>Sistema</td><td><span class="tag">Sempre ativo</span></td></tr>
-   <tr><td>Utilizadores</td><td>Sistema</td><td><span class="tag">Aguardando API</span></td></tr>
-  </tbody></table></div>
-  <div class="section-head"><h2>Ações administrativas</h2><span>Disponíveis após autenticação</span></div>
-  <div class="api-toolbar"><button class="action-btn" type="button" disabled>Ativar todos</button><button class="action-btn danger" type="button" disabled>Desativar módulos operacionais</button></div>
-  <p class="form-hint">Os estados não são presumidos nem gravados por esta tela. Ao conectar a sessão, a tabela será carregada da API. Apenas Admin poderá alterar módulos; Operador terá consulta. Alterações não concedem permissões.</p>
- </section>`;
+  <div class="api-toolbar"><div><strong style="font-size:13px">Administração dos módulos</strong><div class="api-status" id="config-status" role="status" aria-live="polite">Aguardando sessão Google e API HTTPS Shadow</div></div><span class="tag">Configuração administrativa</span></div>
+  <div class="notice" style="margin:16px 0 18px"><div class="notice-icon">⚙</div><div><strong>Estados dos módulos</strong><p>Os estados são consultados na API Shadow. Somente Admin pode ativar ou desativar módulos. Essa configuração não altera as capacidades/permissões individuais; a API continua sendo a autoridade de autorização.</p></div></div>
+  <div class="api-toolbar"><div><strong>Catálogo de módulos</strong><div class="form-hint">17 módulos · estados persistidos e auditados no backend</div></div><button id="config-refresh" class="action-btn" type="button" disabled>Atualizar</button></div>
+  <div class="data-table-wrap"><table class="data-table" style="min-width:0"><thead><tr><th scope="col">Módulo</th><th scope="col">Grupo</th><th scope="col">Estado</th><th scope="col">Ação</th></tr></thead><tbody id="config-rows"><tr><td colspan="4" class="empty-state">Aguardando consulta autenticada. Nenhum estado presumido será exibido.</td></tr></tbody></table></div>
+  <p id="config-admin-note" class="form-hint" hidden>Seu perfil possui consulta, mas não autorização administrativa para alterar módulos.</p>
+  <p class="form-hint">O módulo Configurações é obrigatório e não pode ser desativado. Cada alteração individual exige confirmação e é registrada na mesma transação PostgreSQL pela auditoria administrativa. Se a persistência auditada não estiver disponível, a API recusa a alteração.</p>
+ </section>
+ <section class="panel" style="margin-top:16px"><div class="section-head" style="margin-top:0"><h2>Limites e segurança</h2><span>Comportamento do sistema</span></div><ul style="margin:0;padding-left:18px;color:var(--soft);font-size:12px;line-height:1.9">
+  <li>Desativar um módulo não revoga capacidades do usuário nem substitui a autorização da API.</li>
+  <li>Ativação em massa não é exposta nesta interface para evitar alterações amplas acidentais.</li>
+  <li>O estado depende da tabela module_settings no PostgreSQL Shadow; nenhum SQL ou migration é aplicado por esta tela.</li>
+  <li>O ambiente em memória pode permitir consulta, mas não possui persistência administrativa auditada para alterações.</li>
+ </ul></section>`;
+ document.getElementById("config-refresh")?.addEventListener("click",()=>{if(configuracoesApiClient)void configuracoesLoad(configuracoesApiClient);});
+ configuracoesApplyPermissions();configuracoesRenderRows();
+ if(configuracoesApiClient)void configuracoesLoad(configuracoesApiClient);
 }
+
 let catalogApiClient=null,categoriesItems=[],reasonsItems=[],catalogSequence=0,catalogController=null;
 function catalogCan(key,action){return hasBravoCapability(key+":"+action);}
 function catalogStatus(id,message,kind=""){const node=document.getElementById(id);if(node){node.textContent=message;node.className="api-status"+(kind?" "+kind:"");}}
