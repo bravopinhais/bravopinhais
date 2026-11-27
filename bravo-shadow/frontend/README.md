@@ -488,3 +488,9 @@ A tela do Plano de Contas utiliza o cliente HTTP entregue pelo evento de sessão
 Ao encerrar a sessão, a lista em memória é limpa e requisições pendentes são canceladas. A navegação para outro módulo também invalida a consulta anterior. Cadastro, edição e exclusão continuam desabilitados, embora existam rotas correspondentes no backend. Nenhum dado fictício é apresentado.
 
 A integração está preparada no código da branch Shadow, mas depende da API HTTPS isolada, da configuração explícita do bootstrap Google e da concessão de `plano_contas:read`. Não houve publicação nem alteração na aplicação original.
+
+### Relacionamento entre Financeiro e Plano de Contas
+
+Na listagem financeira, a interface consulta também `GET /api/v1/plano-contas` para resolver `planoContaId` em código e nome da conta. Essa consulta auxiliar usa a mesma sessão autenticada e sua própria autorização `plano_contas:read`. Se a permissão ou a consulta auxiliar não estiver disponível, a listagem de títulos continua funcionando e exibe o identificador interno como alternativa; não transforma uma falha auxiliar em falha do Financeiro.
+
+A pesquisa financeira considera histórico, tipo, identificador e nome/código resolvido. Os dados auxiliares ficam apenas em memória e são descartados ao encerrar a sessão. Ambas as consultas são canceladas quando a tela deixa de ser atual; não há gravação nem alteração de vínculos.
