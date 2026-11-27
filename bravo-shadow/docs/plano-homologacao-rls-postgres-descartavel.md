@@ -1730,3 +1730,37 @@ O script `docs/verificar-privilegios-rls-somente-leitura.sql` é uma inspeção 
 A execução GitHub Actions `45997490822` foi consultada novamente em 27/11/2026 e permanecia `in_progress`: o job Docker/smoke test estava `success`, enquanto o job Backend/PostgreSQL descartável ainda não tinha conclusão. Não registrar aprovação dos testes dessa execução até obter seu resultado final.
 
 **Conclusão:** a revisão identificou com precisão a ausência de uma identidade runtime PostgreSQL definida e validada no código. A configuração continua deliberadamente não implementada; o banco de produção permanece desconectado e sem alterações.
+
+## 29. Escopo destrutivo das fixtures PostgreSQL opt-in
+
+A revisão direta das fixtures de integração real identificou três suítes que não devem ser confundidas com testes de leitura ou com o teste de roles via `SET ROLE`:
+
+- `backend/tests/test_postgres_inventory_integration.py`
+- `backend/tests/test_usuarios_admin_postgres_integration.py`
+- `backend/tests/test_migration_review_postgres_integration.py`
+
+As três leem `BRAVO_SHADOW_TEST_DATABASE_URL`, ignoram a suíte quando a variável não está configurada e exigem `BRAVO_SHADOW_ALLOW_DESTRUCTIVE_TEST_DATABASE=1`. Também validam PostgreSQL local/loopback e o nome exato do banco `bravo_shadow_test`.
+
+### Operações destrutivas observadas
+
+Antes dos testes, as fixtures:
+1. consultam `pg_roles` e criam `anon`, `authenticated` e `service_role` como `NOLOGIN` caso ainda não existam;
+2. executam `DROP SCHEMA IF EXISTS bravo_shadow CASCADE`;
+3. aplicam um ou mais arquivos SQL de rascunho para reconstruir o schema.
+
+Ao final, removem novamente `bravo_shadow` com `CASCADE`. Algumas provas de rollback criam triggers e funções temporárias dentro do schema para forçar falhas controladas.
+
+### Consequência para execução e CI
+
+- Essas suítes só podem receber uma URL criada exclusivamente para o banco descartável local. Nunca reutilizar `BRAVO_DATABASE_URL`, URL de Supabase hospedado, banco de desenvolvimento compartilhado ou produção.
+- A variável de autorização destrutiva não deve ser configurada em ambientes genéricos nem armazenada como configuração persistente de aplicação.
+- O processo de CI deve criar o banco efêmero, fornecer a URL somente ao job de teste e descartar o container/banco ao terminar. A mera presença do job Docker ou do serviço PostgreSQL não prova que as fixtures destrutivas foram executadas.
+- A criação condicional dos três papéis padrão é DDL real, mesmo que ocorra somente em teste. Não representa configuração de roles runtime privadas nem prova de isolamento de privilégios.
+- A fixture não cria credenciais independentes para as roles testadas. Ela aplica o DDL usando a conexão configurada para o banco de teste; portanto, esses testes validam comportamento funcional/integridade, não autenticação PostgreSQL independente por role.
+- A suíte de roles com `SET ROLE` é evidência separada e limitada: não substitui conexões autenticadas diretamente como cada identidade.
+
+### Critério de aceite
+
+Antes de habilitar essas suítes em qualquer pipeline, inspecionar o workflow e comprovar que o PostgreSQL é criado dentro do próprio job, com database `bravo_shadow_test`, host local do serviço/container e descarte garantido. Registrar o resultado de cada suíte separadamente. Se a execução não ocorrer, reportar como não executada ou ignorada, nunca como aprovada.
+
+**Status:** fixtures revisadas estaticamente; nenhuma fixture foi executada nesta etapa e nenhum banco foi acessado ou alterado.
