@@ -149,6 +149,7 @@ def build_storage_services(
     plano_contas = PlanoContasService(
         repository=plano_repository,
         has_financial_references=financeiro.has_plan_account_reference,
+        audit_sink=audit_sink,
     )
     formas_monetarias = FormasMonetariasService(repository=formas_repository)
 
