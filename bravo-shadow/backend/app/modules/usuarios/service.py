@@ -87,7 +87,8 @@ class UsuariosService:
             return updated
 
     def deactivate(
-        self, item_id: str, *, actor_subject: str, actor_email: str
+        self, item_id: str, *, actor_subject: str, actor_email: str,
+        request_id: str | None = None,
     ) -> None:
         """Desativa sem apagar o cadastro; exige auditoria na mesma transação."""
         if not actor_subject or not actor_subject.strip():
@@ -122,6 +123,7 @@ class UsuariosService:
             entity_type="usuario",
             entity_id=item_id,
             outcome="success",
+            request_id=request_id,
         )
         operation(item_id, event=event, audit_sink=self.audit_sink)
 
