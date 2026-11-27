@@ -131,10 +131,11 @@ def build_synthetic_homologation_package(
                 and all(item.status in {"compatible", "compatible_with_optional_gaps"}
                         for item in compatibility.assessments) else "review_required",
             len(compatibility.assessments),
-            tuple(sorted(set(
-                ["unmapped_source_collections"] if compatibility.unmapped_source_collections else []
+            tuple(sorted(
+                (["unmapped_source_collections"] if compatibility.unmapped_source_collections else [])
                 + (["unmapped_target_collections"] if compatibility.unmapped_target_collections else [])
-            ))),
+                + (["collection_mapping_conflicts"] if compatibility.mapping_conflicts else [])
+            )),
         ),
         HomologationTrace(
             "REF-001", "reference_reconciliation",
@@ -150,8 +151,8 @@ def build_synthetic_homologation_package(
         HomologationTrace(
             "DOM-001", "specialized_contracts", "review_required",
             len(special.assessments),
-            tuple(sorted({item.key for item in special.assessments
-                          if item.status != "shape_matches_review_required"})),
+            ("specialized_domain_approval_pending",)
+            if special.assessments or special.unassessed_domains else (),
         ),
         HomologationTrace(
             "VAL-001", "special_value_assessment",
