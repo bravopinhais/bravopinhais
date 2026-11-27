@@ -997,73 +997,121 @@ window.addEventListener("bravo:session-ended",()=>{
  moradoresApiClient=null;moradoresItems=[];moradoresRequestSequence++;moradoresDetailSequence++;moradoresRequestController?.abort();moradoresRequestController=null;moradorEditingId=null;
  if(moduloAtual==="moradores")moradoresView();
 });
+let planoContasApiClient=null,planoContasRequestSequence=0,planoContasRequestController=null,planoContasAccounts=[],planoContasEditingId=null,planoContasSaving=false;
+function planoContasCan(action){return hasBravoCapability("plano_contas:"+action);}
+function planoContasStatus(message,kind=""){const node=document.getElementById("pc-status");if(node){node.textContent=message;node.className="api-status"+(kind?" "+kind:"");}}
+function planoContasApplyPermissions(){
+ const form=document.getElementById("pc-form");const allowed=planoContasSaving?false:(planoContasEditingId?planoContasCan("update"):planoContasCan("create"));
+ if(form)form.querySelectorAll("input,select").forEach(input=>{input.disabled=!allowed||(planoContasEditingId&&input.name==="tipo");});
+ const save=document.getElementById("pc-save");if(save){save.disabled=!allowed;save.textContent=planoContasEditingId?"Salvar alterações":"Cadastrar conta";}
+ const cancel=document.getElementById("pc-cancel");if(cancel)cancel.hidden=!planoContasEditingId;
+ const search=document.getElementById("pc-search");if(search)search.disabled=!planoContasCan("read");
+ const filter=document.getElementById("pc-filter-type");if(filter)filter.disabled=!planoContasCan("read");
+ const note=document.getElementById("pc-note");if(note)note.textContent=planoContasCan("read")?"O tipo da conta é preservado durante a edição para evitar reclassificação inadvertida de títulos históricos.":"Sua sessão não possui autorização para consultar o Plano de Contas.";
+}
+function planoContasValidate(items){
+ if(!Array.isArray(items)||!items.every(item=>item&&typeof item.id==="string"&&item.id&&typeof item.codigo==="string"&&typeof item.nome==="string"&&["Receita","Despesa"].includes(item.tipo)&&Number.isInteger(item.version)&&item.version>0))throw new Error("A API retornou uma lista de contas inválida.");
+ return items;
+}
+function renderPlanoContasRows(){
+ const tbody=document.getElementById("pc-rows");if(!tbody)return;
+ const search=(document.getElementById("pc-search")?.value||"").trim().toLocaleLowerCase("pt-BR"),type=document.getElementById("pc-filter-type")?.value||"";
+ const filtered=planoContasAccounts.filter(item=>[item.codigo,item.nome,item.tipo].join(" ").toLocaleLowerCase("pt-BR").includes(search)&&(!type||item.tipo===type));
+ tbody.replaceChildren();
+ if(!filtered.length){const row=document.createElement("tr"),cell=document.createElement("td");cell.colSpan=4;cell.className="empty-state";cell.textContent=planoContasAccounts.length?"Nenhuma conta corresponde aos filtros.":"Nenhuma conta do plano cadastrada.";row.append(cell);tbody.append(row);return;}
+ for(const item of filtered){
+  const row=document.createElement("tr");
+  for(const value of [item.codigo,item.nome,item.tipo]){const cell=document.createElement("td");cell.textContent=value;row.append(cell);}
+  const actions=document.createElement("td");
+  if(planoContasCan("update")){const edit=document.createElement("button");edit.type="button";edit.className="action-btn";edit.textContent="Editar";edit.dataset.pcAction="edit";edit.dataset.pcId=item.id;actions.append(edit);}
+  else{const label=document.createElement("span");label.className="form-hint";label.textContent="Somente leitura";actions.append(label);}
+  row.append(actions);tbody.append(row);
+ }
+}
+async function loadPlanoContas(api=planoContasApiClient){
+ if(!api||!planoContasCan("read"))return;
+ planoContasRequestController?.abort();const controller=new AbortController();planoContasRequestController=controller;const sequence=++planoContasRequestSequence;
+ planoContasStatus("Consultando contas com a permissão plano_contas:read…");
+ try{
+  const data=planoContasValidate(await api.get("/api/v1/plano-contas",{signal:controller.signal}));
+  if(sequence!==planoContasRequestSequence||controller.signal.aborted||moduloAtual!=="plano_contas")return;
+  planoContasAccounts=data;renderPlanoContasRows();planoContasStatus(data.length+" conta(s) carregada(s).","ok");
+ }catch(error){
+  if(error?.name==="AbortError"||sequence!==planoContasRequestSequence)return;
+  planoContasAccounts=[];renderPlanoContasRows();
+  planoContasStatus(error?.status===403?"A conta autenticada não possui a capacidade plano_contas:read.":error?.status===401?"Sessão não autorizada ou expirada. Entre novamente.":(error?.message||"Não foi possível consultar o Plano de Contas."),"err");
+ }finally{if(planoContasRequestController===controller)planoContasRequestController=null;planoContasApplyPermissions();}
+}
+function planoContasResetForm(){
+ const form=document.getElementById("pc-form");if(form)form.reset();planoContasEditingId=null;
+ const title=document.getElementById("pc-form-title");if(title)title.textContent="Nova conta gerencial";
+ const type=document.getElementById("pc-type");if(type)type.disabled=!planoContasCan("create");
+ planoContasApplyPermissions();
+}
+function planoContasStartEdit(id){
+ const item=planoContasAccounts.find(account=>account.id===id);if(!item||!planoContasCan("update"))return;
+ planoContasEditingId=item.id;
+ document.getElementById("pc-code").value=item.codigo;document.getElementById("pc-name").value=item.nome;document.getElementById("pc-type").value=item.tipo;
+ const title=document.getElementById("pc-form-title");if(title)title.textContent="Editar conta gerencial";
+ planoContasApplyPermissions();document.getElementById("pc-form-title")?.scrollIntoView({behavior:"smooth",block:"center"});
+}
+async function planoContasSubmit(event){
+ event.preventDefault();if(!planoContasApiClient||planoContasSaving)return;
+ const editing=Boolean(planoContasEditingId),item=editing?planoContasAccounts.find(account=>account.id===planoContasEditingId):null;
+ if(editing&&!item){planoContasStatus("A conta selecionada não está mais na lista. Atualize os dados.","err");return;}
+ if(!(editing?planoContasCan("update"):planoContasCan("create"))){planoContasStatus("Sua sessão não possui autorização para esta operação.","err");return;}
+ const data={codigo:document.getElementById("pc-code").value.trim(),nome:document.getElementById("pc-name").value.trim(),tipo:editing?item.tipo:document.getElementById("pc-type").value};
+ if(!data.codigo||!data.nome||!["Receita","Despesa"].includes(data.tipo)){planoContasStatus("Informe código, nome e um tipo válido.","err");return;}
+ planoContasSaving=true;planoContasApplyPermissions();planoContasStatus(editing?"Salvando alterações com controle de versão…":"Cadastrando conta…");
+ try{
+  if(editing)await planoContasApiClient.put("/api/v1/plano-contas/"+encodeURIComponent(item.id),data,{headers:{"If-Match":'"'+item.version+'"'}});
+  else await planoContasApiClient.post("/api/v1/plano-contas",data);
+  planoContasResetForm();await loadPlanoContas(planoContasApiClient);planoContasStatus(editing?"Conta atualizada.":"Conta cadastrada.","ok");
+ }catch(error){
+  if(error?.status===409||error?.status===428){planoContasStatus("A conta foi alterada por outra operação ou a versão ficou desatualizada. A lista será recarregada.","err");await loadPlanoContas(planoContasApiClient);}
+  else planoContasStatus(error?.status===403?"A API negou a operação: permissão insuficiente.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível salvar a conta."),"err");
+ }finally{planoContasSaving=false;planoContasApplyPermissions();}
+}
+window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function")return;planoContasApiClient=api;planoContasApplyPermissions();if(moduloAtual==="plano_contas")void loadPlanoContas(api);});
+window.addEventListener("bravo:session-ended",()=>{planoContasApiClient=null;planoContasRequestSequence++;planoContasRequestController?.abort();planoContasRequestController=null;planoContasAccounts=[];planoContasEditingId=null;planoContasSaving=false;if(moduloAtual==="plano_contas")planoContasView();});
 function planoContasView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
-  <div class="api-toolbar"><div><strong style="font-size:13px">Plano de Contas</strong><div class="api-status" id="pc-status" role="status" aria-live="polite">Aguardando autenticação Google e API HTTPS Shadow</div></div><span class="tag">Classificação financeira</span></div>
-  <div class="notice" style="margin:14px 0 18px"><div class="notice-icon">▤</div><div><strong>Contas gerenciais de receitas e despesas</strong><p>O cadastro do sistema original contém código, nome da conta e tipo (Receita ou Despesa). As contas podem ser vinculadas aos lançamentos de Pagar / Receber e utilizadas na DRE.</p></div></div>
-  <div class="section-head"><h2>Nova conta gerencial</h2><span>Campos do legado</span></div>
+  <div class="api-toolbar"><div><strong style="font-size:13px">Plano de Contas</strong><div class="api-status" id="pc-status" role="status" aria-live="polite">Aguardando sessão Google e API HTTPS Shadow</div></div><span class="tag">Classificação financeira</span></div>
+  <div class="notice" style="margin:14px 0 18px"><div class="notice-icon">▤</div><div><strong>Contas gerenciais de receitas e despesas</strong><p>Cadastre e mantenha código, nome e tipo (Receita ou Despesa). As contas podem ser vinculadas aos lançamentos financeiros e utilizadas na DRE.</p></div></div>
+  <div class="section-head"><h2 id="pc-form-title">Nova conta gerencial</h2><span>Campos do contrato</span></div>
   <form class="api-form" id="pc-form" style="grid-template-columns:repeat(3,minmax(0,1fr))">
    <div class="field"><label for="pc-code">Código</label><input id="pc-code" name="codigo" maxlength="30" required placeholder="Ex.: 1.3" disabled></div>
    <div class="field"><label for="pc-name">Nome da conta</label><input id="pc-name" name="nome" maxlength="160" required placeholder="Nome da classificação" disabled></div>
    <div class="field"><label for="pc-type">Tipo</label><select id="pc-type" name="tipo" disabled><option value="Despesa">Despesa</option><option value="Receita">Receita</option></select></div>
-   <div style="grid-column:1/-1;display:flex;justify-content:flex-end"><button class="action-btn primary" type="button" disabled>Salvar conta</button></div>
+   <div style="grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px"><button type="button" id="pc-cancel" class="action-btn" hidden>Cancelar edição</button><button class="action-btn primary" id="pc-save" type="submit" disabled>Cadastrar conta</button></div>
   </form>
-  <p class="form-hint">O backend exige código único, nome obrigatório e tipo Receita ou Despesa. Edição utiliza controle de versão (ETag / If-Match).</p>
+  <p class="form-hint">Código único, nome obrigatório e tipo Receita ou Despesa. A edição utiliza controle otimista de versão (ETag / If-Match).</p>
  </section>
  <section class="panel" style="margin-top:16px">
-  <div class="api-toolbar"><div><strong style="font-size:13px">Contas cadastradas</strong><div class="api-status">Consulta protegida · plano_contas:read</div></div><span class="tag">Ordenação por código</span></div>
+  <div class="api-toolbar"><div><strong style="font-size:13px">Contas cadastradas</strong><div class="form-hint">Consulta protegida · plano_contas:read</div></div><button type="button" id="pc-refresh" class="action-btn" disabled>Atualizar</button></div>
   <div class="api-toolbar"><div class="field" style="flex:1"><label for="pc-search">Pesquisar código ou nome</label><input id="pc-search" type="search" placeholder="Pesquisar conta" disabled></div><div class="field"><label for="pc-filter-type">Tipo de conta</label><select id="pc-filter-type" disabled><option value="">Todos</option><option value="Receita">Receita</option><option value="Despesa">Despesa</option></select></div></div>
   <div class="data-table-wrap"><table class="data-table"><caption>Plano de Contas</caption><thead><tr><th scope="col">Código</th><th scope="col">Nome da conta</th><th scope="col">Tipo</th><th scope="col">Ações</th></tr></thead><tbody id="pc-rows"><tr><td colspan="4" class="empty-state">Aguardando consulta autorizada. Nenhuma conta de exemplo será exibida.</td></tr></tbody></table></div>
+  <p id="pc-note" class="form-hint" role="note">A API é a autoridade final para permissões e integridade.</p>
  </section>
  <section class="panel" style="margin-top:16px">
   <div class="section-head" style="margin-top:0"><h2>Vínculos e regras</h2><span>Integridade financeira</span></div>
   <ul style="margin:0;padding-left:18px;color:var(--soft);font-size:12px;line-height:1.9">
    <li>O Financeiro pode vincular um título a uma conta do Plano de Contas; o vínculo é opcional no contrato atual.</li>
    <li>O tipo da conta (Receita/Despesa) classifica as contas na DRE legada.</li>
-   <li>O backend bloqueia exclusão quando existem lançamentos financeiros vinculados.</li>
-   <li>O backend exige versão esperada para edição, evitando sobrescrever alterações concorrentes.</li>
+   <li>A exclusão não é oferecida nesta interface para preservar referências e histórico financeiro.</li>
+   <li>A edição exige versão esperada para evitar sobrescrever alterações concorrentes; o tipo permanece imutável durante a edição.</li>
    <li>O modelo atual não possui hierarquia pai/filho, centro de custo, natureza contábil adicional ou nível sintético/analítico.</li>
-   <li>A listagem é somente leitura; cadastro, edição e exclusão permanecem bloqueados nesta etapa.</li>
   </ul>
  </section>`;
- bindPlanoContasFilters();
- if(planoContasApiClient)void loadPlanoContas(planoContasApiClient);
+ document.getElementById("pc-form")?.addEventListener("submit",planoContasSubmit);
+ document.getElementById("pc-cancel")?.addEventListener("click",planoContasResetForm);
+ document.getElementById("pc-refresh")?.addEventListener("click",()=>void loadPlanoContas());
+ document.getElementById("pc-search")?.addEventListener("input",renderPlanoContasRows);
+ document.getElementById("pc-filter-type")?.addEventListener("change",renderPlanoContasRows);
+ document.getElementById("pc-rows")?.addEventListener("click",event=>{const button=event.target.closest("button[data-pc-action]");if(button&&button.dataset.pcAction==="edit")planoContasStartEdit(button.dataset.pcId);});
+ planoContasApplyPermissions();renderPlanoContasRows();if(planoContasApiClient)void loadPlanoContas(planoContasApiClient);
 }
-
-let planoContasApiClient=null,planoContasRequestSequence=0,planoContasRequestController=null,planoContasAccounts=[];
-function renderPlanoContasRows(){
- const tbody=document.getElementById("pc-rows");if(!tbody)return;
- const search=(document.getElementById("pc-search")?.value||"").trim().toLocaleLowerCase("pt-BR");
- const type=document.getElementById("pc-filter-type")?.value||"";
- const filtered=planoContasAccounts.filter(item=>{const hay=[item.codigo,item.nome,item.tipo].filter(Boolean).join(" ").toLocaleLowerCase("pt-BR");return(!search||hay.includes(search))&&(!type||item.tipo===type);});
- tbody.replaceChildren();
- if(!filtered.length){const row=document.createElement("tr"),cell=document.createElement("td");cell.colSpan=4;cell.className="empty-state";cell.textContent=planoContasAccounts.length?"Nenhuma conta corresponde aos filtros.":"Nenhuma conta do plano cadastrada.";row.append(cell);tbody.append(row);return;}
- for(const item of filtered){const row=document.createElement("tr");for(const value of [item.codigo,item.nome,item.tipo,"Somente leitura"]){const cell=document.createElement("td");cell.textContent=value;row.append(cell);}tbody.append(row);}
-}
-async function loadPlanoContas(api){
- const status=document.getElementById("pc-status");if(!status||!api||typeof api.get!=="function")return;
- const sequence=++planoContasRequestSequence;planoContasRequestController?.abort();planoContasRequestController=new AbortController();
- status.textContent="Consultando contas com a permissão plano_contas:read…";status.className="api-status";
- try{
-  const data=await api.get("/api/v1/plano-contas",{signal:planoContasRequestController.signal});
-  if(sequence!==planoContasRequestSequence||moduloAtual!=="plano_contas")return;
-  if(!Array.isArray(data)||data.some(item=>!item||typeof item!=="object"||typeof item.codigo!=="string"||typeof item.nome!=="string"||!["Receita","Despesa"].includes(item.tipo)))throw new Error("A API retornou uma lista de contas inválida.");
-  planoContasAccounts=data;const search=document.getElementById("pc-search"),type=document.getElementById("pc-filter-type");if(search)search.disabled=false;if(type)type.disabled=false;
-  renderPlanoContasRows();status.textContent=data.length+" conta(s) carregada(s) · consulta somente leitura";status.className="api-status ok";
- }catch(error){
-  if(error?.name==="AbortError"||sequence!==planoContasRequestSequence)return;
-  planoContasAccounts=[];renderPlanoContasRows();const search=document.getElementById("pc-search"),type=document.getElementById("pc-filter-type");if(search)search.disabled=true;if(type)type.disabled=true;
-  status.textContent=error?.status===403?"A conta autenticada não possui a capacidade plano_contas:read.":error?.status===401?"Sessão não autorizada ou expirada. Entre novamente.":(error?.message||"Não foi possível consultar o Plano de Contas.");status.className="api-status err";
- }
-}
-function bindPlanoContasFilters(){
- const search=document.getElementById("pc-search"),type=document.getElementById("pc-filter-type");
- if(search&&search.dataset.bound!=="true"){search.dataset.bound="true";search.addEventListener("input",renderPlanoContasRows);}
- if(type&&type.dataset.bound!=="true"){type.dataset.bound="true";type.addEventListener("change",renderPlanoContasRows);}
-}
-window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function")return;planoContasApiClient=api;if(moduloAtual==="plano_contas")void loadPlanoContas(api);});
-window.addEventListener("bravo:session-ended",()=>{planoContasApiClient=null;planoContasRequestSequence+=1;planoContasRequestController?.abort();planoContasRequestController=null;planoContasAccounts=[];if(moduloAtual==="plano_contas")planoContasView();});
 
 let financeiroApiClient = null;
 let financeiroRequestSequence = 0;
