@@ -350,3 +350,58 @@ Os limites mais importantes identificados:
 - Executar testes negativos de SELECT/INSERT/UPDATE/DELETE/TRUNCATE/DDL para cada identidade e verificar memberships transitivas e bypass de RLS.
 
 **Status:** mapa de privilégios por operação e blast radius documentado; nenhuma role, grant, policy, função, migration ou connection factory foi criada/alterada. A decisão entre role agregada e separação por fronteira continua pendente de revisão explícita.
+
+
+## 12. Regras de negócio que hoje dependem da camada de serviço
+
+A revisão dos serviços, schemas e routers de estoque, movimentos e usuários separou três fronteiras: validação do payload, autorização HTTP e integridade transacional do repositório. As proteções abaixo foram observadas no código da branch; não equivalem a garantias do PostgreSQL.
+
+### 12.1 Estoque e movimentos
+
+| Regra | Onde está protegida | Limite residual |
+|---|---|---|
+| Quantidade do movimento deve ser positiva; tipo deve ser Entrada/Saída | `AcertoInput` (Pydantic) | Validação de payload não protege INSERT SQL direto. |
+| Saída não pode superar saldo | Serviço faz pré-checagem; `register_movement` relê quantidade com `FOR UPDATE` e recalcula saldo dentro da transação | A garantia concorrente está no adaptador transacional, não na pré-checagem do serviço. Testar com sessões reais. |
+| Saldo e histórico devem ser gravados juntos | `PostgresAcertosEstoqueRepository.register_movement` atualiza `estoque` e insere `acertos_estoque` na mesma unidade de trabalho | Um grant UPDATE em `estoque` permite tentar alterar saldo por outros comandos com a mesma role; o banco ainda não obriga a existência do acerto correspondente. |
+| Produto com movimento não pode ter saldo alterado pela edição cadastral | Serviço `EstoqueService.update` e, adicionalmente, `PostgresEstoqueRepository.replace` verifica histórico sob lock | A proteção Python não impede SQL direto. A verificação do repositório é mais forte para concorrência, mas também é código da aplicação. |
+| Histórico não pode ser editado/excluído | Serviço e adaptador recusam replace/delete; não há rota DELETE no router | A garantia final deve ser ausência de UPDATE/DELETE na role SQL, e não apenas HTTP 405/409. |
+| Produto com movimento não pode ser excluído | Serviço verifica referências; PostgreSQL possui FK RESTRICT para o histórico no DDL | O FK protege a integridade mesmo em SQL direto; a resposta HTTP amigável é camada de serviço. |
+
+**Achado específico sobre `update_quantity`:** o método público de serviço altera a quantidade por `repository.replace` e não chama diretamente `_has_movement_references`. No caminho PostgreSQL, o `replace` do repositório repete a verificação de histórico e bloqueia alteração de saldo após movimento. No caminho em memória, o método é usado pelo serviço de movimentos, que atualiza saldo e adiciona o histórico em chamadas distintas. Portanto, ele não deve ser promovido a endpoint nem reutilizado como operação genérica de alteração de saldo; a API deve continuar expondo movimento como único fluxo de ajuste. Isso não é uma vulnerabilidade HTTP observada hoje, mas é uma restrição importante para futuras alterações.
+
+O serviço de movimento faz uma leitura inicial do produto antes de chamar o repositório persistente. O repositório não confia nesse saldo inicial: adquire lock, relê o valor e calcula o novo saldo dentro da transação. Essa segunda leitura é a autoridade para concorrência. A consulta inicial serve para validações e construção do fluxo, não para garantir o saldo.
+
+### 12.2 Cadastro e administração de usuários
+
+| Regra | Onde está protegida | Limite residual |
+|---|---|---|
+| Cadastro comum sempre cria perfil Operador e status Ativo | `UsuarioCadastroInput` não aceita esses campos; `create_cadastral` fixa os valores | INSERT SQL direto com a role de API ainda pode definir perfil/status se os grants/rotinas permitirem. |
+| Atualização cadastral não altera e-mail, perfil ou status | `UsuarioDadosCadastraisUpdateInput` aceita apenas nome, loja e cargo; `update_cadastral` preserva os demais campos | O método legado `update` aceita `UsuarioInput` completo; não está ligado à rota atual, mas não deve ser usado por novos endpoints cadastrais. |
+| Auto-desativação e autoalteração de perfil/status são bloqueadas | `UsuariosService.deactivate` e `update_administrative_state` comparam e-mail autenticado ao alvo | A checagem é de serviço. O repositório também precisa preservar a proteção concorrente e o guard de último Admin. |
+| Desativação e alteração administrativa exigem auditoria atômica | Serviço exige operação transacional; repositório chama `append_in_transaction` com a mesma conexão | A garantia depende da implementação e de que todos os chamadores usem esse caminho. SQL direto não herda a regra. |
+| Exclusão física de usuário é proibida | Router e serviço respondem HTTP 410; adaptador não oferece delete | A role SQL também deve ficar sem DELETE em `usuarios`. |
+| Alteração privilegiada não está exposta por rota | Router atual não declara endpoint para `update_administrative_state` | A ausência de rota é uma barreira atual, não uma autorização para criar endpoint futuro sem capability dedicada e revisão. |
+
+**Ponto de atenção para a futura rota administrativa:** `update_administrative_state` aceita atualmente tanto um `AuthenticatedPrincipal` quanto os parâmetros separados `actor_subject` e `actor_email`. O método valida presença dos textos e impede alterar a própria conta, mas não verifica internamente que o principal tem perfil Admin ou capability específica. Hoje a operação não possui rota pública e a matriz de capabilities continua vazia/deny-by-default; portanto, não há endpoint administrativo habilitado. Antes de qualquer exposição, remover o caminho de identidade fornecida por strings arbitrárias e exigir principal autenticado validado + capability administrativa explícita na fronteira HTTP. Não ativar a capability nesta etapa.
+
+A desativação também confia na autorização da rota para decidir quem pode executá-la: o serviço valida que o principal está ativo, tem subject/e-mail e não é o próprio alvo, mas não exige por conta própria perfil Admin. Manter a autorização explícita no router e testar 401/403 antes de qualquer liberação de capability.
+
+### 12.3 Autorização HTTP observada
+
+- Os routers de estoque e acertos usam `require_capability_dependency` para leitura, criação, atualização e exclusão aplicáveis.
+- O router de usuários usa capabilities específicas para leitura, cadastro, atualização cadastral e desativação; a exclusão física termina em HTTP 410.
+- Os testes verificam que Admin e Operador recebem 403 enquanto a matriz de capabilities não for aprovada.
+- `ROLE_CAPABILITIES` permanece fechada por padrão. Nenhuma capability deve ser habilitada apenas porque existe uma rota ou teste com override.
+- Os testes de serviço com principal sintético verificam regras de negócio, mas não substituem testes de autorização HTTP sem overrides nem testes de privilégios PostgreSQL com sessões independentes.
+
+### 12.4 Requisitos de desenho antes de grants
+
+1. Não conceder UPDATE amplo em `estoque` sem registrar que a role pode alterar saldo fora do fluxo de movimento; avaliar separar a credencial de movimentação ou encapsular a operação em rotina SQL restrita, com identidade e auditoria testadas.
+2. Não conceder UPDATE amplo em `usuarios` sem registrar que a role pode alterar perfil/status por SQL direto. Avaliar grants por coluna, rotinas controladas ou separação de credenciais para cadastro comum e administração.
+3. Manter `acertos_estoque` sem UPDATE/DELETE e `usuarios` sem DELETE no banco, além dos bloqueios da API.
+4. Preservar a transação única de movimento saldo + histórico e de usuário + auditoria. Não trocar chamadas transacionais por commits independentes para simplificar grants.
+5. Antes de expor alteração administrativa, exigir principal validado, capability administrativa separada, trilha de auditoria e testes negativos; hoje essa rota não existe e deve continuar assim.
+6. Adicionar testes de contrato para garantir que nenhum router futuro use `EstoqueService.update_quantity` como endpoint de saldo e que nenhuma rota cadastral chame o método legado `UsuariosService.update`.
+7. Testar em PostgreSQL descartável que a role candidata não consegue executar UPDATE/DELETE direto no histórico nem DELETE em usuários, e que as operações autorizadas continuam funcionando com os locks e transações atuais.
+
+**Status:** mapeamento de regras de serviço e lacunas documentado. Nenhum endpoint foi adicionado, nenhuma capability foi ativada e nenhum grant, role, policy, função ou migration foi criado ou aplicado.
