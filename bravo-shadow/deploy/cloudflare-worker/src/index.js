@@ -86,6 +86,7 @@ async function verifyGoogleIdToken(token, clientId) {
   const now = Math.floor(Date.now() / 1000);
   if (!GOOGLE_ISSUERS.has(claims.iss)
       || claims.aud !== clientId
+      || (claims.azp !== undefined && claims.azp !== clientId)
       || !Number.isFinite(claims.exp)
       || claims.exp <= now
       || !Number.isFinite(claims.iat)
