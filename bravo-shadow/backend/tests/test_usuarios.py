@@ -72,6 +72,26 @@ def test_user_schema_rejects_local_password_fields_and_normalizes_email():
     with pytest.raises(ValidationError):
         UsuarioInput(email="user@example.com", nome="Pessoa", cargo="Conselho", senhaHash="legacy")
 
+def test_user_payloads_cannot_set_google_identity_or_internal_subject():
+    with pytest.raises(ValidationError):
+        UsuarioInput(
+            email="novo@example.com", nome="Pessoa", cargo="Conselho",
+            google_subject="attacker-controlled-subject",
+        )
+
+    with pytest.raises(ValidationError):
+        UsuarioCadastroInput(
+            email="novo@example.com", nome="Pessoa", cargo="Conselho",
+            google_subject="attacker-controlled-subject",
+        )
+
+    with pytest.raises(ValidationError):
+        UsuarioDadosCadastraisUpdateInput(google_subject="replacement-subject")
+
+    with pytest.raises(ValidationError):
+        UsuarioDadosCadastraisUpdateInput(subject="replacement-subject")
+
+
 def test_concurrent_user_creation_cannot_duplicate_email_in_memory():
     from concurrent.futures import ThreadPoolExecutor
     from threading import Barrier
