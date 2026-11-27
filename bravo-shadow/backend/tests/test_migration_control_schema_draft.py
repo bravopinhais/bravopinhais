@@ -88,6 +88,8 @@ def test_rls_is_enabled_and_no_grants_or_policies_are_opened():
     assert "enable row level security" in sql
     assert "revoke all on schema bravo_shadow" in sql
     assert "revoke all on table" in sql
+    revoke_block = sql.split("revoke all on table", 1)[1].split(";", 1)[0]
+    assert "bravo_shadow.migration_batch_recovery_events" in revoke_block
     assert not re.search(r"\bgrant\s+", sql)
     assert not re.search(r"\bcreate\s+policy\s+", sql)
 
