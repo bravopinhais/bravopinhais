@@ -30,7 +30,13 @@ class PostgresUnitOfWork:
         self.connection: ConnectionT | None = None
 
     def __enter__(self) -> PostgresUnitOfWork:
-        self.connection = self._connection_factory()
+        connection = self._connection_factory()
+        required_methods = ("commit", "rollback", "close")
+        if any(not callable(getattr(connection, name, None)) for name in required_methods):
+            raise TypeError(
+                "A connection_factory deve retornar uma conexão com commit, rollback e close chamáveis."
+            )
+        self.connection = connection
         return self
 
     def __exit__(self, exc_type, exc, traceback) -> bool:

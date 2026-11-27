@@ -115,3 +115,15 @@ def test_unit_of_work_propagates_connection_factory_error():
         raise AssertionError("A falha da fábrica deveria ser propagada")
 
     assert work.connection is None
+
+
+def test_unit_of_work_rejects_invalid_connection_returned_by_factory():
+    for invalid_connection in (None, object(), {"commit": "not-callable"}):
+        work = PostgresUnitOfWork(lambda: invalid_connection)
+        try:
+            work.__enter__()
+        except TypeError as error:
+            assert "commit, rollback e close" in str(error)
+        else:
+            raise AssertionError("A conexão inválida deveria ser rejeitada")
+        assert work.connection is None
