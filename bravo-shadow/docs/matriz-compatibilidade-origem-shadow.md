@@ -28,8 +28,9 @@ O campo `version` de Plano de Contas é metadado controlado pelo Shadow e não f
 ## Classificações
 
 - `compatible`: campos esperados encontrados, sem divergência de tipo observada.
-- `compatible_with_optional_gaps`: faltam somente campos opcionais; o Shadow poderá aplicar seu contrato padrão apenas após aprovação explícita da regra de importação.
-- `review_required`: campo obrigatório ausente, tipo incompatível/conversão pendente ou campo de origem sem destino mapeado.
+- `compatible_with_optional_gaps`: faltam somente campos opcionais ou há preenchimento parcial de campo opcional; qualquer default só poderá ser aplicado após aprovação explícita.
+- `review_required`: campo obrigatório ausente ou parcialmente preenchido, tipo incompatível/conversão pendente ou campo de origem sem destino mapeado.
+- `empty_source_collection`: coleção presente, mas sem registros; não é tratada como esquema ausente nem como prova de compatibilidade dos campos.
 - Coleção de origem sem mapeamento e destino sem coleção de origem aparecem separadamente no relatório.
 
 Campos extras são bloqueadores de revisão, não são descartados. Para `saldo` decimal, texto decimal é aceito para avaliação preliminar; número JSON exige revisão porque não comprova preservação de precisão. Para `multaPct`, o destino é numérico e a avaliação exige número JSON.
