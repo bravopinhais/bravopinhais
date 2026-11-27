@@ -117,7 +117,7 @@ class PostgresBatchStateStore:
                     approved_at = %s,
                     approved_manifest_hash = %s,
                     finished_at = CASE
-                        WHEN %s IN ('applied', 'verified', 'failed', 'rolled_back')
+                        WHEN %s IN ('applied', 'verified', 'failed', 'rolled_back', 'needs_review')
                         THEN now()
                         ELSE NULL
                     END
