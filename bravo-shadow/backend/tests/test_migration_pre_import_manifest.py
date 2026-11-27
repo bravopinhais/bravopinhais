@@ -112,3 +112,12 @@ def test_manifest_rejects_missing_version_and_invalid_gate():
         _manifest(source, integrity, contract_version=" ")
     with pytest.raises(ValueError, match="pending_gates"):
         _manifest(source, integrity, pending_gates=("ok", " "))
+
+
+def test_manifest_rejects_integrity_report_from_a_different_inventory():
+    source, _ = _source()
+    unrelated = build_source_integrity_report({
+        "categorias": [{"id": "other", "nome": "Outra"}],
+    })
+    with pytest.raises(ValueError, match="não corresponde ao inventário"):
+        _manifest(source, unrelated)
