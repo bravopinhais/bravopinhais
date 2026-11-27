@@ -118,7 +118,7 @@ function formasView(){
  const view=document.getElementById("view");
  if(IS_STATIC_PREVIEW){view.innerHTML=`<section class="panel module-view"><div><div class="big-icon">◉</div><span class="eyebrow">Preview estático · GitHub Pages</span><h2>Formas Monetárias</h2><p>Esta publicação permite avaliar o visual e a navegação. O GitHub Pages não executa a API FastAPI; por isso, cadastro, edição e exclusão ficam indisponíveis neste preview.</p><span class="tag">API não conectada · Nenhuma operação enviada</span></div></section>`;return}
  view.innerHTML=`<section class="panel">
-  <div class="api-toolbar"><div><strong style="font-size:13px">Cadastro de formas monetárias</strong><div class="api-status" id="formas-status" role="status" aria-live="polite" aria-atomic="true">Carregando dados da API...</div></div><button type="button" class="action-btn" data-action="reload" aria-label="Atualizar formas monetárias">↻ Atualizar</button></div>
+  <div class="api-toolbar"><div><strong style="font-size:13px">Cadastro de formas monetárias</strong><div class="api-status" id="formas-status" role="status" aria-live="polite" aria-atomic="true" tabindex="-1">Carregando dados da API...</div></div><button type="button" class="action-btn" data-action="reload" aria-label="Atualizar formas monetárias">↻ Atualizar</button></div>
   <form class="api-form" id="forma-form">
    <div class="field"><label for="forma-nome">Nome da forma monetária</label><input id="forma-nome" name="nome" required placeholder="Ex.: Dinheiro, PIX, Cartão"></div>
    <div class="field"><label for="forma-multa">Multa (%)</label><input id="forma-multa" name="multaPct" type="number" min="0" max="100" step="0.01" value="2" required></div>
@@ -198,7 +198,7 @@ document.addEventListener("click",async event=>{
  }
  if(action.dataset.action==="delete"){
   const item=formasMonetarias.find(row=>row.id===id);if(!item||!confirm("Excluir a forma monetária \""+item.nome+"\" deste ambiente sombra?"))return;
-  action.disabled=true;action.textContent="Excluindo...";action.setAttribute("aria-busy","true");try{await apiRequest("/formas-monetarias/"+encodeURIComponent(id),{method:"DELETE"});await carregarFormas();setFormasStatus("Registro excluído do ambiente sombra.","ok")}catch(error){setFormasStatus(error.message,"err")}finally{action.disabled=false;action.textContent="Excluir";action.removeAttribute("aria-busy")}
+  action.disabled=true;action.textContent="Excluindo...";action.setAttribute("aria-busy","true");try{await apiRequest("/formas-monetarias/"+encodeURIComponent(id),{method:"DELETE"});const listaAtualizada=await carregarFormas();setFormasStatus(listaAtualizada?"Registro excluído do ambiente sombra.":"Exclusão concluída, mas a lista não foi atualizada. Use Atualizar para tentar novamente.",listaAtualizada?"ok":"err")}catch(error){setFormasStatus(error.message,"err")}finally{action.disabled=false;action.textContent="Excluir";action.removeAttribute("aria-busy")}document.getElementById("formas-status")?.focus()
  }
 });
 document.addEventListener("keydown",event=>{if(event.key!=="Escape"||!formaEmEdicao)return;const form=document.getElementById("forma-form");if(form?.getAttribute("aria-busy")==="true")return;event.preventDefault();resetFormaForm();setFormasStatus("Edição cancelada pelo teclado; nenhuma alteração foi enviada.");document.getElementById("forma-nome")?.focus()});
