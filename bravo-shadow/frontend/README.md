@@ -539,3 +539,10 @@ A navegação lateral e os cartões de acesso rápido agora são filtrados pela 
 A tentativa de abrir por hash ou chamada de navegação um módulo sem capacidade também é bloqueada e apresenta aviso de acesso restrito, sem iniciar a consulta do módulo. No encerramento da sessão, a lista de permissões em memória é descartada, a navegação volta ao estado neutro e a visibilidade anterior é restaurada. Sem sessão confirmada, o preview estático mantém o mapa visual atual, sem habilitar operações.
 
 **Importante:** esta etapa controla apenas visibilidade e navegação de leitura. Não habilita automaticamente formulários, edição, exclusão, importação, exportação ou outros comandos de gravação. Esses controles continuam desabilitados até que cada fluxo de negócio seja integrado e revisado; a API sempre valida as capacidades no servidor.
+
+
+## Fornecedores — consulta, cadastro e edição na Shadow
+
+O módulo Fornecedores passou a consumir a API autenticada: consulta em `GET /api/v1/fornecedores`, criação em `POST /api/v1/fornecedores` com `fornecedores:create` e edição em `PUT /api/v1/fornecedores/{id}` com `fornecedores:update`. O formulário usa apenas CNPJ e Razão Social, conforme o schema atual. A interface aplica as capacidades da sessão, trata respostas 401/403, evita inserir valores da API como HTML, cancela consultas obsoletas e limpa o estado ao encerrar a sessão.
+
+A exclusão permanece desabilitada: embora exista rota protegida, ela remove fisicamente o registro e ainda não há proteção de referências ou retenção. Também permanecem pendentes validação de dígitos do CNPJ e unicidade no banco; portanto, esta integração não deve ser considerada pronta para uso produtivo nem conectada a dados reais. A API é a autoridade final de autorização.
