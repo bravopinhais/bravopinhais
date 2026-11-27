@@ -14,6 +14,9 @@ from app.core.postgres import (
 )
 
 
+RECORD_HASH_VERSION = "json-sort-keys-utf8-no-whitespace-v1"
+
+
 class MigrationApplyError(RuntimeError):
     """Base class for a rejected or failed migration unit."""
 
@@ -126,6 +129,8 @@ def _validate(
     )
     if any(not isinstance(value, str) or not value.strip() for value in required):
         raise ValueError("identidade, destino e versão são obrigatórios.")
+    if command.hash_version != RECORD_HASH_VERSION:
+        raise MigrationApplyBlocked("record_hash_version_not_supported")
     if not _valid_sha256(command.source_record_sha256):
         raise ValueError("hash do registro de origem inválido.")
     if not _valid_sha256(command.manifest_sha256) or not _valid_sha256(command.plan_sha256):
@@ -142,6 +147,10 @@ def _validate(
         raise MigrationApplyBlocked("aplicação exige autorização explícita e restrita ao ambiente descartável local.")
     if not isinstance(command.target_payload, dict):
         raise ValueError("payload de destino deve ser objeto.")
+    if not command.target_payload:
+        raise ValueError("payload de destino não pode ser vazio.")
+    if "id" in command.target_payload and command.target_payload["id"] != command.destination_id:
+        raise MigrationApplyBlocked("target_payload_id_mismatch")
 
 
 def apply_one_record(
