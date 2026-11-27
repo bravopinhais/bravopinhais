@@ -43,7 +43,7 @@
   <div class="side-foot"><b>Ambiente isolado</b><br>Sem conexão com dados de produção.<br>Bravo Shadow · versão de arquitetura 0.1</div>
 </aside>
 <main class="main" id="main-content" tabindex="-1">
-  <header class="topbar"><div class="crumb">Bravo <span aria-hidden="true">/</span> <strong id="breadcrumb">Dashboard</strong></div><div class="top-actions"><div class="env"><span class="dot"></span> AMBIENTE SOMBRA</div><div class="avatar" aria-label="Ambiente de desenvolvimento">BS</div></div></header>
+  <header class="topbar"><div class="crumb">Bravo <span aria-hidden="true">/</span> <strong id="breadcrumb">Dashboard</strong></div><div class="top-actions"><div id="bravo-auth-root" class="api-toolbar" style="margin:0;gap:8px" aria-label="Autenticação do ambiente Shadow"><span class="api-status" role="status">Autenticação não configurada</span></div><div class="env"><span class="dot"></span> AMBIENTE SOMBRA</div><div class="avatar" aria-label="Ambiente de desenvolvimento">BS</div></div></header>
   <div class="content">
     <div class="page-head"><div><div class="eyebrow">Plataforma integrada de gestão</div><h1 id="page-title" tabindex="-1">Visão geral</h1><p id="page-subtitle">Uma nova fundação para o Bravo, preservando sua identidade e preparando a próxima evolução.</p></div><div class="version">BUILD <b>0.1.0 · SHADOW</b></div></div>
     <section class="notice" aria-label="Aviso do ambiente"><div class="notice-icon">✦</div><div><strong>Ambiente de desenvolvimento — dados reais ainda não conectados</strong><p>Esta interface é a primeira estrutura navegável da versão sombra. Os indicadores e módulos ainda não executam operações de negócio. O ambiente permanece isolado do banco de produção.</p></div></section>
@@ -714,5 +714,6 @@ window.addEventListener("hashchange",()=>{
 });
 if(location.hash&&modules[location.hash.slice(1)])openModule(location.hash.slice(1));
 </script>
+<script type="module" src="./js/bravo-bootstrap.js"></script>
 </body>
 </html>
