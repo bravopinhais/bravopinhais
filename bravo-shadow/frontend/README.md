@@ -113,3 +113,8 @@ O módulo `js/google-auth.js` recebeu uma revisão defensiva sem ativar o bootst
 Esses controles melhoram a robustez do cliente, mas **não significam que o login esteja ativo**. O bootstrap permanece desligado até existir uma API HTTPS isolada e validada, origem frontend independente e aprovação da configuração OAuth. Nenhuma API de produção deve ser usada como fallback.
 
 Não foram executados testes JavaScript ou workflows nesta etapa, conforme orientação de não executar testes por enquanto.
+
+
+## Configurações — API preparada, interface pendente
+
+O backend oferece `GET /api/v1/configuracoes/modulos`, `PATCH /api/v1/configuracoes/modulos/{key}` e `POST /api/v1/configuracoes/modulos/acao-em-massa`. Admin ativo pode alterar visibilidade; Operador pode apenas consultar. A interface ainda não consome esses endpoints porque o bootstrap Google/API HTTPS segue desligado. Não exibir toggles operacionais como se estivessem persistidos enquanto a sessão e a API não estiverem conectadas.
