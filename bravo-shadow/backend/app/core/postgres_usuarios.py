@@ -91,6 +91,70 @@ class PostgresUsuariosRepository:
         if not changed:
             raise HTTPException(status_code=404, detail="Usuário não encontrado.")
 
+    def deactivate_user(
+        self,
+        item_id: str,
+        *,
+        event: Any,
+        audit_sink: Any,
+    ) -> None:
+        """Desativa preservando o registro e grava auditoria atomicamente."""
+        from app.core.audit import AuditEvent
+
+        if not isinstance(event, AuditEvent):
+            raise TypeError("Somente AuditEvent pode acompanhar a desativação.")
+        if (
+            event.action != "usuarios:desativar"
+            or event.entity_type != "usuario"
+            or event.entity_id != item_id
+            or event.outcome != "success"
+        ):
+            raise ValueError("O evento de auditoria não corresponde à desativação.")
+        if not callable(getattr(audit_sink, "append_in_transaction", None)):
+            raise TypeError("audit_sink deve aceitar append_in_transaction.")
+
+        with self._uow as uow:
+            connection = uow.connection
+            if connection is None:
+                raise RuntimeError("A conexão PostgreSQL não foi aberta.")
+            cursor = connection.cursor()
+            try:
+                cursor.execute(
+                    f"LOCK TABLE {self._table} IN SHARE ROW EXCLUSIVE MODE"
+                )
+                cursor.execute(
+                    f"SELECT perfil, status FROM {self._table} WHERE id = %s FOR UPDATE",
+                    (item_id,),
+                )
+                current = cursor.fetchone()
+                if current is None:
+                    raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+                perfil, current_status = current
+                if current_status == "Inativo":
+                    return
+                if perfil == "Admin":
+                    cursor.execute(
+                        f"SELECT count(*) FROM {self._table} "
+                        "WHERE perfil = 'Admin' AND status = 'Ativo'"
+                    )
+                    count_row = cursor.fetchone()
+                    active_admins = int(count_row[0]) if count_row else 0
+                    if active_admins <= 1:
+                        raise HTTPException(
+                            status_code=409,
+                            detail="Não é permitido desativar o último Admin ativo.",
+                        )
+                cursor.execute(
+                    f"UPDATE {self._table} SET status = 'Inativo', "
+                    "updated_at = now(), version = version + 1 WHERE id = %s",
+                    (item_id,),
+                )
+                if not cursor.rowcount:
+                    raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+                audit_sink.append_in_transaction(connection, event)
+            finally:
+                cursor.close()
+
     def update_administrative_state(
         self,
         item_id: str,
