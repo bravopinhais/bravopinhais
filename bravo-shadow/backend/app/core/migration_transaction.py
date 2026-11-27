@@ -33,6 +33,7 @@ class MigrationWriteOperations(Generic[DestinationT]):
     write_source_map: Callable[[object, DestinationT], None]
     append_success_event: Callable[[object, DestinationT], None]
     append_audit_event: Callable[[object, DestinationT], None]
+    append_failure_event: Callable[[BaseException], None]
 
 
 class MigrationTransactionError(RuntimeError):
@@ -43,20 +44,34 @@ def execute_migration_write_unit(
     unit_of_work_factory: Callable[[], PostgresUnitOfWork],
     operations: MigrationWriteOperations[DestinationT],
 ) -> DestinationT:
-    """Run reserve, business insert, provenance and both event trails atomically.
+    """Run the write unit atomically and record failures after rollback.
 
-    PostgresUnitOfWork owns commit/rollback/close. If any callback raises,
-    the context manager rolls the complete unit back. The caller must persist
-    failure evidence separately after this transaction has been released.
+    The failure callback runs only after PostgresUnitOfWork has rolled back and
+    released its connection. It must open its own transaction and record only
+    metadata (batch/request IDs, stage and sanitized error code), never source
+    payloads or credentials. If failure auditing also fails, the original
+    migration exception remains primary and receives a diagnostic note.
     """
-    with unit_of_work_factory() as unit:
-        connection = unit.connection
-        if connection is None:
-            raise MigrationTransactionError("transaction_connection_unavailable")
+    try:
+        with unit_of_work_factory() as unit:
+            connection = unit.connection
+            if connection is None:
+                raise MigrationTransactionError("transaction_connection_unavailable")
 
-        operations.reserve_batch(connection)
-        destination = operations.write_business(connection)
-        operations.write_source_map(connection, destination)
-        operations.append_success_event(connection, destination)
-        operations.append_audit_event(connection, destination)
-        return destination
+            operations.reserve_batch(connection)
+            destination = operations.write_business(connection)
+            operations.write_source_map(connection, destination)
+            operations.append_success_event(connection, destination)
+            operations.append_audit_event(connection, destination)
+            return destination
+    except BaseException as migration_error:
+        try:
+            operations.append_failure_event(migration_error)
+        except BaseException as audit_error:
+            add_note = getattr(migration_error, "add_note", None)
+            if callable(add_note):
+                add_note(
+                    "Falha adicional ao persistir auditoria de falha: "
+                    f"{type(audit_error).__name__}."
+                )
+        raise
