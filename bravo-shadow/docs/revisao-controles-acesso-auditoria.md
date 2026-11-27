@@ -180,3 +180,12 @@ O commit `24404744b6aaf1c73bab64c83fa497a0e634cbc3` alinhou os testes estáticos
 A execução GitHub Actions `45987386977` concluiu com sucesso os trabalhos Backend e Docker. O backend reportou **564 testes aprovados, 1 aviso de depreciação e nenhuma falha**. A construção da imagem, inicialização do contêiner e smoke test de interface/API também foram concluídos com sucesso.
 
 Esta evidência valida o contrato textual do script e a suíte automatizada do projeto. **Não significa que o script SQL tenha sido executado em PostgreSQL**, nem que existam roles ou policies reais para inspecionar. A validação de privilégios efetivos continua pendente de uma instância PostgreSQL descartável e isolada, com um esquema de teste aprovado. Nenhum banco compartilhado ou de produção foi acessado.
+
+
+## Execução automatizada do roteiro em PostgreSQL descartável — 27/11/2026
+
+O workflow `.github/workflows/bravo-shadow-tests.yml` agora executa o arquivo `docs/verificar-privilegios-rls-somente-leitura.sql` com Psycopg contra o serviço PostgreSQL 16 efêmero criado pelo próprio GitHub Actions. A etapa usa somente a URL do banco de teste do job, abre o script com `autocommit` para respeitar seu próprio bloco `BEGIN READ ONLY ... COMMIT` e não cria schema, tabela, role, grant ou policy. O banco do serviço é descartado ao final do job.
+
+O caminho do script também foi incluído nos filtros de execução por push e pull request, para que alterações nele acionem essa verificação. A execução confirma sintaxe e compatibilidade das consultas com PostgreSQL 16 em uma base vazia; **não** valida a matriz de permissões de aplicação, porque nenhuma migration ou role específica do Bravo Shadow é criada nesse teste.
+
+Esta etapa foi adicionada no commit `a8c7814f0d9096aeb5bc9dc5e59d1eef00fc2ddf` e o filtro de pull request foi completado no commit `bd5aaa6977ef5a87237dc84e6edbbfc02068424e`. A execução do workflow para esses commits ainda precisa concluir antes de registrar resultado. Nenhum banco compartilhado, Supabase hospedado ou produção foi acessado.
