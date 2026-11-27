@@ -46,7 +46,7 @@ O script:
 7. consulta o histórico com `supabase migration list --local`.
 
 O script não instala ferramentas, não executa `supabase link`,
-`supabase db push), não usa credenciais remotas e não importa dados. Se uma
+`supabase db push`, não usa credenciais remotas e não importa dados. Se uma
 verificação de segurança falhar, ele para sem tentar corrigir vínculo ou
 configuração automaticamente.
 
@@ -65,5 +65,5 @@ corrigir os arquivos. Os testes automatizados não foram executados.
 ## Proibições permanentes deste fluxo
 
 Não executar `supabase link`, `supabase db push`,
-`supabase db reset --linked), nem fornecer credencial remota.
+`supabase db reset --linked`, nem fornecer credencial remota.
 Não importar dados reais, não criar projeto hospedado e não publicar Shadow.
