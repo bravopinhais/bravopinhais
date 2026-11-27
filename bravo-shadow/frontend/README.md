@@ -79,3 +79,7 @@ O ambiente sombra publica a pasta `bravo-shadow/frontend/` como site estático p
 - O preview identifica o host `github.io` e desabilita chamadas à API; em Formas Monetárias apresenta aviso em vez de tentar cadastrar/editar/excluir.
 - O GitHub Pages hospeda apenas arquivos estáticos. Não executa FastAPI, não fornece PostgreSQL e não habilita autenticação nem permissões.
 - O endereço só deve ser considerado disponível depois de o workflow concluir o deploy. Se o repositório ainda não tiver Pages habilitado, ativar em **Settings → Pages → Build and deployment → Source: GitHub Actions**.
+
+### Verificações antes da publicação
+
+O workflow valida, antes de enviar o artefato ao GitHub Pages, a existência da página inicial, o painel de Gestão de Usuários, a identificação do host `github.io`, o bloqueio de chamadas à API no preview e o estado protegido do Dashboard. Se alguma dessas proteções desaparecer do frontend, a etapa de build falha e o deploy não é iniciado.
