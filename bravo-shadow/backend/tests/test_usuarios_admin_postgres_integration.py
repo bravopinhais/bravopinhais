@@ -377,3 +377,52 @@ def test_real_postgres_deactivation_audit_failure_rolls_back_status(postgres_use
             connection.execute(
                 "DROP FUNCTION IF EXISTS bravo_shadow.reject_deactivation_audit()"
             )
+
+def test_real_postgres_concurrent_deactivations_preserve_one_active_admin(postgres_users_database):
+    database_url = postgres_users_database
+    _insert_user(database_url, "usr_deactivate_admin_a", "deactivate-admin-a@example.test")
+    _insert_user(database_url, "usr_deactivate_admin_b", "deactivate-admin-b@example.test")
+    barrier = Barrier(2)
+
+    def deactivate(user_id: str):
+        barrier.wait(timeout=10)
+        try:
+            _repository(database_url).deactivate_user(
+                user_id,
+                event=_deactivation_event(user_id),
+                audit_sink=_audit_sink(database_url),
+            )
+            return "committed"
+        except HTTPException as error:
+            if error.status_code != 409:
+                raise
+            return "last_admin_guard"
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        outcomes = list(
+            pool.map(
+                deactivate,
+                ("usr_deactivate_admin_a", "usr_deactivate_admin_b"),
+            )
+        )
+
+    assert outcomes.count("committed") == 1
+    assert outcomes.count("last_admin_guard") == 1
+
+    with psycopg.connect(database_url) as connection:
+        remaining_admins = connection.execute(
+            "SELECT count(*) FROM bravo_shadow.usuarios "
+            "WHERE perfil = 'Admin' AND status = 'Ativo'"
+        ).fetchone()[0]
+        inactive_admins = connection.execute(
+            "SELECT count(*) FROM bravo_shadow.usuarios "
+            "WHERE perfil = 'Admin' AND status = 'Inativo'"
+        ).fetchone()[0]
+        audit_count = connection.execute(
+            "SELECT count(*) FROM bravo_shadow.audit_events "
+            "WHERE action = 'usuarios:desativar'"
+        ).fetchone()[0]
+
+    assert remaining_admins == 1
+    assert inactive_admins == 1
+    assert audit_count == 1
