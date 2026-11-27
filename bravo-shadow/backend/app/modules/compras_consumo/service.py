@@ -66,9 +66,13 @@ def _is_loss_reason(reason: str) -> bool:
 
 
 def _month_range(start: date | None, end: date | None, observed: list[str]) -> list[str]:
+    observed_dates = [date.fromisoformat(f"{month}-01") for month in set(observed)]
+    if start is None and observed_dates:
+        start = min(observed_dates)
+    if end is None and observed_dates:
+        end = max(observed_dates)
     if start is None or end is None:
-        months = sorted(set(observed))
-        return months
+        return []
     cursor = date(start.year, start.month, 1)
     last = date(end.year, end.month, 1)
     result: list[str] = []
