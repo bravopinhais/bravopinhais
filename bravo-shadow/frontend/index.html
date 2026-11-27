@@ -123,7 +123,7 @@ function formasView(){
    <button class="action-btn primary" type="submit" id="forma-submit">Cadastrar</button>
   </form>
   <div class="form-hint">Os registros ficam temporariamente na memória do serviço Python e são apagados quando o processo reinicia. Não use dados de produção.</div>
-  <div class="data-table-wrap"><table class="data-table"><thead><tr><th>Forma monetária</th><th>Multa (%)</th><th>Ações</th></tr></thead><tbody id="formas-rows"><tr><td colspan="3" class="empty-state">Carregando...</td></tr></tbody></table></div>
+  <div class="data-table-wrap"><table class="data-table"><caption>Formas monetárias cadastradas</caption><thead><tr><th scope="col">Forma monetária</th><th scope="col">Multa (%)</th><th scope="col">Ações</th></tr></thead><tbody id="formas-rows"><tr><td colspan="3" class="empty-state">Carregando...</td></tr></tbody></table></div>
  </section>`;
  carregarFormas();
 }
