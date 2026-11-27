@@ -148,6 +148,12 @@ class PostgresUsuariosRepository:
                 raise RuntimeError("A conexão PostgreSQL não foi aberta.")
             cursor = connection.cursor()
             try:
+                # Serializa atualizações cadastrais com mudanças administrativas.
+                # Ambas alteram o mesmo registro e devem concluir em uma ordem
+                # definida antes de calcular a próxima versão persistida.
+                cursor.execute(
+                    f"LOCK TABLE {self._table} IN SHARE ROW EXCLUSIVE MODE"
+                )
                 cursor.execute(sql, params)
                 row = cursor.fetchone()
                 if row is None:
