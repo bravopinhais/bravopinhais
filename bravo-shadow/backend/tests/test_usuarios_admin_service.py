@@ -140,6 +140,7 @@ def test_service_deactivates_another_user_with_bound_audit_event():
         "usr_target",
         actor_subject="google-subject-admin",
         actor_email="admin@example.com",
+        request_id="req_0123456789abcdef0123456789abcdef",
     )
 
     item_id, kwargs = repository.call
@@ -148,6 +149,7 @@ def test_service_deactivates_another_user_with_bound_audit_event():
     assert kwargs["event"].action == "usuarios:desativar"
     assert kwargs["event"].entity_type == "usuario"
     assert kwargs["event"].entity_id == "usr_target"
+    assert kwargs["event"].request_id == "req_0123456789abcdef0123456789abcdef"
     assert kwargs["audit_sink"] is sink
 
 
