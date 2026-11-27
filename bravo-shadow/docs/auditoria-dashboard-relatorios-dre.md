@@ -66,3 +66,16 @@ O contrato não possui data de competência/vencimento, data de pagamento/recebi
 ## Próxima decisão funcional
 
 Antes de construir relatórios por período, confirmar quais datas e estados existem no processo real do Bravo: lançamento, vencimento, competência, pagamento/recebimento e cancelamento. A migração deve preservar os campos originais e não inferir essas informações.
+
+
+## Implementação incremental — DRE gerencial somente leitura (2026-11-27)
+
+Foi adicionada na branch `bravo-shadow` a rota `GET /api/v1/relatorios/dre`, protegida por `relatorios:read`. O serviço usa diretamente as instâncias existentes de Financeiro e Plano de Contas; não cria repositórios, não grava dados e não altera o contrato dos títulos.
+
+O payload inclui totais e quantidades de Receber/Pagar, diferença aritmética, linhas agrupadas por conta (código, nome, tipo cadastrado, quantidade, valor e participação), quantidade/valor sem conta e instante de atualização. Os cálculos monetários permanecem em Decimal no backend. A classificação do grupo segue o tipo do título, não o tipo da conta, para preservar a regra histórica; o tipo da conta é exibido para transparência.
+
+Títulos sem vínculo ou com vínculo não resolvido permanecem nos totais gerais e são apresentados em indicadores separados, não em linhas agrupadas. Não são aplicados filtros de data ou status, pois esses campos não existem no contrato financeiro atual. A diferença é denominada diferença entre títulos e não representa caixa ou banco.
+
+A tela Shadow foi conectada ao endpoint por meio do cliente entregue em `bravo:session-ready`. A consulta é somente GET, valida a estrutura recebida, insere texto com `textContent`, cancela requisições ao navegar e limpa os dados ao encerrar a sessão. Filtros por período, competência/caixa, conciliação e exportações continuam desabilitados/fora do escopo.
+
+**Evidência e limite:** arquivos versionados na branch Shadow; nenhuma execução de testes, navegação em browser, conexão a banco ou implantação foi realizada nesta etapa. A integração não foi ativada em produção e não consultou dados reais.
