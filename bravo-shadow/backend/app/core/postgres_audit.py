@@ -58,7 +58,17 @@ class PostgresAuditSink:
                     event.request_id,
                 ),
             )
-        finally:
+        except BaseException:
+            # Um erro ao liberar o cursor não pode esconder a falha original
+            # do INSERT (ou uma interrupção) que motivou o fechamento.
+            try:
+                cursor.close()
+            except BaseException:
+                pass
+            raise
+        else:
+            # Sem falha no INSERT, erro ao fechar o cursor deve ser propagado
+            # para que a transação proprietária possa ser revertida.
             cursor.close()
 
     def append(self, event: AuditEvent) -> None:

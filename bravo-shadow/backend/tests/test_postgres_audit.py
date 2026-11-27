@@ -142,3 +142,37 @@ def test_append_in_transaction_rejects_invalid_connection(connection):
     with pytest.raises(TypeError, match="conexão DB-API"):
         sink.append_in_transaction(connection, make_event())
 
+
+
+class CloseFailCursor(FakeCursor):
+    def close(self):
+        self.closed = True
+        raise RuntimeError("cursor close failed")
+
+
+def test_insert_error_is_preserved_when_cursor_close_also_fails():
+    connection = FakeConnection(fail=True)
+    connection.cursor_instance = CloseFailCursor(fail=True)
+    sink = PostgresAuditSink(lambda: connection)
+
+    with pytest.raises(RuntimeError, match="insert failed"):
+        sink.append(make_event())
+
+    assert connection.commits == 0
+    assert connection.rollbacks == 1
+    assert connection.closes == 1
+    assert connection.cursor_instance.closed is True
+
+
+def test_cursor_close_error_after_successful_insert_rolls_back():
+    connection = FakeConnection()
+    connection.cursor_instance = CloseFailCursor()
+    sink = PostgresAuditSink(lambda: connection)
+
+    with pytest.raises(RuntimeError, match="cursor close failed"):
+        sink.append(make_event())
+
+    assert connection.commits == 0
+    assert connection.rollbacks == 1
+    assert connection.closes == 1
+    assert connection.cursor_instance.closed is True
