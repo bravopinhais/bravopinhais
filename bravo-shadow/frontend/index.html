@@ -443,6 +443,8 @@ let financeiroApiClient = null;
 let financeiroRequestSequence = 0;
 let financeiroRequestController = null;
 let financeiroTitles = [];
+let financeiroPlanAccounts = new Map();
+let financeiroPlanAccountsStatus = "pending";
 
 function formatFinanceiroCurrency(value){
  if(value===null||value===undefined||value==="")return "—";
@@ -457,7 +459,9 @@ function renderFinanceiroRows(){
  const search=(document.getElementById("fin-search")?.value||"").trim().toLocaleLowerCase("pt-BR");
  const type=document.getElementById("fin-filter-type")?.value||"";
  const filtered=financeiroTitles.filter(item=>{
-  const haystack=[item.historico,item.planoContaId,item.tipo].filter(Boolean).join(" ").toLocaleLowerCase("pt-BR");
+  const account=financeiroPlanAccounts.get(item.planoContaId);
+  const accountLabel=account?account.codigo+" · "+account.nome:(item.planoContaId||"");
+  const haystack=[item.historico,item.planoContaId,accountLabel,item.tipo].filter(Boolean).join(" ").toLocaleLowerCase("pt-BR");
   return (!search||haystack.includes(search))&&(!type||item.tipo===type);
  });
  tbody.replaceChildren();
@@ -471,7 +475,7 @@ function renderFinanceiroRows(){
   const row=document.createElement("tr");
   const values=[
    item.tipo==="Receber"?"A receber":item.tipo==="Pagar"?"A pagar":"—",
-   item.planoContaId||"—",
+   (()=>{const account=financeiroPlanAccounts.get(item.planoContaId);return account?account.codigo+" · "+account.nome:(item.planoContaId||"—");})(),
    typeof item.historico==="string"?item.historico:"—",
    formatFinanceiroCurrency(item.valor),
    "Somente leitura"
@@ -493,10 +497,22 @@ async function loadFinanceiroTitles(api){
  status.textContent="Consultando títulos com a permissão financeiro:read…";
  status.className="api-status";
  try{
-  const data=await api.get("/api/v1/financeiro",{signal:financeiroRequestController.signal});
+  const [titlesResult,accountsResult]=await Promise.allSettled([
+   api.get("/api/v1/financeiro",{signal:financeiroRequestController.signal}),
+   api.get("/api/v1/plano-contas",{signal:financeiroRequestController.signal})
+  ]);
   if(sequence!==financeiroRequestSequence||moduloAtual!=="financeiro")return;
+  if(titlesResult.status==="rejected")throw titlesResult.reason;
+  const data=titlesResult.value;
   if(!Array.isArray(data))throw new Error("A API retornou uma lista financeira inválida.");
   financeiroTitles=data.filter(item=>item&&typeof item==="object");
+  financeiroPlanAccounts=new Map();financeiroPlanAccountsStatus="unavailable";
+  if(accountsResult.status==="fulfilled"){
+   const accounts=accountsResult.value;
+   if(!Array.isArray(accounts)||accounts.some(item=>!item||typeof item.id!=="string"||typeof item.codigo!=="string"||typeof item.nome!=="string"||!["Receita","Despesa"].includes(item.tipo)))throw new Error("A API retornou uma lista de contas inválida.");
+   financeiroPlanAccounts=new Map(accounts.map(item=>[item.id,item]));
+   financeiroPlanAccountsStatus="loaded";
+  }
   const search=document.getElementById("fin-search");
   const type=document.getElementById("fin-filter-type");
   const filterForm=document.getElementById("fin-filters");
@@ -504,11 +520,12 @@ async function loadFinanceiroTitles(api){
   if(type)type.disabled=false;
   if(filterForm){const filterButton=filterForm.querySelector('button[type="submit"]');if(filterButton)filterButton.disabled=false;}
   renderFinanceiroRows();
-  status.textContent=financeiroTitles.length+" título(s) carregado(s) · consulta somente leitura";
-  status.className="api-status ok";
+  status.textContent=financeiroTitles.length+" título(s) carregado(s) · "+(financeiroPlanAccountsStatus==="loaded"?"contas identificadas por código e nome":"identificadores de conta exibidos como alternativa")+" · somente leitura";
+  status.className="api-status "+(financeiroPlanAccountsStatus==="loaded"?"ok":"");
  }catch(error){
   if(error?.name==="AbortError"||sequence!==financeiroRequestSequence)return;
   financeiroTitles=[];
+  financeiroPlanAccounts=new Map();financeiroPlanAccountsStatus="unavailable";
   renderFinanceiroRows();
   const search=document.getElementById("fin-search");
   const type=document.getElementById("fin-filter-type");
@@ -583,6 +600,7 @@ window.addEventListener("bravo:session-ended",()=>{
  financeiroRequestController?.abort();
  financeiroRequestController=null;
  financeiroTitles=[];
+ financeiroPlanAccounts=new Map();financeiroPlanAccountsStatus="pending";
  if(moduloAtual==="financeiro")financeiroView();
 });
 let dashboardApiClient = null;
