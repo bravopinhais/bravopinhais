@@ -14,7 +14,7 @@ A cadeia de autenticação e autorização já está implementada no backend e c
 3. O backend valida assinatura, emissor, audiência configurada em `GOOGLE_CLIENT_ID` e expiração usando `google-auth`.
 4. O backend exige `sub`, e-mail textual e `email_verified is True`; normaliza o e-mail para minúsculas e espaços externos.
 5. O cadastro interno é pesquisado por e-mail. Exatamente um usuário com status `Ativo` é obrigatório; zero, duplicidade ou inatividade negam acesso.
-6. Perfil e status vêm do cadastro Bravo, não de claims de perfil do Google. A autorização é resolvida no servidor por capacidade.
+6. Perfil e status vêm do cadastro Bravo, não de claims de perfil do Google. A autorização é resolvida no servidor por capacidade. O endpoint `/api/v1/auth/me` também devolve a lista explícita de capacidades efetivas do perfil, calculada pela mesma matriz `ROLE_CAPABILITIES`; o frontend exige essa lista, valida tipo/duplicidade e a mantém imutável na sessão.
 7. Cada dependência de capacidade chama primeiro `get_current_principal`, depois aplica a matriz de perfil. Falha de capacidade resulta em 403; falha/ausência de token resulta em 401; configuração ausente do servidor resulta em 503.
 
 ## Matriz de perfil observada
@@ -23,7 +23,7 @@ A cadeia de autenticação e autorização já está implementada no backend e c
 - **Operador:** rotina operacional e leitura de cadastros/configurações; sem administração de usuários nem alteração de configurações. A matriz concede explicitamente `relatorios:read`, que também protege os relatórios de Compras x Consumo.
 - Perfil desconhecido, principal inválido ou conta diferente de `Ativo`: nenhuma capacidade.
 
-A autorização não depende de botões ocultos na interface: as rotas são protegidas no servidor. O módulo de usuários também não permite exclusão física: o DELETE responde 410 e a desativação lógica tem capacidade própria e auditoria.
+A autorização não depende de botões ocultos na interface: as rotas são protegidas no servidor. A lista de capacidades enviada ao navegador serve para orientar a apresentação dos controles, nunca substitui a checagem da API. O módulo de usuários também não permite exclusão física: o DELETE responde 410 e a desativação lógica tem capacidade própria e auditoria.
 
 ## Cobertura das rotas registradas
 
@@ -69,7 +69,9 @@ A autorização não depende de botões ocultos na interface: as rotas são prot
 ## Evidência consultada
 
 - `backend/app/core/authentication.py`
-- `backend/app/core/authorization.py`
+- `backend/app/core/authorization.py` (`capabilities_for` deriva a lista efetiva do perfil)
+- `backend/app/modules/auth/router.py` (inclui `capabilities` na resposta de `/me`)
+- `frontend/js/google-auth.js` (valida e congela a lista recebida)
 - `backend/app/modules/auth/router.py`
 - `frontend/js/google-auth.js`
 - `frontend/js/bravo-api.js`
