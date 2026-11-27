@@ -21,3 +21,12 @@ Valores `null` só são aceitos nas quatro colunas explicitamente nullable do co
 O adaptador compara a presença dos campos obrigatórios com a lista derivada de NOT NULL sem DEFAULT, rejeita campos textuais obrigatórios vazios e deixa defaults SQL para colunas omitidas. Isso não substitui validação de FKs, unicidade, permissões, CHECKs ainda não modelados nem inspeção de catálogo. Os rascunhos SQL não foram executados. Nenhum banco foi conectado.
 
 Casos sintéticos adicionais cobrem expoentes positivos, limite de dígitos inteiros de `numeric(14,2)`, zero com expoente, inteiro fora da faixa de float, literais válidos/inválidos de perfil e status e campos textuais obrigatórios vazios. Os testes foram adicionados e não executados.
+
+
+## Integridade referencial e vínculos legados
+
+A reconciliação de referências legadas é somente leitura e produz contagens agregadas, sem expor IDs ou valores dos registros. Até aqui, somente dois vínculos de origem foram confirmados: `financeiro.planoContaId` para `plano_contas.id` (opcional) e `acertos_estoque.produtoId` para `estoque.id` (obrigatório). Referências ausentes, inválidas, órfãs ou com destino duplicado/malformado bloqueiam a classificação como resolvida.
+
+O DDL também contém FKs para `documentos.categoria_id` e `acertos_estoque.motivo_id`, ambas opcionais, mas esses campos ainda são vínculos exclusivos do modelo de destino: não foram presumidos como campos equivalentes da origem. Todas as FKs usam `ON DELETE RESTRICT`, evitando apagar silenciosamente registros referenciados.
+
+A reconciliação prévia não substitui as FKs no PostgreSQL. O fechamento estático agora confere nome da constraint, coluna de origem, tabela/coluna de destino, nulabilidade e política de exclusão. Não houve importação nem conexão com banco; os testes foram adicionados e não executados.
