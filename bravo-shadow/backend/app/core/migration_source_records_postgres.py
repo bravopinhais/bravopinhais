@@ -98,3 +98,77 @@ class PostgresSourceRecordStore:
             link.source_record_hash,
         ):
             raise SourceRecordConflict("source_record_identity_or_content_conflict")
+
+    def mark_verified(
+        self,
+        connection: Any,
+        *,
+        source_system: str,
+        source_collection: str,
+        legacy_id: str,
+        destination_collection: str,
+        destination_id: str,
+        source_record_hash: str,
+        batch_id: str,
+    ) -> None:
+        """Advance verification provenance only for an already verified batch.
+
+        The caller must invoke this after the complete batch verification has
+        succeeded, using the same transaction connection. The guarded UPDATE
+        rejects missing/changed provenance and batches that are not in the
+        verified state; the composite FK also enforces the source system.
+        """
+        values = (
+            source_system,
+            source_collection,
+            legacy_id,
+            destination_collection,
+            destination_id,
+            source_record_hash,
+            batch_id,
+            source_system,
+        )
+        if any(not isinstance(value, str) or not value.strip() for value in values):
+            raise SourceRecordConflict("source_record_verification_fields_required")
+        if len(source_record_hash) != 64 or any(
+            char not in "0123456789abcdef" for char in source_record_hash
+        ):
+            raise SourceRecordConflict("source_record_hash_invalid")
+
+        cursor = self._run(
+            connection,
+            """
+            UPDATE bravo_shadow.migration_source_records AS source
+            SET last_verified_batch_id = %s,
+                updated_at = now()
+            WHERE source.source_system = %s
+              AND source.source_collection = %s
+              AND source.legacy_id = %s
+              AND source.destination_collection = %s
+              AND source.destination_id = %s
+              AND source.source_record_hash = %s
+              AND EXISTS (
+                  SELECT 1
+                  FROM bravo_shadow.migration_batches AS batch
+                  WHERE batch.batch_id = %s
+                    AND batch.source_system = %s
+                    AND batch.status = 'verified'
+              )
+            RETURNING source.source_system
+            """,
+            (
+                batch_id,
+                source_system,
+                source_collection,
+                legacy_id,
+                destination_collection,
+                destination_id,
+                source_record_hash,
+                batch_id,
+                source_system,
+            ),
+        )
+        updated = cursor.fetchone()
+        cursor.close()
+        if updated is None:
+            raise SourceRecordConflict("source_record_verification_not_eligible")
