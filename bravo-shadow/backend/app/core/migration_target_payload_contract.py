@@ -57,9 +57,11 @@ def _decimal(value: Any, *, collection: str, column: str,
         raise TargetPayloadContractError(f"{collection}.{column}: decimal_invalido")
     if not number.is_finite():
         raise TargetPayloadContractError(f"{collection}.{column}: decimal_nao_finito")
-    sign, digits, exponent = number.as_tuple()
+    _, digits, exponent = number.as_tuple()
     fractional = max(-exponent, 0)
-    integer_digits = max(len(digits) - fractional, 0)
+    # Decimal('1E+13') has one coefficient digit but fourteen integer
+    # digits. Zero is special: its exponent never consumes precision.
+    integer_digits = 0 if number.is_zero() else max(len(digits) + exponent, 0)
     if fractional > scale or integer_digits > precision - scale:
         raise TargetPayloadContractError(f"{collection}.{column}: numeric_precision_or_scale_exceeded")
     if rule == "nonnegative" and number < 0:
@@ -91,7 +93,13 @@ def validate_target_payload(collection: str, payload: Mapping[str, Any]) -> None
         if key in NUMERIC_COLUMNS:
             precision, scale, rule = NUMERIC_COLUMNS[key]
             if rule == "finite_float":
-                if isinstance(value, bool) or not isinstance(value, (int, float)) or not math.isfinite(value):
+                if isinstance(value, bool) or not isinstance(value, (int, float)):
+                    raise TargetPayloadContractError(f"{collection}.{column}: finite_float_required")
+                try:
+                    finite = math.isfinite(value)
+                except OverflowError:
+                    finite = False
+                if not finite:
                     raise TargetPayloadContractError(f"{collection}.{column}: finite_float_required")
             else:
                 _decimal(value, collection=collection, column=column,
