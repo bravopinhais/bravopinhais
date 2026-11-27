@@ -60,7 +60,7 @@ RLS está habilitado e forçado no rascunho, sem policies permissivas. Isso bloq
 
 ## Limites preservados
 
-Nenhuma migration foi criada ou aplicada. Nenhuma role, policy, grant ou banco foi alterado. O `AuditSink` em memória continua isolado e não é apresentado como persistência. Nenhum router foi conectado à auditoria e nenhuma rota foi exposta.
+Nenhuma migration foi criada ou aplicada. Nenhuma role, policy, grant ou banco foi alterado. O `AuditSink` em memória continua isolado e não é apresentado como persistência. A rota de desativação lógica constrói um evento de sucesso e o repositório PostgreSQL sabe inseri-lo atomicamente, mas a capacidade permanece sem concessão e o sink ainda não foi validado em banco real. Não existe consulta de auditoria exposta.
 
 ## Adaptador Python — etapa isolada
 
@@ -83,7 +83,7 @@ Foram acrescentados testes unitários simulados para verificar que `append_in_tr
 
 A revisão confirmou que `AuditEvent` contém somente oito campos explícitos: `actor_subject`, `action`, `entity_type`, `entity_id`, `outcome`, `request_id`, `event_id` e `occurred_at`. Foram adicionados testes de contrato para impedir a inclusão acidental de campos livres como e-mail ou metadata/token.
 
-**Limitação atual de correlação:** embora o evento aceite `request_id`, as rotas de usuários revisadas ainda não o preenchem a partir de um contexto de requisição. Portanto, não afirmar que há rastreabilidade ponta a ponta por request ID. A futura integração deve gerar/validar um identificador no limite HTTP, armazená-lo em contexto confiável e propagá-lo ao serviço; nunca aceitar um ID de ator ou payload de auditoria enviado pelo cliente.
+**Limitação inicial de correlação (superada parcialmente):** o middleware gera o `request_id` no servidor e a rota de desativação lógica o propaga ao evento. A cobertura ainda é somente desse fluxo; os demais endpoints e eventos de negação/falha não estão integrados.
 
 **Classificação do identificador:** `actor_subject` evita gravar e-mail, mas o `sub` Google continua sendo um identificador pseudônimo vinculável a uma pessoa. Deve receber proteção, controle de leitura e prazo de retenção definidos; não é dado anônimo.
 
@@ -95,7 +95,7 @@ A API agora gera um identificador `req_<uuid>` no middleware, guarda-o em `reque
 
 Foram adicionados testes para formato, unicidade entre requisições e rejeição de tentativa de falsificação pelo cabeçalho de entrada. **Esses testes foram escritos, mas não executados nesta etapa.**
 
-**Limite explícito:** isso ainda não preenche `AuditEvent.request_id`. As rotas/serviços de negócio não recebem nem propagam esse contexto no momento. O próximo passo seguro é passar o valor do middleware explicitamente do endpoint ao serviço e ao evento, sem aceitar `actor_subject`, perfil ou e-mail do corpo/cabeçalhos. Até essa integração, o cabeçalho ajuda a correlação HTTP, mas não oferece rastreabilidade da auditoria ponta a ponta.
+**Limite explícito desta etapa:** o request ID é propagado somente na desativação lógica. Não há rastreabilidade ponta a ponta para todos os endpoints; nunca aceitar `actor_subject`, perfil ou e-mail do corpo/cabeçalhos.
 
 ### Propagação para desativação lógica — código preparado
 
