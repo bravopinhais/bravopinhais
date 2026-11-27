@@ -1,7 +1,8 @@
 """Static safety checks for the unexecuted migration-control SQL draft.
 
-These tests do not parse or execute PostgreSQL SQL. They guard the documented
-contract until a reviewed local migration and disposable-PostgreSQL suite exist.
+These tests do not parse or execute PostgreSQL SQL. They guard the four-table
+batch, provenance, recovery-event and recovery-approval contract until a reviewed
+local migration and disposable-PostgreSQL suite exist.
 """
 from __future__ import annotations
 
@@ -20,7 +21,7 @@ def _sql() -> str:
     return SQL_PATH.read_text(encoding="utf-8")
 
 
-def test_draft_declares_only_batch_and_source_provenance_tables():
+def test_draft_declares_the_four_control_and_recovery_tables():
     sql = _sql().lower()
     creates = re.findall(
         r"create\s+table\s+if\s+not\s+exists\s+([a-z0-9_.]+)",
