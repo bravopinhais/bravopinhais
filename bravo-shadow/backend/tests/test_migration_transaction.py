@@ -4,7 +4,11 @@ from app.core.migration_transaction import (
     MigrationWriteOperations,
     execute_migration_write_unit,
 )
-from app.core.postgres import CommitOutcomeUnknown, PostgresUnitOfWork
+from app.core.postgres import (
+    CommitOutcomeUnknown,
+    CommitSucceededCleanupError,
+    PostgresUnitOfWork,
+)
 
 
 class FakeConnection:
@@ -67,6 +71,9 @@ def make_operations(expected_connection, calls, *, fail_at=None):
         append_audit_event=append_audit,
         append_failure_event=append_failure,
         append_unknown_outcome_event=append_unknown,
+        append_committed_cleanup_event=lambda error: calls.append(
+            ("committed_cleanup_event", type(error).__name__)
+        ),
     )
 
 
@@ -156,6 +163,7 @@ def test_failure_audit_error_does_not_hide_original_migration_error():
         append_audit_event=operations.append_audit_event,
         append_failure_event=broken_failure_audit,
         append_unknown_outcome_event=operations.append_unknown_outcome_event,
+        append_committed_cleanup_event=operations.append_committed_cleanup_event,
     )
 
     with pytest.raises(RuntimeError, match="failure_at_business") as caught:
@@ -204,6 +212,7 @@ def test_unknown_outcome_audit_error_does_not_hide_commit_uncertainty():
         append_audit_event=operations.append_audit_event,
         append_failure_event=operations.append_failure_event,
         append_unknown_outcome_event=broken_unknown_audit,
+        append_committed_cleanup_event=operations.append_committed_cleanup_event,
     )
 
     with pytest.raises(CommitOutcomeUnknown) as caught:
@@ -215,3 +224,27 @@ def test_unknown_outcome_audit_error_does_not_hide_commit_uncertainty():
     assert any("resultado desconhecido" in note for note in caught.value.__notes__)
     assert connection.rollbacks == 1
     assert connection.closes == 1
+
+
+
+def test_close_error_after_confirmed_commit_is_not_recorded_as_write_failure():
+    class CloseFailConnection(FakeConnection):
+        def close(self):
+            self.closes += 1
+            raise RuntimeError("close after commit failed")
+
+    connection = CloseFailConnection()
+    calls = []
+    operations = make_operations(connection, calls)
+
+    with pytest.raises(CommitSucceededCleanupError):
+        execute_migration_write_unit(
+            lambda: PostgresUnitOfWork(lambda: connection), operations
+        )
+
+    assert connection.commits == 1
+    assert connection.rollbacks == 0
+    assert calls[-1] == ("committed_cleanup_event", "CommitSucceededCleanupError")
+    assert not any(
+        isinstance(call, tuple) and call[0] == "failure_event" for call in calls
+    )
