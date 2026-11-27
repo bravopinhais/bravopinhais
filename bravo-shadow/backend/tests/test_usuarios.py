@@ -182,3 +182,49 @@ def test_cadastral_update_preserves_existing_admin_and_inactive_state():
 def test_cadastral_update_rejects_explicit_null_values():
     with pytest.raises(ValidationError):
         UsuarioDadosCadastraisUpdateInput(nome=None, cargo="Conselho")
+
+def test_user_service_rejects_case_insensitive_duplicate_email():
+    service = UsuariosService()
+    service.create(
+        UsuarioInput(
+            email="Pessoa@Example.com",
+            nome="Pessoa original",
+            cargo="Conselho",
+        )
+    )
+
+    with pytest.raises(HTTPException) as error:
+        service.create(
+            UsuarioInput(
+                email=" PESSOA@example.com ",
+                nome="Pessoa duplicada",
+                cargo="Conselho",
+            )
+        )
+
+    assert error.value.status_code == 409
+    assert len(service.list()) == 1
+
+
+def test_user_update_rejects_email_already_owned_by_another_user_case_insensitively():
+    service = UsuariosService()
+    first = service.create(
+        UsuarioInput(email="primeiro@example.com", nome="Primeiro", cargo="Conselho")
+    )
+    second = service.create(
+        UsuarioInput(email="segundo@example.com", nome="Segundo", cargo="Conselho")
+    )
+
+    with pytest.raises(HTTPException) as error:
+        service.update(
+            second.id,
+            UsuarioInput(
+                email=" PRIMEIRO@EXAMPLE.COM ",
+                nome="Segundo atualizado",
+                cargo="Conselho",
+            ),
+        )
+
+    assert error.value.status_code == 409
+    assert service.get(first.id).email == "primeiro@example.com"
+    assert service.get(second.id).email == "segundo@example.com"
