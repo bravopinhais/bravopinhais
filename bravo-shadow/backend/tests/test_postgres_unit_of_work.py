@@ -1,4 +1,8 @@
-from app.core.postgres import CommitOutcomeUnknown, PostgresUnitOfWork
+from app.core.postgres import (
+    CommitOutcomeUnknown,
+    CommitSucceededCleanupError,
+    PostgresUnitOfWork,
+)
 
 
 class FakeConnection:
@@ -136,10 +140,12 @@ def test_unit_of_work_propagates_close_error_after_successful_commit():
     try:
         with PostgresUnitOfWork(lambda: connection):
             pass
-    except RuntimeError as error:
-        assert str(error) == "close falhou"
+    except CommitSucceededCleanupError as error:
+        assert str(error) == "postgres_commit_succeeded_connection_close_failed"
+        assert isinstance(error.__cause__, RuntimeError)
+        assert str(error.__cause__) == "close falhou"
     else:
-        raise AssertionError("A falha de fechamento deveria ser propagada")
+        raise AssertionError("A falha de fechamento deveria ser classificada após commit")
     assert connection.commits == 1
     assert connection.rollbacks == 0
     assert connection.closes == 1
