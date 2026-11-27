@@ -174,6 +174,55 @@ function condominioView(){
   </ul>
  </section>`;
 }
+function moradoresView(){
+ const view=document.getElementById("view");
+ view.innerHTML=`<section class="panel">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Moradores & Unidades</strong><div class="api-status" id="mor-status" role="status" aria-live="polite">Aguardando autenticação Google e API HTTPS Shadow</div></div><span class="tag">Cadastro residencial</span></div>
+  <div class="notice" style="margin:14px 0 18px"><div class="notice-icon">⌂</div><div><strong>Cadastro e vínculo com unidade</strong><p>Organize moradores por bloco e apartamento, mantendo contato, documento, pet e vaga de garagem. CPF/RG e contatos são dados pessoais: acesso e exportação devem respeitar as permissões do Bravo.</p></div></div>
+  <div class="section-head"><h2>Novo morador / unidade</h2><span>Campos do cadastro original</span></div>
+  <form class="api-form" id="mor-form" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+   <div class="field"><label for="mor-bloco">Bloco</label><input id="mor-bloco" name="bloco" required maxlength="80" disabled></div>
+   <div class="field"><label for="mor-ap">Apartamento</label><input id="mor-ap" name="apartamento" required maxlength="80" disabled></div>
+   <div class="field"><label for="mor-name">Nome completo</label><input id="mor-name" name="nome" required maxlength="160" disabled></div>
+   <div class="field"><label for="mor-email">E-mail</label><input id="mor-email" name="email" type="email" maxlength="254" disabled></div>
+   <div class="field"><label for="mor-phone">Telefone / WhatsApp</label><input id="mor-phone" name="telefone" maxlength="40" disabled></div>
+   <div class="field"><label for="mor-cpf">CPF / RG</label><input id="mor-cpf" name="cpf" maxlength="40" disabled></div>
+   <div class="field"><label for="mor-pet">Pet (espécie / nome)</label><input id="mor-pet" name="petNome" maxlength="120" disabled></div>
+   <div class="field"><label for="mor-garage">Vaga / estacionamento</label><input id="mor-garage" name="vagaGaragem" maxlength="80" disabled></div>
+   <div style="grid-column:1/-1;display:flex;justify-content:flex-end"><button type="button" class="action-btn primary" disabled>Salvar morador</button></div>
+  </form>
+  <p class="form-hint">A API exige bloco, apartamento e nome. A gravação ficará bloqueada até integração do token Google como Bearer e revisão das regras de unidade/duplicidade.</p>
+ </section>
+ <section class="panel" style="margin-top:16px">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Pesquisar e filtrar moradores</strong><div class="api-status">Filtros previstos: bloco, nome ou apartamento</div></div><span class="tag">Consulta</span></div>
+  <form class="api-form" id="mor-filter-form" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+   <div class="field"><label for="mor-filter-block">Bloco</label><input id="mor-filter-block" name="bloco" placeholder="Todos os blocos" disabled></div>
+   <div class="field"><label for="mor-filter-search">Nome ou apartamento</label><input id="mor-filter-search" name="busca" placeholder="Pesquisar cadastro" disabled></div>
+   <div style="grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px"><button type="button" class="action-btn" disabled>Limpar filtros</button><button type="button" class="action-btn primary" disabled>Pesquisar</button></div>
+  </form>
+  <div class="data-table-wrap"><table class="data-table"><caption>Cadastro de moradores por unidade</caption><thead><tr><th scope="col">Bloco / Apartamento</th><th scope="col">Morador / E-mail</th><th scope="col">CPF / RG</th><th scope="col">Telefone</th><th scope="col">Pet</th><th scope="col">Vaga</th><th scope="col">Ações</th></tr></thead><tbody id="mor-rows"><tr><td colspan="7" class="empty-state">Aguardando consulta autenticada. Nenhum dado pessoal fictício será exibido.</td></tr></tbody></table></div>
+  <p class="form-hint">O backend atual filtra por bloco e por nome/apartamento. A pesquisa não contempla e-mail, telefone ou CPF.</p>
+ </section>
+ <section class="panel" style="margin-top:16px">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Importação de moradores</strong><div class="api-status">CSV / TXT — recurso do sistema original</div></div><span class="tag">Importação em lote</span></div>
+  <div class="notice" style="margin:14px 0"><div class="notice-icon">⇧</div><div><strong>Importação protegida</strong><p>O legado reconhece cabeçalhos de bloco, apartamento/unidade, nome, e-mail, telefone, CPF/RG, pet e vaga. O envio está desabilitado até existir prévia, validação por linha, tratamento de duplicidades e confirmação do lote.</p></div></div>
+  <div class="api-form" style="grid-template-columns:minmax(0,1fr) auto;align-items:end">
+   <div class="field"><label for="mor-csv">Arquivo CSV ou TXT</label><input id="mor-csv" type="file" accept=".csv,.txt,text/csv,text/plain" disabled></div>
+   <button type="button" class="action-btn primary" disabled>Validar e importar</button>
+  </div>
+  <p class="form-hint">A rota `POST /api/v1/moradores/importar` recebe um lote JSON. O serviço atual não retorna erros por linha nem garante atomicidade do lote; não habilitar importação antes de corrigir esses pontos.</p>
+ </section>
+ <section class="panel" style="margin-top:16px">
+  <div class="section-head" style="margin-top:0"><h2>Regras e lacunas identificadas</h2><span>Proteção de dados</span></div>
+  <ul style="margin:0;padding-left:18px;color:var(--soft);font-size:12px;line-height:1.9">
+   <li>Bloco, apartamento e nome são obrigatórios; demais campos são opcionais.</li>
+   <li>Não existe vínculo relacional com uma tabela de unidades nem restrição de unidade única no contrato inspecionado.</li>
+   <li>Exclusão é física e não foi identificada regra de retenção/histórico.</li>
+   <li>Listagem carrega a coleção inteira antes de filtrar; não há paginação.</li>
+   <li>O CPF/RG é armazenado como texto sem validação de formato, o que preserva o padrão legado, mas exige proteção de acesso.</li>
+  </ul>
+ </section>`;
+}
 function planoContasView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
@@ -486,6 +535,7 @@ function openModule(id){
  const view=document.getElementById("view");
  if(id==="dashboard"){dashboardView();location.hash="";return}
  if(id==="condominio"){location.hash=id;condominioView();return}
+ if(id==="moradores"){location.hash=id;moradoresView();return}
   if(id==="plano_contas"){location.hash=id;planoContasView();return}
   if(id==="financeiro"){location.hash=id;financeiroView();return}
  if(id==="contas_bancarias"){location.hash=id;contasBancariasView();return}
