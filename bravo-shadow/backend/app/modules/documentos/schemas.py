@@ -2,7 +2,7 @@ import base64
 import binascii
 import zlib
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 MAX_DOCUMENT_BYTES = 5 * 1024 * 1024
 MAX_COMPRESSED_BASE64_CHARS = 8 * 1024 * 1024
@@ -28,7 +28,7 @@ class DocumentoInput(BaseModel):
     @field_validator("nomeArquivo")
     @classmethod
     def validate_filename(cls, value: str) -> str:
-        if value in {".", ".."} or any(char in value for char in ("/", "\\\\", "\\x00")):
+        if value in {".", ".."} or any(char in value for char in ("/", "\\", "\x00")):
             raise ValueError("O nome do arquivo não pode conter caminhos.")
         return value
 
