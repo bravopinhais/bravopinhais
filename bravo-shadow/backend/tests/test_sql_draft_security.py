@@ -30,6 +30,21 @@ def test_every_declared_table_has_rls_and_client_grants_revoked():
     assert revoked == tables
 
 
+def test_schema_access_is_revoked_from_public_and_supabase_api_roles():
+    sql = re.sub(r"--[^\\n]*", "", _sql()).lower()
+
+    for role in ("public", "anon", "authenticated", "service_role"):
+        assert f"revoke all on schema bravo_shadow from {role};" in sql
+
+
+def test_draft_does_not_create_grants_or_permissive_policies():
+    sql = re.sub(r"--[^\\n]*", "", _sql()).lower()
+
+    assert not re.search(r"\\bgrant\\s+", sql)
+    assert not re.search(r"\\bcreate\\s+policy\\s+", sql)
+    assert len(re.findall(r"alter table bravo_shadow\\.\\w+ enable row level security", sql)) == 15
+
+
 def test_financial_and_inventory_integrity_constraints_are_present():
     sql = _sql().lower()
 
