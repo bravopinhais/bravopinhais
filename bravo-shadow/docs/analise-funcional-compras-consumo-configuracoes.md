@@ -157,3 +157,38 @@ O cálculo de produção depende de classificar texto de motivo e tipo, então a
 ### Conclusão de prontidão para Configurações
 
 A navegação Shadow ainda não tem a entrada `configuracoes`, e não há módulo/serviço/rota de configurações. A implementação precisa criar uma configuração persistente com versionamento/auditoria, separar preferências locais de preferências administrativas e proteger alterações com capacidade administrativa. Não reutilizar `db.configuracoes` local da produção nem habilitar funcionalidades ainda inexistentes.
+
+## 7. Ampliação do contrato legado de Estoque — inspeção detalhada do formulário
+
+A inspeção do formulário e do salvamento de produto na baseline de produção confirma que os três campos citados acima não são a lista completa. O legado persiste/usa também:
+
+| Campo legado | Uso observado | Situação do contrato Shadow |
+|---|---|---|
+| `setor` | Local de armazenamento; filtro e relatório por setor | Ausente |
+| `unidade` | Código da unidade de medida; quantidade formatada e agregação | Ausente |
+| `valorUnitario` | Valor unitário em reais; compras/consumo valorizados | Ausente |
+| `status` | Ativo/Inativo; listas e indicadores excluem inativos conforme filtro | Ausente |
+| `cor` | Metadado do produto | Ausente |
+| `senhaCadeado` | Campo de controle/acesso associado ao item | Ausente; requer análise de sensibilidade e mascaramento antes de migrar |
+| `fotoPath` | Referência de anexo externo, além do nome e gzip legado | Ausente |
+| `quantidade`, `minimo`, `maximo` | Aceitam frações com até 3 casas decimais no formulário legado | Shadow limita a inteiro |
+| quantidade do acerto | O legado opera com quantidades fracionárias por unidade | Shadow limita a inteiro |
+
+O formulário legado usa unidades cadastradas no catálogo interno (incluindo `un`, `cx`, `pct`, `fr`, `gal`, `sc`, `mg`, `g`, `kg`, `ml`, `l` e `m`), não apenas uma unidade genérica. O valor unitário é arredondado a duas casas decimais; quantidades são normalizadas a três casas. Setor aceita valores padrão e texto personalizado.
+
+### Implicação técnica
+
+O relatório Compras x Consumo não deve ser implementado contra o contrato atual de estoque, pois além de setor/unidade/valor unitário faltam status e suporte a frações. O formulário completo de Estoque também não alcançaria paridade sem cor, fotoPath e o campo de senha tratado com segurança. A mudança proposta deve preservar os nomes camelCase no contrato HTTP e mapear explicitamente para snake_case no PostgreSQL.
+
+Não foi presumido que `senhaCadeado` possa ser armazenada ou exibida como texto simples no Shadow. Antes de implementar esse campo, definir se é segredo, hash, referência a cofre ou dado legado sem uso atual; não copiar seu valor nem o expor em respostas de API.
+
+## 8. Proposta de evolução de esquema (somente rascunho)
+
+Foi preparado o arquivo `sql-estoque-compras-consumo-rascunho.sql` como proposta de DDL. Ele:
+- adiciona os campos necessários para equivalência do cadastro e do relatório;
+- converte quantidades de estoque e movimentos de inteiro para `numeric(14,3)`, preservando valores existentes por cast;
+- usa `numeric(14,2)` para valor unitário;
+- não cria dados, usuários, permissões ou políticas novas;
+- não é migration executável aprovada e não foi aplicado a nenhum banco.
+
+Antes de implementar os schemas Python/adaptadores, é necessário revisar especialmente status/inativação, referência de fotos e o tratamento de `senhaCadeado`. O relatório poderá ser construído quando o contrato final desses campos estiver aprovado e os dados sintéticos de homologação cobrirem frações, produtos inativos e unidades diferentes.
