@@ -107,6 +107,38 @@ const IS_STATIC_PREVIEW=location.hostname.endsWith("github.io");
 if(IS_STATIC_PREVIEW){const env=document.querySelector(".env");if(env)env.innerHTML='<span class="dot"></span> PREVIEW ESTÁTICO · GITHUB PAGES';}
 let moduloAtual="dashboard";
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
+
+let contasBancariasApiClient=null,contasBancariasRequestSequence=0,contasBancariasRequestController=null,contasBancariasItems=[];
+function formatContaBancariaSaldo(value){
+ if(value===null||value===undefined||value==="")return "—";
+ const number=Number(value);
+ return Number.isFinite(number)?new Intl.NumberFormat("pt-BR",{style:"currency",currency:"BRL"}).format(number):"—";
+}
+function renderContasBancariasRows(){
+ const tbody=document.getElementById("cb-rows");if(!tbody)return;
+ tbody.replaceChildren();
+ if(!contasBancariasItems.length){const row=document.createElement("tr"),cell=document.createElement("td");cell.colSpan=3;cell.className="empty-state";cell.textContent="Nenhuma conta bancária cadastrada.";row.append(cell);tbody.append(row);return;}
+ for(const item of contasBancariasItems){const row=document.createElement("tr");for(const value of [item.banco,formatContaBancariaSaldo(item.saldo),"Somente leitura"]){const cell=document.createElement("td");cell.textContent=value;row.append(cell);}tbody.append(row);}
+}
+async function loadContasBancarias(api){
+ const status=document.getElementById("cb-status");if(!status||!api||typeof api.get!=="function")return;
+ const sequence=++contasBancariasRequestSequence;contasBancariasRequestController?.abort();contasBancariasRequestController=new AbortController();
+ status.textContent="Consultando contas com a permissão contas_bancarias:read…";status.className="api-status";
+ try{
+  const data=await api.get("/api/v1/contas-bancarias",{signal:contasBancariasRequestController.signal});
+  if(sequence!==contasBancariasRequestSequence||moduloAtual!=="contas_bancarias")return;
+  if(!Array.isArray(data)||data.some(item=>!item||typeof item.id!=="string"||typeof item.banco!=="string"||item.banco.trim()===""||item.saldo===null||item.saldo===undefined||!Number.isFinite(Number(item.saldo))))throw new Error("A API retornou uma lista de contas bancárias inválida.");
+  contasBancariasItems=data;renderContasBancariasRows();
+  status.textContent=data.length+" conta(s) carregada(s) · saldo informado, não conciliado · somente leitura";status.className="api-status ok";
+ }catch(error){
+  if(error?.name==="AbortError"||sequence!==contasBancariasRequestSequence)return;
+  contasBancariasItems=[];renderContasBancariasRows();
+  status.textContent=error?.status===403?"A conta autenticada não possui a capacidade contas_bancarias:read.":error?.status===401?"Sessão não autorizada ou expirada. Entre novamente.":(error?.message||"Não foi possível consultar as contas bancárias.");
+  status.className="api-status err";
+ }
+}
+window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function")return;contasBancariasApiClient=api;if(moduloAtual==="contas_bancarias")void loadContasBancarias(api);});
+window.addEventListener("bravo:session-ended",()=>{contasBancariasApiClient=null;contasBancariasRequestSequence+=1;contasBancariasRequestController?.abort();contasBancariasRequestController=null;contasBancariasItems=[];if(moduloAtual==="contas_bancarias")contasBancariasView();});
 function contasBancariasView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
@@ -135,6 +167,7 @@ function contasBancariasView(){
    <li>A exclusão atual é física e não possui proteção contra referências financeiras.</li>
   </ul>
  </section>`;
+ if(contasBancariasApiClient)void loadContasBancarias(contasBancariasApiClient);
 }
 function condominioView(){
  const view=document.getElementById("view");
@@ -914,7 +947,7 @@ function documentosView(){
 }
 
 function openModule(id){
- const item=modules[id];if(!item)return;moduloAtual=id;if(id!=="dashboard"){dashboardRequestSequence+=1;dashboardRequestController?.abort();dashboardRequestController=null;}if(id!=="financeiro"){financeiroRequestSequence+=1;financeiroRequestController?.abort();financeiroRequestController=null;}if(id!=="plano_contas"){planoContasRequestSequence+=1;planoContasRequestController?.abort();planoContasRequestController=null;}
+ const item=modules[id];if(!item)return;moduloAtual=id;if(id!=="dashboard"){dashboardRequestSequence+=1;dashboardRequestController?.abort();dashboardRequestController=null;}if(id!=="financeiro"){financeiroRequestSequence+=1;financeiroRequestController?.abort();financeiroRequestController=null;}if(id!=="plano_contas"){planoContasRequestSequence+=1;planoContasRequestController?.abort();planoContasRequestController=null;}if(id!=="contas_bancarias"){contasBancariasRequestSequence+=1;contasBancariasRequestController?.abort();contasBancariasRequestController=null;}
  document.querySelectorAll("[data-module]").forEach(el=>{if(el.closest("#navigation")){if(el.dataset.module===id)el.setAttribute("aria-current","page");else el.removeAttribute("aria-current")}});
  document.getElementById("breadcrumb").textContent=item.name;
  document.getElementById("page-title").textContent=item.title;
