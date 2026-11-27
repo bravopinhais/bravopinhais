@@ -205,3 +205,19 @@ Após a inspeção, foram atualizados no branch bravo-shadow:
 O rascunho incremental sql-estoque-compras-consumo-rascunho.sql permanece como proposta para bancos descartáveis que tenham sido criados com a versão anterior do DDL. Nenhum DDL foi aplicado.
 
 **Limite atual:** senhaCadeado continua fora do contrato por ser um campo potencialmente sensível. A tela completa de Estoque também possui fluxos adicionais (scanner, fotos/anexos, checklist, etiquetas, relatórios por setor e status) que ainda precisam de implementação e comparação. A evolução do contrato é uma etapa de base, não significa que Estoque ou Compras x Consumo estejam concluídos.
+## 9. Primeiro fluxo de Compras x Consumo implementado na API
+
+Foi criado o módulo `backend/app/modules/compras_consumo` com:
+- serviço somente leitura sobre os serviços de Estoque e Acertos da mesma instância;
+- classificação de entradas como compras/reposições ou outras entradas, com opção de tratar toda entrada como compra;
+- classificação de saídas como consumo ou perdas/ajustes;
+- filtros por intervalo de datas, setor, busca por produto/etiqueta/marca, inclusão de inativos e ordenação;
+- indicadores de compras, consumo, perdas/ajustes, produtos em alerta e valores;
+- média mensal, cobertura, situação por produto e evolução mensal de até 12 meses;
+- resposta sem consolidar quantidades de unidades diferentes; quando há unidades incompatíveis, a série mensal de quantidades é suprimida e a compatibilidade é sinalizada;
+- endpoint protegido `GET /api/v1/compras-consumo` e exportação CSV `GET /api/v1/compras-consumo/export.csv`, ambos exigindo `relatorios:read`;
+- exportação CSV com separador compatível com Excel e proteção contra injeção de fórmulas em campos textuais.
+
+O módulo foi registrado na aplicação FastAPI e recebe os mesmos serviços de Estoque e Acertos configurados pelo backend, sem novo acesso a produção ou a outro banco.
+
+Testes unitários do serviço foram adicionados, mas não executados conforme orientação. O endpoint ainda depende da sessão Google válida e de um ambiente API HTTPS isolado para uso pela interface. Impressão/PDF e a interface de filtros ainda não foram conectados; portanto, o módulo está em primeira entrega de backend, não em paridade visual completa.
