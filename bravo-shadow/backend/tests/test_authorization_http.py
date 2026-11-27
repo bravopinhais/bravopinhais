@@ -113,12 +113,15 @@ def test_authenticated_permission_denial_is_audited_without_personal_payload():
     assert not hasattr(event, "email")
 
 
-def test_audit_failure_does_not_turn_permission_denial_into_success():
+def test_audit_failure_does_not_turn_permission_denial_into_success(caplog):
     sink = RecordingAuditSink(fail=True)
 
-    response = build_test_client(make_principal("Admin"), sink).get("/protected")
+    with caplog.at_level("ERROR", logger="bravo.audit.authorization"):
+        response = build_test_client(make_principal("Admin"), sink).get("/protected")
 
     assert response.status_code == 403
+    assert "req_test_authorization" in caplog.text
+    assert "audit unavailable" not in caplog.text
 
 
 
