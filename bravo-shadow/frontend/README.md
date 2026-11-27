@@ -564,3 +564,10 @@ A tela de Moradores utiliza a sessão Google e as capacidades do backend: listag
 O formulário preserva os campos existentes, sem inventar vínculo de unidade ou regra de ocupação exclusiva. As respostas são renderizadas com `textContent`; consultas anteriores são canceladas e os dados em memória são descartados ao encerrar a sessão. A interface não oferece exclusão física.
 
 **Importação permanece desabilitada:** embora a rota exista, o contrato atual não limita o tamanho do lote, não retorna erros por linha e o serviço grava item a item sem garantir atomicidade. Também não há paginação, validação/unicidade de CPF/RG, autorização específica por campo ou relação referencial com unidades. A minimização da listagem reduz exposição desnecessária, mas não substitui política de acesso, retenção e auditoria de dados pessoais. Esta integração não habilita produção nem conecta dados reais.
+
+
+## Pastas & Categorias — catálogos autenticados
+
+A tela separa os dois cadastros e aplica capacidades independentes. Categorias usam `GET/POST /api/v1/categorias` com `categorias:read/create`; motivos de acerto usam `GET/POST /api/v1/motivos-acerto-estoque` com `motivos_estoque:read/create`. Os contratos atuais aceitam somente o campo `nome`; a resposta é validada e renderizada com `textContent`. Cada lista mostra seu próprio estado de autorização/consulta, e as requisições são canceladas e os dados em memória descartados ao encerrar a sessão.
+
+A interface não oferece edição porque as rotas atuais não têm PUT, nem exclusão física, apesar de existirem rotas DELETE com verificação de vínculos no backend. O cadastro usa apenas as capacidades de criação; não presume contagem de documentos ou acertos associados, pois as listas não retornam esses totais. Persistência operacional continua condicionada à configuração PostgreSQL isolada e homologada; nenhum dado de produção é consultado.
