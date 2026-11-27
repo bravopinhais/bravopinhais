@@ -1,4 +1,5 @@
 from collections.abc import Callable
+from decimal import Decimal
 from uuid import uuid4
 
 from fastapi import HTTPException
@@ -50,7 +51,7 @@ class EstoqueService:
         self.repository.replace(item_id, item)
         return item
 
-    def update_quantity(self, item_id: str, quantity: int) -> EstoqueItem:
+    def update_quantity(self, item_id: str, quantity: Decimal) -> EstoqueItem:
         product = self.get(item_id)
         updated = product.model_copy(update={"quantidade": quantity})
         self.repository.replace(item_id, updated)
