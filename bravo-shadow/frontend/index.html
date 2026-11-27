@@ -34,6 +34,7 @@
     <button data-module="categorias"><span class="ico">▦</span>Pastas & Categorias</button>
     <button data-module="estoque"><span class="ico">▥</span>Estoque & Inventário</button>
     <button data-module="acerto_estoque"><span class="ico">⇄</span>Acerto de Estoque</button>
+    <button data-module="compras_consumo"><span class="ico">▤</span>Compras x Consumo</button>
     <button data-module="documentos"><span class="ico">▧</span>Gestão de Documentos</button>
     <button data-module="relatorios"><span class="ico">▥</span>Relatórios & DRE</button>
     <button data-module="usuarios"><span class="ico">♙</span>Gestão de Usuários</button>
@@ -96,6 +97,7 @@ empregados:{name:"Empregados",title:"Empregados",desc:"Cadastro de empregados e 
 categorias:{name:"Pastas & Categorias",title:"Pastas & Categorias",desc:"Organização de categorias e motivos de acerto de estoque."},
 estoque:{name:"Estoque & Inventário",title:"Estoque & Inventário",desc:"Produtos, níveis de estoque, imagens e leitura por scanner."},
 acerto_estoque:{name:"Acerto de Estoque",title:"Acerto de Estoque",desc:"Ajustes de inventário e registro de justificativas."},
+compras_consumo:{name:"Compras x Consumo",title:"Compras x Consumo",desc:"Análise de compras, consumo, perdas, cobertura e evolução mensal."},
 documentos:{name:"Gestão de Documentos",title:"Gestão de Documentos",desc:"Arquivos, pastas, visualização e download."},
 relatorios:{name:"Relatórios & DRE",title:"Central de Relatórios & DRE",desc:"Relatórios gerenciais e demonstrativo de resultados."},
 usuarios:{name:"Gestão de Usuários",title:"Gestão de Usuários",desc:"Perfis e administração de acesso. Autenticação será integrada após auditoria."},
@@ -180,8 +182,8 @@ function usuariosView(){
 function configuracoesView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
-  <div class="api-toolbar"><div><strong style="font-size:13px">Administração dos módulos</strong><div class="api-status" id="config-status" role="status" aria-live="polite">API disponível no backend · sessão ainda não conectada</div></div><span class="tag">Controles bloqueados</span></div>
-  <div class="notice" style="margin:16px 0 18px"><div class="notice-icon">⚙</div><div><strong>Configurações protegidas</strong><p>A API já possui consulta, alteração individual e ações em massa. A interface ainda não envia operações: falta conectar uma sessão Google validada e uma API HTTPS exclusiva do ambiente Shadow.</p></div></div>
+  <div class="api-toolbar"><div><strong style="font-size:13px">Administração dos módulos</strong><div class="api-status" id="config-status" role="status" aria-live="polite">API implementada · endereço e sessão ainda não configurados</div></div><span class="tag">Controles bloqueados</span></div>
+  <div class="notice" style="margin:16px 0 18px"><div class="notice-icon">⚙</div><div><strong>Configurações protegidas</strong><p>A API de Configurações foi implementada no backend, mas este navegador ainda não possui uma sessão Google validada nem um endereço HTTPS exclusivo para a API Shadow. Por segurança, esta tela não tenta consultar nem alterar dados até esses pré-requisitos existirem.</p></div></div>
   <div class="section-head"><h2>Catálogo de módulos</h2><span>17 áreas mapeadas</span></div>
   <div class="data-table-wrap"><table class="data-table" style="min-width:0"><thead><tr><th scope="col">Módulo</th><th scope="col">Grupo</th><th scope="col">Estado</th></tr></thead><tbody>
    <tr><td>Dashboard Executivo</td><td>Gestão</td><td><span class="tag">Aguardando API</span></td></tr>
