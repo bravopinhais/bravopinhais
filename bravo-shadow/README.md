@@ -23,7 +23,7 @@ Fundação da API e contratos dos 15 módulos implementados na sombra. Plano de 
 
 ## Preview visual
 
-O frontend estático é publicado pelo GitHub Pages a partir de `bravo-shadow/frontend/`. Esse preview serve para avaliar layout e navegação; ele não hospeda a API FastAPI e bloqueia chamadas de API quando aberto em `github.io`. A navegação oferece link para pular ao conteúdo, foco visível, foco no título ao trocar de módulo e retorno seguro ao Dashboard para fragmentos inválidos. A publicação depende de o GitHub Pages estar habilitado com a fonte **GitHub Actions** nas configurações do repositório.
+O frontend estático é publicado pelo GitHub Pages a partir de `bravo-shadow/frontend/`. Esse preview serve para avaliar layout e navegação; ele não hospeda a API FastAPI e bloqueia chamadas de API quando aberto em `github.io`. A navegação oferece link para pular ao conteúdo, foco visível, foco no título ao trocar de módulo e retorno seguro ao Dashboard para fragmentos inválidos. Mensagens de estado do cadastro de Formas Monetárias também são anunciadas por região acessível `role="status"`. A publicação depende de o GitHub Pages estar habilitado com a fonte **GitHub Actions** nas configurações do repositório.
 
 ## Execução local
 
