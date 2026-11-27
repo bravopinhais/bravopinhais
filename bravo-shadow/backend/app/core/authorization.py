@@ -102,15 +102,16 @@ def require_capability_dependency(capability: str):
     logger = logging.getLogger("bravo.audit.authorization")
 
     def dependency(
-        request: Request,
         principal: AuthenticatedPrincipal = Depends(get_current_principal),
+        request: Request = None,
     ) -> AuthenticatedPrincipal:
         try:
             require_capability(principal, capability)
         except HTTPException:
             # Só registrar quando há principal Google validado e subject útil.
             # Falhas de autenticação sem principal não recebem ator fictício.
-            sink = getattr(request.app.state.services, "audit_sink", None)
+            services = getattr(request.app.state, "services", None) if request is not None else None
+            sink = getattr(services, "audit_sink", None)
             if (
                 sink is not None
                 and isinstance(principal.subject, str)
@@ -121,7 +122,7 @@ def require_capability_dependency(capability: str):
                     action=capability,
                     entity_type="authorization",
                     outcome="denied",
-                    request_id=getattr(request.state, "request_id", None),
+                    request_id=getattr(request.state, "request_id", None) if request is not None else None,
                 )
                 try:
                     sink.append(event)
@@ -132,7 +133,8 @@ def require_capability_dependency(capability: str):
             raise
         # Contexto mínimo para o handler global de falhas inesperadas.
         # Nunca copiar e-mail, token, payload ou dados da rota para o contexto.
-        request.state.authenticated_subject = principal.subject.strip()
+        if request is not None:
+            request.state.authenticated_subject = principal.subject.strip()
         return principal
 
     return dependency
