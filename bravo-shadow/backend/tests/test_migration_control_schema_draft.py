@@ -132,7 +132,7 @@ def test_recovery_events_are_evidence_bound_append_only_records():
 def test_recovery_decision_does_not_reopen_or_authorize_same_batch():
     sql = _sql().lower()
 
-    assert "o evento nunca muda o status nem reabre o lote" in sql
+    assert "o evento não muda status nem reabre o lote" in sql
     assert "um novo apply sempre exige novo lote/manifesto aprovado" in sql
 
 
@@ -148,7 +148,7 @@ def test_recovery_append_requires_parent_lock_and_sequence_conflict_guard():
 
 
 def test_recovery_event_id_is_idempotency_key_not_sequence_workaround():
-    sql = re.sub(r"\\s+", " ", _sql().lower())
+    sql = re.sub(r"\s+", " ", _sql().lower())
 
     assert "event_id é chave de idempotência global" in sql
     assert "comparar todos os" in sql and "campos do evento existente" in sql
