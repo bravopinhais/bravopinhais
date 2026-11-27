@@ -54,6 +54,7 @@ def load_locked_apply_authorization(
     execution_id: str,
     manifest_sha256: str,
     plan_sha256: str,
+    source_system: str,
 ) -> LockedApplyAuthorization:
     """Lock and validate batch -> execution -> approval in a fixed lock order.
 
@@ -65,14 +66,15 @@ def load_locked_apply_authorization(
         return LockedApplyAuthorization(False, ("transaction_connection_required",))
     if getattr(connection, "autocommit", None) is not False:
         return LockedApplyAuthorization(False, ("autocommit_must_be_disabled",))
-    for value in (batch_id, execution_id, manifest_sha256, plan_sha256):
+    for value in (batch_id, execution_id, manifest_sha256, plan_sha256, source_system):
         if not isinstance(value, str) or not value.strip():
             return LockedApplyAuthorization(False, ("expected_identity_required",))
 
     batch = _fetchone(
         connection,
         """
-        SELECT batch_id, manifest_hash, environment, status
+        SELECT batch_id, manifest_hash, environment, status, mode,
+               source_system, approved_manifest_hash
         FROM bravo_shadow.migration_batches
         WHERE batch_id = %s
         FOR UPDATE
@@ -81,15 +83,21 @@ def load_locked_apply_authorization(
     )
     if batch is None:
         return LockedApplyAuthorization(False, ("batch_not_found",))
-    if not isinstance(batch, (tuple, list)) or len(batch) != 4:
+    if not isinstance(batch, (tuple, list)) or len(batch) != 7:
         return LockedApplyAuthorization(False, ("stored_batch_shape_invalid",))
-    batch_id_db, manifest_db, environment_db, status_db = batch
+    batch_id_db, manifest_db, environment_db, status_db, mode_db, source_db, approved_manifest_db = batch
     if _stored_text(batch_id_db) != batch_id or _stored_text(manifest_db) != manifest_sha256:
         return LockedApplyAuthorization(False, ("batch_manifest_mismatch",))
     if _stored_text(environment_db) != "local_disposable":
         return LockedApplyAuthorization(False, ("batch_environment_not_allowed",))
     if _stored_text(status_db) != "approved":
         return LockedApplyAuthorization(False, ("batch_not_approved",))
+    if _stored_text(mode_db) != "apply":
+        return LockedApplyAuthorization(False, ("batch_mode_not_apply",))
+    if _stored_text(source_db) != source_system:
+        return LockedApplyAuthorization(False, ("batch_source_system_mismatch",))
+    if _stored_text(approved_manifest_db) != manifest_sha256:
+        return LockedApplyAuthorization(False, ("batch_manifest_not_explicitly_approved",))
 
     execution_row = _fetchone(
         connection,

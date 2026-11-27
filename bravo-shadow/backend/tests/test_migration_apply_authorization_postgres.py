@@ -34,7 +34,7 @@ class Connection:
     def __init__(self):
         self.calls = []
         self.closed_cursors = 0
-        self.batch = ("batch-1", H, "local_disposable", "approved")
+        self.batch = ("batch-1", H, "local_disposable", "approved", "apply", "legacy", H)
         self.execution = (
             "exec-1", "batch-1", H, P, "local_disposable",
             "google-sub-requester", "approved",
@@ -52,7 +52,7 @@ class Connection:
 def load(connection):
     return load_locked_apply_authorization(
         connection, batch_id="batch-1", execution_id="exec-1",
-        manifest_sha256=H, plan_sha256=P,
+        manifest_sha256=H, plan_sha256=P, source_system="legacy",
     )
 
 
@@ -71,7 +71,7 @@ def test_valid_persisted_approval_locks_in_fixed_order():
 
 def test_batch_environment_or_status_blocks_before_execution_read():
     connection = Connection()
-    connection.batch = ("batch-1", H, "ci_ephemeral", "approved")
+    connection.batch = ("batch-1", H, "ci_ephemeral", "approved", "apply", "legacy", H)
     result = load(connection)
     assert result.authorized is False
     assert result.issues == ("batch_environment_not_allowed",)
@@ -90,7 +90,7 @@ def test_changed_plan_is_rejected_by_persisted_approval():
     connection = Connection()
     result = load_locked_apply_authorization(
         connection, batch_id="batch-1", execution_id="exec-1",
-        manifest_sha256=H, plan_sha256="c" * 64,
+        manifest_sha256=H, plan_sha256="c" * 64, source_system="legacy",
     )
     assert result.authorized is False
     assert "expected_plan_mismatch" in result.issues
@@ -111,7 +111,7 @@ def test_same_person_cannot_request_and_approve():
 def test_no_connection_is_opened_or_required_by_importing_module():
     result = load_locked_apply_authorization(
         None, batch_id="batch-1", execution_id="exec-1",
-        manifest_sha256=H, plan_sha256=P,
+        manifest_sha256=H, plan_sha256=P, source_system="legacy",
     )
     assert result.authorized is False
     assert result.issues == ("transaction_connection_required",)

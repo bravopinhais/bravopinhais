@@ -253,6 +253,7 @@ def apply_one_record_with_persisted_approval(
                 execution_id=command.execution_id,
                 manifest_sha256=command.manifest_sha256,
                 plan_sha256=command.plan_sha256,
+                source_system=command.source_system,
             )
             if not persisted.authorized:
                 raise MigrationApplyBlocked(
@@ -388,6 +389,7 @@ def apply_batch_with_persisted_approval(
                 execution_id=first.execution_id,
                 manifest_sha256=first.manifest_sha256,
                 plan_sha256=first.plan_sha256,
+                source_system=first.source_system,
             )
             if not persisted.authorized:
                 raise MigrationApplyBlocked(
