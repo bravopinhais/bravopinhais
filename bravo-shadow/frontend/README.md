@@ -442,3 +442,19 @@ O valor permanece vazio no `.env.example`; não foi inventada nem autorizada uma
 Foi preparado `render.yaml` para um único serviço Docker no Render Free, servindo frontend e API na mesma origem HTTPS, com deploy automático desligado e branch `bravo-shadow`. O PostgreSQL fica em projeto Supabase Free isolado, sem usar Supabase Auth. O guia `docs/guia-homologacao-gratuita.md` descreve os passos manuais, secrets, OAuth, limitações e critérios de liberação.
 
 Este material não cria contas ou recursos: nenhum deploy, banco, migration ou credencial foi criado/aplicado. A combinação gratuita é somente para homologação com dados sintéticos: Render adormece após inatividade e Supabase Free pode pausar por baixa atividade, não oferece backups automáticos e tem limite de 500 MB.
+
+## Bootstrap Google — preparado e fechado por padrão
+
+O arquivo `js/bravo-bootstrap.js` foi conectado ao shell como módulo ES. Ele coordena `google-auth.js` e `bravo-api.js`, mas **não ativa o login sem configuração explícita**.
+
+Condições obrigatórias para inicializar:
+- `window.BRAVO_SHADOW_CONFIG.enabled === true`;
+- Client ID público Google válido;
+- `apiBase` HTTPS (HTTP somente em localhost durante desenvolvimento);
+- API na mesma origem da página, para manter a homologação sem CORS aberto.
+
+Sem essas condições, o módulo mostra o motivo do bloqueio e não carrega o Google Identity Services, não chama a API e não tenta descobrir ou usar endereço de produção. Nenhum objeto de configuração habilitador foi adicionado ao HTML.
+
+Após autenticação, a API continua sendo a autoridade para confirmar cadastro, e-mail verificado e status `Ativo`. O cliente HTTP recebe o token apenas em memória; nenhum token é persistido. O cliente permanece encapsulado no bootstrap e ainda não habilita operações dos módulos. A conexão funcional de cada módulo dependerá da homologação da API e das permissões correspondentes.
+
+**Estado atual:** bootstrap conectado ao shell; login ainda desabilitado; API/host ainda não publicados; nenhuma chamada de negócio habilitada.
