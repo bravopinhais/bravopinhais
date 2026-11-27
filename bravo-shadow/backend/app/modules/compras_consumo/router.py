@@ -40,26 +40,6 @@ def build_report(
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
-def report_filters(
-    data_inicio: date | None = Query(default=None),
-    data_fim: date | None = Query(default=None),
-    setor: str | None = Query(default=None, max_length=120),
-    busca: str | None = Query(default=None, max_length=160),
-    tratar_todas_entradas_como_compras: bool = Query(default=False),
-    incluir_inativos: bool = Query(default=False),
-    ordenar: str = Query(default="maior_consumo", pattern="^(maior_consumo|maior_compra|diferenca|menor_cobertura|nome)$"),
-):
-    return {
-        "data_inicio": data_inicio,
-        "data_fim": data_fim,
-        "setor": setor,
-        "busca": busca,
-        "tratar_todas_entradas_como_compras": tratar_todas_entradas_como_compras,
-        "incluir_inativos": incluir_inativos,
-        "ordenar": ordenar,
-    }
-
-
 @router.get(
     "",
     response_model=ComprasConsumoRelatorio,
@@ -107,14 +87,19 @@ def export_report_csv(
         "Estoque atual", "Média mensal", "Cobertura (meses)",
         "Valor comprado (R$)", "Valor consumido (R$)", "Situação",
     ])
+    def safe_text(value: str) -> str:
+        text = str(value or "")
+        return "'" + text if text.lstrip().startswith(("=", "+", "-", "@")) else text
+
     for row in report.produtos:
         writer.writerow([
-            row.etiqueta, row.produto, row.marca, row.setor, row.unidade,
+            safe_text(row.etiqueta), safe_text(row.produto), safe_text(row.marca),
+            safe_text(row.setor), safe_text(row.unidade),
             str(row.compras), str(row.outrasEntradas), str(row.consumo),
             str(row.perdasAjustes), str(row.diferenca), str(row.estoqueAtual),
             str(row.mediaMensal),
             "" if row.coberturaMeses is None else str(row.coberturaMeses),
-            str(row.valorComprado), str(row.valorConsumido), row.situacao,
+            str(row.valorComprado), str(row.valorConsumido), safe_text(row.situacao),
         ])
     csv_content = "\ufeff" + output.getvalue()
     filename = "compras-consumo.csv"
