@@ -633,3 +633,128 @@ A alternativa B oferece melhor contenção em princípio, mas só se as credenci
 - Nenhum banco foi conectado ou alterado.
 
 **Portão de segurança:** a comparação é documental. Qualquer fixture com roles privadas, teste de privilégios efetivos ou DDL de homologação exigirá autorização explícita prévia e permanecerá restrita ao PostgreSQL local descartável.
+
+## 17. Auditoria transacional: função controlada versus outbox — 27/11/2026
+
+### 17.1 Requisitos que não podem ser confundidos
+
+O fluxo administrativo atual tem requisito síncrono: a alteração de perfil/status e o INSERT em `audit_events` ocorrem na mesma conexão e unidade de trabalho. Se o INSERT falha, a alteração deve sofrer rollback. O sink também registra negações autenticadas em uma transação independente; esse caminho não faz parte da transação de negócio.
+
+Uma arquitetura futura deve declarar qual garantia oferece:
+- **Atomicidade de negócio + evento:** ambos são confirmados ou revertidos juntos.
+- **Entrega eventual:** negócio e intenção de auditoria são confirmados juntos; a publicação na tabela final ocorre depois e pode ficar pendente.
+
+Não chamar a segunda garantia de auditoria síncrona nem ocultar atraso/falha de entrega.
+
+### 17.2 Opção 1 — função SQL estreita com SECURITY DEFINER
+
+**Conceito:** a API recebe apenas EXECUTE em uma função específica. A função, sob uma identidade proprietária não utilizável para login e com privilégios SQL estritamente limitados, executa a mudança administrativa e o INSERT em `audit_events` dentro da mesma transação PostgreSQL.
+
+Fluxo conceitual:
+1. Backend valida token Google, principal interno ativo, capacidade e regra de auto-alteração.
+2. Backend chama a função com identificador do usuário alvo, novo perfil/status e campos mínimos do evento derivados do principal e do servidor.
+3. Função valida estados/argumentos permitidos, bloqueia concorrência do último Admin, atualiza `usuarios` e insere `audit_events`.
+4. Qualquer erro aborta a chamada; a transação do chamador não confirma parcialmente a alteração.
+
+**Privilégios pretendidos (ainda não concedidos):**
+- Role runtime: EXECUTE apenas na função; sem UPDATE direto em colunas administrativas de `usuarios` e sem INSERT direto em `audit_events` para esse fluxo.
+- Owner da função: NOLOGIN, sem SUPERUSER/BYPASSRLS/CREATEDB/CREATEROLE, sem ownership de tabelas e com somente os privilégios necessários à função.
+- Reader de auditoria: identidade separada, caso consulta seja aprovada.
+- PUBLIC: EXECUTE revogado; conceder EXECUTE somente à role runtime aprovada.
+
+**Controles obrigatórios de SECURITY DEFINER:**
+- Definir `search_path` seguro e fixo na própria função (preferencialmente `pg_catalog` e schemas confiáveis explicitamente controlados); qualificar nomes de tabelas e objetos.
+- Não usar SQL dinâmico concatenado; parametrizar todas as operações.
+- Validar rigorosamente perfil, status, ação, tipo de entidade e correspondência do identificador do evento.
+- Não aceitar subject Google, ator, request ID ou resultado como verdade autenticada do banco: esses dados são fornecidos pelo backend confiável e devem ser derivados/validados no servidor. A função não valida token Google.
+- Não permitir ao chamador escolher ação arbitrária, gravar evento de outro tipo ou usar a função como INSERT genérico.
+- Revogar EXECUTE de PUBLIC e revisar privilégios padrão, ownership, memberships e RLS.
+- Testar chamadas malformadas, IDs de usuário arbitrários, elevação de perfil, último Admin, concorrência, falha no INSERT de auditoria e tentativa de chamar funções auxiliares.
+- Manter a função pequena, específica e revisável. Uma função genérica com SQL dinâmico ou permissão administrativa ampla anularia o benefício.
+
+**Vantagens**
+- Preserva atomicidade estrita entre alteração administrativa e auditoria.
+- A role da API não precisa de UPDATE administrativo direto nem INSERT em auditoria para esse fluxo.
+- A fronteira de privilégio é explícita e pode ser testada no PostgreSQL.
+
+**Riscos/custos**
+- SECURITY DEFINER cria uma fronteira de confiança sensível: erro de ownership, search_path, EXECUTE ou validação pode virar escalada de privilégio.
+- Regras passam a existir parcialmente no backend e parcialmente no SQL; é preciso evitar divergência e duplicidade.
+- Migração, testes e observabilidade ficam mais complexos.
+- O owner da função precisa ser cuidadosamente isolado e não pode ser a credencial web.
+
+**Limite importante:** a função só reduz o privilégio se a API realmente perder os grants diretos equivalentes. Conceder EXECUTE e manter UPDATE/INSERT diretos não oferece contenção efetiva.
+
+### 17.3 Opção 2 — outbox transacional e dispatcher separado
+
+**Conceito:** a operação de negócio grava, na mesma transação, uma mensagem mínima em uma tabela outbox. Um worker independente lê a fila e grava o evento na tabela final `audit_events`.
+
+Fluxo conceitual:
+1. Backend valida principal e capacidade.
+2. Uma única transação atualiza `usuarios` e insere o evento pendente em `audit_outbox`.
+3. Commit confirma a mudança e a intenção de auditoria juntas.
+4. Worker com identidade própria seleciona mensagens pendentes, publica em `audit_events` e marca a entrega.
+5. Uma chave única/idempotente baseada em `event_id` evita duplicidade na tabela final.
+
+**Privilégios pretendidos (ainda não concedidos):**
+- Runtime de usuários: SELECT/UPDATE estritamente necessários em `usuarios` e INSERT apenas em `audit_outbox`; sem INSERT/UPDATE/DELETE em `audit_events`.
+- Dispatcher: SELECT e atualização de estado/lease em `audit_outbox`, além de INSERT em `audit_events`; sem UPDATE/DELETE em `usuarios`.
+- Reader: SELECT em auditoria somente se aprovado.
+- Owner/migration: separado de runtime e dispatcher.
+
+A tabela outbox pode ser desenhada como append-only com tentativas/entregas em tabela auxiliar, ou com colunas de estado atualizadas pelo dispatcher. A escolha afeta os grants: `FOR UPDATE SKIP LOCKED` e atualização de lease/status exigem privilégios de leitura e atualização cuidadosamente limitados. Não presumir que INSERT-only é suficiente para um worker com confirmação de entrega.
+
+**Vantagens**
+- A API não precisa escrever na tabela final de auditoria.
+- O dispatcher pode ter credenciais e ciclo de vida separados do servidor web.
+- Falhas temporárias na persistência final podem ser retentadas sem perder a intenção já confirmada na outbox.
+- Permite controlar taxa, backoff, lote e isolamento do processamento.
+
+**Riscos/custos**
+- A auditoria final deixa de estar disponível imediatamente após o commit da operação.
+- Falha permanente, backlog ou indisponibilidade do worker atrasam a entrega; exige alertas, métricas, política de retry e reconciliação.
+- Entrega tende a ser pelo menos uma vez; precisa de idempotência e chave única.
+- O estado da outbox cresce e exige retenção/arquivamento e controle de acesso.
+- Se o requisito for “não confirmar alteração sem evento já gravado em audit_events”, outbox simples não satisfaz esse requisito. Ele garante intenção durável, não publicação síncrona na tabela final.
+
+### 17.4 Comparação de garantias
+
+| Critério | Função SQL controlada | Outbox + dispatcher |
+|---|---|---|
+| Negócio + auditoria final na mesma transação | Sim | Não; negócio + intenção ficam atômicos |
+| API com INSERT direto em audit_events | Não precisa | Não precisa |
+| API com UPDATE direto em usuarios | Pode ser removido para fluxo coberto | Necessário no desenho simples |
+| Identidade separada para publicação final | Não é necessária | Sim |
+| Disponibilidade imediata do evento final | Sim, após commit | Não garantida |
+| Retentativa após falha transitória do destino | Não automaticamente | Sim |
+| Complexidade de operação | Maior no desenho SQL seguro | Maior na operação do worker/fila |
+| Risco principal | Escalada via SECURITY DEFINER mal configurada | Atraso, backlog, duplicidade e falha de entrega |
+
+### 17.5 Direção recomendada para o requisito atual
+
+Para o fluxo administrativo de usuários, o requisito registrado até agora é rollback da alteração quando a auditoria falha. Sob esse requisito, **a função SQL estreita é a opção mais alinhada**, desde que a função seja pequena, com owner NOLOGIN, EXECUTE mínimo, search_path fixo, sem SQL dinâmico e testes reais de privilégio em conexões independentes.
+
+O outbox é uma alternativa válida se o responsável aceitar formalmente a garantia diferente: “a mudança só confirma quando a intenção de auditoria está durável na outbox; a publicação em audit_events é eventual”. Nesse caso, o produto precisa expor/monitorar pendências e ter processo de reconciliação. Não adotar outbox silenciosamente como substituto da atomicidade atual.
+
+Uma decisão também pode ser híbrida por tipo de evento: eventos críticos administrativos síncronos via função controlada e eventos operacionais de alto volume via outbox, mas isso aumenta o número de contratos e não deve ser adotado sem requisitos de retenção, criticidade e disponibilidade definidos.
+
+### 17.6 Plano de homologação futuro — ainda não autorizado
+
+Em banco PostgreSQL local exclusivamente descartável, uma fase futura poderá:
+1. Criar roles sintéticas NOLOGIN/LOGIN e schema de teste isolado, sem reutilizar nomes ou credenciais de qualquer ambiente persistente.
+2. Implementar a função ou outbox em migration de teste separada, depois de autorização explícita.
+3. Conectar com credenciais independentes para runtime, owner da função, dispatcher e reader.
+4. Provar operações permitidas e negadas, incluindo acesso direto à tabela, EXECUTE, RLS, ownership, memberships e privilégios herdados.
+5. Simular falha de INSERT em auditoria, rollback, concorrência de último Admin, repetição do mesmo evento, queda do worker e recuperação do backlog.
+6. Confirmar que nenhuma credencial runtime consegue alterar função, grants, policies, roles ou schema.
+7. Descartar integralmente o banco temporário ao final.
+
+### 17.7 Estado e decisões pendentes
+
+- A função SQL não foi criada.
+- A tabela outbox não foi criada.
+- Nenhum worker/dispatcher foi implementado.
+- Nenhuma role, grant, policy, membership ou migration foi criada/aplicada.
+- A preferência técnica pela função controlada é uma recomendação documental, não decisão de produto nem autorização de execução.
+- A matriz Admin/Operador permanece vazia; os endpoints administrativos continuam protegidos por deny-by-default.
+- Nenhum banco persistente, Supabase hospedado ou produção foi conectado ou alterado.
