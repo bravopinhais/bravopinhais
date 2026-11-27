@@ -1667,24 +1667,115 @@ function relatoriosView(){
 window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function")return;relatoriosApiClient=api;if(moduloAtual==="relatorios")void loadDre(api);});
 window.addEventListener("bravo:session-ended",()=>{relatoriosApiClient=null;relatoriosRequestSequence+=1;relatoriosRequestController?.abort();relatoriosRequestController=null;if(moduloAtual==="relatorios")relatoriosView();});
 
+let documentosApiClient=null,documentosRequestSequence=0,documentosRequestController=null,documentosCategorySequence=0,documentosCategoryController=null,documentosItems=[],documentosCategories=[],documentosEditingId=null;
+const DOCUMENTOS_MAX_BYTES=5*1024*1024;
+const DOCUMENTOS_ALLOWED_EXTENSIONS=new Set(["pdf","png","jpg","jpeg","gif","webp","txt","csv","doc","docx","xls","xlsx","odt","ods"]);
+function documentosSetStatus(message,kind=""){const node=document.getElementById("documentos-status");if(node){node.textContent=message;node.className="api-status"+(kind?" "+kind:"");}}
+function documentosApplyPermissions(){
+ const read=hasBravoCapability("documentos:read"),create=hasBravoCapability("documentos:create"),update=hasBravoCapability("documentos:update");
+ const form=document.getElementById("documentos-form");if(form)form.querySelectorAll("input,select,button").forEach(el=>{if(el.type==="reset")el.disabled=!(create||update);else if(el.type==="submit")el.disabled=!(create||update)||!documentosApiClient;else el.disabled=!(create||update);});
+ const search=document.getElementById("documentos-search"),filter=document.getElementById("documentos-filter-folder");if(search)search.disabled=!read;if(filter)filter.disabled=!read;
+}
+function documentosValidateMetadata(items){
+ if(!Array.isArray(items)||!items.every(item=>item&&typeof item.id==="string"&&typeof item.pasta==="string"&&(item.categoriaId===null||typeof item.categoriaId==="string")&&typeof item.titulo==="string"&&typeof item.nomeArquivo==="string"))throw new Error("A lista de documentos retornou dados inválidos.");
+ return items;
+}
+function documentosRenderRows(){
+ const tbody=document.getElementById("documentos-rows"),count=document.getElementById("documentos-count");if(!tbody)return;
+ const query=(document.getElementById("documentos-search")?.value||"").trim().toLocaleLowerCase("pt-BR"),folder=document.getElementById("documentos-filter-folder")?.value||"";
+ const visible=documentosItems.filter(item=>(!folder||item.pasta===folder)&&(!query||[item.titulo,item.pasta,item.nomeArquivo].some(value=>value.toLocaleLowerCase("pt-BR").includes(query))));
+ tbody.replaceChildren();if(count)count.textContent=visible.length+" de "+documentosItems.length+" documento(s)";
+ if(!visible.length){const row=document.createElement("tr"),cell=document.createElement("td");cell.colSpan=5;cell.className="empty-state";cell.textContent="Nenhum documento corresponde aos filtros.";row.append(cell);tbody.append(row);return;}
+ for(const item of visible){
+  const row=document.createElement("tr");
+  for(const value of [item.pasta,item.titulo,item.nomeArquivo,"Gzip"]){const cell=document.createElement("td");cell.textContent=value;row.append(cell);}
+  const actions=document.createElement("td"),download=document.createElement("button");download.type="button";download.className="action-btn";download.textContent="Baixar";download.disabled=!hasBravoCapability("documentos:read");download.addEventListener("click",()=>{if(documentosApiClient)void documentosDownload(item.id,documentosApiClient);});actions.append(download);
+  if(hasBravoCapability("documentos:update")){const edit=document.createElement("button");edit.type="button";edit.className="action-btn";edit.textContent="Substituir";edit.addEventListener("click",()=>documentosStartReplacement(item));actions.append(edit);}
+  row.append(actions);tbody.append(row);
+ }
+}
+function documentosRenderCategories(){
+ const select=document.getElementById("documentos-folder"),filter=document.getElementById("documentos-filter-folder"),current=select?.value||"",selected=filter?.value||"";
+ if(select){select.replaceChildren(new Option("Geral (sem categoria)",""));for(const category of documentosCategories)select.add(new Option(category.nome,category.id));if(documentosCategories.some(category=>category.id===current))select.value=current;}
+ if(filter){filter.replaceChildren(new Option("Todas as pastas",""));const folders=[...new Set(documentosItems.map(item=>item.pasta))].sort((a,b)=>a.localeCompare(b,"pt-BR"));for(const folder of folders)filter.add(new Option(folder,folder));if(folders.includes(selected))filter.value=selected;}
+}
+async function documentosLoad(api){
+ const sequence=++documentosRequestSequence;documentosRequestController?.abort();documentosRequestController=new AbortController();documentosSetStatus("Consultando documentos com documentos:read…");
+ try{const items=await api.get("/api/v1/documentos",{signal:documentosRequestController.signal});if(sequence!==documentosRequestSequence||moduloAtual!=="documentos")return;documentosItems=documentosValidateMetadata(items);documentosRenderCategories();documentosRenderRows();documentosSetStatus("Lista atualizada. O conteúdo só é consultado ao baixar.","ok");}
+ catch(error){if(error?.name==="AbortError"||sequence!==documentosRequestSequence)return;documentosSetStatus(error?.status===403?"Seu perfil não possui documentos:read.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível consultar documentos."),"err");}
+}
+async function documentosLoadCategories(api){
+ if(!hasBravoCapability("categorias:read"))return;const sequence=++documentosCategorySequence;documentosCategoryController?.abort();documentosCategoryController=new AbortController();
+ try{const items=await api.get("/api/v1/categorias",{signal:documentosCategoryController.signal});if(sequence!==documentosCategorySequence||moduloAtual!=="documentos")return;if(!Array.isArray(items)||!items.every(item=>item&&typeof item.id==="string"&&typeof item.nome==="string"))throw new Error("A lista de pastas retornou dados inválidos.");documentosCategories=items;documentosRenderCategories();}
+ catch(error){if(error?.name==="AbortError"||sequence!==documentosCategorySequence)return;documentosSetStatus("Pastas indisponíveis: "+(error?.message||"falha de consulta"),"err");}
+}
+function documentosStartReplacement(item){
+ if(!hasBravoCapability("documentos:update"))return;documentosEditingId=item.id;const form=document.getElementById("documentos-form");if(!form)return;
+ form.elements.titulo.value=item.titulo;form.elements.categoriaId.value=item.categoriaId||"";form.elements.arquivo.value="";form.querySelector('[type="submit"]').textContent="Substituir documento";
+ documentosSetStatus("Substituição selecionada: escolha o novo arquivo. O original permanece salvo até a confirmação da API.");form.scrollIntoView({behavior:"smooth",block:"start"});
+}
+function documentosResetForm(){documentosEditingId=null;const form=document.getElementById("documentos-form");if(!form)return;form.reset();const button=form.querySelector('[type="submit"]');if(button)button.textContent="Salvar documento";documentosApplyPermissions();}
+function documentosBytesToBase64(bytes){let binary="";for(let offset=0;offset<bytes.length;offset+=0x8000)binary+=String.fromCharCode(...bytes.subarray(offset,Math.min(offset+0x8000,bytes.length)));return btoa(binary);}
+async function documentosCompress(file){
+ if(!(file instanceof File)||!file.size)throw new Error("Selecione um arquivo que não esteja vazio.");
+ if(file.size>DOCUMENTOS_MAX_BYTES)throw new Error("O arquivo original ultrapassa o limite de 5 MiB.");
+ const extension=file.name.split(".").pop()?.toLowerCase();if(!extension||!DOCUMENTOS_ALLOWED_EXTENSIONS.has(extension))throw new Error("Formato não permitido. Use PDF, imagem, texto, CSV ou documento Office/LibreOffice.");
+ if(typeof CompressionStream!=="function")throw new Error("Este navegador não oferece compressão Gzip. Atualize o navegador para enviar arquivos.");
+ const compressed=await new Response(new Blob([await file.arrayBuffer()]).stream().pipeThrough(new CompressionStream("gzip"))).arrayBuffer();
+ if(compressed.byteLength>DOCUMENTOS_MAX_BYTES+65536)throw new Error("O arquivo compactado ultrapassa o limite permitido.");
+ return documentosBytesToBase64(new Uint8Array(compressed));
+}
+async function documentosSubmit(event){
+ event.preventDefault();const form=event.currentTarget,api=documentosApiClient;if(!api)return;const editing=Boolean(documentosEditingId),capability=editing?"documentos:update":"documentos:create";
+ if(!hasBravoCapability(capability)){documentosSetStatus("Seu perfil não possui "+capability+".","err");return;}
+ const file=form.elements.arquivo.files?.[0];if(!file){documentosSetStatus("Selecione o arquivo original. Para substituir, escolha o novo arquivo antes de salvar.","err");return;}
+ const submit=form.querySelector('[type="submit"]');if(submit)submit.disabled=true;
+ try{
+  const categoriaId=form.elements.categoriaId.value||null,category=documentosCategories.find(item=>item.id===categoriaId);
+  const payload={pasta:category?.nome||"Geral",categoriaId,titulo:form.elements.titulo.value.trim(),nomeArquivo:file.name,arquivoCompactadoGzip:await documentosCompress(file)};
+  const result=editing?await api.put("/api/v1/documentos/"+encodeURIComponent(documentosEditingId),payload):await api.post("/api/v1/documentos",payload);
+  if(!result||typeof result.id!=="string")throw new Error("A API não confirmou o cadastro do documento.");
+  documentosResetForm();documentosSetStatus(editing?"Documento substituído com sucesso.":"Documento cadastrado com sucesso.","ok");await documentosLoad(api);
+ }catch(error){documentosSetStatus(error?.status===403?"Seu perfil não possui a permissão necessária.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível salvar o documento."),"err");}
+ finally{documentosApplyPermissions();}
+}
+async function documentosDownload(id,api){
+ if(!hasBravoCapability("documentos:read"))return;const sequence=++documentosRequestSequence;documentosRequestController?.abort();documentosRequestController=new AbortController();documentosSetStatus("Baixando arquivo…");
+ try{
+  const item=await api.get("/api/v1/documentos/"+encodeURIComponent(id),{signal:documentosRequestController.signal});if(sequence!==documentosRequestSequence||moduloAtual!=="documentos")return;
+  if(!item||typeof item.arquivoCompactadoGzip!=="string"||typeof item.nomeArquivo!=="string")throw new Error("A API não retornou o arquivo esperado.");
+  if(typeof DecompressionStream!=="function")throw new Error("Este navegador não oferece descompressão Gzip.");
+  const binary=atob(item.arquivoCompactadoGzip),bytes=new Uint8Array(binary.length);for(let i=0;i<binary.length;i++)bytes[i]=binary.charCodeAt(i);
+  const blob=await new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip"))).blob();if(blob.size>DOCUMENTOS_MAX_BYTES||!blob.size)throw new Error("O arquivo descompactado excede o limite permitido ou está vazio.");
+  const url=URL.createObjectURL(new Blob([blob],{type:"application/octet-stream"})),link=document.createElement("a");link.href=url;link.download=item.nomeArquivo;link.hidden=true;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+  documentosSetStatus("Download preparado: "+item.nomeArquivo,"ok");
+ }catch(error){if(error?.name==="AbortError"||sequence!==documentosRequestSequence)return;documentosSetStatus(error?.status===403?"Seu perfil não possui documentos:read.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível baixar o documento."),"err");}
+}
+window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function")return;documentosApiClient=api;if(moduloAtual==="documentos"){void documentosLoad(api);void documentosLoadCategories(api);}});
+window.addEventListener("bravo:session-ended",()=>{documentosApiClient=null;documentosRequestSequence++;documentosCategorySequence++;documentosRequestController?.abort();documentosCategoryController?.abort();documentosRequestController=null;documentosCategoryController=null;documentosItems=[];documentosCategories=[];documentosEditingId=null;if(moduloAtual==="documentos")documentosView();});
 function documentosView(){
  const view=document.getElementById("view");
- view.innerHTML=`<section class="panel">
-  <div class="api-toolbar"><div><strong style="font-size:13px">Gestão de documentos</strong><div class="api-status" id="documentos-status" role="status" aria-live="polite">Aguardando sessão Google e API Shadow</div></div><span class="tag">Arquivos Gzip</span></div>
-  <div class="notice" style="margin:16px 0 18px"><div class="notice-icon">▧</div><div><strong>Arquivos organizados por pasta</strong><p>O fluxo legado permite inserir, substituir, visualizar e baixar arquivos armazenados em formato Gzip/Base64. A interface Shadow prepara esses campos sem enviar arquivos ou presumir registros.</p></div></div>
-  <div class="section-head"><h2>Inserir ou atualizar documento</h2><span>Cadastro documental</span></div>
+ view.innerHTML=\`<section class="panel">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Gestão de documentos</strong><div class="api-status" id="documentos-status" role="status" aria-live="polite">Aguardando sessão Google e API Shadow</div></div><span class="tag">Gzip · limite 5 MiB</span></div>
+  <div class="notice" style="margin:16px 0 18px"><div class="notice-icon">▧</div><div><strong>Arquivos organizados por pasta</strong><p>O conteúdo Gzip é enviado somente após validação local de tamanho/formato e validação novamente no backend. A listagem transfere metadados; o conteúdo só é consultado ao baixar.</p></div></div>
+  <div class="section-head"><h2>Inserir ou substituir documento</h2><span>Cadastro documental</span></div>
   <form class="api-form" id="documentos-form">
-   <div class="field"><label for="documentos-folder">Pasta / categoria</label><select id="documentos-folder" name="categoriaId" disabled><option value="">Selecione uma pasta</option></select></div>
+   <div class="field"><label for="documentos-folder">Pasta / categoria</label><select id="documentos-folder" name="categoriaId" disabled><option value="">Geral (sem categoria)</option></select></div>
    <div class="field"><label for="documentos-title">Título do documento</label><input id="documentos-title" name="titulo" maxlength="200" required placeholder="Ex.: Ata de assembleia — novembro/2026" disabled></div>
-   <div class="field"><label for="documentos-file">Arquivo original</label><input id="documentos-file" name="arquivo" type="file" disabled><p class="form-hint">A compressão Gzip, validação de tipo/tamanho e envio seguro ainda precisam ser integrados ao serviço de arquivos.</p></div>
-   <div class="api-actions"><button type="button" class="btn-primary" disabled>Salvar documento</button><button type="reset" class="btn-secondary" disabled>Limpar</button></div>
+   <div class="field"><label for="documentos-file">Arquivo original (até 5 MiB)</label><input id="documentos-file" name="arquivo" type="file" accept=".pdf,.png,.jpg,.jpeg,.gif,.webp,.txt,.csv,.doc,.docx,.xls,.xlsx,.odt,.ods" disabled><p class="form-hint">PDF, imagens, texto/CSV e documentos Office/LibreOffice. Ao substituir, o arquivo anterior permanece salvo até a confirmação da API.</p></div>
+   <div class="api-actions"><button id="documentos-save" type="submit" class="btn-primary" disabled>Salvar documento</button><button id="documentos-reset" type="reset" class="btn-secondary" disabled>Limpar</button></div>
   </form>
   <div class="section-head" style="margin-top:24px"><h2>Documentos cadastrados</h2><span id="documentos-count">Aguardando API</span></div>
   <div class="api-toolbar"><input id="documentos-search" type="search" placeholder="Buscar por título, pasta ou nome do arquivo" aria-label="Buscar documentos" disabled><select id="documentos-filter-folder" aria-label="Filtrar por pasta" disabled><option value="">Todas as pastas</option></select></div>
   <div class="table-wrap"><table><thead><tr><th>Pasta</th><th>Título</th><th>Arquivo original</th><th>Formato</th><th>Ações</th></tr></thead><tbody id="documentos-rows"><tr><td colspan="5" class="empty-state">A lista será carregada após a conexão segura com a API.</td></tr></tbody></table></div>
-  <div class="notice" style="margin-top:16px"><div class="notice-icon">ⓘ</div><div><strong>Recursos ainda não migrados</strong><p>Armazenamento externo, URLs assinadas, pré-visualização por tipo de arquivo, recuperação de arquivos órfãos e otimização de armazenamento não estão implementados nesta etapa. A API atual guarda o conteúdo Gzip/Base64 no registro do documento; isso não equivale a um serviço de arquivos escalável.</p></div></div>
-  <p class="form-hint">Consulta, cadastro, edição e exclusão têm rotas protegidas no backend. A tela permanece somente demonstrativa até existir uma API HTTPS isolada, sessão Google integrada e fluxo de arquivo com limites e validação definidos. Nenhum arquivo será enviado nesta versão.</p>
- </section>`;
+  <div class="notice" style="margin-top:16px"><div class="notice-icon">ⓘ</div><div><strong>Limites preservados nesta etapa</strong><p>O arquivo continua armazenado como Gzip/Base64 no banco; não há armazenamento externo, URL assinada, pré-visualização ou recuperação de órfãos. Exclusão física não é oferecida na interface. O download é entregue como anexo genérico, sem execução/visualização no navegador.</p></div></div>
+ </section>\`;
+ document.getElementById("documentos-form")?.addEventListener("submit",documentosSubmit);
+ document.getElementById("documentos-form")?.addEventListener("reset",()=>{documentosEditingId=null;setTimeout(()=>{const button=document.getElementById("documentos-save");if(button)button.textContent="Salvar documento";},0);});
+ document.getElementById("documentos-search")?.addEventListener("input",documentosRenderRows);
+ document.getElementById("documentos-filter-folder")?.addEventListener("change",documentosRenderRows);
+ documentosRenderCategories();documentosRenderRows();documentosApplyPermissions();
+ if(documentosApiClient){void documentosLoad(documentosApiClient);void documentosLoadCategories(documentosApiClient);}
 }
 
 function openModule(id){
@@ -1697,7 +1788,7 @@ function openModule(id){
   document.getElementById("view").innerHTML='<section class="panel module-view" role="alert"><div><div class="big-icon">⛨</div><span class="eyebrow">Acesso restrito</span><h2>Permissão de consulta não concedida</h2><p>Seu perfil Bravo não possui a capacidade necessária para visualizar este módulo. Solicite a revisão do acesso a um administrador.</p><span class="tag">Acesso negado · sem consulta à API</span></div></section>';
   return;
  }
- moduloAtual=id;if(id!=="dashboard"){dashboardRequestSequence+=1;dashboardRequestController?.abort();dashboardRequestController=null;}if(id!=="financeiro"){financeiroRequestSequence+=1;financeiroRequestController?.abort();financeiroRequestController=null;}if(id!=="plano_contas"){planoContasRequestSequence+=1;planoContasRequestController?.abort();planoContasRequestController=null;}if(id!=="contas_bancarias"){contasBancariasRequestSequence+=1;contasBancariasRequestController?.abort();contasBancariasRequestController=null;}if(id!=="formas_monetarias"){formasMonetariasRequestSequence+=1;formasMonetariasRequestController?.abort();formasMonetariasRequestController=null;}if(id!=="relatorios"){relatoriosRequestSequence+=1;relatoriosRequestController?.abort();relatoriosRequestController=null;}if(id!=="compras_consumo"){comprasConsumoSequence+=1;comprasConsumoController?.abort();comprasConsumoController=null;}
+ moduloAtual=id;if(id!=="dashboard"){dashboardRequestSequence+=1;dashboardRequestController?.abort();dashboardRequestController=null;}if(id!=="financeiro"){financeiroRequestSequence+=1;financeiroRequestController?.abort();financeiroRequestController=null;}if(id!=="plano_contas"){planoContasRequestSequence+=1;planoContasRequestController?.abort();planoContasRequestController=null;}if(id!=="contas_bancarias"){contasBancariasRequestSequence+=1;contasBancariasRequestController?.abort();contasBancariasRequestController=null;}if(id!=="formas_monetarias"){formasMonetariasRequestSequence+=1;formasMonetariasRequestController?.abort();formasMonetariasRequestController=null;}if(id!=="relatorios"){relatoriosRequestSequence+=1;relatoriosRequestController?.abort();relatoriosRequestController=null;}if(id!=="compras_consumo"){comprasConsumoSequence+=1;comprasConsumoController?.abort();comprasConsumoController=null;}if(id!=="documentos"){documentosRequestSequence++;documentosCategorySequence++;documentosRequestController?.abort();documentosCategoryController?.abort();documentosRequestController=null;documentosCategoryController=null;}
  document.querySelectorAll("[data-module]").forEach(el=>{if(el.closest("#navigation")){if(el.dataset.module===id)el.setAttribute("aria-current","page");else el.removeAttribute("aria-current")}});
  document.getElementById("breadcrumb").textContent=item.name;
  document.getElementById("page-title").textContent=item.title;
