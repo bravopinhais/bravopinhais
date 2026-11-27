@@ -63,10 +63,16 @@ def test_user_repository_maps_and_persists_google_email_profile_only():
         id="usr_1", email="person@example.com", nome="Pessoa",
         loja="Bravo", cargo="Operador", perfil="Admin", status="Ativo",
     )
+    # A identidade Google ainda não é persistida: não deve aparecer
+    # no SELECT/INSERT nem existir operação de vínculo neste estágio.
+    assert "google_subject" not in repository._columns.lower()
+    assert not hasattr(repository, "link_google_subject")
+    assert "google_subject" not in connection.calls[0][0].lower()
     repository.add("usr_2", item)
     assert connection.calls[1][1] == (
         "usr_2", "person@example.com", "Pessoa", "Bravo", "Operador", "Admin", "Ativo"
     )
+    assert "google_subject" not in connection.calls[1][0].lower()
     assert "senha" not in connection.calls[1][0].lower()
     assert connection.commits == 2
 
