@@ -160,6 +160,7 @@ CREATE INDEX IF NOT EXISTS migration_source_records_last_verified_idx
 ALTER TABLE bravo_shadow.migration_batches ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bravo_shadow.migration_source_records ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bravo_shadow.migration_batch_recovery_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bravo_shadow.migration_batch_recovery_events ENABLE ROW LEVEL SECURITY;
 
 REVOKE ALL ON SCHEMA bravo_shadow FROM PUBLIC, anon, authenticated, service_role;
 REVOKE ALL ON TABLE
@@ -263,7 +264,8 @@ ALTER TABLE bravo_shadow.migration_source_records ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON SCHEMA bravo_shadow FROM PUBLIC, anon, authenticated, service_role;
 REVOKE ALL ON TABLE
     bravo_shadow.migration_batches,
-    bravo_shadow.migration_source_records
+    bravo_shadow.migration_source_records,
+    bravo_shadow.migration_batch_recovery_events
 FROM PUBLIC, anon, authenticated, service_role;
 
 -- NOTAS DE IMPLEMENTAÇÃO OBRIGATÓRIAS:
@@ -283,4 +285,9 @@ FROM PUBLIC, anon, authenticated, service_role;
 --    quando não houver prova suficiente para concluir ou repetir com segurança.
 --    needs_review é terminal: exige reconciliação e novo lote aprovado; nunca
 --    reabrir nem repetir o mesmo lote automaticamente.
--- 9. Este arquivo não cria nem altera tabelas funcionais do Bravo.
+-- 9. Recovery exige evento append-only com revisor, justificativa e referência
+--    + SHA-256 da evidência; o evento nunca muda o status nem reabre o lote.
+--    confirmed_not_committed exige prova da ausência de commit; rollback_verified
+--    exige prova da reversão integral; partial_or_unknown mantém o bloqueio.
+-- 10. Um novo apply sempre exige novo lote/manifesto aprovado. Este arquivo
+--     não cria nem altera tabelas funcionais do Bravo.
