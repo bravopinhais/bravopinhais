@@ -26,7 +26,7 @@ Coleção: `db.contas_bancarias`.
 Campos gravados:
 - `id`: preservado na edição; novo registro recebe `cb_` + timestamp.
 - `banco`: texto obrigatório pelo atributo HTML `required`.
-- `saldo`: campo numérico decimal com `step=0.01`; valor inválido/vazio é convertido para zero na gravação.
+- `saldo`: campo numérico decimal com `step=0.01`; valor inválido/vazio é convertido para zero na gravação. Na API sombra, o saldo usa `Decimal`, aceita até duas casas decimais e rejeita valores não finitos; valores negativos continuam permitidos para não presumir uma regra que poderia conflitar com saldos legados ou limites.
 
 Comportamento:
 - Novo cadastro apresenta saldo inicial padrão 0.
