@@ -9,7 +9,11 @@ from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Generic, TypeVar
 
-from app.core.postgres import CommitOutcomeUnknown, PostgresUnitOfWork
+from app.core.postgres import (
+    CommitOutcomeUnknown,
+    CommitSucceededCleanupError,
+    PostgresUnitOfWork,
+)
 
 DestinationT = TypeVar("DestinationT")
 
@@ -20,7 +24,10 @@ class MigrationWriteOperations(Generic[DestinationT]):
 
     The success callbacks use the same transaction connection. Failure and
     unknown-outcome callbacks run only after that connection is closed and
-    must persist sanitized metadata in a separate transaction.
+    must persist sanitized metadata in a separate transaction. An unknown
+    COMMIT callback must atomically quarantine the batch as needs_review and
+    append its evidence event; it must never retry the batch. A cleanup error
+    after a confirmed COMMIT is audited separately and is not a failed write.
     """
 
     reserve_batch: Callable[[object], None]
@@ -30,6 +37,7 @@ class MigrationWriteOperations(Generic[DestinationT]):
     append_audit_event: Callable[[object, DestinationT], None]
     append_failure_event: Callable[[BaseException], None]
     append_unknown_outcome_event: Callable[[CommitOutcomeUnknown], None]
+    append_committed_cleanup_event: Callable[[CommitSucceededCleanupError], None]
 
 
 class MigrationTransactionError(RuntimeError):
@@ -66,6 +74,16 @@ def execute_migration_write_unit(
             operations.append_success_event(connection, destination)
             operations.append_audit_event(connection, destination)
             return destination
+    except CommitSucceededCleanupError as cleanup_error:
+        try:
+            operations.append_committed_cleanup_event(cleanup_error)
+        except BaseException as audit_error:
+            _add_secondary_note(
+                cleanup_error,
+                "Falha adicional ao registrar limpeza após COMMIT confirmado",
+                audit_error,
+            )
+        raise
     except CommitOutcomeUnknown as unknown_error:
         try:
             operations.append_unknown_outcome_event(unknown_error)
