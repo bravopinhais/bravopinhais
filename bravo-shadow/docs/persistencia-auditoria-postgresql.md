@@ -142,3 +142,16 @@ A gravação usa `audit_sink.append`, em transação independente da operação 
 **Limites:** em modo memória, `audit_sink` é `None`, portanto não há persistência; em modo PostgreSQL, o sink existe, mas a tabela/roles continuam sem migration aplicada ou validação real. Falhas de autenticação sem principal validado não são registradas como se tivessem um ator. A mudança não registra falhas gerais de negócio nem cria uma trilha completa de segurança.
 
 Foram acrescentados testes para confirmar o conteúdo mínimo do evento, a correlação pelo request ID e a manutenção do 403 quando a gravação falha. Os testes foram escritos, mas ainda não foram executados.
+
+
+## Falhas inesperadas após autorização — preparação no código
+
+A aplicação agora possui um handler global para exceções inesperadas. Quando a requisição passou pela dependência central de autorização, o `subject` validado fica disponível apenas no estado interno da requisição. Se o endpoint falhar depois disso, o handler tenta gravar um evento mínimo `failure` por `audit_sink.append()`, em transação separada da operação que falhou.
+
+O evento usa ação fixa `http:unhandled_exception`, tipo `request`, resultado `failure` e o ID de requisição gerado pelo servidor. Não registra URL, parâmetros, corpo, e-mail, token, mensagem da exceção, SQL ou traceback. A resposta ao cliente é genérica (HTTP 500) e inclui somente o request ID para correlação.
+
+Se a gravação de auditoria também falhar, a resposta permanece 500 e não expõe a exceção original. A falha de auditoria é registrada por mensagem operacional estática com request ID. Não há garantia de persistência se o sink estiver indisponível.
+
+**Escopo:** somente falhas inesperadas de requisições que já passaram pela autorização central são associadas a um ator. Erros de validação HTTP, 401/403 e respostas HTTP tratadas não entram nessa categoria; 403 autenticado continua usando o registro `denied`. O registro de falhas não altera nem substitui o rollback das transações dos repositórios.
+
+Testes foram adicionados para verificar evento mínimo, correlação do request ID, resposta genérica e comportamento quando o sink falha. Os testes ainda precisam ser executados; não houve validação contra PostgreSQL real.
