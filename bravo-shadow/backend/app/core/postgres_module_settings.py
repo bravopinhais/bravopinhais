@@ -31,12 +31,13 @@ class PostgresModuleSettingsRepository:
             cursor = connection.cursor()
             try:
                 cursor.execute(f"SELECT module_key, enabled FROM {self._table}")
-                return {str(row[0]): bool(row[1]) for row in cursor.fetchall()}
+                rows = cursor.fetchall()
             except BaseException as exc:
                 self._close(cursor, exc)
                 raise
             else:
                 self._close(cursor)
+            return {str(row[0]): bool(row[1]) for row in rows}
 
     def set_state_audited(self, key: str, enabled: bool, *, event: Any, audit_sink: Any) -> None:
         self.set_states_audited({key: enabled}, events=[event], audit_sink=audit_sink)
