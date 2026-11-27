@@ -280,3 +280,15 @@ A fotografia histórica acima foi complementada pela inspeção do `index.html` 
 A baseline, os SHAs consultados, o estado atual da interface/API Shadow, as lacunas imediatas e os critérios de aceite estão registrados em **[baseline-paridade-producao-2026-11-27.md](baseline-paridade-producao-2026-11-27.md)**.
 
 A partir desta data, a paridade deve ser medida contra essa baseline atual, não apenas contra a fotografia antiga da branch `upgrade/project-hardening`. O documento novo é um inventário estático; não representa homologação nem autorização de migração.
+
+
+## Atualização de Configurações — API de estado dos módulos (27/11/2026)
+
+O backend Shadow agora declara as capacidades `configuracoes:read` e `configuracoes:update`. Admin ativo recebe ambas; Operador ativo recebe somente leitura. As rotas protegidas são:
+- `GET /api/v1/configuracoes/modulos` — `configuracoes:read`;
+- `PATCH /api/v1/configuracoes/modulos/{key}` — `configuracoes:update`;
+- `POST /api/v1/configuracoes/modulos/acao-em-massa` — `configuracoes:update`.
+
+O catálogo contempla os 17 módulos da baseline. Ativar/desativar é apenas controle de visibilidade; não altera a matriz de autorização nem concede capacidades. Configurações não pode ser desativado. No PostgreSQL, alteração e evento de auditoria são gravados na mesma transação. No modo memória, a leitura usa defaults ativos e mutações são negadas por indisponibilidade de auditoria persistente.
+
+Os testes sintéticos foram adicionados, mas não executados. A tela visual ainda não foi integrada. A tabela `module_settings` está somente no DDL rascunho/piloto; nenhum SQL foi aplicado.
