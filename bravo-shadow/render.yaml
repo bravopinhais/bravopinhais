@@ -1,0 +1,24 @@
+# Blueprint de homologação do Bravo Shadow.
+# Cria apenas um serviço gratuito, sem banco gerenciado pelo Render.
+# O PostgreSQL deve ser um projeto Supabase Free separado e isolado.
+services:
+  - type: web
+    name: bravo-shadow-homologacao
+    runtime: docker
+    rootDir: bravo-shadow
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    branch: bravo-shadow
+    region: ohio
+    plan: free
+    autoDeployTrigger: off
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: BRAVO_STORAGE_BACKEND
+        value: postgres
+      - key: BRAVO_DATABASE_URL
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        value: 846780362249-mrg8k8hh8q9vcmmm4cbophuk4tcjdsu9.apps.googleusercontent.com
+      - key: BRAVO_CORS_ORIGINS
+        value: ""
