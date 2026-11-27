@@ -55,6 +55,28 @@ class MigrationApplyResult:
     writes_authorized: bool
 
 
+class PersistedMigrationApplyStore(Protocol):
+    """Store contract for the authenticated, persisted-approval apply path."""
+
+    def lock_source_identity(
+        self, connection: Any, source_system: str, source_collection: str, legacy_id: str
+    ) -> None: ...
+    def find_source_link(
+        self, connection: Any, source_system: str, source_collection: str, legacy_id: str
+    ) -> tuple[str, str] | None: ...
+    def target_id_exists(self, connection: Any, target_collection: str, destination_id: str) -> bool: ...
+    def insert_target(
+        self, connection: Any, target_collection: str, destination_id: str, payload: dict[str, Any]
+    ) -> None: ...
+    def insert_source_link(
+        self, connection: Any, command: MigrationApplyCommand
+    ) -> None: ...
+    def insert_success_event_authenticated(
+        self, connection: Any, command: MigrationApplyCommand, destination_id: str,
+        actor_subject: str, request_id: str | None,
+    ) -> None: ...
+
+
 class MigrationApplyStore(Protocol):
     """All methods must use only the connection supplied by the unit of work."""
 
@@ -166,7 +188,7 @@ def apply_one_record(
 
 def apply_one_record_with_persisted_approval(
     connection_factory: Any,
-    store: MigrationApplyStore,
+    store: PersistedMigrationApplyStore,
     command: MigrationApplyCommand,
     principal: AuthenticatedPrincipal,
     *,
