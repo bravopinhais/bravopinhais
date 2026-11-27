@@ -1,0 +1,35 @@
+name: Testar prova Cloudflare do Bravo Shadow
+
+on:
+  push:
+    branches:
+      - bravo-shadow
+    paths:
+      - "bravo-shadow/deploy/cloudflare-worker/**"
+      - ".github/workflows/bravo-shadow-cloudflare-proof.yml"
+  pull_request:
+    branches:
+      - bravo-shadow
+    paths:
+      - "bravo-shadow/deploy/cloudflare-worker/**"
+      - ".github/workflows/bravo-shadow-cloudflare-proof.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  worker-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bravo-shadow/deploy/cloudflare-worker
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Configure Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Run isolated Worker smoke tests
+        run: node --test
