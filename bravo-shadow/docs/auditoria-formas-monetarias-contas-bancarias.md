@@ -42,7 +42,7 @@ Comportamento:
 - Contas Bancárias: preservar `id`, `banco` e `saldo`, com padrão 0.0.
 - Não inventar vínculo entre forma monetária, conta bancária e título financeiro.
 - Não chamar o saldo cadastrado de saldo conciliado ou saldo calculado.
-- Não impor limite mínimo/máximo, unicidade ou validação de sinal sem decisão funcional e análise dos dados existentes.
+- Não impor unicidade ou novas regras de sinal sem decisão funcional e análise dos dados existentes. Na interface sombra já havia limite de multa entre 0% e 100%; a API agora aplica a mesma faixa no servidor e rejeita valores não finitos, para que chamadas diretas não contornem a validação visual.
 - A API sombra já oferece CRUD em memória para ambos os cadastros; não existe integração com Supabase nem frontend conectado.
 
 ## Limitações
