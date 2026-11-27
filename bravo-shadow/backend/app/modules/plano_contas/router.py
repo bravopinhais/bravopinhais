@@ -27,7 +27,9 @@ def create_account(
     response: Response,
     _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("plano_contas:create")),
 ):
-    item = get_service(request).create(data)
+    item = get_service(request).create(
+        data, actor=_principal, request_id=getattr(request.state, "request_id", None)
+    )
     response.headers["ETag"] = format_etag(item.version)
     return item
 
@@ -42,7 +44,10 @@ def update_account(
     _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("plano_contas:update")),
 ):
     expected_version = parse_if_match(if_match)
-    item = get_service(request).update(item_id, data, expected_version)
+    item = get_service(request).update(
+        item_id, data, expected_version,
+        actor=_principal, request_id=getattr(request.state, "request_id", None),
+    )
     response.headers["ETag"] = format_etag(item.version)
     return item
 
@@ -53,4 +58,6 @@ def delete_account(
     request: Request,
     _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("plano_contas:delete")),
 ) -> None:
-    get_service(request).delete(item_id)
+    get_service(request).delete(
+        item_id, actor=_principal, request_id=getattr(request.state, "request_id", None)
+    )
