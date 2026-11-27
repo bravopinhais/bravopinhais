@@ -126,3 +126,46 @@ Não criar simultaneamente roles `runtime`, `writer` e `reader` apenas porque ap
 **Recomendação para revisão, ainda não aprovada nem implementada:** manter owner/migrator separado de todas as credenciais de processo; manter o runtime de revisão com SELECT nas tabelas do ledger e INSERT apenas em events; manter a auditoria técnica geral com credencial de escrita isolada, caso o sink seja habilitado em PostgreSQL. A role e os grants finais dependem da confirmação dos adaptadores e de revisão explícita.
 
 Esta decisão é um bloqueio de desenho para a Fase B. Nenhuma role, membership, policy ou grant é criada por esta documentação.
+
+## 7. Mapa dos adaptadores PostgreSQL observados no código
+
+A inspeção do composition root `backend/app/core/storage.py` e dos adaptadores `backend/app/core/postgres_*.py` confirmou o seguinte escopo de persistência:
+
+| Adaptador | Tabelas acessadas |
+|---|---|
+| `PostgresFormasMonetariasRepository` | `formas_monetarias` |
+| `PostgresPlanoContasRepository` | `plano_contas` |
+| `PostgresFinanceiroRepository` | `financeiro` |
+| `PostgresEstoqueRepository` | `estoque` |
+| `PostgresAcertosEstoqueRepository` | `acertos_estoque` |
+| `PostgresCategoriasRepository` | `categorias` |
+| `PostgresMotivosAcertoRepository` | `motivos_acerto` |
+| `PostgresDocumentosRepository` | `documentos` |
+| `PostgresMoradoresRepository` | `moradores` |
+| `PostgresFornecedoresRepository` | `fornecedores` |
+| `PostgresEmpregadosRepository` | `empregados` |
+| `PostgresContasBancariasRepository` | `contas_bancarias` |
+| `PostgresCondominioRepository` | `condominio` |
+| `PostgresConselheirosRepository` | `conselheiros` |
+| `PostgresUsuariosRepository` | `usuarios` |
+| `PostgresAuditSink` | `audit_events` |
+
+Todas as tabelas acima pertencem ao schema `bravo_shadow`. A lista descreve o código encontrado, não prova que todas as tabelas estejam implantadas em um banco.
+
+### Achado importante: a fábrica de conexão é compartilhada
+
+No modo `postgres`, `build_storage_services` recebe uma única `connection_factory` e a injeta nos repositórios de domínio, no repositório de usuários e no `PostgresAuditSink`. Portanto, no estado atual, o código não separa credenciais PostgreSQL para domínio, auditoria geral e revisão humana. A proposta de roles isoladas não pode ser considerada implementada apenas por existir um sink dedicado: ele recebe a mesma fábrica.
+
+Antes de conceder privilégios, será necessário decidir se o backend usará uma única role técnica com grants mínimos agregados ou se o composition root será alterado para aceitar fábricas distintas por fronteira de confiança. A segunda opção reduz o escopo de cada credencial, mas exige rever operações transacionais que hoje compartilham conexão — especialmente a desativação de usuário, que grava alteração cadastral e evento de auditoria na mesma transação via `append_in_transaction`.
+
+### Consequências para a matriz
+
+- A role que atende os repositórios de domínio precisa do conjunto de operações realmente utilizado pelos 15 adaptadores, não apenas do ledger de revisão.
+- O `PostgresAuditSink` oferece somente INSERT em `audit_events`; não implementa leitura, atualização ou exclusão.
+- A desativação de usuário executa LOCK/SELECT/UPDATE em `usuarios` e insere o evento de auditoria na mesma conexão/transação. Separar credenciais nesse fluxo exigiria um desenho transacional explícito; não basta trocar a fábrica do sink.
+- `PostgresUsuariosRepository.delete` bloqueia exclusão física na camada Python (HTTP 410), mas a role SQL ainda precisaria ser testada sem DELETE se a política de segurança exigir essa barreira no banco.
+- `PostgresAcertosEstoqueRepository.replace` e `delete` bloqueiam mutações na camada Python; os privilégios SQL também precisam negar UPDATE/DELETE diretamente.
+
+**Decisão recomendada para a próxima revisão:** não criar ainda roles writer/reader independentes para auditoria. Primeiro fechar a fronteira de conexão: (a) uma role única de API, com grants mínimos agregados e RLS apropriada, ou (b) múltiplas connection factories com transação coordenada/atômica para operações que escrevem negócio e auditoria. A opção (b) não deve ser implementada sem projeto transacional específico. A role do ledger de revisão permanece separada e inativa até existir adaptador efetivamente conectado.
+
+Nenhuma fábrica de conexão foi alterada e nenhuma role ou permissão foi criada nesta etapa.
