@@ -42,7 +42,7 @@ class PostgresReviewLedgerStore:
             return cursor
         except Exception as primary_error:
             try:
-                cursor.close()
+                self._close_cursor(cursor)
             except BaseException as close_error:
                 add_note = getattr(primary_error, "add_note", None)
                 if callable(add_note):
@@ -51,6 +51,24 @@ class PostgresReviewLedgerStore:
                         f"{type(close_error).__name__}."
                     )
             raise
+
+    @staticmethod
+    def _close_cursor(cursor: Any) -> None:
+        """Fecha o cursor sem esconder uma falha anterior da consulta."""
+        import sys
+
+        primary_error = sys.exception()
+        try:
+            self._close_cursor(cursor)
+        except BaseException as close_error:
+            if primary_error is None:
+                raise
+            add_note = getattr(primary_error, "add_note", None)
+            if callable(add_note):
+                add_note(
+                    "Falha secundária durante fechamento do cursor: "
+                    f"{type(close_error).__name__}."
+                )
 
     @staticmethod
     def _timestamp(value: Any) -> str:
@@ -91,7 +109,7 @@ class PostgresReviewLedgerStore:
                 """,
                 (register.batch_id, register.manifest_hash),
             )
-            cursor.close()
+            self._close_cursor(cursor)
 
             cursor = self._run(
                 connection,
@@ -104,7 +122,7 @@ class PostgresReviewLedgerStore:
                 (register.batch_id,),
             )
             batch = cursor.fetchone()
-            cursor.close()
+            self._close_cursor(cursor)
             if batch is None or str(batch[0]).strip() != register.manifest_hash:
                 raise ReviewValidationError("stored_batch_manifest_mismatch")
 
@@ -128,7 +146,7 @@ class PostgresReviewLedgerStore:
                         item.automatic_action,
                     ),
                 )
-                cursor.close()
+                self._close_cursor(cursor)
 
             self._assert_decision_snapshot(connection, register)
             return self._load_from_connection(connection, register)
@@ -165,7 +183,7 @@ class PostgresReviewLedgerStore:
                 (register.batch_id,),
             )
             batch = cursor.fetchone()
-            cursor.close()
+            self._close_cursor(cursor)
             if batch is None or str(batch[0]).strip() != register.manifest_hash:
                 raise ReviewValidationError("stored_batch_manifest_mismatch")
 
@@ -180,7 +198,7 @@ class PostgresReviewLedgerStore:
                 (register.batch_id, decision_id),
             )
             decision = cursor.fetchone()
-            cursor.close()
+            self._close_cursor(cursor)
             if decision is None:
                 raise ReviewValidationError("unknown_or_uninitialized_decision")
             if decision[0] != register.batch_id or str(decision[1]).strip() != register.manifest_hash:
@@ -199,7 +217,7 @@ class PostgresReviewLedgerStore:
                 (register.batch_id, decision_id),
             )
             row = cursor.fetchone()
-            cursor.close()
+            self._close_cursor(cursor)
             database_version = int(row[0]) if row else 0
             if database_version != expected_version:
                 raise ReviewValidationError("stale_review_version")
@@ -214,7 +232,7 @@ class PostgresReviewLedgerStore:
                 (event_id,),
             )
             duplicate_event = cursor.fetchone()
-            cursor.close()
+            self._close_cursor(cursor)
             if duplicate_event is not None:
                 raise ReviewValidationError("duplicate_review_event_id")
 
@@ -253,7 +271,7 @@ class PostgresReviewLedgerStore:
                 ),
             )
             inserted = cursor.fetchone()
-            cursor.close()
+            self._close_cursor(cursor)
             if inserted is None:
                 raise ReviewValidationError("duplicate_review_event_id")
             return updated

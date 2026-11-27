@@ -323,3 +323,24 @@ def test_postgres_review_store_preserves_query_error_when_cursor_close_fails():
         "fechamento do cursor" in note
         for note in getattr(original_error, "__notes__", ())
     )
+
+
+def test_postgres_review_store_close_helper_preserves_primary_fetch_error():
+    original_error = RuntimeError("fetch failed")
+
+    class FailingCursor:
+        def close(self):
+            raise OSError("cursor close failed")
+
+    with pytest.raises(RuntimeError) as raised:
+        try:
+            raise original_error
+        except RuntimeError:
+            PostgresReviewLedgerStore._close_cursor(FailingCursor())
+            raise
+
+    assert raised.value is original_error
+    assert any(
+        "fechamento do cursor" in note
+        for note in getattr(original_error, "__notes__", ())
+    )
