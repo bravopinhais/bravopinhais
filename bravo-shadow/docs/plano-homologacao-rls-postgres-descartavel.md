@@ -951,3 +951,108 @@ A estrutura de colunas existente é suficiente para um piloto sem alterar o mode
 Isso não significa que a função possa ser escrita agora. Os bloqueios reais são de segurança e semântica: policy RLS para executor sob FORCE RLS, confiança no ator, idempotência, retorno de erros e substituição do caminho SQL direto no repositório.
 
 **Estado:** inspeção somente de arquivos versionados. Nenhum banco foi consultado; nenhum SQL foi executado; nenhuma função, policy, role, grant, migration ou alteração de código foi criada nesta etapa.
+
+## 20. Matriz de privilégios efetivos — função administrativa controlada — 27/11/2026
+
+**Status:** matriz-alvo para revisão, não grants executados. Os nomes abaixo são papéis conceituais; não criar roles com estes nomes sem aprovação.
+
+### 20.1 Papéis conceituais e fronteiras
+
+| Papel conceitual | Finalidade | Pode autenticar? | Fronteira |
+|---|---|---:|---|
+| `bravo_api_runtime` | Backend web/API | Sim | Chama apenas a assinatura administrativa aprovada; sem DML administrativo direto |
+| `bravo_admin_fn_owner` | Proprietário dedicado da função | Não (NOLOGIN) | Privilégios mínimos para executar a operação dentro da função |
+| `bravo_audit_reader` | Consulta de auditoria, se aprovada futuramente | Sim, somente serviço autorizado | SELECT separado; sem escrita |
+| `bravo_migrator` | DDL e migrations controladas | Sim, apenas processo administrativo isolado | Nunca usado pela aplicação |
+| `PUBLIC`, `anon`, `authenticated`, `service_role` | Papéis padrão/gerenciados | Conforme plataforma | Sem acesso ao schema privado ou EXECUTE da função |
+
+Não criar writer separado para este fluxo se a própria função for a única fronteira de escrita. A função substitui o INSERT direto do runtime em `audit_events`; um writer independente só seria necessário para outros fluxos com requisitos distintos.
+
+### 20.2 Matriz de privilégios SQL diretos pretendidos
+
+Legenda: **P** = permitido; **N** = negado; **C** = condicionado a revisão/necessidade; **—** = não aplicável.
+
+| Operação direta | API runtime | Function owner | Audit reader | Migrator | PUBLIC/anon/authenticated/service_role |
+|---|---:|---:|---:|---:|---:|
+| USAGE no schema privado | P mínimo | P mínimo | P se leitura aprovada | P controlado | N |
+| SELECT em `usuarios` | C (somente o necessário ao fluxo geral) | P mínimo à função | N | C | N |
+| UPDATE em colunas administrativas de `usuarios` | **N** | P mínimo | N | C em migration | N |
+| INSERT em `audit_events` | **N** | P | N | C em migration | N |
+| SELECT em `audit_events` | N por padrão | N por padrão | P, se aprovado | C | N |
+| UPDATE/DELETE/TRUNCATE em `audit_events` | **N** | **N** | **N** | C somente em manutenção/retention aprovada | N |
+| CREATE/ALTER/DROP no schema | N | N | N | P em ciclo controlado | N |
+| CREATE/REPLACE/ALTER da função | N | N | N | P em ciclo controlado | N |
+| EXECUTE da função administrativa | P, somente assinatura exata | N por padrão | N | C em teste controlado | N |
+| SET ROLE para function owner/migrator | N | — | N | C conforme procedimento | N |
+
+**Importante:** o acesso do owner às tabelas não deve ser mais amplo que o necessário para a função. Se a função exigir SELECT para ler o alvo/contar Admins, conceder somente o escopo necessário; avaliar GRANT por coluna para UPDATE. Não conceder privilégios de tabela inteira quando privilégios por coluna forem suficientes.
+
+### 20.3 Matriz RLS pretendida para o fluxo administrativo
+
+RLS e GRANT são barreiras cumulativas: a operação só funciona se ambas permitirem. O desenho precisa considerar explicitamente que `audit_events` usa `ENABLE ROW LEVEL SECURITY` e `FORCE ROW LEVEL SECURITY`.
+
+| Tabela / policy futura | API runtime | Function owner | Audit reader | Papéis padrão |
+|---|---|---|---|---|
+| `usuarios` — SELECT | policy conforme leituras runtime aprovadas | SELECT apenas para alvo e contagem necessários | N | N |
+| `usuarios` — UPDATE | sem policy de UPDATE administrativo | UPDATE somente nas colunas/linhas cobertas pela função | N | N |
+| `audit_events` — INSERT | sem policy de INSERT direto | INSERT apenas para evento administrativo fixo | N | N |
+| `audit_events` — SELECT | N | N | SELECT, se aprovado | N |
+| `audit_events` — UPDATE/DELETE | N | N | N | N |
+
+As expressões RLS concretas não estão definidas nesta matriz. Não usar `USING (true)` ou `WITH CHECK (true)` como atalho. Uma policy para o executor da função deve ser específica à role e ao comando, e não pode transformar a role definer em uma identidade com acesso irrestrito ao schema.
+
+**Risco de desenho a resolver:** policy RLS não valida token Google. Se a função executa como owner dedicado, o banco confia no backend para fornecer o ator; uma chamada SQL direta sob a role runtime poderia tentar passar subject de outra pessoa. O grant EXECUTE reduz as operações disponíveis, mas não autentica o ator. Se isso estiver fora do threat model aceito, será necessário mecanismo de assertion verificável pelo banco antes de liberar a função.
+
+### 20.4 Privilégios herdados e atributos que bloqueiam o aceite
+
+A inspeção precisa comprovar o estado efetivo, incluindo memberships transitivas, privilégios herdados, ACLs de schema/tabela/função e atributos de role.
+
+Bloqueadores absolutos para `bravo_api_runtime` e `bravo_admin_fn_owner`:
+- SUPERUSER, BYPASSRLS, CREATEDB ou CREATEROLE;
+- ownership de schema, tabelas ou funções fora do escopo;
+- membership direta ou transitiva em migrator, owner, reader ou qualquer papel privilegiado;
+- CREATE no schema privado;
+- TRUNCATE, REFERENCES, TRIGGER ou DDL não necessários;
+- EXECUTE em overloads/rotinas auxiliares não aprovados;
+- privilégios herdados via PUBLIC ou default privileges que reabram acesso revogado.
+
+A role `bravo_admin_fn_owner` deve ser NOLOGIN e não pode ser concedida como membership à API. A role runtime não pode alterar atributos, memberships, ACLs, policies, ownership ou definição da função.
+
+### 20.5 Matriz de prova por sessão independente
+
+| Teste com credencial própria | API runtime | Function owner (sessão de teste isolada) | Audit reader | anon/authenticated/service_role |
+|---|---|---|---|---|
+| Chamar função administrativa aprovada | P | N por padrão | N | N |
+| UPDATE administrativo direto em `usuarios` | N | P somente dentro do escopo SQL/RLS mínimo | N | N |
+| INSERT direto em `audit_events` | N | P somente para operação coberta | N | N |
+| SELECT direto em `audit_events` | N | N por padrão | P, se aprovado | N |
+| UPDATE/DELETE/TRUNCATE em `audit_events` | N | N | N | N |
+| Criar/alterar função ou policy | N | N | N | N |
+| SET ROLE para owner/migrator | N | N | N | N |
+| Alterar search_path da sessão e redirecionar objeto da função | N | N | N | N |
+
+A sessão de teste do function owner serve para provar seus limites de privilégio; não representa uma credencial que a aplicação receberá. A execução real da função deve ser testada por uma conexão independente como runtime.
+
+### 20.6 Regras para interpretar os resultados
+
+1. `GRANT EXECUTE` sem revogar UPDATE/INSERT direto não satisfaz o objetivo de redução de privilégio.
+2. `REVOKE` isolado não prova negação se houver membership, privilégio herdado, ownership, PUBLIC ou superuser.
+3. `FORCE ROW LEVEL SECURITY` não substitui a prova de atributos da role; superuser e BYPASSRLS continuam sendo exceções relevantes.
+4. O owner da função não pode ser o owner das tabelas, superuser ou BYPASSRLS apenas para contornar policy.
+5. A API não pode receber senha/DSN do function owner ou migrator.
+6. A função não pode expor operação genérica, DDL ou execução SQL arbitrária.
+7. Testar negações com conexões autenticadas como as próprias roles; `SET ROLE` é complementar, não substituto.
+8. Repetir as consultas de catálogo depois da instalação do schema e das policies no PostgreSQL descartável; salvar evidências sem segredos.
+
+### 20.7 Pendências que impedem fechar a matriz como desenho final
+
+- Confirmar se leituras gerais da API em `usuarios` precisam de SELECT direto e qual coluna/linha.
+- Confirmar se o executor SECURITY DEFINER poderá receber policies específicas sob FORCE RLS sem ampliar acesso.
+- Decidir se a confiança no backend para o parâmetro actor é suficiente ou se assertion assinada é requisito.
+- Definir grants por coluna e políticas RLS correspondentes com base no DDL real.
+- Definir se consulta de auditoria existirá e qual capacidade/perfil poderá acessá-la.
+- Validar a estratégia de idempotência e a semântica de erro antes de estabilizar a assinatura.
+
+### 20.8 Estado
+
+Esta seção descreve apenas privilégios pretendidos. Nenhuma role conceitual foi criada; nenhum GRANT/REVOKE foi aplicado; nenhuma policy foi escrita ou aplicada; nenhuma função foi criada; nenhuma credencial foi provisionada; nenhum banco foi conectado. A matriz de capacidades do produto continua deny-by-default.
