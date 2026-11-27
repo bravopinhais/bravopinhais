@@ -42,9 +42,9 @@ class FakeCursor:
             self.result = stored[:3] if stored else None
         elif query.startswith("UPDATE bravo_shadow.migration_source_records AS source"):
             (
-                batch_id, source_system, source_collection, legacy_id,
+                verified_batch_id, verified_source_system, batch_id,
+                update_batch_id, source_system, source_collection, legacy_id,
                 destination_collection, destination_id, record_hash,
-                verified_batch_id, verified_source_system,
             ) = params
             stored = self.connection.records.get(
                 (source_system, source_collection, legacy_id)
@@ -153,7 +153,8 @@ def test_mark_verified_advances_only_after_matching_batch_is_verified():
         ("legacy", "fornecedores", "fornecedor-17")
     ] == "batch-synthetic-002"
     assert "updated_at = now()" in connection.statements[-1]
-    assert "batch.status = 'verified'" in connection.statements[-1]
+    assert "status = 'verified'" in connection.statements[-1]
+    assert "FOR SHARE" in connection.statements[-1]
 
 
 @pytest.mark.parametrize(
