@@ -50,6 +50,8 @@ jobs:
           grep -q 'aria-label="Editar ${escapeHTML(item.nome)}"' _site/index.html
           grep -q 'aria-label="Excluir ${escapeHTML(item.nome)}"' _site/index.html
           grep -q 'id="forma-multa" name="multaPct" type="number" min="0" max="100" step="0.01" value="2" required' _site/index.html
+          grep -q '<form class="api-form" id="forma-form" aria-describedby="forma-hint">' _site/index.html
+          grep -q '<div class="form-hint" id="forma-hint">' _site/index.html
           grep -q 'button.textContent="Salvando..."' _site/index.html
           grep -q 'return true}' _site/index.html
           grep -q 'return false}' _site/index.html
