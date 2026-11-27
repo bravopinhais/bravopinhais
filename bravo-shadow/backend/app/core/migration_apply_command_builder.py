@@ -34,6 +34,23 @@ def _canonical_hash(value: Any) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def _json_safe_copy(value: Any) -> Any:
+    """Return a detached JSON-safe copy, rejecting custom objects and non-string keys."""
+    if isinstance(value, Mapping):
+        if any(not isinstance(key, str) for key in value):
+            raise TypeError("target payload keys must be strings")
+        copied = {key: _json_safe_copy(item) for key, item in value.items()}
+    elif isinstance(value, (list, tuple)):
+        copied = [_json_safe_copy(item) for item in value]
+    elif value is None or isinstance(value, (str, bool, int, float)):
+        copied = value
+    else:
+        raise TypeError("target payload contains a non-JSON value")
+    # Also rejects NaN and infinities, which are not valid interoperable JSON.
+    json.dumps(copied, ensure_ascii=False, allow_nan=False)
+    return copied
+
+
 def _record_hash(record: Mapping[str, Any]) -> str:
     def normalize(value: Any) -> Any:
         if isinstance(value, Mapping):
@@ -193,7 +210,7 @@ def build_apply_commands(
             raise ValueError("destination ID must be explicit non-empty text")
         if not isinstance(payload, Mapping) or not payload:
             raise ValueError("target payload must be an explicit non-empty mapping")
-        payload_copy = dict(payload)
+        payload_copy = _json_safe_copy(payload)
         if "id" in payload_copy and payload_copy["id"] != destination_id:
             raise ValueError("target payload ID differs from explicit destination ID")
         payload_copy["id"] = destination_id
