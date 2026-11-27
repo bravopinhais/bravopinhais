@@ -615,3 +615,12 @@ A tela usa a sessão Google e as capacidades existentes: listagem/detalhe em `GE
 **Download:** busca o conteúdo por ID, descompacta com limite de 5 MiB no navegador e entrega como anexo genérico `application/octet-stream`; não executa nem pré-visualiza arquivos. Consultas e downloads são cancelados ao sair do módulo e todo estado em memória é limpo no logout. O filtro e a busca operam somente sobre metadados.
 
 **Limitações conhecidas:** o conteúdo continua no banco PostgreSQL como Gzip/Base64; ainda não há object storage, URL assinada, antivírus, OCR, pré-visualização, histórico de versões, restauração, retenção ou trilha de auditoria específica por documento. O limite de 5 MiB é aplicado aos novos uploads; a leitura de registros legados permanece separada do schema de entrada para não rejeitar automaticamente documentos antigos. Nenhum arquivo de produção foi acessado, nenhum banco foi migrado e a Shadow não foi publicada.
+
+
+## Condomínio — consulta e atualização institucional autenticadas
+
+A tela de dados institucionais agora consulta `GET /api/v1/condominio` com a sessão Google/Bearer e atualiza o registro singleton por `PUT /api/v1/condominio`. A leitura exige `condominio:read`; os campos e o botão de gravação só são habilitados quando a sessão possui `condominio:update`. O formulário preserva os 17 campos previstos no schema: identificação, endereço, contato e referências de concessionárias (Copel, gás e Sanepar).
+
+A resposta da API é validada antes de preencher os campos. Não são inseridos valores fictícios nem acessados dados do ambiente de produção. Erros de autenticação/autorização são apresentados separadamente; as consultas pendentes são canceladas e o estado institucional é limpo no encerramento da sessão. O conselho continua com sua integração independente e suas próprias capacidades.
+
+**Limitações:** o endpoint singleton ainda não expõe versão/ETag ou controle de concorrência; não há trilha de auditoria de negócio específica para a atualização institucional, nem validação formal de CNPJ/CEP/telefone. A interface não inventa essas regras nem oferece histórico de alterações. A integração é estática e depende da API HTTPS Shadow isolada, da autenticação Google configurada e da persistência PostgreSQL explicitamente provisionada. Não houve teste automatizado, migração, deploy ou acesso à produção.
