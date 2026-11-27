@@ -602,3 +602,16 @@ A exportação baixa o CSV gerado no servidor com os mesmos filtros. O backend n
 **Regras atuais do serviço:** entradas com motivo contendo termos de compra/reposição são classificadas como compras, salvo quando o filtro manda considerar todas as entradas como compras; demais entradas aparecem separadamente. Saídas com motivo contendo perda/avaria/quebra/ajuste/inventário são perdas/ajustes; as demais são consumo. Valores são estimados com o valor unitário atual do produto, não com custo histórico da data do movimento. A cobertura é calculada com base no consumo médio do período e o gráfico/tabela mensal mostra no máximo os 12 meses finais. Se houver unidades incompatíveis, quantidades consolidadas na série mensal são zeradas e o relatório informa a incompatibilidade.
 
 A impressão/PDF permanece desabilitada: o contrato oferece CSV, não PDF. Não há filtro de grupo de produto, centro de custo ou exportação Excel neste endpoint. Consultas são canceladas ao sair do módulo e o estado em memória é descartado ao encerrar a sessão. A integração não foi publicada e não acessa produção.
+
+
+## Gestão de Documentos — consulta, upload, substituição e download
+
+A tela usa a sessão Google e as capacidades existentes: listagem/detalhe em `GET /api/v1/documentos` e `GET /api/v1/documentos/{id}` (`documentos:read`), cadastro em `POST /api/v1/documentos` (`documentos:create`) e substituição em `PUT /api/v1/documentos/{id}` (`documentos:update`). As pastas são carregadas de `GET /api/v1/categorias` com `categorias:read`. A interface não oferece exclusão física.
+
+**Proteção do conteúdo:** a listagem retorna somente metadados; o PostgreSQL seleciona explicitamente ID, pasta, categoria, título e nome do arquivo, sem carregar a coluna Gzip/Base64. O corpo compactado é solicitado individualmente apenas no download. As respostas de cadastro/substituição também retornam somente metadados, evitando ecoar o arquivo ao navegador.
+
+**Upload:** aceita PDF, PNG, JPG/JPEG, GIF, WEBP, TXT, CSV, DOC, DOCX, XLS, XLSX, ODT e ODS. O navegador verifica extensão e limite original de 5 MiB e compacta com Gzip antes do envio. O backend não confia nessa validação: decodifica Base64 estritamente, verifica Gzip íntegro, limita tamanho comprimido e descompactado, bloqueia caminhos/controles no nome e confere assinaturas binárias para PDF/imagens/Office; TXT/CSV exigem UTF-8 e não podem conter bytes nulos. Título (200), pasta (120) e nome (255) também têm limites. O contrato rejeita campos desconhecidos.
+
+**Download:** busca o conteúdo por ID, descompacta com limite de 5 MiB no navegador e entrega como anexo genérico `application/octet-stream`; não executa nem pré-visualiza arquivos. Consultas e downloads são cancelados ao sair do módulo e todo estado em memória é limpo no logout. O filtro e a busca operam somente sobre metadados.
+
+**Limitações conhecidas:** o conteúdo continua no banco PostgreSQL como Gzip/Base64; ainda não há object storage, URL assinada, antivírus, OCR, pré-visualização, histórico de versões, restauração, retenção ou trilha de auditoria específica por documento. O limite de 5 MiB é aplicado aos novos uploads; a leitura de registros legados permanece separada do schema de entrada para não rejeitar automaticamente documentos antigos. Nenhum arquivo de produção foi acessado, nenhum banco foi migrado e a Shadow não foi publicada.
