@@ -87,6 +87,109 @@ DECLARE
         'pre_import_approval_history_idx'
     ];
     missing_query_indexes text[];
+    expected_check_constraints text[] := ARRAY[
+        'module_settings_key_not_empty',
+        'migration_batches_batch_id_nonempty',
+        'migration_batches_snapshot_hash_format',
+        'migration_batches_manifest_hash_format',
+        'migration_batches_source_nonempty',
+        'migration_batches_baseline_nonempty',
+        'migration_batches_environment_allowed',
+        'migration_batches_mode_allowed',
+        'migration_batches_status_allowed',
+        'migration_batches_versions_nonempty',
+        'migration_batches_approval_complete',
+        'migration_source_records_source_nonempty',
+        'migration_source_records_destination_nonempty',
+        'migration_source_records_hash_format',
+        'migration_batch_recovery_event_id_nonempty',
+        'migration_batch_recovery_sequence_positive',
+        'migration_batch_recovery_outcome_allowed',
+        'migration_batch_recovery_recorder_nonempty',
+        'migration_batch_recovery_reviewer_nonempty',
+        'migration_batch_recovery_recorder_reviewer_distinct',
+        'migration_batch_recovery_rationale_nonempty',
+        'migration_batch_recovery_evidence_nonempty',
+        'migration_batch_recovery_evidence_hash_format',
+        'migration_batch_recovery_approval_id_nonempty',
+        'migration_batch_recovery_approval_actors_distinct',
+        'migration_batch_recovery_approval_decision_allowed',
+        'migration_batch_recovery_approval_rationale_nonempty',
+        'migration_executions_id_nonempty',
+        'migration_executions_subject_nonempty',
+        'migration_executions_manifest_hash_format',
+        'migration_executions_plan_hash_format',
+        'migration_executions_environment_local_only',
+        'migration_executions_status_allowed',
+        'migration_executions_time_order',
+        'migration_apply_approvals_id_nonempty',
+        'migration_apply_approvals_reviewer_nonempty',
+        'migration_apply_approvals_rationale_nonempty',
+        'migration_apply_approvals_decision_allowed',
+        'migration_review_batches_key_nonempty',
+        'migration_review_batches_manifest_hash_format',
+        'migration_review_decisions_id_nonempty',
+        'migration_review_decisions_kind_nonempty',
+        'migration_review_decisions_status_nonempty',
+        'migration_review_decisions_manifest_hash_format',
+        'migration_review_decisions_no_automatic_action',
+        'migration_review_events_id_nonempty',
+        'migration_review_events_reviewer_nonempty',
+        'migration_review_events_rationale_nonempty',
+        'migration_review_events_manifest_hash_format',
+        'pre_import_approval_event_id_nonempty',
+        'pre_import_approval_manifest_hash_format',
+        'pre_import_approval_source_hash_format',
+        'pre_import_approval_snapshot_hash_format',
+        'pre_import_approval_decision_allowed',
+        'pre_import_approval_scope_fixed',
+        'pre_import_approval_never_authorizes_writes',
+        'pre_import_approval_reviewer_nonempty',
+        'pre_import_approval_rationale_nonempty',
+        'pre_import_approval_sequence_positive'
+    ];
+    missing_check_constraints text[];
+    expected_not_null_columns text[] := ARRAY[
+        'migration_executions.execution_id',
+        'migration_executions.batch_id',
+        'migration_executions.manifest_hash',
+        'migration_executions.plan_sha256',
+        'migration_executions.environment',
+        'migration_executions.requested_by_subject',
+        'migration_executions.status',
+        'migration_executions.created_at',
+        'migration_apply_approvals.approval_id',
+        'migration_apply_approvals.execution_id',
+        'migration_apply_approvals.batch_id',
+        'migration_apply_approvals.manifest_hash',
+        'migration_apply_approvals.plan_sha256',
+        'migration_apply_approvals.decision',
+        'migration_apply_approvals.reviewer_subject',
+        'migration_apply_approvals.rationale',
+        'migration_apply_approvals.approved_at',
+        'migration_apply_approvals.recorded_at',
+        'migration_review_decisions.requires_human',
+        'migration_review_decisions.automatic_action',
+        'pre_import_approval_events.scope',
+        'pre_import_approval_events.writes_authorized',
+        'pre_import_approval_events.sequence_no',
+        'pre_import_approval_events.reviewed_at',
+        'pre_import_approval_events.recorded_at'
+    ];
+    missing_not_null_columns text[];
+    expected_default_columns text[] := ARRAY[
+        'migration_executions.status|prepared',
+        'migration_executions.created_at|now()',
+        'migration_apply_approvals.recorded_at|now()',
+        'migration_review_batches.created_at|now()',
+        'migration_review_decisions.requires_human|true',
+        'migration_review_decisions.automatic_action|none',
+        'migration_review_events.recorded_at|now()',
+        'pre_import_approval_events.scope|dry_run_only',
+        'pre_import_approval_events.writes_authorized|false',
+        'pre_import_approval_events.recorded_at|now()'
+    ];
+    missing_default_columns text[];
     missing_roles text[];
     missing_tables text[];
     bad_tables text[];
@@ -181,6 +284,73 @@ BEGIN
             missing_query_indexes;
     END IF;
 
+    -- CHECKs nomeados das migrations: todos devem existir, ser CHECK
+    -- e estar validados pelo PostgreSQL.
+    SELECT array_agg(expected_name)
+      INTO missing_check_constraints
+      FROM unnest(expected_check_constraints) AS expected_name
+     WHERE NOT EXISTS (
+        SELECT 1
+          FROM pg_constraint
+         WHERE connamespace = 'bravo_shadow'::regnamespace
+           AND conname = expected_name
+           AND contype = 'c'
+           AND convalidated
+     );
+
+    IF missing_check_constraints IS NOT NULL THEN
+        RAISE EXCEPTION 'CHECKs ausentes ou não validados: %',
+            missing_check_constraints;
+    END IF;
+
+    -- NOT NULL nos campos de identidade, estado e auditoria mais sensíveis.
+    SELECT array_agg(expected_column)
+      INTO missing_not_null_columns
+      FROM unnest(expected_not_null_columns) AS expected_column
+     WHERE NOT EXISTS (
+        SELECT 1
+          FROM pg_attribute att
+          JOIN pg_class tbl ON tbl.oid = att.attrelid
+          JOIN pg_namespace ns ON ns.oid = tbl.relnamespace
+         WHERE ns.nspname = 'bravo_shadow'
+           AND tbl.relname = split_part(expected_column, '.', 1)
+           AND att.attname = split_part(expected_column, '.', 2)
+           AND att.attnum > 0
+           AND NOT att.attisdropped
+           AND att.attnotnull
+     );
+
+    IF missing_not_null_columns IS NOT NULL THEN
+        RAISE EXCEPTION 'Colunas críticas sem NOT NULL: %',
+            missing_not_null_columns;
+    END IF;
+
+    -- DEFAULTs críticos: exige expressão cadastrada e que contenha o
+    -- literal/expressão esperado, sem impor formatação textual exata.
+    SELECT array_agg(expected_column)
+      INTO missing_default_columns
+      FROM unnest(expected_default_columns) AS expected_column
+     WHERE NOT EXISTS (
+        SELECT 1
+          FROM pg_attribute att
+          JOIN pg_class tbl ON tbl.oid = att.attrelid
+          JOIN pg_namespace ns ON ns.oid = tbl.relnamespace
+          JOIN pg_attrdef def ON def.adrelid = tbl.oid
+                             AND def.adnum = att.attnum
+         WHERE ns.nspname = 'bravo_shadow'
+           AND tbl.relname = split_part(expected_column, '.', 1)
+           AND att.attname = split_part(split_part(expected_column, '.', 2), '|', 1)
+           AND att.attnum > 0
+           AND NOT att.attisdropped
+           AND pg_get_expr(def.adbin, def.adrelid) ILIKE
+               '%' || split_part(expected_column, '|', 2) || '%'
+     );
+
+    IF missing_default_columns IS NOT NULL THEN
+        RAISE EXCEPTION 'DEFAULTs críticos ausentes ou divergentes: %',
+            missing_default_columns;
+    END IF;
+
     FOREACH table_name IN ARRAY expected_tables LOOP
         relation_oid := to_regclass(format('bravo_shadow.%I', table_name));
 
@@ -265,8 +435,10 @@ BEGIN
         RAISE EXCEPTION 'Restrições de aprovação exclusivamente dry-run ausentes/não validadas.';
     END IF;
 
-    RAISE NOTICE 'OK: % tabelas, % FKs, % índices únicos e % índices de consulta presentes/válidos; RLS habilitado; sem policies ou grants às roles comuns; auditoria e aprovação pré-importação verificadas.',
+    RAISE NOTICE 'OK: % tabelas, % FKs, % CHECKs nomeados, % NOT NULLs, % DEFAULTs, % índices únicos e % índices de consulta verificados; RLS e controles de acesso conferidos.',
         cardinality(expected_tables), cardinality(expected_foreign_keys),
-        cardinality(expected_unique_indexes), cardinality(expected_query_indexes);
+        cardinality(expected_check_constraints), cardinality(expected_not_null_columns),
+        cardinality(expected_default_columns), cardinality(expected_unique_indexes),
+        cardinality(expected_query_indexes);
 END;
 $$;
