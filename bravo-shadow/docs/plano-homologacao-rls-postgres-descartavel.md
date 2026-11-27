@@ -888,3 +888,66 @@ Antes de qualquer implementação, precisam ser aprovados:
 - revisão de segurança independente da função e de todas as dependências.
 
 **Nenhuma implementação foi autorizada ou executada nesta etapa.** A função, roles, policies, grants, migrations, vínculos de identidade e rotas continuam inexistentes/não ativados. A matriz de capacidades segue vazia.
+
+## 19. Compatibilidade do contrato com o SQL e os adaptadores atuais — 27/11/2026
+
+**Resultado:** compatibilidade estrutural parcial. O contrato cabe nos tipos e nas regras atuais, mas há bloqueios de RLS, fronteira de identidade e semântica de repetição que impedem implementação direta.
+
+### 19.1 Compatibilidades confirmadas no código/DDL versionados
+
+| Elemento | Evidência atual | Consequência para a função |
+|---|---|---|
+| Identificador do usuário | `usuarios.id` é `text PRIMARY KEY` | `target_user_id` deve ser `text` |
+| Perfil | `text` com CHECK em `Admin`/`Operador` | A função deve repetir validação fechada, sem aceitar texto arbitrário |
+| Status | `text` com CHECK em `Ativo`/`Inativo` | A função deve repetir validação fechada |
+| Concorrência/versão | `updated_at timestamptz`, `version bigint` com default 1 | Atualização deve manter `updated_at = now()` e `version = version + 1` |
+| Evento | `event_id text PRIMARY KEY` | Já existe unicidade técnica para detectar repetição de ID |
+| Timestamp do evento | `occurred_at timestamptz NOT NULL` | Função pode produzir `now()`; o contrato não precisa receber timestamp |
+| Ator | `actor_subject text NOT NULL` | Receber subject validado do backend; não é prova de identidade para o banco |
+| Ação/entidade/resultado | Campos text e CHECK de `outcome` | A função pode fixar ação, entidade e resultado constantes |
+| Request ID | `request_id text NULL` | Pode receber o identificador server-side já gerado pelo middleware |
+
+O índice único `usuarios_email_ci_uidx` protege a unicidade do e-mail; a função administrativa não altera e-mail, portanto não precisa dessa regra para sua operação.
+
+### 19.2 Divergências e lacunas que precisam ser resolvidas
+
+**A. A função administrativa ainda não tem um ponto único de integração.**  
+O método `PostgresUsuariosRepository.update_administrative_state` hoje executa diretamente `LOCK TABLE`, SELECT, contagem de Admins, UPDATE e `audit_sink.append_in_transaction`. Para usar a função, o repositório deverá substituir esse bloco por uma chamada parametrizada à função e interpretar o resultado/erros estáveis. Manter o UPDATE direto junto com EXECUTE anularia a redução de privilégio pretendida.
+
+**B. O serviço aceita uma rota de ator legado insegura para esta futura operação.**  
+`UsuariosService.update_administrative_state` ainda permite receber `actor_subject` e `actor_email` como strings independentes quando `actor` é omitido. Embora o método não esteja exposto por rota e a matriz continue deny-by-default, esse contrato deve ser removido antes da integração: aceitar exclusivamente `AuthenticatedPrincipal`, validar status ativo e derivar subject/e-mail do mesmo objeto. A função SQL não corrige essa lacuna do serviço.
+
+**C. O banco não consegue provar que o subject veio do Google.**  
+O SQL recebe um parâmetro `actor_google_subject`, mas não há vínculo persistente/claim assinada verificável no banco. A segurança depende do backend confiável e da autorização HTTP. Se o objetivo de ameaça incluir credencial runtime comprometida ou SQL arbitrário sob essa role, a função com parâmetro actor não atende sozinha; seria necessário um mecanismo de assertion verificável ou uma fronteira diferente.
+
+**D. FORCE RLS impede presumir que SECURITY DEFINER contorna a política.**  
+O rascunho de `audit_events` habilita e força RLS, mas não define policy. O DDL de usuários aplica RLS seletivamente a outras tabelas e não estabelece ainda a policy específica necessária para o executor da função. Portanto, a função não pode ser homologada apenas com GRANTs: será preciso decidir e testar a policy mínima para a role definer em `usuarios` e `audit_events`, mantendo negado o acesso direto da role runtime. Não usar BYPASSRLS, superuser ou policy aberta como solução.
+
+**E. A chave primária do evento detecta duplicidade, mas não define idempotência de negócio.**  
+`event_id PRIMARY KEY` faz uma segunda inserção com o mesmo ID falhar; não faz a função devolver automaticamente o resultado anterior. O contrato precisa decidir se uma repetição idêntica retorna resultado original ou conflito, e como detectar reutilização do mesmo ID com alvo/estado/ator diferentes. `request_id` não é chave única e não deve ser tratado como idempotency key sem decisão explícita.
+
+**F. O bloqueio de último Admin precisa ser preservado dentro da função.**  
+O repositório atual usa `LOCK TABLE usuarios IN SHARE ROW EXCLUSIVE MODE`, lê o alvo sob `FOR UPDATE`, conta Admins ativos e só então atualiza. Uma função futura deve preservar uma estratégia serializável equivalente ou provar outra estratégia com duas sessões independentes. Não substituir por uma contagem sem lock/serialização.
+
+**G. A operação atual e o piloto proposto precisam de escopo definido.**  
+O contrato da seção 18 escolheu inicialmente `update_administrative_state`. O método de desativação lógica `deactivate_user` é outro fluxo, com ação `usuarios:desativar` e request ID propagado. Não reutilizar a função administrativa para desativação nem presumir que ela cobre esse endpoint.
+
+### 19.3 Ajustes necessários antes de implementar
+
+1. Confirmar os tipos SQL exatos a partir do DDL versionado: todos os parâmetros de identificadores são `text`; não introduzir UUID SQL sem migração de contrato.
+2. Definir comportamento de idempotência para `event_id` repetido e colisão/reuso com conteúdo divergente.
+3. Definir policy RLS mínima para a role definer nas tabelas necessárias, considerando FORCE RLS; provar negação direta para runtime e roles padrão.
+4. Remover do serviço a assinatura com `actor_subject`/`actor_email` independentes; aceitar somente principal autenticado.
+5. Definir contrato de retorno/erros da função sem expor SQLSTATE/mensagem interna ao cliente.
+6. Refatorar o repositório para chamar a função, sem caminho alternativo de UPDATE/INSERT direto no runtime.
+7. Preservar regra de último Admin com lock/serialização e testar concorrência real.
+8. Provar com credenciais independentes que runtime tem EXECUTE e não possui UPDATE administrativo/INSERT audit direto; role definer é NOLOGIN e não herdável por runtime.
+9. Testar rollback quando INSERT falha, chamada repetida, evento conflitante, alvo inexistente, autoalteração, enumerações inválidas e acesso direto negado.
+
+### 19.4 Decisão técnica após a inspeção
+
+A estrutura de colunas existente é suficiente para um piloto sem alterar o modelo de dados: identificadores `text`, versão, timestamp e chave primária do evento já atendem ao contrato básico. **Não é necessário adicionar coluna ou tabela apenas para iniciar a função.**
+
+Isso não significa que a função possa ser escrita agora. Os bloqueios reais são de segurança e semântica: policy RLS para executor sob FORCE RLS, confiança no ator, idempotência, retorno de erros e substituição do caminho SQL direto no repositório.
+
+**Estado:** inspeção somente de arquivos versionados. Nenhum banco foi consultado; nenhum SQL foi executado; nenhuma função, policy, role, grant, migration ou alteração de código foi criada nesta etapa.
