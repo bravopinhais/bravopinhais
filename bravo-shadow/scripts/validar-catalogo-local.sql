@@ -53,6 +53,40 @@ DECLARE
         'pre_import_approval_manifest_sequence_unique'
     ];
     missing_unique_indexes text[];
+    expected_query_indexes text[] := ARRAY[
+        'formas_monetarias_created_at_idx',
+        'financeiro_plano_conta_id_idx',
+        'financeiro_created_at_idx',
+        'moradores_bloco_apartamento_idx',
+        'fornecedores_razao_social_idx',
+        'empregados_nome_idx',
+        'contas_bancarias_banco_idx',
+        'conselheiros_nome_idx',
+        'usuarios_nome_idx',
+        'estoque_item_idx',
+        'estoque_setor_status_idx',
+        'categorias_nome_idx',
+        'motivos_acerto_nome_idx',
+        'documentos_categoria_id_idx',
+        'documentos_created_at_idx',
+        'acertos_estoque_produto_data_idx',
+        'acertos_estoque_data_idx',
+        'audit_events_occurred_at_idx',
+        'audit_events_actor_time_idx',
+        'audit_events_action_time_idx',
+        'audit_events_entity_time_idx',
+        'migration_batches_status_created_idx',
+        'migration_batches_snapshot_idx',
+        'migration_source_records_first_batch_idx',
+        'migration_source_records_last_verified_idx',
+        'migration_batch_recovery_history_idx',
+        'migration_batch_recovery_approvals_history_idx',
+        'migration_executions_batch_status_idx',
+        'migration_apply_approvals_batch_idx',
+        'migration_review_events_history_idx',
+        'pre_import_approval_history_idx'
+    ];
+    missing_query_indexes text[];
     missing_roles text[];
     missing_tables text[];
     bad_tables text[];
@@ -121,6 +155,30 @@ BEGIN
     IF missing_unique_indexes IS NOT NULL THEN
         RAISE EXCEPTION 'Índices únicos ausentes, inválidos ou não prontos: %',
             missing_unique_indexes;
+    END IF;
+
+    -- Confirma os índices de consulta declarados nas migrations e seu
+    -- estado operacional no catálogo (válido e pronto para uso).
+    SELECT array_agg(expected_name)
+      INTO missing_query_indexes
+      FROM unnest(expected_query_indexes) AS expected_name
+     WHERE NOT EXISTS (
+        SELECT 1
+          FROM pg_class i
+          JOIN pg_namespace n ON n.oid = i.relnamespace
+          JOIN pg_index ix ON ix.indexrelid = i.oid
+          JOIN pg_class t ON t.oid = ix.indrelid
+         WHERE n.nspname = 'bravo_shadow'
+           AND i.relname = expected_name
+           AND t.relnamespace = n.oid
+           AND t.relname = ANY(expected_tables)
+           AND ix.indisvalid
+           AND ix.indisready
+     );
+
+    IF missing_query_indexes IS NOT NULL THEN
+        RAISE EXCEPTION 'Índices de consulta ausentes, inválidos ou não prontos: %',
+            missing_query_indexes;
     END IF;
 
     FOREACH table_name IN ARRAY expected_tables LOOP
@@ -207,8 +265,8 @@ BEGIN
         RAISE EXCEPTION 'Restrições de aprovação exclusivamente dry-run ausentes/não validadas.';
     END IF;
 
-    RAISE NOTICE 'OK: % tabelas, % FKs e % índices únicos presentes/válidos; RLS habilitado; sem policies ou grants às roles comuns; auditoria e aprovação pré-importação verificadas.',
+    RAISE NOTICE 'OK: % tabelas, % FKs, % índices únicos e % índices de consulta presentes/válidos; RLS habilitado; sem policies ou grants às roles comuns; auditoria e aprovação pré-importação verificadas.',
         cardinality(expected_tables), cardinality(expected_foreign_keys),
-        cardinality(expected_unique_indexes);
+        cardinality(expected_unique_indexes), cardinality(expected_query_indexes);
 END;
 $$;
