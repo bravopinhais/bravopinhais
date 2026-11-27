@@ -130,6 +130,9 @@ def require_capability_dependency(capability: str):
                     # a operação por falha no registro da auditoria.
                     logger.exception("Falha ao persistir evento de negação de autorização.")
             raise
+        # Contexto mínimo para o handler global de falhas inesperadas.
+        # Nunca copiar e-mail, token, payload ou dados da rota para o contexto.
+        request.state.authenticated_subject = principal.subject.strip()
         return principal
 
     return dependency
