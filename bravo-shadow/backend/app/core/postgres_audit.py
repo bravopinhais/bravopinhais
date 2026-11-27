@@ -1,7 +1,8 @@
-"""Adaptador PostgreSQL isolado para persistência append-only de auditoria.
+"""Adaptador PostgreSQL append-only para persistência de auditoria.
 
-Não é conectado à aplicação nesta etapa. A role usada pela fábrica deve ter
-somente INSERT na tabela audit_events; o banco deve impor essa restrição.
+É construído pelo composition root no modo postgres e injetado nos serviços
+que exigem auditoria. A role da aplicação deve ter somente INSERT na tabela
+audit_events; essa restrição precisa ser imposta também pelo próprio banco.
 """
 from __future__ import annotations
 
