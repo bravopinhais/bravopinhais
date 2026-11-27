@@ -119,7 +119,7 @@ function formasView(){
   <div class="api-toolbar"><div><strong style="font-size:13px">Cadastro de formas monetárias</strong><div class="api-status" id="formas-status" role="status" aria-live="polite" aria-atomic="true">Carregando dados da API...</div></div><button class="action-btn" data-action="reload">↻ Atualizar</button></div>
   <form class="api-form" id="forma-form">
    <div class="field"><label for="forma-nome">Nome da forma monetária</label><input id="forma-nome" name="nome" required placeholder="Ex.: Dinheiro, PIX, Cartão"></div>
-   <div class="field"><label for="forma-multa">Multa (%)</label><input id="forma-multa" name="multaPct" type="number" step="0.01" value="2"></div>
+   <div class="field"><label for="forma-multa">Multa (%)</label><input id="forma-multa" name="multaPct" type="number" min="0" max="100" step="0.01" value="2" required></div>
    <button class="action-btn primary" type="submit" id="forma-submit">Cadastrar</button>
   </form>
   <div class="form-hint">Os registros ficam temporariamente na memória do serviço Python e são apagados quando o processo reinicia. Não use dados de produção.</div>
