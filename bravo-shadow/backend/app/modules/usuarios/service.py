@@ -5,7 +5,10 @@ from fastapi import HTTPException, status
 
 from app.core.audit import AuditEvent
 from app.core.repositories import CollectionRepository, InMemoryCollectionRepository
-from .schemas import (\n    Usuario, UsuarioAdministracaoInput, UsuarioCadastroInput,\n    UsuarioDadosCadastraisUpdateInput, UsuarioInput,\n)
+from .schemas import (
+    Usuario, UsuarioAdministracaoInput, UsuarioCadastroInput,
+    UsuarioDadosCadastraisUpdateInput, UsuarioInput,
+)
 
 
 class UsuariosService:
