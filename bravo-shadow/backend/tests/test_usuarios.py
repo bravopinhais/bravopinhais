@@ -175,3 +175,9 @@ def test_cadastral_update_preserves_existing_admin_and_inactive_state():
     assert updated.perfil == "Admin"
     assert updated.status == "Inativo"
     assert updated.email == "admin@example.com"
+
+
+
+def test_cadastral_update_rejects_explicit_null_values():
+    with pytest.raises(ValidationError):
+        UsuarioDadosCadastraisUpdateInput(nome=None, cargo="Conselho")
