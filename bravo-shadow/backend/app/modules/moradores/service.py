@@ -26,6 +26,12 @@ class MoradoresService:
             ]
         return items
 
+    def get(self, item_id: str) -> Morador:
+        item = self.repository.get(item_id)
+        if item is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Morador não encontrado.")
+        return item
+
     def create(self, data: MoradorInput) -> Morador:
         item = Morador(id=f"mor_shadow_{uuid4().hex}", **data.model_dump())
         self.repository.add(item.id, item)
