@@ -516,8 +516,8 @@ async function acertoEstoqueSave(event){
   acertoEstoqueSetStatus("ace-status",message,"err");
  }finally{acertoEstoqueApplyPermissions();}
 }
-window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function"||typeof api.post!=="function")return;acertoEstoqueApiClient=api;if(moduloAtual==="acertos_estoque")void acertoEstoqueLoad(api);acertoEstoqueApplyPermissions();});
-window.addEventListener("bravo:session-ended",()=>{acertoEstoqueApiClient=null;acertoEstoqueSequence++;acertoEstoqueController?.abort();acertoEstoqueController=null;acertoEstoqueItems=[];acertoEstoqueProducts=[];acertoEstoqueReasons=[];if(moduloAtual==="acertos_estoque")acertoEstoqueView();});
+window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function"||typeof api.post!=="function")return;acertoEstoqueApiClient=api;if(moduloAtual==="acerto_estoque")void acertoEstoqueLoad(api);acertoEstoqueApplyPermissions();});
+window.addEventListener("bravo:session-ended",()=>{acertoEstoqueApiClient=null;acertoEstoqueSequence++;acertoEstoqueController?.abort();acertoEstoqueController=null;acertoEstoqueItems=[];acertoEstoqueProducts=[];acertoEstoqueReasons=[];if(moduloAtual==="acerto_estoque")acertoEstoqueView();});
 function acertoEstoqueView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
