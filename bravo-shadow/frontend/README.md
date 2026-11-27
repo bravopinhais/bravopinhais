@@ -198,3 +198,21 @@ A tela separa os campos existentes dos indicadores que ainda exigem serviços es
 O resumo atual percorre os serviços de listagem e agrega valores na camada de serviço. Antes de conectar em escala, é necessário avaliar agregações SQL, paginação/contagens eficientes e consistência transacional, evitando carregar coleções completas de documentos e demais registros apenas para contar.
 
 A tela continua sem bootstrap Google/API HTTPS, e nenhum request é disparado. Nenhum dado de produção é consultado.
+
+
+## Financeiro — Contas a Pagar / Receber
+
+A navegação agora abre uma tela própria para lançamentos financeiros, alinhada ao fluxo observado no legado: tipo (Receber/Pagar), conta do Plano de Contas, histórico e valor. A lista apresenta as mesmas colunas e ações previstas. A tela também documenta o controle de versão ETag/If-Match do endpoint de edição.
+
+Os campos, filtros, gravação e ações permanecem desabilitados até existir sessão Google conectada e API HTTPS Shadow independente. A tela não carrega dados de produção, não inventa títulos e não dispara chamadas sem token. O filtro visual é apenas estrutura e ainda não corresponde a filtro suportado pelo endpoint atual.
+
+### Contrato backend existente
+
+- `GET /api/v1/financeiro` — lista títulos; requer `financeiro:read`.
+- `POST /api/v1/financeiro` — cria título; requer `financeiro:create`.
+- `PUT /api/v1/financeiro/{id}` — atualiza com `If-Match` e versão; requer `financeiro:update`.
+- `DELETE /api/v1/financeiro/{id}` — exclusão física; requer `financeiro:delete`.
+
+O contrato atual possui apenas tipo, vínculo opcional com Plano de Contas, histórico, valor e versão. Não há datas de vencimento/competência, liquidação, pagamentos parciais, recorrência, baixa ou conciliação. A exclusão física exige uma política explícita de confirmação e auditoria antes de habilitar a ação na interface.
+
+O serviço tem adapters em memória e PostgreSQL; o modo padrão da API continua em memória, e PostgreSQL só é selecionado por configuração explícita. A integração de sessão e a persistência hospedada seguem pendentes.
