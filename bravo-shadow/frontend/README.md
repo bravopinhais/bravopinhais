@@ -42,11 +42,15 @@ O backend deste módulo ainda utiliza armazenamento em memória. Os registros s�
 
 Os demais módulos continuam identificados como estrutura visual até que seus contratos e fluxos sejam conectados individualmente.
 
-## Dashboard — integração visual segura
+## Dashboard — integração de leitura preparada
 
-A tela inicial apresenta o contrato do resumo protegido `GET /api/v1/dashboard/resumo`, mas mantém os indicadores indisponíveis até a integração da sessão Google no navegador. A API exige um ID token Google no cabeçalho Bearer e a capacidade `dashboard:read`; a matriz de perfis continua fechada por padrão.
+A tela inicial está conectada ao evento de sessão autenticada do bootstrap. Quando o servidor confirmar a conta Google e o cadastro ativo, o bootstrap entrega ao Dashboard um cliente HTTP limitado, sem expor nem persistir o ID token. O Dashboard consulta somente `GET /api/v1/dashboard/resumo`, que exige a capacidade `dashboard:read`.
 
-A interface não inventa valores, não interpreta falha de autenticação como zero e não tenta armazenar tokens em `localStorage` ou em variáveis globais. O próximo passo é conectar o bootstrap de sessão à URL HTTPS da API e só então renderizar o resumo após resposta autorizada.
+Os indicadores exibidos correspondem aos campos reais do contrato: quantidades de títulos a receber/pagar, valores agregados, diferença, produtos, moradores, documentos, contas do plano, fornecedores e empregados. Valores monetários são formatados em BRL; valores ausentes ou inválidos permanecem como traço. Erros HTTP 401 e 403 são apresentados como sessão expirada/não autorizada ou ausência de capacidade, nunca como zero.
+
+A consulta é somente leitura, cancela requisições obsoletas ao trocar de módulo ou encerrar a sessão e atualiza apenas a tela do Dashboard. Não foram criados dados demonstrativos, indicadores sem suporte no backend, nem chamadas a APIs externas ou de produção. O contrato atual ainda não fornece inadimplência, vencidos, fluxo de caixa, séries temporais, alertas ou comparativos; esses itens continuam fora da tela funcional.
+
+**Estado atual:** integração do Dashboard implementada no código, mas não ativada em produção/homologação. Continua dependendo de uma API Shadow hospedada em HTTPS, configuração explícita do bootstrap e concessão da capacidade `dashboard:read`.
 
 ## Autenticação Google — módulo cliente preparado, bootstrap pendente
 
@@ -458,3 +462,10 @@ Sem essas condições, o módulo mostra o motivo do bloqueio e não carrega o Go
 Após autenticação, a API continua sendo a autoridade para confirmar cadastro, e-mail verificado e status `Ativo`. O cliente HTTP recebe o token apenas em memória; nenhum token é persistido. O cliente permanece encapsulado no bootstrap e ainda não habilita operações dos módulos. A conexão funcional de cada módulo dependerá da homologação da API e das permissões correspondentes.
 
 **Estado atual:** bootstrap conectado ao shell; login ainda desabilitado; API/host ainda não publicados; nenhuma chamada de negócio habilitada.
+
+
+## Integração incremental — Dashboard
+
+O shell encaminha os eventos `bravo:session-ready` e `bravo:session-ended`. O evento de sessão pronta contém um cliente HTTP com métodos de API e o perfil confirmado; não contém o ID token. O Dashboard usa esse cliente apenas para a rota de resumo protegida. A navegação invalida/cancela consultas pendentes, e o encerramento da sessão limpa a referência do cliente e repõe os indicadores indisponíveis.
+
+O endpoint é agregado no backend e não devolve nomes, e-mails ou textos de documentos. A leitura não concede permissões: a autorização continua no servidor, por meio da capacidade `dashboard:read`.
