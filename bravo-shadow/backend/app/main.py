@@ -1,8 +1,9 @@
 import os
 from collections.abc import Callable
 from typing import Any
+from uuid import uuid4
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 
 from app.core.postgres_connection import create_postgres_connection_factory
 from app.core.storage import StorageConfigurationError, build_storage_services
@@ -57,6 +58,16 @@ def create_app(
         description="API paralela do Bravo — ambiente de desenvolvimento e homologação.",
         version="0.1.0",
     )
+    @application.middleware("http")
+    async def assign_request_id(request: Request, call_next):
+        # O identificador é sempre gerado pelo servidor; cabeçalhos recebidos
+        # do cliente não podem escolher nem sobrescrever o contexto de auditoria.
+        request_id = f"req_{uuid4().hex}"
+        request.state.request_id = request_id
+        response = await call_next(request)
+        response.headers["X-Request-ID"] = request_id
+        return response
+
     application.state.storage_backend = selected_backend
     application.state.services = services
     application.state.dashboard_service = DashboardService(
