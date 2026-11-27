@@ -103,22 +103,10 @@ relatorios:{name:"Relatórios & DRE",title:"Central de Relatórios & DRE",desc:"
 usuarios:{name:"Gestão de Usuários",title:"Gestão de Usuários",desc:"Perfis e administração de acesso. Autenticação será integrada após auditoria."},
 configuracoes:{name:"Configurações",title:"Configurações",desc:"Ativação de módulos, preferências administrativas e auditoria."}
 };
-const dashboardMarkup=document.getElementById("view").innerHTML;
-const API_BASE="/api/v1";
 const IS_STATIC_PREVIEW=location.hostname.endsWith("github.io");
 if(IS_STATIC_PREVIEW){const env=document.querySelector(".env");if(env)env.innerHTML='<span class="dot"></span> PREVIEW ESTÁTICO · GITHUB PAGES';}
-let formasMonetarias=[];
-let formasListaDesatualizada=false;
-let formaEmEdicao=null;
 let moduloAtual="dashboard";
 const escapeHTML=value=>String(value??"").replace(/[&<>"']/g,char=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[char]));
-async function apiRequest(path,options={}){
- if(IS_STATIC_PREVIEW)throw new Error("Preview visual do GitHub Pages: a API FastAPI não está hospedada neste endereço.");
- const response=await fetch(API_BASE+path,{...options,headers:{"Content-Type":"application/json",...(options.headers||{})}});
- if(!response.ok){let detail="Não foi possível concluir a operação.";try{const body=await response.json();detail=body.detail||detail}catch{}throw new Error(typeof detail==="string"?detail:JSON.stringify(detail))}
- if(response.status===204)return null;
- return response.json();
-}
 function contasBancariasView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
@@ -227,48 +215,29 @@ function dashboardView(){
  <div class="panel"><strong style="font-size:13px">Frontend unificado → API FastAPI → serviços de domínio → persistência isolada</strong><p>O painel executivo será atualizado por serviços autorizados, com agregações no backend e trilha de auditoria. O sistema original permanece preservado durante a migração sombra.</p></div>`;
 }
 function formasView(){
- // A view is rebuilt on entry; never carry an edit ID into a fresh form.
- formaEmEdicao=null;
  const view=document.getElementById("view");
- if(IS_STATIC_PREVIEW){view.innerHTML=`<section class="panel module-view"><div><div class="big-icon">◉</div><span class="eyebrow">Preview estático · GitHub Pages</span><h2>Formas Monetárias</h2><p>Esta publicação permite avaliar o visual e a navegação. O GitHub Pages não executa a API FastAPI; por isso, cadastro, edição e exclusão ficam indisponíveis neste preview.</p><span class="tag">API não conectada · Nenhuma operação enviada</span></div></section>`;return}
  view.innerHTML=`<section class="panel">
-  <div class="api-toolbar"><div><strong style="font-size:13px">Cadastro de formas monetárias</strong><div class="api-status" id="formas-status" role="status" aria-live="polite" aria-atomic="true" tabindex="-1">Carregando dados da API...</div></div><button type="button" class="action-btn" data-action="reload" aria-label="Atualizar formas monetárias">↻ Atualizar</button></div>
+  <div class="api-toolbar"><div><strong style="font-size:13px">Cadastro de formas monetárias</strong><div class="api-status" id="formas-status" role="status" aria-live="polite">Aguardando autenticação Google e API HTTPS Shadow</div></div><span class="tag">Operações bloqueadas</span></div>
+  <div class="notice" style="margin:16px 0 18px"><div class="notice-icon">◉</div><div><strong>Cadastro financeiro de apoio</strong><p>O legado e o schema Shadow possuem dois campos: nome da forma monetária e percentual de multa. Exemplos de nomes são apenas orientativos; nenhum registro real ou fictício será carregado.</p></div></div>
+  <div class="section-head"><h2>Dados da forma monetária</h2><span>Contrato atual</span></div>
   <form class="api-form" id="forma-form" aria-describedby="forma-hint">
-   <div class="field"><label for="forma-nome">Nome da forma monetária</label><input id="forma-nome" name="nome" required placeholder="Ex.: Dinheiro, PIX, Cartão"></div>
-   <div class="field"><label for="forma-multa">Multa (%)</label><input id="forma-multa" name="multaPct" type="number" min="0" max="100" step="0.01" value="2" required></div>
-   <button class="action-btn primary" type="submit" id="forma-submit">Cadastrar</button><button class="action-btn" type="button" id="forma-cancel-edit" data-action="cancel-edit" hidden>Cancelar edição</button>
+   <div class="field"><label for="forma-nome">Nome da forma monetária</label><input id="forma-nome" name="nome" required maxlength="120" placeholder="Ex.: Dinheiro, PIX, Cartão" disabled></div>
+   <div class="field"><label for="forma-multa">Multa (%)</label><input id="forma-multa" name="multaPct" type="number" min="0" max="100" step="0.01" value="2" required disabled></div>
+   <button class="action-btn primary" type="button" disabled>Cadastrar</button>
   </form>
-  <div class="form-hint" id="forma-hint">Os registros ficam temporariamente na memória do serviço Python e são apagados quando o processo reinicia. Não use dados de produção.</div>
-  <div class="data-table-wrap"><table class="data-table"><caption>Formas monetárias cadastradas</caption><thead><tr><th scope="col">Forma monetária</th><th scope="col">Multa (%)</th><th scope="col">Ações</th></tr></thead><tbody id="formas-rows"><tr><td colspan="3" class="empty-state">Carregando...</td></tr></tbody></table></div>
+  <p class="form-hint" id="forma-hint">A API possui rotas de consulta, cadastro, edição e exclusão. Os controles permanecem desabilitados até a integração Google enviar e validar o ID token em todas as requisições. O frontend atual ainda não possui esse fluxo.</p>
+  <div class="data-table-wrap"><table class="data-table"><caption>Formas monetárias cadastradas</caption><thead><tr><th scope="col">Forma monetária</th><th scope="col">Multa (%)</th><th scope="col">Ações</th></tr></thead><tbody id="formas-rows"><tr><td colspan="3" class="empty-state">Aguardando consulta autenticada. Nenhum registro será presumido.</td></tr></tbody></table></div>
+ </section>
+ <section class="panel" style="margin-top:16px">
+  <div class="section-head" style="margin-top:0"><h2>Integração e regras pendentes</h2><span>Antes de liberar operações</span></div>
+  <ul style="margin:0;padding-left:18px;color:var(--soft);font-size:12px;line-height:1.9">
+   <li>Enviar Authorization: Bearer com o ID token Google validado pelo backend em cada chamada.</li>
+   <li>Definir persistência PostgreSQL no ambiente isolado; o modo padrão atual é memória e perde dados ao reiniciar.</li>
+   <li>Definir política de exclusão quando uma forma já estiver vinculada a cobranças ou lançamentos.</li>
+   <li>Adicionar auditoria de criação, edição e exclusão, sem gravar o evento fora da transação da alteração.</li>
+   <li>Confirmar se a multa percentual é usada no cálculo de encargos e em quais tipos de título.</li>
+  </ul>
  </section>`;
- carregarFormas();
-}
-function setFormasStatus(message,kind=""){
- const el=document.getElementById("formas-status");if(el){el.textContent=message;el.className="api-status "+kind}
-}
-function renderFormasRows(){
- const body=document.getElementById("formas-rows");if(!body)return;
- if(!formasMonetarias.length){body.innerHTML='<tr><td colspan="3" class="empty-state">Nenhuma forma monetária cadastrada neste ambiente.</td></tr>';return}
- body.innerHTML=formasMonetarias.map(item=>`<tr><td><strong>${escapeHTML(item.nome)}</strong></td><td>${Number(item.multaPct).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})}%</td><td><div class="row-actions"><button type="button" class="action-btn" data-action="edit" data-id="${escapeHTML(item.id)}" aria-label="Editar ${escapeHTML(item.nome)}"${formasListaDesatualizada?" disabled":""}>Editar</button><button type="button" class="action-btn danger" data-action="delete" data-id="${escapeHTML(item.id)}" aria-label="Excluir ${escapeHTML(item.nome)}"${formasListaDesatualizada?" disabled":""}>Excluir</button></div></td></tr>`).join("");
-}
-async function carregarFormas(){
- try{formasMonetarias=await apiRequest("/formas-monetarias");formasListaDesatualizada=false;const edicaoPerdida=Boolean(formaEmEdicao&&!formasMonetarias.some(item=>item.id===formaEmEdicao));if(edicaoPerdida)resetFormaForm();renderFormasRows();setFormasStatus(edicaoPerdida?"A forma que estava em edição não existe mais na lista. A edição foi cancelada.":"API conectada · "+formasMonetarias.length+" registro(s)",edicaoPerdida?"err":"ok");return true}
- catch(error){const possuiListaAnterior=formasMonetarias.length>0;if(possuiListaAnterior){formasListaDesatualizada=true;renderFormasRows();setFormasStatus("Falha ao atualizar: "+error.message+" · Exibindo a última lista carregada; os dados podem estar desatualizados.","err")}else{setFormasStatus("Falha ao carregar: "+error.message,"err");const body=document.getElementById("formas-rows");if(body)body.innerHTML='<tr><td colspan="3" class="empty-state">Não foi possível carregar os registros. Verifique se a API está disponível.</td></tr>'}return false}
-}
-function resetFormaForm(){
- formaEmEdicao=null;const form=document.getElementById("forma-form");if(!form)return;
- form.reset();form.elements.multaPct.value="2";document.getElementById("forma-submit").textContent="Cadastrar";const cancel=document.getElementById("forma-cancel-edit");if(cancel)cancel.hidden=true;
-}
-async function salvarForma(event){
- event.preventDefault();const form=event.currentTarget;if(form.getAttribute("aria-busy")==="true")return;const nome=form.elements.nome.value.trim();const multaPct=Number(form.elements.multaPct.value);
- if(!nome||!Number.isFinite(multaPct)||multaPct<0||multaPct>100){setFormasStatus("Informe um nome e uma multa entre 0 e 100%.","err");return}
- const button=document.getElementById("forma-submit");button.disabled=true;button.textContent="Salvando...";form.setAttribute("aria-busy","true");
- try{
-  const payload={nome,multaPct};
-  if(formaEmEdicao)await apiRequest("/formas-monetarias/"+encodeURIComponent(formaEmEdicao),{method:"PUT",body:JSON.stringify(payload)});
-  else await apiRequest("/formas-monetarias",{method:"POST",body:JSON.stringify(payload)});
-  resetFormaForm();const listaAtualizada=await carregarFormas();if(listaAtualizada)setFormasStatus("Registro salvo na API sombra.","ok");else setFormasStatus("Registro salvo, mas a lista não foi atualizada. Use Atualizar para tentar novamente.","err");
- }catch(error){setFormasStatus(error.message,"err")}finally{button.disabled=false;button.textContent=formaEmEdicao?"Salvar edição":"Cadastrar";form.removeAttribute("aria-busy")}
 }
 function usuariosView(){
  const view=document.getElementById("view");
@@ -459,25 +428,10 @@ function openModule(id){
  view.innerHTML='<section class="panel module-view"><div><div class="big-icon">◇</div><span class="eyebrow">Módulo mapeado · Bravo Shadow</span><h2>'+item.title+'</h2><p>'+item.desc+'</p><span class="tag">Estrutura visual inicial · Funcionalidade ainda não migrada</span></div></section>';
  location.hash=id;
 }
-document.addEventListener("click",async event=>{
- const nav=event.target.closest("[data-module]");if(nav){openModule(nav.dataset.module);return}
- const action=event.target.closest("[data-action]");if(!action||moduloAtual!=="formas_monetarias")return;
- const id=action.dataset.id;
- if(formasListaDesatualizada&&["edit","delete"].includes(action.dataset.action)){setFormasStatus("A lista exibida pode estar desatualizada. Atualize antes de editar ou excluir registros.","err");return}
- const formaForm=document.getElementById("forma-form");if(formaForm?.getAttribute("aria-busy")==="true")return;
- if(action.dataset.action==="cancel-edit"){const form=document.getElementById("forma-form");if(form?.getAttribute("aria-busy")==="true")return;resetFormaForm();setFormasStatus("Edição cancelada; nenhuma alteração foi enviada.");document.getElementById("forma-nome")?.focus();return}
- if(action.dataset.action==="reload"){const edicaoCancelada=Boolean(formaEmEdicao);if(edicaoCancelada)resetFormaForm();action.disabled=true;action.textContent="Atualizando...";action.setAttribute("aria-busy","true");try{const atualizada=await carregarFormas();if(edicaoCancelada)setFormasStatus(atualizada?"Lista atualizada; a edição anterior foi cancelada para evitar salvar dados desatualizados.":"Edição cancelada; não foi possível atualizar a lista. Tente novamente.",atualizada?"ok":"err")}finally{action.disabled=false;action.textContent="↻ Atualizar";action.removeAttribute("aria-busy")}return}
- if(action.dataset.action==="edit"){
-  const item=formasMonetarias.find(row=>row.id===id);if(!item)return;
-  formaEmEdicao=item.id;const form=document.getElementById("forma-form");form.elements.nome.value=item.nome;form.elements.multaPct.value=item.multaPct;document.getElementById("forma-submit").textContent="Salvar edição";document.getElementById("forma-cancel-edit").hidden=false;setFormasStatus("Editando forma monetária: "+item.nome+". Altere os campos e salve ou cancele a edição.");form.elements.nome.focus();return
- }
- if(action.dataset.action==="delete"){
-  const item=formasMonetarias.find(row=>row.id===id);if(!item||!confirm("Excluir a forma monetária \""+item.nome+"\" deste ambiente sombra?"))return;
-  action.disabled=true;action.textContent="Excluindo...";action.setAttribute("aria-busy","true");try{await apiRequest("/formas-monetarias/"+encodeURIComponent(id),{method:"DELETE"});const listaAtualizada=await carregarFormas();setFormasStatus(listaAtualizada?"Registro excluído do ambiente sombra.":"Exclusão concluída, mas a lista não foi atualizada. Use Atualizar para tentar novamente.",listaAtualizada?"ok":"err")}catch(error){setFormasStatus(error.message,"err")}finally{action.disabled=false;action.textContent="Excluir";action.removeAttribute("aria-busy")}document.getElementById("formas-status")?.focus()
- }
+document.addEventListener("click",event=>{
+ const nav=event.target.closest("[data-module]");
+ if(nav){openModule(nav.dataset.module);return}
 });
-document.addEventListener("keydown",event=>{if(event.key!=="Escape"||!formaEmEdicao)return;const form=document.getElementById("forma-form");if(form?.getAttribute("aria-busy")==="true")return;event.preventDefault();resetFormaForm();setFormasStatus("Edição cancelada pelo teclado; nenhuma alteração foi enviada.");document.getElementById("forma-nome")?.focus()});
-document.addEventListener("submit",event=>{if(event.target.id==="forma-form")salvarForma(event)});
 window.addEventListener("hashchange",()=>{
  const id=location.hash.slice(1);
  if(id&&modules[id]){if(id!==moduloAtual)openModule(id);return}
