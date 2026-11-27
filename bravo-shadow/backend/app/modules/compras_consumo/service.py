@@ -185,8 +185,25 @@ class ComprasConsumoService:
                     bucket["valor_consumido"] += value
                     monthly[record.month]["valor_consumido"] += value
 
-        all_period_months = _month_range(data_inicio, data_fim, [m.month for m in valid_movements])
-        month_count = max(len(all_period_months), 1)
+        observed_months = [m.month for m in valid_movements]
+        all_period_months = _month_range(data_inicio, data_fim, observed_months)
+        # The monthly average must use the full requested period, even though
+        # the chart/table intentionally displays only its latest 12 months.
+        if data_inicio is not None and data_fim is not None:
+            month_count = (
+                (data_fim.year - data_inicio.year) * 12
+                + data_fim.month - data_inicio.month + 1
+            )
+        elif all_period_months:
+            month_count = (
+                (date.fromisoformat(all_period_months[-1] + "-01").year
+                 - date.fromisoformat(all_period_months[0] + "-01").year) * 12
+                + date.fromisoformat(all_period_months[-1] + "-01").month
+                - date.fromisoformat(all_period_months[0] + "-01").month + 1
+            )
+        else:
+            month_count = 1
+        month_count = max(month_count, 1)
         period_months = all_period_months[-12:]
         rows: list[ComprasConsumoProduto] = []
         for product_id, product in selected_products.items():
