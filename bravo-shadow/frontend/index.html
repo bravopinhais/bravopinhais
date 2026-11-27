@@ -113,6 +113,8 @@ async function apiRequest(path,options={}){
  return response.json();
 }
 function formasView(){
+ // A view is rebuilt on entry; never carry an edit ID into a fresh form.
+ formaEmEdicao=null;
  const view=document.getElementById("view");
  if(IS_STATIC_PREVIEW){view.innerHTML=`<section class="panel module-view"><div><div class="big-icon">◉</div><span class="eyebrow">Preview estático · GitHub Pages</span><h2>Formas Monetárias</h2><p>Esta publicação permite avaliar o visual e a navegação. O GitHub Pages não executa a API FastAPI; por isso, cadastro, edição e exclusão ficam indisponíveis neste preview.</p><span class="tag">API não conectada · Nenhuma operação enviada</span></div></section>`;return}
  view.innerHTML=`<section class="panel">
