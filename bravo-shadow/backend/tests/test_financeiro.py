@@ -112,6 +112,12 @@ def test_reject_amount_with_more_than_two_decimal_places():
     assert response.status_code == 422
 
 
+@pytest.mark.parametrize("valor", ["NaN", "Infinity", "-Infinity"])
+def test_reject_non_finite_financial_amounts(valor):
+    with pytest.raises(Exception):
+        FinanceiroInput(**payload(valor=valor))
+
+
 def test_reject_amount_exceeding_numeric_precision():
     response = client.post("/api/v1/financeiro", json=payload(valor=1000000000000.00))
     assert response.status_code == 422
