@@ -27,7 +27,7 @@ O original não define limites de tamanho, normalização, formato hierárquico 
 
 ## Observação técnica sobre unicidade concorrente
 
-A verificação de código duplicado no serviço consulta a coleção antes de inserir/atualizar. Essa pré-verificação melhora a resposta funcional, mas não é uma operação atômica com a gravação e, isoladamente, não garante unicidade sob requisições concorrentes. O adaptador PostgreSQL traduz a violação SQLSTATE `23505` em HTTP 409; a existência de uma constraint/índice único correspondente no schema sombra ainda precisa ser confirmada em uma revisão de DDL isolada, sem aplicar migrações ou conectar dados reais. Até essa confirmação, não considerar a unicidade concorrente garantida no PostgreSQL.
+A verificação de código duplicado no serviço consulta a coleção antes de inserir/atualizar. Essa pré-verificação melhora a resposta funcional, mas não é uma operação atômica com a gravação. O rascunho `docs/sql-piloto-financeiro.sql` já declara o índice único `plano_contas_codigo_ci_uidx` sobre `lower(codigo)`, que fecha a condição de corrida quando o DDL for aplicado. O adaptador PostgreSQL traduz a violação SQLSTATE `23505` em HTTP 409. **Limite importante:** o índice está apenas no rascunho versionado; nenhuma migration foi aplicada e a constraint ainda não foi verificada em um PostgreSQL descartável. Portanto, não afirmar que a unicidade concorrente já está ativa no banco.
 
 ## Dependência com Financeiro e DRE
 - Os títulos financeiros podem armazenar `planoContaId`.
