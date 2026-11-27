@@ -483,3 +483,67 @@ Esses testes exercitam os adaptadores com conexões PostgreSQL reais e DDL de te
 Também não comprovam autenticação Google, identidade de sessão em produção, API pública para administração de usuários ou isolamento de credenciais. Esses itens permanecem pendentes e bloqueados até aprovação explícita do modelo de roles e da arquitetura de runtime.
 
 Nenhuma migration foi aplicada a banco persistente. Nenhuma role, policy, grant ou membership do desenho final foi criada. O CI usa somente o PostgreSQL 16 efêmero `bravo_shadow_test`.
+
+## 15. Matriz refinada de operações e identidade runtime
+
+### 15.1 Evidência de código consultada
+
+Revisão estática da branch `bravo-shadow` em:
+- `backend/app/core/authorization.py`: catálogo de capacidades e matriz Admin/Operador vazia.
+- `backend/app/core/storage.py`: modo PostgreSQL injeta a mesma `connection_factory` em todos os adaptadores e no `PostgresAuditSink`.
+- Adaptadores `postgres_repositories.py`, `postgres_catalogs.py`, `postgres_cadastros.py`, `postgres_governance.py`, `postgres_inventory.py`, `postgres_usuarios.py` e `postgres_audit.py`.
+- Routers de estoque, acertos de estoque e usuários.
+
+A matriz abaixo descreve o SQL que os adaptadores atuais precisam executar, não os grants efetivamente instalados. Não há role runtime final nem policy homologada.
+
+### 15.2 Matriz operacional derivada dos adaptadores
+
+| Tabela | SELECT runtime | INSERT runtime | UPDATE runtime | DELETE runtime | Observação |
+|---|---:|---:|---:|---:|---|
+| `plano_contas` | Sim | Sim | Sim | Sim | CRUD; atualização otimista opcional |
+| `financeiro` | Sim | Sim | Sim | Sim | CRUD e vínculo com plano de contas |
+| `formas_monetarias` | Sim | Sim | Sim | Sim | CRUD de catálogo |
+| `moradores` | Sim | Sim | Sim | Sim | Contém dados pessoais |
+| `fornecedores` | Sim | Sim | Sim | Sim | Cadastro |
+| `empregados` | Sim | Sim | Sim | Sim | Contém endereço, telefone e contato de emergência |
+| `contas_bancarias` | Sim | Sim | Sim | Sim | Saldo cadastral; não é conciliação bancária |
+| `condominio` | Sim | Sim | Sim | Não | Adaptador não oferece exclusão |
+| `conselheiros` | Sim | Sim | Sim | Sim | Cadastro |
+| `categorias` | Sim | Sim | Sim | Sim | Exclusão pode falhar por FK de documentos |
+| `motivos_acerto` | Sim | Sim | Sim | Sim | Exclusão pode falhar por FK de movimentos |
+| `documentos` | Sim | Sim | Sim | Sim | Guarda conteúdo/arquivo compactado no registro |
+| `estoque` | Sim | Sim | Sim | Sim | UPDATE de saldo depende de fluxo protegido no serviço/adaptador |
+| `acertos_estoque` | Sim | Sim | Não | Não | Histórico append-only; movimento insere registro |
+| `usuarios` | Sim | Sim | Sim | Não | Exclusão física HTTP 410; desativação/admin usa UPDATE |
+| `audit_events` | Não | Sim | Não | Não | Sink oferece INSERT; sem leitura/edição/exclusão |
+
+### 15.3 Consequência para a role técnica
+
+O composition root atual injeta uma única fábrica de conexões em todos os repositórios e no sink de auditoria. Portanto, a proposta de uma única role de API, se mantida, precisará acumular a união dos privilégios operacionais acima, inclusive UPDATE em `usuarios` e INSERT em `audit_events` na mesma conexão/transação quando ocorrer desativação ou alteração administrativa auditada.
+
+A auditoria de negação de capacidade usa `PostgresAuditSink.append()`, com transação própria. A auditoria de sucesso da desativação/alteração administrativa usa `append_in_transaction(connection, event)` na mesma transação da alteração de usuário. Separar a credencial do sink sem redesenhar esse fluxo quebra a atomicidade atualmente implementada.
+
+### 15.4 O que GRANT não consegue garantir
+
+Privilégios de tabela não expressam as regras de negócio. Mesmo com UPDATE concedido em `estoque`, o banco não sabe, apenas pelo GRANT, que o saldo não pode ser alterado diretamente depois do primeiro movimento. Da mesma forma, UPDATE em `usuarios` não impõe por si só o bloqueio do último Admin, a proibição de auto-desativação ou a obrigação de registrar auditoria na mesma transação.
+
+Essas condições continuam dependendo da camada de serviço e de transações testadas; se a ameaça inclui SQL arbitrário executado pela role da API, será necessário avaliar funções controladas, triggers/constraints ou uma separação de identidades com desenho transacional próprio. Nenhuma dessas alternativas foi implementada ou aprovada.
+
+### 15.5 Limites de autorização HTTP
+
+- `ROLE_CAPABILITIES` mantém Admin e Operador com conjuntos vazios; o comportamento atual é deny-by-default.
+- As capacidades de usuários incluem leitura, cadastro, atualização cadastral e desativação; a rota administrativa de mudança de perfil/status não está exposta.
+- O router de usuários bloqueia exclusão física com HTTP 410; a operação de desativação lógica exige `usuarios:deactivate`.
+- Estoque exige capacidades distintas para leitura, criação, atualização e exclusão; acertos de estoque expõem leitura e criação, sem UPDATE/DELETE.
+- O perfil funcional da aplicação não é uma role PostgreSQL e não deve ser usado diretamente como principal SQL.
+
+### 15.6 Pendências antes de qualquer desenho executável
+
+1. Aprovar se a primeira versão continuará com uma role técnica compartilhada ou se haverá separação por domínio/operação.
+2. Definir como manter atomicidade entre alteração de usuário e INSERT de auditoria se houver mais de uma identidade SQL.
+3. Definir se a proteção contra SQL arbitrário pela role da API faz parte do requisito de segurança.
+4. Homologar privilégios por coluna/operação e políticas RLS em PostgreSQL descartável com sessões independentes.
+5. Aprovar a matriz funcional Admin/Operador separadamente; ela continua vazia.
+6. Só depois preparar uma proposta SQL para revisão. Este documento não autoriza executar DDL.
+
+Nenhuma role, membership, policy, grant, função, trigger ou migration foi criada. Nenhum banco persistente ou remoto foi conectado ou alterado.
