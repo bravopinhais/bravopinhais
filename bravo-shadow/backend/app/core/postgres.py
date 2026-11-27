@@ -19,12 +19,17 @@ class CommitOutcomeUnknown(RuntimeError):
     """O servidor pode ter confirmado o COMMIT, mas a confirmação não chegou."""
 
 
+class CommitSucceededCleanupError(RuntimeError):
+    """O COMMIT foi confirmado, mas a conexão falhou ao ser encerrada."""
+
+
 class PostgresUnitOfWork:
     """Gerencia commit/rollback/close de uma conexão por unidade de trabalho.
 
     A fábrica deve abrir uma conexão PostgreSQL nova. O driver concreto é
     injetado pelo ambiente, evitando conexão implícita ou fallback em memória.
-    Se o próprio commit falhar, tenta rollback antes de liberar a conexão.
+    Se o commit falhar, tenta rollback para limpeza, mas não presume que isso
+    desfaça um commit que o servidor talvez já tenha confirmado.
     """
 
     def __init__(self, connection_factory: Callable[[], ConnectionT]) -> None:
@@ -65,6 +70,7 @@ class PostgresUnitOfWork:
             return False
 
         primary_error = exc
+        commit_succeeded = False
         try:
             if exc_type is not None:
                 try:
@@ -79,6 +85,7 @@ class PostgresUnitOfWork:
             else:
                 try:
                     connection.commit()
+                    commit_succeeded = True
                 except BaseException as commit_error:
                     outcome_error = CommitOutcomeUnknown(
                         "postgres_commit_outcome_unknown"
@@ -96,6 +103,15 @@ class PostgresUnitOfWork:
             try:
                 connection.close()
             except BaseException as close_error:
+                if primary_error is None and commit_succeeded:
+                    cleanup_error = CommitSucceededCleanupError(
+                        "postgres_commit_succeeded_connection_close_failed"
+                    )
+                    primary_error = cleanup_error
+                    self._note_cleanup_failure(
+                        primary_error, "fechamento após commit confirmado", close_error
+                    )
+                    raise cleanup_error from close_error
                 if primary_error is None:
                     raise
                 self._note_cleanup_failure(
