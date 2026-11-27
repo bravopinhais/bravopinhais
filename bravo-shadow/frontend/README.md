@@ -71,6 +71,10 @@ A navegação da Gestão de Usuários apresenta um painel de pré-requisitos, se
 
 Esse estado é intencional: a interface não consulta nem altera usuários com identidade ausente, não inventa dados e não concede permissões por perfil. Para avançar, é necessário identificar o provedor Google usado no ambiente ativo e aprovar explicitamente a matriz de permissões. A tela de login original permanece intocada.
 
+## Acessibilidade da navegação
+
+O frontend inclui atalho de teclado para pular diretamente ao conteúdo principal, indicador de foco visível para links e botões e uma região de conteúdo com anúncios educados para leitores de tela durante a troca de módulos. O atalho fica oculto visualmente até receber foco.
+
 ## Preview visual pelo GitHub Pages
 
 O ambiente sombra publica a pasta `bravo-shadow/frontend/` como site estático por meio do workflow `.github/workflows/bravo-shadow-pages.yml`, acionado por alterações no frontend da branch `bravo-shadow` ou manualmente.
