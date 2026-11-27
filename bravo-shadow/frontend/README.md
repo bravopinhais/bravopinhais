@@ -524,3 +524,8 @@ A implementação está na branch Shadow, mas não foi ativada em hospedagem nem
 ## Autenticação Google e autorização central
 
 A cadeia de autenticação, vínculo com cadastro ativo e cobertura de capacidades dos routers está registrada em [Auditoria de autenticação Google e autorização de rotas](../docs/auditoria-autenticacao-google-autorizacao-rotas.md). A autenticação valida o ID token no backend e resolve o perfil exclusivamente pelo usuário interno ativo. A interface não concede permissões; cada endpoint de negócio aplica sua capacidade no servidor. O bootstrap segue opt-in e não foi ativado nesta revisão.
+
+
+### Capacidades efetivas na sessão
+
+A resposta autenticada de `GET /api/v1/auth/me` inclui `capabilities`, calculada no backend a partir do perfil Bravo ativo e da matriz explícita `ROLE_CAPABILITIES`. O módulo `google-auth.js` exige que a propriedade seja uma lista válida, sem valores vazios ou duplicados, e a congela na sessão entregue aos módulos. Essa lista pode orientar a apresentação de controles, mas não autoriza operações: cada endpoint continua validando sua capacidade no servidor. Ausência ou formato inválido da lista impede a abertura da sessão; nenhuma permissão é presumida no navegador.
