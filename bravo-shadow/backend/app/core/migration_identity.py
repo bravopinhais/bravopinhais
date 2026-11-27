@@ -52,11 +52,21 @@ def classify_source_identity(
     """Classify an import without performing writes or resolving conflicts."""
     if not isinstance(incoming_hash, str) or not incoming_hash.strip():
         raise ValueError("incoming_hash deve ser texto não vazio.")
+    if not isinstance(destination_id_exists, bool):
+        raise TypeError("destination_id_exists deve ser booleano.")
 
     if existing_mapping is not None:
-        if not existing_mapping.source_record_hash.strip():
+        if not isinstance(existing_mapping, ExistingSourceMapping):
             return IdentityDecision("mapping_inconsistent", None, False)
-        if not existing_mapping.destination_id.strip():
+        if (
+            not isinstance(existing_mapping.source_record_hash, str)
+            or not existing_mapping.source_record_hash.strip()
+        ):
+            return IdentityDecision("mapping_inconsistent", None, False)
+        if (
+            not isinstance(existing_mapping.destination_id, str)
+            or not existing_mapping.destination_id.strip()
+        ):
             return IdentityDecision("mapping_inconsistent", None, False)
         if existing_mapping.source_record_hash == incoming_hash:
             return IdentityDecision(
