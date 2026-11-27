@@ -42,6 +42,7 @@ jobs:
           grep -q 'href="#main-content"' _site/index.html
           grep -q 'id="main-content" tabindex="-1"' _site/index.html
           grep -q 'id="view" aria-live="polite" aria-atomic="true"' _site/index.html
+          grep -q 'id="formas-status" role="status" aria-live="polite" aria-atomic="true"' _site/index.html
           grep -q 'window.addEventListener("hashchange"' _site/index.html
           grep -q '<h1 id="page-title" tabindex="-1">' _site/index.html
           grep -q 'getElementById("page-title").focus({preventScroll:true})' _site/index.html
