@@ -58,3 +58,15 @@ A revisão do código disponível não identificou um bootstrap cliente do Googl
 A API sombra já valida ID token Google no servidor (`GOOGLE_CLIENT_ID`, assinatura, emissor, audiência e expiração por meio de `google-auth`) e vincula o e-mail verificado a um usuário interno ativo. A interface não deve receber segredo de cliente, simular token, guardar token em `localStorage` ou aceitar identidade informada manualmente.
 
 **Próximo insumo necessário para concluir a integração:** identificar e aprovar o provedor Google efetivamente usado no ambiente ativo (ou fornecer sua configuração pública de cliente/redirect URI e fluxo autorizado). Até essa confirmação, o Dashboard permanece em estado indisponível e protegido. A tela de login original não foi modificada.
+
+## Gestão de Usuários — estado da interface
+
+A navegação da Gestão de Usuários apresenta um painel de pré-requisitos, sem botões de cadastro, edição ou desativação enquanto a sessão Google do navegador não estiver integrada e a matriz de permissões continuar fechada. O painel identifica separadamente:
+
+- sessão Google do navegador ainda não conectada;
+- consulta bloqueada pela ausência de `usuarios:read`;
+- cadastro/edição sem capacidades concedidas;
+- desativação lógica protegida por `usuarios:deactivate` ainda não concedida;
+- exclusão física desabilitada pela API (HTTP 410).
+
+Esse estado é intencional: a interface não consulta nem altera usuários com identidade ausente, não inventa dados e não concede permissões por perfil. Para avançar, é necessário identificar o provedor Google usado no ambiente ativo e aprovar explicitamente a matriz de permissões. A tela de login original permanece intocada.
