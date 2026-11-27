@@ -136,6 +136,44 @@ function contasBancariasView(){
   </ul>
  </section>`;
 }
+function condominioView(){
+ const view=document.getElementById("view");
+ const fields=[
+  ["nome","Nome do condomínio"],["cnpj","CNPJ"],["razaoSocial","Razão social"],["endereco","Endereço"],["bairro","Bairro"],["cidade","Cidade"],["uf","UF"],["cep","CEP"],["telefone","Telefone"],["email","E-mail"],
+  ["copelBloco1","Copel — Bloco 1"],["copelBloco2","Copel — Bloco 2"],["copelBloco3","Copel — Bloco 3"],["copelBloco4","Copel — Bloco 4"],["copelAreasComuns","Copel — Áreas comuns"],["gasSalao","Gás — Salão"],["sanepar","Sanepar — Água"]
+ ];
+ const fieldMarkup=fields.map(([key,label])=>`<div class="field"><label for="cond-${key}">${label}</label><input id="cond-${key}" name="${key}" maxlength="200" disabled></div>`).join("");
+ view.innerHTML=`<section class="panel">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Dados institucionais do condomínio</strong><div class="api-status" id="cond-status" role="status" aria-live="polite">Aguardando autenticação Google e API HTTPS Shadow</div></div><span class="tag">Cadastro institucional</span></div>
+  <div class="notice" style="margin:14px 0 18px"><div class="notice-icon">⌂</div><div><strong>Identificação e concessionárias</strong><p>Dados cadastrais, contato, endereço e números de instalação/matrícula de energia, gás e água. Os valores não serão preenchidos com exemplos nem recuperados do sistema de produção.</p></div></div>
+  <form class="api-form" id="cond-form" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+   ${fieldMarkup}
+   <div style="grid-column:1/-1;display:flex;justify-content:flex-end"><button type="button" class="action-btn primary" disabled>Salvar alterações</button></div>
+  </form>
+  <p class="form-hint">O contrato possui GET e PUT para o registro único do condomínio. A gravação permanece bloqueada até integração da sessão Google com envio do ID token como Bearer.</p>
+ </section>
+ <section class="panel" style="margin-top:16px">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Corpo diretivo / Conselho</strong><div class="api-status" id="council-status" role="status" aria-live="polite">Aguardando consulta autorizada</div></div><span class="tag">Composição do conselho</span></div>
+  <form class="api-form" id="council-form" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+   <div class="field"><label for="council-name">Nome</label><input id="council-name" name="nome" required maxlength="160" disabled></div>
+   <div class="field"><label for="council-role">Cargo</label><input id="council-role" name="cargo" required maxlength="120" placeholder="Ex.: Síndico" disabled></div>
+   <div class="field"><label for="council-unit">Bloco / Apartamento</label><input id="council-unit" name="BlocoAp" maxlength="80" disabled></div>
+   <div class="field"><label for="council-phone">Telefone</label><input id="council-phone" name="telefone" maxlength="40" disabled></div>
+   <div style="grid-column:1/-1;display:flex;justify-content:flex-end"><button type="button" class="action-btn primary" disabled>Adicionar conselheiro</button></div>
+  </form>
+  <div class="data-table-wrap"><table class="data-table"><caption>Integrantes do conselho</caption><thead><tr><th scope="col">Nome</th><th scope="col">Cargo</th><th scope="col">Bloco / Apartamento</th><th scope="col">Telefone</th><th scope="col">Ações</th></tr></thead><tbody id="council-rows"><tr><td colspan="5" class="empty-state">Aguardando consulta autenticada. Nenhum integrante fictício será exibido.</td></tr></tbody></table></div>
+  <p class="form-hint">Admin pode cadastrar, editar e excluir. Operador possui somente leitura. As operações permanecem bloqueadas até autenticação e revisão da auditoria.</p>
+ </section>
+ <section class="panel" style="margin-top:16px">
+  <div class="section-head" style="margin-top:0"><h2>Limites e cuidados</h2><span>Estado do backend</span></div>
+  <ul style="margin:0;padding-left:18px;color:var(--soft);font-size:12px;line-height:1.9">
+   <li>O cadastro do condomínio é um registro singleton; o endpoint não possui versionamento If-Match exposto.</li>
+   <li>O conselho possui CRUD, mas o contrato atual não inclui mandato, início/fim de gestão, ata, eleição ou anexos.</li>
+   <li>O backend dispõe de adapter PostgreSQL, mas o CRUD não registra auditoria de negócio transacional específica.</li>
+   <li>Não há validação formal de CNPJ, CEP ou telefone no schema atual; não adicionar regras que alterem dados legados sem homologação.</li>
+  </ul>
+ </section>`;
+}
 function planoContasView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
@@ -447,7 +485,8 @@ function openModule(id){
  document.getElementById("page-title").focus({preventScroll:true});
  const view=document.getElementById("view");
  if(id==="dashboard"){dashboardView();location.hash="";return}
- if(id==="plano_contas"){location.hash=id;planoContasView();return}
+ if(id==="condominio"){location.hash=id;condominioView();return}
+  if(id==="plano_contas"){location.hash=id;planoContasView();return}
   if(id==="financeiro"){location.hash=id;financeiroView();return}
  if(id==="contas_bancarias"){location.hash=id;contasBancariasView();return}
  if(id==="formas_monetarias"){location.hash=id;formasView();return}
