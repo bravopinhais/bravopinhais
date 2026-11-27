@@ -50,19 +50,19 @@ def test_provenance_batch_foreign_keys_bind_the_same_source_system():
     sql = _sql().lower()
 
     assert re.search(
-        r"unique\\s*\\(\\s*batch_id\\s*,\\s*source_system\\s*\\)",
+        r"unique\s*\(\s*batch_id\s*,\s*source_system\s*\)",
         sql,
     )
     assert re.search(
-        r"foreign\\s+key\\s*\\(\\s*first_batch_id\\s*,\\s*source_system\\s*\\)\\s*"
-        r"references\\s+bravo_shadow\\.migration_batches\\s*"
-        r"\\(\\s*batch_id\\s*,\\s*source_system\\s*\\)",
+        r"foreign\s+key\s*\(\s*first_batch_id\s*,\s*source_system\s*\)\s*"
+        r"references\s+bravo_shadow\.migration_batches\s*"
+        r"\(\s*batch_id\s*,\s*source_system\s*\)",
         sql,
     )
     assert re.search(
-        r"foreign\\s+key\\s*\\(\\s*last_verified_batch_id\\s*,\\s*source_system\\s*\\)\\s*"
-        r"references\\s+bravo_shadow\\.migration_batches\\s*"
-        r"\\(\\s*batch_id\\s*,\\s*source_system\\s*\\)",
+        r"foreign\s+key\s*\(\s*last_verified_batch_id\s*,\s*source_system\s*\)\s*"
+        r"references\s+bravo_shadow\.migration_batches\s*"
+        r"\(\s*batch_id\s*,\s*source_system\s*\)",
         sql,
     )
 
