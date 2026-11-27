@@ -1,9 +1,13 @@
+import logging
 import os
 from collections.abc import Callable
 from typing import Any
 from uuid import uuid4
 
 from fastapi import FastAPI, Request
+from fastapi.responses import JSONResponse
+
+from app.core.audit import AuditEvent
 
 from app.core.postgres_connection import create_postgres_connection_factory
 from app.core.storage import StorageConfigurationError, build_storage_services
@@ -67,6 +71,46 @@ def create_app(
         response = await call_next(request)
         response.headers["X-Request-ID"] = request_id
         return response
+
+    @application.exception_handler(Exception)
+    async def handle_unexpected_exception(request: Request, exc: Exception):
+        # Não devolver nem persistir a mensagem/traceback da exceção: pode
+        # conter SQL, dados de negócio, tokens ou detalhes internos.
+        request_id = getattr(request.state, "request_id", None)
+        subject = getattr(request.state, "authenticated_subject", None)
+        sink = getattr(request.app.state.services, "audit_sink", None)
+        if (
+            sink is not None
+            and isinstance(subject, str)
+            and subject.strip()
+        ):
+            event = AuditEvent(
+                actor_subject=subject.strip(),
+                action="http:unhandled_exception",
+                entity_type="request",
+                outcome="failure",
+                request_id=request_id,
+            )
+            try:
+                # append() abre e conclui sua própria transação, separada
+                # da transação de negócio que falhou.
+                sink.append(event)
+            except Exception:
+                logging.getLogger("bravo.audit.failure").error(
+                    "Não foi possível persistir auditoria de falha; request_id=%s",
+                    request_id,
+                )
+        logging.getLogger("bravo.api").error(
+            "Falha inesperada na requisição; request_id=%s",
+            request_id,
+        )
+        return JSONResponse(
+            status_code=500,
+            content={
+                "detail": "Erro interno do servidor.",
+                "request_id": request_id,
+            },
+        )
 
     application.state.storage_backend = selected_backend
     application.state.services = services
