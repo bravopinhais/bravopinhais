@@ -462,6 +462,105 @@ function acertoEstoqueView(){
   </ul>
  </section>`;
 }
+let estoqueApiClient=null,estoqueItems=[],estoqueRequestSequence=0,estoqueRequestController=null,estoqueEditingId=null;
+function estoqueCan(action){return hasBravoCapability("estoque:"+action);}
+function estoqueSetStatus(message,kind=""){const node=document.getElementById("est-status");if(node){node.textContent=message;node.className="api-status"+(kind?" "+kind:"");}}
+function estoqueLevel(item){
+ const q=Number(item.quantidade),min=Number(item.minimo),max=Number(item.maximo);
+ if(q<min||(q===0&&min===0))return "Crítico";
+ if(max>0&&q>max)return "Excedente";
+ return "Adequado";
+}
+function estoqueApplyPermissions(){
+ const form=document.getElementById("est-form");if(!form)return;
+ const allowed=estoqueCan(estoqueEditingId?"update":"create");
+ form.querySelectorAll("input,select").forEach(input=>{input.disabled=!allowed||input.type==="file";});
+ const save=document.getElementById("est-save");if(save){save.disabled=!allowed;save.textContent=estoqueEditingId?"Salvar alterações":"Salvar produto";}
+ const cancel=document.getElementById("est-cancel");if(cancel)cancel.hidden=!estoqueEditingId;
+ for(const id of ["est-search","est-filter","est-sector-filter"]){const el=document.getElementById(id);if(el)el.disabled=!estoqueCan("read");}
+}
+function estoqueRenderRows(){
+ const tbody=document.getElementById("est-rows");if(!tbody)return;tbody.replaceChildren();
+ const term=(document.getElementById("est-search")?.value||"").trim().toLocaleLowerCase("pt-BR");
+ const filter=document.getElementById("est-filter")?.value||"Todos";
+ const sector=(document.getElementById("est-sector-filter")?.value||"").trim().toLocaleLowerCase("pt-BR");
+ const filtered=estoqueItems.filter(item=>{
+  const matches=[item.item,item.etiqueta,item.marca,item.linha,item.fabricante].some(v=>String(v||"").toLocaleLowerCase("pt-BR").includes(term));
+  return matches&&(filter==="Todos"||estoqueLevel(item)===filter)&&String(item.setor||"").toLocaleLowerCase("pt-BR").includes(sector);
+ });
+ const counts={"Adequado":0,"Crítico":0,"Excedente":0};
+ for(const item of estoqueItems)counts[estoqueLevel(item)]++;
+ for(const [id,value] of [["est-count-ok",counts.Adequado],["est-count-low",counts.Crítico],["est-count-high",counts.Excedente]]){const node=document.getElementById(id);if(node)node.textContent=String(value);}
+ if(!filtered.length){const row=document.createElement("tr"),cell=document.createElement("td");cell.colSpan=10;cell.className="empty-state";cell.textContent=estoqueItems.length?"Nenhum produto corresponde aos filtros.":"Nenhum produto cadastrado.";row.append(cell);tbody.append(row);return;}
+ for(const item of filtered){
+  const row=document.createElement("tr");
+  const values=[item.fotoNome||"—",item.etiqueta||"—",item.item,[item.marca,item.linha].filter(Boolean).join(" / ")||"—",item.fabricante||"—",item.setor||"—",Number(item.quantidade).toLocaleString("pt-BR",{maximumFractionDigits:3})+" "+item.unidade,Number(item.minimo).toLocaleString("pt-BR",{maximumFractionDigits:3})+" / "+Number(item.maximo).toLocaleString("pt-BR",{maximumFractionDigits:3}),estoqueLevel(item)];
+  for(const value of values){const cell=document.createElement("td");cell.textContent=String(value??"—");row.append(cell);}
+  const actions=document.createElement("td"),wrap=document.createElement("div");wrap.className="row-actions";
+  if(estoqueCan("update")){const edit=document.createElement("button");edit.type="button";edit.className="action-btn";edit.textContent="Editar";edit.addEventListener("click",()=>estoqueStartEdit(item.id));wrap.append(edit);}
+  actions.append(wrap);row.append(actions);tbody.append(row);
+ }
+}
+function estoqueStartEdit(id){
+ const item=estoqueItems.find(entry=>entry.id===id);if(!item||!estoqueCan("update"))return;
+ estoqueEditingId=id;
+ const values={item:item.item,etiqueta:item.etiqueta,marca:item.marca,linha:item.linha,fabricante:item.fabricante,dataCadastro:item.dataCadastro,setor:item.setor,unidade:item.unidade,quantidade:item.quantidade,minimo:item.minimo,maximo:item.maximo,valorUnitario:item.valorUnitario,status:item.status,cor:item.cor,fotoPath:item.fotoPath};
+ for(const [key,value] of Object.entries(values)){const input=document.getElementById("est-"+({dataCadastro:"data",valorUnitario:"valor",fotoPath:"foto-path"}[key]||key));if(input)input.value=value??"";}
+ document.getElementById("est-foto").value="";
+ const heading=document.querySelector("#est-form")?.previousElementSibling?.querySelector("h2");if(heading)heading.textContent="Editar produto";
+ estoqueApplyPermissions();estoqueSetStatus("Editando cadastro. O saldo com movimentações não pode ser alterado aqui.");
+ document.getElementById("est-item").focus();
+}
+function estoqueResetForm(){
+ const form=document.getElementById("est-form");if(!form)return;form.reset();estoqueEditingId=null;
+ const heading=form.previousElementSibling?.querySelector("h2");if(heading)heading.textContent="Novo item / produto";
+ const date=document.getElementById("est-data");if(date&&!date.value){const now=new Date();date.value=[now.getFullYear(),String(now.getMonth()+1).padStart(2,"0"),String(now.getDate()).padStart(2,"0")].join("-");}
+ estoqueApplyPermissions();
+}
+async function estoqueLoad(api){
+ const sequence=++estoqueRequestSequence;estoqueRequestController?.abort();estoqueRequestController=new AbortController();
+ estoqueSetStatus("Consultando inventário autorizado…");
+ try{
+  const data=await api.get("/api/v1/estoque",{signal:estoqueRequestController.signal});
+  if(sequence!==estoqueRequestSequence||moduloAtual!=="estoque")return;
+  const fields=["id","item","etiqueta","marca","linha","fabricante","dataCadastro","setor","unidade","status","cor","fotoPath"];
+  if(!Array.isArray(data)||data.some(item=>!item||fields.some(key=>typeof item[key]!=="string")||["quantidade","minimo","maximo","valorUnitario"].some(key=>!Number.isFinite(Number(item[key])))))throw new Error("A API retornou uma lista de produtos inválida.");
+  estoqueItems=data;estoqueRenderRows();estoqueSetStatus(data.length+" produto(s) carregado(s) · saldo e limites atualizados","ok");
+ }catch(error){
+  if(error?.name==="AbortError"||sequence!==estoqueRequestSequence)return;
+  estoqueItems=[];estoqueRenderRows();estoqueSetStatus(error?.status===403?"Seu perfil não possui estoque:read.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível consultar o estoque."),"err");
+ }
+}
+async function estoqueSave(event){
+ event.preventDefault();const api=estoqueApiClient;if(!api)return;
+ const wasEditing=Boolean(estoqueEditingId),action=wasEditing?"update":"create";
+ if(!estoqueCan(action)){estoqueSetStatus("Seu perfil não possui autorização para esta operação.","err");return;}
+ const num=id=>Number(document.getElementById(id).value||0);
+ const payload={
+  item:document.getElementById("est-item").value.trim(),etiqueta:document.getElementById("est-etiqueta").value.trim(),
+  marca:document.getElementById("est-marca").value.trim(),linha:document.getElementById("est-linha").value.trim(),
+  fabricante:document.getElementById("est-fabricante").value.trim(),dataCadastro:document.getElementById("est-data").value,
+  setor:document.getElementById("est-setor").value.trim(),unidade:document.getElementById("est-unidade").value,
+  quantidade:num("est-qtd"),minimo:num("est-min"),maximo:num("est-max"),valorUnitario:num("est-valor"),
+  status:document.getElementById("est-status").value,cor:document.getElementById("est-cor").value.trim()
+ };
+ if(!payload.item){estoqueSetStatus("Informe a descrição do produto.","err");return;}
+ if(payload.minimo>0&&payload.maximo>0&&payload.maximo<payload.minimo){estoqueSetStatus("A quantidade máxima não pode ser menor que a mínima.","err");return;}
+ const existing=wasEditing?estoqueItems.find(item=>item.id===estoqueEditingId):null;
+ payload.fotoNome=existing?.fotoNome||"";payload.fotoCompactadaGzip=existing?.fotoCompactadaGzip||"";payload.fotoPath=existing?.fotoPath||"";
+ const button=document.getElementById("est-save");if(button)button.disabled=true;
+ estoqueSetStatus(wasEditing?"Salvando alterações…":"Cadastrando produto…");
+ try{
+  if(wasEditing)await api.put("/api/v1/estoque/"+encodeURIComponent(estoqueEditingId),payload);
+  else await api.post("/api/v1/estoque",payload);
+  estoqueResetForm();await estoqueLoad(api);estoqueSetStatus(wasEditing?"Produto atualizado.":"Produto cadastrado.","ok");
+ }catch(error){
+  const detail=error?.status===409?"O saldo possui movimentações ou há conflito. Use Acerto de Estoque para alterar o saldo.":error?.status===403?"Seu perfil não possui autorização para esta operação.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível salvar o produto.");
+  estoqueSetStatus(detail,"err");
+ }finally{estoqueApplyPermissions();}
+}
+window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function"||typeof api.post!=="function"||typeof api.put!=="function")return;estoqueApiClient=api;if(moduloAtual==="estoque")void estoqueLoad(api);estoqueApplyPermissions();});
+window.addEventListener("bravo:session-ended",()=>{estoqueApiClient=null;estoqueRequestSequence+=1;estoqueRequestController?.abort();estoqueRequestController=null;estoqueItems=[];estoqueEditingId=null;if(moduloAtual==="estoque")estoqueView();});
 function estoqueView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
@@ -485,13 +584,13 @@ function estoqueView(){
    <div class="field"><label for="est-cor">Cor / característica</label><input id="est-cor" name="cor" maxlength="80" disabled></div>
    <div class="field"><label for="est-foto">Foto do produto</label><input id="est-foto" name="foto" type="file" accept="image/*" disabled></div>
    <div class="field"><label for="est-foto-path">Referência da foto (armazenamento)</label><input id="est-foto-path" name="fotoPath" maxlength="500" disabled></div>
-   <div style="grid-column:1/-1;display:flex;justify-content:flex-end"><button type="button" class="action-btn primary" disabled>Salvar produto</button></div>
+   <div style="grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px"><button id="est-cancel" type="button" class="action-btn" hidden>Cancelar edição</button><button id="est-save" type="submit" class="action-btn primary" disabled>Salvar produto</button></div>
   </form>
   <p class="form-hint">Quantidades aceitam até três casas decimais; valor unitário, duas. A edição de saldo com histórico de movimentações é bloqueada pelo serviço. A imagem compactada Gzip/Base64 é aceita pelo schema atual, mas armazenamento externo e gestão de fotos ainda precisam de definição.</p>
  </section>
  <section class="panel" style="margin-top:16px">
   <div class="api-toolbar"><div><strong style="font-size:13px">Visão geral do inventário</strong><div class="api-status">Indicadores dependem da consulta autenticada</div></div><span class="tag">Níveis de estoque</span></div>
-  <div class="stats-grid" style="margin:12px 0"><div class="stat-card"><span>Estoque adequado</span><strong>—</strong></div><div class="stat-card"><span>Estoque crítico</span><strong>—</strong></div><div class="stat-card"><span>Estoque excedente</span><strong>—</strong></div></div>
+  <div class="stats-grid" style="margin:12px 0"><div class="stat-card"><span>Estoque adequado</span><strong id="est-count-ok">—</strong></div><div class="stat-card"><span>Estoque crítico</span><strong id="est-count-low">—</strong></div><div class="stat-card"><span>Estoque excedente</span><strong id="est-count-high">—</strong></div></div>
   <div class="api-form" style="grid-template-columns:repeat(3,minmax(0,1fr));align-items:end">
    <div class="field"><label for="est-search">Pesquisar item / código / marca</label><input id="est-search" name="busca" disabled></div>
    <div class="field"><label for="est-filter">Situação</label><select id="est-filter" disabled><option>Todos</option><option>Adequado</option><option>Crítico</option><option>Excedente</option></select></div>
@@ -506,8 +605,8 @@ function estoqueView(){
    <li>O backend aceita marca, linha, fabricante, data de cadastro, setor, unidade, valor unitário, status, cor e referência de foto.</li>
    <li>Produtos com movimentações não podem ter o saldo alterado pelo cadastro; utilizar Acerto de Estoque.</li>
    <li>Produtos com movimentações não podem ser excluídos pelo serviço atual.</li>
-   <li>Scanner por câmera, impressão de etiquetas, checklist, relatórios por setor e gestão de arquivos/fotos ainda não estão integrados à tela Shadow.</li>
-   <li>Admin e Operador possuem CRUD de produtos na matriz atual; permissões de acerto são separadas.</li>
+   <li>Scanner por câmera, impressão de etiquetas, checklist, relatórios por setor e gestão de arquivos/fotos ainda não estão integrados à tela Shadow.</li><li>A foto existente é preservada na edição, mas upload e armazenamento de novas imagens ainda não estão implementados.</li>
+   <li>Consulta, cadastro e edição usam estoque:read/create/update; exclusão física não é oferecida na interface.</li>
   </ul>
  </section>`;
 }
