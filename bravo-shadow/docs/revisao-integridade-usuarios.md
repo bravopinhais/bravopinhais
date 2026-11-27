@@ -84,3 +84,10 @@ A cobertura real inclui:
 A CI já fornece PostgreSQL 16 descartável e a variável de conexão local `BRAVO_SHADOW_TEST_DATABASE_URL`, portanto o novo teste foi ligado ao fluxo normal de backend sem criar credenciais ou acessar banco externo. A validação efetiva depende da execução da CI deste commit.
 
 Nenhum router foi conectado, nenhuma capacidade foi liberada, nenhuma migration foi aplicada e nenhum dado real foi usado.
+
+
+### Resultado da integração PostgreSQL real
+
+A execução GitHub Actions **45914069701** concluiu com sucesso no commit `2c92bd7864c21a327b0410c29b2a9a16cffb21f6`: **443 testes aprovados**, incluindo os quatro cenários novos com PostgreSQL 16 descartável. O build Docker e o smoke test da API/interface também passaram. Houve um warning de depreciação de dependência de teste, sem falha.
+
+A primeira execução da integração falhou porque o cenário de rollback de auditoria tinha somente um Admin ativo; a proteção do último Admin bloqueou corretamente a operação antes de alcançar o trigger de auditoria. O fixture foi corrigido adicionando um segundo Admin sintético, isolando o teste da regra que ele pretendia exercitar. A execução seguinte passou.
