@@ -5,7 +5,7 @@ from fastapi import HTTPException, status
 
 from app.core.audit import AuditEvent
 from app.core.repositories import CollectionRepository, InMemoryCollectionRepository
-from .schemas import Usuario, UsuarioAdministracaoInput, UsuarioInput
+from .schemas import (\n    Usuario, UsuarioAdministracaoInput, UsuarioCadastroInput,\n    UsuarioDadosCadastraisUpdateInput, UsuarioInput,\n)
 
 
 class UsuariosService:
@@ -51,6 +51,35 @@ class UsuariosService:
             item = Usuario(id=current.id, **payload)
             self.repository.replace(item_id, item)
             return item
+
+    def create_cadastral(self, data: UsuarioCadastroInput) -> Usuario:
+        """Cria cadastro comum sem permitir atribuição de perfil privilegiado."""
+        return self.create(
+            UsuarioInput(
+                **data.model_dump(),
+                perfil="Operador",
+                status="Ativo",
+            )
+        )
+
+    def update_cadastral(
+        self, item_id: str, data: UsuarioDadosCadastraisUpdateInput
+    ) -> Usuario:
+        """Atualiza apenas dados cadastrais; identidade e privilégios são preservados."""
+        with self._email_lock:
+            current = self.get(item_id)
+            payload = data.model_dump(exclude_unset=True)
+            updated = Usuario(
+                id=current.id,
+                email=current.email,
+                nome=payload.get("nome", current.nome),
+                loja=payload.get("loja", current.loja),
+                cargo=payload.get("cargo", current.cargo),
+                perfil=current.perfil,
+                status=current.status,
+            )
+            self.repository.replace(item_id, updated)
+            return updated
 
     def delete(self, item_id: str) -> None:
         self.get(item_id)
