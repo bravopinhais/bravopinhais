@@ -125,3 +125,35 @@ O Shadow já possui autorização granular, auditoria e serviços de armazenamen
 - Se os repositórios Shadow de estoque/acertos contêm todos os campos exigidos pelo relatório.
 - Se o valor unitário atual é suficiente para a regra contábil desejada para períodos históricos (é assim que a produção calcula hoje).
 - Quais painéis transversais de Configurações serão implementados primeiro; não criar controles fictícios para recursos ainda ausentes.
+
+## 6. Verificação dos contratos reais do Shadow (2026-11-27)
+
+A leitura dos schemas e adaptadores PostgreSQL confirmou estas diferenças concretas:
+
+### Estoque Shadow hoje
+
+`EstoqueInput` / `EstoqueItem` e `PostgresEstoqueRepository` persistem:
+- item, quantidade, mínimo, máximo, etiqueta;
+- nome/foto gzip;
+- marca, linha, fabricante e data de cadastro.
+
+Ainda não existem no contrato e no mapeamento PostgreSQL:
+- setor do produto;
+- unidade de medida;
+- valor unitário.
+
+Esses três campos são necessários para reproduzir filtros por setor, agregação sem misturar unidades, cobertura/unidade exibida e valores comprados/consumidos. Não devem ser improvisados no frontend nem inferidos do texto do produto.
+
+### Acertos Shadow hoje
+
+O contrato contém tipo limitado a `Entrada` / `Saída`, produtoId, quantidade inteira positiva, motivo e motivoId. A data é gerada pelo serviço e persistida como timestamp/data no PostgreSQL. O histórico é imutável; correções são movimentos compensatórios; saldo e movimento são gravados atomicamente.
+
+O cálculo de produção depende de classificar texto de motivo e tipo, então a migração deve manter compatibilidade de nomes/semântica dos motivos e evitar usar exclusões ou alterações históricas para “corrigir” dados.
+
+### Conclusão de prontidão para Compras x Consumo
+
+**Não implementar ainda o endpoint/tela final do relatório.** O contrato Shadow atual não contém setor, unidade e valor unitário, que alteram os resultados e a interpretação dos indicadores. Primeiro é necessário definir e persistir esses campos em schema e repositório PostgreSQL, com migração apenas no banco descartável Shadow quando autorizada. Depois, criar o serviço de relatório somente leitura que recebe os filtros e consulta Estoque + Acertos.
+
+### Conclusão de prontidão para Configurações
+
+A navegação Shadow ainda não tem a entrada `configuracoes`, e não há módulo/serviço/rota de configurações. A implementação precisa criar uma configuração persistente com versionamento/auditoria, separar preferências locais de preferências administrativas e proteger alterações com capacidade administrativa. Não reutilizar `db.configuracoes` local da produção nem habilitar funcionalidades ainda inexistentes.
