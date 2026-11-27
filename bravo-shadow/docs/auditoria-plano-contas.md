@@ -25,6 +25,10 @@ O original não define limites de tamanho, normalização, formato hierárquico 
 - Exclusão usa o helper genérico `excluirRegistro('plano_contas', id)`, que remove pelo `id` após confirmação e salva o objeto completo.
 - O helper genérico não verifica vínculo financeiro antes de remover a conta.
 
+## Observação técnica sobre unicidade concorrente
+
+A verificação de código duplicado no serviço consulta a coleção antes de inserir/atualizar. Essa pré-verificação melhora a resposta funcional, mas não é uma operação atômica com a gravação e, isoladamente, não garante unicidade sob requisições concorrentes. O adaptador PostgreSQL traduz a violação SQLSTATE `23505` em HTTP 409; a existência de uma constraint/índice único correspondente no schema sombra ainda precisa ser confirmada em uma revisão de DDL isolada, sem aplicar migrações ou conectar dados reais. Até essa confirmação, não considerar a unicidade concorrente garantida no PostgreSQL.
+
 ## Dependência com Financeiro e DRE
 - Os títulos financeiros podem armazenar `planoContaId`.
 - A tela Financeiro procura a conta pelo `id` e exibe “Não vinculada” se não encontrar.
