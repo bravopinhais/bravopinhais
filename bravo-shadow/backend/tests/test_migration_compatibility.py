@@ -69,3 +69,27 @@ def test_explicit_mapping_does_not_guess_source_collection_names():
         "motivos_acerto", "fornecedores", "empregados", "moradores",
         "conselheiros", "plano_contas", "formas_monetarias", "contas_bancarias",
     }))
+
+
+def test_required_field_missing_from_some_records_requires_review():
+    inventory = inspect_source_collections({
+        "fornecedores": [
+            {"id": "1", "cnpj": "texto", "razaoSocial": "Fornecedor A"},
+            {"id": "2", "cnpj": "texto"},
+        ],
+    })
+
+    result = assess_source_compatibility(inventory).assessments[0]
+
+    assert result.status == "review_required"
+    assert result.partially_populated_required == ("razaoSocial",)
+
+
+def test_empty_collection_is_not_misreported_as_missing_schema_fields():
+    inventory = inspect_source_collections({"categorias": []})
+
+    result = assess_source_compatibility(inventory).assessments[0]
+
+    assert result.status == "empty_source_collection"
+    assert result.missing_required == ()
+    assert result.fields == ()
