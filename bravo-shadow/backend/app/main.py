@@ -13,6 +13,8 @@ from app.core.postgres_connection import create_postgres_connection_factory
 from app.core.storage import StorageConfigurationError, build_storage_services
 from app.modules.auth.router import router as auth_router
 from app.modules.dashboard.service import DashboardService
+from app.modules.compras_consumo.service import ComprasConsumoService
+from app.modules.compras_consumo.router import router as compras_consumo_router
 from app.modules.dashboard.router import router as dashboard_router
 from app.modules.contas_bancarias.router import router as contas_bancarias_router
 from app.modules.condominio.router import router as condominio_router
@@ -118,6 +120,10 @@ def create_app(
 
     application.state.storage_backend = selected_backend
     application.state.services = services
+    application.state.compras_consumo_service = ComprasConsumoService(
+        estoque=services.estoque,
+        acertos_estoque=services.acertos_estoque,
+    )
     application.state.dashboard_service = DashboardService(
         formas_monetarias=services.formas_monetarias,
         plano_contas=services.plano_contas,
@@ -131,6 +137,7 @@ def create_app(
 
     application.include_router(auth_router)
     application.include_router(dashboard_router)
+    application.include_router(compras_consumo_router)
     application.include_router(plano_contas_router)
     application.include_router(financeiro_router)
     application.include_router(formas_monetarias_router)
