@@ -53,6 +53,7 @@ class CompatibilityReport:
     assessments: tuple[CollectionAssessment, ...]
     unmapped_source_collections: tuple[str, ...]
     unmapped_target_collections: tuple[str, ...]
+    mapping_conflicts: tuple[str, ...]
 
 
 # These describe current Shadow schemas, not proof of legacy field aliases.
@@ -133,12 +134,21 @@ def assess_source_compatibility(
     The default mapping uses identical collection names. Supply
     source_to_target only after the legacy collection names are confirmed.
     """
-    mapping = dict(source_to_target or {item.name: item.name for item in TARGET_CONTRACTS})
+    mapping = dict(
+        {item.name: item.name for item in TARGET_CONTRACTS}
+        if source_to_target is None else source_to_target
+    )
     target_by_name = {item.name: item for item in TARGET_CONTRACTS}
     source_by_name = {item.name: item for item in inventory.collections}
     assessments: list[CollectionAssessment] = []
     mapped_sources: set[str] = set()
     mapped_targets: set[str] = set()
+    target_sources: dict[str, list[str]] = {}
+    for source_name, target_name in mapping.items():
+        target_sources.setdefault(target_name, []).append(source_name)
+    mapping_conflicts = tuple(sorted(
+        target for target, sources in target_sources.items() if len(sources) > 1
+    ))
 
     for source_name, target_name in sorted(mapping.items()):
         source = source_by_name.get(source_name)
@@ -154,7 +164,10 @@ def assess_source_compatibility(
                 source_collection=source_name,
                 target_collection=target_name,
                 source_records=0,
-                status="empty_source_collection",
+                status=(
+                    "review_required" if target_name in mapping_conflicts
+                    else "empty_source_collection"
+                ),
                 fields=(),
                 missing_required=(),
                 missing_optional=(),
@@ -190,6 +203,7 @@ def assess_source_compatibility(
         has_type_issue = any(item.status != "compatible" for item in field_results)
         status = "review_required" if (
             missing_required or partially_required or has_type_issue or unexpected
+            or target_name in mapping_conflicts
         ) else (
             "compatible_with_optional_gaps"
             if missing_optional or partially_optional else "compatible"
@@ -213,4 +227,5 @@ def assess_source_compatibility(
         assessments=tuple(assessments),
         unmapped_source_collections=tuple(sorted(set(source_by_name) - mapped_sources)),
         unmapped_target_collections=tuple(sorted(set(target_by_name) - mapped_targets)),
+        mapping_conflicts=mapping_conflicts,
     )
