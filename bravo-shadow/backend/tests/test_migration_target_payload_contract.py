@@ -30,13 +30,14 @@ def test_stock_numeric_accepts_three_decimal_places():
 @pytest.mark.parametrize("value", [
     Decimal("1E+13"),
     Decimal("-1E+12"),
+    Decimal("1E+12"),
 ])
 def test_numeric_precision_counts_positive_decimal_exponents(value):
     with pytest.raises(TargetPayloadContractError, match="numeric_precision_or_scale_exceeded"):
         validate_target_payload("financeiro", {"valor": value})
 
 def test_numeric_precision_accepts_maximum_integer_digits_and_exponent_zero():
-    validate_target_payload("financeiro", {"valor": Decimal("1E+12")})
+    validate_target_payload("financeiro", {"valor": Decimal("999999999999.00")})
     validate_target_payload("financeiro", {"valor": Decimal("0E+100")})
 
 def test_finite_float_rejects_integer_outside_float_range():
