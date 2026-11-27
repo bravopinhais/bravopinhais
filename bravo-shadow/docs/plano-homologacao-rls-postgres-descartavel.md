@@ -1218,3 +1218,101 @@ No replay, devolver o resultado original armazenado, não o estado atual possive
 A afirmação anterior de que o schema atual é suficiente vale para o contrato básico da função, mas não para idempotência forte com detecção de payload divergente e retorno do resultado original. Essa garantia exige persistência adicional (coluna ou tabela) ou uma limitação formal do contrato. Recomenda-se não implementar a função até escolher uma dessas opções e revisar a migration correspondente no banco PostgreSQL descartável.
 
 Nenhuma migration, coluna, tabela, função, role, policy ou grant foi criada/aplicada. Nenhum banco foi conectado. Nenhum teste novo foi executado nesta revisão; a análise foi feita sobre arquivos versionados da branch.
+
+## 23. Replay estável, fingerprint semântico e concorrência — 27/11/2026
+
+**Status:** refinamento documental do contrato da seção 22. Não contém DDL executável e não autoriza alteração de schema ou banco.
+
+### 23.1 Correção da composição do fingerprint
+
+A seção 22 incluiu `request_id` entre os campos candidatos do payload canônico. Isso precisa ser refinado para separar identidade da operação de rastreamento HTTP:
+
+- `event_id` é a chave de idempotência estável, criada uma vez para a intenção administrativa e reutilizada em todas as tentativas.
+- O fingerprint representa somente a semântica da operação: versão do contrato, nome/ação fixa, actor subject validado, usuário alvo, perfil solicitado e status solicitado.
+- `request_id` é metadado de rastreamento da primeira tentativa aceita. Pode mudar em uma nova tentativa HTTP e, por isso, **não participa do fingerprint** nem transforma um replay legítimo em conflito.
+- O primeiro `request_id` pode ser preservado junto ao resultado original para auditoria e diagnóstico. Uma tentativa posterior pode ter seu próprio request ID nos logs HTTP, sem reescrever o evento original.
+- O backend deve gerar e conservar o mesmo `event_id` ao repetir uma operação após timeout. Gerar um ID novo em cada retry elimina a proteção de idempotência.
+- O fingerprint deve ser calculado na fronteira confiável, com serialização canônica e versionada. Não aceitar hash fornecido pelo navegador como prova.
+
+Consequência: mesmo `event_id` + mesmo fingerprint semântico = replay; mesmo `event_id` + fingerprint diferente = conflito HTTP 409. Um request ID diferente, isoladamente, não é divergência semântica.
+
+### 23.2 Persistir o resultado original, não reconstruir o estado atual
+
+A resposta de replay não pode ser montada consultando apenas a linha atual de `usuarios`. Exemplo:
+
+1. Evento A altera o usuário para `Admin/Ativo`, versão 8.
+2. Uma operação posterior B altera o mesmo usuário para `Operador/Inativo`, versão 9.
+3. Chega novamente o evento A.
+
+O replay de A deve devolver exatamente o snapshot produzido por A — `Admin/Ativo`, versão 8 e o mesmo `event_id` — com `replayed=true`. Não deve devolver `Operador/Inativo`, versão 9, nem tentar restaurar o estado antigo.
+
+Portanto, o registro idempotente precisa armazenar o resultado confirmado da primeira execução, no mínimo:
+- identificador do usuário alvo;
+- perfil e status resultantes;
+- versão resultante;
+- event_id;
+- timestamp de conclusão da operação;
+- request_id original, apenas como metadado de rastreamento, se necessário.
+
+A resposta original deve ser persistida na mesma transação que atualiza `usuarios` e grava `audit_events`. Assim, não existe resultado idempotente confirmado sem a alteração e a auditoria correspondentes, nem alteração confirmada sem o snapshot que permite replay.
+
+### 23.3 Alternativa preferida: tabela dedicada de idempotência
+
+A recomendação é avaliar uma tabela privada dedicada, em vez de misturar estado de controle de execução com o ledger de auditoria imutável.
+
+Campos conceituais (nomes/tipos ainda não aprovados):
+- `event_id`: chave primária estável;
+- `operation_name` e `contract_version`;
+- `fingerprint` calculado no backend confiável, ou campos semânticos canônicos suficientes para comparação;
+- `actor_subject` e `target_user_id`;
+- `requested_profile` e `requested_status`;
+- `result_profile`, `result_status` e `result_version`;
+- `audit_event_id` e `completed_at`;
+- `original_request_id`, opcional e não usado na comparação semântica.
+
+A tabela deve ter restrições que impeçam estado concluído sem os campos mínimos do resultado. Não armazenar payload completo, e-mail, token Google ou dados pessoais que não sejam necessários para verificar a operação e reproduzir a resposta.
+
+A tabela de idempotência é estado técnico de deduplicação; `audit_events` continua sendo o ledger append-only. As duas gravações pertencem à mesma transação. O identificador do evento deve manter correspondência inequívoca entre os dois registros.
+
+Uma coluna adicional em `audit_events` também poderia guardar fingerprint e snapshot, mas acoplaria controle de replay ao modelo de auditoria. A tabela dedicada é preferível para manter responsabilidades separadas e permitir política de acesso/retention própria.
+
+### 23.4 Reserva da chave e chamadas concorrentes
+
+A implementação futura deve evitar a sequência vulnerável “atualiza usuário e só depois descobre que o event_id já existe”. A ordem conceitual recomendada é:
+
+1. Validar o principal e os argumentos; construir o fingerprint semântico.
+2. Tentar reservar `event_id` na tabela idempotente dentro da transação, usando a constraint UNIQUE/PRIMARY KEY como árbitro da concorrência.
+3. Se a reserva for obtida, executar a validação do alvo e do último Admin, atualizar usuário, gravar auditoria e completar o snapshot idempotente antes do commit.
+4. Se a reserva não for obtida porque outra transação confirmou a mesma chave, ler o registro confirmado e comparar o fingerprint. Igual: devolver o snapshot original como replay. Diferente: conflito sem mutação.
+5. Se a transação vencedora falhar e fizer rollback, a reserva também desaparece; uma tentativa concorrente pode então assumir a chave e executar a operação.
+6. Se a gravação da auditoria ou do snapshot falhar, reverter reserva, alteração de usuário e evento como uma unidade.
+
+No PostgreSQL, a constraint única faz a tentativa concorrente aguardar a transação que reservou a mesma chave. Depois da colisão, a função precisa fazer uma leitura em comando/snapshot que consiga enxergar o registro confirmado e comparar o fingerprint. O desenho deve declarar o nível de isolamento esperado (preferencialmente READ COMMITTED para esse fluxo) e tratar explicitamente serialization failure/deadlock com retry seguro. Não capturar qualquer `unique_violation` e presumir replay.
+
+A reserva provisória não deve ficar visível como operação concluída: a linha só se torna observável depois do commit, já com snapshot completo. Uma falha anterior ao commit reverte a reserva. Se o desenho precisar de estados internos, eles devem ser protegidos por constraints e não permitir que uma linha incompleta seja interpretada como resultado replayável.
+
+### 23.5 Retenção e expiração da chave
+
+Excluir o registro idempotente reabre a possibilidade de uma repetição antiga executar novamente a alteração. Para operações administrativas, a recomendação inicial é manter a chave e o snapshot pelo mesmo horizonte de retenção da auditoria, preferencialmente sem expiração automática.
+
+Se houver requisito formal de retenção limitada, não apagar simplesmente a chave ao vencer o prazo. Manter um tombstone mínimo que impeça reexecução e responda que a chave expirou/não pode ser repetida, sem reconstruir nem executar a operação. A janela de retry e o comportamento de chave expirada precisam fazer parte do contrato HTTP.
+
+### 23.6 Matriz de testes atualizada
+
+- Replay sequencial idêntico com o mesmo event_id e request_id diferente: replay do snapshot original, sem UPDATE, incremento de versão ou novo evento.
+- Reutilização do mesmo event_id com actor, alvo, ação, perfil ou status divergente: conflito 409, sem mutação.
+- Operação posterior altera o mesmo usuário; replay antigo continua retornando o snapshot e a versão originais.
+- Duas sessões concorrentes com mesma chave e mesmo fingerprint: uma execução efetiva e um replay do resultado confirmado.
+- Duas sessões concorrentes com mesma chave e fingerprints diferentes: uma execução efetiva e um conflito.
+- A transação que reservou a chave falha antes do commit: reserva, usuário, auditoria e snapshot sofrem rollback; outra tentativa pode executar.
+- Falha na auditoria ou no snapshot: rollback integral.
+- Retry depois de timeout pós-commit: resultado original recuperado, sem segunda alteração.
+- Chave antiga retida/tombstone não pode ser reutilizada para executar uma nova operação.
+- Replay não depende do estado atual de `usuarios` e não grava um segundo evento de sucesso.
+
+### 23.7 Decisão e estado
+
+Ajuste da seção 22: `request_id` não integra o fingerprint semântico; `event_id` permanece estável entre tentativas. O resultado original deve ser persistido, não reconstruído do cadastro atual. A tabela dedicada é a alternativa preferida para avaliação, ainda sujeita à revisão de schema, segurança, retention e contrato HTTP.
+
+Nenhuma tabela/coluna, função, role, policy, grant ou migration foi criada. Nenhum SQL foi executado e nenhum banco foi conectado ou alterado. Esta etapa é exclusivamente documental.
+
