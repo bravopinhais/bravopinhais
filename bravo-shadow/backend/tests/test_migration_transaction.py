@@ -81,7 +81,7 @@ def setup(store=None, connection=None):
         "batch-1", "execution-1", "legacy", "estoque", "0007", RECORD,
         "sha256-json-v1", "estoque", {"item": "caneta"}, "0007", MANIFEST, PLAN,
     )
-    permit = MigrationApplyAuthorization(MANIFEST, PLAN, "shadow_local", "migration_apply", True)
+    permit = MigrationApplyAuthorization(MANIFEST, PLAN, "local_disposable", "migration_apply", True)
     return conn, repo, command, permit
 
 

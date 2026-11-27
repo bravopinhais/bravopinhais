@@ -109,11 +109,11 @@ def _validate(
     if command.plan_sha256 != authorization.plan_sha256:
         raise MigrationApplyBlocked("autorização não corresponde ao plano.")
     if (
-        authorization.environment != "shadow_local"
+        authorization.environment != "local_disposable"
         or authorization.scope != "migration_apply"
         or authorization.writes_authorized is not True
     ):
-        raise MigrationApplyBlocked("aplicação exige autorização explícita e restrita ao Shadow local.")
+        raise MigrationApplyBlocked("aplicação exige autorização explícita e restrita ao ambiente descartável local.")
     if not isinstance(command.target_payload, dict):
         raise ValueError("payload de destino deve ser objeto.")
 
