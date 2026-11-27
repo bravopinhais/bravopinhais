@@ -206,6 +206,36 @@ function fornecedoresView(){
   </ul>
  </section>`;
 }
+function acertoEstoqueView(){
+ const view=document.getElementById("view");
+ view.innerHTML=`<section class="panel">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Novo Acerto de Estoque</strong><div class="api-status" id="ace-status" role="status" aria-live="polite">Aguardando autenticação Google e API HTTPS Shadow</div></div><span class="tag">Movimentação de saldo</span></div>
+  <div class="notice" style="margin:14px 0 18px"><div class="notice-icon">↕</div><div><strong>Movimentos permanentes e rastreáveis</strong><p>Entrada soma ao saldo; saída subtrai. Saídas acima do saldo são recusadas. Correções posteriores devem ser feitas por movimento compensatório, sem apagar o histórico.</p></div></div>
+  <form class="api-form" id="ace-form" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+   <div class="field"><label for="ace-tipo">Tipo de movimento</label><select id="ace-tipo" name="tipo" disabled><option>Saída</option><option>Entrada</option></select></div>
+   <div class="field"><label for="ace-produto">Produto</label><select id="ace-produto" name="produtoId" required disabled><option value="">Aguardando catálogo de estoque</option></select></div>
+   <div class="field"><label for="ace-qtd">Quantidade</label><input id="ace-qtd" name="quantidade" type="number" min="0.001" step="0.001" required disabled></div>
+   <div class="field"><label for="ace-motivo">Motivo</label><select id="ace-motivo" name="motivoId" required disabled><option value="">Aguardando catálogo de motivos</option></select></div>
+   <div style="grid-column:1/-1;display:flex;justify-content:flex-end"><button type="button" class="action-btn primary" disabled>Registrar movimento</button></div>
+  </form>
+  <p class="form-hint">A API registra data/hora automaticamente. Quantidade positiva com até três casas decimais. O motivo é vinculado ao catálogo quando houver motivoId.</p>
+ </section>
+ <section class="panel" style="margin-top:16px">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Histórico de Acertos de Estoque</strong><div class="api-status">Consulta autenticada pendente</div></div><span class="tag">Histórico</span></div>
+  <div class="data-table-wrap"><table class="data-table"><caption>Movimentações registradas</caption><thead><tr><th scope="col">Data / Hora</th><th scope="col">Tipo</th><th scope="col">Produto</th><th scope="col">Quantidade</th><th scope="col">Motivo</th><th scope="col">Ações</th></tr></thead><tbody id="ace-rows"><tr><td colspan="6" class="empty-state">Aguardando consulta autenticada. Nenhuma movimentação fictícia será exibida.</td></tr></tbody></table></div>
+ </section>
+ <section class="panel" style="margin-top:16px">
+  <div class="section-head" style="margin-top:0"><h2>Integridade e permissões</h2><span>Regras Shadow</span></div>
+  <ul style="margin:0;padding-left:18px;color:var(--soft);font-size:12px;line-height:1.9">
+   <li>POST /api/v1/acertos-estoque grava o movimento e atualiza o saldo em uma transação no PostgreSQL, com bloqueio da linha do produto.</li>
+   <li>Saída superior ao saldo disponível retorna conflito HTTP 409; não há permissão para saldo negativo.</li>
+   <li>Movimentações são imutáveis: não existe rota de edição ou exclusão. Corrigir por movimento compensatório.</li>
+   <li>Motivo pode ser validado pelo identificador do catálogo; o nome fica registrado no movimento.</li>
+   <li>Admin e Operador possuem leitura e criação no catálogo de capacidades atual.</li>
+   <li>Scanner, aprovação de movimentos, anexos/evidências e filtros/paginação ainda não estão integrados.</li>
+  </ul>
+ </section>`;
+}
 function estoqueView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
@@ -657,6 +687,7 @@ function openModule(id){
  if(id==="fornecedores"){location.hash=id;fornecedoresView();return}
  if(id==="empregados"){location.hash=id;empregadosView();return}
  if(id==="estoque"){location.hash=id;estoqueView();return}
+ if(id==="acerto_estoque"){location.hash=id;acertoEstoqueView();return}
   if(id==="plano_contas"){location.hash=id;planoContasView();return}
   if(id==="financeiro"){location.hash=id;financeiroView();return}
  if(id==="contas_bancarias"){location.hash=id;contasBancariasView();return}
