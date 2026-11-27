@@ -178,3 +178,22 @@ def test_audit_sink_failure_does_not_expose_original_exception(monkeypatch):
     assert response.status_code == 500
     assert response.json()["detail"] == "Erro interno do servidor."
     assert "sensitive database detail" not in response.text
+
+
+def test_dependency_rejects_missing_or_malformed_principal_without_audit_crash():
+    application = FastAPI()
+    sink = RecordingAuditSink()
+    application.state.services = SimpleNamespace(audit_sink=sink)
+    application.dependency_overrides[get_current_principal] = lambda: None
+
+    @application.get(
+        "/protected-none",
+        dependencies=[Depends(require_capability_dependency("financeiro:read"))],
+    )
+    async def protected_none():
+        return {"ok": True}
+
+    response = TestClient(application).get("/protected-none")
+    assert response.status_code == 403
+    assert sink.events == []
+
