@@ -60,3 +60,24 @@ def test_sink_rejects_non_audit_objects():
     sink = InMemoryAuditSink()
     with pytest.raises(TypeError, match="AuditEvent"):
         sink.append({"action": "financeiro:create"})
+
+def test_audit_event_schema_contains_only_explicit_minimal_fields():
+    from dataclasses import fields
+
+    assert {item.name for item in fields(AuditEvent)} == {
+        "actor_subject",
+        "action",
+        "entity_type",
+        "entity_id",
+        "outcome",
+        "request_id",
+        "event_id",
+        "occurred_at",
+    }
+
+
+def test_audit_event_does_not_accept_unreviewed_payload_fields():
+    with pytest.raises(TypeError):
+        make_event(email="person@example.com")
+    with pytest.raises(TypeError):
+        make_event(metadata={"token": "must-not-be-stored"})
