@@ -77,8 +77,8 @@ de tabela/schema para `anon`, `authenticated` ou `service_role`, ausência de
 FORCE RLS na auditoria, triggers append-only ausentes/desabilitados,
 constraints que impedem autorização de escrita na aprovação pré-importação,
 as 13 FKs críticas, 15 índices únicos, 31 índices de consulta, 59 CHECKs
-nomeados, 25 campos NOT NULL críticos e 10 DEFAULTs críticos ausentes,
-inválidos, divergentes ou ainda não prontos para uso.
+nomeados, 25 campos NOT NULL críticos, 10 DEFAULTs críticos e 26 tipos/
+precisões de colunas ausentes, inválidos ou divergentes.
 
 A auditoria é uma verificação de catálogo direcionada às 27 tabelas, 13 FKs,
 15 índices únicos e 31 índices de consulta definidos nas migrations atuais.
@@ -88,9 +88,12 @@ Para índices de consulta, confirma existência, `indisvalid` e `indisready`,
 além de vínculo a uma tabela esperada do schema. Também verifica os 59 CHECKs
 nomeados e validados, 25 campos críticos com `NOT NULL` e 10 expressões
 `DEFAULT` críticas. Os CHECKs inline sem nome explícito e os demais campos
-NOT NULL/DEFAULT ainda exigem conferência complementar; a auditoria não
-substitui revisão manual de planos de consulta, tipos, triggers ou comportamento
-da aplicação.
+NOT NULL/DEFAULT ainda exigem conferência complementar. A checagem de
+tipos cobre os campos numéricos, datas e timestamps críticos, incluindo
+`numeric(14,2)`, `numeric(14,3)`, `double precision`, `date` e
+`timestamp with time zone`; não é uma comparação integral de todas as colunas.
+A auditoria não substitui revisão manual de planos de consulta, triggers ou
+comportamento da aplicação.
 
 Depois da execução, ainda será necessário revisar FKs, índices, constraints,
 triggers e resultados de cada migration, registrar falhas e corrigir os
