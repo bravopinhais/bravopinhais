@@ -21,6 +21,12 @@ DATABASE_URL = os.getenv("BRAVO_SHADOW_TEST_DATABASE_URL")
 
 
 def _guard_test_database(url: str) -> None:
+    if os.getenv("BRAVO_SHADOW_ALLOW_DESTRUCTIVE_TEST_DATABASE") != "1":
+        raise RuntimeError(
+            "Integração destrutiva bloqueada: defina "
+            "BRAVO_SHADOW_ALLOW_DESTRUCTIVE_TEST_DATABASE=1 apenas para "
+            "o banco descartável dedicado."
+        )
     parsed = urlparse(url)
     if parsed.scheme not in {"postgres", "postgresql"}:
         raise RuntimeError("A URL de integração precisa usar PostgreSQL.")
