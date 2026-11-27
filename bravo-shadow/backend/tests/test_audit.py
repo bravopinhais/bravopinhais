@@ -99,3 +99,21 @@ def test_audit_event_rejects_invalid_event_id(event_id):
 def test_audit_event_rejects_non_datetime_timestamp(occurred_at):
     with pytest.raises(ValueError, match="data/hora válida"):
         make_event(occurred_at=occurred_at)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("actor_subject", None),
+        ("actor_subject", 123),
+        ("action", []),
+        ("entity_type", {}),
+        ("entity_id", 123),
+        ("request_id", []),
+        ("outcome", []),
+        ("outcome", {}),
+    ],
+)
+def test_audit_event_rejects_malformed_field_types(field, value):
+    with pytest.raises(ValueError):
+        make_event(**{field: value})
