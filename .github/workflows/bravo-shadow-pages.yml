@@ -59,6 +59,7 @@ jobs:
           grep -q 'const listaAtualizada=await carregarFormas()' _site/index.html
           grep -q 'const edicaoPerdida=Boolean(formaEmEdicao&&!formasMonetarias.some(item=>item.id===formaEmEdicao))' _site/index.html
           grep -q 'A forma que estava em edição não existe mais na lista. A edição foi cancelada.' _site/index.html
+          grep -q 'Editando forma monetária: ' _site/index.html
           grep -q 'Registro salvo, mas a lista não foi atualizada. Use Atualizar para tentar novamente.' _site/index.html
           grep -q 'tabindex="-1"' _site/index.html
           grep -q 'Exclusão concluída, mas a lista não foi atualizada. Use Atualizar para tentar novamente.' _site/index.html
