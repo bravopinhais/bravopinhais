@@ -312,3 +312,21 @@ O legado aceita CSV/TXT e procura cabeçalhos equivalentes a bloco, apartamento/
 Não habilitar a importação antes de adicionar prévia, validação, deduplicação, limites de lote, resultado por linha e garantia transacional. A API também lista toda a coleção antes de aplicar filtros e não expõe paginação. Não há unicidade relacional de unidade nem histórico de exclusão demonstrados no contrato atual.
 
 CPF/RG e contatos são dados pessoais. Não utilizar dados reais em homologação; limitar acesso, logs e exportações conforme a política do condomínio.
+
+
+## Fornecedores
+
+A tela Shadow apresenta cadastro, pesquisa e tabela de fornecedores com os dois campos identificados no legado: CNPJ e Razão Social. Campos e ações ficam desabilitados até integração da sessão Google/Bearer com API HTTPS isolada. Não há dados fictícios nem chamadas automáticas.
+
+### Contrato da API
+
+- `GET /api/v1/fornecedores` — `fornecedores:read`.
+- `POST /api/v1/fornecedores` — `fornecedores:create`.
+- `PUT /api/v1/fornecedores/{id}` — `fornecedores:update`.
+- `DELETE /api/v1/fornecedores/{id}` — `fornecedores:delete`.
+
+Campos obrigatórios: `cnpj` e `razaoSocial`. O schema remove espaços nas extremidades e recusa campos extras. Admin e Operador possuem CRUD no catálogo de permissões atual.
+
+### Limites que impedem ativação imediata
+
+O serviço atual não valida CNPJ nem detecta duplicidade. O repositório PostgreSQL não evidencia índice único por CNPJ. A exclusão é física e não há verificação de vínculos com compras ou outros registros. Embora o adapter incremente uma versão interna em atualizações, o router não exige If-Match/ETag. O contrato não contém contato, endereço, inscrição estadual ou dados bancários; não presumir esses campos sem confirmar o legado.
