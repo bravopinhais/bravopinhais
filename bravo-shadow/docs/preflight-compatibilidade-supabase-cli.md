@@ -58,9 +58,32 @@ e a compatibilidade operacional permanece não verificada. O script foi
 preparado para executar a etapa assim que houver um terminal com Docker e
 Supabase CLI instalados; sua criação não significa que a homologação passou.
 
-Depois da execução, ainda será necessário inspecionar schema, RLS, constraints,
-triggers, índices, FKs e resultados de cada migration, registrar falhas e
-corrigir os arquivos. Os testes automatizados não foram executados.
+### Auditoria read-only do catálogo
+
+Foi adicionado `scripts/validar-catalogo-local.sql`. Depois que o reset local
+terminar, obtenha a URL do banco local pelo comando `supabase status` e execute
+o arquivo com o cliente PostgreSQL, usando somente a URL local exibida pela
+stack local:
+
+```bash
+psql "$LOCAL_DB_URL" -v ON_ERROR_STOP=1 -f scripts/validar-catalogo-local.sql
+```
+
+`LOCAL_DB_URL` deve ser definida manualmente com a URL local apresentada por
+`supabase status`; não use URL de projeto hospedado. O SQL não consulta linhas
+de negócio nem altera dados ou schema. Ele interrompe com erro se encontrar:
+tabelas esperadas ausentes, RLS desabilitado, policies inesperadas, privilégios
+de tabela/schema para `anon`, `authenticated` ou `service_role`, ausência de
+FORCE RLS na auditoria, triggers append-only ausentes/desabilitados ou
+constraints que impedem autorização de escrita na aprovação pré-importação.
+
+A auditoria é uma verificação de catálogo direcionada aos 27 objetos/tabelas
+definidos nas migrations atuais; não substitui revisão manual de cada FK,
+índice, tipo, trigger ou comportamento da aplicação.
+
+Depois da execução, ainda será necessário revisar FKs, índices, constraints,
+triggers e resultados de cada migration, registrar falhas e corrigir os
+arquivos. Os testes automatizados não foram executados.
 
 ## Proibições permanentes deste fluxo
 
