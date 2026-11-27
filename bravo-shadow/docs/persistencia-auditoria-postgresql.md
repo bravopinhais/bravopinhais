@@ -102,3 +102,8 @@ Foram adicionados testes para formato, unicidade entre requisições e rejeiçã
 O endpoint de desativação lógica agora encaminha `request.state.request_id` ao serviço; o serviço o inclui em `AuditEvent.request_id`. O identificador vem exclusivamente do middleware server-side. Foi atualizado o teste unitário do serviço para conferir a presença do valor no evento.
 
 Essa ligação cobre somente o fluxo de desativação lógica. A alteração administrativa de perfil/status ainda não tem rota e não foi conectada. A capacidade `usuarios:deactivate` continua sem concessão na matriz; portanto, o endpoint permanece bloqueado para Admin e Operador. A integração não ativa permissões nem conecta o sink PostgreSQL.
+
+
+## Identidade do ator na desativação lógica
+
+A rota entrega ao serviço o objeto `AuthenticatedPrincipal` retornado pela dependência de autenticação Google. O serviço não recebe mais `actor_subject` e `actor_email` como campos independentes: valida o tipo, o subject, o e-mail e o status ativo do principal, e grava no evento de auditoria o subject desse mesmo objeto. A comparação de auto-desativação continua usando o e-mail verificado, pois o vínculo persistente por Google `sub` ainda não foi implementado. Essa alteração reforça o contrato interno, mas não cria vínculo durável de identidade nem habilita a capacidade `usuarios:deactivate`.
