@@ -560,7 +560,7 @@ window.addEventListener("bravo:session-ended",()=>{
  empregadosApiClient=null;empregadosItems=[];empregadosRequestSequence++;empregadosRequestController?.abort();empregadosRequestController=null;empregadoEditingId=null;
  if(moduloAtual==="empregados")empregadosView();
 });
-let moradoresApiClient=null,moradoresItems=[],moradoresRequestSequence=0,moradoresRequestController=null,moradorEditingId=null;
+let moradoresApiClient=null,moradoresItems=[],moradoresRequestSequence=0,moradoresRequestController=null,moradoresDetailSequence=0,moradorEditingId=null;
 function moradoresCan(action){return hasBravoCapability("moradores:"+action);}
 function moradoresSetStatus(message,kind=""){const node=document.getElementById("mor-status");if(node){node.textContent=message;node.className="api-status"+(kind?" "+kind:"");}}
 function moradoresApplyPermissions(){
@@ -600,9 +600,11 @@ async function moradoresLoad(api){
 }
 async function moradoresStartEdit(id){
  if(!moradoresCan("update")||!moradoresApiClient)return;
+ const detailSequence=++moradoresDetailSequence;
  moradoresSetStatus("Carregando detalhes do cadastro…");
  try{
   const item=await moradoresApiClient.get("/api/v1/moradores/"+encodeURIComponent(id));
+  if(detailSequence!==moradoresDetailSequence||moduloAtual!=="moradores")return;
   if(!item||item.id!==id)throw new Error("A API retornou um cadastro inválido.");
   moradorEditingId=id;
   for(const key of ["bloco","apartamento","nome","email","telefone","cpf","petNome","vagaGaragem"]){const input=document.querySelector('[name="mor-'+key+'"]');if(input)input.value=item[key]||"";}
@@ -686,7 +688,7 @@ window.addEventListener("bravo:session-ready",event=>{
  if(moduloAtual==="moradores")void moradoresLoad(api);moradoresApplyPermissions();
 });
 window.addEventListener("bravo:session-ended",()=>{
- moradoresApiClient=null;moradoresItems=[];moradoresRequestSequence++;moradoresRequestController?.abort();moradoresRequestController=null;moradorEditingId=null;
+ moradoresApiClient=null;moradoresItems=[];moradoresRequestSequence++;moradoresDetailSequence++;moradoresRequestController?.abort();moradoresRequestController=null;moradorEditingId=null;
  if(moduloAtual==="moradores")moradoresView();
 });
 function planoContasView(){
