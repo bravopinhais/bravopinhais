@@ -162,3 +162,17 @@ def test_monthly_average_uses_full_period_not_only_displayed_twelve_months():
     assert len(report.evolucaoMensal) == 12
     assert report.evolucaoMensal[0].mes == "2025-12"
     assert report.evolucaoMensal[-1].mes == "2026-11"
+
+
+def test_monthly_average_with_only_start_date_uses_all_observed_months():
+    report = service(
+        [product()],
+        [
+            movement("Saída", "12.000", "Consumo", data="2026-11-05"),
+            movement("Saída", "12.000", "Consumo", data="2025-12-05"),
+        ],
+    ).report(data_inicio=date(2024, 12, 1))
+
+    row = report.produtos[0]
+    assert row.mediaMensal == Decimal("1")
+    assert len(report.evolucaoMensal) == 12
