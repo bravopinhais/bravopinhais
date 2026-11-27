@@ -1404,7 +1404,7 @@ function usuariosStatus(message,kind=""){const node=document.getElementById("usr
 function usuariosApplyPermissions(){
  const read=usuariosCan("read"),create=usuariosCan("create"),update=usuariosCan("update"),deactivate=usuariosCan("deactivate");
  const form=document.getElementById("usr-form");
- if(form)form.querySelectorAll("input").forEach(input=>{input.disabled=usuariosSaving||(!usuarioEditingId?!create:!update)||(!usuarioEditingId&&input.name==="email"&&!create);});
+ if(form)form.querySelectorAll("input").forEach(input=>{input.disabled=usuariosSaving||(!usuarioEditingId?!create:!update)||(input.name==="usr-email"&&Boolean(usuarioEditingId));});
  const save=document.getElementById("usr-save");if(save)save.disabled=usuariosSaving||(!usuarioEditingId?!create:!update);
  const refresh=document.getElementById("usr-refresh");if(refresh)refresh.disabled=!read||!usuariosApiClient||usuariosSaving;
  const search=document.getElementById("usr-search");if(search)search.disabled=!read;
