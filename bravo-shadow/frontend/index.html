@@ -272,24 +272,62 @@ async function councilSave(event){
   councilStatus(error?.status===403?"Seu perfil não possui autorização para esta operação.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível salvar o integrante."),"err");
  }finally{councilApplyPermissions();}
 }
-window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function")return;councilApiClient=api;if(moduloAtual==="condominio")void councilLoad(api);});
-window.addEventListener("bravo:session-ended",()=>{councilApiClient=null;councilRequestSequence+=1;councilRequestController?.abort();councilRequestController=null;councilItems=[];councilEditingId=null;if(moduloAtual==="condominio")condominioView();});
+window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function")return;councilApiClient=api;condominioApiClient=api;if(moduloAtual==="condominio"){void councilLoad(api);void condominioLoad(api);}});
+window.addEventListener("bravo:session-ended",()=>{councilApiClient=null;councilRequestSequence+=1;councilRequestController?.abort();councilRequestController=null;councilItems=[];councilEditingId=null;condominioApiClient=null;condominioRequestSequence+=1;condominioRequestController?.abort();condominioRequestController=null;condominioRecord=null;if(moduloAtual==="condominio")condominioView();});
 
+let condominioApiClient=null,condominioRequestSequence=0,condominioRequestController=null,condominioRecord=null;
+const condominioFields=[["nome","Nome do condomínio"],["cnpj","CNPJ"],["razaoSocial","Razão social"],["endereco","Endereço"],["bairro","Bairro"],["cidade","Cidade"],["uf","UF"],["cep","CEP"],["telefone","Telefone"],["email","E-mail"],["copelBloco1","Copel — Bloco 1"],["copelBloco2","Copel — Bloco 2"],["copelBloco3","Copel — Bloco 3"],["copelBloco4","Copel — Bloco 4"],["copelAreasComuns","Copel — Áreas comuns"],["gasSalao","Gás — Salão"],["sanepar","Sanepar — Água"]];
+function condominioCan(action){return hasBravoCapability("condominio:"+action);}
+function condominioStatus(message,kind=""){const node=document.getElementById("cond-status");if(node){node.textContent=message;node.className="api-status"+(kind?" "+kind:"");}}
+function condominioApplyPermissions(){
+ const form=document.getElementById("cond-form");if(!form)return;
+ const canWrite=condominioCan("update");
+ form.querySelectorAll("input").forEach(input=>{input.disabled=!canWrite;});
+ const save=document.getElementById("cond-save");if(save)save.disabled=!canWrite;
+}
+function condominioRenderFields(data){
+ for(const [key] of condominioFields){const input=document.getElementById("cond-"+key);if(input)input.value=typeof data?.[key]==="string"?data[key]:"";}
+}
+async function condominioLoad(api){
+ const sequence=++condominioRequestSequence;condominioRequestController?.abort();condominioRequestController=new AbortController();
+ condominioStatus("Consultando cadastro institucional autorizado…");
+ try{
+  const data=await api.get("/api/v1/condominio",{signal:condominioRequestController.signal});
+  if(sequence!==condominioRequestSequence||moduloAtual!=="condominio")return;
+  if(!data||typeof data!=="object"||Array.isArray(data)||condominioFields.some(([key])=>data[key]!==undefined&&data[key]!==null&&typeof data[key]!=="string"))throw new Error("A API retornou dados institucionais inválidos.");
+  condominioRecord=data;condominioRenderFields(data);condominioStatus("Dados institucionais carregados · consulta autorizada","ok");
+ }catch(error){
+  if(error?.name==="AbortError"||sequence!==condominioRequestSequence)return;
+  condominioRecord=null;condominioRenderFields({});
+  condominioStatus(error?.status===403?"Seu perfil não possui condominio:read.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível consultar o condomínio."),"err");
+ }finally{condominioApplyPermissions();}
+}
+async function condominioSave(event){
+ event.preventDefault();if(!condominioApiClient)return;
+ if(!condominioCan("update")){condominioStatus("Seu perfil não possui autorização para atualizar o condomínio.","err");return;}
+ const data=Object.fromEntries(condominioFields.map(([key])=>[key,document.getElementById("cond-"+key)?.value.trim()||""]));
+ const save=document.getElementById("cond-save");if(save)save.disabled=true;
+ condominioStatus("Salvando dados institucionais…");
+ try{
+  const updated=await condominioApiClient.put("/api/v1/condominio",data);
+  if(moduloAtual!=="condominio")return;
+  if(!updated||typeof updated!=="object"||Array.isArray(updated)||condominioFields.some(([key])=>updated[key]!==undefined&&updated[key]!==null&&typeof updated[key]!=="string"))throw new Error("A API retornou dados atualizados inválidos.");
+  condominioRecord=updated;condominioRenderFields(updated);condominioStatus("Cadastro institucional atualizado com sucesso.","ok");
+ }catch(error){
+  condominioStatus(error?.status===403?"A API negou a operação: permissão insuficiente.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível salvar o condomínio."),"err");
+ }finally{condominioApplyPermissions();}
+}
 function condominioView(){
  const view=document.getElementById("view");
- const fields=[
-  ["nome","Nome do condomínio"],["cnpj","CNPJ"],["razaoSocial","Razão social"],["endereco","Endereço"],["bairro","Bairro"],["cidade","Cidade"],["uf","UF"],["cep","CEP"],["telefone","Telefone"],["email","E-mail"],
-  ["copelBloco1","Copel — Bloco 1"],["copelBloco2","Copel — Bloco 2"],["copelBloco3","Copel — Bloco 3"],["copelBloco4","Copel — Bloco 4"],["copelAreasComuns","Copel — Áreas comuns"],["gasSalao","Gás — Salão"],["sanepar","Sanepar — Água"]
- ];
- const fieldMarkup=fields.map(([key,label])=>`<div class="field"><label for="cond-${key}">${label}</label><input id="cond-${key}" name="${key}" maxlength="200" disabled></div>`).join("");
+ const fieldMarkup=condominioFields.map(([key,label])=>`<div class="field"><label for="cond-${key}">${label}</label><input id="cond-${key}" name="${key}" maxlength="200" disabled></div>`).join("");
  view.innerHTML=`<section class="panel">
   <div class="api-toolbar"><div><strong style="font-size:13px">Dados institucionais do condomínio</strong><div class="api-status" id="cond-status" role="status" aria-live="polite">Aguardando autenticação Google e API HTTPS Shadow</div></div><span class="tag">Cadastro institucional</span></div>
   <div class="notice" style="margin:14px 0 18px"><div class="notice-icon">⌂</div><div><strong>Identificação e concessionárias</strong><p>Dados cadastrais, contato, endereço e números de instalação/matrícula de energia, gás e água. Os valores não serão preenchidos com exemplos nem recuperados do sistema de produção.</p></div></div>
   <form class="api-form" id="cond-form" style="grid-template-columns:repeat(2,minmax(0,1fr))">
    ${fieldMarkup}
-   <div style="grid-column:1/-1;display:flex;justify-content:flex-end"><button type="button" class="action-btn primary" disabled>Salvar alterações</button></div>
+   <div style="grid-column:1/-1;display:flex;justify-content:flex-end"><button id="cond-save" type="submit" class="action-btn primary" disabled>Salvar alterações</button></div>
   </form>
-  <p class="form-hint">O contrato possui GET e PUT para o registro único do condomínio. A gravação permanece bloqueada até integração da sessão Google com envio do ID token como Bearer.</p>
+  <p class="form-hint">A consulta e a atualização usam a sessão Google/Bearer e as capacidades independentes condominio:read e condominio:update. Nenhum dado é preenchido por exemplo.</p>
  </section>
  <section class="panel" style="margin-top:16px">
   <div class="api-toolbar"><div><strong style="font-size:13px">Corpo diretivo / Conselho</strong><div class="api-status" id="council-status" role="status" aria-live="polite">Aguardando consulta autorizada</div></div><span class="tag">Composição do conselho</span></div>
@@ -313,10 +351,12 @@ function condominioView(){
    <li>Não há validação formal de CNPJ, CEP ou telefone no schema atual; não adicionar regras que alterem dados legados sem homologação.</li>
   </ul>
  </section>`;
+ const condForm=document.getElementById("cond-form");if(condForm)condForm.addEventListener("submit",condominioSave);
  const councilForm=document.getElementById("council-form");if(councilForm)councilForm.addEventListener("submit",councilSave);
  document.getElementById("council-cancel")?.addEventListener("click",()=>{councilResetForm();councilStatus("Edição cancelada.");});
  document.getElementById("council-search")?.addEventListener("input",councilRenderRows);
- councilApplyPermissions();
+ condominioApplyPermissions();councilApplyPermissions();
+ if(condominioApiClient)void condominioLoad(condominioApiClient);
  if(councilApiClient)void councilLoad(councilApiClient);
 }
 let fornecedoresApiClient=null,fornecedoresItems=[],fornecedoresRequestSequence=0,fornecedoresRequestController=null,fornecedorEditingId=null;
