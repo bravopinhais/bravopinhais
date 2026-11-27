@@ -41,7 +41,7 @@ No Windows, ative o ambiente com `.venv\\Scripts\\activate`.
 | Motivos de acerto | `GET/POST /api/v1/motivos-acerto-estoque`, `DELETE /api/v1/motivos-acerto-estoque/{id}` |
 | Usuários / Perfis | `GET/POST /api/v1/usuarios`, `GET/PUT/DELETE /api/v1/usuarios/{id}` |
 
-Os quinze módulos usam armazenamento temporário em memória por padrão. Plano de Contas, Financeiro e Formas Monetárias recebem serviços/repositórios próprios por instância FastAPI; o verificador de exclusão do Plano de Contas consulta os títulos financeiros da mesma instância. As demais rotas ainda usam serviços em memória no escopo atual.
+Os quinze módulos usam armazenamento temporário em memória por padrão. Quando `BRAVO_STORAGE_BACKEND=postgres` é selecionado explicitamente, `build_storage_services()` também constrói os adaptadores PostgreSQL para os módulos de Plano de Contas, Financeiro, Formas Monetárias, Contas Bancárias, Fornecedores, Empregados, Condomínio, Conselheiros, Moradores, Categorias, Motivos de Acerto, Estoque, Acertos de Estoque, Documentos e Usuários, além do sink de auditoria. A seleção do backend não significa que o banco esteja pronto ou autorizado para uso com dados reais.
 
 ## Identidade e segurança
 
@@ -113,11 +113,11 @@ As rotas POST devolvem a versão no corpo e um ETag forte no cabeçalho de respo
 
 ## Seleção explícita do armazenamento
 
-A aplicação é criada por `create_app()`. O padrão é `BRAVO_STORAGE_BACKEND=memory`; nesse modo, Plano de Contas e Financeiro usam repositórios temporários em memória, como os demais módulos.
+A aplicação é criada por `create_app()`. O padrão é `BRAVO_STORAGE_BACKEND=memory`; nesse modo, todos os módulos usam repositórios temporários em memória.
 
 A infraestrutura aceita `create_app(storage_backend="postgres", postgres_connection_factory=...)`. Se a fábrica não for injetada, a aplicação monta uma fábrica Psycopg 3 a partir de `BRAVO_DATABASE_URL`; a variável é obrigatória nesse modo. O driver é importado somente quando PostgreSQL é selecionado. A fábrica não abre conexão no startup: cada operação do repositório abre e fecha sua própria conexão/transação. Sem URL ou driver, a inicialização falha explicitamente e não há fallback para memória.
 
-**Escopo atual:** Plano de Contas, Financeiro e Formas Monetárias têm adaptadores PostgreSQL. Os outros módulos continuam em memória. O driver Psycopg 3.3.9 está declarado e fixado em `requirements.txt`, mas ainda não há migration aplicada, concessão de privilégios ao usuário dedicado da API nem teste contra banco real. Portanto, não habilite PostgreSQL até preparar o schema privado `bravo_shadow`, criar um usuário local de privilégio mínimo e validar os adaptadores. O health endpoint informa o modo configurado, mas não verifica a conectividade com o banco.
+**Escopo atual do código:** `build_storage_services()` seleciona adaptadores PostgreSQL para os quinze módulos listados acima e para auditoria, todos recebendo a mesma fábrica de conexões. A fábrica Psycopg 3.3.9 lê `BRAVO_DATABASE_URL`, mas não define nem valida uma identidade/role runtime específica. Ainda não há comprovação de migration aplicada, privilégios mínimos, identidade runtime independente ou teste de integração com PostgreSQL real. Portanto, mantenha o backend em memória; não habilite PostgreSQL com dados reais. O health endpoint informa apenas o modo configurado e não verifica conectividade nem privilégios do banco.
 
 
 ### Integração das rotas com adaptadores PostgreSQL (simulada)
@@ -131,4 +131,4 @@ A camada Financeiro também traduz violações de chave estrangeira ao criar ou 
 
 ### Isolamento de serviços por instância
 
-A fábrica `build_storage_services()` cria os três serviços do piloto para cada chamada de `create_app()`. Os routers obtêm a instância correspondente por `request.app.state.services`; não há reconfiguração de singletons globais ao iniciar outra aplicação. Isso permite testes e ambientes paralelos com backends diferentes sem compartilhar os repositórios do piloto. O isolamento está coberto por testes HTTP que criam duas aplicações independentes. Esses testes foram adicionados, mas precisam ser executados no CI/ambiente Python antes de considerar o gate validado.
+A fábrica `build_storage_services()` cria os serviços e repositórios de todos os módulos para cada chamada de `create_app()`. Os routers obtêm a instância correspondente por `request.app.state.services`; não há reconfiguração de singletons globais ao iniciar outra aplicação. A fábrica de conexões PostgreSQL é compartilhada entre esses adapters na mesma instância. Os testes de isolamento foram adicionados, mas precisam ser executados no CI/ambiente Python antes de considerar o gate validado.
