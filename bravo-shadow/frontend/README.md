@@ -417,3 +417,16 @@ O cliente ainda não está importado pelo `index.html` nem usado pelas telas. Is
 5. Integrar `google-auth.js` e `bravo-api.js` no bootstrap da interface; encerrar sessão, abortar requisições e limpar estado em logout/expiração.
 6. Conectar módulos em etapas, verificando capacidade por rota e erros 401/403/409/422.
 7. Confirmar auditoria, paginação, limites de upload e políticas de arquivos antes de liberar operações sensíveis.
+
+## Preparação de container e isolamento de hospedagem
+
+O `Dockerfile` foi endurecido para hospedagem Shadow: imagem Python 3.12 slim, usuário sem privilégios, frontend estático incluído e inicialização bloqueada a menos que `BRAVO_STORAGE_BACKEND=postgres`, `BRAVO_DATABASE_URL` e `GOOGLE_CLIENT_ID` estejam definidos. A porta usa `PORT` do provedor ou 8000. `.env.example` contém apenas placeholders e `.dockerignore` já exclui `.env`, diretórios Git e artefatos locais.
+
+O Worker Cloudflare de prova agora está com `workers_dev=false`, origem CORS de placeholder não utilizável e validação de `azp` quando presente no ID token. Isso é apenas configuração de segurança; nenhum Worker foi publicado.
+
+### Limitações que continuam impedindo hospedagem
+
+- O FastAPI ainda não implementa middleware CORS/allowlist. Definir variável no ambiente não habilita CORS; permanece fechado.
+- Não existe provedor/origem HTTPS isolada aprovado ou configurado.
+- Não existe PostgreSQL Shadow provisionado; não preencher secrets com dados de produção.
+- O Dockerfile é blueprint; não foi construído nem publicado.
