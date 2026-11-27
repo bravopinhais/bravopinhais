@@ -60,6 +60,6 @@ Após a auditoria, foi criado o primeiro CRUD de homologação em memória:
 - `PUT /api/v1/financeiro/{id}`
 - `DELETE /api/v1/financeiro/{id}`
 
-Schemas e serviço preservam os cinco campos observados. O serviço expõe a consulta `has_plan_account_reference`, ligada ao serviço de Plano de Contas na inicialização da API. Assim, a exclusão de conta no ambiente sombra pode retornar 409 quando houver título vinculado.
+Schemas e serviço preservam os cinco campos observados. O campo `valor` usa `Decimal`, aceita até duas casas decimais e rejeita valores não finitos (`NaN` e infinitos), sem alterar a regra de negócio sobre sinal do valor. Foram acrescentados testes específicos para essas entradas; a execução desses testes ainda precisa ser confirmada no CI. O serviço expõe a consulta `has_plan_account_reference`, ligada ao serviço de Plano de Contas na inicialização da API. Assim, a exclusão de conta no ambiente sombra pode retornar 409 quando houver título vinculado.
 
 **Limite:** os dados permanecem em memória e são perdidos ao reiniciar a API. Não há persistência, autenticação, conexão Supabase nem integração com o frontend. Os testes foram adicionados, mas ainda não executados.
