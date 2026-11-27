@@ -330,3 +330,14 @@ revoke all on table bravo_shadow.usuarios from public, anon, authenticated, serv
 -- DELETE em bravo_shadow.acertos_estoque. Correções devem ser lançadas como
 -- movimentos compensatórios após implementação do fluxo específico.
 -- Não conceder DELETE nessa tabela ao usuário PostgreSQL da aplicação.
+
+
+-- Preferências de visibilidade dos módulos. Não representam permissões.
+create table bravo_shadow.module_settings (
+    module_key text primary key,
+    enabled boolean not null,
+    updated_at timestamptz not null default now(),
+    constraint module_settings_key_not_empty check (length(trim(module_key)) > 0)
+);
+alter table bravo_shadow.module_settings enable row level security;
+revoke all on table bravo_shadow.module_settings from public, anon, authenticated, service_role;
