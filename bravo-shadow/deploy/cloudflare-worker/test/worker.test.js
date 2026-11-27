@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { generateKeyPairSync, sign as signBytes } from "node:crypto";
+import { generateKeyPairSync, sign as signBytes, createPublicKey } from "node:crypto";
 import worker from "../src/index.js";
 
 const env = {
@@ -22,7 +22,6 @@ const publicJwk = {
 };
 
 function createPublicJwk(pem) {
-  const { createPublicKey } = awaitlessCrypto();
   return createPublicKey(pem).export({ format: "jwk" });
 }
 
@@ -37,15 +36,6 @@ globalThis.fetch = async (input) => {
     headers: { "content-type": "application/json", "cache-control": "max-age=300" },
   });
 };
-
-function awaitlessCrypto() {
-  return { createPublicKey: (pem) => {
-    // A chave pública é derivada apenas da chave privada sintética criada no teste.
-    return requireCryptoCreatePublicKey(pem);
-  }};
-}
-
-import { createPublicKey as requireCryptoCreatePublicKey } from "node:crypto";
 
 function base64url(value) {
   return Buffer.from(typeof value === "string" ? value : JSON.stringify(value)).toString("base64url");
@@ -174,6 +164,17 @@ test("unverified email is rejected", async () => {
 test("expired Google token is rejected", async () => {
   const now = Math.floor(Date.now() / 1000);
   const response = await authRequest(makeToken({ iat: now - 600, exp: now - 1 }), env);
+  assert.equal(response.status, 401);
+});
+
+test("Google token issued too far in the future is rejected", async () => {
+  const now = Math.floor(Date.now() / 1000);
+  const response = await authRequest(makeToken({ iat: now + 120 }), env);
+  assert.equal(response.status, 401);
+});
+
+test("malformed token is rejected", async () => {
+  const response = await authRequest("not.a.valid-token", env);
   assert.equal(response.status, 401);
 });
 
