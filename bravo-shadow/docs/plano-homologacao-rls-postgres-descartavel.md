@@ -1764,3 +1764,16 @@ Ao final, removem novamente `bravo_shadow` com `CASCADE`. Algumas provas de roll
 Antes de habilitar essas suítes em qualquer pipeline, inspecionar o workflow e comprovar que o PostgreSQL é criado dentro do próprio job, com database `bravo_shadow_test`, host local do serviço/container e descarte garantido. Registrar o resultado de cada suíte separadamente. Se a execução não ocorrer, reportar como não executada ou ignorada, nunca como aprovada.
 
 **Status:** fixtures revisadas estaticamente; nenhuma fixture foi executada nesta etapa e nenhum banco foi acessado ou alterado.
+
+
+### Seção 30 — revisão das fronteiras transacionais (27/11/2026)
+
+Revisão estática dos adaptadores PostgreSQL e serviços, sem conexão com banco remoto:
+
+- `PostgresUnitOfWork` confirma a transação em sucesso, executa rollback em exceção e tenta rollback quando o próprio commit falha; sempre tenta fechar a conexão.
+- Desativação e alteração administrativa de usuários usam a mesma conexão para atualizar o cadastro e inserir o evento de auditoria via `append_in_transaction`. A auditoria não confirma nem encerra a transação do chamador.
+- Registro de movimento de estoque bloqueia a linha do produto com `FOR UPDATE`, atualiza o saldo e insere o histórico na mesma unidade de trabalho. O adaptador impede edição do saldo por CRUD quando há movimentos registrados.
+- O histórico de movimentos não oferece edição ou exclusão; correções devem ser compensatórias.
+- Financeiro e Plano de Contas usam atualização compare-and-swap por versão nos fluxos de atualização; o serviço falha fechado se o repositório não oferecer esse contrato.
+
+**Limites e itens para homologação:** esta inspeção de código e os testes com conexões fake não comprovam o comportamento de locks, constraints, isolamento ou permissões no PostgreSQL real. Verificações de vínculo feitas em operações compostas (por exemplo, checagem de referência antes de exclusão) ainda precisam ser confrontadas com constraints no banco descartável. Não assumir atomicidade global entre serviços ou tabelas fora das operações que explicitamente compartilham a mesma conexão. Nenhuma migration, grant, role ou conexão externa foi executada nesta revisão.
