@@ -473,6 +473,12 @@ async function loadFinanceiroTitles(api){
   if(error?.name==="AbortError"||sequence!==financeiroRequestSequence)return;
   financeiroTitles=[];
   renderFinanceiroRows();
+  const search=document.getElementById("fin-search");
+  const type=document.getElementById("fin-filter-type");
+  const filterButton=document.querySelector('#fin-filters button[type="submit"]');
+  if(search)search.disabled=true;
+  if(type)type.disabled=true;
+  if(filterButton)filterButton.disabled=true;
   const message=error?.status===403
    ?"A conta autenticada não possui a capacidade financeiro:read."
    :error?.status===401
