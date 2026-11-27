@@ -4,18 +4,21 @@ from app.core.migration_transaction import (
     MigrationWriteOperations,
     execute_migration_write_unit,
 )
-from app.core.postgres import PostgresUnitOfWork
+from app.core.postgres import CommitOutcomeUnknown, PostgresUnitOfWork
 
 
 class FakeConnection:
-    def __init__(self):
+    def __init__(self, commit_error=None):
         self.calls = []
         self.commits = 0
         self.rollbacks = 0
         self.closes = 0
+        self.commit_error = commit_error
 
     def commit(self):
         self.commits += 1
+        if self.commit_error is not None:
+            raise self.commit_error
 
     def rollback(self):
         self.rollbacks += 1
@@ -53,6 +56,9 @@ def make_operations(expected_connection, calls, *, fail_at=None):
     def append_failure(error):
         calls.append(("failure_event", type(error).__name__, expected_connection.rollbacks))
 
+    def append_unknown(error):
+        calls.append(("unknown_outcome_event", type(error).__name__, expected_connection.rollbacks))
+
     return MigrationWriteOperations(
         reserve_batch=reserve,
         write_business=write_business,
@@ -60,6 +66,7 @@ def make_operations(expected_connection, calls, *, fail_at=None):
         append_success_event=append_event,
         append_audit_event=append_audit,
         append_failure_event=append_failure,
+        append_unknown_outcome_event=append_unknown,
     )
 
 
@@ -148,6 +155,7 @@ def test_failure_audit_error_does_not_hide_original_migration_error():
         append_success_event=operations.append_success_event,
         append_audit_event=operations.append_audit_event,
         append_failure_event=broken_failure_audit,
+        append_unknown_outcome_event=operations.append_unknown_outcome_event,
     )
 
     with pytest.raises(RuntimeError, match="failure_at_business") as caught:
@@ -158,3 +166,52 @@ def test_failure_audit_error_does_not_hide_original_migration_error():
     assert connection.rollbacks == 1
     assert calls[-1] == ("failure_audit_error", "RuntimeError", 1)
     assert any("auditoria de falha" in note for note in getattr(caught.value, "__notes__", []))
+
+
+
+def test_commit_error_is_recorded_as_unknown_not_confirmed_failure():
+    connection = FakeConnection(commit_error=RuntimeError("acknowledgement lost"))
+    calls = []
+    operations = make_operations(connection, calls)
+
+    with pytest.raises(CommitOutcomeUnknown) as caught:
+        execute_migration_write_unit(
+            lambda: PostgresUnitOfWork(lambda: connection), operations
+        )
+
+    assert isinstance(caught.value.__cause__, RuntimeError)
+    assert calls[-1] == ("unknown_outcome_event", "CommitOutcomeUnknown", 1)
+    assert not any(call[0] == "failure_event" for call in calls if isinstance(call, tuple))
+    assert connection.commits == 1
+    assert connection.rollbacks == 1
+    assert connection.closes == 1
+
+
+def test_unknown_outcome_audit_error_does_not_hide_commit_uncertainty():
+    connection = FakeConnection(commit_error=RuntimeError("acknowledgement lost"))
+    calls = []
+    operations = make_operations(connection, calls)
+
+    def broken_unknown_audit(error):
+        calls.append(("unknown_audit_error", type(error).__name__, connection.rollbacks))
+        raise RuntimeError("unknown_audit_unavailable")
+
+    operations = MigrationWriteOperations(
+        reserve_batch=operations.reserve_batch,
+        write_business=operations.write_business,
+        write_source_map=operations.write_source_map,
+        append_success_event=operations.append_success_event,
+        append_audit_event=operations.append_audit_event,
+        append_failure_event=operations.append_failure_event,
+        append_unknown_outcome_event=broken_unknown_audit,
+    )
+
+    with pytest.raises(CommitOutcomeUnknown) as caught:
+        execute_migration_write_unit(
+            lambda: PostgresUnitOfWork(lambda: connection), operations
+        )
+
+    assert calls[-1] == ("unknown_audit_error", "CommitOutcomeUnknown", 1)
+    assert any("resultado desconhecido" in note for note in caught.value.__notes__)
+    assert connection.rollbacks == 1
+    assert connection.closes == 1
