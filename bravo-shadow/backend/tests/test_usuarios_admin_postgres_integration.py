@@ -585,3 +585,23 @@ def test_real_postgres_concurrent_cadastral_update_and_demotion_do_not_restore_p
     assert row == ("Nome cadastral concorrente", "Operador", "Ativo", 3)
     assert active_admins == 1
     assert audit_count == 1
+
+
+@pytest.mark.parametrize("role", ["anon", "authenticated", "service_role"])
+def test_real_postgres_client_roles_cannot_access_users_without_explicit_grants(
+    postgres_users_database,
+    role,
+):
+    """Confirma que os papéis de API permanecem fechados no SQL ainda não habilitado."""
+    database_url = postgres_users_database
+
+    with psycopg.connect(database_url) as connection:
+        connection.execute(f'SET ROLE "{role}"')
+        can_use_schema = connection.execute(
+            "SELECT has_schema_privilege(current_user, 'bravo_shadow', 'USAGE')"
+        ).fetchone()[0]
+        assert can_use_schema is False
+
+        with pytest.raises(psycopg.errors.InsufficientPrivilege) as error:
+            connection.execute("SELECT id FROM bravo_shadow.usuarios LIMIT 1")
+        assert error.value.sqlstate == "42501"
