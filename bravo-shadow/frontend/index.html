@@ -359,14 +359,14 @@ function condominioView(){
  if(condominioApiClient)void condominioLoad(condominioApiClient);
  if(councilApiClient)void councilLoad(councilApiClient);
 }
-let fornecedoresApiClient=null,fornecedoresItems=[],fornecedoresRequestSequence=0,fornecedoresRequestController=null,fornecedorEditingId=null;
+let fornecedoresApiClient=null,fornecedoresItems=[],fornecedoresRequestSequence=0,fornecedoresRequestController=null,fornecedorEditingId=null,fornecedoresSaving=false;
 function fornecedoresCan(capability){return hasBravoCapability("fornecedores:"+capability);}
 function fornecedoresSetStatus(message,kind=""){const node=document.getElementById("for-status");if(node){node.textContent=message;node.className="api-status"+(kind?" "+kind:"");}}
 function fornecedoresApplyPermissions(){
  const form=document.getElementById("for-form");if(!form)return;
  const canCreate=fornecedoresCan("create"),canUpdate=fornecedoresCan("update");
- form.querySelectorAll("input").forEach(input=>{input.disabled=!(fornecedorEditingId?canUpdate:canCreate);});
- const save=form.querySelector('button[type="submit"]');if(save){save.disabled=!(fornecedorEditingId?canUpdate:canCreate);save.textContent=fornecedorEditingId?"Salvar alterações":"Salvar fornecedor";}
+ form.querySelectorAll("input").forEach(input=>{input.disabled=fornecedoresSaving||!(fornecedorEditingId?canUpdate:canCreate);});
+ const save=form.querySelector('button[type="submit"]');if(save){save.disabled=fornecedoresSaving||!(fornecedorEditingId?canUpdate:canCreate);save.textContent=fornecedoresSaving?"Salvando…":fornecedorEditingId?"Salvar alterações":"Salvar fornecedor";}
  const search=document.getElementById("for-search");if(search)search.disabled=!fornecedoresCan("read");
 }
 function fornecedoresRenderRows(){
@@ -395,7 +395,7 @@ function fornecedoresStartEdit(id){
 function fornecedoresResetForm(){
  const form=document.getElementById("for-form");if(!form)return;
  form.reset();fornecedorEditingId=null;
- const cancel=document.getElementById("for-cancel");if(cancel)cancel.hidden=true;
+ const cancel=document.getElementById("for-cancel");if(cancel){cancel.hidden=true;cancel.disabled=fornecedoresSaving;}
  fornecedoresApplyPermissions();
 }
 async function fornecedoresLoad(api){
@@ -403,35 +403,35 @@ async function fornecedoresLoad(api){
  fornecedoresSetStatus("Consultando fornecedores autorizados…");
  try{
   const data=await api.get("/api/v1/fornecedores",{signal:fornecedoresRequestController.signal});
-  if(sequence!==fornecedoresRequestSequence||moduloAtual!=="fornecedores")return;
+  if(sequence!==fornecedoresRequestSequence||moduloAtual!=="fornecedores")return false;
   if(!Array.isArray(data)||data.some(item=>!item||typeof item.id!=="string"||typeof item.cnpj!=="string"||typeof item.razaoSocial!=="string"))throw new Error("A API retornou uma lista de fornecedores inválida.");
   fornecedoresItems=data;fornecedoresRenderRows();
-  fornecedoresSetStatus(data.length+" fornecedor(es) carregado(s) · consulta autorizada","ok");
+  fornecedoresSetStatus(data.length+" fornecedor(es) carregado(s) · consulta autorizada","ok");return true;
  }catch(error){
-  if(error?.name==="AbortError"||sequence!==fornecedoresRequestSequence)return;
+  if(error?.name==="AbortError"||sequence!==fornecedoresRequestSequence)return false;
   fornecedoresItems=[];fornecedoresRenderRows();
-  fornecedoresSetStatus(error?.status===403?"Seu perfil não possui fornecedores:read.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível consultar fornecedores."),"err");
+  fornecedoresSetStatus(error?.status===403?"Seu perfil não possui fornecedores:read.":error?.status===401?"Sessão expirada. Entre novamente.":error?.status===503?"Consulta indisponível no armazenamento configurado.":(error?.message||"Não foi possível consultar fornecedores."),"err");return false;
  }
 }
 async function fornecedoresSave(event){
  event.preventDefault();
- const form=document.getElementById("for-form");if(!form||!fornecedoresApiClient)return;
+ const form=document.getElementById("for-form");if(!form||!fornecedoresApiClient||fornecedoresSaving)return;
  const wasEditing=Boolean(fornecedorEditingId);
  const capability=wasEditing?"update":"create";
  if(!fornecedoresCan(capability)){fornecedoresSetStatus("Seu perfil não possui autorização para esta operação.","err");return;}
  const data={cnpj:document.getElementById("for-cnpj").value.trim(),razaoSocial:document.getElementById("for-razao").value.trim()};
  if(!data.cnpj||!data.razaoSocial){fornecedoresSetStatus("Preencha CNPJ e Razão Social.","err");return;}
- const save=form.querySelector('button[type="submit"]');if(save)save.disabled=true;
+ fornecedoresSaving=true;form.setAttribute("aria-busy","true");fornecedoresApplyPermissions();
  fornecedoresSetStatus(fornecedorEditingId?"Salvando alterações…":"Cadastrando fornecedor…");
  try{
   if(fornecedorEditingId)await fornecedoresApiClient.put("/api/v1/fornecedores/"+encodeURIComponent(fornecedorEditingId),data);
   else await fornecedoresApiClient.post("/api/v1/fornecedores",data);
   fornecedoresResetForm();
-  await fornecedoresLoad(fornecedoresApiClient);
-  fornecedoresSetStatus(wasEditing?"Fornecedor atualizado.":"Fornecedor salvo com sucesso.","ok");
+  const refreshed=await fornecedoresLoad(fornecedoresApiClient);
+  fornecedoresSetStatus(refreshed?(wasEditing?"Fornecedor atualizado.":"Fornecedor salvo com sucesso."):"Fornecedor salvo, mas a lista não foi atualizada. Use a consulta novamente quando disponível.",refreshed?"ok":"err");
  }catch(error){
   fornecedoresSetStatus(error?.status===403?"A API negou a operação: permissão insuficiente.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível salvar o fornecedor."),"err");
- }finally{fornecedoresApplyPermissions();}
+ }finally{fornecedoresSaving=false;form.removeAttribute("aria-busy");fornecedoresApplyPermissions();}
 }
 function fornecedoresView(){
  const view=document.getElementById("view");
@@ -469,7 +469,7 @@ window.addEventListener("bravo:session-ready",event=>{
  fornecedoresApplyPermissions();
 });
 window.addEventListener("bravo:session-ended",()=>{
- fornecedoresApiClient=null;fornecedoresItems=[];fornecedoresRequestSequence++;fornecedoresRequestController?.abort();fornecedoresRequestController=null;fornecedorEditingId=null;
+ fornecedoresApiClient=null;fornecedoresItems=[];fornecedoresRequestSequence++;fornecedoresRequestController?.abort();fornecedoresRequestController=null;fornecedorEditingId=null;fornecedoresSaving=false;
  if(moduloAtual==="fornecedores")fornecedoresView();
 });
 let acertoEstoqueApiClient=null,acertoEstoqueItems=[],acertoEstoqueProducts=[],acertoEstoqueReasons=[],acertoEstoqueSequence=0,acertoEstoqueController=null;
