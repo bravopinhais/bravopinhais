@@ -1636,3 +1636,59 @@ A proteção atual de último Admin nos métodos `deactivate_user()` e `update_a
 
 Nenhuma correção de código foi aplicada, nenhum teste foi executado nesta etapa e nenhum banco foi conectado ou alterado.
 
+
+## 27. Fechamento das barreiras de escrita e identidade administrativa — 27/11/2026
+
+**Status:** implementado na branch `bravo-shadow`; CI automatizada aprovada para o commit de código `d7b45d7d764f7d6032966e1ee51999df28afac93`. Esta seção atualiza o estado posterior às correções registradas na seção 26. Não houve conexão nem alteração de banco de produção.
+
+### 27.1 Escrita cadastral sem regravar privilégios
+
+O repositório PostgreSQL agora oferece `update_cadastral()`, que monta o UPDATE somente a partir da lista fixa `nome`, `loja` e `cargo`, além de atualizar `updated_at` e incrementar `version`. Perfil e status não participam do SQL.
+
+O serviço `update_cadastral()` detecta essa operação específica e a utiliza diretamente, sem reconstruir o objeto completo a partir de uma leitura potencialmente obsoleta. O teste de integração reproduz snapshot cadastral antigo após rebaixamento administrativo e verifica que o resultado continua `Operador/Ativo`.
+
+### 27.2 Escritores genéricos PostgreSQL fechados
+
+- `PostgresUsuariosRepository.add()` aceita exclusivamente `Operador/Ativo`; criação genérica privilegiada é recusada antes do INSERT.
+- `PostgresUsuariosRepository.replace()` falha imediatamente, antes de abrir conexão, pois uma substituição ampla poderia regravar perfil/status.
+- Alterações privilegiadas permanecem concentradas em `update_administrative_state()`, com lock transacional, proteção do último Admin e auditoria na mesma transação.
+- Desativação lógica permanece em `deactivate_user()`, também com lock, proteção do último Admin e auditoria transacional.
+
+Os métodos genéricos de serviço `create()/update()` ainda existem por compatibilidade e pelo adaptador em memória; no backend PostgreSQL, os limites do repositório impedem que sejam usados para inserir privilégios ou executar substituição ampla.
+
+### 27.3 Identidade confiável para alteração administrativa
+
+O serviço `update_administrative_state()` não aceita mais `actor_subject` ou `actor_email` como parâmetros de texto. Exige um `AuthenticatedPrincipal` e valida:
+
+- tipo correto de principal;
+- conta com status `Ativo`;
+- `subject` e e-mail não vazios;
+- perfil exatamente `Admin`;
+- proibição de o responsável alterar o próprio perfil/status.
+
+O evento de auditoria e a verificação de autoalteração usam exclusivamente os atributos do principal validado. Foram adicionados testes para principal ausente, tipo incorreto, conta inativa, subject/e-mail vazios e perfil Operador.
+
+### 27.4 Superfície HTTP e estado de autorização
+
+A rota de cadastro recebe `UsuarioCadastroInput`, que não contém perfil nem status; `create_cadastral()` fixa `Operador/Ativo`. A rota de atualização recebe somente campos cadastrais. Não existe rota HTTP para `update_administrative_state()`; a operação continua fora do router.
+
+A matriz de capacidades Admin/Operador continua sem concessões implícitas e aguarda aprovação explícita. Portanto, esta implementação não habilita por si só o fluxo administrativo na API nem concede acesso funcional aos perfis.
+
+### 27.5 Evidência automatizada e limites
+
+- Commit de código: `d7b45d7d764f7d6032966e1ee51999df28afac93`.
+- Workflow GitHub Actions: execução `45996828705`, conclusão `success` nos jobs Backend/PostgreSQL descartável e Docker/smoke test.
+- Resultado do backend: **576 testes aprovados, 1 warning**.
+- A CI anterior do commit `667c0289f517dbdfa4cc04581b759fb1b5bef555` também passou, com os dois jobs aprovados.
+
+A aprovação da CI valida os testes automatizados e o smoke test do contêiner; não equivale a deploy, homologação visual no navegador, conexão a banco de produção ou aprovação da matriz de capacidades. Nenhuma migration, role, policy, grant ou alteração de dados foi aplicada nesta etapa.
+
+### 27.6 Próximos critérios antes de habilitar administração
+
+1. Aprovar formalmente a matriz de capacidades Admin/Operador.
+2. Fazer inventário global final de todo DML sobre `bravo_shadow.usuarios`, incluindo rotinas externas e scripts operacionais.
+3. Homologar concorrência entre atualização cadastral, desativação e mudanças administrativas em PostgreSQL descartável.
+4. Validar privilégios efetivos das roles de runtime para provar que não há DML alternativo capaz de contornar os métodos controlados.
+5. Somente após aprovação explícita, desenhar a exposição de uma rota administrativa com dependência de capacidade e auditoria.
+
+**Estado final desta etapa:** correção cadastral e endurecimento dos métodos de escrita concluídos; identidade administrativa baseada exclusivamente em principal confiável; CI aprovada. A administração continua não exposta e a garantia global de último Admin ainda depende da homologação completa de todos os escritores e privilégios no banco.
