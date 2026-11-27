@@ -221,3 +221,20 @@ Foi criado o módulo `backend/app/modules/compras_consumo` com:
 O módulo foi registrado na aplicação FastAPI e recebe os mesmos serviços de Estoque e Acertos configurados pelo backend, sem novo acesso a produção ou a outro banco.
 
 Testes unitários do serviço foram adicionados, mas não executados conforme orientação. O endpoint ainda depende da sessão Google válida e de um ambiente API HTTPS isolado para uso pela interface. Impressão/PDF e a interface de filtros ainda não foram conectados; portanto, o módulo está em primeira entrega de backend, não em paridade visual completa.
+
+## 10. Primeiro fluxo de Configurações implementado na API
+
+No branch `bravo-shadow` foi criado o módulo `backend/app/modules/configuracoes` com catálogo alinhado aos 17 módulos identificados na baseline e os endpoints:
+- `GET /api/v1/configuracoes/modulos`: lista nome, grupo e estado de cada módulo;
+- `PATCH /api/v1/configuracoes/modulos/{key}`: altera individualmente a visibilidade;
+- `POST /api/v1/configuracoes/modulos/acao-em-massa`: ativa todos ou desativa os módulos operacionais.
+
+Regras de segurança:
+- Admin ativo pode alterar estados; Operador possui somente leitura.
+- O módulo Configurações não pode ser desativado.
+- A ativação/desativação não concede nem revoga capacidades de autorização; permissões continuam independentes e decididas pelo backend.
+- Cada alteração é registrada na auditoria na mesma transação PostgreSQL da persistência.
+- O modo memória permite apenas leitura com defaults ativos; mutações falham fechadas porque não há auditoria persistente.
+- A tabela `bravo_shadow.module_settings` foi incluída no DDL piloto e no rascunho específico, ambos não executados. RLS habilitado, privilégios revogados e nenhum GRANT/POLICY adicionado.
+
+Testes unitários sintéticos foram adicionados para catálogo, Admin/Operador, proteção do módulo Configurações e operação em massa; não foram executados. A interface visual ainda não está conectada a esses endpoints. O estado implementado é de API/backend, não de paridade completa.
