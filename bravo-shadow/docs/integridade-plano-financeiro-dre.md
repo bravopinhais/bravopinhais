@@ -17,6 +17,9 @@ A exclusão agora segue o princípio *fail closed*:
 
 O serviço recebe um verificador `has_financial_references(account_id)`. No estado atual, o serviço global da API não possui repositório financeiro conectado; por isso a rota de exclusão fica deliberadamente indisponível (503), em vez de presumir que a conta está sem vínculos.
 
+## Defesa referencial prevista no DDL (ainda não aplicada)
+O rascunho `docs/sql-piloto-financeiro.sql` declara `financeiro_plano_conta_fk`, com `FOREIGN KEY (plano_conta_id)` para `plano_contas(id)` e `ON DELETE RESTRICT`, além do índice `plano_contas_codigo_ci_uidx` sobre `lower(codigo)`. Isso prevê proteção também no PostgreSQL contra vínculo órfão e códigos duplicados por diferença de maiúsculas/minúsculas. Essas garantias só passam a existir no banco depois de uma migration revisada e aplicada em ambiente descartável; o arquivo atual é documentação SQL, não migration executada.
+
 ## Efeitos no Dashboard e na DRE
 No original, Dashboard e DRE somam todos os títulos sem filtro por data ou status. A classificação geral usa o tipo do título; a DRE agrupa por conta vinculada. Títulos sem conta entram nos totais gerais, mas não em linhas por conta. A soma por conta não confere se o tipo do título coincide com o tipo cadastrado na conta. O indicador “Saldo em Caixa” é apenas Receber menos Pagar, não um saldo bancário conciliado. Essas regras e limitações devem ser mantidas como referência de paridade até aprovação de uma mudança funcional.
 
