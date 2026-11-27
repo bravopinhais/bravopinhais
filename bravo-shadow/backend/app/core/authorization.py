@@ -127,9 +127,12 @@ def require_capability_dependency(capability: str):
                 try:
                     sink.append(event)
                 except Exception:
-                    # A negação continua sendo 403; não mascarar nem liberar
-                    # a operação por falha no registro da auditoria.
-                    logger.exception("Falha ao persistir evento de negação de autorização.")
+                    # Não registrar texto da exceção nem traceback: podem conter
+                    # detalhes internos. A negação continua sendo 403.
+                    logger.error(
+                        "Falha ao persistir auditoria de negação; request_id=%s",
+                        getattr(request.state, "request_id", None) if request is not None else None,
+                    )
             raise
         # Contexto mínimo para o handler global de falhas inesperadas.
         # Nunca copiar e-mail, token, payload ou dados da rota para o contexto.
