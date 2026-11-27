@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Request, status
 
 from app.core.authorization import AuthenticatedPrincipal, require_capability_dependency
-from .schemas import (\n    Usuario, UsuarioCadastroInput, UsuarioDadosCadastraisUpdateInput,\n)
+from .schemas import Usuario, UsuarioCadastroInput, UsuarioDadosCadastraisUpdateInput
 from .service import UsuariosService
 
 router = APIRouter(prefix="/api/v1/usuarios", tags=["Usuários"])
@@ -31,20 +31,20 @@ def get_user(
 @router.post("", response_model=Usuario, status_code=status.HTTP_201_CREATED)
 def create_user(
     request: Request,
-    data: UsuarioInput,
+    data: UsuarioCadastroInput,
     _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("usuarios:create")),
 ) -> Usuario:
-    return get_service(request).create(data)
+    return get_service(request).create_cadastral(data)
 
 
 @router.put("/{item_id}", response_model=Usuario)
 def update_user(
     request: Request,
     item_id: str,
-    data: UsuarioInput,
+    data: UsuarioDadosCadastraisUpdateInput,
     _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("usuarios:update")),
 ) -> Usuario:
-    return get_service(request).update(item_id, data)
+    return get_service(request).update_cadastral(item_id, data)
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
