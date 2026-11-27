@@ -202,3 +202,26 @@ Na mesma execução, a suíte backend concluiu com **564 testes aprovados, 1 avi
 O aviso de depreciação do `anyio.abc.BlockingPortal` permanece não bloqueante. As mensagens de falha forçada no log PostgreSQL são cenários intencionais dos testes de rollback/auditoria, não falhas da execução.
 
 Nenhum banco compartilhado, Supabase hospedado ou produção foi acessado. Nenhuma role, policy, grant ou migration foi criada ou aplicada.
+
+
+## Delimitação da cobertura PostgreSQL existente — 27/11/2026
+
+A inspeção do código de integração identificou que `backend/tests/test_migration_review_postgres_integration.py` já prepara um cenário PostgreSQL destrutível, protegido por três condições: variável explícita `BRAVO_SHADOW_ALLOW_DESTRUCTIVE_TEST_DATABASE=1`, nome exato `bravo_shadow_test` e host local (`localhost`, `127.0.0.1` ou `::1`). No workflow, essas condições apontam para o serviço PostgreSQL 16 efêmero do job.
+
+Dentro desse banco temporário, o fixture existente:
+- cria `anon`, `authenticated` e `service_role` como NOLOGIN somente se ainda não existirem;
+- remove o schema `bravo_shadow` e aplica o rascunho `sql-controle-revisao-migracao-rascunho.sql`;
+- cria e remove funções/triggers de teste para simular falhas e rollback;
+- remove o schema ao final do fixture.
+
+Essa preparação destrutiva ocorre **depois** da etapa de inspeção `READ ONLY`; são etapas separadas no mesmo job descartável. Não apontar esses testes a qualquer banco local que contenha dados úteis. O job do GitHub Actions descarta o serviço PostgreSQL ao terminar.
+
+### O que os testes PostgreSQL atuais provam
+
+Os testes de integração existentes cobrem concorrência de append, controle de versão, unicidade de eventos, inicialização idempotente, integridade entre lotes/decisões e rollback após falhas artificiais. O run `45987794142` confirmou a execução da suíte.
+
+### O que ainda não está coberto
+
+A fixture atual **não** cria roles privadas dedicadas de runtime/writer/reader, não concede privilégios a elas e não cria policies RLS para essas identidades. Também não prova, por conexão autenticada separada, os resultados positivos e negativos da matriz SELECT/INSERT/UPDATE/DELETE/DDL. Portanto, o CI atual não deve ser interpretado como homologação de RLS/grants.
+
+A próxima fase de teste de autorização exigiria uma fixture separada com DDL e roles sintéticas, aprovada explicitamente antes de sua implementação. Até essa aprovação, manter a especificação como desenho não executável e não introduzir roles, grants, memberships ou policies adicionais.
