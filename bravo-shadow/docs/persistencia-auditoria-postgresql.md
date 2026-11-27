@@ -155,3 +155,17 @@ Se a gravação de auditoria também falhar, a resposta permanece 500 e não exp
 **Escopo:** somente falhas inesperadas de requisições que já passaram pela autorização central são associadas a um ator. Erros de validação HTTP, 401/403 e respostas HTTP tratadas não entram nessa categoria; 403 autenticado continua usando o registro `denied`. O registro de falhas não altera nem substitui o rollback das transações dos repositórios.
 
 Testes foram adicionados para verificar evento mínimo, correlação do request ID, resposta genérica e comportamento quando o sink falha. Os testes ainda precisam ser executados; não houve validação contra PostgreSQL real.
+
+
+## Validação automatizada confirmada — 27/11/2026
+
+A execução do workflow **Bravo Shadow — testes automatizados** para o commit `59f5b90a011f6a43a35fc87b89dbcdff9999f98e` foi concluída com sucesso:
+
+- **560 testes aprovados**, com 1 aviso de depreciação do Starlette/AnyIO.
+- O job de backend utilizou PostgreSQL 16 descartável, com o banco dedicado `bravo_shadow_test` e a autorização explícita de testes destrutivos restrita ao CI.
+- Os testes reais de integração cobrem a gravação conjunta de auditoria e mudança administrativa, rollback quando a auditoria falha, proteção do último Admin e concorrência entre alterações administrativas.
+- O job Docker também concluiu build, inicialização do contêiner e smoke test da interface/API.
+
+Execução: https://github.com/bravopinhais/bravopinhais/actions/runs/45982447366
+
+**O que essa validação não significa:** o banco de produção não foi acessado; nenhuma migration foi aplicada; nenhuma role, policy ou grant foi criada; o sink PostgreSQL continua fora da composição operacional da aplicação; e as capacidades administrativas permanecem sem concessão. O PostgreSQL utilizado foi exclusivo e descartável para testes automatizados.
