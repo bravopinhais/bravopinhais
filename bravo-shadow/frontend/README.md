@@ -130,3 +130,10 @@ A interface não envia alterações porque ainda não existe sessão Google cone
 ## Navegação funcional mapeada
 
 A navegação Shadow agora inclui também `Compras x Consumo`, alinhada ao catálogo de 17 módulos da baseline. O item abre a estrutura do módulo, mas ainda não representa a tela de relatório concluída. A tela de Configurações permanece em modo seguro: não consulta nem altera estados enquanto não houver URL HTTPS isolada da API e sessão Google validada no navegador.
+
+
+## Compras x Consumo — primeira interface do relatório
+
+A navegação abre agora um painel próprio com filtros previstos no contrato da API (período, setor, busca, ordenação e opções de classificação), indicadores de compras/consumo/perdas/alertas, evolução mensal e detalhamento por produto. A interface não inventa valores nem simula gráficos ou resultados.
+
+Os controles permanecem desabilitados até a integração segura da sessão Google no navegador. O backend expõe consulta protegida por `relatorios:read` e exportação CSV; a interface visual ainda não está conectada a esses endpoints. Impressão/PDF e renderização de dados reais continuam pendentes. O GitHub Pages estático não hospeda a API FastAPI.
