@@ -434,43 +434,132 @@ function estoqueView(){
   </ul>
  </section>`;
 }
+let empregadosApiClient=null,empregadosItems=[],empregadosRequestSequence=0,empregadosRequestController=null,empregadoEditingId=null;
+function empregadosCan(action){return hasBravoCapability("empregados:"+action);}
+function empregadosSetStatus(message,kind=""){const node=document.getElementById("emp-status");if(node){node.textContent=message;node.className="api-status"+(kind?" "+kind:"");}}
+function empregadosApplyPermissions(){
+ const form=document.getElementById("emp-form");if(!form)return;
+ const allowed=empregadoEditingId?empregadosCan("update"):empregadosCan("create");
+ form.querySelectorAll("input").forEach(input=>{input.disabled=!allowed;});
+ const save=form.querySelector('button[type="submit"]');if(save){save.disabled=!allowed;save.textContent=empregadoEditingId?"Salvar alterações":"Salvar empregado";}
+ const search=document.getElementById("emp-search");if(search)search.disabled=!empregadosCan("read");
+}
+function empregadosRenderRows(){
+ const tbody=document.getElementById("emp-rows");if(!tbody)return;
+ tbody.replaceChildren();
+ const term=(document.getElementById("emp-search")?.value||"").trim().toLocaleLowerCase("pt-BR");
+ const filtered=empregadosItems.filter(item=>[item.nome,item.cargo,item.empresa].some(value=>(value||"").toLocaleLowerCase("pt-BR").includes(term)));
+ if(!filtered.length){const row=document.createElement("tr"),cell=document.createElement("td");cell.colSpan=4;cell.className="empty-state";cell.textContent=empregadosItems.length?"Nenhum empregado corresponde à pesquisa.":"Nenhum empregado cadastrado.";row.append(cell);tbody.append(row);return;}
+ for(const item of filtered){
+  const row=document.createElement("tr");
+  for(const value of [item.nome,item.cargo,item.empresa||"—"]){const cell=document.createElement("td");cell.textContent=value;row.append(cell);}
+  const actions=document.createElement("td"),wrap=document.createElement("div");wrap.className="row-actions";
+  if(empregadosCan("update")){const edit=document.createElement("button");edit.type="button";edit.className="action-btn";edit.textContent="Editar";edit.addEventListener("click",()=>empregadosStartEdit(item.id));wrap.append(edit);}
+  actions.append(wrap);row.append(actions);tbody.append(row);
+ }
+}
+function empregadosStartEdit(id){
+ const item=empregadosItems.find(entry=>entry.id===id);if(!item||!empregadosCan("update"))return;
+ empregadoEditingId=id;
+ for(const key of ["nome","cargo","empresa","telefone","endereco","contatoEmergenciaNome","contatoEmergenciaTel"]){const input=document.querySelector('[name="emp-'+key+'"]');if(input)input.value=item[key]||"";}
+ const cancel=document.getElementById("emp-cancel");if(cancel)cancel.hidden=false;
+ document.getElementById("emp-form-title").textContent="Editar empregado";
+ empregadosApplyPermissions();empregadosSetStatus("Editando cadastro. Os campos de contato são dados pessoais; confira antes de salvar.");
+ document.getElementById("emp-nome").focus();
+}
+function empregadosResetForm(){
+ const form=document.getElementById("emp-form");if(!form)return;
+ form.reset();empregadoEditingId=null;
+ const cancel=document.getElementById("emp-cancel");if(cancel)cancel.hidden=true;
+ const title=document.getElementById("emp-form-title");if(title)title.textContent="Novo empregado";
+ empregadosApplyPermissions();
+}
+async function empregadosLoad(api){
+ const sequence=++empregadosRequestSequence;empregadosRequestController?.abort();empregadosRequestController=new AbortController();
+ empregadosSetStatus("Consultando equipe autorizada…");
+ try{
+  const data=await api.get("/api/v1/empregados",{signal:empregadosRequestController.signal});
+  if(sequence!==empregadosRequestSequence||moduloAtual!=="empregados")return;
+  const fields=["id","nome","cargo","empresa","endereco","telefone","contatoEmergenciaNome","contatoEmergenciaTel"];
+  if(!Array.isArray(data)||data.some(item=>!item||fields.some(key=>typeof item[key]!=="string")))throw new Error("A API retornou uma lista de empregados inválida.");
+  empregadosItems=data;empregadosRenderRows();
+  empregadosSetStatus(data.length+" empregado(s) carregado(s) · dados pessoais exibidos somente no formulário de edição","ok");
+ }catch(error){
+  if(error?.name==="AbortError"||sequence!==empregadosRequestSequence)return;
+  empregadosItems=[];empregadosRenderRows();
+  empregadosSetStatus(error?.status===403?"Seu perfil não possui empregados:read.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível consultar empregados."),"err");
+ }
+}
+async function empregadosSave(event){
+ event.preventDefault();
+ const form=document.getElementById("emp-form");if(!form||!empregadosApiClient)return;
+ const wasEditing=Boolean(empregadoEditingId),capability=wasEditing?"update":"create";
+ if(!empregadosCan(capability)){empregadosSetStatus("Seu perfil não possui autorização para esta operação.","err");return;}
+ const data={};
+ for(const key of ["nome","cargo","empresa","endereco","telefone","contatoEmergenciaNome","contatoEmergenciaTel"]){const input=document.querySelector('[name="emp-'+key+'"]');data[key]=(input?.value||"").trim();}
+ if(!data.nome||!data.cargo){empregadosSetStatus("Nome e cargo são obrigatórios.","err");return;}
+ const save=form.querySelector('button[type="submit"]');if(save)save.disabled=true;
+ empregadosSetStatus(wasEditing?"Salvando alterações…":"Cadastrando empregado…");
+ try{
+  if(wasEditing)await empregadosApiClient.put("/api/v1/empregados/"+encodeURIComponent(empregadoEditingId),data);
+  else await empregadosApiClient.post("/api/v1/empregados",data);
+  empregadosResetForm();
+  await empregadosLoad(empregadosApiClient);
+  empregadosSetStatus(wasEditing?"Cadastro de empregado atualizado.":"Empregado cadastrado com sucesso.","ok");
+ }catch(error){
+  empregadosSetStatus(error?.status===403?"A API negou a operação: permissão insuficiente.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível salvar o empregado."),"err");
+ }finally{empregadosApplyPermissions();}
+}
 function empregadosView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
-  <div class="api-toolbar"><div><strong style="font-size:13px">Empregados</strong><div class="api-status" id="emp-status" role="status" aria-live="polite">Aguardando autenticação Google e API HTTPS Shadow</div></div><span class="tag">Cadastro de equipe</span></div>
-  <div class="notice" style="margin:14px 0 18px"><div class="notice-icon">♧</div><div><strong>Cadastro funcional e contato de emergência</strong><p>O formulário preserva os campos do Bravo original. Endereço, telefone e contato de emergência são dados pessoais e devem ter acesso restrito.</p></div></div>
-  <div class="section-head"><h2>Novo empregado</h2><span>Campos do cadastro original</span></div>
+  <div class="api-toolbar"><div><strong style="font-size:13px">Empregados</strong><div class="api-status" id="emp-status" role="status" aria-live="polite">Aguardando sessão Google e API Shadow</div></div><span class="tag">Cadastro funcional</span></div>
+  <div class="notice" style="margin:14px 0 18px"><div class="notice-icon">♧</div><div><strong>Dados funcionais e contatos pessoais</strong><p>O cadastro mantém os campos do Bravo: nome, cargo, empresa, endereço, telefone e contato de emergência. A lista exibe somente nome, cargo e empresa; endereço e contatos ficam fora da tabela.</p></div></div>
+  <div class="section-head"><h2 id="emp-form-title">Novo empregado</h2><span>Campos do cadastro original</span></div>
   <form class="api-form" id="emp-form" style="grid-template-columns:repeat(2,minmax(0,1fr))">
-   <div class="field"><label for="emp-nome">Nome completo</label><input id="emp-nome" name="nome" required maxlength="160" placeholder="Nome do empregado" disabled></div>
-   <div class="field"><label for="emp-cargo">Função / Cargo</label><input id="emp-cargo" name="cargo" required maxlength="160" placeholder="Função exercida" disabled></div>
-   <div class="field"><label for="emp-empresa">Empresa</label><input id="emp-empresa" name="empresa" maxlength="200" placeholder="Empresa vinculada" disabled></div>
-   <div class="field"><label for="emp-telefone">Telefone</label><input id="emp-telefone" name="telefone" maxlength="40" placeholder="Telefone de contato" disabled></div>
-   <div class="field" style="grid-column:1/-1"><label for="emp-endereco">Endereço</label><input id="emp-endereco" name="endereco" maxlength="300" placeholder="Endereço" disabled></div>
-   <div class="field"><label for="emp-emergencia-nome">Nome do contato de emergência</label><input id="emp-emergencia-nome" name="contatoEmergenciaNome" maxlength="160" disabled></div>
-   <div class="field"><label for="emp-emergencia-tel">Telefone de emergência</label><input id="emp-emergencia-tel" name="contatoEmergenciaTel" maxlength="40" disabled></div>
-   <div style="grid-column:1/-1;display:flex;justify-content:flex-end"><button type="button" class="action-btn primary" disabled>Salvar empregado</button></div>
+   <div class="field"><label for="emp-nome">Nome completo</label><input id="emp-nome" name="emp-nome" required maxlength="160" placeholder="Nome do empregado" disabled></div>
+   <div class="field"><label for="emp-cargo">Função / Cargo</label><input id="emp-cargo" name="emp-cargo" required maxlength="160" placeholder="Função exercida" disabled></div>
+   <div class="field"><label for="emp-empresa">Empresa</label><input id="emp-empresa" name="emp-empresa" maxlength="200" placeholder="Empresa vinculada" disabled></div>
+   <div class="field"><label for="emp-telefone">Telefone</label><input id="emp-telefone" name="emp-telefone" maxlength="40" placeholder="Telefone de contato" disabled></div>
+   <div class="field" style="grid-column:1/-1"><label for="emp-endereco">Endereço</label><input id="emp-endereco" name="emp-endereco" maxlength="300" placeholder="Endereço" disabled></div>
+   <div class="field"><label for="emp-contatoEmergenciaNome">Nome do contato de emergência</label><input id="emp-contatoEmergenciaNome" name="emp-contatoEmergenciaNome" maxlength="160" disabled></div>
+   <div class="field"><label for="emp-contatoEmergenciaTel">Telefone de emergência</label><input id="emp-contatoEmergenciaTel" name="emp-contatoEmergenciaTel" maxlength="40" disabled></div>
+   <div style="grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px"><button type="button" id="emp-cancel" class="action-btn" hidden>Cancelar edição</button><button type="submit" class="action-btn primary" disabled>Salvar empregado</button></div>
   </form>
-  <p class="form-hint">Nome e cargo são obrigatórios. Os demais campos são opcionais. Nenhuma informação de salário, documento, jornada ou vínculo trabalhista foi acrescentada, pois não consta no formulário legado inspecionado.</p>
+  <p class="form-hint">Nome e cargo são obrigatórios. Os demais campos são opcionais. Nenhum dado de salário, documento ou jornada foi acrescentado.</p>
  </section>
  <section class="panel" style="margin-top:16px">
-  <div class="api-toolbar"><div><strong style="font-size:13px">Equipe cadastrada</strong><div class="api-status">Consulta autenticada pendente</div></div><span class="tag">Consulta</span></div>
+  <div class="api-toolbar"><div><strong style="font-size:13px">Equipe cadastrada</strong><div class="api-status">Consulta autenticada · pesquisa local por nome, cargo ou empresa</div></div><span class="tag">Consulta</span></div>
   <div class="api-form" style="grid-template-columns:minmax(0,1fr) auto;align-items:end">
-   <div class="field"><label for="emp-search">Pesquisar por nome, cargo ou empresa</label><input id="emp-search" name="busca" placeholder="Digite para localizar" disabled></div>
-   <button type="button" class="action-btn" disabled>Pesquisar</button>
+   <div class="field"><label for="emp-search">Pesquisar</label><input id="emp-search" name="busca" placeholder="Nome, cargo ou empresa" disabled></div>
+   <button type="button" id="emp-search-clear" class="action-btn">Limpar</button>
   </div>
-  <div class="data-table-wrap"><table class="data-table"><caption>Empregados cadastrados</caption><thead><tr><th scope="col">Nome / Função</th><th scope="col">Empresa</th><th scope="col">Endereço</th><th scope="col">Telefone</th><th scope="col">Contato de emergência</th><th scope="col">Ações</th></tr></thead><tbody id="emp-rows"><tr><td colspan="6" class="empty-state">Aguardando consulta autenticada. Nenhum empregado fictício será exibido.</td></tr></tbody></table></div>
+  <div class="data-table-wrap"><table class="data-table"><caption>Empregados cadastrados — dados pessoais minimizados</caption><thead><tr><th scope="col">Nome</th><th scope="col">Cargo</th><th scope="col">Empresa</th><th scope="col">Ações</th></tr></thead><tbody id="emp-rows"><tr><td colspan="4" class="empty-state">Aguardando consulta autenticada. Nenhum empregado fictício será exibido.</td></tr></tbody></table></div>
  </section>
- <section class="panel" style="margin-top:16px">
-  <div class="section-head" style="margin-top:0"><h2>Regras e pontos de atenção</h2><span>Contrato Shadow</span></div>
-  <ul style="margin:0;padding-left:18px;color:var(--soft);font-size:12px;line-height:1.9">
-   <li>Admin e Operador possuem leitura, cadastro, edição e exclusão no catálogo atual de permissões.</li>
-   <li>A API exige nome e cargo; os cinco campos restantes são opcionais e as strings são aparadas.</li>
-   <li>A exclusão é física; não foi identificada trilha de desligamento, retenção ou proteção contra referências.</li>
-   <li>O PostgreSQL incrementa versão interna na edição, mas a API não exige If-Match/ETag.</li>
-   <li>Não há filtros, paginação ou busca no endpoint de listagem atual.</li>
-  </ul>
- </section>`;
+ <section class="panel" style="margin-top:16px"><div class="section-head" style="margin-top:0"><h2>Limites e proteção de dados</h2><span>Contrato atual</span></div><ul style="margin:0;padding-left:18px;color:var(--soft);font-size:12px;line-height:1.9">
+  <li>Admin e Operador possuem leitura, cadastro e edição conforme a matriz de capacidades atual.</li>
+  <li>O backend exige nome e cargo; os demais campos são opcionais e aparados.</li>
+  <li>A exclusão permanece desabilitada porque a rota atual remove fisicamente o registro, sem fluxo de desligamento ou retenção.</li>
+  <li>O PostgreSQL possui repositório próprio para empregados, mas esta tela só usa a API configurada do ambiente Shadow.</li>
+  <li>O backend ainda não fornece controle de acesso por campo; a minimização da tabela reduz exposição visual, mas não substitui política de acesso aos dados pessoais.</li>
+ </ul></section>`;
+ const form=document.getElementById("emp-form");form.addEventListener("submit",empregadosSave);
+ document.getElementById("emp-cancel").addEventListener("click",()=>{empregadosResetForm();empregadosSetStatus("Edição cancelada.");});
+ document.getElementById("emp-search").addEventListener("input",empregadosRenderRows);
+ document.getElementById("emp-search-clear").addEventListener("click",()=>{document.getElementById("emp-search").value="";empregadosRenderRows();});
+ empregadosApplyPermissions();
+ if(empregadosApiClient)void empregadosLoad(empregadosApiClient);
 }
+window.addEventListener("bravo:session-ready",event=>{
+ const api=event.detail?.api;if(!api||typeof api.get!=="function")return;
+ empregadosApiClient=api;
+ if(moduloAtual==="empregados")void empregadosLoad(api);
+ empregadosApplyPermissions();
+});
+window.addEventListener("bravo:session-ended",()=>{
+ empregadosApiClient=null;empregadosItems=[];empregadosRequestSequence++;empregadosRequestController?.abort();empregadosRequestController=null;empregadoEditingId=null;
+ if(moduloAtual==="empregados")empregadosView();
+});
 function moradoresView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
