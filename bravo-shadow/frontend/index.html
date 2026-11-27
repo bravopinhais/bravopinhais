@@ -432,22 +432,108 @@ window.addEventListener("bravo:session-ended",()=>{
  fornecedoresApiClient=null;fornecedoresItems=[];fornecedoresRequestSequence++;fornecedoresRequestController?.abort();fornecedoresRequestController=null;fornecedorEditingId=null;
  if(moduloAtual==="fornecedores")fornecedoresView();
 });
+let acertoEstoqueApiClient=null,acertoEstoqueItems=[],acertoEstoqueProducts=[],acertoEstoqueReasons=[],acertoEstoqueSequence=0,acertoEstoqueController=null;
+function acertoEstoqueCan(key,action){return hasBravoCapability(key+":"+action);}
+function acertoEstoqueSetStatus(id,message,kind=""){const node=document.getElementById(id);if(node){node.textContent=message;node.className="api-status"+(kind?" "+kind:"");}}
+function acertoEstoqueApplyPermissions(){
+ const canCreate=acertoEstoqueCan("acertos_estoque","create"),canRead=acertoEstoqueCan("acertos_estoque","read");
+ const productRead=acertoEstoqueCan("estoque","read"),reasonRead=acertoEstoqueCan("motivos_estoque","read");
+ for(const id of ["ace-tipo","ace-qtd"]){const node=document.getElementById(id);if(node)node.disabled=!canCreate;}
+ const product=document.getElementById("ace-produto");if(product)product.disabled=!canCreate||!productRead||!acertoEstoqueProducts.length;
+ const reason=document.getElementById("ace-motivo");if(reason)reason.disabled=!canCreate||!reasonRead||!acertoEstoqueReasons.length;
+ const submit=document.getElementById("ace-submit");if(submit)submit.disabled=!canCreate||!productRead||!reasonRead||!acertoEstoqueProducts.length||!acertoEstoqueReasons.length;
+ if(!canRead)acertoEstoqueSetStatus("ace-history-status","Seu perfil não possui acertos_estoque:read.","err");
+}
+function acertoEstoqueFillSelect(id,items,placeholder,labelFn){
+ const select=document.getElementById(id);if(!select)return;select.replaceChildren();
+ const first=document.createElement("option");first.value="";first.textContent=placeholder;select.append(first);
+ for(const item of items){const option=document.createElement("option");option.value=item.id;option.textContent=labelFn(item);select.append(option);}
+}
+function acertoEstoqueRenderHistory(){
+ const tbody=document.getElementById("ace-rows");if(!tbody)return;tbody.replaceChildren();
+ if(!acertoEstoqueItems.length){const row=document.createElement("tr"),cell=document.createElement("td");cell.colSpan=6;cell.className="empty-state";cell.textContent="Nenhuma movimentação registrada.";row.append(cell);tbody.append(row);return;}
+ const products=new Map(acertoEstoqueProducts.map(item=>[item.id,item]));
+ for(const movement of [...acertoEstoqueItems].reverse()){
+  const product=products.get(movement.produtoId),row=document.createElement("tr");
+  let dateLabel=movement.data;const parsed=new Date(movement.data);if(Number.isFinite(parsed.getTime()))dateLabel=parsed.toLocaleString("pt-BR");
+  const quantity=Number(movement.quantidade);
+  for(const value of [dateLabel,movement.tipo,product?.item||"Produto "+movement.produtoId,Number.isFinite(quantity)?quantity.toLocaleString("pt-BR",{maximumFractionDigits:3}):"—",movement.motivo||"—","Imutável"]){const cell=document.createElement("td");cell.textContent=String(value??"—");row.append(cell);}
+  tbody.append(row);
+ }
+}
+async function acertoEstoqueLoad(api){
+ const sequence=++acertoEstoqueSequence;acertoEstoqueController?.abort();acertoEstoqueController=new AbortController();const signal=acertoEstoqueController.signal;
+ const jobs=[];
+ if(acertoEstoqueCan("estoque","read"))jobs.push(["products",api.get("/api/v1/estoque",{signal})]);else{acertoEstoqueProducts=[];acertoEstoqueSetStatus("ace-status","Seu perfil não possui estoque:read.","err");}
+ if(acertoEstoqueCan("motivos_estoque","read"))jobs.push(["reasons",api.get("/api/v1/motivos-acerto-estoque",{signal})]);else{acertoEstoqueReasons=[];acertoEstoqueSetStatus("ace-status","Seu perfil não possui motivos_estoque:read.","err");}
+ if(acertoEstoqueCan("acertos_estoque","read"))jobs.push(["history",api.get("/api/v1/acertos-estoque",{signal})]);else{acertoEstoqueItems=[];acertoEstoqueSetStatus("ace-history-status","Seu perfil não possui acertos_estoque:read.","err");}
+ acertoEstoqueSetStatus("ace-status","Carregando produtos, motivos e histórico…");
+ const results=await Promise.all(jobs.map(async([key,promise])=>({key,result:await promise.then(value=>({value})).catch(error=>({error}))})));
+ if(sequence!==acertoEstoqueSequence||moduloAtual!=="acertos_estoque")return;
+ const problems=[];
+ for(const {key,result} of results){
+  if(result.error){if(result.error?.name==="AbortError")return;problems.push(result.error?.status===403?"Acesso negado a "+key:result.error?.status===401?"Sessão expirada":"Falha ao consultar "+key);continue;}
+  const data=result.value;if(!Array.isArray(data)){problems.push("Resposta inválida de "+key);continue;}
+  if(key==="products"){
+   if(!data.every(x=>x&&typeof x.id==="string"&&typeof x.item==="string"&&typeof x.status==="string"&&Number.isFinite(Number(x.quantidade)))){problems.push("Catálogo de produtos inválido");continue;}
+   acertoEstoqueProducts=data.filter(x=>x.status==="Ativo");
+   acertoEstoqueFillSelect("ace-produto",acertoEstoqueProducts,"Selecione um produto",x=>x.item+" · saldo "+Number(x.quantidade).toLocaleString("pt-BR",{maximumFractionDigits:3})+" "+(x.unidade||""));
+  }else if(key==="reasons"){
+   if(!data.every(x=>x&&typeof x.id==="string"&&typeof x.nome==="string")){problems.push("Catálogo de motivos inválido");continue;}
+   acertoEstoqueReasons=data;acertoEstoqueFillSelect("ace-motivo",data,"Selecione um motivo",x=>x.nome);
+  }else{
+   if(!data.every(x=>x&&typeof x.id==="string"&&typeof x.data==="string"&&["Entrada","Saída"].includes(x.tipo)&&typeof x.produtoId==="string"&&Number.isFinite(Number(x.quantidade))&&typeof x.motivo==="string")){problems.push("Histórico de movimentações inválido");continue;}
+   acertoEstoqueItems=data;
+  }
+ }
+ acertoEstoqueRenderHistory();acertoEstoqueApplyPermissions();
+ if(problems.length)acertoEstoqueSetStatus("ace-status",problems.join(" · "),"err");
+ else acertoEstoqueSetStatus("ace-status","Catálogos e histórico carregados conforme suas permissões.","ok");
+ if(acertoEstoqueCan("acertos_estoque","read"))acertoEstoqueSetStatus("ace-history-status",acertoEstoqueItems.length+" movimentação(ões) carregada(s).","ok");
+ acertoEstoqueUpdateHint();
+}
+function acertoEstoqueUpdateHint(){
+ const type=document.getElementById("ace-tipo")?.value,select=document.getElementById("ace-produto"),product=select?.selectedOptions?.[0]?.textContent;
+ const hint=document.querySelector("#ace-form + .form-hint");
+ if(hint&&select?.value)hint.textContent="Produto selecionado: "+product+". "+(type==="Entrada"?"A entrada será somada ao saldo.":"A saída será subtraída e não pode exceder o saldo disponível.")+" A data/hora será gerada pela API.";
+}
+async function acertoEstoqueSave(event){
+ event.preventDefault();const api=acertoEstoqueApiClient;if(!api)return;
+ if(!acertoEstoqueCan("acertos_estoque","create")){acertoEstoqueSetStatus("ace-status","Seu perfil não possui acertos_estoque:create.","err");return;}
+ const productId=document.getElementById("ace-produto").value,reasonId=document.getElementById("ace-motivo").value;
+ const quantity=Number(document.getElementById("ace-qtd").value),type=document.getElementById("ace-tipo").value;
+ const product=acertoEstoqueProducts.find(x=>x.id===productId),reason=acertoEstoqueReasons.find(x=>x.id===reasonId);
+ if(!product||!reason){acertoEstoqueSetStatus("ace-status","Selecione um produto ativo e um motivo válido.","err");return;}
+ if(!Number.isFinite(quantity)||quantity<=0||Math.round(quantity*1000)!==quantity*1000){acertoEstoqueSetStatus("ace-status","Informe uma quantidade positiva com até três casas decimais.","err");return;}
+ if(type==="Saída"&&quantity>Number(product.quantidade)){acertoEstoqueSetStatus("ace-status","A saída não pode exceder o saldo disponível.","err");return;}
+ const payload={tipo,produtoId,quantidade,motivo:reason.nome,motivoId:reason.id},button=document.getElementById("ace-submit");
+ if(button)button.disabled=true;acertoEstoqueSetStatus("ace-status","Registrando movimentação…");
+ try{
+  await api.post("/api/v1/acertos-estoque",payload);document.getElementById("ace-form").reset();
+  await acertoEstoqueLoad(api);acertoEstoqueSetStatus("ace-status","Movimentação registrada. Saldo e histórico atualizados.","ok");
+ }catch(error){
+  const message=error?.status===409?"Conflito de saldo: a API recusou a movimentação. Atualize os dados e tente novamente.":error?.status===403?"Seu perfil não possui autorização para registrar movimentos.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível registrar a movimentação.");
+  acertoEstoqueSetStatus("ace-status",message,"err");
+ }finally{acertoEstoqueApplyPermissions();}
+}
+window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function"||typeof api.post!=="function")return;acertoEstoqueApiClient=api;if(moduloAtual==="acertos_estoque")void acertoEstoqueLoad(api);acertoEstoqueApplyPermissions();});
+window.addEventListener("bravo:session-ended",()=>{acertoEstoqueApiClient=null;acertoEstoqueSequence++;acertoEstoqueController?.abort();acertoEstoqueController=null;acertoEstoqueItems=[];acertoEstoqueProducts=[];acertoEstoqueReasons=[];if(moduloAtual==="acertos_estoque")acertoEstoqueView();});
 function acertoEstoqueView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
   <div class="api-toolbar"><div><strong style="font-size:13px">Novo Acerto de Estoque</strong><div class="api-status" id="ace-status" role="status" aria-live="polite">Aguardando autenticação Google e API HTTPS Shadow</div></div><span class="tag">Movimentação de saldo</span></div>
   <div class="notice" style="margin:14px 0 18px"><div class="notice-icon">↕</div><div><strong>Movimentos permanentes e rastreáveis</strong><p>Entrada soma ao saldo; saída subtrai. Saídas acima do saldo são recusadas. Correções posteriores devem ser feitas por movimento compensatório, sem apagar o histórico.</p></div></div>
   <form class="api-form" id="ace-form" style="grid-template-columns:repeat(2,minmax(0,1fr))">
-   <div class="field"><label for="ace-tipo">Tipo de movimento</label><select id="ace-tipo" name="tipo" disabled><option>Saída</option><option>Entrada</option></select></div>
+   <div class="field"><label for="ace-tipo">Tipo de movimento</label><select id="ace-tipo" name="tipo" disabled><option value="Saída">Saída</option><option value="Entrada">Entrada</option></select></div>
    <div class="field"><label for="ace-produto">Produto</label><select id="ace-produto" name="produtoId" required disabled><option value="">Aguardando catálogo de estoque</option></select></div>
    <div class="field"><label for="ace-qtd">Quantidade</label><input id="ace-qtd" name="quantidade" type="number" min="0.001" step="0.001" required disabled></div>
    <div class="field"><label for="ace-motivo">Motivo</label><select id="ace-motivo" name="motivoId" required disabled><option value="">Aguardando catálogo de motivos</option></select></div>
-   <div style="grid-column:1/-1;display:flex;justify-content:flex-end"><button type="button" class="action-btn primary" disabled>Registrar movimento</button></div>
+   <div style="grid-column:1/-1;display:flex;justify-content:flex-end"><button id="ace-submit" type="submit" class="action-btn primary" disabled>Registrar movimento</button></div>
   </form>
   <p class="form-hint">A API registra data/hora automaticamente. Quantidade positiva com até três casas decimais. O motivo é vinculado ao catálogo quando houver motivoId.</p>
  </section>
  <section class="panel" style="margin-top:16px">
-  <div class="api-toolbar"><div><strong style="font-size:13px">Histórico de Acertos de Estoque</strong><div class="api-status">Consulta autenticada pendente</div></div><span class="tag">Histórico</span></div>
+  <div class="api-toolbar"><div><strong style="font-size:13px">Histórico de Acertos de Estoque</strong><div class="api-status" id="ace-history-status" role="status" aria-live="polite">Consulta autenticada pendente</div></div><span class="tag">Histórico</span></div>
   <div class="data-table-wrap"><table class="data-table"><caption>Movimentações registradas</caption><thead><tr><th scope="col">Data / Hora</th><th scope="col">Tipo</th><th scope="col">Produto</th><th scope="col">Quantidade</th><th scope="col">Motivo</th><th scope="col">Ações</th></tr></thead><tbody id="ace-rows"><tr><td colspan="6" class="empty-state">Aguardando consulta autenticada. Nenhuma movimentação fictícia será exibida.</td></tr></tbody></table></div>
  </section>
  <section class="panel" style="margin-top:16px">
@@ -457,7 +543,7 @@ function acertoEstoqueView(){
    <li>Saída superior ao saldo disponível retorna conflito HTTP 409; não há permissão para saldo negativo.</li>
    <li>Movimentações são imutáveis: não existe rota de edição ou exclusão. Corrigir por movimento compensatório.</li>
    <li>Motivo pode ser validado pelo identificador do catálogo; o nome fica registrado no movimento.</li>
-   <li>Admin e Operador possuem leitura e criação no catálogo de capacidades atual.</li>
+   <li>Leitura e criação são autorizadas separadamente por acertos_estoque:read/create; consulta de produtos e motivos exige suas próprias capacidades.</li>
    <li>Scanner, aprovação de movimentos, anexos/evidências e filtros/paginação ainda não estão integrados.</li>
   </ul>
  </section>`;
