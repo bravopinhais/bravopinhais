@@ -10,7 +10,7 @@ class FinanceiroInput(BaseModel):
     tipo: Literal["Receber", "Pagar"]
     planoContaId: str = ""
     historico: str = Field(min_length=1)
-    valor: Decimal = Field(max_digits=14, decimal_places=2)
+    valor: Decimal = Field(max_digits=14, decimal_places=2, allow_inf_nan=False)
 
     @field_validator("historico")
     @classmethod
