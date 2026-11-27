@@ -114,9 +114,10 @@ class PostgresSourceRecordStore:
         """Advance verification provenance only for an already verified batch.
 
         The caller must invoke this after the complete batch verification has
-        succeeded, using the same transaction connection. The guarded UPDATE
-        rejects missing/changed provenance and batches that are not in the
-        verified state; the composite FK also enforces the source system.
+        succeeded, using the same transaction connection. FOR SHARE locks the
+        verified batch against a concurrent state transition until this
+        transaction commits, preventing a verification/rollback race. The
+        update also rejects missing or changed provenance.
         """
         values = (
             source_system,
@@ -138,25 +139,31 @@ class PostgresSourceRecordStore:
         cursor = self._run(
             connection,
             """
+            WITH verified_batch AS (
+                SELECT batch_id
+                FROM bravo_shadow.migration_batches
+                WHERE batch_id = %s
+                  AND source_system = %s
+                  AND status = 'verified'
+                FOR SHARE
+            )
             UPDATE bravo_shadow.migration_source_records AS source
             SET last_verified_batch_id = %s,
                 updated_at = now()
-            WHERE source.source_system = %s
+            FROM verified_batch
+            WHERE verified_batch.batch_id = %s
+              AND source.source_system = %s
               AND source.source_collection = %s
               AND source.legacy_id = %s
               AND source.destination_collection = %s
               AND source.destination_id = %s
               AND source.source_record_hash = %s
-              AND EXISTS (
-                  SELECT 1
-                  FROM bravo_shadow.migration_batches AS batch
-                  WHERE batch.batch_id = %s
-                    AND batch.source_system = %s
-                    AND batch.status = 'verified'
-              )
             RETURNING source.source_system
             """,
             (
+                batch_id,
+                source_system,
+                batch_id,
                 batch_id,
                 source_system,
                 source_collection,
@@ -164,8 +171,6 @@ class PostgresSourceRecordStore:
                 destination_collection,
                 destination_id,
                 source_record_hash,
-                batch_id,
-                source_system,
             ),
         )
         updated = cursor.fetchone()
