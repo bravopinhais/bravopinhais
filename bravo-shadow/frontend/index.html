@@ -299,7 +299,8 @@ async function fornecedoresLoad(api){
 async function fornecedoresSave(event){
  event.preventDefault();
  const form=document.getElementById("for-form");if(!form||!fornecedoresApiClient)return;
- const capability=fornecedorEditingId?"update":"create";
+ const wasEditing=Boolean(fornecedorEditingId);
+ const capability=wasEditing?"update":"create";
  if(!fornecedoresCan(capability)){fornecedoresSetStatus("Seu perfil não possui autorização para esta operação.","err");return;}
  const data={cnpj:document.getElementById("for-cnpj").value.trim(),razaoSocial:document.getElementById("for-razao").value.trim()};
  if(!data.cnpj||!data.razaoSocial){fornecedoresSetStatus("Preencha CNPJ e Razão Social.","err");return;}
@@ -310,7 +311,7 @@ async function fornecedoresSave(event){
   else await fornecedoresApiClient.post("/api/v1/fornecedores",data);
   fornecedoresResetForm();
   await fornecedoresLoad(fornecedoresApiClient);
-  fornecedoresSetStatus(fornecedorEditingId?"Fornecedor atualizado.":"Fornecedor salvo com sucesso.","ok");
+  fornecedoresSetStatus(wasEditing?"Fornecedor atualizado.":"Fornecedor salvo com sucesso.","ok");
  }catch(error){
   fornecedoresSetStatus(error?.status===403?"A API negou a operação: permissão insuficiente.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível salvar o fornecedor."),"err");
  }finally{fornecedoresApplyPermissions();}
