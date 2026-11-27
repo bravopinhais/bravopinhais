@@ -445,9 +445,16 @@ def test_real_postgres_cadastral_update_cannot_restore_stale_admin_state(postgre
         event=_event("usr_cadastral_race"),
         audit_sink=_audit_sink(database_url),
     )
-    repository.update_cadastral(
+    from app.modules.usuarios.schemas import UsuarioDadosCadastraisUpdateInput
+    from app.modules.usuarios.service import UsuariosService
+
+    service = UsuariosService(repository=repository)
+    # Simula a leitura antiga que ocorreria antes da alteração administrativa.
+    # O adapter PostgreSQL deve evitar usar esse snapshot na escrita cadastral.
+    service.get = lambda _item_id: stale_snapshot
+    service.update_cadastral(
         "usr_cadastral_race",
-        nome="Nome cadastral atualizado",
+        UsuarioDadosCadastraisUpdateInput(nome="Nome cadastral atualizado"),
     )
 
     with psycopg.connect(database_url) as connection:
