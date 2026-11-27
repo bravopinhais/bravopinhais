@@ -83,3 +83,21 @@ def test_iso_with_conflicting_hint_is_not_accepted():
 def test_non_text_input_is_rejected_instead_of_coerced():
     with pytest.raises(TypeError):
         parse_legacy_date(20211125)  # type: ignore[arg-type]
+
+@pytest.mark.parametrize(
+    "original",
+    [
+        "25/11/2021 10:30:00",
+        "2021-11-25T10:30:00",
+        "2021-11-25T10:30:00-03:00",
+        "25/11",
+        "2021",
+    ],
+)
+def test_datetime_and_partial_dates_are_never_guessed_or_rewritten(original):
+    result = parse_legacy_date(original, format_hint="br")
+
+    assert result.original_text == original
+    assert result.normalized_date is None
+    assert result.status == "invalid"
+
