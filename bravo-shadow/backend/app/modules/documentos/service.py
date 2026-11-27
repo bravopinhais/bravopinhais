@@ -4,7 +4,7 @@ from fastapi import HTTPException
 
 from app.core.repositories import CollectionRepository, InMemoryCollectionRepository
 from app.modules.categorias.service import CategoriasService
-from .schemas import Documento, DocumentoInput
+from .schemas import Documento, DocumentoInput, DocumentoResumo
 
 
 class DocumentosService:
@@ -19,6 +19,21 @@ class DocumentosService:
 
     def list(self) -> list[Documento]:
         return self.repository.list()
+
+    def list_metadata(self) -> list[DocumentoResumo]:
+        metadata_reader = getattr(self.repository, "list_metadata", None)
+        if callable(metadata_reader):
+            return metadata_reader()
+        return [
+            DocumentoResumo(
+                id=item.id,
+                pasta=item.pasta,
+                categoriaId=item.categoriaId,
+                titulo=item.titulo,
+                nomeArquivo=item.nomeArquivo,
+            )
+            for item in self.repository.list()
+        ]
 
     def get(self, item_id: str) -> Documento:
         item = self.repository.get(item_id)
