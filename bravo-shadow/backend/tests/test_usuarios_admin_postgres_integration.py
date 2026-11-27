@@ -536,7 +536,7 @@ def test_real_postgres_concurrent_cadastral_update_and_demotion_do_not_restore_p
     from app.modules.usuarios.schemas import UsuarioDadosCadastraisUpdateInput
 
     database_url = postgres_users_database
-    _insert_user(database_url, "usr_cadastral_concurrent", "cadastral-concurrent@example.test")
+    _insert_user(database_url, "usr_cadastral_concurrent", "cadastral-concurrent@example.com")
     _insert_user(
         database_url,
         "usr_cadastral_concurrent_guard",
