@@ -211,3 +211,38 @@ Esta matriz foi extraída dos métodos SQL dos repositórios PostgreSQL. Ela rep
 - Resolver o lock de `usuarios` e a atomicidade entre atualização cadastral e INSERT em `audit_events` antes de qualquer separação de credenciais.
 
 **Status:** matriz de código documentada; matriz de privilégios do banco ainda não aprovada. Nenhum DDL, grant, role, policy ou migration foi executado nesta etapa.
+
+## 9. Dependências indiretas: sequences, triggers, funções e locks
+
+Foi feita uma varredura estática dos quatro rascunhos SQL versionados nesta branch:
+- `docs/sql-piloto-financeiro.sql`
+- `docs/sql-controle-revisao-migracao-rascunho.sql`
+- `docs/sql-controle-lotes-importacao-rascunho.sql`
+- `docs/sql-auditoria-rascunho.sql`
+
+Resultado observado nos arquivos atuais:
+
+| Dependência | Evidência no DDL revisado | Consequência para privilégios |
+|---|---|---|
+| IDs por sequence/identity/serial | Não foram encontrados `SERIAL`, `IDENTITY`, `nextval` ou `CREATE SEQUENCE`; as PKs declaradas são `text`. | Não há concessão de `USAGE` em sequence justificada por esses DDLs. Reavaliar se uma migration futura introduzir sequence ou default gerador. |
+| Triggers e funções próprias | Não foram encontrados `CREATE TRIGGER`, `CREATE FUNCTION` ou `CREATE PROCEDURE`. | Nenhum `EXECUTE` em função própria nem privilégio `TRIGGER` é justificado pelo DDL atual. Funções internas usadas pelo PostgreSQL e defaults como `now()` não significam que o runtime precise de grants amplos. |
+| Exclusões em cascata | As FKs explícitas encontradas usam `ON DELETE RESTRICT`; não foi encontrada `ON DELETE CASCADE`. | Exclusões dependentes devem falhar enquanto houver referências. Testar cada FK com dados sintéticos e confirmar que nenhuma cascata remove histórico ou registros relacionados. |
+| Atualizações em cascata | Não foi encontrada cláusula `ON UPDATE CASCADE`. | Não presumir propagação automática de alterações de chave. |
+| Views/materialized views | Nenhuma definição foi encontrada nos quatro rascunhos examinados. | Não há grant de leitura em view justificado por esses arquivos. |
+| Locks explícitos do backend | O código de administração de usuários usa `LOCK TABLE ... IN SHARE ROW EXCLUSIVE MODE`; fluxos de estoque e usuário também usam `SELECT ... FOR UPDATE`. | A matriz CRUD não prova que a role runtime consegue executar esses caminhos. Incluir testes de sessão real com a role candidata, em transações concorrentes e descartáveis. Não conceder ownership para contornar falha. |
+
+### Escopo e limites da conclusão
+
+Esta é uma inspeção estática dos rascunhos listados e do código dos adaptadores consultados, não uma inspeção de catálogo em banco com o schema Bravo instalado. Ela não prova que objetos equivalentes existam no banco, nem cobre objetos criados manualmente fora do repositório, extensões, funções instaladas por terceiros ou futuras migrations.
+
+Os IDs textuais são fornecidos pela aplicação nos comandos INSERT dos adaptadores observados. Portanto, não se deve adicionar privilégios de sequence preventivamente. Se a estratégia de IDs mudar, atualizar primeiro o DDL, os adaptadores e esta matriz.
+
+### Casos adicionais obrigatórios na futura homologação
+
+1. Para cada FK com `ON DELETE RESTRICT`, inserir pai e filho sintéticos e provar que a exclusão do pai é recusada; depois remover os fixtures na própria base descartável.
+2. Para `estoque` e `acertos_estoque`, provar que a role de runtime pode executar o fluxo transacional autorizado sem obter UPDATE/DELETE no histórico.
+3. Para `usuarios`, testar `LOCK TABLE ... IN SHARE ROW EXCLUSIVE MODE`, `SELECT ... FOR UPDATE`, UPDATE e INSERT de auditoria na mesma transação, incluindo rollback quando a auditoria falhar.
+4. Executar duas sessões concorrentes nos caminhos que usam locks e confirmar ausência de bypass por credenciais privilegiadas.
+5. Repetir a varredura de sequences, triggers, funções, views e FKs depois de qualquer revisão do DDL, antes de aprovar grants.
+
+**Status:** nenhum grant de sequence, EXECUTE, TRIGGER ou privilégio de ownership foi recomendado ou aplicado. O teste do lock de usuários continua pendente e é um bloqueio explícito para aprovar a role runtime.
