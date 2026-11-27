@@ -179,6 +179,42 @@ function usuariosView(){
   <div class="dashboard-gate-note"><span class="dot"></span><span>Nenhum perfil ou privilégio será habilitado automaticamente. A integração usará o Google diretamente; faltam o Client ID público correto, as origens autorizadas e a aprovação explícita da matriz de permissões.</span></div>
  </section>`;
 }
+function ccNumber(value,digits=3){
+ const number=Number(value);
+ return Number.isFinite(number)?number.toLocaleString("pt-BR",{minimumFractionDigits:0,maximumFractionDigits:digits}):"—";
+}
+function ccCurrency(value){
+ const number=Number(value);
+ return Number.isFinite(number)?number.toLocaleString("pt-BR",{style:"currency",currency:"BRL"}):"—";
+}
+function buildComprasConsumoQuery(form){
+ const values=new FormData(form), params=new URLSearchParams();
+ for(const key of ["data_inicio","data_fim","setor","busca","ordenar"]){
+  const value=String(values.get(key)||"").trim();if(value)params.set(key,value);
+ }
+ params.set("tratar_todas_entradas_como_compras",values.has("tratar_todas_entradas_como_compras")?"true":"false");
+ params.set("incluir_inativos",values.has("incluir_inativos")?"true":"false");
+ return params.toString();
+}
+function renderComprasConsumoReport(report){
+ if(!report||typeof report!=="object"||!report.kpis||!Array.isArray(report.evolucaoMensal)||!Array.isArray(report.produtos))throw new Error("A API retornou um relatório em formato inesperado.");
+ const status=document.getElementById("cc-status");
+ if(status)status.textContent="Relatório atualizado · "+(report.dataInicio||"início disponível")+" a "+(report.dataFim||"data atual");
+ const metrics=document.getElementById("cc-metrics");
+ if(metrics){
+  const k=report.kpis;
+  metrics.innerHTML=[
+   ["Compras",ccNumber(k.compras),ccCurrency(k.valorComprado)],
+   ["Consumo",ccNumber(k.consumo),ccCurrency(k.valorConsumido)],
+   ["Perdas / ajustes",ccNumber(k.perdasAjustes),"Quantidade no período"],
+   ["Produtos em alerta",ccNumber(k.produtosEmAlerta,0),"Reposição ou cobertura baixa"]
+  ].map(([label,value,foot])=>'<article class="metric"><div class="metric-label">'+label+'</div><div class="metric-value">'+value+'</div><div class="metric-foot">'+foot+'</div></article>').join("");
+ }
+ const monthly=document.getElementById("cc-monthly-rows");
+ if(monthly)monthly.innerHTML=report.evolucaoMensal.length?report.evolucaoMensal.map(row=>'<tr><td>'+escapeHTML(row.mes)+'</td><td>'+ccNumber(row.quantidadeComprada)+'</td><td>'+ccNumber(row.quantidadeConsumida)+'</td><td>'+ccCurrency(row.valorComprado)+'</td><td>'+ccCurrency(row.valorConsumido)+'</td></tr>').join(""):'<tr><td colspan="5" class="empty-state">Nenhuma movimentação no período.</td></tr>';
+ const products=document.getElementById("cc-product-rows");
+ if(products)products.innerHTML=report.produtos.length?report.produtos.map(row=>'<tr><td><strong>'+escapeHTML(row.produto)+'</strong><div class="form-hint">'+escapeHTML(row.etiqueta||"")+' · '+escapeHTML(row.marca||"")+'</div></td><td>'+escapeHTML(row.setor)+'</td><td>'+ccNumber(row.compras)+' '+escapeHTML(row.unidade)+'</td><td>'+ccNumber(row.consumo)+' '+escapeHTML(row.unidade)+'</td><td>'+ccNumber(row.perdasAjustes)+' '+escapeHTML(row.unidade)+'</td><td>'+ccNumber(row.diferenca)+' '+escapeHTML(row.unidade)+'</td><td>'+ccNumber(row.estoqueAtual)+' '+escapeHTML(row.unidade)+'</td><td>'+(row.coberturaMeses===null?"—":ccNumber(row.coberturaMeses,2)+" meses")+'</td><td>'+escapeHTML(row.situacao)+'</td></tr>').join(""):'<tr><td colspan="9" class="empty-state">Nenhum produto encontrado para os filtros.</td></tr>';
+}
 function comprasConsumoView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
@@ -196,16 +232,16 @@ function comprasConsumoView(){
   </form>
   <p class="form-hint" id="cc-filter-hint">Filtros bloqueados até a integração da sessão autenticada. O endpoint de consulta é somente leitura.</p>
   <div class="section-head"><h2>Indicadores do período</h2><span>Sem dados até autenticação</span></div>
-  <div class="metrics dashboard-metrics" aria-label="Indicadores aguardando autenticação">
+  <div class="metrics dashboard-metrics" id="cc-metrics" aria-label="Indicadores aguardando autenticação">
    <article class="metric"><div class="metric-label">Compras</div><div class="metric-value">—</div><div class="metric-foot">Quantidade e valor comprado</div></article>
    <article class="metric"><div class="metric-label">Consumo</div><div class="metric-value">—</div><div class="metric-foot">Quantidade e valor consumido</div></article>
    <article class="metric"><div class="metric-label">Perdas / ajustes</div><div class="metric-value">—</div><div class="metric-foot">Movimentos classificados</div></article>
    <article class="metric"><div class="metric-label">Produtos em alerta</div><div class="metric-value">—</div><div class="metric-foot">Reposição ou cobertura baixa</div></article>
   </div>
   <div class="section-head"><h2>Evolução mensal</h2><span>Até 12 meses</span></div>
-  <div class="data-table-wrap"><table class="data-table"><caption>Evolução mensal de compras e consumo</caption><thead><tr><th scope="col">Mês</th><th scope="col">Compras</th><th scope="col">Consumo</th><th scope="col">Valor comprado</th><th scope="col">Valor consumido</th></tr></thead><tbody><tr><td colspan="5" class="empty-state">Aguardando consulta autorizada.</td></tr></tbody></table></div>
+  <div class="data-table-wrap"><table class="data-table"><caption>Evolução mensal de compras e consumo</caption><thead><tr><th scope="col">Mês</th><th scope="col">Compras</th><th scope="col">Consumo</th><th scope="col">Valor comprado</th><th scope="col">Valor consumido</th></tr></thead><tbody id="cc-monthly-rows"><tr><td colspan="5" class="empty-state">Aguardando consulta autorizada.</td></tr></tbody></table></div>
   <div class="section-head"><h2>Detalhamento por produto</h2><span>Saldo, diferença e cobertura</span></div>
-  <div class="data-table-wrap"><table class="data-table"><caption>Compras e consumo por produto</caption><thead><tr><th scope="col">Produto</th><th scope="col">Setor</th><th scope="col">Compras</th><th scope="col">Consumo</th><th scope="col">Perdas</th><th scope="col">Diferença</th><th scope="col">Estoque</th><th scope="col">Cobertura</th><th scope="col">Situação</th></tr></thead><tbody><tr><td colspan="9" class="empty-state">Os produtos serão exibidos após autenticação e consulta à API.</td></tr></tbody></table></div>
+  <div class="data-table-wrap"><table class="data-table"><caption>Compras e consumo por produto</caption><thead><tr><th scope="col">Produto</th><th scope="col">Setor</th><th scope="col">Compras</th><th scope="col">Consumo</th><th scope="col">Perdas</th><th scope="col">Diferença</th><th scope="col">Estoque</th><th scope="col">Cobertura</th><th scope="col">Situação</th></tr></thead><tbody id="cc-product-rows"><tr><td colspan="9" class="empty-state">Os produtos serão exibidos após autenticação e consulta à API.</td></tr></tbody></table></div>
  </section>`;
 }
 function configuracoesView(){
