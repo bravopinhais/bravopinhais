@@ -99,3 +99,19 @@ def test_unit_of_work_rejects_non_callable_connection_factory():
         else:
             raise AssertionError("A fábrica inválida deveria ser rejeitada")
 
+
+def test_unit_of_work_propagates_connection_factory_error():
+    expected_error = RuntimeError("falha ao abrir conexão")
+
+    def failing_factory():
+        raise expected_error
+
+    work = PostgresUnitOfWork(failing_factory)
+    try:
+        work.__enter__()
+    except RuntimeError as error:
+        assert error is expected_error
+    else:
+        raise AssertionError("A falha da fábrica deveria ser propagada")
+
+    assert work.connection is None
