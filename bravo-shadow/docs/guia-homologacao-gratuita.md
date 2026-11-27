@@ -40,7 +40,10 @@ No diretório `bravo-shadow`, conferir:
 - `supabase/config.toml` com `project_id = "bravo-shadow-local"`;
 - ausência de vínculo em `supabase/.temp/project-ref` e `.supabase/.temp/project-ref`;
 - ausência de remotes no arquivo de configuração;
-- ausência de variáveis de conexão/segredos remotos no ambiente do processo.
+- ausência das variáveis remotas `SUPABASE_ACCESS_TOKEN`, `SUPABASE_URL`, `SUPABASE_DB_URL`, `SUPABASE_DB_PASSWORD`, `SUPABASE_SERVICE_ROLE_KEY`, `BRAVO_DATABASE_URL` e `BRAVO_SHADOW_TEST_DATABASE_URL`;
+- ausência de vínculo CLI em `supabase/.temp/project-ref` e `.supabase/.temp/project-ref`.
+
+O script interrompe a execução se qualquer uma dessas variáveis estiver definida; ele não imprime valores de credenciais. A CLI e o Docker também precisam estar disponíveis localmente.
 
 Se qualquer condição for incerta, não iniciar os serviços.
 
