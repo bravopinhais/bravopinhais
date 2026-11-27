@@ -108,6 +108,111 @@ class PostgresPlanoContasRepository(_PostgresRepository):
                 raise HTTPException(status_code=409, detail="Registro já existente.") from exc
             raise
 
+    def add_audited(self, item: PlanoConta, event: Any, audit_sink: Any) -> None:
+        append = getattr(audit_sink, "append_in_transaction", None)
+        if not callable(append):
+            raise HTTPException(status_code=503, detail="Auditoria transacional indisponível.")
+        with self._uow as uow:
+            connection = uow.connection
+            if connection is None:
+                raise RuntimeError("Conexão PostgreSQL indisponível.")
+            cursor = connection.cursor()
+            business_inserted = False
+            try:
+                cursor.execute(
+                    f"INSERT INTO {self._table} (id, codigo, nome, tipo) VALUES (%s, %s, %s, %s)",
+                    (item.id, item.codigo, item.nome, item.tipo),
+                )
+                business_inserted = True
+                append(connection, event)
+            except BaseException as exc:
+                try:
+                    cursor.close()
+                except BaseException as close_error:
+                    add_note = getattr(exc, "add_note", None)
+                    if callable(add_note):
+                        add_note(f"Falha secundária ao fechar cursor: {type(close_error).__name__}.")
+                if not business_inserted and self._sqlstate(exc) == "23505":
+                    raise HTTPException(status_code=409, detail="Já existe uma conta com este código.") from exc
+                raise
+            else:
+                cursor.close()
+
+    def replace_if_version_audited(
+        self, item: PlanoConta, expected_version: int, event: Any, audit_sink: Any
+    ) -> int:
+        append = getattr(audit_sink, "append_in_transaction", None)
+        if not callable(append):
+            raise HTTPException(status_code=503, detail="Auditoria transacional indisponível.")
+        with self._uow as uow:
+            connection = uow.connection
+            if connection is None:
+                raise RuntimeError("Conexão PostgreSQL indisponível.")
+            cursor = connection.cursor()
+            business_updated = False
+            try:
+                cursor.execute(
+                    f"UPDATE {self._table} SET codigo = %s, nome = %s, tipo = %s, "
+                    "updated_at = now(), version = version + 1 WHERE id = %s AND version = %s",
+                    (item.codigo, item.nome, item.tipo, item.id, expected_version),
+                )
+                business_updated = cursor.rowcount == 1
+                if not business_updated:
+                    cursor.execute(f"SELECT version FROM {self._table} WHERE id = %s", (item.id,))
+                    existing = cursor.fetchone()
+                    if existing is None:
+                        raise HTTPException(status_code=404, detail="Conta não encontrada.")
+                    raise HTTPException(
+                        status_code=409,
+                        detail="A conta foi alterada por outra operação. Recarregue os dados antes de tentar novamente.",
+                    )
+                append(connection, event)
+            except BaseException as exc:
+                try:
+                    cursor.close()
+                except BaseException as close_error:
+                    add_note = getattr(exc, "add_note", None)
+                    if callable(add_note):
+                        add_note(f"Falha secundária ao fechar cursor: {type(close_error).__name__}.")
+                if not business_updated and self._sqlstate(exc) == "23505":
+                    raise HTTPException(status_code=409, detail="Já existe uma conta com este código.") from exc
+                raise
+            else:
+                cursor.close()
+        return expected_version + 1
+
+    def delete_audited(self, item_id: str, event: Any, audit_sink: Any) -> None:
+        append = getattr(audit_sink, "append_in_transaction", None)
+        if not callable(append):
+            raise HTTPException(status_code=503, detail="Auditoria transacional indisponível.")
+        with self._uow as uow:
+            connection = uow.connection
+            if connection is None:
+                raise RuntimeError("Conexão PostgreSQL indisponível.")
+            cursor = connection.cursor()
+            business_deleted = False
+            try:
+                cursor.execute(f"DELETE FROM {self._table} WHERE id = %s", (item_id,))
+                business_deleted = cursor.rowcount == 1
+                if not business_deleted:
+                    raise HTTPException(status_code=404, detail="Conta não encontrada.")
+                append(connection, event)
+            except BaseException as exc:
+                try:
+                    cursor.close()
+                except BaseException as close_error:
+                    add_note = getattr(exc, "add_note", None)
+                    if callable(add_note):
+                        add_note(f"Falha secundária ao fechar cursor: {type(close_error).__name__}.")
+                if not business_deleted and self._sqlstate(exc) == "23503":
+                    raise HTTPException(
+                        status_code=409,
+                        detail="Esta conta possui lançamentos financeiros vinculados e não pode ser excluída.",
+                    ) from exc
+                raise
+            else:
+                cursor.close()
+
     def replace(self, item_id: str, item: PlanoConta) -> None:
         try:
             changed = self._query(
