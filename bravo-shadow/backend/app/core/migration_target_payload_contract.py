@@ -85,7 +85,8 @@ def validate_target_payload(collection: str, payload: Mapping[str, Any]) -> None
     for column, value in payload.items():
         key = (collection, column)
         if value is None:
-            # SQL NULLability is enforced by the DDL; preserve explicit NULL.
+            if key not in NULLABLE_COLUMNS:
+                raise TargetPayloadContractError(f"{collection}.{column}: null_not_allowed_by_ddl")
             continue
         if key in NUMERIC_COLUMNS:
             precision, scale, rule = NUMERIC_COLUMNS[key]
