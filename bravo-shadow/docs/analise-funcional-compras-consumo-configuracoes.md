@@ -192,3 +192,16 @@ Foi preparado o arquivo `sql-estoque-compras-consumo-rascunho.sql` como proposta
 - não é migration executável aprovada e não foi aplicado a nenhum banco.
 
 Antes de implementar os schemas Python/adaptadores, é necessário revisar especialmente status/inativação, referência de fotos e o tratamento de `senhaCadeado`. O relatório poderá ser construído quando o contrato final desses campos estiver aprovado e os dados sintéticos de homologação cobrirem frações, produtos inativos e unidades diferentes.
+### Implementação de contrato iniciada no branch Shadow
+
+Após a inspeção, foram atualizados no branch bravo-shadow:
+- schemas HTTP de Estoque e Acerto de Estoque para aceitar quantidades com até três casas decimais;
+- valor unitário como Decimal com duas casas;
+- campos setor, unidade, status, cor e fotoPath no contrato de Estoque;
+- mapeamento PostgreSQL desses campos e das quantidades fracionárias;
+- DDL base descartável em sql-piloto-financeiro.sql;
+- testes de contrato/persistência para campos e frações (adicionados, não executados).
+
+O rascunho incremental sql-estoque-compras-consumo-rascunho.sql permanece como proposta para bancos descartáveis que tenham sido criados com a versão anterior do DDL. Nenhum DDL foi aplicado.
+
+**Limite atual:** senhaCadeado continua fora do contrato por ser um campo potencialmente sensível. A tela completa de Estoque também possui fluxos adicionais (scanner, fotos/anexos, checklist, etiquetas, relatórios por setor e status) que ainda precisam de implementação e comparação. A evolução do contrato é uma etapa de base, não significa que Estoque ou Compras x Consumo estejam concluídos.
