@@ -7,7 +7,7 @@ class ContaBancariaInput(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     banco: str = Field(min_length=1)
-    saldo: Decimal = Field(default=Decimal("0.00"), max_digits=14, decimal_places=2)
+    saldo: Decimal = Field(default=Decimal("0.00"), max_digits=14, decimal_places=2, allow_inf_nan=False)
 
     @field_validator("banco")
     @classmethod
