@@ -107,3 +107,27 @@ Essa ligação cobre somente o fluxo de desativação lógica. A alteração adm
 ## Identidade do ator na desativação lógica
 
 A rota entrega ao serviço o objeto `AuthenticatedPrincipal` retornado pela dependência de autenticação Google. O serviço não recebe mais `actor_subject` e `actor_email` como campos independentes: valida o tipo, o subject, o e-mail e o status ativo do principal, e grava no evento de auditoria o subject desse mesmo objeto. A comparação de auto-desativação continua usando o e-mail verificado, pois o vínculo persistente por Google `sub` ainda não foi implementado. Essa alteração reforça o contrato interno, mas não cria vínculo durável de identidade nem habilita a capacidade `usuarios:deactivate`.
+
+
+## Matriz de cobertura: sucesso, negação e falha — revisão 26/11/2026
+
+A revisão do código confirmou que a trilha ainda **não registra de forma geral** tentativas negadas ou falhas. O campo `outcome` aceita `success`, `denied` e `failure`, mas isso é apenas capacidade do modelo de evento, não prova de emissão nem persistência.
+
+| Situação | Estado atual |
+|---|---|
+| Desativação lógica concluída | O serviço constrói evento `success`; o repositório PostgreSQL insere-o na mesma transação da mudança. O sink só existe no modo PostgreSQL, ainda não validado em banco real. |
+| Desativação bloqueada por último Admin, usuário inexistente ou estado inválido | A transação é revertida e nenhum evento `denied` é emitido. |
+| Falha ao inserir auditoria durante desativação | A mudança é revertida; a exceção é propagada. Não há evento secundário de `failure`. |
+| Falha de autenticação Google / token inválido | A requisição recebe erro, mas não existe evento de auditoria ligado a esse fluxo. |
+| Identidade válida sem capacidade autorizada | A dependência responde 403, mas não emite evento `denied`. |
+| Erro inesperado em outro endpoint | Não há captura geral que gere evento `failure`. |
+
+### Regras para a próxima integração
+
+- Para negação após autenticação, registrar `denied` em transação curta independente, usando o `sub` do principal validado, ação/capacidade canônica e `request_id`. Nunca incluir corpo, query string, e-mail ou mensagem bruta de exceção.
+- Para falha de negócio após autenticação, registrar `failure` em transação separada somente depois do rollback da transação de negócio; se o registro falhar, manter a falha original e emitir métrica/log operacional sem dados pessoais.
+- Para falha de autenticação sem identidade validada, **não inventar um ator** nem gravar token, e-mail informado ou IP na tabela atual. Se for necessário auditar esse cenário, desenhar evento de segurança separado com ator anônimo explícito e política de retenção/abuso própria.
+- Não registrar falhas de validação com conteúdo do usuário; usar códigos estáveis e categorizados.
+- Evitar duplicar evento `success` quando uma operação idempotente já estava concluída.
+
+Nenhuma dessas rotas de emissão adicional foi implementada nesta revisão. O modelo aceita os três resultados e agora possui teste de contrato para isso; os testes foram escritos, não executados. A integração operacional permanece limitada ao sucesso da desativação lógica, e mesmo esse fluxo depende da tabela/role PostgreSQL ainda não aplicadas ou validadas.
