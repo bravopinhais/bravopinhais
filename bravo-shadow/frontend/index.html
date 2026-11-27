@@ -753,6 +753,32 @@ window.addEventListener("bravo:session-ended",()=>{
  dashboardRequestController=null;
  if(moduloAtual==="dashboard")dashboardView();
 });
+
+let formasMonetariasApiClient=null,formasMonetariasRequestSequence=0,formasMonetariasRequestController=null,formasMonetariasItems=[];
+function renderFormasMonetariasRows(){
+ const tbody=document.getElementById("formas-rows");if(!tbody)return;tbody.replaceChildren();
+ if(!formasMonetariasItems.length){const row=document.createElement("tr"),cell=document.createElement("td");cell.colSpan=3;cell.className="empty-state";cell.textContent="Nenhuma forma monetária cadastrada.";row.append(cell);tbody.append(row);return;}
+ for(const item of formasMonetariasItems){const row=document.createElement("tr");for(const value of [item.nome,Number(item.multaPct).toLocaleString("pt-BR",{minimumFractionDigits:2,maximumFractionDigits:2})+"%","Somente leitura"]){const cell=document.createElement("td");cell.textContent=value;row.append(cell);}tbody.append(row);}
+}
+async function loadFormasMonetarias(api){
+ const status=document.getElementById("formas-status");if(!status||!api||typeof api.get!=="function")return;
+ const sequence=++formasMonetariasRequestSequence;formasMonetariasRequestController?.abort();formasMonetariasRequestController=new AbortController();
+ status.textContent="Consultando formas monetárias com a permissão formas_monetarias:read…";status.className="api-status";
+ try{
+  const data=await api.get("/api/v1/formas-monetarias",{signal:formasMonetariasRequestController.signal});
+  if(sequence!==formasMonetariasRequestSequence||moduloAtual!=="formas_monetarias")return;
+  if(!Array.isArray(data)||data.some(item=>!item||typeof item.id!=="string"||typeof item.nome!=="string"||item.nome.trim()===""||!Number.isFinite(Number(item.multaPct))||Number(item.multaPct)<0||Number(item.multaPct)>100))throw new Error("A API retornou uma lista de formas monetárias inválida.");
+  formasMonetariasItems=data;renderFormasMonetariasRows();
+  status.textContent=data.length+" forma(s) monetária(s) carregada(s) · somente leitura";status.className="api-status ok";
+ }catch(error){
+  if(error?.name==="AbortError"||sequence!==formasMonetariasRequestSequence)return;
+  formasMonetariasItems=[];renderFormasMonetariasRows();
+  status.textContent=error?.status===403?"A conta autenticada não possui a capacidade formas_monetarias:read.":error?.status===401?"Sessão não autorizada ou expirada. Entre novamente.":(error?.message||"Não foi possível consultar as formas monetárias.");
+  status.className="api-status err";
+ }
+}
+window.addEventListener("bravo:session-ready",event=>{const api=event.detail?.api;if(!api||typeof api.get!=="function")return;formasMonetariasApiClient=api;if(moduloAtual==="formas_monetarias")void loadFormasMonetarias(api);});
+window.addEventListener("bravo:session-ended",()=>{formasMonetariasApiClient=null;formasMonetariasRequestSequence+=1;formasMonetariasRequestController?.abort();formasMonetariasRequestController=null;formasMonetariasItems=[];if(moduloAtual==="formas_monetarias")formasView();});
 function formasView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
@@ -764,7 +790,7 @@ function formasView(){
    <div class="field"><label for="forma-multa">Multa (%)</label><input id="forma-multa" name="multaPct" type="number" min="0" max="100" step="0.01" value="2" required disabled></div>
    <button class="action-btn primary" type="button" disabled>Cadastrar</button>
   </form>
-  <p class="form-hint" id="forma-hint">A API possui rotas de consulta, cadastro, edição e exclusão. Os controles permanecem desabilitados até a integração Google enviar e validar o ID token em todas as requisições. O frontend atual ainda não possui esse fluxo.</p>
+  <p class="form-hint" id="forma-hint">A consulta utiliza a sessão Google validada e a capacidade formas_monetarias:read. Cadastro, edição e exclusão permanecem bloqueados nesta etapa.</p>
   <div class="data-table-wrap"><table class="data-table"><caption>Formas monetárias cadastradas</caption><thead><tr><th scope="col">Forma monetária</th><th scope="col">Multa (%)</th><th scope="col">Ações</th></tr></thead><tbody id="formas-rows"><tr><td colspan="3" class="empty-state">Aguardando consulta autenticada. Nenhum registro será presumido.</td></tr></tbody></table></div>
  </section>
  <section class="panel" style="margin-top:16px">
@@ -777,6 +803,7 @@ function formasView(){
    <li>Confirmar se a multa percentual é usada no cálculo de encargos e em quais tipos de título.</li>
   </ul>
  </section>`;
+ if(formasMonetariasApiClient)void loadFormasMonetarias(formasMonetariasApiClient);
 }
 function usuariosView(){
  const view=document.getElementById("view");
@@ -947,7 +974,7 @@ function documentosView(){
 }
 
 function openModule(id){
- const item=modules[id];if(!item)return;moduloAtual=id;if(id!=="dashboard"){dashboardRequestSequence+=1;dashboardRequestController?.abort();dashboardRequestController=null;}if(id!=="financeiro"){financeiroRequestSequence+=1;financeiroRequestController?.abort();financeiroRequestController=null;}if(id!=="plano_contas"){planoContasRequestSequence+=1;planoContasRequestController?.abort();planoContasRequestController=null;}if(id!=="contas_bancarias"){contasBancariasRequestSequence+=1;contasBancariasRequestController?.abort();contasBancariasRequestController=null;}
+ const item=modules[id];if(!item)return;moduloAtual=id;if(id!=="dashboard"){dashboardRequestSequence+=1;dashboardRequestController?.abort();dashboardRequestController=null;}if(id!=="financeiro"){financeiroRequestSequence+=1;financeiroRequestController?.abort();financeiroRequestController=null;}if(id!=="plano_contas"){planoContasRequestSequence+=1;planoContasRequestController?.abort();planoContasRequestController=null;}if(id!=="contas_bancarias"){contasBancariasRequestSequence+=1;contasBancariasRequestController?.abort();contasBancariasRequestController=null;}if(id!=="formas_monetarias"){formasMonetariasRequestSequence+=1;formasMonetariasRequestController?.abort();formasMonetariasRequestController=null;}
  document.querySelectorAll("[data-module]").forEach(el=>{if(el.closest("#navigation")){if(el.dataset.module===id)el.setAttribute("aria-current","page");else el.removeAttribute("aria-current")}});
  document.getElementById("breadcrumb").textContent=item.name;
  document.getElementById("page-title").textContent=item.title;
