@@ -131,3 +131,14 @@ A revisão do código confirmou que a trilha ainda **não registra de forma gera
 - Evitar duplicar evento `success` quando uma operação idempotente já estava concluída.
 
 Nenhuma dessas rotas de emissão adicional foi implementada nesta revisão. O modelo aceita os três resultados e agora possui teste de contrato para isso; os testes foram escritos, não executados. A integração operacional permanece limitada ao sucesso da desativação lógica, e mesmo esse fluxo depende da tabela/role PostgreSQL ainda não aplicadas ou validadas.
+
+
+## Negações de autorização autenticadas — preparação no código
+
+A dependência central `require_capability_dependency` agora tenta registrar `AuditEvent` com resultado `denied` quando a identidade já foi validada e a capacidade é negada. O evento contém somente o `sub` Google, a capacidade solicitada, o tipo técnico `authorization`, o resultado e o `request_id` gerado pelo middleware. Não inclui e-mail, corpo, query string, IP ou mensagem da exceção.
+
+A gravação usa `audit_sink.append`, em transação independente da operação de negócio. Se o sink falhar, a exceção é registrada no log operacional e a resposta continua sendo 403; a operação protegida nunca é liberada por falha de auditoria. Isso significa que a negação continua segura, mas pode não ficar persistida se o sink estiver indisponível.
+
+**Limites:** em modo memória, `audit_sink` é `None`, portanto não há persistência; em modo PostgreSQL, o sink existe, mas a tabela/roles continuam sem migration aplicada ou validação real. Falhas de autenticação sem principal validado não são registradas como se tivessem um ator. A mudança não registra falhas gerais de negócio nem cria uma trilha completa de segurança.
+
+Foram acrescentados testes para confirmar o conteúdo mínimo do evento, a correlação pelo request ID e a manutenção do 403 quando a gravação falha. Os testes foram escritos, mas ainda não foram executados.
