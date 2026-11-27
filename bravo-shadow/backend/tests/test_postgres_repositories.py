@@ -235,9 +235,9 @@ def test_monetary_forms_repository_crud_uses_legacy_fields():
     repository.add("fm_2", FormaMonetaria(id="fm_2", nome="PIX", multaPct=0.0))
     assert connection.calls[1][1] == ("fm_2", "PIX", 0.0)
 
-    repository.replace("fm_2", FormaMonetaria(id="fm_2", nome="Dinheiro", multaPct=-1.0))
+    repository.replace("fm_2", FormaMonetaria(id="fm_2", nome="Dinheiro", multaPct=1.0))
     assert "version = version + 1" in connection.calls[2][0]
-    assert connection.calls[2][1] == ("Dinheiro", -1.0, "fm_2")
+    assert connection.calls[2][1] == ("Dinheiro", 1.0, "fm_2")
 
     repository.delete("fm_2")
     assert "DELETE FROM bravo_shadow.formas_monetarias" in connection.calls[3][0]
