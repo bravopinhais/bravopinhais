@@ -35,6 +35,24 @@ DECLARE
         'migration_review_events_decision_manifest_fk'
     ];
     missing_foreign_keys text[];
+    expected_unique_indexes text[] := ARRAY[
+        'plano_contas_codigo_ci_uidx',
+        'usuarios_email_ci_uidx',
+        'migration_batches_id_manifest_unique',
+        'migration_batches_id_source_unique',
+        'migration_source_records_destination_unique',
+        'migration_batch_recovery_sequence_unique',
+        'migration_batch_recovery_approval_binding_unique',
+        'migration_batch_recovery_approval_event_unique',
+        'migration_executions_batch_plan_unique',
+        'migration_executions_full_identity_unique',
+        'migration_apply_approvals_one_decision_per_execution',
+        'migration_review_batches_key_manifest_unique',
+        'migration_review_decisions_batch_decision_manifest_unique',
+        'migration_review_events_version_unique',
+        'pre_import_approval_manifest_sequence_unique'
+    ];
+    missing_unique_indexes text[];
     missing_roles text[];
     missing_tables text[];
     bad_tables text[];
@@ -81,6 +99,28 @@ BEGIN
 
     IF missing_foreign_keys IS NOT NULL THEN
         RAISE EXCEPTION 'FKs ausentes ou não validadas: %', missing_foreign_keys;
+    END IF;
+
+    -- Verifica índices que implementam unicidade, inclusive índices
+    -- funcionais (lower/btrim) e índices criados por constraints UNIQUE.
+    SELECT array_agg(expected_name)
+      INTO missing_unique_indexes
+      FROM unnest(expected_unique_indexes) AS expected_name
+     WHERE NOT EXISTS (
+        SELECT 1
+          FROM pg_class i
+          JOIN pg_namespace n ON n.oid = i.relnamespace
+          JOIN pg_index ix ON ix.indexrelid = i.oid
+         WHERE n.nspname = 'bravo_shadow'
+           AND i.relname = expected_name
+           AND ix.indisunique
+           AND ix.indisvalid
+           AND ix.indisready
+     );
+
+    IF missing_unique_indexes IS NOT NULL THEN
+        RAISE EXCEPTION 'Índices únicos ausentes, inválidos ou não prontos: %',
+            missing_unique_indexes;
     END IF;
 
     FOREACH table_name IN ARRAY expected_tables LOOP
@@ -167,7 +207,8 @@ BEGIN
         RAISE EXCEPTION 'Restrições de aprovação exclusivamente dry-run ausentes/não validadas.';
     END IF;
 
-    RAISE NOTICE 'OK: % tabelas e % FKs presentes; RLS habilitado; sem policies ou grants às roles comuns; auditoria e aprovação pré-importação verificadas.',
-        cardinality(expected_tables), cardinality(expected_foreign_keys);
+    RAISE NOTICE 'OK: % tabelas, % FKs e % índices únicos presentes/válidos; RLS habilitado; sem policies ou grants às roles comuns; auditoria e aprovação pré-importação verificadas.',
+        cardinality(expected_tables), cardinality(expected_foreign_keys),
+        cardinality(expected_unique_indexes);
 END;
 $$;
