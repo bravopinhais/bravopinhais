@@ -88,3 +88,15 @@ def test_fastapi_dependency_does_not_grant_unapproved_profile() -> None:
     with pytest.raises(HTTPException) as error:
         dependency(principal("Admin"))
     assert error.value.status_code == 403
+
+@pytest.mark.parametrize("profile", [None, [], {}])
+def test_non_string_profiles_are_denied_without_raising(profile) -> None:
+    malformed = AuthenticatedPrincipal(
+        "google-subject-123", "usuario@example.com", profile, "Ativo"
+    )
+    assert not has_capability(malformed, "dashboard:read")
+
+
+@pytest.mark.parametrize("capability", [None, [], {}])
+def test_non_string_capabilities_are_denied_without_raising(capability) -> None:
+    assert not has_capability(principal(), capability)
