@@ -84,6 +84,17 @@ def test_bank_balance_uses_decimal_precision_and_rejects_more_than_two_places():
         ContaBancariaInput(banco="Banco", saldo="1234.567")
 
 
+@pytest.mark.parametrize("saldo", ["NaN", "Infinity", "-Infinity"])
+def test_bank_balance_rejects_non_finite_values(saldo):
+    with pytest.raises(ValidationError):
+        ContaBancariaInput(banco="Banco", saldo=saldo)
+
+
+def test_bank_balance_allows_negative_values_for_legacy_compatibility():
+    item = ContaBancariaInput(banco="Banco", saldo="-125.50")
+    assert item.saldo == Decimal("-125.50")
+
+
 def test_bank_name_is_trimmed_on_create():
     response = client.post(
         "/api/v1/contas-bancarias",
