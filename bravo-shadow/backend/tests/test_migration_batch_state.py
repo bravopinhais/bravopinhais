@@ -106,3 +106,27 @@ def test_failed_apply_can_be_recorded_but_cannot_be_retried_in_same_batch():
     assert failed.status == "failed"
     with pytest.raises(BatchTransitionError, match="invalid_status_transition"):
         transition_batch(failed, "applying", expected_manifest_hash=HASH)
+
+
+def test_interrupted_batch_can_be_quarantined_for_manual_review_only():
+    applying = transition_batch(
+        approve(), "applying", expected_manifest_hash=HASH
+    )
+    review = transition_batch(applying, "needs_review")
+
+    assert review.status == "needs_review"
+    with pytest.raises(BatchTransitionError, match="invalid_status_transition"):
+        transition_batch(review, "applying", expected_manifest_hash=HASH)
+    with pytest.raises(BatchTransitionError, match="invalid_status_transition"):
+        transition_batch(review, "verified")
+
+
+def test_applied_batch_with_uncertain_verification_can_be_quarantined():
+    applied = transition_batch(
+        transition_batch(
+            approve(), "applying", expected_manifest_hash=HASH
+        ),
+        "applied",
+    )
+    review = transition_batch(applied, "needs_review")
+    assert review.status == "needs_review"
