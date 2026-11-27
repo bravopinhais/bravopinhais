@@ -30,3 +30,14 @@ A reconciliação de referências legadas é somente leitura e produz contagens 
 O DDL também contém FKs para `documentos.categoria_id` e `acertos_estoque.motivo_id`, ambas opcionais, mas esses campos ainda são vínculos exclusivos do modelo de destino: não foram presumidos como campos equivalentes da origem. Todas as FKs usam `ON DELETE RESTRICT`, evitando apagar silenciosamente registros referenciados.
 
 A reconciliação prévia não substitui as FKs no PostgreSQL. O fechamento estático agora confere nome da constraint, coluna de origem, tabela/coluna de destino, nulabilidade e política de exclusão. Não houve importação nem conexão com banco; os testes foram adicionados e não executados.
+
+
+## Identidade, duplicidade e reexecução segura
+
+O inventário de origem contabiliza IDs ausentes e duplicados por coleção, sem expor os valores. A identidade legada é composta por sistema, coleção e ID opaco; espaços em branco não são identidade válida e zeros à esquerda permanecem significativos. IDs duplicados, ausentes ou registros que não sejam objetos mantêm a origem em revisão.
+
+A tabela de proveniência fecha a idempotência no banco com chave primária composta por `source_system`, `source_collection` e `legacy_id`, além de unicidade global do par `destination_collection`/`destination_id`. O hash do registro exige 64 caracteres hexadecimais minúsculos. As referências aos lotes inicial e último verificado também são protegidas por FKs compostas que incluem o sistema de origem.
+
+Uma repetição só é considerada já aplicada quando o hash e o destino permanecem iguais. Mudança no conteúdo, destino divergente, mapeamento malformado ou colisão de ID no destino bloqueiam nova gravação e exigem revisão. O adaptador usa bloqueio transacional por identidade e a persistência de proveniência não retargeta silenciosamente um registro.
+
+Essas proteções foram conferidas por revisão estática e casos sintéticos adicionados. Não houve execução dos testes, conexão PostgreSQL ou importação de dados.
