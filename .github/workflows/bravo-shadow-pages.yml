@@ -42,6 +42,7 @@ jobs:
           grep -q 'href="#main-content"' _site/index.html
           grep -q 'id="main-content" tabindex="-1"' _site/index.html
           grep -q 'id="view" aria-live="polite" aria-atomic="true"' _site/index.html
+          grep -q '@media(max-width:980px)' _site/index.html
           grep -q '@media(prefers-reduced-motion:reduce)' _site/index.html
           grep -q 'id="formas-status" role="status" aria-live="polite" aria-atomic="true"' _site/index.html
           grep -q '<caption>Formas monetárias cadastradas</caption>' _site/index.html
@@ -99,7 +100,7 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Enviar artefato do site
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: _site
 
