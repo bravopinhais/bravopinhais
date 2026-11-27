@@ -120,6 +120,24 @@ def build_apply_commands(
         or manifest.writes_authorized is not False
     ):
         raise ValueError("dry-run evidence does not match the immutable manifest")
+    if (
+        manifest.readiness != "awaiting_human_approval"
+        or manifest.pending_gates
+        or manifest.integrity_status != "structurally_clear"
+        or manifest.integrity_issue_codes
+    ):
+        raise ValueError("manifest still has unresolved pre-import gates")
+    if (
+        report.source_records != len(report.decisions)
+        or report.planned_inserts != sum(
+            item.classification == APPLYABLE_CLASSIFICATION for item in report.decisions
+        )
+        or report.changed_source_conflicts
+        or report.destination_id_collisions
+        or report.invalid_records
+        or report.duplicate_source_identities
+    ):
+        raise ValueError("dry-run contains inconsistencies or blocking discrepancies")
     if report.plan_sha256 != _expected_plan_hash(report):
         raise ValueError("dry-run plan hash mismatch")
 
