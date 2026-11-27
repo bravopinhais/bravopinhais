@@ -1315,4 +1315,123 @@ Se houver requisito formal de retenção limitada, não apagar simplesmente a ch
 Ajuste da seção 22: `request_id` não integra o fingerprint semântico; `event_id` permanece estável entre tentativas. O resultado original deve ser persistido, não reconstruído do cadastro atual. A tabela dedicada é a alternativa preferida para avaliação, ainda sujeita à revisão de schema, segurança, retention e contrato HTTP.
 
 Nenhuma tabela/coluna, função, role, policy, grant ou migration foi criada. Nenhum SQL foi executado e nenhum banco foi conectado ou alterado. Esta etapa é exclusivamente documental.
+## 24. Contrato HTTP, classificação de falhas e recuperação segura — 27/11/2026
+
+**Status:** proposta documental para a futura integração da função administrativa. Nenhuma rota foi criada, nenhum endpoint foi exposto e nenhum comportamento foi ativado.
+
+### 24.1 Princípios de resposta
+
+A camada HTTP deve traduzir resultados de negócio e falhas técnicas para respostas estáveis, sem expor mensagens PostgreSQL, SQLSTATE bruto, nomes de tabelas, constraints, queries, credenciais ou stack traces.
+
+O contrato deve distinguir:
+- rejeição antes da operação, por identidade/autorização inválida;
+- conflito de negócio, no qual a solicitação é válida, mas não pode ser aplicada;
+- replay idempotente de operação já confirmada;
+- falha transitória, que pode ser tentada novamente com a mesma chave;
+- resultado incerto, quando a conexão cai e o backend não sabe se o commit foi concluído;
+- falha permanente/interna, que exige investigação e não deve ser repetida indefinidamente.
+
+A resposta não deve afirmar que a operação falhou apenas porque o cliente perdeu a conexão. Se o commit pode ter ocorrido, o resultado é **indeterminado até reconciliação pelo mesmo event_id**.
+
+### 24.2 Mapeamento HTTP proposto
+
+| Condição | HTTP | Código estável sugerido | Comportamento |
+|---|---:|---|---|
+| Principal ausente, inválido ou expirado | 401 | authentication_required | Não chamar a função |
+| Principal autenticado sem capacidade aprovada | 403 | capability_denied | Não chamar a função |
+| Autoalteração proibida | 403 | self_administration_forbidden | Não chamar a função |
+| Usuário alvo inexistente | 404 | target_not_found | Sem alteração ou evento de sucesso |
+| Perfil/status fora do contrato | 422 | invalid_administrative_state | Rejeitar antes da mutação |
+| Último Admin seria removido/desativado | 409 | last_active_admin_conflict | Sem mutação |
+| Mesmo event_id com fingerprint diferente | 409 | idempotency_key_conflict | Sem mutação |
+| Chave expirada/tombstone, se retenção limitada for aprovada | 409 | idempotency_key_expired | Não reexecutar |
+| Replay idêntico | 200 | replayed=true | Devolver snapshot original |
+| Primeira execução confirmada | 200 | replayed=false | Devolver snapshot confirmado |
+| Dependência temporariamente indisponível antes de resultado conhecido | 503 | temporarily_unavailable | Retry limitado com o mesmo event_id |
+| Commit de resultado incerto por queda de conexão/timeout | 503 | operation_outcome_unknown | Consultar/repetir com o mesmo event_id; nunca gerar outro |
+| Falha interna não classificada | 500 | internal_error | Não revelar detalhes; correlacionar por request_id |
+
+O status 200 para primeira execução e replay evita que clientes interpretem um replay bem-sucedido como criação de recurso. Se o contrato REST final preferir 201 para primeira execução, a distinção deve ser documentada e mantida estável; replay continua retornando o resultado original sem afirmar nova criação.
+
+### 24.3 Envelope de resposta
+
+Formato conceitual, ainda não implementado:
+
+- Sucesso: data com target_user_id, perfil, status, version, event_id, replayed e completed_at.
+- Erro: error.code estável, mensagem pública curta e request_id da tentativa HTTP atual.
+- O resultado original preserva o request ID da primeira execução no registro de idempotência/auditoria, se necessário para rastreabilidade; o envelope da tentativa atual pode informar seu próprio request ID.
+- Não incluir actor subject, e-mail, token, fingerprint bruto, SQLSTATE ou conteúdo interno da exceção no corpo público.
+
+Em replay, data reproduz o snapshot da operação original. O campo replayed muda para true, pois descreve a tentativa atual; os demais campos de resultado permanecem os originalmente confirmados.
+
+### 24.4 Política de retry por classe de falha
+
+**Pode admitir retry automático limitado, sempre com o mesmo event_id:**
+- indisponibilidade transitória de conexão antes de a operação produzir resultado;
+- deadlock ou falha de serialização, depois de rollback confirmado;
+- timeout de aquisição de conexão;
+- indisponibilidade temporária do serviço de banco.
+
+**Exige reconciliação pelo mesmo event_id antes de declarar falha:**
+- timeout durante a chamada;
+- reset de conexão enquanto o comando está em execução;
+- perda de conexão durante COMMIT;
+- resposta perdida depois de o PostgreSQL confirmar a transação.
+
+Nesses casos, o backend não deve gerar outra chave nem tentar compensar com UPDATE inverso. Deve consultar/repetir a mesma operação idempotente. Se a transação anterior confirmou, recebe o snapshot como replay; se reverteu, a chave não estará concluída e a tentativa poderá executar; se o banco continuar indisponível, manter o resultado como desconhecido.
+
+**Não repetir automaticamente:**
+- 401/403;
+- 404;
+- 409 de último Admin ou fingerprint divergente;
+- 422;
+- falha de validação/contrato;
+- erro interno sem classificação confiável.
+
+Retries automáticos devem ter limite, backoff exponencial com jitter, timeout total e logs correlacionados. Não manter retry infinito em processo HTTP. Depois do limite, responder 503 com código estável e orientação de reconciliação pelo mesmo event_id.
+
+### 24.5 Classificação interna de erros PostgreSQL
+
+O adaptador pode usar SQLSTATE e contexto da operação internamente, mas a tradução deve ser explícita e restrita ao fluxo administrativo.
+
+- 40001 (serialization failure) e 40P01 (deadlock): retry transacional limitado, com o mesmo event_id; só repetir automaticamente quando a transação anterior tiver sido revertida.
+- 55P03 (lock not available), se houver lock com timeout configurado: falha temporária, sem mutação confirmada; retry limitado.
+- 57014 (query canceled): tratar com cautela; o cancelamento não prova por si só que nenhuma confirmação ocorreu em outra etapa. Se o resultado do commit for incerto, reconciliar pela chave.
+- 23505: não converter genericamente em replay. Identificar a constraint exata. Colisão da chave idempotente exige leitura e comparação do fingerprint; outra constraint pode representar conflito de domínio ou erro interno.
+- Falha no INSERT de auditoria ou no snapshot idempotente: propagar para abortar a transação inteira; classificar externamente como indisponibilidade/falha de serviço, sem revelar a causa SQL.
+- Falha de autenticação/autorização é decidida no backend antes do SQL; não transformar qualquer erro SQL em 401/403.
+
+A lista é uma base de classificação, não um mapeamento completo de todas as exceções do driver. A implementação deverá testar o driver/versão efetivamente escolhidos e preservar a causa interna nos logs protegidos.
+
+### 24.6 Requisitos transacionais e de observabilidade
+
+1. A função executa dentro da transação aberta pelo chamador; não executa COMMIT/ROLLBACK próprio.
+2. Alteração de usuário, evento de auditoria e snapshot idempotente confirmam ou revertem juntos.
+3. O backend só responde sucesso depois de saber que o commit foi confirmado ou de recuperar o resultado persistido pelo mesmo event_id.
+4. Em erro, o backend não tenta escrever um evento de sucesso separado depois da falha da transação.
+5. Eventos de negação/autorização continuam sendo um fluxo distinto; a falha ao registrar negação não pode ser confundida com falha de auditoria da alteração administrativa.
+6. Logs estruturados correlacionam request_id, event_id, operação, resultado/replay e classe de falha; não registram tokens, segredos, e-mails desnecessários nem payload pessoal completo.
+7. Métricas devem distinguir execução nova, replay, fingerprint conflitante, retry, resultado desconhecido, rollback por auditoria e indisponibilidade.
+8. Alertar sobre crescimento de retries, taxa de 409, operação em estado desconhecido e falha de gravação do ledger.
+9. O cliente não deve apresentar “alteração concluída” até receber confirmação/reconciliação; para resultado desconhecido, exibir estado pendente de confirmação, sem instruir o usuário a criar outra operação.
+
+### 24.7 Testes de aceite adicionais
+
+- 401/403 são produzidos antes da chamada SQL.
+- 404, 409 e 422 têm códigos estáveis e não revelam detalhes internos.
+- Último Admin e fingerprint divergente não são retentados automaticamente.
+- Deadlock/serialization failure com rollback confirmado é repetido com o mesmo event_id.
+- Timeout antes do commit permite retry idempotente sem duplicar evento.
+- Queda após commit e antes da resposta é reconciliada como replay com snapshot original.
+- Indisponibilidade persistente termina em 503 controlado, sem gerar nova chave.
+- Falha de auditoria e falha de snapshot provocam rollback integral.
+- SQLSTATE, query, nome de constraint e stack trace não aparecem no corpo HTTP.
+- Logs correlacionam tentativa atual e operação original sem expor dados pessoais ou segredos.
+- Replay com request_id diferente retorna o mesmo resultado de negócio e não grava novo evento.
+
+### 24.8 Bloqueios e estado
+
+Antes da implementação ainda será necessário fechar a assinatura/retorno SQL, os códigos de erro internos, o nível de isolamento, a política de timeout/lock, o envelope HTTP e a estratégia de retry do driver. A rota administrativa segue não exposta e as capacidades seguem deny-by-default.
+
+Nenhum endpoint, função, middleware, retry automático, log ou métrica foi implementado nesta etapa. Nenhuma migration/DDL foi executada; nenhum banco persistente foi conectado ou alterado.
 
