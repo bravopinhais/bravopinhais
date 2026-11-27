@@ -32,7 +32,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Baixar repositório
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Construir imagem portátil
         run: docker build -f bravo-shadow/Dockerfile -t bravo-shadow:ci ./bravo-shadow
@@ -75,10 +75,10 @@ jobs:
         working-directory: bravo-shadow/backend
     steps:
       - name: Baixar repositório
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Configurar Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.11"
           cache: pip
