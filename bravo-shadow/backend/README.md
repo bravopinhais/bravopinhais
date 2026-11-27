@@ -132,3 +132,15 @@ A camada Financeiro também traduz violações de chave estrangeira ao criar ou 
 ### Isolamento de serviços por instância
 
 A fábrica `build_storage_services()` cria os serviços e repositórios de todos os módulos para cada chamada de `create_app()`. Os routers obtêm a instância correspondente por `request.app.state.services`; não há reconfiguração de singletons globais ao iniciar outra aplicação. A fábrica de conexões PostgreSQL é compartilhada entre esses adapters na mesma instância. Os testes de isolamento foram adicionados, mas precisam ser executados no CI/ambiente Python antes de considerar o gate validado.
+
+
+## Matriz de permissões aprovada
+
+Em 27/11/2026 foi aprovada a matriz de perfis Admin e Operador para o ambiente Shadow. A política está implementada em `app/core/authorization.py` e documentada em [`docs/matriz-permissoes.md`](../docs/matriz-permissoes.md).
+
+- **Admin:** todas as capacidades registradas, incluindo administração de usuários e configurações.
+- **Operador:** rotina operacional nos módulos financeiros, moradores, fornecedores, empregados, estoque, acertos e documentos; consulta de dashboard/relatórios e leitura de configurações; sem acesso a usuários/perfis nem alteração de configurações.
+- **Ambos:** exigem identidade Google validada no servidor e cadastro interno ativo. Perfil/capacidade desconhecidos são negados.
+- A matriz é aplicada nas rotas da API; controle visual no frontend não substitui autorização server-side.
+
+A matriz foi aprovada e registrada somente na branch `bravo-shadow`. Ela não autoriza deploy, uso de dados reais ou alterações na branch de produção. A aprovação não significa que o ciclo de testes automatizados já terminou.
