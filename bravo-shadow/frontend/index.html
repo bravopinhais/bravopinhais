@@ -294,6 +294,27 @@ function pastasView(){
   <p class="form-hint">A API já oferece consulta e cadastro para as duas listas. Exclusões exigem as capacidades administrativas correspondentes e são recusadas quando existem vínculos. Os controles permanecem desativados até a integração segura da sessão autenticada; nenhum registro é presumido.</p>
  </section>`;
 }
+
+function documentosView(){
+ const view=document.getElementById("view");
+ view.innerHTML=`<section class="panel">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Gestão de documentos</strong><div class="api-status" id="documentos-status" role="status" aria-live="polite">Aguardando sessão Google e API Shadow</div></div><span class="tag">Arquivos Gzip</span></div>
+  <div class="notice" style="margin:16px 0 18px"><div class="notice-icon">▧</div><div><strong>Arquivos organizados por pasta</strong><p>O fluxo legado permite inserir, substituir, visualizar e baixar arquivos armazenados em formato Gzip/Base64. A interface Shadow prepara esses campos sem enviar arquivos ou presumir registros.</p></div></div>
+  <div class="section-head"><h2>Inserir ou atualizar documento</h2><span>Cadastro documental</span></div>
+  <form class="api-form" id="documentos-form">
+   <div class="field"><label for="documentos-folder">Pasta / categoria</label><select id="documentos-folder" name="categoriaId" disabled><option value="">Selecione uma pasta</option></select></div>
+   <div class="field"><label for="documentos-title">Título do documento</label><input id="documentos-title" name="titulo" maxlength="200" required placeholder="Ex.: Ata de assembleia — novembro/2026" disabled></div>
+   <div class="field"><label for="documentos-file">Arquivo original</label><input id="documentos-file" name="arquivo" type="file" disabled><p class="form-hint">A compressão Gzip, validação de tipo/tamanho e envio seguro ainda precisam ser integrados ao serviço de arquivos.</p></div>
+   <div class="api-actions"><button type="button" class="btn-primary" disabled>Salvar documento</button><button type="reset" class="btn-secondary" disabled>Limpar</button></div>
+  </form>
+  <div class="section-head" style="margin-top:24px"><h2>Documentos cadastrados</h2><span id="documentos-count">Aguardando API</span></div>
+  <div class="api-toolbar"><input id="documentos-search" type="search" placeholder="Buscar por título, pasta ou nome do arquivo" aria-label="Buscar documentos" disabled><select id="documentos-filter-folder" aria-label="Filtrar por pasta" disabled><option value="">Todas as pastas</option></select></div>
+  <div class="table-wrap"><table><thead><tr><th>Pasta</th><th>Título</th><th>Arquivo original</th><th>Formato</th><th>Ações</th></tr></thead><tbody id="documentos-rows"><tr><td colspan="5" class="empty-state">A lista será carregada após a conexão segura com a API.</td></tr></tbody></table></div>
+  <div class="notice" style="margin-top:16px"><div class="notice-icon">ⓘ</div><div><strong>Recursos ainda não migrados</strong><p>Armazenamento externo, URLs assinadas, pré-visualização por tipo de arquivo, recuperação de arquivos órfãos e otimização de armazenamento não estão implementados nesta etapa. A API atual guarda o conteúdo Gzip/Base64 no registro do documento; isso não equivale a um serviço de arquivos escalável.</p></div></div>
+  <p class="form-hint">Consulta, cadastro, edição e exclusão têm rotas protegidas no backend. A tela permanece somente demonstrativa até existir uma API HTTPS isolada, sessão Google integrada e fluxo de arquivo com limites e validação definidos. Nenhum arquivo será enviado nesta versão.</p>
+ </section>`;
+}
+
 function openModule(id){
  const item=modules[id];if(!item)return;moduloAtual=id;
  document.querySelectorAll("[data-module]").forEach(el=>{if(el.closest("#navigation")){if(el.dataset.module===id)el.setAttribute("aria-current","page");else el.removeAttribute("aria-current")}});
@@ -307,6 +328,7 @@ function openModule(id){
  if(id==="usuarios"){location.hash=id;usuariosView();return}
  if(id==="compras_consumo"){location.hash=id;comprasConsumoView();return}
  if(id==="categorias"){location.hash=id;pastasView();return}
+ if(id==="documentos"){location.hash=id;documentosView();return}
  if(id==="configuracoes"){location.hash=id;configuracoesView();return}
  view.innerHTML='<section class="panel module-view"><div><div class="big-icon">◇</div><span class="eyebrow">Módulo mapeado · Bravo Shadow</span><h2>'+item.title+'</h2><p>'+item.desc+'</p><span class="tag">Estrutura visual inicial · Funcionalidade ainda não migrada</span></div></section>';
  location.hash=id;
