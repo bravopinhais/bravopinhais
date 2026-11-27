@@ -26,10 +26,10 @@ DATABASE_URL = os.getenv("BRAVO_SHADOW_TEST_DATABASE_URL")
 def _guard_test_database(url: str) -> None:
     parsed = urlparse(url)
     database = parsed.path.lstrip("/")
-    if not database.endswith("_test"):
+    if database != "bravo_shadow_test":
         raise RuntimeError(
-            "BRAVO_SHADOW_TEST_DATABASE_URL precisa apontar para um banco "
-            "descartável cujo nome termine em _test."
+            "BRAVO_SHADOW_TEST_DATABASE_URL precisa apontar exatamente para "
+            "o banco descartável bravo_shadow_test."
         )
     if parsed.scheme not in {"postgres", "postgresql"}:
         raise RuntimeError("A URL de integração precisa usar PostgreSQL.")

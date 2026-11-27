@@ -26,8 +26,11 @@ def _guard_test_database(url: str) -> None:
         raise RuntimeError("A URL de integração precisa usar PostgreSQL.")
     if parsed.hostname not in {"localhost", "127.0.0.1", "::1"}:
         raise RuntimeError("Os testes só podem conectar a PostgreSQL local/descartável.")
-    if not parsed.path.lstrip("/").endswith("_test"):
-        raise RuntimeError("O banco descartável precisa terminar com _test.")
+    if database != "bravo_shadow_test":
+        raise RuntimeError(
+            "BRAVO_SHADOW_TEST_DATABASE_URL precisa apontar exatamente para "
+            "o banco descartável bravo_shadow_test."
+        )
 
 
 @pytest.fixture
