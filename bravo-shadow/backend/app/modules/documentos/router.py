@@ -31,7 +31,7 @@ def get_document(item_id: str, request: Request):
 
 @router.post(
     "",
-    response_model=Documento,
+    response_model=DocumentoResumo,
     status_code=status.HTTP_201_CREATED,
     dependencies=[Depends(require_capability_dependency("documentos:create"))],
 )
@@ -41,7 +41,7 @@ def create_document(data: DocumentoInput, request: Request):
 
 @router.put(
     "/{item_id}",
-    response_model=Documento,
+    response_model=DocumentoResumo,
     dependencies=[Depends(require_capability_dependency("documentos:update"))],
 )
 def update_document(item_id: str, data: DocumentoInput, request: Request):
