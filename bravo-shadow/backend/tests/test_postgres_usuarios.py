@@ -257,3 +257,23 @@ def test_postgres_cadastral_update_rejects_empty_payload_without_connection():
     repository = PostgresUsuariosRepository(unexpected_connection)
     with pytest.raises(ValueError):
         repository.update_cadastral("usr_1")
+
+
+
+def test_postgres_user_lookup_by_email_is_targeted_and_caps_ambiguous_results():
+    rows = [
+        ("usr_1", "person@example.com", "Pessoa", "Bravo", "Operador", "Admin", "Ativo"),
+        ("usr_2", "PERSON@example.com", "Pessoa 2", "Bravo", "Conselho", "Operador", "Ativo"),
+    ]
+    connection = Connection(rows=rows)
+    repository = PostgresUsuariosRepository(factory(connection))
+
+    matches = repository.find_by_email(" PERSON@example.com ")
+
+    sql, params = connection.calls[0]
+    normalized_sql = " ".join(sql.lower().split())
+    assert "where lower(email) = %s" in normalized_sql
+    assert "order by id limit 2" in normalized_sql
+    assert params == ("person@example.com",)
+    assert [item.id for item in matches] == ["usr_1", "usr_2"]
+    assert connection.commits == 1
