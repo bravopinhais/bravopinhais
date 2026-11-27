@@ -1398,21 +1398,138 @@ function formasView(){
  </section>`;
  if(formasMonetariasApiClient)void loadFormasMonetarias(formasMonetariasApiClient);
 }
+let usuariosApiClient=null,usuariosItems=[],usuariosSequence=0,usuariosController=null,usuarioEditingId=null,usuariosSaving=false;
+function usuariosCan(action){return hasBravoCapability("usuarios:"+action);}
+function usuariosStatus(message,kind=""){const node=document.getElementById("usr-status");if(node){node.textContent=message;node.className="api-status"+(kind?" "+kind:"");}}
+function usuariosApplyPermissions(){
+ const read=usuariosCan("read"),create=usuariosCan("create"),update=usuariosCan("update"),deactivate=usuariosCan("deactivate");
+ const form=document.getElementById("usr-form");
+ if(form)form.querySelectorAll("input").forEach(input=>{input.disabled=usuariosSaving||(!usuarioEditingId?!create:!update)||(!usuarioEditingId&&input.name==="email"&&!create);});
+ const save=document.getElementById("usr-save");if(save)save.disabled=usuariosSaving||(!usuarioEditingId?!create:!update);
+ const refresh=document.getElementById("usr-refresh");if(refresh)refresh.disabled=!read||!usuariosApiClient||usuariosSaving;
+ const search=document.getElementById("usr-search");if(search)search.disabled=!read;
+ const note=document.getElementById("usr-note");if(note)note.textContent=read?"Somente Admin possui capacidades de administração de usuários. O e-mail de vínculo Google é imutável; novos cadastros começam como Operador/Ativo.":"Sua sessão não possui autorização para consultar usuários.";
+}
+function usuariosValidateList(items){
+ if(!Array.isArray(items)||!items.every(u=>u&&typeof u.id==="string"&&u.id&&typeof u.email==="string"&&typeof u.nome==="string"&&typeof u.loja==="string"&&typeof u.cargo==="string"&&["Admin","Operador"].includes(u.perfil)&&["Ativo","Inativo"].includes(u.status)))throw new Error("A API retornou uma lista de usuários inválida.");
+ return items;
+}
+function usuariosRenderRows(){
+ const tbody=document.getElementById("usr-rows");if(!tbody)return;tbody.replaceChildren();
+ const query=(document.getElementById("usr-search")?.value||"").trim().toLocaleLowerCase("pt-BR");
+ const filtered=usuariosItems.filter(u=>[u.nome,u.email,u.cargo,u.loja,u.perfil,u.status].some(v=>String(v).toLocaleLowerCase("pt-BR").includes(query)));
+ if(!filtered.length){const tr=document.createElement("tr"),td=document.createElement("td");td.colSpan=6;td.className="empty-state";td.textContent=usuariosItems.length?"Nenhum usuário corresponde à pesquisa.":"Nenhum usuário cadastrado.";tr.append(td);tbody.append(tr);return;}
+ for(const user of filtered){
+  const tr=document.createElement("tr");
+  for(const value of [user.nome,user.email,user.cargo,user.perfil,user.status]){const td=document.createElement("td");td.textContent=value;tr.append(td);}
+  const actions=document.createElement("td");actions.className="table-actions";
+  if(usuariosCan("update")){const edit=document.createElement("button");edit.type="button";edit.className="action-btn";edit.textContent="Editar dados";edit.dataset.userAction="edit";edit.dataset.userId=user.id;actions.append(edit);}
+  if(usuariosCan("deactivate")&&user.status==="Ativo"&&user.email.toLowerCase()!==(bravoCurrentUser?.email||"").toLowerCase()){const deactivate=document.createElement("button");deactivate.type="button";deactivate.className="action-btn";deactivate.textContent="Desativar";deactivate.dataset.userAction="deactivate";deactivate.dataset.userId=user.id;actions.append(deactivate);}
+  if(!actions.childElementCount){const span=document.createElement("span");span.className="form-hint";span.textContent="Sem ações disponíveis";actions.append(span);}
+  tr.append(actions);tbody.append(tr);
+ }
+}
+async function usuariosLoad(api=usuariosApiClient){
+ if(!api||!usuariosCan("read"))return;
+ usuariosController?.abort();const controller=new AbortController();usuariosController=controller;const sequence=++usuariosSequence;
+ usuariosStatus("Consultando usuários…");
+ try{
+  const items=usuariosValidateList(await api.get("/api/v1/usuarios",{signal:controller.signal}));
+  if(sequence!==usuariosSequence||controller.signal.aborted||moduloAtual!=="usuarios")return;
+  usuariosItems=items;usuariosRenderRows();usuariosStatus(items.length+" usuário(s) carregado(s).","ok");
+ }catch(error){
+  if(controller.signal.aborted||sequence!==usuariosSequence)return;
+  usuariosItems=[];usuariosRenderRows();
+  usuariosStatus(error?.status===403?"A API negou a consulta.":error?.status===401?"Sessão expirada. Entre novamente.":error?.status===503?"Consulta indisponível no armazenamento configurado.":(error?.message||"Não foi possível consultar usuários."),"err");
+ }finally{if(usuariosController===controller)usuariosController=null;usuariosApplyPermissions();}
+}
+function usuariosResetForm(){
+ const form=document.getElementById("usr-form");if(form)form.reset();usuarioEditingId=null;
+ const title=document.getElementById("usr-form-title");if(title)title.textContent="Novo usuário";
+ const email=document.getElementById("usr-email");if(email){email.disabled=!usuariosCan("create");email.required=true;}
+ const cancel=document.getElementById("usr-cancel");if(cancel)cancel.hidden=true;
+ const save=document.getElementById("usr-save");if(save)save.textContent="Cadastrar usuário";
+ usuariosApplyPermissions();
+}
+function usuariosStartEdit(id){
+ const user=usuariosItems.find(item=>item.id===id);if(!user||!usuariosCan("update"))return;
+ usuarioEditingId=user.id;
+ for(const [field,value] of Object.entries({nome:user.nome,loja:user.loja,cargo:user.cargo})){const input=document.querySelector('[name="usr-'+field+'"]');if(input)input.value=value;}
+ const email=document.getElementById("usr-email");if(email){email.value=user.email;email.disabled=true;email.required=false;}
+ const title=document.getElementById("usr-form-title");if(title)title.textContent="Editar dados cadastrais";
+ const save=document.getElementById("usr-save");if(save)save.textContent="Salvar alterações";
+ const cancel=document.getElementById("usr-cancel");if(cancel)cancel.hidden=false;
+ usuariosApplyPermissions();document.getElementById("usr-form-title")?.scrollIntoView({behavior:"smooth",block:"center"});
+}
+async function usuariosSubmit(event){
+ event.preventDefault();if(!usuariosApiClient||usuariosSaving)return;
+ const can=usuarioEditingId?usuariosCan("update"):usuariosCan("create");if(!can){usuariosStatus("Sua sessão não possui autorização para esta operação.","err");return;}
+ const form=event.currentTarget,data={};
+ for(const field of ["nome","loja","cargo"]){data[field]=(form.elements["usr-"+field]?.value||"").trim();}
+ if(!data.nome||!data.loja||!data.cargo){usuariosStatus("Preencha nome, loja e cargo.","err");return;}
+ const editing=Boolean(usuarioEditingId),id=usuarioEditingId;
+ if(!editing){data.email=(form.elements["usr-email"]?.value||"").trim().toLowerCase();if(!data.email){usuariosStatus("Informe o e-mail Google verificado que será vinculado ao cadastro.","err");return;}}
+ usuariosSaving=true;usuariosApplyPermissions();usuariosStatus(editing?"Salvando dados cadastrais…":"Criando usuário Operador…");
+ try{
+  if(editing)await usuariosApiClient.put("/api/v1/usuarios/"+encodeURIComponent(id),data);
+  else await usuariosApiClient.post("/api/v1/usuarios",data);
+  usuariosResetForm();await usuariosLoad(usuariosApiClient);usuariosStatus(editing?"Dados cadastrais atualizados.":"Cadastro criado como Operador/Ativo. O acesso depende do mesmo e-mail verificado no Google.","ok");
+ }catch(error){usuariosStatus(error?.status===409?"Já existe um usuário vinculado a esse e-mail.":error?.status===403?"A API negou a operação: permissão insuficiente.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível salvar o usuário."),"err");}
+ finally{usuariosSaving=false;usuariosApplyPermissions();}
+}
+async function usuariosDeactivate(id){
+ if(!usuariosApiClient||!usuariosCan("deactivate")||usuariosSaving)return;
+ const user=usuariosItems.find(item=>item.id===id);if(!user||user.status!=="Ativo")return;
+ if(user.email.toLowerCase()===(bravoCurrentUser?.email||"").toLowerCase()){usuariosStatus("Não é permitido desativar a própria conta.","err");return;}
+ if(!window.confirm("Desativar o acesso de "+user.nome+" ("+user.email+")? O cadastro será preservado e o acesso Google será bloqueado. Esta ação exige auditoria persistente."))return;
+ usuariosSaving=true;usuariosApplyPermissions();usuariosStatus("Solicitando desativação auditada…");
+ try{await usuariosApiClient.post("/api/v1/usuarios/"+encodeURIComponent(id)+"/desativar",{});await usuariosLoad(usuariosApiClient);usuariosStatus("Usuário desativado. O cadastro foi preservado.","ok");}
+ catch(error){usuariosStatus(error?.status===409?"A operação foi bloqueada para preservar o último Admin ativo.":error?.status===503?"Desativação auditada indisponível. Nenhuma alteração foi confirmada.":error?.status===403?"A API negou a desativação.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível desativar o usuário."),"err");}
+ finally{usuariosSaving=false;usuariosApplyPermissions();}
+}
+window.addEventListener("bravo:session-ready",event=>{
+ const api=event.detail?.api;if(!api||typeof api.get!=="function")return;
+ usuariosApiClient=api;usuariosApplyPermissions();if(moduloAtual==="usuarios")void usuariosLoad(api);
+});
+window.addEventListener("bravo:session-ended",()=>{
+ usuariosApiClient=null;usuariosSequence++;usuariosController?.abort();usuariosController=null;usuariosItems=[];usuarioEditingId=null;usuariosSaving=false;
+ if(moduloAtual==="usuarios")usuariosView();
+});
 function usuariosView(){
  const view=document.getElementById("view");
  view.innerHTML=`<section class="panel">
-  <div class="api-toolbar"><div><strong style="font-size:13px">Acesso e cadastro de usuários</strong><div class="api-status">Módulo em preparação segura</div></div><span class="tag">Sem operações liberadas</span></div>
-  <div class="notice" style="margin:16px 0 18px"><div class="notice-icon">⌁</div><div><strong>Integração Google pendente</strong><p>A integração será feita diretamente com a autenticação Google. O ID token ainda não está disponível no navegador; sem essa identidade validada, a lista de usuários não será consultada nem serão enviados cadastros ou alterações.</p></div></div>
-  <div class="section-head"><h2>Pré-requisitos de acesso</h2><span>Estado atual do Shadow</span></div>
-  <div class="data-table-wrap"><table class="data-table" style="min-width:0"><tbody>
-   <tr><th scope="row">Sessão Google no navegador</th><td><span class="tag">Pendente · configuração do cliente Google</span></td></tr>
-   <tr><th scope="row">Consulta de usuários</th><td><span class="tag">Bloqueada · usuarios:read não concedida</span></td></tr>
-   <tr><th scope="row">Cadastro e edição</th><td><span class="tag">Bloqueados · matriz de perfis fechada</span></td></tr>
-   <tr><th scope="row">Desativação lógica</th><td><span class="tag">Protegida · usuarios:deactivate não concedida</span></td></tr>
-   <tr><th scope="row">Exclusão física</th><td><span class="tag">Desabilitada pela API · HTTP 410</span></td></tr>
-  </tbody></table></div>
-  <div class="dashboard-gate-note"><span class="dot"></span><span>Nenhum perfil ou privilégio será habilitado automaticamente. A integração usará o Google diretamente; faltam o Client ID público correto, as origens autorizadas e a aprovação explícita da matriz de permissões.</span></div>
- </section>`;
+  <div class="api-toolbar"><div><strong style="font-size:13px">Acesso e cadastro de usuários</strong><div class="api-status" id="usr-status" role="status" aria-live="polite">Aguardando sessão Google e API HTTPS Shadow</div></div><span class="tag">Administração protegida</span></div>
+  <div class="notice" style="margin:14px 0 18px"><div class="notice-icon">♙</div><div><strong>Vínculo de identidade Google</strong><p>O e-mail é a chave de associação com a conta Google verificada. Novos cadastros são criados exclusivamente como Operador/Ativo. A tela não permite criar Admin, trocar e-mail, alterar privilégios nem reativar contas.</p></div></div>
+  <div class="section-head"><h2 id="usr-form-title">Novo usuário</h2><span>Cadastro básico</span></div>
+  <form class="api-form" id="usr-form" style="grid-template-columns:repeat(2,minmax(0,1fr))">
+   <div class="field"><label for="usr-email">E-mail Google</label><input id="usr-email" name="usr-email" type="email" maxlength="254" autocomplete="off" placeholder="usuario@dominio.com" required disabled></div>
+   <div class="field"><label for="usr-nome">Nome completo</label><input id="usr-nome" name="usr-nome" maxlength="160" required disabled></div>
+   <div class="field"><label for="usr-loja">Unidade / Loja</label><input id="usr-loja" name="usr-loja" maxlength="120" required disabled></div>
+   <div class="field"><label for="usr-cargo">Cargo</label><input id="usr-cargo" name="usr-cargo" maxlength="100" required disabled></div>
+   <div style="grid-column:1/-1;display:flex;justify-content:flex-end;gap:8px"><button type="button" id="usr-cancel" class="action-btn" hidden>Cancelar edição</button><button type="submit" id="usr-save" class="action-btn primary" disabled>Cadastrar usuário</button></div>
+  </form>
+  <p class="form-hint">O cadastro não cria credenciais locais. O usuário só entra quando autenticar no Google com o mesmo e-mail verificado e o cadastro estiver Ativo.</p>
+ </section>
+ <section class="panel" style="margin-top:16px">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Usuários cadastrados</strong><div class="form-hint">E-mail, perfil e situação retornados pela API autorizada</div></div><button type="button" id="usr-refresh" class="action-btn" disabled>Atualizar</button></div>
+  <div class="api-form" style="grid-template-columns:minmax(0,1fr) auto;align-items:end"><div class="field"><label for="usr-search">Pesquisar</label><input id="usr-search" placeholder="Nome, e-mail, cargo ou perfil" disabled></div><button type="button" id="usr-search-clear" class="action-btn">Limpar</button></div>
+  <div class="data-table-wrap"><table class="data-table"><caption>Cadastro interno — sem credenciais locais</caption><thead><tr><th scope="col">Nome</th><th scope="col">E-mail Google</th><th scope="col">Cargo</th><th scope="col">Perfil</th><th scope="col">Status</th><th scope="col">Ações</th></tr></thead><tbody id="usr-rows"><tr><td colspan="6" class="empty-state">Aguardando consulta autenticada.</td></tr></tbody></table></div>
+  <p id="usr-note" class="form-hint" role="note">A API controla as permissões efetivas; os controles visuais não substituem a autorização do servidor.</p>
+ </section>
+ <section class="panel" style="margin-top:16px"><div class="section-head" style="margin-top:0"><h2>Proteções administrativas</h2><span>Regras do backend</span></div><ul style="margin:0;padding-left:18px;color:var(--soft);font-size:12px;line-height:1.9">
+  <li>Somente dados cadastrais (nome, unidade/loja e cargo) podem ser editados nesta tela; o e-mail de identidade é imutável.</li>
+  <li>Perfil e status não são editáveis por formulário. Mudanças privilegiadas permanecem fora da API pública desta interface.</li>
+  <li>Desativação é lógica, exige confirmação e auditoria na mesma transação; a própria conta não pode ser desativada.</li>
+  <li>O backend impede desativar ou rebaixar o último Admin ativo; exclusão física é bloqueada.</li>
+  <li>Sem PostgreSQL e auditoria persistente, operações administrativas de desativação falham fechadas.</li>
+ </ul></section>`;
+ document.getElementById("usr-form")?.addEventListener("submit",usuariosSubmit);
+ document.getElementById("usr-cancel")?.addEventListener("click",usuariosResetForm);
+ document.getElementById("usr-refresh")?.addEventListener("click",()=>void usuariosLoad());
+ document.getElementById("usr-search")?.addEventListener("input",usuariosRenderRows);
+ document.getElementById("usr-search-clear")?.addEventListener("click",()=>{const input=document.getElementById("usr-search");if(input)input.value="";usuariosRenderRows();});
+ document.getElementById("usr-rows")?.addEventListener("click",event=>{const button=event.target.closest("button[data-user-action]");if(!button)return;const id=button.dataset.userId;if(button.dataset.userAction==="edit")usuariosStartEdit(id);if(button.dataset.userAction==="deactivate")void usuariosDeactivate(id);});
+ usuariosApplyPermissions();usuariosRenderRows();if(usuariosApiClient)void usuariosLoad(usuariosApiClient);
 }
 function ccNumber(value,digits=3){
  const number=Number(value);
