@@ -7,7 +7,7 @@ from fastapi import HTTPException
 
 from app.core.postgres import PostgresUnitOfWork
 from app.modules.categorias.schemas import Categoria
-from app.modules.documentos.schemas import Documento
+from app.modules.documentos.schemas import Documento, DocumentoResumo
 from app.modules.motivos_acerto.schemas import MotivoAcerto
 
 
@@ -170,6 +170,20 @@ class PostgresDocumentosRepository(_CatalogRepository):
             f"SELECT {self._columns} FROM {self._table} WHERE id = %s",
             (item_id,), fetch="one",
         ))
+
+    def list_metadata(self) -> list[DocumentoResumo]:
+        rows = self._query(
+            f"SELECT id, pasta, categoria_id, titulo, nome_arquivo "
+            f"FROM {self._table} ORDER BY created_at, id",
+            fetch="all",
+        )
+        return [
+            DocumentoResumo(
+                id=row[0], pasta=row[1], categoriaId=row[2],
+                titulo=row[3], nomeArquivo=row[4],
+            )
+            for row in rows
+        ]
 
     def exists(self, item_id: str) -> bool:
         return self.get(item_id) is not None
