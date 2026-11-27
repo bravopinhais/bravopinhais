@@ -31,11 +31,14 @@ jobs:
           cp -R bravo-shadow/frontend/. _site/
           touch _site/.nojekyll
 
-      - name: Validar arquivos publicados
+      - name: Validar arquivos e proteções do preview
         run: |
           test -s _site/index.html
           grep -q 'function usuariosView' _site/index.html
-          grep -q 'PREVIEW' _site/index.html || true
+          grep -q 'const IS_STATIC_PREVIEW=location.hostname.endsWith("github.io")' _site/index.html
+          grep -q 'if(IS_STATIC_PREVIEW)throw new Error' _site/index.html
+          grep -q 'if(IS_STATIC_PREVIEW){view.innerHTML=' _site/index.html
+          grep -q 'Indicadores aguardando autenticação' _site/index.html
 
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
