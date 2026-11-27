@@ -72,3 +72,9 @@ O Worker Cloudflare de prova agora está com `workers_dev=false`, origem CORS de
 - Não existe provedor/origem HTTPS isolada aprovado ou configurado.
 - Não existe PostgreSQL Shadow provisionado; não preencher secrets com dados de produção.
 - O Dockerfile é blueprint; não foi construído nem publicado.
+
+## CORS por allowlist explícita
+
+O FastAPI agora aceita a variável `BRAVO_CORS_ORIGINS` como lista separada por vírgulas de origens exatas. Sem valor, CORS continua fechado. Curinga `*`, credenciais/cookies, caminhos, query strings e origens HTTP públicas são rejeitados; HTTP é permitido somente em localhost para desenvolvimento. Métodos e cabeçalhos são limitados aos usados pela API e `ETag`/`X-Request-ID` são expostos.
+
+O valor permanece vazio no `.env.example`; não foi inventada nem autorizada uma origem de preview. Ao definir hospedagem, preencher apenas com a origem HTTPS exata do frontend Shadow.
