@@ -1142,3 +1142,79 @@ Não escolher JWT no banco ou assertion assinada por conveniência sem protótip
 ### 21.7 Estado e bloqueios
 
 Nenhum token Google foi consultado ou armazenado. Nenhuma chave, segredo, assertion, serviço signer ou verificador JWT foi criado. Nenhuma função SQL, role, policy, grant ou migration foi implementada/aplicada. Nenhum banco foi conectado. A alternativa A é uma hipótese para piloto descartável, não uma autorização para produção; a proteção contra runtime comprometido permanece explicitamente não resolvida.
+
+## 22. Contrato de idempotência da alteração administrativa — 27/11/2026
+
+**Status:** decisão de contrato e lacunas registradas; sem implementação ou alteração de schema.
+
+### 22.1 Evidência do estado atual
+
+- `audit_events.event_id` é `PRIMARY KEY`; isso impede duas linhas com a mesma chave, mas não define replay sem efeito colateral.
+- `PostgresAuditSink.append_in_transaction` executa INSERT e deixa a transação ao chamador. Uma colisão de chave não é tratada como retorno do resultado original.
+- `PostgresUsuariosRepository.update_administrative_state` bloqueia a tabela de usuários, lê o alvo, verifica o último Admin, atualiza `perfil/status`, incrementa `version` e só depois insere auditoria.
+- Portanto, se o mesmo `event_id` for repetido, a segunda tentativa pode executar o UPDATE antes de o INSERT falhar. O rollback da transação deve reverter esse UPDATE, mas o chamador recebe erro de unicidade, não um replay idempotente bem-sucedido.
+- Os testes de integração PostgreSQL inspecionados cobrem atualização/auditoria atômicas, último Admin, rollback e concorrência; não foi localizado um teste de replay idempotente da alteração administrativa com o mesmo `event_id`.
+
+A chave primária é uma proteção de duplicidade no ledger, não prova suficiente de idempotência da operação de negócio.
+
+### 22.2 Contrato recomendado
+
+Definir `event_id` como chave de idempotência da operação administrativa, com dois resultados distintos:
+
+| Situação | Resultado esperado | Efeito no estado |
+|---|---|---|
+| Primeiro uso do ID | Executar alteração e inserir evento atomicamente | Uma única alteração e um evento |
+| Repetição do mesmo ID e payload idêntico | Retornar resultado original com indicação de replay | Nenhuma nova alteração, incremento de versão ou evento |
+| Mesmo ID com ator, alvo, ação, perfil/status ou request_id divergente | Conflito determinístico (HTTP 409 na camada HTTP) | Nenhuma alteração |
+| Falha antes do commit | Erro; transação revertida | Nenhum evento/alteração parcial; retry pode executar |
+| Timeout após commit, cliente sem resposta | Retry com mesmo ID retorna replay original | Sem segunda alteração |
+
+O payload canônico deve incluir, no mínimo: nome/versionamento da operação, actor subject, target user ID, perfil solicitado, status solicitado e request ID conforme a semântica aprovada. Campos não incluídos no fingerprint não podem ser usados para distinguir requests conflitantes.
+
+### 22.3 Lacuna do schema atual
+
+O registro atual de auditoria contém `event_id`, actor, action, entity, outcome e request_id, mas não registra `perfil/status` solicitados nem fingerprint do payload. Assim, ao encontrar um `event_id` existente, a função não consegue provar que a repetição pediu exatamente o mesmo estado final. Comparar apenas actor/action/entity não detecta reutilização do mesmo ID para alterar o mesmo usuário de `Operador` para `Admin`, por exemplo.
+
+**Conclusão:** para garantir replay idêntico versus reutilização divergente, será necessário persistir uma representação verificável do payload da operação. Opções a avaliar no piloto:
+1. Adicionar ao evento um campo `payload_hash`/`operation_hash` calculado dentro da fronteira confiável a partir de uma serialização canônica, ou uma coluna JSONB com os campos imutáveis da solicitação.
+2. Criar tabela de idempotência dedicada, com `event_id` como chave e os campos da operação/fingerprint, gravada na mesma transação da alteração e do evento de auditoria.
+
+Não usar apenas `request_id` como chave idempotente: no schema ele é nullable e não unique. Não confiar em hash fornecido pelo navegador. Se optar por hash, definir algoritmo, codificação e canonicalização estáveis, e calcular/verificar no lado confiável; não presumir extensão PostgreSQL disponível sem verificar o ambiente descartável.
+
+### 22.4 Ordem transacional da função futura
+
+1. Validar todos os argumentos e construir a representação canônica/fingerprint.
+2. Adquirir lock transacional que serialize chamadas administrativas concorrentes. Preservar a proteção atual do último Admin; a estratégia de lock precisa cobrir também a verificação de replay.
+3. Consultar a chave de idempotência/evento existente.
+4. Se existir e o fingerprint coincidir, retornar o resultado original com `replayed = true`, sem UPDATE, sem incrementar `version` e sem INSERT de novo evento.
+5. Se existir e o fingerprint divergir, retornar conflito estável, sem mutação.
+6. Se não existir, validar alvo e regra do último Admin, aplicar UPDATE e gravar o registro de idempotência e a auditoria na mesma transação.
+7. Qualquer falha na escrita de idempotência ou auditoria deve abortar toda a operação.
+
+A serialização e a constraint UNIQUE devem continuar sendo a defesa final contra corrida entre duas chamadas com o mesmo ID. A implementação precisa definir como tratar uma colisão concorrente após a leitura inicial; não capturar genericamente `unique_violation` e declarar replay sem comparar o fingerprint persistido.
+
+### 22.5 Resposta da função e contrato HTTP
+
+A função futura deve retornar campos estáveis e mínimos, por exemplo: `target_user_id`, `perfil`, `status`, `version`, `event_id` e `replayed`. Não retornar texto interno de exceção PostgreSQL. O backend converte conflito de reutilização de chave em HTTP 409; falha de infraestrutura permanece erro de serviço sem revelar SQLSTATE/detalhes internos.
+
+No replay, devolver o resultado original armazenado, não o estado atual possivelmente alterado por uma operação posterior. Isso exige persistir os dados de resultado/version no registro idempotente ou provar que podem ser recuperados sem ambiguidade.
+
+### 22.6 Testes de aceite obrigatórios
+
+- Primeira chamada: exatamente um UPDATE, incremento único de version e um evento.
+- Replay sequencial idêntico: mesmo resultado, `replayed=true`, version inalterada e uma linha de auditoria.
+- Mesmo event_id com perfil diferente: conflito e nenhuma mutação.
+- Mesmo event_id com status diferente: conflito e nenhuma mutação.
+- Mesmo event_id com ator diferente: conflito e nenhuma mutação.
+- Mesmo event_id com alvo/ação/request_id diferente: conflito e nenhuma mutação.
+- Duas sessões concorrentes com o mesmo ID e payload idêntico: uma execução efetiva; a outra recebe replay do resultado original.
+- Duas sessões concorrentes com o mesmo ID e payload divergente: uma execução efetiva e a outra conflito; nunca duas alterações/eventos.
+- Falha forçada ao persistir fingerprint ou auditoria: rollback de usuário, versão, idempotência e evento.
+- Timeout simulado após commit e retry com o mesmo ID: replay sem nova alteração.
+- Corrida do último Admin continua preservando ao menos um Admin ativo, inclusive com retries.
+
+### 22.7 Impacto no escopo e decisão pendente
+
+A afirmação anterior de que o schema atual é suficiente vale para o contrato básico da função, mas não para idempotência forte com detecção de payload divergente e retorno do resultado original. Essa garantia exige persistência adicional (coluna ou tabela) ou uma limitação formal do contrato. Recomenda-se não implementar a função até escolher uma dessas opções e revisar a migration correspondente no banco PostgreSQL descartável.
+
+Nenhuma migration, coluna, tabela, função, role, policy ou grant foi criada/aplicada. Nenhum banco foi conectado. Nenhum teste novo foi executado nesta revisão; a análise foi feita sobre arquivos versionados da branch.
