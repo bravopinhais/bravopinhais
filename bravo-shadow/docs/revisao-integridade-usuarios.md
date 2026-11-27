@@ -91,3 +91,18 @@ Nenhum router foi conectado, nenhuma capacidade foi liberada, nenhuma migration 
 A execução GitHub Actions **45914069701** concluiu com sucesso no commit `2c92bd7864c21a327b0410c29b2a9a16cffb21f6`: **443 testes aprovados**, incluindo os quatro cenários novos com PostgreSQL 16 descartável. O build Docker e o smoke test da API/interface também passaram. Houve um warning de depreciação de dependência de teste, sem falha.
 
 A primeira execução da integração falhou porque o cenário de rollback de auditoria tinha somente um Admin ativo; a proteção do último Admin bloqueou corretamente a operação antes de alcançar o trigger de auditoria. O fixture foi corrigido adicionando um segundo Admin sintético, isolando o teste da regra que ele pretendia exercitar. A execução seguinte passou.
+
+## 5. Identidade Google: e-mail verificado versus identificador estável
+
+A inspeção do verificador e do repositório identificou uma limitação que deve ser resolvida antes de considerar a autenticação pronta para operação:
+
+- O backend valida o ID token Google com audiência configurada e exige `email_verified=true`.
+- O claim `sub` é validado como não vazio e incluído no principal autenticado, mas não é persistido no cadastro interno.
+- A associação atual procura o usuário exclusivamente pelo e-mail normalizado.
+- O SQL rascunho da tabela `usuarios` ainda não possui coluna para o identificador Google.
+
+A documentação oficial do Google recomenda usar `sub` como identificador único e estável da Conta Google, pois o e-mail pode mudar. A associação por e-mail deve ser tratada como etapa inicial, não como vínculo definitivo.
+
+Foi criado `docs/identidade-google-evolucao.md` com proposta de evolução sem mudança operacional: coluna nullable para `google_subject`, índice único parcial, associação inicial explícita e auditada, e proibição de vincular automaticamente contas diferentes apenas por coincidência de e-mail.
+
+**Não implementado nesta etapa:** nenhuma coluna ou índice foi adicionado ao SQL; nenhum schema, repositório, endpoint, tela de login ou fluxo de sessão foi alterado. Não houve migration, conexão com banco ou associação de contas reais.
