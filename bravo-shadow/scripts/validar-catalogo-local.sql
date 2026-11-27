@@ -190,6 +190,35 @@ DECLARE
         'pre_import_approval_events.recorded_at|now()'
     ];
     missing_default_columns text[];
+    expected_column_types text[] := ARRAY[
+        'formas_monetarias.multa_pct|double precision',
+        'financeiro.valor|numeric(14,2)',
+        'contas_bancarias.saldo|numeric(14,2)',
+        'estoque.quantidade|numeric(14,3)',
+        'estoque.minimo|numeric(14,3)',
+        'estoque.maximo|numeric(14,3)',
+        'estoque.valor_unitario|numeric(14,2)',
+        'estoque.data_cadastro|date',
+        'acertos_estoque.quantidade|numeric(14,3)',
+        'acertos_estoque.data|timestamp with time zone',
+        'formas_monetarias.created_at|timestamp with time zone',
+        'formas_monetarias.updated_at|timestamp with time zone',
+        'financeiro.created_at|timestamp with time zone',
+        'financeiro.updated_at|timestamp with time zone',
+        'estoque.created_at|timestamp with time zone',
+        'estoque.updated_at|timestamp with time zone',
+        'documentos.created_at|timestamp with time zone',
+        'documentos.updated_at|timestamp with time zone',
+        'audit_events.occurred_at|timestamp with time zone',
+        'migration_batches.created_at|timestamp with time zone',
+        'migration_source_records.created_at|timestamp with time zone',
+        'migration_batch_recovery_events.reviewed_at|timestamp with time zone',
+        'migration_executions.created_at|timestamp with time zone',
+        'migration_apply_approvals.approved_at|timestamp with time zone',
+        'migration_review_events.reviewed_at|timestamp with time zone',
+        'pre_import_approval_events.reviewed_at|timestamp with time zone'
+    ];
+    mismatched_column_types text[];
     missing_roles text[];
     missing_tables text[];
     bad_tables text[];
@@ -435,10 +464,37 @@ BEGIN
         RAISE EXCEPTION 'Restrições de aprovação exclusivamente dry-run ausentes/não validadas.';
     END IF;
 
-    RAISE NOTICE 'OK: % tabelas, % FKs, % CHECKs nomeados, % NOT NULLs, % DEFAULTs, % índices únicos e % índices de consulta verificados; RLS e controles de acesso conferidos.',
+    -- Confere tipos e precisão dos campos numéricos, datas e timestamps
+    -- que fazem parte dos contratos de payload e trilha de auditoria.
+    SELECT array_agg(expected_column || ' esperado=' || expected_type)
+      INTO mismatched_column_types
+      FROM (
+        SELECT split_part(item, '|', 1) AS expected_column,
+               split_part(item, '|', 2) AS expected_type
+          FROM unnest(expected_column_types) AS item
+      ) expected
+     WHERE NOT EXISTS (
+        SELECT 1
+          FROM pg_attribute att
+          JOIN pg_class tbl ON tbl.oid = att.attrelid
+          JOIN pg_namespace ns ON ns.oid = tbl.relnamespace
+         WHERE ns.nspname = 'bravo_shadow'
+           AND tbl.relname = split_part(expected.expected_column, '.', 1)
+           AND att.attname = split_part(expected.expected_column, '.', 2)
+           AND att.attnum > 0
+           AND NOT att.attisdropped
+           AND format_type(att.atttypid, att.atttypmod) = expected.expected_type
+     );
+
+    IF mismatched_column_types IS NOT NULL THEN
+        RAISE EXCEPTION 'Tipos/precisões de colunas divergentes: %',
+            mismatched_column_types;
+    END IF;
+
+    RAISE NOTICE 'OK: % tabelas, % FKs, % CHECKs nomeados, % NOT NULLs, % DEFAULTs, % tipos/precisões, % índices únicos e % índices de consulta verificados; RLS e controles de acesso conferidos.',
         cardinality(expected_tables), cardinality(expected_foreign_keys),
         cardinality(expected_check_constraints), cardinality(expected_not_null_columns),
-        cardinality(expected_default_columns), cardinality(expected_unique_indexes),
-        cardinality(expected_query_indexes);
+        cardinality(expected_default_columns), cardinality(expected_column_types),
+        cardinality(expected_unique_indexes), cardinality(expected_query_indexes);
 END;
 $$;
