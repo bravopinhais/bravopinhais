@@ -24,6 +24,8 @@ class PostgresUnitOfWork:
     """
 
     def __init__(self, connection_factory: Callable[[], ConnectionT]) -> None:
+        if not callable(connection_factory):
+            raise TypeError("connection_factory deve ser chamável.")
         self._connection_factory = connection_factory
         self.connection: ConnectionT | None = None
 

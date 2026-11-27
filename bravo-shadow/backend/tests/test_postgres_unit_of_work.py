@@ -90,3 +90,12 @@ def test_unit_of_work_still_closes_when_rollback_fails_after_commit_error():
     assert connection.rollbacks == 1
     assert connection.closes == 1
 
+def test_unit_of_work_rejects_non_callable_connection_factory():
+    for factory in (None, object(), "not-callable"):
+        try:
+            PostgresUnitOfWork(factory)
+        except TypeError as error:
+            assert "connection_factory" in str(error)
+        else:
+            raise AssertionError("A fábrica inválida deveria ser rejeitada")
+
