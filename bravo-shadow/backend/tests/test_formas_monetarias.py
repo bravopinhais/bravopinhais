@@ -46,13 +46,13 @@ def test_operator_is_denied_all_formas_monetarias_actions_until_matrix_approval(
     assert client.delete("/api/v1/formas-monetarias/1").status_code == 403
 
 
-@pytest.mark.parametrize("multa_pct", [0, 2, 100])
+@pytest.mark.parametrize("multa_pct", [0, 2, 2.01, 100])
 def test_forma_monetaria_accepts_multa_within_range(multa_pct):
     data = FormaMonetariaInput(nome="PIX", multaPct=multa_pct)
     assert data.multaPct == multa_pct
 
 
-@pytest.mark.parametrize("multa_pct", [-0.01, 100.01, float("nan"), float("inf"), float("-inf")])
+@pytest.mark.parametrize("multa_pct", [-0.01, 100.01, 1.234, float("nan"), float("inf"), float("-inf")])
 def test_forma_monetaria_rejects_multa_outside_range_or_non_finite(multa_pct):
     with pytest.raises(ValidationError):
         FormaMonetariaInput(nome="PIX", multaPct=multa_pct)
