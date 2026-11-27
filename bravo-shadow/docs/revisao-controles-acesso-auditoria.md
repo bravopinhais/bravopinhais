@@ -171,3 +171,12 @@ O script não contém DDL, CREATE ROLE, GRANT, REVOKE, CREATE POLICY ou comandos
 **Commit do script:** `34d4c56022f205921f6b1d42e3d05822a01a0cef`.
 
 Não foi executado contra nenhum banco. Não há roles, policies ou migrations criadas; não houve conexão com Supabase hospedado, banco compartilhado ou produção.
+
+
+## Evidência de contrato do script somente leitura — 27/11/2026
+
+O commit `24404744b6aaf1c73bab64c83fa497a0e634cbc3` alinhou os testes estáticos ao conteúdo efetivo do roteiro e acrescentou verificações automatizadas para: (1) exigir `BEGIN READ ONLY`; (2) permitir somente instruções `BEGIN READ ONLY`, `SELECT` e `COMMIT`; e (3) confirmar a presença das consultas de catálogo e das funções de verificação de privilégios usadas pelo script.
+
+A execução GitHub Actions `45987386977` concluiu com sucesso os trabalhos Backend e Docker. O backend reportou **564 testes aprovados, 1 aviso de depreciação e nenhuma falha**. A construção da imagem, inicialização do contêiner e smoke test de interface/API também foram concluídos com sucesso.
+
+Esta evidência valida o contrato textual do script e a suíte automatizada do projeto. **Não significa que o script SQL tenha sido executado em PostgreSQL**, nem que existam roles ou policies reais para inspecionar. A validação de privilégios efetivos continua pendente de uma instância PostgreSQL descartável e isolada, com um esquema de teste aprovado. Nenhum banco compartilhado ou de produção foi acessado.
