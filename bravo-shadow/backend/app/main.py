@@ -78,7 +78,8 @@ def create_app(
         # conter SQL, dados de negócio, tokens ou detalhes internos.
         request_id = getattr(request.state, "request_id", None)
         subject = getattr(request.state, "authenticated_subject", None)
-        sink = getattr(request.app.state.services, "audit_sink", None)
+        services = getattr(request.app.state, "services", None)
+        sink = getattr(services, "audit_sink", None)
         if (
             sink is not None
             and isinstance(subject, str)
@@ -104,13 +105,16 @@ def create_app(
             "Falha inesperada na requisição; request_id=%s",
             request_id,
         )
-        return JSONResponse(
+        response = JSONResponse(
             status_code=500,
             content={
                 "detail": "Erro interno do servidor.",
                 "request_id": request_id,
             },
         )
+        if request_id:
+            response.headers["X-Request-ID"] = request_id
+        return response
 
     application.state.storage_backend = selected_backend
     application.state.services = services
