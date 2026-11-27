@@ -330,3 +330,21 @@ Campos obrigatórios: `cnpj` e `razaoSocial`. O schema remove espaços nas extre
 ### Limites que impedem ativação imediata
 
 O serviço atual não valida CNPJ nem detecta duplicidade. O repositório PostgreSQL não evidencia índice único por CNPJ. A exclusão é física e não há verificação de vínculos com compras ou outros registros. Embora o adapter incremente uma versão interna em atualizações, o router não exige If-Match/ETag. O contrato não contém contato, endereço, inscrição estadual ou dados bancários; não presumir esses campos sem confirmar o legado.
+
+
+## Empregados
+
+A interface Shadow do módulo Empregados foi criada com os campos do formulário legado: nome completo, função/cargo, empresa, endereço, telefone, nome do contato de emergência e telefone de emergência. Nome e cargo são obrigatórios; os demais são opcionais. A tela não apresenta registros fictícios e mantém formulário, pesquisa e ações desabilitados até integração segura da sessão Google/Bearer com API HTTPS isolada.
+
+### Contrato da API
+
+- `GET /api/v1/empregados` — `empregados:read`.
+- `POST /api/v1/empregados` — `empregados:create`.
+- `PUT /api/v1/empregados/{id}` — `empregados:update`.
+- `DELETE /api/v1/empregados/{id}` — `empregados:delete`.
+
+O schema remove espaços nas extremidades e recusa campos extras. Admin e Operador possuem CRUD no catálogo atual de permissões. O armazenamento PostgreSQL persiste os sete campos de cadastro e incrementa versão interna na edição.
+
+### Limites que impedem ativação imediata
+
+A exclusão atual é física, sem fluxo de desligamento/arquivamento ou verificação de referências. O router não exige If-Match/ETag apesar da versão interna no repositório. A listagem retorna a coleção inteira, sem filtros ou paginação. Não foram identificados no formulário legado campos de salário, documentos, jornada ou vínculo trabalhista; não devem ser acrescentados sem validação funcional. Endereço e contatos, especialmente o contato de emergência, exigem restrição de acesso e minimização de exposição.
