@@ -14,6 +14,8 @@ from fastapi import HTTPException
 
 from app.core.postgres_inventory import PostgresAcertosEstoqueRepository
 from app.modules.acertos_estoque.schemas import Acerto
+from app.core.postgres_inventory import PostgresEstoqueRepository
+from app.modules.estoque.schemas import EstoqueItem
 
 
 DATABASE_URL = os.getenv("BRAVO_SHADOW_TEST_DATABASE_URL")
@@ -198,3 +200,76 @@ def test_real_postgres_serializes_concurrent_stock_exits_without_negative_balanc
 
     assert balance == 1
     assert history == (1, 4)
+
+
+
+def test_real_postgres_serializes_product_edit_with_movement(postgres_inventory_database):
+    database_url = postgres_inventory_database
+    product_id = f"stock-{uuid4().hex}"
+    _insert_product(database_url, product_id, 5)
+    barrier = Barrier(2)
+
+    edited_item = EstoqueItem(
+        id=product_id,
+        item="Produto sintético editado",
+        quantidade=8,
+        minimo=0,
+        maximo=100,
+        etiqueta="",
+        fotoNome="",
+        fotoCompactadaGzip="",
+        marca="Marca teste",
+        linha="Linha teste",
+        fabricante="Fabricante teste",
+        dataCadastro="",
+    )
+
+    def edit_product() -> str:
+        barrier.wait(timeout=10)
+        try:
+            PostgresEstoqueRepository(
+                lambda: psycopg.connect(database_url)
+            ).replace(product_id, edited_item)
+            return "edited"
+        except HTTPException as error:
+            if error.status_code != 409:
+                raise
+            return "edit_rejected_after_movement"
+
+    def register_movement() -> str:
+        barrier.wait(timeout=10)
+        movement = _movement(product_id, f"movement-{uuid4().hex}", 2)
+        PostgresAcertosEstoqueRepository(
+            lambda: psycopg.connect(database_url)
+        ).register_movement(
+            product_id=product_id,
+            movement=movement,
+            delta=-2,
+        )
+        return "movement_committed"
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        edit_future = pool.submit(edit_product)
+        movement_future = pool.submit(register_movement)
+        edit_outcome = edit_future.result(timeout=20)
+        movement_outcome = movement_future.result(timeout=20)
+
+    assert movement_outcome == "movement_committed"
+    assert edit_outcome in {"edited", "edit_rejected_after_movement"}
+
+    with psycopg.connect(database_url) as connection:
+        product = connection.execute(
+            "SELECT quantidade, item, marca FROM bravo_shadow.estoque WHERE id = %s",
+            (product_id,),
+        ).fetchone()
+        history = connection.execute(
+            "SELECT count(*), coalesce(sum(quantidade), 0) "
+            "FROM bravo_shadow.acertos_estoque WHERE produto_id = %s",
+            (product_id,),
+        ).fetchone()
+
+    assert history == (1, 2)
+    if edit_outcome == "edited":
+        assert product == (6, "Produto sintético editado", "Marca teste")
+    else:
+        assert product == (3, "Item sintético de integração", "")
