@@ -1,250 +1,147 @@
+"""Synthetic transaction-boundary tests; no PostgreSQL connection is used."""
 import pytest
 
 from app.core.migration_transaction import (
-    MigrationWriteOperations,
-    execute_migration_write_unit,
-)
-from app.core.postgres import (
     CommitOutcomeUnknown,
-    CommitSucceededCleanupError,
-    PostgresUnitOfWork,
+    MigrationApplyAuthorization,
+    MigrationApplyBlocked,
+    MigrationApplyCommand,
+    apply_one_record,
 )
+
+MANIFEST = "a" * 64
+PLAN = "b" * 64
+RECORD = "c" * 64
 
 
 class FakeConnection:
-    def __init__(self, commit_error=None):
-        self.calls = []
-        self.commits = 0
-        self.rollbacks = 0
-        self.closes = 0
-        self.commit_error = commit_error
+    autocommit = False
+
+    def __init__(self, fail_commit=False):
+        self.events = []
+        self.fail_commit = fail_commit
 
     def commit(self):
-        self.commits += 1
-        if self.commit_error is not None:
-            raise self.commit_error
+        self.events.append("commit")
+        if self.fail_commit:
+            raise OSError("synthetic connection loss")
 
     def rollback(self):
-        self.rollbacks += 1
+        self.events.append("rollback")
 
     def close(self):
-        self.closes += 1
+        self.events.append("close")
 
 
-def make_operations(expected_connection, calls, *, fail_at=None):
-    def record(step, connection):
-        assert connection is expected_connection
-        calls.append(step)
-        if fail_at == step:
-            raise RuntimeError(f"failure_at_{step}")
+class FakeStore:
+    def __init__(self, fail_at=None, existing=None, target_exists=False):
+        self.fail_at = fail_at
+        self.existing = existing
+        self.target_exists = target_exists
+        self.events = []
 
-    def reserve(connection):
-        record("reserve", connection)
+    def _step(self, name, connection):
+        assert connection is self.connection
+        self.events.append(name)
+        if self.fail_at == name:
+            raise RuntimeError("synthetic failure")
 
-    def write_business(connection):
-        record("business", connection)
-        return {"table": "fornecedores", "id": "legacy-17"}
+    def bind(self, connection):
+        self.connection = connection
 
-    def write_source_map(connection, destination):
-        assert destination["id"] == "legacy-17"
-        record("source_map", connection)
+    def lock_batch(self, connection, batch_id, execution_id):
+        self._step("lock_batch", connection)
 
-    def append_event(connection, destination):
-        assert destination["table"] == "fornecedores"
-        record("success_event", connection)
+    def lock_source_identity(self, connection, source_system, source_collection, legacy_id):
+        self._step("lock_identity", connection)
 
-    def append_audit(connection, destination):
-        assert destination["id"] == "legacy-17"
-        record("audit_event", connection)
+    def find_source_link(self, connection, source_system, source_collection, legacy_id):
+        self._step("find_link", connection)
+        return self.existing
 
-    def append_failure(error):
-        calls.append(("failure_event", type(error).__name__, expected_connection.rollbacks))
+    def target_id_exists(self, connection, target_collection, destination_id):
+        self._step("check_target", connection)
+        return self.target_exists
 
-    def append_unknown(error):
-        calls.append(("unknown_outcome_event", type(error).__name__, expected_connection.rollbacks))
+    def insert_target(self, connection, target_collection, destination_id, payload):
+        self._step("insert_target", connection)
 
-    return MigrationWriteOperations(
-        reserve_batch=reserve,
-        write_business=write_business,
-        write_source_map=write_source_map,
-        append_success_event=append_event,
-        append_audit_event=append_audit,
-        append_failure_event=append_failure,
-        append_unknown_outcome_event=append_unknown,
-        append_committed_cleanup_event=lambda error: calls.append(
-            ("committed_cleanup_event", type(error).__name__)
-        ),
+    def insert_source_link(self, connection, command):
+        self._step("insert_link", connection)
+
+    def insert_success_event(self, connection, command, destination_id):
+        self._step("insert_success_event", connection)
+
+
+def setup(store=None, connection=None):
+    conn = connection or FakeConnection()
+    repo = store or FakeStore()
+    repo.bind(conn)
+    command = MigrationApplyCommand(
+        "batch-1", "execution-1", "legacy", "estoque", "0007", RECORD,
+        "sha256-json-v1", "estoque", {"item": "caneta"}, "0007", MANIFEST, PLAN,
     )
+    permit = MigrationApplyAuthorization(MANIFEST, PLAN, "shadow_local", "migration_apply", True)
+    return conn, repo, command, permit
 
 
-def test_write_unit_uses_one_connection_and_commits_all_steps():
-    connection = FakeConnection()
-    calls = []
-    operations = make_operations(connection, calls)
-
-    result = execute_migration_write_unit(
-        lambda: PostgresUnitOfWork(lambda: connection),
-        operations,
-    )
-
-    assert result == {"table": "fornecedores", "id": "legacy-17"}
-    assert calls == ["reserve", "business", "source_map", "success_event", "audit_event"]
-    assert connection.commits == 1
-    assert connection.rollbacks == 0
-    assert connection.closes == 1
+def test_success_uses_one_connection_and_commits_after_all_three_writes():
+    conn, store, command, permit = setup()
+    result = apply_one_record(lambda: conn, store, command, permit)
+    assert result.classification == "applied"
+    assert store.events[-3:] == ["insert_target", "insert_link", "insert_success_event"]
+    assert conn.events == ["commit", "close"]
 
 
-@pytest.mark.parametrize(
-    ("failed_step", "expected_calls"),
-    [
-        ("reserve", ["reserve"]),
-        ("business", ["reserve", "business"]),
-        ("source_map", ["reserve", "business", "source_map"]),
-        (
-            "success_event",
-            ["reserve", "business", "source_map", "success_event"],
-        ),
-        (
-            "audit_event",
-            ["reserve", "business", "source_map", "success_event", "audit_event"],
-        ),
-    ],
-)
-def test_failure_at_any_step_rolls_back_entire_unit(failed_step, expected_calls):
-    connection = FakeConnection()
-    calls = []
-    operations = make_operations(connection, calls, fail_at=failed_step)
-
-    with pytest.raises(RuntimeError, match=f"failure_at_{failed_step}"):
-        execute_migration_write_unit(
-            lambda: PostgresUnitOfWork(lambda: connection),
-            operations,
-        )
-
-    assert calls[:len(expected_calls)] == expected_calls
-    assert calls[-1] == ("failure_event", "RuntimeError", 1)
-    assert connection.commits == 0
-    assert connection.rollbacks == 1
-    assert connection.closes == 1
-
-
-def test_unit_does_not_emit_success_event_when_business_insert_fails():
-    connection = FakeConnection()
-    calls = []
-    operations = make_operations(connection, calls, fail_at="business")
-
+@pytest.mark.parametrize("failure", ["insert_target", "insert_link", "insert_success_event"])
+def test_any_write_failure_rolls_back_entire_unit(failure):
+    conn, store, command, permit = setup(FakeStore(fail_at=failure))
     with pytest.raises(RuntimeError):
-        execute_migration_write_unit(
-            lambda: PostgresUnitOfWork(lambda: connection),
-            operations,
-        )
-
-    assert "source_map" not in calls
-    assert "success_event" not in calls
-    assert "audit_event" not in calls
-    assert calls[-1] == ("failure_event", "RuntimeError", 1)
-    assert connection.rollbacks == 1
+        apply_one_record(lambda: conn, store, command, permit)
+    assert conn.events == ["rollback", "close"]
 
 
-def test_failure_audit_error_does_not_hide_original_migration_error():
-    connection = FakeConnection()
-    calls = []
-    operations = make_operations(connection, calls, fail_at="business")
-
-    def broken_failure_audit(error):
-        calls.append(("failure_audit_error", type(error).__name__, connection.rollbacks))
-        raise RuntimeError("failure_audit_unavailable")
-
-    operations = MigrationWriteOperations(
-        reserve_batch=operations.reserve_batch,
-        write_business=operations.write_business,
-        write_source_map=operations.write_source_map,
-        append_success_event=operations.append_success_event,
-        append_audit_event=operations.append_audit_event,
-        append_failure_event=broken_failure_audit,
-        append_unknown_outcome_event=operations.append_unknown_outcome_event,
-        append_committed_cleanup_event=operations.append_committed_cleanup_event,
-    )
-
-    with pytest.raises(RuntimeError, match="failure_at_business") as caught:
-        execute_migration_write_unit(
-            lambda: PostgresUnitOfWork(lambda: connection), operations
-        )
-
-    assert connection.rollbacks == 1
-    assert calls[-1] == ("failure_audit_error", "RuntimeError", 1)
-    assert any("auditoria de falha" in note for note in getattr(caught.value, "__notes__", []))
+def test_identical_retry_is_idempotent_without_business_writes():
+    conn, store, command, permit = setup(FakeStore(existing=(RECORD, "0007")))
+    result = apply_one_record(lambda: conn, store, command, permit)
+    assert result.classification == "already_applied"
+    assert store.events == ["lock_batch", "lock_identity", "find_link"]
+    assert conn.events == ["commit", "close"]
 
 
-
-def test_commit_error_is_recorded_as_unknown_not_confirmed_failure():
-    connection = FakeConnection(commit_error=RuntimeError("acknowledgement lost"))
-    calls = []
-    operations = make_operations(connection, calls)
-
-    with pytest.raises(CommitOutcomeUnknown) as caught:
-        execute_migration_write_unit(
-            lambda: PostgresUnitOfWork(lambda: connection), operations
-        )
-
-    assert isinstance(caught.value.__cause__, RuntimeError)
-    assert calls[-1] == ("unknown_outcome_event", "CommitOutcomeUnknown", 1)
-    assert not any(call[0] == "failure_event" for call in calls if isinstance(call, tuple))
-    assert connection.commits == 1
-    assert connection.rollbacks == 1
-    assert connection.closes == 1
+def test_changed_source_hash_is_blocked_and_rolled_back():
+    conn, store, command, permit = setup(FakeStore(existing=("d" * 64, "0007")))
+    with pytest.raises(MigrationApplyBlocked, match="conflict_changed_source"):
+        apply_one_record(lambda: conn, store, command, permit)
+    assert conn.events == ["rollback", "close"]
 
 
-def test_unknown_outcome_audit_error_does_not_hide_commit_uncertainty():
-    connection = FakeConnection(commit_error=RuntimeError("acknowledgement lost"))
-    calls = []
-    operations = make_operations(connection, calls)
-
-    def broken_unknown_audit(error):
-        calls.append(("unknown_audit_error", type(error).__name__, connection.rollbacks))
-        raise RuntimeError("unknown_audit_unavailable")
-
-    operations = MigrationWriteOperations(
-        reserve_batch=operations.reserve_batch,
-        write_business=operations.write_business,
-        write_source_map=operations.write_source_map,
-        append_success_event=operations.append_success_event,
-        append_audit_event=operations.append_audit_event,
-        append_failure_event=operations.append_failure_event,
-        append_unknown_outcome_event=broken_unknown_audit,
-        append_committed_cleanup_event=operations.append_committed_cleanup_event,
-    )
-
-    with pytest.raises(CommitOutcomeUnknown) as caught:
-        execute_migration_write_unit(
-            lambda: PostgresUnitOfWork(lambda: connection), operations
-        )
-
-    assert calls[-1] == ("unknown_audit_error", "CommitOutcomeUnknown", 1)
-    assert any("resultado desconhecido" in note for note in caught.value.__notes__)
-    assert connection.rollbacks == 1
-    assert connection.closes == 1
+def test_unmapped_destination_collision_is_blocked():
+    conn, store, command, permit = setup(FakeStore(target_exists=True))
+    with pytest.raises(MigrationApplyBlocked, match="destination_id_collision"):
+        apply_one_record(lambda: conn, store, command, permit)
+    assert conn.events == ["rollback", "close"]
 
 
+def test_uncertain_commit_is_not_reported_as_success():
+    conn, store, command, permit = setup(connection=FakeConnection(fail_commit=True))
+    with pytest.raises(CommitOutcomeUnknown):
+        apply_one_record(lambda: conn, store, command, permit)
+    assert conn.events == ["commit", "rollback", "close"]
 
-def test_close_error_after_confirmed_commit_is_not_recorded_as_write_failure():
-    class CloseFailConnection(FakeConnection):
-        def close(self):
-            self.closes += 1
-            raise RuntimeError("close after commit failed")
 
-    connection = CloseFailConnection()
-    calls = []
-    operations = make_operations(connection, calls)
+def test_manifest_plan_or_environment_mismatch_blocks_before_connecting():
+    _, store, command, permit = setup()
+    bad = MigrationApplyAuthorization(MANIFEST, PLAN, "production", "migration_apply", True)
+    called = []
+    with pytest.raises(MigrationApplyBlocked):
+        apply_one_record(lambda: called.append(True), store, command, bad)
+    assert called == []
 
-    with pytest.raises(CommitSucceededCleanupError):
-        execute_migration_write_unit(
-            lambda: PostgresUnitOfWork(lambda: connection), operations
-        )
 
-    assert connection.commits == 1
-    assert connection.rollbacks == 0
-    assert calls[-1] == ("committed_cleanup_event", "CommitSucceededCleanupError")
-    assert not any(
-        isinstance(call, tuple) and call[0] == "failure_event" for call in calls
-    )
+def test_autocommit_connection_is_rejected():
+    conn, store, command, permit = setup()
+    conn.autocommit = True
+    with pytest.raises(MigrationApplyBlocked):
+        apply_one_record(lambda: conn, store, command, permit)
+    assert conn.events == ["rollback", "close"]

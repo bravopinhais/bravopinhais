@@ -1,106 +1,179 @@
-"""Atomic orchestration boundary for one migration write unit.
-
-This module does not implement SQL or open connections. All persistence
-callbacks receive the exact same connection owned by PostgresUnitOfWork.
-"""
+"""Atomic, opt-in migration apply unit; deliberately not wired to application routes."""
 from __future__ import annotations
 
-from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Generic, TypeVar
+from typing import Any, Protocol
 
-from app.core.postgres import (
-    CommitOutcomeUnknown,
-    CommitSucceededCleanupError,
-    PostgresUnitOfWork,
-)
 
-DestinationT = TypeVar("DestinationT")
+class MigrationApplyError(RuntimeError):
+    """Base class for a rejected or failed migration unit."""
+
+
+class MigrationApplyBlocked(MigrationApplyError):
+    """The source identity cannot be safely applied."""
+
+
+class CommitOutcomeUnknown(MigrationApplyError):
+    """Commit raised; caller must reconcile state before any retry."""
 
 
 @dataclass(frozen=True, slots=True)
-class MigrationWriteOperations(Generic[DestinationT]):
-    """Persistence steps supplied by a domain-specific PostgreSQL adapter.
+class MigrationApplyAuthorization:
+    manifest_sha256: str
+    plan_sha256: str
+    environment: str
+    scope: str
+    writes_authorized: bool
 
-    The success callbacks use the same transaction connection. Failure and
-    unknown-outcome callbacks run only after that connection is closed and
-    must persist sanitized metadata in a separate transaction. An unknown
-    COMMIT callback must atomically quarantine the batch as needs_review and
-    append its evidence event; it must never retry the batch. A cleanup error
-    after a confirmed COMMIT is audited separately and is not a failed write.
+
+@dataclass(frozen=True, slots=True)
+class MigrationApplyCommand:
+    batch_id: str
+    execution_id: str
+    source_system: str
+    source_collection: str
+    legacy_id: str
+    source_record_sha256: str
+    hash_version: str
+    target_collection: str
+    target_payload: dict[str, Any]
+    destination_id: str
+    manifest_sha256: str
+    plan_sha256: str
+
+
+@dataclass(frozen=True, slots=True)
+class MigrationApplyResult:
+    classification: str
+    destination_id: str | None
+    committed: bool
+    writes_authorized: bool
+
+
+class MigrationApplyStore(Protocol):
+    """All methods must use only the connection supplied by the unit of work."""
+
+    def lock_batch(self, connection: Any, batch_id: str, execution_id: str) -> None: ...
+    def lock_source_identity(
+        self, connection: Any, source_system: str, source_collection: str, legacy_id: str
+    ) -> None: ...
+    def find_source_link(
+        self, connection: Any, source_system: str, source_collection: str, legacy_id: str
+    ) -> tuple[str, str] | None:
+        """Return (record_sha256, destination_id), or None."""
+        ...
+    def target_id_exists(self, connection: Any, target_collection: str, destination_id: str) -> bool: ...
+    def insert_target(
+        self, connection: Any, target_collection: str, destination_id: str, payload: dict[str, Any]
+    ) -> None: ...
+    def insert_source_link(
+        self, connection: Any, command: MigrationApplyCommand
+    ) -> None: ...
+    def insert_success_event(
+        self, connection: Any, command: MigrationApplyCommand, destination_id: str
+    ) -> None: ...
+
+
+def _valid_sha256(value: str) -> bool:
+    return (
+        isinstance(value, str) and len(value) == 64
+        and all(char in "0123456789abcdef" for char in value)
+    )
+
+
+def _validate(
+    command: MigrationApplyCommand, authorization: MigrationApplyAuthorization
+) -> None:
+    if not isinstance(command, MigrationApplyCommand):
+        raise TypeError("comando de aplicação inválido.")
+    if not isinstance(authorization, MigrationApplyAuthorization):
+        raise TypeError("autorização de aplicação inválida.")
+    required = (
+        command.batch_id, command.execution_id, command.source_system,
+        command.source_collection, command.legacy_id, command.hash_version,
+        command.target_collection, command.destination_id,
+    )
+    if any(not isinstance(value, str) or not value.strip() for value in required):
+        raise ValueError("identidade, destino e versão são obrigatórios.")
+    if not _valid_sha256(command.source_record_sha256):
+        raise ValueError("hash do registro de origem inválido.")
+    if not _valid_sha256(command.manifest_sha256) or not _valid_sha256(command.plan_sha256):
+        raise ValueError("hash do manifesto ou plano inválido.")
+    if command.manifest_sha256 != authorization.manifest_sha256:
+        raise MigrationApplyBlocked("autorização não corresponde ao manifesto.")
+    if command.plan_sha256 != authorization.plan_sha256:
+        raise MigrationApplyBlocked("autorização não corresponde ao plano.")
+    if (
+        authorization.environment != "shadow_local"
+        or authorization.scope != "migration_apply"
+        or authorization.writes_authorized is not True
+    ):
+        raise MigrationApplyBlocked("aplicação exige autorização explícita e restrita ao Shadow local.")
+    if not isinstance(command.target_payload, dict):
+        raise ValueError("payload de destino deve ser objeto.")
+
+
+def apply_one_record(
+    connection_factory: Any,
+    store: MigrationApplyStore,
+    command: MigrationApplyCommand,
+    authorization: MigrationApplyAuthorization,
+) -> MigrationApplyResult:
+    """Apply one record atomically; this function is not exposed by the app.
+
+    The store is a narrow SQL adapter. Every method receives the same connection.
+    Unique constraints remain mandatory for source identity and destination PK.
     """
-
-    reserve_batch: Callable[[object], None]
-    write_business: Callable[[object], DestinationT]
-    write_source_map: Callable[[object, DestinationT], None]
-    append_success_event: Callable[[object, DestinationT], None]
-    append_audit_event: Callable[[object, DestinationT], None]
-    append_failure_event: Callable[[BaseException], None]
-    append_unknown_outcome_event: Callable[[CommitOutcomeUnknown], None]
-    append_committed_cleanup_event: Callable[[CommitSucceededCleanupError], None]
-
-
-class MigrationTransactionError(RuntimeError):
-    """Raised when a migration unit cannot obtain its transaction connection."""
-
-
-def _add_secondary_note(primary_error: BaseException, label: str, secondary: BaseException) -> None:
-    add_note = getattr(primary_error, "add_note", None)
-    if callable(add_note):
-        add_note(f"{label}: {type(secondary).__name__}.")
-
-
-def execute_migration_write_unit(
-    unit_of_work_factory: Callable[[], PostgresUnitOfWork],
-    operations: MigrationWriteOperations[DestinationT],
-) -> DestinationT:
-    """Run one atomic write and classify transaction outcomes conservatively.
-
-    A failure before COMMIT is recorded only after rollback/connection cleanup.
-    A COMMIT exception is different: PostgreSQL may have committed even when
-    the client did not receive the acknowledgement. Such cases are recorded
-    as outcome-unknown and must be quarantined/reconciled; they are never
-    reported as confirmed failures or retried automatically.
-    """
+    _validate(command, authorization)
+    if not callable(connection_factory):
+        raise TypeError("connection_factory explícita é obrigatória.")
+    connection = connection_factory()
+    if connection is None:
+        raise MigrationApplyError("connection_factory não forneceu conexão.")
     try:
-        with unit_of_work_factory() as unit:
-            connection = unit.connection
-            if connection is None:
-                raise MigrationTransactionError("transaction_connection_unavailable")
-
-            operations.reserve_batch(connection)
-            destination = operations.write_business(connection)
-            operations.write_source_map(connection, destination)
-            operations.append_success_event(connection, destination)
-            operations.append_audit_event(connection, destination)
-            return destination
-    except CommitSucceededCleanupError as cleanup_error:
+        if getattr(connection, "autocommit", False) is not False:
+            raise MigrationApplyBlocked("autocommit deve estar desativado.")
+        store.lock_batch(connection, command.batch_id, command.execution_id)
+        store.lock_source_identity(
+            connection, command.source_system, command.source_collection, command.legacy_id
+        )
+        existing = store.find_source_link(
+            connection, command.source_system, command.source_collection, command.legacy_id
+        )
+        if existing is not None:
+            old_hash, old_destination_id = existing
+            if old_hash == command.source_record_sha256:
+                connection.commit()
+                return MigrationApplyResult("already_applied", old_destination_id, True, False)
+            raise MigrationApplyBlocked("conflict_changed_source: hash de origem divergente.")
+        if store.target_id_exists(connection, command.target_collection, command.destination_id):
+            raise MigrationApplyBlocked("destination_id_collision: ID já existe sem vínculo de origem.")
+        store.insert_target(
+            connection, command.target_collection, command.destination_id, command.target_payload
+        )
+        store.insert_source_link(connection, command)
+        store.insert_success_event(connection, command, command.destination_id)
         try:
-            operations.append_committed_cleanup_event(cleanup_error)
-        except BaseException as audit_error:
-            _add_secondary_note(
-                cleanup_error,
-                "Falha adicional ao registrar limpeza após COMMIT confirmado",
-                audit_error,
-            )
+            connection.commit()
+        except Exception as exc:
+            try:
+                connection.rollback()
+            except Exception:
+                pass
+            raise CommitOutcomeUnknown(
+                "resultado do commit incerto; consultar mapa e destino antes de qualquer retry."
+            ) from exc
+        return MigrationApplyResult("applied", command.destination_id, True, True)
+    except CommitOutcomeUnknown:
         raise
-    except CommitOutcomeUnknown as unknown_error:
+    except Exception:
         try:
-            operations.append_unknown_outcome_event(unknown_error)
-        except BaseException as audit_error:
-            _add_secondary_note(
-                unknown_error,
-                "Falha adicional ao registrar resultado desconhecido do COMMIT",
-                audit_error,
-            )
+            connection.rollback()
+        except Exception:
+            pass
         raise
-    except BaseException as migration_error:
+    finally:
         try:
-            operations.append_failure_event(migration_error)
-        except BaseException as audit_error:
-            _add_secondary_note(
-                migration_error,
-                "Falha adicional ao persistir auditoria de falha",
-                audit_error,
-            )
-        raise
+            connection.close()
+        except Exception:
+            pass
