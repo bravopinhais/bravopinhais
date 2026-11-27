@@ -1434,4 +1434,123 @@ A lista é uma base de classificação, não um mapeamento completo de todas as 
 Antes da implementação ainda será necessário fechar a assinatura/retorno SQL, os códigos de erro internos, o nível de isolamento, a política de timeout/lock, o envelope HTTP e a estratégia de retry do driver. A rota administrativa segue não exposta e as capacidades seguem deny-by-default.
 
 Nenhum endpoint, função, middleware, retry automático, log ou métrica foi implementado nesta etapa. Nenhuma migration/DDL foi executada; nenhum banco persistente foi conectado ou alterado.
+## 25. Concorrência do último Admin, ordem de locks e contenção — 27/11/2026
+
+**Status:** decisão arquitetural proposta para homologação. Não altera o repositório de código, não cria tabela de guarda e não executa SQL.
+
+### 25.1 Invariante de negócio
+
+Em todo commit confirmado deve existir pelo menos um usuário com `perfil = 'Admin'` e `status = 'Ativo'`, desde que o sistema tenha sido inicializado com ao menos um Admin ativo.
+
+A verificação precisa cobrir **todas** as operações que possam alterar esse conjunto:
+- alterar perfil de Admin para Operador;
+- alterar status de Ativo para Inativo;
+- desativar ou excluir logicamente usuário;
+- criar usuário já como Admin ativo;
+- reativar ou promover usuário;
+- importação, rotina administrativa, job ou endpoint que altere perfil/status;
+- qualquer caminho futuro de manutenção que possa reduzir ou aumentar a quantidade de Admins ativos.
+
+Proteger somente a rota de edição administrativa não basta. Um caminho alternativo que altere a mesma tabela sem participar do protocolo de lock pode invalidar a garantia.
+
+### 25.2 Corrida que precisa ser impedida
+
+Considere dois Admins ativos, A e B. Duas transações simultâneas tentam rebaixar A e B, respectivamente. Se ambas contarem dois Admins antes de qualquer alteração e depois atualizarem linhas diferentes, ambas podem concluir e deixar zero Admins ativos.
+
+A validação isolada com `SELECT COUNT(*)` e `SELECT ... FOR UPDATE` apenas na linha alvo não protege esse predicado agregado: cada transação bloqueia um usuário diferente. A decisão sobre o último Admin precisa de um ponto de serialização comum a todas as mudanças do conjunto.
+
+### 25.3 Opção preferida: linha de guarda transacional
+
+Avaliar uma tabela privada pequena com uma única linha de guarda para mudanças de privilégios administrativos. Cada operação que possa alterar o conjunto de Admins ativos adquire essa linha com `SELECT ... FOR UPDATE` antes de ler a contagem e antes de bloquear/alterar o usuário alvo.
+
+Ordem proposta:
+1. Validar principal e payload; calcular fingerprint semântico.
+2. Reservar/verificar `event_id` na tabela idempotente.
+3. Se for replay, devolver o snapshot persistido e encerrar sem adquirir a guarda nem tocar no usuário.
+4. Para operação nova, bloquear a linha única de guarda administrativa.
+5. Bloquear a linha do usuário alvo com `SELECT ... FOR UPDATE`.
+6. Ler a quantidade atual de Admins ativos depois de adquirir a guarda; avaliar o estado solicitado e impedir que a contagem resultante fique abaixo de um.
+7. Atualizar o usuário, incrementar versão e gravar auditoria + snapshot idempotente na mesma transação.
+8. Confirmar a transação; liberar os locks automaticamente no commit/rollback.
+
+A linha de guarda deve existir previamente e ser validada no bootstrap/migration. Ausência da linha não pode significar “seguir sem lock”: deve falhar fechado. O runtime não pode inserir, excluir ou alterar a linha de guarda diretamente.
+
+A guarda serializa somente operações administrativas que alteram o conjunto protegido, em vez de bloquear a tabela inteira de usuários. A contagem passa a ser segura sob READ COMMITTED porque nenhuma outra operação participante pode mudar o conjunto entre a aquisição da guarda e a decisão/commit.
+
+### 25.4 Condição indispensável: todos os escritores participam
+
+A garantia só existe se todo caminho de escrita que afeta perfil/status/Admin ativo adquirir a mesma guarda antes de bloquear a linha de usuário ou consultar a contagem. Isso inclui criação, promoção, reativação, desativação e exclusão lógica, não apenas edição.
+
+O desenho de permissões deve impedir DML direto do runtime e concentrar as mudanças em funções controladas. Caso exista um caminho legado ou job com permissão de UPDATE/INSERT/DELETE fora do protocolo, a garantia não pode ser afirmada.
+
+A auditoria de implementação deverá inventariar todas as referências de escrita à tabela de usuários e demonstrar, por teste e privilégio, que nenhuma rota contorna o lock comum.
+
+### 25.5 Ordem global e prevenção de deadlocks
+
+Para operações que também usam idempotência e auditoria, documentar uma ordem única de aquisição:
+
+`chave idempotente → guarda administrativa → linha(s) de usuário em ordem determinística → gravações de auditoria/resultado`.
+
+- Não adquirir lock de usuário antes da guarda.
+- Não criar fluxo que retenha a guarda e depois tente reservar uma chave idempotente.
+- Em operações com mais de um usuário, bloquear IDs em ordem estável (por exemplo, ordenação lexical do identificador).
+- Não fazer chamadas externas, envio de e-mail ou chamadas HTTP enquanto locks estiverem retidos.
+- Manter a transação curta e executar validações independentes antes da aquisição dos locks.
+- O replay deve encerrar antes da guarda; não deve obter lock de usuário.
+- Auditoria e snapshot são gravações transacionais no final da operação, sem caminho separado que inverta a ordem.
+
+A ordem reduz ciclos, mas não elimina todo deadlock possível (índices, constraints, triggers e outros escritores também podem participar). O sistema ainda deve reconhecer deadlock/serialization failure, reverter a transação inteira e permitir retry limitado com o mesmo event_id.
+
+### 25.6 Comparação com o lock atual e alternativas
+
+O repositório possui um fluxo que usa `LOCK TABLE usuarios IN SHARE ROW EXCLUSIVE MODE` antes da leitura/alteração administrativa. Esse lock amplo é uma proteção conservadora para escritores que conflitam com ele, mas pode bloquear operações não relacionadas e reduzir a concorrência da tabela inteira.
+
+Alternativas a avaliar:
+- **Linha de guarda dedicada:** opção preferida para clareza e escopo; exige tabela/linha protegida e disciplina universal dos escritores.
+- **Lock de tabela atual:** pode ser mantido no piloto descartável como solução conservadora, desde que todas as rotas relevantes usem o mesmo protocolo e os impactos de contenção sejam aceitos.
+- **Advisory transaction lock:** evita tabela adicional, mas usa chave convencionada e exige que todos os escritores conheçam e respeitem o mesmo identificador; é menos autoexplicativo e requer cuidado com colisões/escopo.
+
+Não misturar estratégias de forma inconsistente. A decisão final deve ser tomada após inventário dos escritores e teste concorrente em PostgreSQL 16 descartável. Não substituir o lock atual por guarda/advisory apenas por recomendação documental.
+
+### 25.7 Timeouts e contenção
+
+Definir limites explícitos e configuráveis para:
+- espera por conexão do pool;
+- aquisição da guarda/lock de tabela;
+- lock de linha do usuário;
+- execução da transação;
+- chamada HTTP total.
+
+Usar `lock_timeout` menor que o timeout total da transação e este menor que o timeout HTTP, deixando margem para rollback e resposta controlada. Os valores concretos dependem de medição e não devem ser inventados nesta etapa.
+
+Ao atingir lock timeout:
+- cancelar e reverter toda a transação;
+- não devolver sucesso parcial;
+- classificar como indisponibilidade temporária (503) conforme seção 24;
+- permitir retry limitado com o mesmo event_id;
+- registrar métrica de espera/timeout sem expor dados sensíveis.
+
+Não configurar `statement_timeout` ou `lock_timeout` globalmente sem avaliar outras rotas. Preferir configuração local à transação, sob controle do backend/função, e validar que o runtime não possa ampliar seus próprios privilégios.
+
+### 25.8 Matriz de concorrência e critérios de aceite
+
+- Com dois Admins ativos, duas sessões tentam simultaneamente rebaixar um de cada vez: exatamente uma operação pode confirmar; permanece um Admin ativo.
+- Repetir o cenário com desativação, exclusão lógica, promoção e reativação.
+- Criação de Admin ativo concorrente com rebaixamento/desativação: resultado serializável e contagem consistente.
+- Uma rota alternativa sem a guarda deve ser bloqueada por privilégios; não basta depender de convenção de código.
+- Duas operações diferentes no mesmo usuário respeitam a ordem e produzem versões monotônicas.
+- Duas operações em usuários diferentes não formam ciclo de locks.
+- Timeout na guarda ou no usuário provoca rollback integral e não deixa auditoria/snapshot órfão.
+- Deadlock induzido reverte integralmente e retry com a mesma chave não duplica evento nem versão.
+- Replay de evento já confirmado não adquire guarda e devolve snapshot original.
+- Teste de carga mede espera da guarda e confirma que operações que não alteram privilégio/status não são bloqueadas indevidamente.
+- Verificação de catálogo/permissões demonstra que runtime não faz DML direto capaz de contornar o protocolo.
+
+### 25.9 Decisão pendente e estado
+
+**Direção recomendada:** usar uma linha de guarda transacional para mudanças de estado administrativo, com ordem de locks fixa e DML direto do runtime negado. Manter o lock de tabela atual no piloto até que o desenho alternativo seja implementado e validado em banco descartável.
+
+A decisão final depende do inventário de todos os escritores e da homologação concorrente. A garantia “sempre existe ao menos um Admin ativo” só pode ser declarada depois desses passos.
+
+Nenhuma tabela/linha de guarda foi criada; nenhum lock, timeout, função, role, policy ou grant foi aplicado. Nenhum teste concorrente foi executado nesta etapa documental e nenhum banco foi conectado ou alterado.
 
