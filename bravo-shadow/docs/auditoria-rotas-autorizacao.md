@@ -4,7 +4,7 @@
 
 Revisão estática dos 15 arquivos `router.py` e de `backend/app/main.py`, na branch `bravo-shadow`.
 
-**Achado crítico:** as rotas de negócio revisadas não declaram dependências de autenticação/autorização (não há `Depends` de segurança nos handlers). Cada router obtém diretamente o serviço em `request.app.state.services`. Assim, a existência de cadastro de usuários e de uma role técnica PostgreSQL não protege, por si só, os endpoints HTTP.
+**Estado atual corrigido (27/11/2026):** a inspeção da branch confirma que as rotas de negócio agora declaram dependências de capacidade por endpoint, e essas dependências obtêm um principal por meio da validação do ID token Google. O teste `test_every_business_api_route_requires_google_identity` verifica a cobertura de identidade; `test_every_business_api_route_has_capability_gate_or_is_identity_endpoint` verifica a cobertura de capacidade. A política `ROLE_CAPABILITIES` concede conjunto vazio tanto a `Admin` quanto a `Operador`; portanto, a proteção está ativa em modo *fail-closed*, mas nenhuma operação de negócio é autorizada até a aprovação explícita da matriz funcional.
 
 O endpoint `GET /api/v1/health` é público por desenho e informa apenas estado/configuração do serviço. Deve continuar sem dados sensíveis.
 
@@ -32,12 +32,11 @@ Esta auditoria é estática; não executou requisições HTTP nem testes de pene
 
 ## Situação atual da segurança HTTP
 
-- Os handlers não declaram dependências de autenticação/autorização.
-- Os routers recuperam os serviços diretamente de `request.app.state.services`.
-- O cadastro `usuarios` guarda e-mail, nome, loja, cargo, perfil e status; não valida token Google.
-- Os valores de perfil aceitos atualmente são `Admin` e `Operador`, mas não há matriz funcional implementada que associe esses valores a permissões.
-- O campo `status` do cadastro não bloqueia por si só o acesso HTTP.
-- O vínculo entre e-mail autenticado e registro de usuário ainda precisa ser validado pelo backend.
+- As rotas de negócio declaram dependências centrais de capacidade; a dependência exige identidade Google validada e cadastro interno ativo antes de avaliar a capacidade.
+- O router de identidade `GET /api/v1/auth/me` exige `get_current_principal`; `GET /api/v1/health` permanece público e não consulta dados de negócio.
+- A resolução do principal valida claims do token Google, exige `sub`, e-mail verificado e exatamente um cadastro interno correspondente com status `Ativo`.
+- O catálogo `CAPABILITIES` é granular, mas `ROLE_CAPABILITIES` concede atualmente capacidades vazias a `Admin` e `Operador`; assim, rotas de negócio autenticadas continuam respondendo 403 até aprovação da matriz.
+- A conexão direta dos routers aos serviços em `request.app.state.services` não substitui a dependência de capacidade, que é avaliada antes do handler.
 - Não introduzir login por senha local. O fluxo de identidade esperado continua sendo Google/e-mail com validação de token no servidor.
 - CORS fechado não substitui autenticação; ocultar a interface também não protege endpoints.
 
@@ -341,3 +340,24 @@ A revisão do schema, serviço, router e testes de Usuários confirmou que:
 - O backend padrão usa armazenamento em memória; portanto, criar um primeiro Admin nesse modo não é provisionamento persistente.
 
 **Bloqueio:** não implementar bootstrap via endpoint HTTP, não confiar em primeiro login e não permitir que o payload do cliente escolha o perfil. O desenho recomendado de provisionamento fora da API está em `docs/provisionamento-primeiro-admin.md`. A implementação depende de PostgreSQL local de sombra, transação atômica, e-mail explicitamente autorizado pelo responsável e proteção das rotas de Usuários.
+
+
+## Atualização de estado — cobertura HTTP e negação por padrão (27/11/2026)
+
+Esta seção prevalece sobre os registros históricos anteriores que descrevem os routers como desprotegidos. As seções antigas registram o estado em que foram produzidas; não devem ser lidas como retrato atual.
+
+### Evidência estática atual
+
+- `backend/app/modules/estoque/router.py` (e os demais routers de negócio) declara `Depends(require_capability_dependency(...))` por operação.
+- `backend/app/core/authorization.py` cria a dependência que obtém `get_current_principal`, valida a capacidade e retorna 403 quando ela não é concedida.
+- `backend/app/core/authentication.py` valida o Bearer ID token Google no servidor e resolve o e-mail verificado para um cadastro Bravo único e ativo.
+- `backend/tests/test_route_authentication_coverage.py` contém verificações automatizadas de cobertura de identidade e de capacidade para as rotas de negócio, com exceção explícita de `/api/v1/auth/me` para a segunda verificação.
+- `ROLE_CAPABILITIES` permanece vazio para os dois perfis. Não há concessão funcional implícita a Admin nem a Operador.
+
+### Limites da evidência
+
+A inspeção acima é leitura de código e de testes; não equivale a teste de penetração, validação de token real no ambiente, nem prova de que uma identidade PostgreSQL de runtime esteja corretamente configurada. O workflow de CI ainda está executando os testes de backend no PostgreSQL descartável; até sua conclusão, não declarar a suíte aprovada.
+
+### Decisão de segurança preservada
+
+Não preencher a matriz de perfis por inferência. Até aprovação explícita, as rotas continuam negando todas as capacidades de negócio, mesmo para Admin autenticado e ativo. Não habilitar dados reais, banco remoto, cutover ou publicação pública com base apenas na presença dos decorators.
