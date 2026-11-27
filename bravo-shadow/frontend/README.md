@@ -571,3 +571,14 @@ O formulário preserva os campos existentes, sem inventar vínculo de unidade ou
 A tela separa os dois cadastros e aplica capacidades independentes. Categorias usam `GET/POST /api/v1/categorias` com `categorias:read/create`; motivos de acerto usam `GET/POST /api/v1/motivos-acerto-estoque` com `motivos_estoque:read/create`. Os contratos atuais aceitam somente o campo `nome`; a resposta é validada e renderizada com `textContent`. Cada lista mostra seu próprio estado de autorização/consulta, e as requisições são canceladas e os dados em memória descartados ao encerrar a sessão.
 
 A interface não oferece edição porque as rotas atuais não têm PUT, nem exclusão física, apesar de existirem rotas DELETE com verificação de vínculos no backend. O cadastro usa apenas as capacidades de criação; não presume contagem de documentos ou acertos associados, pois as listas não retornam esses totais. Persistência operacional continua condicionada à configuração PostgreSQL isolada e homologada; nenhum dado de produção é consultado.
+
+
+## Estoque & Inventário — integração autenticada
+
+A tela consome `GET /api/v1/estoque`, cria produtos com `POST` e edita com `PUT /api/v1/estoque/{id}`, respeitando `estoque:read/create/update` no frontend e as dependências de autorização do backend. Os campos seguem o schema atual: descrição, etiqueta, marca, linha, fabricante, data de cadastro, setor, unidade, quantidade, limites mínimo/máximo, valor unitário, status e cor. A resposta é validada antes de renderização e os textos são inseridos por `textContent`.
+
+A listagem oferece pesquisa por descrição/código/marca/linha/fabricante, filtro por situação e setor, além de contagens de estoque adequado, crítico e excedente calculadas a partir dos limites cadastrados. A classificação de crítico usa saldo abaixo do mínimo (e saldo zero quando mínimo também é zero); excedente considera máximo maior que zero e saldo acima dele.
+
+O formulário preserva a referência e os metadados de foto existentes durante a edição, mas não oferece upload, conversão Gzip/Base64 nem alteração de referência de arquivo. Exclusão física não é oferecida pela interface. O backend impede alteração do saldo quando há movimentações; o saldo deve ser ajustado por `POST /api/v1/acertos-estoque`, que registra movimento e saldo atomicamente no adapter PostgreSQL. O frontend de inventário ainda não substitui a tela de Acertos de Estoque nem integra scanner por câmera, impressão de etiquetas, checklist, anexos, paginação ou relatórios por setor.
+
+A sessão encerrada invalida e aborta consultas pendentes e limpa os produtos em memória. Nenhuma execução automatizada ou publicação foi feita nesta etapa.
