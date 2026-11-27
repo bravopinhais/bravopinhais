@@ -59,7 +59,7 @@ class PostgresReviewLedgerStore:
 
         primary_error = sys.exception()
         try:
-            self._close_cursor(cursor)
+            cursor.close()
         except BaseException as close_error:
             if primary_error is None:
                 raise
