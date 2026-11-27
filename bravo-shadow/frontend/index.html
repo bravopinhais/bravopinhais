@@ -463,6 +463,8 @@ function acertoEstoqueRenderHistory(){
 }
 async function acertoEstoqueLoad(api){
  const sequence=++acertoEstoqueSequence;acertoEstoqueController?.abort();acertoEstoqueController=new AbortController();const signal=acertoEstoqueController.signal;
+ acertoEstoqueProducts=[];acertoEstoqueReasons=[];acertoEstoqueItems=[];
+ acertoEstoqueFillSelect("ace-produto",[],"Carregando produtos…",x=>x.item);acertoEstoqueFillSelect("ace-motivo",[],"Carregando motivos…",x=>x.nome);
  const jobs=[];
  if(acertoEstoqueCan("estoque","read"))jobs.push(["products",api.get("/api/v1/estoque",{signal})]);else{acertoEstoqueProducts=[];acertoEstoqueSetStatus("ace-status","Seu perfil não possui estoque:read.","err");}
  if(acertoEstoqueCan("motivos_estoque","read"))jobs.push(["reasons",api.get("/api/v1/motivos-acerto-estoque",{signal})]);else{acertoEstoqueReasons=[];acertoEstoqueSetStatus("ace-status","Seu perfil não possui motivos_estoque:read.","err");}
@@ -490,7 +492,7 @@ async function acertoEstoqueLoad(api){
  if(problems.length)acertoEstoqueSetStatus("ace-status",problems.join(" · "),"err");
  else acertoEstoqueSetStatus("ace-status","Catálogos e histórico carregados conforme suas permissões.","ok");
  if(acertoEstoqueCan("acertos_estoque","read"))acertoEstoqueSetStatus("ace-history-status",acertoEstoqueItems.length+" movimentação(ões) carregada(s).","ok");
- acertoEstoqueUpdateHint();
+ acertoEstoqueUpdateHint();return problems.length===0;
 }
 function acertoEstoqueUpdateHint(){
  const type=document.getElementById("ace-tipo")?.value,select=document.getElementById("ace-produto"),product=select?.selectedOptions?.[0]?.textContent;
@@ -510,7 +512,8 @@ async function acertoEstoqueSave(event){
  if(button)button.disabled=true;acertoEstoqueSetStatus("ace-status","Registrando movimentação…");
  try{
   await api.post("/api/v1/acertos-estoque",payload);document.getElementById("ace-form").reset();
-  await acertoEstoqueLoad(api);acertoEstoqueSetStatus("ace-status","Movimentação registrada. Saldo e histórico atualizados.","ok");
+  const refreshed=await acertoEstoqueLoad(api);
+  acertoEstoqueSetStatus("ace-status",refreshed?"Movimentação registrada. Saldo e histórico atualizados.":"Movimentação registrada, mas não foi possível atualizar todos os dados da tela.","ok");
  }catch(error){
   const message=error?.status===409?"Conflito de saldo: a API recusou a movimentação. Atualize os dados e tente novamente.":error?.status===403?"Seu perfil não possui autorização para registrar movimentos.":error?.status===401?"Sessão expirada. Entre novamente.":(error?.message||"Não foi possível registrar a movimentação.");
   acertoEstoqueSetStatus("ace-status",message,"err");
