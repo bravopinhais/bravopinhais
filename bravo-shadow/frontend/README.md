@@ -97,3 +97,19 @@ O preview precisa ter origem e endereço independentes da aplicação original. 
 ### Verificações antes de uma futura publicação
 
 A publicação só poderá ser considerada após confirmar que o destino é distinto do domínio/caminho de produção, que a interface não chama APIs de produção, que não contém dados reais nem segredos e que as verificações automatizadas de segurança passaram. Até lá, o artefato permanece apenas na branch `bravo-shadow`.
+
+
+## Endurecimento do cliente Google — 2026-11-27
+
+O módulo `js/google-auth.js` recebeu uma revisão defensiva sem ativar o bootstrap da tela:
+
+- o carregamento do Google Identity Services agora tem timeout de 15 segundos e remove listeners ao concluir, evitando Promise pendente indefinidamente;
+- URLs de API com usuário/senha, query string ou fragmento são rejeitadas;
+- o Client ID é validado no formato público OAuth do Google;
+- cada tentativa de autenticação recebe um identificador sequencial e aborta a consulta anterior;
+- uma resposta atrasada de uma tentativa anterior não pode substituir a sessão mais recente;
+- encerramento/descarte da sessão aborta a consulta em andamento e invalida callbacks atrasados.
+
+Esses controles melhoram a robustez do cliente, mas **não significam que o login esteja ativo**. O bootstrap permanece desligado até existir uma API HTTPS isolada e validada, origem frontend independente e aprovação da configuração OAuth. Nenhuma API de produção deve ser usada como fallback.
+
+Não foram executados testes JavaScript ou workflows nesta etapa, conforme orientação de não executar testes por enquanto.
