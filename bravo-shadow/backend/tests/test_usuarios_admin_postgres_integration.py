@@ -431,6 +431,8 @@ def test_real_postgres_concurrent_deactivations_preserve_one_active_admin(postgr
 def test_real_postgres_cadastral_update_cannot_restore_stale_admin_state(postgres_users_database):
     database_url = postgres_users_database
     _insert_user(database_url, "usr_cadastral_race", "cadastral-race@example.com")
+    # Mantém outro Admin ativo para que o teste possa rebaixar o usuário-alvo.
+    _insert_user(database_url, "usr_cadastral_race_guard", "cadastral-guard@example.com")
 
     repository = _repository(database_url)
     # Simula uma leitura cadastral antiga anterior à mudança administrativa.
