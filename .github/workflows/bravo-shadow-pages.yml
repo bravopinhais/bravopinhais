@@ -53,6 +53,9 @@ jobs:
           grep -q 'button.textContent="Salvando..."' _site/index.html
           grep -q 'id="forma-cancel-edit" data-action="cancel-edit" hidden' _site/index.html
           grep -q 'if(action.dataset.action==="cancel-edit")' _site/index.html
+          grep -q 'form?.getAttribute("aria-busy")==="true")return;resetFormaForm();setFormasStatus("Edição cancelada; nenhuma alteração foi enviada.");document.getElementById("forma-nome")?.focus()' _site/index.html
+          grep -q 'event.key!=="Escape"||!formaEmEdicao' _site/index.html
+          grep -q 'Edição cancelada pelo teclado; nenhuma alteração foi enviada.' _site/index.html
           grep -q 'cancel.hidden=false' _site/index.html
           grep -q 'if(cancel)cancel.hidden=true' _site/index.html
           grep -q 'if(form.getAttribute("aria-busy")==="true")return' _site/index.html
