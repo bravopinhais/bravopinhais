@@ -149,6 +149,22 @@ async function salvarForma(event){
   resetFormaForm();await carregarFormas();setFormasStatus("Registro salvo na API sombra.","ok");
  }catch(error){setFormasStatus(error.message,"err")}finally{button.disabled=false}
 }
+function usuariosView(){
+ const view=document.getElementById("view");
+ view.innerHTML=`<section class="panel">
+  <div class="api-toolbar"><div><strong style="font-size:13px">Acesso e cadastro de usuários</strong><div class="api-status">Módulo em preparação segura</div></div><span class="tag">Sem operações liberadas</span></div>
+  <div class="notice" style="margin:16px 0 18px"><div class="notice-icon">⌁</div><div><strong>Integração Google pendente</strong><p>A interface ainda não recebeu o ID token da sessão Google. Sem essa identidade validada, a lista de usuários não será consultada nem serão enviados cadastros ou alterações.</p></div></div>
+  <div class="section-head"><h2>Pré-requisitos de acesso</h2><span>Estado atual do Shadow</span></div>
+  <div class="data-table-wrap"><table class="data-table" style="min-width:0"><tbody>
+   <tr><th scope="row">Sessão Google no navegador</th><td><span class="tag">Pendente · provedor não identificado</span></td></tr>
+   <tr><th scope="row">Consulta de usuários</th><td><span class="tag">Bloqueada · usuarios:read não concedida</span></td></tr>
+   <tr><th scope="row">Cadastro e edição</th><td><span class="tag">Bloqueados · matriz de perfis fechada</span></td></tr>
+   <tr><th scope="row">Desativação lógica</th><td><span class="tag">Protegida · usuarios:deactivate não concedida</span></td></tr>
+   <tr><th scope="row">Exclusão física</th><td><span class="tag">Desabilitada pela API · HTTP 410</span></td></tr>
+  </tbody></table></div>
+  <div class="dashboard-gate-note"><span class="dot"></span><span>Nenhum perfil ou privilégio será habilitado automaticamente. A próxima integração depende da confirmação do provedor Google ativo e da aprovação explícita da matriz de permissões.</span></div>
+ </section>`;
+}
 function openModule(id){
  const item=modules[id];if(!item)return;moduloAtual=id;
  document.querySelectorAll("[data-module]").forEach(el=>{if(el.closest("#navigation")){if(el.dataset.module===id)el.setAttribute("aria-current","page");else el.removeAttribute("aria-current")}});
@@ -158,6 +174,7 @@ function openModule(id){
  const view=document.getElementById("view");
  if(id==="dashboard"){view.innerHTML=dashboardMarkup;location.hash="";return}
  if(id==="formas_monetarias"){location.hash=id;formasView();return}
+ if(id==="usuarios"){location.hash=id;usuariosView();return}
  view.innerHTML='<section class="panel module-view"><div><div class="big-icon">◇</div><span class="eyebrow">Módulo mapeado · Bravo Shadow</span><h2>'+item.title+'</h2><p>'+item.desc+'</p><span class="tag">Estrutura visual inicial · Funcionalidade ainda não migrada</span></div></section>';
  location.hash=id;
 }
