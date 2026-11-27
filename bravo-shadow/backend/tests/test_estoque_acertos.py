@@ -263,3 +263,22 @@ def test_stock_and_adjustment_routes_deny_profiles_until_matrix_approval(monkeyp
         assert denied.post("/api/v1/acertos-estoque", json={
             "tipo": "Entrada", "produtoId": "x", "quantidade": 1, "motivo": "Teste",
         }).status_code == 403
+
+
+def test_stock_and_movement_accept_fractional_quantities():
+    product_response = client.post("/api/v1/estoque", json={
+        "item": "Produto fracionado", "quantidade": 2.375,
+        "minimo": 0.250, "maximo": 5.000, "unidade": "kg",
+        "valorUnitario": 8.90, "setor": "DML",
+    })
+    assert product_response.status_code == 201
+    product = product_response.json()
+    assert product["quantidade"] == 2.375
+    movement = client.post("/api/v1/acertos-estoque", json={
+        "tipo": "Saída", "produtoId": product["id"],
+        "quantidade": 0.125, "motivo": "Consumo fracionado",
+    })
+    assert movement.status_code == 201
+    assert movement.json()["quantidade"] == 0.125
+    updated = client.get("/api/v1/estoque").json()[0]
+    assert updated["quantidade"] == 2.25
