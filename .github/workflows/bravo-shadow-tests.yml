@@ -59,7 +59,7 @@ jobs:
   backend-tests:
     name: Backend / Python 3.11 + PostgreSQL descartável
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 10
     services:
       postgres:
         image: postgres:16
