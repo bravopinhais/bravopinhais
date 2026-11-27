@@ -104,6 +104,47 @@ class PostgresUsuariosRepository:
         if not changed:
             raise HTTPException(status_code=404, detail="Usuário não encontrado.")
 
+    def update_cadastral(
+        self,
+        item_id: str,
+        *,
+        nome: str | None = None,
+        loja: str | None = None,
+        cargo: str | None = None,
+    ) -> Usuario:
+        """Atualiza somente colunas cadastrais, sem regravar privilégios."""
+        allowed = {"nome": nome, "loja": loja, "cargo": cargo}
+        assignments = [
+            (column, value)
+            for column, value in allowed.items()
+            if value is not None
+        ]
+        if not assignments:
+            raise ValueError("Informe ao menos um campo cadastral para atualizar.")
+
+        set_clause = ", ".join(f"{column} = %s" for column, _ in assignments)
+        params = tuple(value for _, value in assignments) + (item_id,)
+        sql = (
+            f"UPDATE {self._table} SET {set_clause}, "
+            "updated_at = now(), version = version + 1 "
+            f"WHERE id = %s RETURNING {self._columns}"
+        )
+        with self._uow as uow:
+            connection = uow.connection
+            if connection is None:
+                raise RuntimeError("A conexão PostgreSQL não foi aberta.")
+            cursor = connection.cursor()
+            try:
+                cursor.execute(sql, params)
+                row = cursor.fetchone()
+                if row is None:
+                    raise HTTPException(
+                        status_code=404, detail="Usuário não encontrado."
+                    )
+                return self._entity(row)
+            finally:
+                self._close_cursor(cursor)
+
     def delete(self, item_id: str) -> None:
         """Impede exclusão física mesmo em chamadas diretas ao repositório."""
         raise HTTPException(

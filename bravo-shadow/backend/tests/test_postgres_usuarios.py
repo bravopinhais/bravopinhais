@@ -10,7 +10,7 @@ class Cursor:
 
     def execute(self, sql, params=()):
         self.connection.calls.append((sql, params))
-        if sql.lstrip().startswith("SELECT"):
+        if sql.lstrip().startswith("SELECT") or "RETURNING" in sql:
             self.connection.row = self.connection.row_value
 
     def fetchone(self):
@@ -191,3 +191,34 @@ def test_postgres_user_repository_blocks_physical_delete_without_opening_connect
         repository.delete("usr_1")
 
     assert error.value.status_code == 410
+
+
+
+def test_postgres_cadastral_update_never_writes_profile_or_status():
+    row = ("usr_1", "person@example.com", "Nome atualizado", "Bravo", "Conselho", "Admin", "Inativo")
+    connection = Connection(row=row)
+    repository = PostgresUsuariosRepository(factory(connection))
+
+    updated = repository.update_cadastral("usr_1", nome="Nome atualizado")
+
+    sql, params = connection.calls[0]
+    normalized_sql = " ".join(sql.lower().split())
+    assert "set nome = %s" in normalized_sql
+    assert "perfil =" not in normalized_sql
+    assert "status =" not in normalized_sql
+    assert "returning id, email, nome, loja, cargo, perfil, status" in normalized_sql
+    assert params == ("Nome atualizado", "usr_1")
+    assert updated.perfil == "Admin"
+    assert updated.status == "Inativo"
+    assert connection.commits == 1
+
+
+def test_postgres_cadastral_update_rejects_empty_payload_without_connection():
+    import pytest
+
+    def unexpected_connection():
+        raise AssertionError("Payload vazio não deve abrir conexão.")
+
+    repository = PostgresUsuariosRepository(unexpected_connection)
+    with pytest.raises(ValueError):
+        repository.update_cadastral("usr_1")

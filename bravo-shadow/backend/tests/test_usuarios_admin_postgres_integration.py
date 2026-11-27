@@ -426,3 +426,35 @@ def test_real_postgres_concurrent_deactivations_preserve_one_active_admin(postgr
     assert remaining_admins == 1
     assert inactive_admins == 1
     assert audit_count == 1
+
+
+def test_real_postgres_cadastral_update_cannot_restore_stale_admin_state(postgres_users_database):
+    database_url = postgres_users_database
+    _insert_user(database_url, "usr_cadastral_race", "cadastral-race@example.test")
+
+    repository = _repository(database_url)
+    # Simula uma leitura cadastral antiga anterior à mudança administrativa.
+    stale_snapshot = repository.get("usr_cadastral_race")
+    assert stale_snapshot.perfil == "Admin"
+    assert stale_snapshot.status == "Ativo"
+
+    repository.update_administrative_state(
+        "usr_cadastral_race",
+        perfil="Operador",
+        status="Ativo",
+        event=_event("usr_cadastral_race"),
+        audit_sink=_audit_sink(database_url),
+    )
+    repository.update_cadastral(
+        "usr_cadastral_race",
+        nome="Nome cadastral atualizado",
+    )
+
+    with psycopg.connect(database_url) as connection:
+        row = connection.execute(
+            "SELECT nome, perfil, status, version FROM bravo_shadow.usuarios WHERE id = %s",
+            ("usr_cadastral_race",),
+        ).fetchone()
+
+    assert row == ("Nome cadastral atualizado", "Operador", "Ativo", 3)
+

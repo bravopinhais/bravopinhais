@@ -73,8 +73,15 @@ class UsuariosService:
     ) -> Usuario:
         """Atualiza apenas dados cadastrais; identidade e privilégios são preservados."""
         with self._email_lock:
-            current = self.get(item_id)
             payload = data.model_dump(exclude_unset=True)
+            operation = getattr(self.repository, "update_cadastral", None)
+            if callable(operation):
+                # O adapter PostgreSQL atualiza somente as colunas permitidas.
+                # Não ler e reenviar perfil/status evita restaurar estado obsoleto
+                # após uma alteração administrativa concorrente.
+                return operation(item_id, **payload)
+
+            current = self.get(item_id)
             updated = Usuario(
                 id=current.id,
                 email=current.email,
