@@ -79,6 +79,33 @@ class StorageServices:
     audit_sink: Any | None
 
 
+class _WritesPendingAuditRepository:
+    """Bloqueia mutações persistentes até cada módulo ter auditoria atômica homologada."""
+
+    _WRITE_METHODS = frozenset({"add", "replace", "delete", "register_movement"})
+
+    def __init__(self, repository: Any, module_name: str) -> None:
+        self._repository = repository
+        self._module_name = module_name
+
+    def __getattr__(self, name: str):
+        attribute = getattr(self._repository, name)
+        if name not in self._WRITE_METHODS or not callable(attribute):
+            return attribute
+
+        def blocked(*args, **kwargs):
+            from fastapi import HTTPException
+            raise HTTPException(
+                status_code=503,
+                detail=(
+                    f"Mutações de {self._module_name} bloqueadas até a auditoria "
+                    "transacional integrada ser implementada e homologada."
+                ),
+            )
+
+        return blocked
+
+
 class _InMemoryModuleSettingsRepository:
     """Snapshot de configuração para leitura; mutações exigem PostgreSQL auditado."""
 
@@ -139,6 +166,15 @@ def build_storage_services(
         usuarios_repository = PostgresUsuariosRepository(connection_factory)
         module_settings_repository = PostgresModuleSettingsRepository(connection_factory)
         audit_sink = PostgresAuditSink(connection_factory)
+        # Estes módulos ainda não possuem contrato de auditoria atômica completo.
+        # O bloqueio fica no adaptador, protegendo também chamadas internas entre serviços.
+        estoque_repository = _WritesPendingAuditRepository(estoque_repository, "estoque")
+        acertos_repository = _WritesPendingAuditRepository(acertos_repository, "acertos de estoque")
+        categorias_repository = _WritesPendingAuditRepository(categorias_repository, "categorias")
+        motivos_repository = _WritesPendingAuditRepository(motivos_repository, "motivos de estoque")
+        documentos_repository = _WritesPendingAuditRepository(documentos_repository, "documentos")
+        condominio_repository = _WritesPendingAuditRepository(condominio_repository, "condomínio")
+        conselheiros_repository = _WritesPendingAuditRepository(conselheiros_repository, "conselheiros")
         movement_repository = acertos_repository
     else:
         raise StorageConfigurationError(
