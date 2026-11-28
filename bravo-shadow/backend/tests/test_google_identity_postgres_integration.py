@@ -118,10 +118,12 @@ def test_google_identity_enforces_one_identity_per_user_and_unique_google_subjec
         with pytest.raises(psycopg.errors.UniqueViolation):
             _insert_identity(connection, user_a, f"sub-{uuid4().hex}")
 
+        user_c = f"user-{uuid4().hex}"
+        _insert_user(connection, user_c)
         subject = f"sub-{uuid4().hex}"
         _insert_identity(connection, user_b, subject)
         with pytest.raises(psycopg.errors.UniqueViolation):
-            _insert_identity(connection, f"user-{uuid4().hex}", subject)
+            _insert_identity(connection, user_c, subject)
 
 
 def test_google_identity_unique_constraint_is_safe_under_concurrency(
