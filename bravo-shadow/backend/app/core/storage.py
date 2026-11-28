@@ -154,7 +154,7 @@ def build_storage_services(
         plano_repository = PostgresPlanoContasRepository(connection_factory)
         estoque_repository = PostgresEstoqueRepository(connection_factory)
         acertos_repository = PostgresAcertosEstoqueRepository(connection_factory)
-        movement_repository = acertos_repository
+        movement_repository = _WritesPendingAuditRepository(acertos_repository, "acertos de estoque")
         categorias_repository = PostgresCategoriasRepository(connection_factory)
         motivos_repository = PostgresMotivosAcertoRepository(connection_factory)
         documentos_repository = PostgresDocumentosRepository(connection_factory)
