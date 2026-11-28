@@ -83,3 +83,47 @@ def test_explicit_collection_mapping_is_respected():
 def test_condominio_singleton_is_not_misrepresented_as_collection():
     assert CONDOMINIO_SINGLETON_CONTRACT["source_shape"] == "singleton_object"
     assert CONDOMINIO_SINGLETON_CONTRACT["status"] == "manual_source_locator_required"
+
+
+
+def test_unexpected_field_is_reported_without_exposing_its_value():
+    inventory = inspect_source_collections({
+        "financeiro": [_record(
+            id="001", tipo="Receber", planoContaId="", historico="Taxa",
+            valor=10.25, tokenAcesso="SEGREDO-SINTETICO"
+        )]
+    })
+    report = assess_special_contracts(inventory)
+    assessment = next(item for item in report.assessments if item.key == "financeiro")
+
+    assert assessment.status == "review_required"
+    assert assessment.unexpected_fields == ("tokenAcesso",)
+    assert "SEGREDO-SINTETICO" not in repr(report)
+
+
+def test_boolean_and_null_are_not_accepted_as_numeric_stock_values():
+    inventory = inspect_source_collections({
+        "estoque": [
+            _record(id="p1", item="Papel", quantidade=True),
+            _record(id="p2", item="Caneta", quantidade=None),
+        ]
+    })
+    report = assess_special_contracts(inventory)
+    assessment = next(item for item in report.assessments if item.key == "estoque")
+
+    assert assessment.status == "review_required"
+    assert "quantidade" in assessment.type_mismatches
+
+
+def test_partially_populated_optional_field_is_reported_for_review():
+    inventory = inspect_source_collections({
+        "estoque": [
+            _record(id="p1", item="Papel", quantidade=5, etiqueta="A-1"),
+            _record(id="p2", item="Caneta", quantidade=2),
+        ]
+    })
+    report = assess_special_contracts(inventory)
+    assessment = next(item for item in report.assessments if item.key == "estoque")
+
+    assert "etiqueta" in assessment.partially_populated
+    assert assessment.status == "review_required"
