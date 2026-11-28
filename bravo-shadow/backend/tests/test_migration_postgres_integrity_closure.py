@@ -211,17 +211,6 @@ def test_target_only_foreign_keys_are_explicitly_not_claimed_as_legacy_mappings(
     assert "references bravo_shadow.motivos_acerto (id)" in sql
     assert "documentos_categoria" not in reconciliation
     assert "acertos_estoque_motivo" not in reconciliation
-",
-        body, re.IGNORECASE,
-    )
-    assert re.search(
-        r"foreign\s+key\s*\(\s*first_batch_id\s*,\s*source_system\s*\)",
-        body, re.IGNORECASE,
-    )
-    assert re.search(
-        r"foreign\s+key\s*\(\s*last_verified_batch_id\s*,\s*source_system\s*\)",
-        body, re.IGNORECASE,
-    )
 
 
 def test_authenticated_audit_insert_matches_all_required_sql_columns():
