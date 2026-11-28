@@ -138,4 +138,4 @@ Foi identificado que o adaptador runtime ainda usa `SELECT ... FOR UPDATE` nas t
 
 A chave global é uma escolha conservadora de homologação, não uma decisão de desempenho definitiva. O grant EXECUTE da função de advisory lock deve ser verificado explicitamente no ambiente descartável; não presumir que os privilégios padrão permanecerão iguais após hardening.
 
-**Estado:** análise e diretriz documental בלבד. O adaptador, o SQL rascunho, as roles e as policies não foram alterados nem executados.
+**Estado:** análise e diretriz documental apenas. O adaptador, o SQL rascunho, as roles e as policies não foram alterados nem executados.
