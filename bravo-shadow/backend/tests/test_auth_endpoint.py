@@ -46,12 +46,13 @@ def test_auth_me_accepts_verified_google_identity_and_internal_active_user():
     )
 
     assert response.status_code == 200
-    assert response.json() == {
-        "subject": "google-123",
-        "email": "admin@example.com",
-        "profile": "Admin",
-        "status": "Ativo",
-    }
+    body = response.json()
+    assert body["subject"] == "google-123"
+    assert body["email"] == "admin@example.com"
+    assert body["profile"] == "Admin"
+    assert body["status"] == "Ativo"
+    assert body["capabilities"]
+    assert body["capabilities"] == sorted(set(body["capabilities"]))
 
 
 def test_auth_me_denies_unknown_google_email():
