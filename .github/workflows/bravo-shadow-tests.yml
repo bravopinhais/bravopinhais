@@ -47,7 +47,12 @@ jobs:
         run: docker build -f bravo-shadow/Dockerfile -t bravo-shadow:ci ./bravo-shadow
 
       - name: Iniciar contêiner para smoke test
-        run: docker run -d --name bravo-shadow-smoke -p 8000:8000 bravo-shadow:ci
+        run: >-
+          docker run -d --name bravo-shadow-smoke -p 8000:8000
+          -e BRAVO_STORAGE_BACKEND=postgres
+          -e BRAVO_DATABASE_URL=postgresql://bravo_ci:bravo_ci@127.0.0.1:5432/bravo_ci_unused
+          -e GOOGLE_CLIENT_ID=000000000000-bravo-shadow-ci.apps.googleusercontent.com
+          bravo-shadow:ci
 
       - name: Validar interface e API dentro do contêiner
         run: |
