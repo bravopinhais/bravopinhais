@@ -362,8 +362,10 @@ def test_client_roles_are_denied_and_runtime_cannot_mutate_snapshots_or_ddl(post
     with psycopg.connect(postgres_database, autocommit=True) as connection:
         for role in client_roles:
             connection.execute(
-                f'ALTER ROLE "{role}" LOGIN PASSWORD %s',
-                (f"{role}-shadow-test-only",),
+                psycopg.sql.SQL("ALTER ROLE {} LOGIN PASSWORD {}").format(
+                    psycopg.sql.Identifier(role),
+                    psycopg.sql.Literal(f"{role}-shadow-test-only"),
+                )
             )
 
     admin_conninfo = psycopg.conninfo.conninfo_to_dict(postgres_database)
