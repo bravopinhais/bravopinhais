@@ -109,20 +109,27 @@ def test_google_identity_rejects_invalid_identity_fields(
 def test_google_identity_enforces_one_identity_per_user_and_unique_google_subject(
     google_identity_database,
 ):
+    user_a, user_b, user_c = (
+        f"user-{uuid4().hex}",
+        f"user-{uuid4().hex}",
+        f"user-{uuid4().hex}",
+    )
     with psycopg.connect(google_identity_database) as connection:
-        user_a, user_b = f"user-{uuid4().hex}", f"user-{uuid4().hex}"
         _insert_user(connection, user_a)
         _insert_user(connection, user_b)
-        _insert_identity(connection, user_a, f"sub-{uuid4().hex}")
+        _insert_user(connection, user_c)
 
-        with pytest.raises(psycopg.errors.UniqueViolation):
+    with psycopg.connect(google_identity_database) as connection:
+        _insert_identity(connection, user_a, f"sub-{uuid4().hex}")
+    with pytest.raises(psycopg.errors.UniqueViolation):
+        with psycopg.connect(google_identity_database) as connection:
             _insert_identity(connection, user_a, f"sub-{uuid4().hex}")
 
-        user_c = f"user-{uuid4().hex}"
-        _insert_user(connection, user_c)
-        subject = f"sub-{uuid4().hex}"
+    subject = f"sub-{uuid4().hex}"
+    with psycopg.connect(google_identity_database) as connection:
         _insert_identity(connection, user_b, subject)
-        with pytest.raises(psycopg.errors.UniqueViolation):
+    with pytest.raises(psycopg.errors.UniqueViolation):
+        with psycopg.connect(google_identity_database) as connection:
             _insert_identity(connection, user_c, subject)
 
 
