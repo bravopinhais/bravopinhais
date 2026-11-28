@@ -15,7 +15,7 @@ def test_api_bootstrap_requires_explicit_same_origin_configuration():
     assert '<script type="module" src="./js/bravo-bootstrap.js"></script>' in HTML
     assert "if (!value || value.enabled !== true)" in BOOTSTRAP
     assert "api.origin !== window.location.origin" in BOOTSTRAP
-    assert BOOTSTRAP.index("settings = validateConfig(config)") < BOOTSTRAP.index("initializeGoogleSession")
+    assert BOOTSTRAP.index("settings = validateConfig(config)") < BOOTSTRAP.index("sessionController = await initializeGoogleSession")
     assert "const config = window.BRAVO_SHADOW_CONFIG" in BOOTSTRAP
 
 
