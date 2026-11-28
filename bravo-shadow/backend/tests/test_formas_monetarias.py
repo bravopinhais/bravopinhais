@@ -46,6 +46,7 @@ def test_operator_has_read_only_formas_monetarias_access():
     assert client.post("/api/v1/formas-monetarias", json={"nome": "Boleto"}).status_code == 403
     assert client.put("/api/v1/formas-monetarias/missing", json={"nome": "PIX"}).status_code == 403
     assert client.delete("/api/v1/formas-monetarias/missing").status_code == 403
+@pytest.mark.parametrize("multa_pct", [0, 2, 2.01, 100])
 def test_forma_monetaria_accepts_multa_within_range(multa_pct):
     data = FormaMonetariaInput(nome="PIX", multaPct=multa_pct)
     assert data.multaPct == multa_pct
