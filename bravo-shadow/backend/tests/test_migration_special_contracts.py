@@ -127,3 +127,51 @@ def test_partially_populated_optional_field_is_reported_for_review():
 
     assert "etiqueta" in assessment.partially_populated
     assert assessment.status == "review_required"
+
+
+def test_auxiliary_contract_catalog_covers_confirmed_simple_collections():
+    from app.core.migration_special_contracts import AUXILIARY_COLLECTION_CONTRACTS
+
+    assert {item.key for item in AUXILIARY_COLLECTION_CONTRACTS} == {
+        "formas_monetarias", "motivos_acerto_estoque", "categorias"
+    }
+
+
+def test_auxiliary_contracts_report_shape_without_claiming_import_readiness():
+    from app.core.migration_special_contracts import assess_auxiliary_contracts
+
+    inventory = inspect_source_collections({
+        "formas_monetarias": [
+            _record(id="fm1", nome="Boleto", multaPct=2.0)
+        ],
+        "motivos_acerto_estoque": [
+            _record(id="me1", nome="Compra")
+        ],
+        "categorias": [
+            _record(id="cat1", nome="Atas")
+        ],
+    })
+    report = assess_auxiliary_contracts(inventory)
+
+    assert len(report.assessments) == 3
+    assert all(item.status == "review_required" for item in report.assessments)
+    assert all(item.record_count == 1 for item in report.assessments)
+    assert "allowlists" in report.unassessed_domains[0]
+
+
+def test_auxiliary_contracts_flag_unknown_fields_and_duplicate_ids_without_values():
+    from app.core.migration_special_contracts import assess_auxiliary_contracts
+
+    inventory = inspect_source_collections({
+        "categorias": [
+            _record(id="cat1", nome="Atas", segredo="VALOR-SINTETICO"),
+            _record(id="cat1", nome="Contratos", segredo="OUTRO-VALOR"),
+        ]
+    })
+    report = assess_auxiliary_contracts(inventory)
+    categories = next(item for item in report.assessments if item.key == "categorias")
+
+    assert categories.unexpected_fields == ("segredo",)
+    assert "VALOR-SINTETICO" not in repr(report)
+    assert "OUTRO-VALOR" not in repr(report)
+    assert any("IDs ausentes ou IDs duplicados" in reason for reason in categories.review_reasons)
