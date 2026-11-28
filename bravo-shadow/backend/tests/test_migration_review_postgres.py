@@ -51,7 +51,9 @@ class FakeCursor:
         query = " ".join(sql.split())
         self.connection.statements.append(query)
 
-        if query.startswith("INSERT INTO bravo_shadow.migration_review_batches"):
+        if query.startswith("SELECT pg_catalog.pg_advisory_xact_lock"):
+            self.one = (None,)
+        elif query.startswith("INSERT INTO bravo_shadow.migration_review_batches"):
             batch_key, manifest_hash = params
             db.batches.setdefault(batch_key, manifest_hash)
         elif query.startswith("SELECT manifest_hash FROM bravo_shadow.migration_review_batches"):
@@ -277,7 +279,7 @@ def test_postgres_adapter_rejects_duplicate_decision_ids_before_writing():
 
 
 
-def test_postgres_adapter_locks_batch_before_decision_during_append():
+def test_postgres_adapter_uses_transaction_advisory_lock_without_row_update_locks():
     register, decision_id, database, store = setup_store()
     store.initialize(register)
     connection = database.connect()
@@ -286,19 +288,22 @@ def test_postgres_adapter_locks_batch_before_decision_during_append():
         def __init__(self):
             super().__init__(lambda: connection)
 
-    CapturingStore().append(register, **event_args(decision_id, "lock-order-event", 0))
+    CapturingStore().append(register, **event_args(decision_id, "advisory-lock-event", 0))
 
-    batch_lock = next(
+    lock_index = next(
+        index for index, statement in enumerate(connection.statements)
+        if statement.startswith("SELECT pg_catalog.pg_advisory_xact_lock")
+    )
+    batch_read_index = next(
         index for index, statement in enumerate(connection.statements)
         if statement.startswith("SELECT manifest_hash FROM bravo_shadow.migration_review_batches")
-        and "FOR UPDATE" in statement
     )
-    decision_lock = next(
+    decision_read_index = next(
         index for index, statement in enumerate(connection.statements)
         if statement.startswith("SELECT batch_key, manifest_hash FROM bravo_shadow.migration_review_decisions")
-        and "FOR UPDATE" in statement
     )
-    assert batch_lock < decision_lock
+    assert lock_index < batch_read_index < decision_read_index
+    assert not any("FOR UPDATE" in statement for statement in connection.statements)
 
 
 def test_postgres_review_store_preserves_query_error_when_cursor_close_fails():
