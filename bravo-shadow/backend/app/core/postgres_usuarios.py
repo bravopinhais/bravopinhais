@@ -164,6 +164,66 @@ class PostgresUsuariosRepository:
             finally:
                 self._close_cursor(cursor)
 
+    def add_audited(self, item: Usuario, *, event: Any, audit_sink: Any) -> None:
+        from app.core.audit import AuditEvent
+
+        if not isinstance(event, AuditEvent) or event.action != "usuarios:create" or event.entity_type != "usuario" or event.entity_id != item.id or event.outcome != "success":
+            raise ValueError("Evento de auditoria não corresponde à criação do usuário.")
+        if item.perfil != "Operador" or item.status != "Ativo":
+            raise ValueError("Criação cadastral aceita somente Operador/Ativo.")
+        if not callable(getattr(audit_sink, "append_in_transaction", None)):
+            raise TypeError("audit_sink deve aceitar append_in_transaction.")
+        with self._uow as uow:
+            connection = uow.connection
+            if connection is None:
+                raise RuntimeError("A conexão PostgreSQL não foi aberta.")
+            cursor = connection.cursor()
+            try:
+                cursor.execute(
+                    f"INSERT INTO {self._table} (id, email, nome, loja, cargo, perfil, status) "
+                    "VALUES (%s, %s, %s, %s, %s, 'Operador', 'Ativo')",
+                    (item.id, item.email, item.nome, item.loja, item.cargo),
+                )
+                audit_sink.append_in_transaction(connection, event)
+            finally:
+                self._close_cursor(cursor)
+
+    def update_cadastral_audited(
+        self, item_id: str, *, event: Any, audit_sink: Any,
+        nome: str | None = None, loja: str | None = None, cargo: str | None = None,
+    ) -> Usuario:
+        from app.core.audit import AuditEvent
+
+        if not isinstance(event, AuditEvent) or event.action != "usuarios:update_cadastral" or event.entity_type != "usuario" or event.entity_id != item_id or event.outcome != "success":
+            raise ValueError("Evento de auditoria não corresponde à atualização cadastral.")
+        if not callable(getattr(audit_sink, "append_in_transaction", None)):
+            raise TypeError("audit_sink deve aceitar append_in_transaction.")
+        allowed = {"nome": nome, "loja": loja, "cargo": cargo}
+        assignments = [(column, value) for column, value in allowed.items() if value is not None]
+        if not assignments:
+            raise ValueError("Informe ao menos um campo cadastral.")
+        set_clause = ", ".join(f"{column} = %s" for column, _ in assignments)
+        params = tuple(value for _, value in assignments) + (item_id,)
+        sql = (
+            f"UPDATE {self._table} SET {set_clause}, updated_at = now(), "
+            f"version = version + 1 WHERE id = %s RETURNING {self._columns}"
+        )
+        with self._uow as uow:
+            connection = uow.connection
+            if connection is None:
+                raise RuntimeError("A conexão PostgreSQL não foi aberta.")
+            cursor = connection.cursor()
+            try:
+                cursor.execute(f"LOCK TABLE {self._table} IN SHARE ROW EXCLUSIVE MODE")
+                cursor.execute(sql, params)
+                row = cursor.fetchone()
+                if row is None:
+                    raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+                audit_sink.append_in_transaction(connection, event)
+                return self._entity(row)
+            finally:
+                self._close_cursor(cursor)
+
     def delete(self, item_id: str) -> None:
         """Impede exclusão física mesmo em chamadas diretas ao repositório."""
         raise HTTPException(
