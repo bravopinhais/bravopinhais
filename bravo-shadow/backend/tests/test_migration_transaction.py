@@ -79,7 +79,7 @@ def setup(store=None, connection=None):
     repo.bind(conn)
     command = MigrationApplyCommand(
         "batch-1", "execution-1", "legacy", "estoque", "0007", RECORD,
-        "sha256-json-v1", "estoque", {"item": "caneta"}, "0007", MANIFEST, PLAN,
+        "json-sort-keys-utf8-no-whitespace-v1", "estoque", {"item": "caneta"}, "0007", MANIFEST, PLAN,
     )
     permit = MigrationApplyAuthorization(MANIFEST, PLAN, "local_disposable", "migration_apply", True)
     return conn, repo, command, permit
