@@ -57,3 +57,49 @@ def test_condominium_patch_accepts_empty_optional_values():
     result = service.update(CondominioPatch(telefone="   ", email="  "))
     assert result.telefone == ""
     assert result.email == ""
+
+
+from app.core.repositories import InMemoryCollectionRepository
+
+
+class CondominioAuditSink:
+    def __init__(self):
+        self.events = []
+
+    def append_in_transaction(self, connection, event):
+        self.events.append(event)
+
+
+class AuditedCondominioRepository(InMemoryCollectionRepository):
+    def replace_audited(self, item_id, item, event, sink):
+        current = self.get(item_id) or {}
+        current.update(item)
+        if self.exists(item_id):
+            self.replace(item_id, current)
+        else:
+            self.add(item_id, current)
+        sink.append_in_transaction(None, event)
+
+
+def test_condominio_service_requires_actor_and_records_audit():
+    repository = AuditedCondominioRepository()
+    sink = CondominioAuditSink()
+    service = CondominioService(repository=repository, audit_sink=sink)
+    actor = AuthenticatedPrincipal(
+        subject="google-test-subject", email="teste@example.com",
+        profile="Admin", account_status="Ativo",
+    )
+
+    with pytest.raises(Exception):
+        service.update(CondominioPatch(nome="Residencial"), request_id="req_missing_actor")
+    assert repository.get("singleton") is None
+
+    updated = service.update(
+        CondominioPatch(nome=" Residencial "),
+        actor=actor,
+        request_id="req_condominio",
+    )
+    assert updated.nome == "Residencial"
+    assert len(sink.events) == 1
+    assert sink.events[0].action == "condominio:update"
+    assert sink.events[0].request_id == "req_condominio"
