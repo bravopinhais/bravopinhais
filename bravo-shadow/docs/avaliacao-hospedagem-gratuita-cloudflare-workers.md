@@ -57,3 +57,24 @@ Há duas arquiteturas possíveis para avaliação futura:
 - aprovar uma alteração explícita no bootstrap para API em origem HTTPS separada, mantendo allowlist CORS exata e validação de destino.
 
 Nenhuma dessas opções está implementada ou autorizada. A segunda alternativa não resolve, por si só, a ausência dos módulos FastAPI no Worker. A prova de autenticação permanece isolada e não deve ser conectada ao frontend como se fosse a API completa.
+## Compatibilidade do backend completo
+
+A inspeção do backend confirmou que a API atual não é apenas um conjunto de endpoints JavaScript:
+- O runtime de referência é CPython 3.12 em imagem Docker (Dockerfile).
+- As dependências incluem FastAPI/Uvicorn e psycopg[binary] para PostgreSQL.
+- A camada de persistência cria conexões PostgreSQL por meio do driver Psycopg e espera uma URL BRAVO_DATABASE_URL mantida exclusivamente no servidor.
+- O composition root registra os módulos de negócio do Bravo; a prova Worker atual implementa somente saúde e autenticação.
+
+Consequência: não considerar o Worker de autenticação como substituto do backend FastAPI. Uma hospedagem de API completa precisa comprovar execução de CPython 3.12 e do driver Psycopg, conexão TLS com PostgreSQL, armazenamento de segredos no servidor, processo HTTP estável e health check. Compatibilidade de um adaptador ASGI isolado não comprova compatibilidade do driver, das transações, da auditoria ou de todos os módulos.
+
+## Critérios para comparar provedores de API
+
+Nenhum provedor gratuito está aprovado nesta etapa. Antes de selecionar um, a avaliação deve confirmar por documentação e teste técnico:
+1. Plano realmente gratuito e limites atuais, sem cartão ou cobrança automática.
+2. Suporte a Docker/CPython 3.12 e ao pacote psycopg[binary].
+3. Disponibilidade, suspensão por inatividade, memória, CPU e limites de execução.
+4. Conexão segura ao PostgreSQL externo e armazenamento de segredos.
+5. HTTPS, domínio/URL estável, health check e logs operacionais.
+6. Compatibilidade com a origem do frontend: o bootstrap atual aceita somente API HTTPS na mesma origem; uma origem separada exige mudança explícita e revisão de CORS, ou uma arquitetura de proxy na mesma origem.
+
+Até que todos os critérios sejam comprovados, manter a API Shadow sem publicação e sem configuração de conexão real. Não alterar o bootstrap para contornar a restrição de origem e não iniciar migração de dados.
