@@ -95,6 +95,91 @@ class PostgresEstoqueRepository(_InventoryPostgresBase):
             (item_id, *self._values(item)),
         )
 
+    def add_audited(self, item_id: str, item: EstoqueItem, event: Any, audit_sink: Any) -> None:
+        append = getattr(audit_sink, "append_in_transaction", None)
+        if not callable(append):
+            raise HTTPException(status_code=503, detail="Auditoria transacional indisponível.")
+        with self._uow as uow:
+            connection = uow.connection
+            if connection is None:
+                raise RuntimeError("A conexão PostgreSQL não foi aberta.")
+            cursor = connection.cursor()
+            try:
+                cursor.execute(
+                    f"INSERT INTO {self._table} "
+                    "(id, item, quantidade, minimo, maximo, etiqueta, foto_nome, "
+                    "foto_compactada_gzip, marca, linha, fabricante, data_cadastro, "
+                    "setor, unidade, valor_unitario, status, cor, foto_path) "
+                    "VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)",
+                    (item_id, *self._values(item)),
+                )
+                append(connection, event)
+            finally:
+                cursor.close()
+
+    def replace_audited(self, item_id: str, item: EstoqueItem, event: Any, audit_sink: Any) -> None:
+        append = getattr(audit_sink, "append_in_transaction", None)
+        if not callable(append):
+            raise HTTPException(status_code=503, detail="Auditoria transacional indisponível.")
+        with self._uow as uow:
+            connection = uow.connection
+            if connection is None:
+                raise RuntimeError("A conexão PostgreSQL não foi aberta.")
+            cursor = connection.cursor()
+            try:
+                cursor.execute(
+                    f"SELECT quantidade FROM {self._table} WHERE id = %s FOR UPDATE",
+                    (item_id,),
+                )
+                current = cursor.fetchone()
+                if current is None:
+                    raise HTTPException(status_code=404, detail="Produto não encontrado.")
+                cursor.execute(
+                    "SELECT 1 FROM bravo_shadow.acertos_estoque WHERE produto_id = %s LIMIT 1",
+                    (item_id,),
+                )
+                if cursor.fetchone() is not None and item.quantidade != current[0]:
+                    raise HTTPException(
+                        status_code=409,
+                        detail="O saldo deste produto possui histórico de movimentações. Altere a quantidade por um acerto de estoque.",
+                    )
+                cursor.execute(
+                    f"UPDATE {self._table} SET item = %s, quantidade = %s, minimo = %s, "
+                    "maximo = %s, etiqueta = %s, foto_nome = %s, foto_compactada_gzip = %s, "
+                    "marca = %s, linha = %s, fabricante = %s, data_cadastro = %s, "
+                    "setor = %s, unidade = %s, valor_unitario = %s, status = %s, "
+                    "cor = %s, foto_path = %s, updated_at = now(), version = version + 1 "
+                    "WHERE id = %s",
+                    (*self._values(item), item_id),
+                )
+                if cursor.rowcount != 1:
+                    raise HTTPException(status_code=404, detail="Produto não encontrado.")
+                append(connection, event)
+            finally:
+                cursor.close()
+
+    def delete_audited(self, item_id: str, event: Any, audit_sink: Any) -> None:
+        append = getattr(audit_sink, "append_in_transaction", None)
+        if not callable(append):
+            raise HTTPException(status_code=503, detail="Auditoria transacional indisponível.")
+        try:
+            with self._uow as uow:
+                connection = uow.connection
+                if connection is None:
+                    raise RuntimeError("A conexão PostgreSQL não foi aberta.")
+                cursor = connection.cursor()
+                try:
+                    cursor.execute(f"DELETE FROM {self._table} WHERE id = %s", (item_id,))
+                    if cursor.rowcount != 1:
+                        raise HTTPException(status_code=404, detail="Produto não encontrado.")
+                    append(connection, event)
+                finally:
+                    cursor.close()
+        except Exception as exc:
+            if self._sqlstate(exc) == "23503":
+                raise HTTPException(status_code=409, detail="O produto possui movimentações e não pode ser excluído.") from exc
+            raise
+
     def replace(self, item_id: str, item: EstoqueItem) -> None:
         # Serializa edição cadastral com movimentos de estoque. Depois do primeiro
         # movimento, o saldo só pode mudar pelo fluxo transacional de acerto.
@@ -209,6 +294,56 @@ class PostgresAcertosEstoqueRepository(_InventoryPostgresBase):
             status_code=409,
             detail="Movimentações de estoque são imutáveis; registre um movimento compensatório.",
         )
+
+    def register_movement_audited(
+        self, *, product_id: str, movement: Acerto, delta: Any,
+        event: Any, audit_sink: Any, allow_negative: bool = False,
+    ) -> Acerto:
+        append = getattr(audit_sink, "append_in_transaction", None)
+        if not callable(append):
+            raise HTTPException(status_code=503, detail="Auditoria transacional indisponível.")
+        try:
+            with self._uow as uow:
+                connection = uow.connection
+                if connection is None:
+                    raise RuntimeError("A conexão PostgreSQL não foi aberta.")
+                cursor = connection.cursor()
+                try:
+                    cursor.execute(
+                        "SELECT quantidade FROM bravo_shadow.estoque WHERE id = %s FOR UPDATE",
+                        (product_id,),
+                    )
+                    row = cursor.fetchone()
+                    if row is None:
+                        raise HTTPException(status_code=404, detail="Produto não encontrado.")
+                    new_quantity = row[0] + delta
+                    if new_quantity < 0 and not allow_negative:
+                        raise HTTPException(status_code=409, detail="Quantidade de saída superior ao saldo disponível.")
+                    cursor.execute(
+                        "UPDATE bravo_shadow.estoque SET quantidade = %s, updated_at = now(), "
+                        "version = version + 1 WHERE id = %s",
+                        (new_quantity, product_id),
+                    )
+                    if cursor.rowcount != 1:
+                        raise HTTPException(status_code=404, detail="Produto não encontrado.")
+                    cursor.execute(
+                        f"INSERT INTO {self._table} "
+                        "(id, data, tipo, produto_id, quantidade, motivo, motivo_id) "
+                        "VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                        (movement.id, movement.data, movement.tipo, movement.produtoId,
+                         movement.quantidade, movement.motivo, movement.motivoId),
+                    )
+                    append(connection, event)
+                    return movement
+                finally:
+                    cursor.close()
+        except Exception as exc:
+            if self._sqlstate(exc) == "23503":
+                raise HTTPException(
+                    status_code=409,
+                    detail="O motivo informado não existe ou não pode ser removido durante a movimentação.",
+                ) from exc
+            raise
 
     def register_movement(
         self, *, product_id: str, movement: Acerto, delta: Any,
