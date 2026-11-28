@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Header, Request, Response, status
 
 from app.core.authorization import AuthenticatedPrincipal, require_capability_dependency
+from app.core.read_audit import audit_read
 from app.core.etag import format_etag, parse_if_match
 from .schemas import PlanoConta, PlanoContaInput
 from .service import PlanoContasService
@@ -17,7 +18,9 @@ def list_accounts(
     request: Request,
     _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("plano_contas:read")),
 ) -> list[PlanoConta]:
-    return get_service(request).list()
+    service = get_service(request)
+    audit_read(request, service, _principal, "plano_contas:list", "plano_conta")
+    return service.list()
 
 
 @router.post("", response_model=PlanoConta, status_code=status.HTTP_201_CREATED)
