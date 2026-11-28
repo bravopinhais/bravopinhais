@@ -74,24 +74,54 @@ class UsuariosService:
             self.repository.replace(item_id, item)
             return item
 
-    def create_cadastral(self, data: UsuarioCadastroInput) -> Usuario:
-        """Cria cadastro comum sem permitir atribuição de perfil privilegiado."""
-        return self.create(
-            UsuarioInput(
-                **data.model_dump(),
-                perfil="Operador",
-                status="Ativo",
-            )
+    def create_cadastral(
+        self, data: UsuarioCadastroInput, *, actor: AuthenticatedPrincipal | None = None,
+        request_id: str | None = None,
+    ) -> Usuario:
+        """Cria cadastro comum; em armazenamento persistente exige auditoria atômica."""
+        if self.audit_sink is not None and actor is None:
+            raise HTTPException(status_code=403, detail="Identidade autenticada obrigatória para criar usuários.")
+        item = Usuario(
+            id=f"usr_shadow_{uuid4().hex}",
+            **data.model_dump(), perfil="Operador", status="Ativo",
         )
+        if actor is not None:
+            if not isinstance(actor, AuthenticatedPrincipal) or actor.account_status != "Ativo" or not actor.subject.strip():
+                raise HTTPException(status_code=403, detail="Ator administrativo inválido.")
+            operation = getattr(self.repository, "add_audited", None)
+            if not callable(operation) or not callable(getattr(self.audit_sink, "append_in_transaction", None)):
+                raise HTTPException(status_code=503, detail="Criação auditada de usuários indisponível.")
+            event = AuditEvent(
+                actor_subject=actor.subject.strip(), action="usuarios:create",
+                entity_type="usuario", entity_id=item.id, outcome="success", request_id=request_id,
+            )
+            operation(item, event=event, audit_sink=self.audit_sink)
+        else:
+            self.repository.add(item.id, item)
+        return item
 
     def update_cadastral(
-        self, item_id: str, data: UsuarioDadosCadastraisUpdateInput
+        self, item_id: str, data: UsuarioDadosCadastraisUpdateInput, *,
+        actor: AuthenticatedPrincipal | None = None, request_id: str | None = None,
     ) -> Usuario:
-        """Atualiza apenas dados cadastrais; identidade e privilégios são preservados."""
+        """Atualiza apenas dados cadastrais e audita na mesma transação no PostgreSQL."""
+        if self.audit_sink is not None and actor is None:
+            raise HTTPException(status_code=403, detail="Identidade autenticada obrigatória para atualizar usuários.")
         with self._email_lock:
             payload = data.model_dump(exclude_unset=True)
             operation = getattr(self.repository, "update_cadastral", None)
             if callable(operation):
+                if actor is not None:
+                    if not isinstance(actor, AuthenticatedPrincipal) or actor.account_status != "Ativo" or not actor.subject.strip():
+                        raise HTTPException(status_code=403, detail="Ator administrativo inválido.")
+                    audited = getattr(self.repository, "update_cadastral_audited", None)
+                    if not callable(audited) or not callable(getattr(self.audit_sink, "append_in_transaction", None)):
+                        raise HTTPException(status_code=503, detail="Atualização cadastral auditada indisponível.")
+                    event = AuditEvent(
+                        actor_subject=actor.subject.strip(), action="usuarios:update_cadastral",
+                        entity_type="usuario", entity_id=item_id, outcome="success", request_id=request_id,
+                    )
+                    return audited(item_id, event=event, audit_sink=self.audit_sink, **payload)
                 # O adapter PostgreSQL atualiza somente as colunas permitidas.
                 # Não ler e reenviar perfil/status evita restaurar estado obsoleto
                 # após uma alteração administrativa concorrente.
