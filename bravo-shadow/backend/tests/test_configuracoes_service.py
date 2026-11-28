@@ -112,8 +112,9 @@ def test_bulk_deactivation_keeps_configurations_enabled_and_audits_each_module()
 
     assert len(modules) == 17
     assert repository.states["configuracoes"] is True
-    assert len(repository.states) == 16
-    assert len(audit.events) == 16
+    assert len(repository.states) == 17
+    assert len(audit.events) == 17
+    assert repository.states["configuracoes"] is True
     assert all(not value for key, value in repository.states.items() if key != "configuracoes")
 
 
