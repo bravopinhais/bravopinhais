@@ -1,4 +1,6 @@
-from fastapi import APIRouter, Depends, Header, Request, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
+
+from app.core.audit import AuditEvent
 
 from app.core.authorization import AuthenticatedPrincipal, require_capability_dependency
 
@@ -12,11 +14,33 @@ def get_service(request: Request) -> FinanceiroService:
     return request.app.state.services.financeiro
 
 
+def audit_financial_read(request: Request, actor: AuthenticatedPrincipal) -> None:
+    """Registra consultas financeiras sem copiar valores ou históricos."""
+    sink = getattr(get_service(request), "audit_sink", None)
+    if sink is None:
+        return
+    event = AuditEvent(
+        actor_subject=actor.subject.strip(),
+        action="financeiro:list",
+        entity_type="financeiro",
+        outcome="success",
+        request_id=getattr(request.state, "request_id", None),
+    )
+    try:
+        sink.append(event)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Auditoria indisponível. A consulta financeira não foi concluída.",
+        ) from exc
+
+
 @router.get("", response_model=list[FinanceiroTitulo])
 def list_titles(
     request: Request,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("financeiro:read")),
+    principal: AuthenticatedPrincipal = Depends(require_capability_dependency("financeiro:read")),
 ) -> list[FinanceiroTitulo]:
+    audit_financial_read(request, principal)
     return get_service(request).list()
 
 
