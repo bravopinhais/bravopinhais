@@ -128,3 +128,30 @@ def test_duplicate_known_identity_is_rejected():
 def test_oversized_package_is_rejected():
     with pytest.raises(EvidencePackageError, match="package_too_large"):
         read_evidence_package(b" " * 20, max_bytes=10)
+
+
+
+def test_serializer_produces_canonical_package_that_round_trips():
+    envelope = _package()["sourceEnvelope"]
+    identity = SourceIdentity("legacy-bravo", "moradores", "m-1")
+    candidate = DryRunCandidate(
+        identity=identity,
+        source_record_hash=hashlib.sha256(b"record-m1").hexdigest(),
+    )
+    kwargs = {
+        "source_envelope_raw_sha256": hashlib.sha256(b"synthetic-envelope").hexdigest(),
+        "manifest_context": {
+            "environment": "shadow-test",
+            "importerVersion": "1.0.0",
+            "mappingVersion": "1.0.0",
+            "createdAt": "2026-11-26T15:00:00-03:00",
+        },
+    }
+
+    first = serialize_evidence_package(envelope, (candidate,), **kwargs)
+    second = serialize_evidence_package(envelope, (candidate,), **kwargs)
+
+    assert first == second
+    result = read_evidence_package(first)
+    assert result.valid is True
+    assert result.ready_count == 1
