@@ -265,7 +265,8 @@ def test_postgres_routes_create_read_update_and_enforce_references(postgres_api)
     assert state.financial_titles == {}
     assert state.plan_accounts == {}
     assert connections
-    assert all(connection.closed == connection.cursors_closed for connection in connections)
+    assert all(connection.closed == 1 for connection in connections)
+    assert all(connection.cursors_closed == len(connection.statements) for connection in connections)
 
 
 def test_postgres_routes_reject_duplicate_account_code(postgres_api):
