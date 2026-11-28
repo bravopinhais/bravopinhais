@@ -16,7 +16,7 @@ def list_residents(
     request: Request,
     bloco: str | None = None,
     busca: str | None = None,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("moradores:read")),
+    actor: AuthenticatedPrincipal = Depends(require_capability_dependency("moradores:read")),
 ) -> list[MoradorResumo]:
     return [MoradorResumo(id=item.id, bloco=item.bloco, apartamento=item.apartamento, nome=item.nome) for item in get_service(request).list(bloco=bloco, busca=busca)]
 
@@ -25,7 +25,7 @@ def list_residents(
 def get_resident(
     request: Request,
     item_id: str,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("moradores:read")),
+    actor: AuthenticatedPrincipal = Depends(require_capability_dependency("moradores:read")),
 ) -> Morador:
     return get_service(request).get(item_id)
 
@@ -34,9 +34,9 @@ def get_resident(
 def create_resident(
     request: Request,
     data: MoradorInput,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("moradores:create")),
+    actor: AuthenticatedPrincipal = Depends(require_capability_dependency("moradores:create")),
 ) -> Morador:
-    return get_service(request).create(data)
+    return get_service(request).create(data, actor=actor, request_id=getattr(request.state, 'request_id', None))
 
 
 @router.put("/{item_id}", response_model=Morador)
@@ -44,24 +44,24 @@ def update_resident(
     request: Request,
     item_id: str,
     data: MoradorInput,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("moradores:update")),
+    actor: AuthenticatedPrincipal = Depends(require_capability_dependency("moradores:update")),
 ) -> Morador:
-    return get_service(request).update(item_id, data)
+    return get_service(request).update(item_id, data, actor=actor, request_id=getattr(request.state, 'request_id', None))
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_resident(
     request: Request,
     item_id: str,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("moradores:delete")),
+    actor: AuthenticatedPrincipal = Depends(require_capability_dependency("moradores:delete")),
 ) -> None:
-    get_service(request).delete(item_id)
+    get_service(request).delete(item_id, actor=actor, request_id=getattr(request.state, 'request_id', None))
 
 
 @router.post("/importar", status_code=status.HTTP_200_OK)
 def import_residents(
     request: Request,
     batch: MoradorImportBatch,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("moradores:import")),
+    actor: AuthenticatedPrincipal = Depends(require_capability_dependency("moradores:import")),
 ) -> dict[str, int]:
-    return {"importados": get_service(request).import_batch(batch)}
+    return {"importados": get_service(request).import_batch(batch, actor=actor, request_id=getattr(request.state, 'request_id', None))}
