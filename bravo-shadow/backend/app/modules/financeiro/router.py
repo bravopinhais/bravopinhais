@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, Header, Request, Response, status
 
-from app.core.authorization import require_capability_dependency
+from app.core.authorization import AuthenticatedPrincipal, require_capability_dependency
 
 from app.core.etag import format_etag, parse_if_match
 from .schemas import FinanceiroInput, FinanceiroTitulo
@@ -27,13 +27,14 @@ def list_titles(request: Request) -> list[FinanceiroTitulo]:
 def create_title(
     data: FinanceiroInput,
     request: Request,
-    _principal=Depends(require_capability_dependency("financeiro:create")),
+    response: Response,
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("financeiro:create")),
 ):
-    # Fail closed: ainda não há auditoria atômica junto da mutação financeira.
-    raise HTTPException(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail="Inclusão financeira bloqueada até a auditoria transacional estar integrada.",
+    item = get_service(request).create(
+        data, actor=_principal, request_id=getattr(request.state, "request_id", None)
     )
+    response.headers["ETag"] = format_etag(item.version)
+    return item
 
 
 @router.put("/{item_id}", response_model=FinanceiroTitulo, dependencies=[update_access])
@@ -43,21 +44,23 @@ def update_title(
     request: Request,
     response: Response,
     if_match: str | None = Header(default=None, alias="If-Match"),
-    _principal=Depends(require_capability_dependency("financeiro:update")),
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("financeiro:update")),
 ):
-    raise HTTPException(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail="Edição financeira bloqueada até a auditoria transacional estar integrada.",
+    expected_version = parse_if_match(if_match)
+    item = get_service(request).update(
+        item_id, data, expected_version,
+        actor=_principal, request_id=getattr(request.state, "request_id", None),
     )
+    response.headers["ETag"] = format_etag(item.version)
+    return item
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[delete_access])
 def delete_title(
     item_id: str,
     request: Request,
-    _principal=Depends(require_capability_dependency("financeiro:delete")),
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("financeiro:delete")),
 ) -> None:
-    raise HTTPException(
-        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-        detail="Exclusão financeira bloqueada até a auditoria transacional estar integrada.",
+    get_service(request).delete(
+        item_id, actor=_principal, request_id=getattr(request.state, "request_id", None)
     )
