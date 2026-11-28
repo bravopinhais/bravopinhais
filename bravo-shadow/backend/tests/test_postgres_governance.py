@@ -1,3 +1,5 @@
+import pytest
+
 from app.core.postgres_governance import (
     PostgresCondominioRepository,
     PostgresConselheirosRepository,
