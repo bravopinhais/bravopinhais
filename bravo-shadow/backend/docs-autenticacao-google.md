@@ -1,38 +1,45 @@
 # Autenticação Google — Bravo Shadow
 
-## Implementado nesta etapa
+## Estado implementado na branch bravo-shadow
 
-- Validação de ID token Google no servidor com `google-auth`.
-- A biblioteca verifica assinatura, emissor, audiência e expiração.
-- A audiência é o `GOOGLE_CLIENT_ID` configurado no servidor.
-- Exigência de `sub`, e-mail e `email_verified=true`.
-- Vínculo do e-mail verificado ao cadastro interno Bravo, normalizado sem distinção de caixa.
-- Usuário ausente, duplicado ou inativo é negado.
-- Perfil e status vêm exclusivamente do cadastro interno, nunca do browser.
-- Dependency reutilizável `get_current_principal`.
+- O navegador obtém um Google ID token por meio do Google Identity Services.
+- O backend valida o ID token no servidor com `google-auth`, usando `GOOGLE_CLIENT_ID` como audiência.
+- A validação verifica assinatura, emissor, audiência e expiração.
+- O backend exige `sub`, e-mail textual e `email_verified=true`.
+- O e-mail é normalizado e vinculado a exatamente um cadastro interno.
+- Cadastro inexistente, duplicado ou com status diferente de `Ativo` é negado.
+- Perfil, status e capacidades são obtidos do cadastro interno e da matriz central; nunca são aceitos do browser.
+- `GET /api/v1/auth/me` retorna a identidade validada e as capacidades efetivas.
+- As rotas de negócio possuem dependência de identidade Google e barreira de capacidade. A cobertura é verificada automaticamente por `test_route_authentication_coverage.py`.
+- `GET /api/v1/health` é a única rota pública de sistema; `GET /api/v1/auth/me` é o endpoint autenticado de identidade.
 
-## Ainda não ativado
+## Configuração necessária no servidor
 
-A dependency ainda não foi aplicada aos routers. As rotas atuais permanecem sem autenticação até a etapa de integração e teste por módulo. Não usar a API sombra com dados reais ou expô-la publicamente neste estado.
+Definir `GOOGLE_CLIENT_ID` no ambiente do backend com o Client ID OAuth correspondente ao projeto Google configurado no frontend. O Client ID é identificador público; nenhum Client Secret deve ser colocado no frontend ou versionado no repositório.
 
-## Configuração futura
+A API deve ser publicada somente em HTTPS, com `BRAVO_CORS_ORIGINS` limitado às origens exatas aprovadas. O backend deve usar armazenamento PostgreSQL explicitamente configurado para homologação persistente; não usar fallback silencioso para memória.
 
-Definir `GOOGLE_CLIENT_ID` com o Client ID OAuth do projeto Google correto no ambiente servidor. Não inserir segredo/token no repositório, frontend ou arquivo versionado. O Client ID não é um segredo, mas deve corresponder exatamente à audiência emitida pelo login do frontend.
+## Limite atual do vínculo de identidade
 
-## Segurança e limites
+A associação inicial é feita pelo e-mail Google verificado. O claim `sub` é validado e usado como identificador do principal/auditoria, mas ainda não está persistido como vínculo imutável no cadastro Bravo.
 
-- O backend nunca confia em e-mail, perfil ou status enviados em JSON.
-- Um ID token válido prova a identidade Google, mas o acesso ao Bravo depende também do cadastro interno ativo.
-- A associação inicial é pelo e-mail Google verificado. Caso o Bravo precise suportar troca de e-mail ou múltiplos provedores, deverá ser criado vínculo imutável por `sub` após decisão funcional.
-- Não há refresh token, sessão própria, logout remoto ou autorização aplicada aos endpoints nesta entrega.
-- `/api/v1/health` permanece público.
-- Antes de integrar as rotas, testar a dependency com token real de homologação, Client ID correto e matriz de capacidades aprovada.
+A evolução para vínculo persistente por `sub` está descrita separadamente em `docs/plano-vinculo-identidade-google.md`. Não preencher esse vínculo automaticamente por coincidência de e-mail. Até aprovação e implementação do processo administrativo, alteração de e-mail e recuperação de conta exigem tratamento controlado.
 
+## Limites de implantação
 
-## Endpoint de identidade da sessão
+- A autenticação e autorização do backend não significam que a API esteja publicada ou acessível pelo GitHub Pages.
+- O GitHub Pages hospeda somente os arquivos estáticos; não executa FastAPI.
+- A prova isolada em `deploy/cloudflare-worker/` valida o caminho de identidade no runtime Worker, mas ainda não substitui a API completa nem seu armazenamento.
+- Não conectar o sistema original, importar dados reais, executar dual-write ou fazer cutover nesta etapa.
+- Não reintroduzir senha local, cadastro automático ou credenciais no navegador.
 
-Foi adicionado `GET /api/v1/auth/me`, protegido por `get_current_principal`. Ele retorna apenas `subject`, `email`, `profile` e `status` depois da validação do token e da consulta ao cadastro interno.
+## Homologação pendente
 
-Este endpoint permite validar o fluxo de identidade antes de proteger os módulos. As demais rotas de negócio ainda não estão protegidas e não devem ser expostas publicamente.
+Antes de liberar uso funcional, concluir:
+1. Hospedagem HTTPS gratuita e compatível para a API completa, sem ativar recursos pagos.
+2. Integração real entre frontend, API e PostgreSQL isolado de homologação.
+3. Verificação de identidade, capacidades e auditoria em todas as rotas.
+4. Validação do papel efetivo do usuário PostgreSQL, RLS, políticas e separação entre credenciais de runtime e migração.
+5. Homologação integrada dos módulos e autorização expressa antes de qualquer importação real.
 
-Testes automatizados escritos para: ausência de Bearer token (401), identidade Google válida vinculada a usuário ativo (200), e-mail sem cadastro (403) e token inválido (401). A execução ainda depende de CI ou ambiente Python configurado.
+A execução automatizada dos testes de código não equivale a homologação operacional nem autoriza publicação ou importação.
