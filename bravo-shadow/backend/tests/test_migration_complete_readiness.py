@@ -67,7 +67,7 @@ def test_non_object_collections_fail_closed_without_source_values():
     assert result.status == "review_required"
     assert result.source_integrity is None
     assert "collections_not_object" in result.blocking_reasons
-    assert "not" not in repr(result)
+    assert "['not', 'a', 'mapping']" not in repr(result)
 
 
 def test_clear_assessment_is_explicitly_not_import_authorization():
