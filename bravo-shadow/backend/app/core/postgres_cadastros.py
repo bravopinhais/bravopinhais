@@ -37,6 +37,23 @@ class _PostgresCadastroRepository:
     def _missing(detail: str) -> HTTPException:
         return HTTPException(status_code=404, detail=detail)
 
+    def _execute_audited(self, sql: str, params: tuple[Any, ...], event: Any, audit_sink: Any, *, missing_detail: str | None = None) -> None:
+        append = getattr(audit_sink, "append_in_transaction", None)
+        if not callable(append):
+            raise HTTPException(status_code=503, detail="Auditoria transacional indisponível.")
+        with self._uow as uow:
+            connection = uow.connection
+            if connection is None:
+                raise RuntimeError("Conexão PostgreSQL indisponível.")
+            cursor = connection.cursor()
+            try:
+                cursor.execute(sql, params)
+                if missing_detail is not None and cursor.rowcount != 1:
+                    raise self._missing(missing_detail)
+                append(connection, event)
+            finally:
+                cursor.close()
+
 
 class PostgresMoradoresRepository(_PostgresCadastroRepository):
     _table = "bravo_shadow.moradores"
@@ -100,6 +117,21 @@ class PostgresMoradoresRepository(_PostgresCadastroRepository):
         if not changed:
             raise self._missing("Morador não encontrado.")
 
+    def add_audited(self, item: Morador, event: Any, audit_sink: Any) -> None:
+        self._execute_audited(
+            f"INSERT INTO {self._table} (id, bloco, apartamento, nome, email, telefone, cpf, pet_nome, vaga_garagem) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)",
+            (item.id, *self._values(item)), event, audit_sink,
+        )
+
+    def replace_audited(self, item_id: str, item: Morador, event: Any, audit_sink: Any) -> None:
+        self._execute_audited(
+            f"UPDATE {self._table} SET bloco = %s, apartamento = %s, nome = %s, email = %s, telefone = %s, cpf = %s, pet_nome = %s, vaga_garagem = %s, updated_at = now(), version = version + 1 WHERE id = %s",
+            (*self._values(item), item_id), event, audit_sink, missing_detail="Morador não encontrado.",
+        )
+
+    def delete_audited(self, item_id: str, event: Any, audit_sink: Any) -> None:
+        self._execute_audited(f"DELETE FROM {self._table} WHERE id = %s", (item_id,), event, audit_sink, missing_detail="Morador não encontrado.")
+
 
 class PostgresFornecedoresRepository(_PostgresCadastroRepository):
     _table = "bravo_shadow.fornecedores"
@@ -144,6 +176,21 @@ class PostgresFornecedoresRepository(_PostgresCadastroRepository):
         changed = self._query(f"DELETE FROM {self._table} WHERE id = %s", (item_id,))
         if not changed:
             raise self._missing("Fornecedor não encontrado.")
+
+    def add_audited(self, item: Fornecedor, event: Any, audit_sink: Any) -> None:
+        self._execute_audited(
+            f"INSERT INTO {self._table} (id, cnpj, razao_social) VALUES (%s, %s, %s)",
+            (item.id, item.cnpj, item.razaoSocial), event, audit_sink,
+        )
+
+    def replace_audited(self, item_id: str, item: Fornecedor, event: Any, audit_sink: Any) -> None:
+        self._execute_audited(
+            f"UPDATE {self._table} SET cnpj = %s, razao_social = %s, updated_at = now(), version = version + 1 WHERE id = %s",
+            (item.cnpj, item.razaoSocial, item_id), event, audit_sink, missing_detail="Fornecedor não encontrado.",
+        )
+
+    def delete_audited(self, item_id: str, event: Any, audit_sink: Any) -> None:
+        self._execute_audited(f"DELETE FROM {self._table} WHERE id = %s", (item_id,), event, audit_sink, missing_detail="Fornecedor não encontrado.")
 
 
 class PostgresEmpregadosRepository(_PostgresCadastroRepository):
@@ -209,6 +256,21 @@ class PostgresEmpregadosRepository(_PostgresCadastroRepository):
         changed = self._query(f"DELETE FROM {self._table} WHERE id = %s", (item_id,))
         if not changed:
             raise self._missing("Empregado não encontrado.")
+
+    def add_audited(self, item: Empregado, event: Any, audit_sink: Any) -> None:
+        self._execute_audited(
+            f"INSERT INTO {self._table} (id, nome, cargo, empresa, endereco, telefone, contato_emergencia_nome, contato_emergencia_tel) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)",
+            (item.id, *self._values(item)), event, audit_sink,
+        )
+
+    def replace_audited(self, item_id: str, item: Empregado, event: Any, audit_sink: Any) -> None:
+        self._execute_audited(
+            f"UPDATE {self._table} SET nome = %s, cargo = %s, empresa = %s, endereco = %s, telefone = %s, contato_emergencia_nome = %s, contato_emergencia_tel = %s, updated_at = now(), version = version + 1 WHERE id = %s",
+            (*self._values(item), item_id), event, audit_sink, missing_detail="Empregado não encontrado.",
+        )
+
+    def delete_audited(self, item_id: str, event: Any, audit_sink: Any) -> None:
+        self._execute_audited(f"DELETE FROM {self._table} WHERE id = %s", (item_id,), event, audit_sink, missing_detail="Empregado não encontrado.")
 
 
 class PostgresContasBancariasRepository(_PostgresCadastroRepository):
