@@ -17,6 +17,10 @@ from app.core.migration_preflight import run_migration_preflight
 from app.core.migration_report import build_preflight_report
 from app.core.migration_review import ReviewValidationError
 from app.core.migration_review_postgres import PostgresReviewLedgerStore
+from app.core.migration_review_postgres_roles import (
+    PostgresReviewRuntimeStore,
+    PostgresReviewSnapshotInitializer,
+)
 from test_migration_decisions import setup_batch
 
 
@@ -420,6 +424,109 @@ def test_client_roles_are_denied_and_runtime_cannot_mutate_snapshots_or_ddl(post
             "CREATE TABLE bravo_shadow.runtime_ddl_must_fail (id integer)",
         ):
             assert_denied(runtime, sql)
+
+
+def test_migrator_is_separate_and_can_only_prepare_snapshots(postgres_database):
+    register = _register()
+    with psycopg.connect(postgres_database, autocommit=True) as connection:
+        connection.execute(
+            "CREATE ROLE bravo_shadow_migrator_test LOGIN "
+            "PASSWORD 'bravo-shadow-migration-test-only'"
+        )
+        connection.execute("""
+            GRANT USAGE ON SCHEMA bravo_shadow TO bravo_shadow_migrator_test
+        """)
+        connection.execute("""
+            GRANT SELECT ON
+                bravo_shadow.migration_review_batches,
+                bravo_shadow.migration_review_decisions,
+                bravo_shadow.migration_review_events
+            TO bravo_shadow_migrator_test
+        """)
+        connection.execute("""
+            GRANT INSERT ON
+                bravo_shadow.migration_review_batches,
+                bravo_shadow.migration_review_decisions
+            TO bravo_shadow_migrator_test
+        """)
+        for table in (
+            "migration_review_batches",
+            "migration_review_decisions",
+            "migration_review_events",
+        ):
+            connection.execute(
+                f'ALTER TABLE bravo_shadow.{table} FORCE ROW LEVEL SECURITY'
+            )
+            connection.execute(
+                f'CREATE POLICY migrator_select ON bravo_shadow.{table} '
+                'FOR SELECT TO bravo_shadow_migrator_test USING (true)'
+            )
+        for table in ("migration_review_batches", "migration_review_decisions"):
+            connection.execute(
+                f'CREATE POLICY migrator_insert ON bravo_shadow.{table} '
+                'FOR INSERT TO bravo_shadow_migrator_test WITH CHECK (true)'
+            )
+        privileges = connection.execute("""
+            SELECT
+                has_table_privilege(
+                    'bravo_shadow_migrator_test',
+                    'bravo_shadow.migration_review_batches', 'INSERT'
+                ),
+                has_table_privilege(
+                    'bravo_shadow_migrator_test',
+                    'bravo_shadow.migration_review_decisions', 'INSERT'
+                ),
+                has_table_privilege(
+                    'bravo_shadow_migrator_test',
+                    'bravo_shadow.migration_review_batches', 'UPDATE'
+                ),
+                has_table_privilege(
+                    'bravo_shadow_migrator_test',
+                    'bravo_shadow.migration_review_events', 'INSERT'
+                ),
+                pg_has_role(
+                    'bravo_shadow_migrator_test',
+                    'bravo_shadow_runtime_test',
+                    'MEMBER'
+                )
+        """).fetchone()
+        assert privileges == (True, True, False, False, False)
+
+    migrator_conninfo = psycopg.conninfo.conninfo_to_dict(postgres_database)
+    migrator_conninfo["dbname"] = "bravo_shadow_test"
+    migrator_conninfo["user"] = "bravo_shadow_migrator_test"
+    migrator_conninfo["password"] = "bravo-shadow-migration-test-only"
+    initializer = PostgresReviewSnapshotInitializer(
+        lambda: psycopg.connect(**migrator_conninfo)
+    )
+    initialized = initializer.initialize(register)
+    assert initialized.batch_id == register.batch_id
+
+    with psycopg.connect(**migrator_conninfo) as connection:
+        assert connection.execute(
+            "SELECT session_user, current_user"
+        ).fetchone() == (
+            "bravo_shadow_migrator_test",
+            "bravo_shadow_migrator_test",
+        )
+        for sql in (
+            "UPDATE bravo_shadow.migration_review_batches "
+            "SET manifest_hash = manifest_hash",
+            "DELETE FROM bravo_shadow.migration_review_decisions",
+            "INSERT INTO bravo_shadow.migration_review_events "
+            "(event_id, batch_key, decision_id, manifest_hash, version, "
+            "reviewer_id, choice, rationale, reviewed_at) "
+            "VALUES ('migrator-event-denied', 'batch', 'decision', 'hash', 1, "
+            "'actor', 'keep_blocked', 'test', now())",
+            "CREATE TABLE bravo_shadow.migrator_ddl_must_fail (id integer)",
+        ):
+            with pytest.raises(psycopg.errors.InsufficientPrivilege):
+                connection.execute(sql)
+            connection.rollback()
+
+    runtime = PostgresReviewRuntimeStore(lambda: psycopg.connect(postgres_database))
+    assert not hasattr(runtime, "initialize")
+    assert not hasattr(initializer, "append")
 
 
 def test_runtime_append_works_without_update_on_snapshot_tables(postgres_database):
