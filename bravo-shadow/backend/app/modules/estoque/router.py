@@ -16,7 +16,7 @@ def list_items(request: Request):
     return get_service(request).list()
 
 
-@router.post("", response_model=EstoqueItem, status_code=status.HTTP_201_CREATED, dependencies=[Depends(require_capability_dependency("estoque:create"))])
+@router.post("", response_model=EstoqueItem, status_code=status.HTTP_201_CREATED)
 def create_item(
     data: EstoqueInput,
     request: Request,
@@ -27,7 +27,7 @@ def create_item(
     )
 
 
-@router.put("/{item_id}", response_model=EstoqueItem, dependencies=[Depends(require_capability_dependency("estoque:update"))])
+@router.put("/{item_id}", response_model=EstoqueItem)
 def update_item(
     item_id: str,
     data: EstoqueInput,
@@ -39,7 +39,7 @@ def update_item(
     )
 
 
-@router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[Depends(require_capability_dependency("estoque:delete"))])
+@router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_item(
     item_id: str,
     request: Request,
