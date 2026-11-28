@@ -213,7 +213,7 @@ def build_storage_services(
     fornecedores = FornecedoresService(repository=fornecedores_repository, audit_sink=audit_sink)
     empregados = EmpregadosService(repository=empregados_repository, audit_sink=audit_sink)
     contas_bancarias = ContasBancariasService(repository=contas_bancarias_repository, audit_sink=audit_sink)
-    condominio = CondominioService(repository=condominio_repository)
+    condominio = CondominioService(repository=condominio_repository, audit_sink=audit_sink)
     conselheiros = ConselheirosService(repository=conselheiros_repository, audit_sink=audit_sink)
     usuarios = UsuariosService(repository=usuarios_repository, audit_sink=audit_sink)
     configuracoes = ConfiguracoesService(repository=module_settings_repository, audit_sink=audit_sink)
