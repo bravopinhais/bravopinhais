@@ -51,3 +51,32 @@ def test_memory_storage_does_not_configure_persistent_audit_sink():
 
     assert services.audit_sink is None
     assert services.usuarios.audit_sink is None
+
+
+def test_postgres_storage_fails_closed_for_modules_without_audited_writes():
+    from fastapi import HTTPException
+
+    calls = []
+
+    def connection_factory():
+        calls.append("opened")
+        raise AssertionError("A barreira deve bloquear antes de abrir conexão.")
+
+    services = build_storage_services("postgres", connection_factory)
+    repositories = [
+        services.estoque.repository,
+        services.acertos_estoque.repository,
+        services.acertos_estoque.movement_repository,
+        services.categorias.repository,
+        services.motivos_acerto.repository,
+        services.documentos.repository,
+        services.condominio.repository,
+        services.conselheiros.repository,
+    ]
+
+    for repository in repositories:
+        with pytest.raises(HTTPException) as error:
+            repository.add("shadow-blocked", object())
+        assert error.value.status_code == 503
+
+    assert calls == []
