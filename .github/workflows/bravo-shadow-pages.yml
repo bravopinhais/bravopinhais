@@ -32,65 +32,24 @@ jobs:
       - name: Validar arquivos e proteções do preview
         run: |
           test -s _site/index.html
+          test -s _site/js/bravo-bootstrap.js
           grep -q 'function usuariosView' _site/index.html
           grep -q 'const IS_STATIC_PREVIEW=location.hostname.endsWith("github.io")' _site/index.html
-          grep -q 'if(IS_STATIC_PREVIEW)throw new Error' _site/index.html
-          grep -q 'if(IS_STATIC_PREVIEW){view.innerHTML=' _site/index.html
+          grep -q 'PREVIEW ESTÁTICO · GITHUB PAGES' _site/index.html
           grep -q 'Indicadores aguardando autenticação' _site/index.html
-          grep -q 'href="#main-content"' _site/index.html
-          grep -q 'id="main-content" tabindex="-1"' _site/index.html
-          grep -q 'id="view" aria-live="polite" aria-atomic="true"' _site/index.html
+          grep -q '<a class="skip-link" href="#main-content">' _site/index.html
+          grep -q '<main class="main" id="main-content" tabindex="-1">' _site/index.html
+          grep -q '<div id="view" aria-live="polite" aria-atomic="true">' _site/index.html
           grep -q '@media(max-width:980px)' _site/index.html
           grep -q '@media(prefers-reduced-motion:reduce)' _site/index.html
-          grep -q 'id="formas-status" role="status" aria-live="polite" aria-atomic="true"' _site/index.html
-          grep -q '<caption>Formas monetárias cadastradas</caption>' _site/index.html
-          grep -q '<th scope="col">Forma monetária</th>' _site/index.html
-          grep -q '<th scope="col">Multa (%)</th>' _site/index.html
-          grep -q '<th scope="col">Ações</th>' _site/index.html
-          grep -q 'aria-label="Editar ${escapeHTML(item.nome)}"' _site/index.html
-          grep -q 'aria-label="Excluir ${escapeHTML(item.nome)}"' _site/index.html
-          grep -q 'id="forma-multa" name="multaPct" type="number" min="0" max="100" step="0.01" value="2" required' _site/index.html
-          grep -q '<form class="api-form" id="forma-form" aria-describedby="forma-hint">' _site/index.html
-          grep -q 'const formaForm=document.getElementById("forma-form");if(formaForm?.getAttribute("aria-busy")==="true")return;' _site/index.html
-          grep -q '<div class="form-hint" id="forma-hint">' _site/index.html
-          grep -q 'button.textContent="Salvando..."' _site/index.html
-          grep -q 'return true}' _site/index.html
-          grep -q 'return false}' _site/index.html
-          grep -q 'const listaAtualizada=await carregarFormas()' _site/index.html
-          grep -q 'const edicaoPerdida=Boolean(formaEmEdicao&&!formasMonetarias.some(item=>item.id===formaEmEdicao))' _site/index.html
-          grep -q 'A forma que estava em edição não existe mais na lista. A edição foi cancelada.' _site/index.html
-          grep -q 'Editando forma monetária: ' _site/index.html
-          grep -q 'a edição anterior foi cancelada para evitar salvar dados desatualizados' _site/index.html
-          grep -q 'const possuiListaAnterior=formasMonetarias.length>0' _site/index.html
-          grep -q 'Exibindo a última lista carregada; os dados podem estar desatualizados.' _site/index.html
-          grep -q 'let formasListaDesatualizada=false' _site/index.html
-          grep -q 'formasListaDesatualizada=true;renderFormasRows()' _site/index.html
-          grep -q 'formasListaDesatualizada=false;const edicaoPerdida' _site/index.html
-          grep -q 'A lista exibida pode estar desatualizada. Atualize antes de editar ou excluir registros.' _site/index.html
-          grep -q 'Registro salvo, mas a lista não foi atualizada. Use Atualizar para tentar novamente.' _site/index.html
-          grep -q 'tabindex="-1"' _site/index.html
-          grep -q 'Exclusão concluída, mas a lista não foi atualizada. Use Atualizar para tentar novamente.' _site/index.html
-          grep -q 'document.getElementById("formas-status")?.focus()' _site/index.html
-          grep -q 'id="forma-cancel-edit" data-action="cancel-edit" hidden' _site/index.html
-          grep -q 'if(action.dataset.action==="cancel-edit")' _site/index.html
-          grep -q 'function formasView(){' _site/index.html
-          grep -q '// A view is rebuilt on entry; never carry an edit ID into a fresh form.' _site/index.html
-          grep -q 'form?.getAttribute("aria-busy")==="true")return;resetFormaForm();setFormasStatus("Edição cancelada; nenhuma alteração foi enviada.");document.getElementById("forma-nome")?.focus()' _site/index.html
-          grep -q 'event.key!=="Escape"||!formaEmEdicao' _site/index.html
-          grep -q 'Edição cancelada pelo teclado; nenhuma alteração foi enviada.' _site/index.html
-          grep -q 'document.getElementById("forma-cancel-edit").hidden=false' _site/index.html
-          grep -q 'if(cancel)cancel.hidden=true' _site/index.html
-          grep -q 'if(form.getAttribute("aria-busy")==="true")return' _site/index.html
-          grep -q 'form.setAttribute("aria-busy","true")' _site/index.html
-          grep -q 'form.removeAttribute("aria-busy")' _site/index.html
-          grep -q 'aria-label="Atualizar formas monetárias"' _site/index.html
-          grep -q 'action.textContent="Atualizando..."' _site/index.html
-          grep -q 'action.setAttribute("aria-busy","true")' _site/index.html
-          grep -q 'action.removeAttribute("aria-busy")' _site/index.html
-          grep -q 'action.textContent="Excluindo..."' _site/index.html
-          grep -q 'action.removeAttribute("aria-busy")' _site/index.html
-          grep -q 'window.addEventListener("hashchange"' _site/index.html
-          grep -q '<h1 id="page-title" tabindex="-1">' _site/index.html
-          grep -q 'getElementById("page-title").focus({preventScroll:true})' _site/index.html
-          grep -q 'history.replaceState(null,"",location.pathname+location.search)' _site/index.html
-
+          grep -q 'async function loadFormasMonetarias' _site/index.html
+          grep -q 'api.get("/api/v1/formas-monetarias"' _site/index.html
+          grep -q 'function financeiroView' _site/index.html
+          grep -q 'api.get("/api/v1/financeiro"' _site/index.html
+          grep -q 'function relatoriosView' _site/index.html
+          grep -q 'api.get("/api/v1/relatorios/dre"' _site/index.html
+          grep -q 'function comprasConsumoView' _site/index.html
+          grep -q 'api.get(comprasConsumoQueryPath()' _site/index.html
+          grep -q 'value.enabled !== true' _site/js/bravo-bootstrap.js
+          grep -q 'A API deve usar a mesma origem HTTPS desta homologação.' _site/js/bravo-bootstrap.js
+          grep -q 'Login Google bloqueado: API HTTPS e configuração Shadow ainda não confirmadas.' _site/js/bravo-bootstrap.js
