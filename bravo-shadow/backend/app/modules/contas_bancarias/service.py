@@ -38,7 +38,7 @@ class ContasBancariasService:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conta bancária não encontrada.")
         item = ContaBancaria(id=item_id, **data.model_dump())
         if actor is not None:
-            self._audited("contas_bancarias:update", item_id, actor, request_id, "replace_audited", item, item_id)
+            self._audited("contas_bancarias:update", item_id, actor, request_id, "replace_audited", item_id, item)
         else:
             self.repository.replace(item_id, item)
         return item
