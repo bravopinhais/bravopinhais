@@ -262,3 +262,141 @@ def assess_special_contracts(
         assessments=tuple(assessments),
         unassessed_domains=("Condomínio: objeto singleton exige localização manual fora do inventário de coleções.",),
     )
+
+
+# Auxiliary collections have smaller observed shapes, but they are not yet
+# package allowlists and therefore remain assessment-only.
+AUXILIARY_COLLECTION_CONTRACTS: tuple[SpecialCollectionContract, ...] = (
+    SpecialCollectionContract(
+        key="formas_monetarias",
+        source_collection="formas_monetarias",
+        domain="Configuração financeira",
+        fields=(
+            SpecialField("id", "string"),
+            SpecialField("nome", "string"),
+            SpecialField("multaPct", "number", required=False),
+        ),
+        invariants=(
+            "Preservar IDs e nomes como texto.",
+            "Validar multaPct apenas após confirmar unidade, escala e regra de aplicação.",
+            "Não presumir que ausência de multaPct equivale a zero.",
+        ),
+        blockers=(
+            "A escala e a semântica de multaPct ainda exigem confirmação funcional.",
+            "Contrato ainda não está integrado ao leitor de pacote como allowlist.",
+        ),
+    ),
+    SpecialCollectionContract(
+        key="motivos_acerto_estoque",
+        source_collection="motivos_acerto_estoque",
+        domain="Configuração de estoque",
+        fields=(
+            SpecialField("id", "string"),
+            SpecialField("nome", "string"),
+        ),
+        invariants=(
+            "Preservar ID e nome como texto.",
+            "Não substituir o texto motivo dos movimentos legados por motivoId sem mapeamento exato e aprovado.",
+        ),
+        blockers=(
+            "A coleção de motivos não altera o contrato legado de acertos_estoque, que armazena motivo como texto.",
+            "Contrato ainda não está integrado ao leitor de pacote como allowlist.",
+        ),
+    ),
+    SpecialCollectionContract(
+        key="categorias",
+        source_collection="categorias",
+        domain="Organização de documentos",
+        fields=(
+            SpecialField("id", "string"),
+            SpecialField("nome", "string"),
+        ),
+        invariants=(
+            "Preservar ID e nome como texto.",
+            "Relacionar pasta textual de documentos somente por correspondência exata e única.",
+        ),
+        blockers=(
+            "Documentos legados armazenam pasta como texto, não como categoriaId.",
+            "Contrato ainda não está integrado ao leitor de pacote como allowlist.",
+        ),
+    ),
+)
+
+
+def assess_auxiliary_contracts(
+    inventory: SourceInventory,
+    *,
+    source_to_target: Mapping[str, str] | None = None,
+) -> SpecialContractReport:
+    """Assess simple auxiliary collection shapes without declaring import readiness."""
+    mapping = dict(source_to_target or {})
+    by_name = {item.name: item for item in inventory.collections}
+    assessments: list[SpecialCollectionAssessment] = []
+
+    for contract in AUXILIARY_COLLECTION_CONTRACTS:
+        source_name = mapping.get(contract.source_collection, contract.source_collection)
+        source = by_name.get(source_name)
+        if source is None:
+            assessments.append(SpecialCollectionAssessment(
+                key=contract.key,
+                source_collection=source_name,
+                domain=contract.domain,
+                status="source_collection_not_found",
+                record_count=None,
+                missing_required=tuple(field.name for field in contract.fields if field.required),
+                partially_populated=(),
+                unexpected_fields=(),
+                type_mismatches=(),
+                review_reasons=("Coleção auxiliar não localizada pelo nome confirmado.",),
+            ))
+            continue
+
+        source_fields = {field.name: field for field in source.fields}
+        expected_fields = {field.name for field in contract.fields}
+        missing = tuple(sorted(
+            field.name for field in contract.fields
+            if field.required and field.name not in source_fields
+        ))
+        partial = tuple(sorted(
+            field.name for field in contract.fields
+            if field.name in source_fields
+            and source_fields[field.name].records_present < source.records_total
+        ))
+        unexpected = tuple(sorted(set(source_fields) - expected_fields))
+        mismatches = tuple(sorted(
+            field.name for field in contract.fields
+            if field.name in source_fields
+            and not _type_compatible(source_fields[field.name].value_types, field.observed_type)
+        ))
+        reasons = list(contract.blockers)
+        if source.records_total == 0:
+            reasons.append("Coleção vazia: não comprova compatibilidade nem integridade.")
+        if source.invalid_records or source.records_missing_id or source.duplicate_ids:
+            reasons.append("Há registros inválidos, IDs ausentes ou IDs duplicados.")
+        if missing:
+            reasons.append("Campos obrigatórios ausentes.")
+        if partial:
+            reasons.append("Há campos parcialmente preenchidos.")
+        if unexpected:
+            reasons.append("Campos adicionais exigem decisão explícita.")
+        if mismatches:
+            reasons.append("Tipos observados divergem do formato esperado.")
+        assessments.append(SpecialCollectionAssessment(
+            key=contract.key,
+            source_collection=source_name,
+            domain=contract.domain,
+            status="review_required",
+            record_count=source.records_total,
+            missing_required=missing,
+            partially_populated=partial,
+            unexpected_fields=unexpected,
+            type_mismatches=mismatches,
+            review_reasons=tuple(reasons),
+        ))
+
+    return SpecialContractReport(
+        assessments=tuple(assessments),
+        unassessed_domains=(
+            "Coleções auxiliares: avaliação estrutural preliminar; allowlists do pacote e validação semântica ainda pendentes.",
+        ),
+    )
