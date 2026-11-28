@@ -145,7 +145,7 @@ def build_storage_services(
             "BRAVO_STORAGE_BACKEND deve ser 'memory' ou 'postgres'."
         )
 
-    financeiro = FinanceiroService(repository=financeiro_repository)
+    financeiro = FinanceiroService(repository=financeiro_repository, audit_sink=audit_sink)
     plano_contas = PlanoContasService(
         repository=plano_repository,
         has_financial_references=financeiro.has_plan_account_reference,
