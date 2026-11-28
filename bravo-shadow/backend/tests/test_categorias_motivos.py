@@ -77,7 +77,7 @@ class AuditedCatalogRepository(InMemoryCollectionRepository):
         self.events.append(event)
 
 
-class TestSink:
+class FakeAuditSink:
     def __init__(self):
         self.events = []
 
@@ -94,7 +94,7 @@ class TestSink:
 )
 def test_catalog_services_require_active_actor_and_audit_create_delete(service_type, input_type, name):
     repository = AuditedCatalogRepository()
-    sink = TestSink()
+    sink = FakeAuditSink()
     service = service_type(repository=repository, audit_sink=sink)
     actor = AuthenticatedPrincipal(
         subject="google-test-subject",
