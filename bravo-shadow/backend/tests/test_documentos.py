@@ -117,7 +117,7 @@ def test_document_rejects_unknown_category():
 
 
 def test_document_metadata_is_trimmed_and_compressed_content_is_preserved():
-    compressed_payload = "  H4sIAAAAAAAC/1MNcHHTNdQz4TJUMFDIT8risrGxs+NKzUsBsVVVXf3duADzKswnIwAAAA====  "
+    compressed_payload = "  H4sIAAAAAAAC/1MNcHHTNdQz4TJUMFDIT8risrGxs+NKzUsBsVVVXf3duADzKswnIwAAAA==  "
     response = client.post(
         "/api/v1/documentos",
         json=payload(
