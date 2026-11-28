@@ -182,3 +182,45 @@ def test_council_audit_failure_rolls_back_mutation(operation):
 
     assert connection.commits == 0
     assert connection.rollbacks == 1
+
+
+from app.core.audit import AuditEvent
+
+
+@pytest.mark.parametrize("patch_fields", [{"nome": "Residencial"}, {}, {"cidade": "Curitiba", "uf": "PR"}])
+def test_condominio_patch_and_audit_share_transaction(patch_fields):
+    connection = Connection()
+    sink = GovernanceAuditSink()
+    repository = PostgresCondominioRepository(factory(connection))
+    event = AuditEvent(
+        actor_subject="google-subject", action="condominio:update",
+        entity_type="condominio", entity_id="singleton", request_id="req_condo",
+    )
+
+    repository.replace_audited("singleton", patch_fields, event, sink)
+
+    assert len(connection.calls) == 1
+    sql, params = connection.calls[0]
+    assert sql.startswith("INSERT INTO bravo_shadow.condominio")
+    assert "ON CONFLICT (id)" in sql
+    assert params[0] == "singleton"
+    assert sink.connection is connection
+    assert sink.events == [event]
+    assert connection.commits == 1
+    assert connection.rollbacks == 0
+
+
+def test_condominio_audit_failure_rolls_back_patch():
+    connection = Connection()
+    sink = GovernanceAuditSink(fail=True)
+    repository = PostgresCondominioRepository(factory(connection))
+    event = AuditEvent(
+        actor_subject="google-subject", action="condominio:update",
+        entity_type="condominio", entity_id="singleton", request_id="req_condo",
+    )
+
+    with pytest.raises(RuntimeError, match="audit insert failed"):
+        repository.replace_audited("singleton", {"nome": "Residencial"}, event, sink)
+
+    assert connection.commits == 0
+    assert connection.rollbacks == 1
