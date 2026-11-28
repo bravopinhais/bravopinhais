@@ -9,6 +9,71 @@ from types import MappingProxyType
 from app.core.authentication import get_current_principal
 from app.core.authorization import AuthenticatedPrincipal, CAPABILITIES
 from app.core import authorization
+from app.core.repositories import InMemoryCollectionRepository
+
+
+class _TestAuditSink:
+    """Auditoria efêmera de teste; não representa persistência PostgreSQL."""
+
+    def __init__(self):
+        self.events = []
+
+    def append_in_transaction(self, connection, event):
+        self.events.append(event)
+
+
+class _AuditedMemoryFinanceiroRepository(InMemoryCollectionRepository):
+    """Fake transacional para exercitar rotas autenticadas sem DB real."""
+
+    def add_audited(self, item, event, audit_sink):
+        with self._lock:
+            if item.id in self._items:
+                raise AssertionError("ID duplicado no fake de teste.")
+            self._items[item.id] = item
+            try:
+                audit_sink.append_in_transaction(None, event)
+            except BaseException:
+                self._items.pop(item.id, None)
+                raise
+
+    def replace_if_version_audited(self, item, expected_version, event, audit_sink):
+        with self._lock:
+            current = self._items.get(item.id)
+            if current is None:
+                return self._missing()
+            if current.version != expected_version:
+                return self._conflict()
+            updated = item.model_copy(update={"version": expected_version + 1})
+            self._items[item.id] = updated
+            try:
+                audit_sink.append_in_transaction(None, event)
+            except BaseException:
+                self._items[item.id] = current
+                raise
+            return expected_version + 1
+
+    def delete_audited(self, item_id, event, audit_sink):
+        with self._lock:
+            current = self._items.pop(item_id, None)
+            if current is None:
+                from fastapi import HTTPException
+                raise HTTPException(status_code=404, detail="Título não encontrado.")
+            try:
+                audit_sink.append_in_transaction(None, event)
+            except BaseException:
+                self._items[item_id] = current
+                raise
+
+    @staticmethod
+    def _missing():
+        from fastapi import HTTPException
+        raise HTTPException(status_code=404, detail="Título não encontrado.")
+
+    @staticmethod
+    def _conflict():
+        from fastapi import HTTPException
+        raise HTTPException(status_code=409, detail="O título foi alterado por outra operação.")
+
 
 def configure_test_auth(application):
     async def authenticated_admin():
@@ -20,6 +85,7 @@ def configure_test_auth(application):
         )
     application.dependency_overrides[get_current_principal] = authenticated_admin
 
+
 @pytest.fixture(autouse=True)
 def allow_test_admin(monkeypatch):
     monkeypatch.setattr(
@@ -28,8 +94,34 @@ def allow_test_admin(monkeypatch):
         MappingProxyType({"Admin": CAPABILITIES, "Operador": frozenset()}),
     )
     configure_test_auth(app)
+    service = app.state.services.financeiro
+    repository = _AuditedMemoryFinanceiroRepository()
+    sink = _TestAuditSink()
+    service.repository = repository
+    service._items = repository._items
+    service.audit_sink = sink
     yield
     app.dependency_overrides.clear()
+
+
+from app.modules.financeiro.schemas import FinanceiroInput
+
+client = TestClient(app)
+
+
+def setup_function() -> None:
+    app.state.services.financeiro._items.clear()
+
+
+def payload(**overrides):
+    data = {
+        "tipo": "Receber",
+        "planoContaId": "",
+        "historico": "Taxa condominial",
+        "valor": 350.75,
+    }
+    data.update(overrides)
+    return data
 
 
 from app.modules.financeiro.schemas import FinanceiroInput
