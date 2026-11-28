@@ -61,7 +61,10 @@ def postgres_database():
                 connection.execute(f'CREATE ROLE "{role}" NOLOGIN')
         connection.execute("DROP SCHEMA IF EXISTS bravo_shadow CASCADE")
         connection.execute("DROP ROLE IF EXISTS bravo_shadow_runtime_test")
-        connection.execute("CREATE ROLE bravo_shadow_runtime_test NOLOGIN")
+        connection.execute(
+            "CREATE ROLE bravo_shadow_runtime_test LOGIN "
+            "PASSWORD 'bravo-shadow-test-only'"
+        )
         connection.execute(schema_sql.read_text(encoding="utf-8"), prepare=False)
 
     yield DATABASE_URL
@@ -403,12 +406,24 @@ def test_runtime_append_works_without_update_on_snapshot_tables(postgres_databas
         """).fetchone()
         assert privileges == (False, False, True)
 
-    def runtime_connection():
-        connection = psycopg.connect(postgres_database)
-        connection.execute('SET ROLE bravo_shadow_runtime_test')
-        return connection
+    runtime_conninfo = psycopg.conninfo.conninfo_to_dict(postgres_database)
+    runtime_conninfo["dbname"] = "bravo_shadow_test"
+    runtime_conninfo["user"] = "bravo_shadow_runtime_test"
+    runtime_conninfo["password"] = "bravo-shadow-test-only"
 
-    runtime_store = PostgresReviewLedgerStore(runtime_connection)
+    # Autenticação independente: session_user e current_user são a própria
+    # role runtime, sem SET ROLE a partir de uma sessão administrativa.
+    with psycopg.connect(**runtime_conninfo) as connection:
+        assert connection.execute(
+            "SELECT session_user, current_user"
+        ).fetchone() == (
+            "bravo_shadow_runtime_test",
+            "bravo_shadow_runtime_test",
+        )
+
+    runtime_store = PostgresReviewLedgerStore(
+        lambda: psycopg.connect(**runtime_conninfo)
+    )
     decision_id = register.pending[0].decision_id
     result = runtime_store.append(
         register,
