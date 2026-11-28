@@ -6,9 +6,12 @@ from pathlib import Path
 from fastapi.testclient import TestClient
 
 
-def load_vercel_entrypoint(monkeypatch):
+def load_vercel_entrypoint(monkeypatch, configured=None):
+    configured = configured or {}
     for name in ("BRAVO_STORAGE_BACKEND", "BRAVO_DATABASE_URL", "GOOGLE_CLIENT_ID"):
         monkeypatch.delenv(name, raising=False)
+    for name, value in configured.items():
+        monkeypatch.setenv(name, value)
 
     repository_root = Path(__file__).resolve().parents[3]
     entrypoint = repository_root / "main.py"
@@ -54,3 +57,37 @@ def test_vercel_entrypoint_serves_shadow_frontend_without_database(monkeypatch):
 
     assert response.status_code == 200
     assert "Bravo Shadow" in response.text
+
+
+
+def test_vercel_entrypoint_stays_blocked_when_only_some_settings_exist(monkeypatch):
+    module = load_vercel_entrypoint(
+        monkeypatch,
+        {
+            "BRAVO_STORAGE_BACKEND": "postgres",
+            "GOOGLE_CLIENT_ID": "synthetic-client-id.apps.googleusercontent.com",
+        },
+    )
+
+    with TestClient(module.app) as client:
+        response = client.get("/api/v1/health")
+
+    assert response.status_code == 503
+    assert response.json()["missing_configuration"] == ["BRAVO_DATABASE_URL"]
+
+
+def test_vercel_entrypoint_rejects_memory_storage_even_with_other_settings(monkeypatch):
+    module = load_vercel_entrypoint(
+        monkeypatch,
+        {
+            "BRAVO_STORAGE_BACKEND": "memory",
+            "BRAVO_DATABASE_URL": "postgresql://synthetic.invalid/bravo",
+            "GOOGLE_CLIENT_ID": "synthetic-client-id.apps.googleusercontent.com",
+        },
+    )
+
+    with TestClient(module.app) as client:
+        response = client.get("/api/v1/health")
+
+    assert response.status_code == 503
+    assert response.json()["missing_configuration"] == ["BRAVO_STORAGE_BACKEND"]
