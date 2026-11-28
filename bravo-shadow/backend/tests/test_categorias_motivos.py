@@ -51,6 +51,48 @@ def test_category_and_reason_routes_follow_approved_capability_matrix():
     assert operator.post("/api/v1/motivos-acerto-estoque", json={"nome": "Outro"}).status_code == 403
     assert admin.delete(f"/api/v1/motivos-acerto-estoque/{reason.json()['id']}").status_code == 204
     assert operator.delete("/api/v1/motivos-acerto-estoque/missing").status_code == 403
+import pytest
+from fastapi import HTTPException
+
+from app.core.authorization import AuthenticatedPrincipal
+from app.core.repositories import InMemoryCollectionRepository
+from app.modules.categorias.schemas import CategoriaInput
+from app.modules.categorias.service import CategoriasService
+from app.modules.motivos_acerto.schemas import MotivoAcertoInput
+from app.modules.motivos_acerto.service import MotivosAcertoService
+
+
+class AuditedCatalogRepository(InMemoryCollectionRepository):
+    def __init__(self):
+        super().__init__()
+        self.events = []
+
+    def add_audited(self, item_id, item, event, audit_sink):
+        self.add(item_id, item)
+        audit_sink.append_in_transaction(None, event)
+        self.events.append(event)
+
+    def delete_audited(self, item_id, event, audit_sink):
+        audit_sink.append_in_transaction(None, event)
+        self.delete(item_id)
+        self.events.append(event)
+
+
+class FakeAuditSink:
+    def __init__(self):
+        self.events = []
+
+    def append_in_transaction(self, connection, event):
+        self.events.append(event)
+
+
+@pytest.mark.parametrize(
+    ("service_type", "input_type", "name"),
+    [
+        (CategoriasService, CategoriaInput, "Financeiro"),
+        (MotivosAcertoService, MotivoAcertoInput, "Quebra"),
+    ],
+)
 def test_catalog_services_require_active_actor_and_audit_create_delete(service_type, input_type, name):
     repository = AuditedCatalogRepository()
     sink = FakeAuditSink()
