@@ -81,6 +81,14 @@ class UsuariosService:
         """Cria cadastro comum; em armazenamento persistente exige auditoria atômica."""
         if self.audit_sink is not None and actor is None:
             raise HTTPException(status_code=403, detail="Identidade autenticada obrigatória para criar usuários.")
+        if actor is not None and (
+            not isinstance(actor, AuthenticatedPrincipal)
+            or actor.account_status != "Ativo"
+            or actor.profile != "Admin"
+            or not isinstance(actor.subject, str)
+            or not actor.subject.strip()
+        ):
+            raise HTTPException(status_code=403, detail="Somente Admin autenticado pode criar usuários.")
         item = Usuario(
             id=f"usr_shadow_{uuid4().hex}",
             **data.model_dump(), perfil="Operador", status="Ativo",
@@ -107,21 +115,31 @@ class UsuariosService:
         """Atualiza apenas dados cadastrais e audita na mesma transação no PostgreSQL."""
         if self.audit_sink is not None and actor is None:
             raise HTTPException(status_code=403, detail="Identidade autenticada obrigatória para atualizar usuários.")
+        if actor is not None and (
+            not isinstance(actor, AuthenticatedPrincipal)
+            or actor.account_status != "Ativo"
+            or actor.profile != "Admin"
+            or not isinstance(actor.subject, str)
+            or not actor.subject.strip()
+        ):
+            raise HTTPException(status_code=403, detail="Somente Admin autenticado pode atualizar usuários.")
+
         with self._email_lock:
             payload = data.model_dump(exclude_unset=True)
+            if actor is not None and self.audit_sink is not None:
+                audited = getattr(self.repository, "update_cadastral_audited", None)
+                if not callable(audited) or not callable(
+                    getattr(self.audit_sink, "append_in_transaction", None)
+                ):
+                    raise HTTPException(status_code=503, detail="Atualização cadastral auditada indisponível.")
+                event = AuditEvent(
+                    actor_subject=actor.subject.strip(), action="usuarios:update_cadastral",
+                    entity_type="usuario", entity_id=item_id, outcome="success", request_id=request_id,
+                )
+                return audited(item_id, event=event, audit_sink=self.audit_sink, **payload)
+
             operation = getattr(self.repository, "update_cadastral", None)
             if callable(operation):
-                if actor is not None:
-                    if not isinstance(actor, AuthenticatedPrincipal) or actor.account_status != "Ativo" or actor.profile != "Admin" or not actor.subject.strip():
-                        raise HTTPException(status_code=403, detail="Somente Admin autenticado pode atualizar usuários.")
-                    audited = getattr(self.repository, "update_cadastral_audited", None)
-                    if not callable(audited) or not callable(getattr(self.audit_sink, "append_in_transaction", None)):
-                        raise HTTPException(status_code=503, detail="Atualização cadastral auditada indisponível.")
-                    event = AuditEvent(
-                        actor_subject=actor.subject.strip(), action="usuarios:update_cadastral",
-                        entity_type="usuario", entity_id=item_id, outcome="success", request_id=request_id,
-                    )
-                    return audited(item_id, event=event, audit_sink=self.audit_sink, **payload)
                 # O adapter PostgreSQL atualiza somente as colunas permitidas.
                 # Não ler e reenviar perfil/status evita restaurar estado obsoleto
                 # após uma alteração administrativa concorrente.
@@ -159,6 +177,12 @@ class UsuariosService:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="E-mail autenticado inválido.",
+            )
+
+        if actor.profile != "Admin":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Somente Admin pode desativar usuários.",
             )
 
         current = self.get(item_id)
