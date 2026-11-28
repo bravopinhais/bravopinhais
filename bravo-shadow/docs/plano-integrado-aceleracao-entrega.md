@@ -2,7 +2,7 @@
 
 Data da revisão: 2026-11-27  
 Branch-base revisada: `bravo-shadow`  
-HEAD revisado: `d82f5afaf96f16deb0f0fd30a0eb5e4e2e974458`
+HEAD revisado: `94d1de6bcbb4bf7d9e02bd81486002be7a933cb6`
 
 ## Decisão de execução
 
@@ -87,6 +87,10 @@ O smoke test do contêiner agora fornece valores sintéticos explícitos para `B
 Esta revisão dos arquivos foi estática. O workflow foi atualizado para aplicar as seis migrations no PostgreSQL descartável do GitHub Actions antes da auditoria e também para disparar em pull requests que alterem migrations ou scripts de homologação. Não executei Docker, PostgreSQL, migrations, pytest, OAuth ou deploy nesta sessão. Os itens marcados como concluídos descrevem etapas configuradas no workflow, não resultados de uma execução já observada.
 
 
-### Salvaguarda adicional — Financeiro
+### Financeiro — integração de auditoria atômica
 
-A revisão do contrato identificou que as rotas financeiras de escrita ainda não unem mutação e auditoria em uma única transação. As rotas de inclusão, edição e exclusão foram fechadas preventivamente com resposta 503 após autenticação e autorização. A consulta permanece disponível. Próximo passo técnico: implementar operações auditadas atômicas no repositório PostgreSQL e no serviço, adicionar cobertura de concorrência/ETag e só então liberar a interface. Esta salvaguarda não executa migração, não conecta banco e não altera dados.
+As mutações do Financeiro foram implementadas no repositório PostgreSQL com `add_audited`, `replace_if_version_audited` e `delete_audited`. O serviço cria eventos vinculados ao principal interno ativo e ao request ID; as rotas HTTP encaminham esse contexto. A mutação e o evento append-only usam a mesma conexão/unidade de trabalho, portanto falha no INSERT de auditoria reverte a alteração de negócio. A edição mantém compare-and-swap e ETag/If-Match; o vínculo ao Plano de Contas continua protegido pela FK. O sink foi injetado no composition root. A interface segue somente leitura até homologação do fluxo completo.
+
+### Correções encontradas durante o CI
+
+A execução automatizada identificou dois problemas de coleta Python independentes do Financeiro: anotação `list[...]` avaliada contra um método homônimo no serviço de Documentos e um trecho de teste de integridade com string não terminada. Ambos foram corrigidos na branch Shadow. O smoke test Docker passou na execução observada; a execução de backend precisa ser repetida após as correções para confirmar a coleta e o conjunto completo. Nenhum dado real foi usado e nenhuma conexão de produção foi realizada.
