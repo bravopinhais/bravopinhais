@@ -138,3 +138,17 @@ O cadastro de conselheiros passou a executar criação, atualização e exclusã
 - O CRUD genérico continua bloqueado no repositório PostgreSQL composto pela aplicação.
 
 Foram acrescentados testes para as três operações, rollback por falha de auditoria e contrato do serviço. O CI integrado permanece pendente; o módulo não está homologado. O cadastro de dados do condomínio ainda permanece bloqueado até implementação de atualização auditada e preservação transacional de patches.
+
+
+## Atualização técnica adicional — condomínio
+
+A atualização do cadastro singleton do condomínio passou a usar upsert controlado e auditoria na mesma transação PostgreSQL.
+
+- O patch contém somente os campos enviados; os demais valores são preservados no banco.
+- A operação não depende de leitura seguida de gravação em transações separadas.
+- Patch vazio não sobrescreve dados existentes e ainda registra a operação de forma transacional.
+- A identidade Google ativa, o request ID e o sink transacional são obrigatórios no modo PostgreSQL.
+- Falha na auditoria reverte a alteração.
+- A rota encaminha o principal autenticado.
+
+Foram adicionados testes de patch parcial, patch vazio, uso da mesma conexão, exigência de ator e rollback. A homologação integrada continua pendente; nenhuma importação real foi autorizada.
