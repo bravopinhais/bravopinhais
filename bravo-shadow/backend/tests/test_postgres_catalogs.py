@@ -152,9 +152,9 @@ def test_postgres_storage_wires_all_persistent_catalog_repositories_without_conn
 
     services = build_storage_services("postgres", connection_factory=unexpected_connection)
 
-    assert isinstance(services.categorias.repository, PostgresCategoriasRepository)
-    assert isinstance(services.documentos.repository, PostgresDocumentosRepository)
-    assert isinstance(services.motivos_acerto.repository, PostgresMotivosAcertoRepository)
+    assert isinstance(services.categorias.repository._repository, PostgresCategoriasRepository)
+    assert isinstance(services.documentos.repository._repository, PostgresDocumentosRepository)
+    assert isinstance(services.motivos_acerto.repository._repository, PostgresMotivosAcertoRepository)
 
 
 class AuditSink:
