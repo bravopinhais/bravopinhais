@@ -52,7 +52,7 @@ def _evidence(manifest, **changes):
     return PreImportApprovalEvidence(**values)
 
 
-def test_matching_approval_evidence_only_qualifies_for_dry_run():
+def test_matching_approval_evidence_cannot_override_source_integrity_blockers():
     manifest = _manifest()
     result = verify_pre_import_approval(manifest, _evidence(manifest))
     assert result.valid is True
