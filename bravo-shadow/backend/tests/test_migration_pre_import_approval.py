@@ -55,9 +55,11 @@ def _evidence(manifest, **changes):
 def test_matching_approval_evidence_cannot_override_source_integrity_blockers():
     manifest = _manifest()
     result = verify_pre_import_approval(manifest, _evidence(manifest))
-    assert result.valid is True
-    assert result.eligible_for_dry_run is True
+    assert manifest.readiness == "blocked"
+    assert result.valid is False
+    assert result.eligible_for_dry_run is False
     assert result.writes_authorized is False
+    assert "manifest_not_eligible_for_dry_run" in {item.code for item in result.issues}
 
 
 def test_blocked_manifest_cannot_be_approved_for_dry_run():
