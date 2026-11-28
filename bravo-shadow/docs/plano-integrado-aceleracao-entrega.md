@@ -94,3 +94,8 @@ As mutações do Financeiro foram implementadas no repositório PostgreSQL com `
 ### Correções encontradas durante o CI
 
 A execução automatizada identificou dois problemas de coleta Python independentes do Financeiro: anotação `list[...]` avaliada contra um método homônimo no serviço de Documentos e um trecho de teste de integridade com string não terminada. Ambos foram corrigidos na branch Shadow. O smoke test Docker passou na execução observada; a execução de backend precisa ser repetida após as correções para confirmar a coleta e o conjunto completo. Nenhum dado real foi usado e nenhuma conexão de produção foi realizada.
+
+
+### Proteção temporária dos cadastros financeiros ainda sem auditoria
+
+A revisão identificou que Formas Monetárias e Contas Bancárias já tinham autenticação/capacidades nas rotas, mas seus serviços e adaptadores PostgreSQL ainda não registravam mutação e auditoria na mesma transação. Até a implementação completa desse contrato, o composition root injeta o sink de auditoria e os serviços recusam mutações quando ele está configurado. Assim, o modo PostgreSQL falha fechado em criação, edição e exclusão; o modo de memória para testes isolados permanece disponível. Foram acrescentados testes unitários para os três tipos de operação em ambos os módulos. Essa proteção temporária não equivale à integração auditada concluída e mantém esses módulos fora da homologação CRUD até a próxima etapa.
