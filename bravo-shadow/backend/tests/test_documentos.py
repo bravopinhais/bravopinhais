@@ -183,3 +183,71 @@ def test_document_routes_deny_profiles_until_matrix_approval(monkeypatch):
         assert denied.post("/api/v1/documentos", json=payload()).status_code == 403
         assert denied.put("/api/v1/documentos/x", json=payload()).status_code == 403
         assert denied.delete("/api/v1/documentos/x").status_code == 403
+
+
+from app.core.authorization import AuthenticatedPrincipal
+from app.core.repositories import InMemoryCollectionRepository
+from app.modules.documentos.schemas import DocumentoInput
+from app.modules.documentos.service import DocumentosService
+
+
+class AuditedDocumentRepository(InMemoryCollectionRepository):
+    def add_audited(self, item_id, item, event, audit_sink):
+        audit_sink.append_in_transaction(None, event)
+        self.add(item_id, item)
+
+    def replace_audited(self, item_id, item, event, audit_sink):
+        audit_sink.append_in_transaction(None, event)
+        self.replace(item_id, item)
+
+    def delete_audited(self, item_id, event, audit_sink):
+        audit_sink.append_in_transaction(None, event)
+        self.delete(item_id)
+
+
+class DocumentAuditSink:
+    def __init__(self):
+        self.events = []
+
+    def append_in_transaction(self, connection, event):
+        self.events.append(event)
+
+
+def test_document_service_requires_actor_and_uses_audited_contract():
+    repository = AuditedDocumentRepository()
+    sink = DocumentAuditSink()
+    service = DocumentosService(repository=repository, audit_sink=sink)
+    actor = AuthenticatedPrincipal(
+        subject="google-test-subject",
+        email="teste@example.com",
+        profile="Admin",
+        account_status="Ativo",
+    )
+    data = DocumentoInput.model_construct(
+        pasta="Financeiro", categoriaId=None, titulo="Ata",
+        nomeArquivo="ata.pdf", arquivoCompactadoGzip="gzip-data",
+    )
+
+    with pytest.raises(HTTPException) as denied:
+        service.create(data)
+    assert denied.value.status_code == 403
+    assert repository.list() == []
+
+    item = service.create(data, actor=actor, request_id="req_doc_create")
+    assert repository.get(item.id) == item
+    assert sink.events[-1].action == "documentos:create"
+    assert sink.events[-1].request_id == "req_doc_create"
+
+    updated = service.update(
+        item.id, data.model_copy(update={"titulo": "Ata atualizada"}),
+        actor=actor, request_id="req_doc_update",
+    )
+    assert updated.titulo == "Ata atualizada"
+    assert sink.events[-1].action == "documentos:update"
+
+    service.delete(item.id, actor=actor, request_id="req_doc_delete")
+    assert repository.get(item.id) is None
+    assert sink.events[-1].action == "documentos:delete"
+    assert [event.request_id for event in sink.events] == [
+        "req_doc_create", "req_doc_update", "req_doc_delete",
+    ]
