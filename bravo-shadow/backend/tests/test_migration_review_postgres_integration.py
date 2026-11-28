@@ -368,6 +368,11 @@ def test_client_roles_are_denied_and_runtime_cannot_mutate_snapshots_or_ddl(post
                 )
             )
 
+    def assert_denied(connection, sql: str) -> None:
+        with pytest.raises(psycopg.errors.InsufficientPrivilege):
+            connection.execute(sql)
+        connection.rollback()
+
     admin_conninfo = psycopg.conninfo.conninfo_to_dict(postgres_database)
     admin_conninfo["dbname"] = "bravo_shadow_test"
 
@@ -379,18 +384,18 @@ def test_client_roles_are_denied_and_runtime_cannot_mutate_snapshots_or_ddl(post
             assert connection.execute(
                 "SELECT session_user, current_user"
             ).fetchone() == (role, role)
-            with pytest.raises(psycopg.errors.InsufficientPrivilege):
-                connection.execute(
-                    "SELECT * FROM bravo_shadow.migration_review_batches"
-                )
-            with pytest.raises(psycopg.errors.InsufficientPrivilege):
-                connection.execute(
-                    "INSERT INTO bravo_shadow.migration_review_events "
-                    "(event_id, batch_key, decision_id, manifest_hash, version, "
-                    "reviewer_id, choice, rationale, reviewed_at) "
-                    "VALUES ('denied', 'batch', 'decision', 'hash', 1, "
-                    "'actor', 'keep_blocked', 'test', now())"
-                )
+            assert_denied(
+                connection,
+                "SELECT * FROM bravo_shadow.migration_review_batches",
+            )
+            assert_denied(
+                connection,
+                "INSERT INTO bravo_shadow.migration_review_events "
+                "(event_id, batch_key, decision_id, manifest_hash, version, "
+                "reviewer_id, choice, rationale, reviewed_at) "
+                "VALUES ('denied', 'batch', 'decision', 'hash', 1, "
+                "'actor', 'keep_blocked', 'test', now())",
+            )
 
     runtime_conninfo = dict(admin_conninfo)
     runtime_conninfo["user"] = "bravo_shadow_runtime_test"
@@ -414,8 +419,7 @@ def test_client_roles_are_denied_and_runtime_cannot_mutate_snapshots_or_ddl(post
             "VALUES ('forbidden', 'forbidden', 'hash', 'kind', 'pending', true, 'none')",
             "CREATE TABLE bravo_shadow.runtime_ddl_must_fail (id integer)",
         ):
-            with pytest.raises(psycopg.errors.InsufficientPrivilege):
-                runtime.execute(sql)
+            assert_denied(runtime, sql)
 
 
 def test_runtime_append_works_without_update_on_snapshot_tables(postgres_database):
