@@ -143,3 +143,38 @@ def test_postgres_style_audit_configuration_fails_closed_for_all_mutations():
             operation()
         assert error.value.status_code == 403
     assert service.list() == []
+
+
+def test_authenticated_mutations_use_audited_repository_contract():
+    from app.core.repositories import InMemoryCollectionRepository
+    from app.modules.contas_bancarias.service import ContasBancariasService
+
+    class Sink:
+        def __init__(self):
+            self.events = []
+        def append_in_transaction(self, connection, event):
+            assert connection is self
+            self.events.append(event)
+
+    class AuditedRepository(InMemoryCollectionRepository):
+        def add_audited(self, item, event, sink):
+            super().add(item.id, item)
+            sink.append_in_transaction(sink, event)
+        def replace_audited(self, item_id, item, event, sink):
+            super().replace(item_id, item)
+            sink.append_in_transaction(sink, event)
+        def delete_audited(self, item_id, event, sink):
+            super().delete(item_id)
+            sink.append_in_transaction(sink, event)
+
+    sink = Sink()
+    service = ContasBancariasService(repository=AuditedRepository(), audit_sink=sink)
+    actor = AuthenticatedPrincipal("google-subject", "teste@example.com", "Admin", "Ativo")
+    created = service.create(ContaBancariaInput(banco="Banco A"), actor=actor, request_id="req-1")
+    updated = service.update(created.id, ContaBancariaInput(banco="Banco B"), actor=actor, request_id="req-2")
+    service.delete(updated.id, actor=actor, request_id="req-3")
+    assert [event.action for event in sink.events] == [
+        "contas_bancarias:create", "contas_bancarias:update", "contas_bancarias:delete"
+    ]
+    assert [event.request_id for event in sink.events] == ["req-1", "req-2", "req-3"]
+    assert service.list() == []
