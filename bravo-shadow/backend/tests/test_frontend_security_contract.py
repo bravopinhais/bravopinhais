@@ -20,7 +20,7 @@ def test_api_bootstrap_requires_explicit_same_origin_configuration():
 
 
 def test_business_api_uses_one_shared_http_transport():
-    assert len(re.findall(r"\\bfetch\\s*\\(", API_CLIENT)) == 1
+    assert len(re.findall(r"\bfetch\s*\(", API_CLIENT)) == 1
     assert "fetch(" not in HTML
     assert "fetch(" not in BOOTSTRAP
     assert 'apiRoot + "/api/v1/auth/me"' in GOOGLE_AUTH
@@ -29,10 +29,10 @@ def test_business_api_uses_one_shared_http_transport():
 
 
 def test_browser_session_credentials_are_not_persisted():
-    sources = "\\n".join((HTML, API_CLIENT, BOOTSTRAP, GOOGLE_AUTH))
-    assert re.search(r"\\blocalStorage\\s*(?:\\.|\\[)", sources) is None
-    assert re.search(r"\\bsessionStorage\\s*(?:\\.|\\[)", sources) is None
-    assert re.search(r"\\bindexedDB\\s*(?:\\.|\\[)", sources) is None
+    sources = "\n".join((HTML, API_CLIENT, BOOTSTRAP, GOOGLE_AUTH))
+    assert re.search(r"\blocalStorage\s*(?:\.|\[)", sources) is None
+    assert re.search(r"\bsessionStorage\s*(?:\.|\[)", sources) is None
+    assert re.search(r"\bindexedDB\s*(?:\.|\[)", sources) is None
     assert "document.cookie" not in sources
 
 
@@ -46,5 +46,5 @@ def test_user_administration_requires_google_session_and_admin_capabilities():
 
 
 def test_frontend_does_not_reintroduce_legacy_password_login():
-    assert not re.search(r'type\\s*=\\s*["\\']password["\\']', HTML, re.IGNORECASE)
+    assert not re.search(r'type\s*=\s*["\']password["\']', HTML, re.IGNORECASE)
     assert "js/auth.js" not in HTML
