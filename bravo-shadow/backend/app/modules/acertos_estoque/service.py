@@ -62,7 +62,7 @@ class AcertosEstoqueService:
             reason_name = self.reason_service.get(data.motivoId).nome
 
         current = product.quantidade
-        if data.tipo == "Saída" and data.quantidade > current:
+        if self.movement_repository is None and data.tipo == "Saída" and data.quantidade > current:
             raise HTTPException(
                 status_code=409,
                 detail="Quantidade de saída superior ao saldo disponível.",
