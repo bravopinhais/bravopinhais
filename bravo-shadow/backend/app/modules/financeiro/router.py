@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Header, Request, Response, status
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, Response, status
 
 from app.core.authorization import require_capability_dependency
 
@@ -24,10 +24,16 @@ def list_titles(request: Request) -> list[FinanceiroTitulo]:
 
 
 @router.post("", response_model=FinanceiroTitulo, status_code=status.HTTP_201_CREATED, dependencies=[create_access])
-def create_title(data: FinanceiroInput, request: Request, response: Response):
-    item = get_service(request).create(data)
-    response.headers["ETag"] = format_etag(item.version)
-    return item
+def create_title(
+    data: FinanceiroInput,
+    request: Request,
+    _principal=Depends(require_capability_dependency("financeiro:create")),
+):
+    # Fail closed: ainda não há auditoria atômica junto da mutação financeira.
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail="Inclusão financeira bloqueada até a auditoria transacional estar integrada.",
+    )
 
 
 @router.put("/{item_id}", response_model=FinanceiroTitulo, dependencies=[update_access])
@@ -37,13 +43,21 @@ def update_title(
     request: Request,
     response: Response,
     if_match: str | None = Header(default=None, alias="If-Match"),
+    _principal=Depends(require_capability_dependency("financeiro:update")),
 ):
-    expected_version = parse_if_match(if_match)
-    item = get_service(request).update(item_id, data, expected_version)
-    response.headers["ETag"] = format_etag(item.version)
-    return item
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail="Edição financeira bloqueada até a auditoria transacional estar integrada.",
+    )
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[delete_access])
-def delete_title(item_id: str, request: Request) -> None:
-    get_service(request).delete(item_id)
+def delete_title(
+    item_id: str,
+    request: Request,
+    _principal=Depends(require_capability_dependency("financeiro:delete")),
+) -> None:
+    raise HTTPException(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        detail="Exclusão financeira bloqueada até a auditoria transacional estar integrada.",
+    )
