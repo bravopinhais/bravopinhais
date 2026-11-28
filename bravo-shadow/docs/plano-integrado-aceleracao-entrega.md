@@ -78,6 +78,10 @@ O objetivo da próxima entrega é demonstrar, em um único pipeline, que a image
 
 Acelerar significa executar verificações complementares no mesmo pipeline e corrigir grupos de problemas por causa raiz. Não significa pular testes de integração, aprovar SQL não aplicado, inventar dados persistidos ou publicar um serviço incompleto.
 
+### Correção adicional do pipeline Docker
+
+O smoke test do contêiner agora fornece valores sintéticos explícitos para `BRAVO_STORAGE_BACKEND=postgres`, `BRAVO_DATABASE_URL` e `GOOGLE_CLIENT_ID`, atendendo ao `CMD` fail-closed do Dockerfile. A URL é deliberadamente fictícia e não é usada pelo healthcheck; o smoke test verifica apenas a inicialização HTTP e a interface, sem realizar operações de negócio nem conectar a um banco remoto.
+
 ## Limites desta revisão
 
 Esta revisão dos arquivos foi estática. O workflow foi atualizado para aplicar as seis migrations no PostgreSQL descartável do GitHub Actions antes da auditoria e também para disparar em pull requests que alterem migrations ou scripts de homologação. Não executei Docker, PostgreSQL, migrations, pytest, OAuth ou deploy nesta sessão. Os itens marcados como concluídos descrevem etapas configuradas no workflow, não resultados de uma execução já observada.
