@@ -64,7 +64,7 @@ O módulo `js/google-auth.js` **já existe** e:
 - não grava token em `localStorage`, `sessionStorage` ou cookies;
 - não concede perfil nem permissões no navegador.
 
-**O módulo ainda não está conectado à tela.** A página `index.html` não importa esse módulo nem apresenta o botão Google. O bootstrap foi mantido desligado porque ainda não existe uma URL HTTPS de API hospedada e validada para o ambiente sombra. O GitHub Pages hospeda apenas arquivos estáticos; não executa FastAPI nem PostgreSQL. Não apontar o frontend para a API de produção.
+**A tela visual de login foi integrada ao frontend Shadow.** Ela usa o tema noturno, identidade Guardiões do Bravo e posiciona o botão oficial do Google Identity Services dentro do cartão central. O conteúdo principal permanece oculto até o evento de sessão autenticada e volta a ser bloqueado no encerramento da sessão. O bootstrap continua fechado porque ainda não existe uma URL HTTPS de API hospedada e validada para o ambiente sombra; por isso, no preview atual, o botão Google não é ativado e a tela informa que a configuração está pendente. O GitHub Pages hospeda apenas arquivos estáticos; não executa FastAPI nem PostgreSQL. Não apontar o frontend para a API de produção.
 
 O Client ID OAuth público já foi informado e está configurado no artefato de prova do Worker. Ele pode ser publicado no frontend; o Client Secret nunca deve ser incluído em HTML, JavaScript ou repositório. Ainda é necessário conferir as origens JavaScript autorizadas no projeto Google OAuth antes de ativar o botão.
 
