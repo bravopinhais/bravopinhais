@@ -73,7 +73,7 @@ def test_condominio_allows_defaulted_fields_to_be_omitted():
     ("categorias", {"nome": " "}),
     ("motivos_acerto", {"nome": ""}),
     ("documentos", {"titulo": "Doc", "nome_arquivo": "a.pdf", "arquivo_compactado_gzip": " "}),
-    ("acertos_estoque", {"data": "2026-01-01T00:00:00Z", "tipo": "Entrada", "produto_id": "p1", "quantidade": "1.000", "motivo": " "}),
+    ("acertos_estoque", {"data": "2026-01-01T00:00:00Z", "tipo": "Entrada", "produto_id": "p1", "quantidade": "1.000"}),
 ])
 def test_insert_rejects_blank_required_text_before_sql(collection, payload):
     with pytest.raises(ValueError, match="campos textuais obrigatórios vazios"):
