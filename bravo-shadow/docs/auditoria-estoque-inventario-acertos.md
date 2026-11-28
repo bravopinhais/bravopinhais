@@ -67,3 +67,32 @@ Testes automatizados foram escritos para CRUD, campos adicionais, atualização 
 4. Definir unicidade de etiqueta e normalização de códigos.
 5. Definir se marca/linha/fabricante serão texto livre ou cadastros normalizados.
 6. Implementar transações no banco para movimentação e saldo atômicos.
+
+## Atualização técnica da branch `bravo-shadow` — 2026-11-28
+
+A persistência PostgreSQL do Estoque e dos Acertos foi ampliada com operações auditadas. Esta atualização descreve implementação em código; não representa liberação para produção ou autorização de importação.
+
+### Operações persistentes auditadas
+
+- Cadastro de produto: INSERT do produto e INSERT de `audit_events` na mesma unidade de trabalho.
+- Edição de produto: bloqueio da linha com `SELECT ... FOR UPDATE`, validação do histórico, UPDATE e evento de auditoria na mesma transação.
+- Exclusão de produto: DELETE e evento de auditoria na mesma transação; vínculos de movimentação continuam protegidos por FK.
+- Acerto de estoque: bloqueio da linha do produto, validação do saldo atualizado, alteração do saldo, INSERT do histórico e evento de auditoria na mesma transação.
+- Falha ao inserir auditoria provoca rollback da alteração de negócio.
+- Identidade autenticada do Google e request ID são encaminhados pelas rotas aos serviços; serviços persistentes rejeitam mutação sem ator ativo.
+- As operações genéricas de escrita dos repositórios permanecem bloqueadas; o caminho dos serviços usa somente os contratos auditados.
+- O saldo é validado dentro da transação após o bloqueio da linha, evitando decisões baseadas em leitura concorrente desatualizada.
+- O histórico de movimentos continua imutável; correções devem usar movimento compensatório.
+
+### Cobertura automatizada adicionada
+
+- Testes de mesma conexão para saldo, histórico e auditoria.
+- Testes de rollback quando a auditoria falha.
+- Testes de rollback para criação, edição e exclusão de produto.
+- Teste de concorrência real no PostgreSQL descartável: duas saídas concorrentes não podem gerar saldo negativo; apenas a operação vencedora registra histórico e auditoria.
+- Teste de integração real que força falha no INSERT de auditoria e verifica que saldo e histórico permanecem inalterados.
+- Teste de CRUD auditado do produto no PostgreSQL descartável.
+
+### Estado de homologação
+
+O código e os testes foram adicionados à branch `bravo-shadow`. A homologação depende da conclusão do workflow automatizado com PostgreSQL descartável e da análise de qualquer falha. Até a confirmação do CI, esta etapa permanece **pendente de homologação**. Não houve implantação, conexão com banco de produção, importação de dados reais nem alteração da branch `main`.
