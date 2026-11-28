@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.core.authorization import AuthenticatedPrincipal, require_capability_dependency
 from app.core.audit import AuditEvent
