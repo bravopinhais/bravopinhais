@@ -194,6 +194,7 @@ def build_storage_services(
     documentos = DocumentosService(
         repository=documentos_repository,
         category_service=categorias,
+        audit_sink=audit_sink,
     )
     categorias.set_reference_checker(documentos.has_category_reference)
 
