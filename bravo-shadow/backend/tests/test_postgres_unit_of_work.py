@@ -230,3 +230,23 @@ def test_unit_of_work_preserves_invalid_connection_error_if_close_fails():
 
     assert work.connection is None
 
+
+
+class ServerRejectedCommit(RuntimeError):
+    sqlstate = "P0001"
+
+
+def test_unit_of_work_preserves_server_confirmed_transaction_rejection():
+    connection = FakeConnection(
+        commit_error=ServerRejectedCommit("forced deferred commit failure")
+    )
+    try:
+        with PostgresUnitOfWork(lambda: connection):
+            pass
+    except ServerRejectedCommit as error:
+        assert str(error) == "forced deferred commit failure"
+    else:
+        raise AssertionError("A rejeição explícita do servidor deveria ser propagada")
+    assert connection.commits == 1
+    assert connection.rollbacks == 1
+    assert connection.closes == 1
