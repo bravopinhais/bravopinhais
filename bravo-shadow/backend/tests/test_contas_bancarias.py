@@ -122,3 +122,24 @@ def test_bank_name_is_trimmed_on_update():
     )
     assert response.status_code == 200
     assert response.json()["banco"] == "Banco B"
+
+
+def test_postgres_style_audit_configuration_fails_closed_for_all_mutations():
+    from fastapi import HTTPException
+    from app.core.repositories import InMemoryCollectionRepository
+    from app.modules.contas_bancarias.service import ContasBancariasService
+
+    service = ContasBancariasService(
+        repository=InMemoryCollectionRepository(),
+        audit_sink=object(),
+    )
+    operations = [
+        lambda: service.create(ContaBancariaInput(banco="Banco")),
+        lambda: service.update("missing", ContaBancariaInput(banco="Banco")),
+        lambda: service.delete("missing"),
+    ]
+    for operation in operations:
+        with pytest.raises(HTTPException) as error:
+            operation()
+        assert error.value.status_code == 503
+    assert service.list() == []
