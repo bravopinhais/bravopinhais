@@ -42,6 +42,35 @@ def test_council_read_is_available_to_both_and_mutations_are_admin_only():
     assert operator.put(f"/api/v1/conselheiros/{item_id}", json=payload).status_code == 403
     assert admin.delete(f"/api/v1/conselheiros/{item_id}").status_code == 204
     assert operator.delete(f"/api/v1/conselheiros/{item_id}").status_code == 403
+import pytest
+from fastapi import HTTPException
+from app.core.repositories import InMemoryCollectionRepository
+from app.modules.conselheiros.schemas import ConselheiroInput
+from app.modules.conselheiros.service import ConselheirosService
+
+
+class CouncilAuditSink:
+    def __init__(self):
+        self.events = []
+
+    def append_in_transaction(self, connection, event):
+        self.events.append(event)
+
+
+class AuditedCouncilRepository(InMemoryCollectionRepository):
+    def add_audited(self, item_id, item, event, sink):
+        sink.append_in_transaction(None, event)
+        self.add(item_id, item)
+
+    def replace_audited(self, item_id, item, event, sink):
+        sink.append_in_transaction(None, event)
+        self.replace(item_id, item)
+
+    def delete_audited(self, item_id, event, sink):
+        sink.append_in_transaction(None, event)
+        self.delete(item_id)
+
+
 def test_council_service_requires_actor_and_audits_crud():
     repository = AuditedCouncilRepository()
     sink = CouncilAuditSink()
