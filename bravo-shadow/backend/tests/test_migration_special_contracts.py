@@ -175,3 +175,20 @@ def test_auxiliary_contracts_flag_unknown_fields_and_duplicate_ids_without_value
     assert "VALOR-SINTETICO" not in repr(report)
     assert "OUTRO-VALOR" not in repr(report)
     assert any("IDs ausentes ou IDs duplicados" in reason for reason in categories.review_reasons)
+
+
+def test_special_contracts_flag_non_object_records_missing_and_duplicate_ids():
+    inventory = inspect_source_collections({
+        "estoque": [
+            _record(id="p1", item="Papel", quantidade=5),
+            _record(id="p1", item="Caneta", quantidade=2),
+            {"item": "Lápis", "quantidade": 1},
+            "registro-inválido",
+        ]
+    })
+    report = assess_special_contracts(inventory)
+    stock = next(item for item in report.assessments if item.key == "estoque")
+
+    assert stock.status == "review_required"
+    assert any("registros inválidos, IDs ausentes ou IDs duplicados" in reason
+               for reason in stock.review_reasons)
