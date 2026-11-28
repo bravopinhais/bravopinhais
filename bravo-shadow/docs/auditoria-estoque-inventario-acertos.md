@@ -124,3 +124,17 @@ O módulo Documentos também recebeu contratos de escrita auditada para criaçã
 - Os testes adicionados cobrem contrato de serviço e rollback de criação, atualização e exclusão em adaptador PostgreSQL controlado.
 
 Esta implementação ainda aguarda o workflow integrado. Não significa homologação, publicação ou autorização de importação.
+
+
+## Atualização técnica adicional — conselheiros
+
+O cadastro de conselheiros passou a executar criação, atualização e exclusão com auditoria na mesma unidade de trabalho PostgreSQL.
+
+- O serviço exige principal Google ativo, request ID e sink de auditoria.
+- Os métodos persistentes auditados executam a alteração e o evento na mesma conexão/transação.
+- Atualização e exclusão verificam a existência do registro dentro da própria transação.
+- Falha ao inserir auditoria reverte a alteração.
+- As rotas encaminham o principal autenticado e o request ID.
+- O CRUD genérico continua bloqueado no repositório PostgreSQL composto pela aplicação.
+
+Foram acrescentados testes para as três operações, rollback por falha de auditoria e contrato do serviço. O CI integrado permanece pendente; o módulo não está homologado. O cadastro de dados do condomínio ainda permanece bloqueado até implementação de atualização auditada e preservação transacional de patches.
