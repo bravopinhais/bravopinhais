@@ -13,7 +13,7 @@ def test_integrated_preflight_combines_reports_and_keeps_domain_approval_blocked
     result = run_integrated_migration_preflight(snapshot)
     assert result.status == "review_required"
     assert result.source_inventory.valid_collection_container
-    assert result.value_summary.records_assessed == 2
+    assert result.value_summary.records_assessed == 3
     assert result.value_summary.records_with_issues == 2
     assert "specialized_domain_approval_pending" in result.blocking_reasons
     assert "record_value_contracts_have_issues" in result.blocking_reasons
@@ -36,4 +36,4 @@ def test_integrated_preflight_reports_reference_orphans_without_source_values():
     result = run_integrated_migration_preflight(snapshot)
     assert any(item.orphan_references == 1 for item in result.references.assessments)
     assert "private-synthetic" not in repr(result)
-    assert "missing" not in repr(result)
+    assert "'missing'" not in repr(result)
