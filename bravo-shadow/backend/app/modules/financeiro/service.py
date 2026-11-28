@@ -21,6 +21,8 @@ class FinanceiroService:
         return self.repository.list()
 
     def create(self, data: FinanceiroInput, *, actor: AuthenticatedPrincipal | None = None, request_id: str | None = None) -> FinanceiroTitulo:
+        if self.audit_sink is not None and actor is None:
+            raise HTTPException(status_code=403, detail="Identidade autenticada obrigatória para operações financeiras auditadas.")
         item = FinanceiroTitulo(id=f"fin_shadow_{uuid4().hex}", **data.model_dump())
         if actor is None:
             self.repository.add(item.id, item)
@@ -32,6 +34,8 @@ class FinanceiroService:
         return item
 
     def update(self, item_id: str, data: FinanceiroInput, expected_version: int, *, actor: AuthenticatedPrincipal | None = None, request_id: str | None = None) -> FinanceiroTitulo:
+        if self.audit_sink is not None and actor is None:
+            raise HTTPException(status_code=403, detail="Identidade autenticada obrigatória para operações financeiras auditadas.")
         # A operação CAS do repositório distingue registro ausente de versão obsoleta.
         # Não é necessário fazer uma leitura separada antes do UPDATE.
         item = FinanceiroTitulo(id=item_id, version=expected_version, **data.model_dump())
@@ -54,6 +58,8 @@ class FinanceiroService:
         return item
 
     def delete(self, item_id: str, *, actor: AuthenticatedPrincipal | None = None, request_id: str | None = None) -> None:
+        if self.audit_sink is not None and actor is None:
+            raise HTTPException(status_code=403, detail="Identidade autenticada obrigatória para operações financeiras auditadas.")
         if not self.repository.exists(item_id):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Título não encontrado.")
         if actor is not None:
