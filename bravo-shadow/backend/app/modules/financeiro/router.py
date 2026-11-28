@@ -18,6 +18,11 @@ def audit_financial_read(request: Request, actor: AuthenticatedPrincipal) -> Non
     """Registra consultas financeiras sem copiar valores ou históricos."""
     sink = getattr(get_service(request), "audit_sink", None)
     if sink is None:
+        if getattr(request.app.state, "storage_backend", None) == "postgres":
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Auditoria indisponível. A consulta não foi concluída.",
+            )
         return
     event = AuditEvent(
         actor_subject=actor.subject.strip(),
