@@ -166,8 +166,8 @@ def build_storage_services(
         usuarios_repository = PostgresUsuariosRepository(connection_factory)
         module_settings_repository = PostgresModuleSettingsRepository(connection_factory)
         audit_sink = PostgresAuditSink(connection_factory)
-        # Estes módulos ainda não possuem contrato de auditoria atômica completo.
-        # O bloqueio fica no adaptador, protegendo também chamadas internas entre serviços.
+        # O CRUD genérico continua bloqueado; métodos auditados são liberados ao serviço.
+        # O repositório de movimentação fica separado para a transação saldo + histórico + auditoria.
         estoque_repository = _WritesPendingAuditRepository(estoque_repository, "estoque")
         acertos_repository = _WritesPendingAuditRepository(acertos_repository, "acertos de estoque")
         categorias_repository = _WritesPendingAuditRepository(categorias_repository, "categorias")
@@ -189,7 +189,7 @@ def build_storage_services(
     )
     formas_monetarias = FormasMonetariasService(repository=formas_repository, audit_sink=audit_sink)
 
-    estoque = EstoqueService(repository=estoque_repository)
+    estoque = EstoqueService(repository=estoque_repository, audit_sink=audit_sink)
     categorias = CategoriasService(repository=categorias_repository)
     documentos = DocumentosService(
         repository=documentos_repository,
@@ -203,6 +203,7 @@ def build_storage_services(
         inventory_service=estoque,
         reason_service=motivos_acerto,
         movement_repository=movement_repository,
+        audit_sink=audit_sink,
     )
     motivos_acerto.set_reference_checker(acertos_estoque.has_reason_reference)
     estoque.set_movement_reference_checker(acertos_estoque.has_product_reference)
