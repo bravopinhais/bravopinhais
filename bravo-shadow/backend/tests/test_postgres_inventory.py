@@ -231,3 +231,121 @@ def test_stock_repository_preserves_fractional_quantities_and_legacy_metadata():
     assert item.maximo == Decimal("4.500")
     assert item.valorUnitario == Decimal("9.90")
     assert item.status == "Inativo"
+
+
+class RecordingAuditSink:
+    def __init__(self, fail=False):
+        self.connection = None
+        self.events = []
+        self.fail = fail
+
+    def append_in_transaction(self, connection, event):
+        self.connection = connection
+        if self.fail:
+            raise RuntimeError("audit insert failed")
+        self.events.append(event)
+
+
+def test_audited_movement_commits_stock_history_and_audit_together():
+    from app.core.audit import AuditEvent
+
+    connection = Connection(stock_row=(5,))
+    repository = PostgresAcertosEstoqueRepository(factory(connection))
+    sink = RecordingAuditSink()
+    movement = Acerto(
+        id="ac_audited", data="2026-11-26T10:00:00-03:00", tipo="Saída",
+        produtoId="est_1", quantidade=2, motivo="Uso interno",
+    )
+    event = AuditEvent(
+        actor_subject="google-subject", action="acertos_estoque:create",
+        entity_type="acerto_estoque", entity_id=movement.id,
+        request_id="req-audited",
+    )
+
+    result = repository.register_movement_audited(
+        product_id="est_1", movement=movement, delta=-2,
+        event=event, audit_sink=sink,
+    )
+
+    assert result == movement
+    assert sink.connection is connection
+    assert sink.events == [event]
+    assert len(connection.calls) == 3
+    assert "FOR UPDATE" in connection.calls[0][0]
+    assert "UPDATE bravo_shadow.estoque" in connection.calls[1][0]
+    assert "INSERT INTO bravo_shadow.acertos_estoque" in connection.calls[2][0]
+    assert connection.commits == 1
+    assert connection.rollbacks == 0
+    assert connection.closed == 1
+
+
+def test_audited_movement_rolls_back_stock_and_history_when_audit_fails():
+    from app.core.audit import AuditEvent
+
+    connection = Connection(stock_row=(5,))
+    repository = PostgresAcertosEstoqueRepository(factory(connection))
+    sink = RecordingAuditSink(fail=True)
+    movement = Acerto(
+        id="ac_audit_fail", data="2026-11-26T10:00:00-03:00", tipo="Entrada",
+        produtoId="est_1", quantidade=3, motivo="Reposição",
+    )
+    event = AuditEvent(
+        actor_subject="google-subject", action="acertos_estoque:create",
+        entity_type="acerto_estoque", entity_id=movement.id,
+        request_id="req-audit-fail",
+    )
+
+    with pytest.raises(RuntimeError, match="audit insert failed"):
+        repository.register_movement_audited(
+            product_id="est_1", movement=movement, delta=3,
+            event=event, audit_sink=sink,
+        )
+
+    assert sink.connection is connection
+    assert len(connection.calls) == 3
+    assert connection.commits == 0
+    assert connection.rollbacks == 1
+    assert connection.closed == 1
+
+
+def test_stock_create_audit_uses_same_transaction():
+    from app.core.audit import AuditEvent
+
+    connection = Connection()
+    repository = PostgresEstoqueRepository(factory(connection))
+    sink = RecordingAuditSink()
+    item = EstoqueItem(id="est_audited", item="Produto auditado")
+    event = AuditEvent(
+        actor_subject="google-subject", action="estoque:create",
+        entity_type="estoque", entity_id=item.id, request_id="req-stock",
+    )
+
+    repository.add_audited(item.id, item, event, sink)
+
+    assert sink.connection is connection
+    assert sink.events == [event]
+    assert len(connection.calls) == 1
+    assert connection.commits == 1
+    assert connection.rollbacks == 0
+    assert connection.closed == 1
+
+
+def test_stock_audit_failure_rolls_back_create():
+    from app.core.audit import AuditEvent
+
+    connection = Connection()
+    repository = PostgresEstoqueRepository(factory(connection))
+    sink = RecordingAuditSink(fail=True)
+    item = EstoqueItem(id="est_audit_fail", item="Produto auditado")
+    event = AuditEvent(
+        actor_subject="google-subject", action="estoque:create",
+        entity_type="estoque", entity_id=item.id,
+    )
+
+    with pytest.raises(RuntimeError, match="audit insert failed"):
+        repository.add_audited(item.id, item, event, sink)
+
+    assert sink.connection is connection
+    assert connection.commits == 0
+    assert connection.rollbacks == 1
+    assert connection.closed == 1
