@@ -77,6 +77,28 @@ class PostgresCondominioRepository(_GovernanceRepository):
             (item_id, *(item[field] for field in fields)),
         )
 
+    def replace_audited(self, item_id: str, item: dict[str, str], event: AuditEvent, audit_sink) -> None:
+        fields = [field for field in self._fields if field in item]
+        if fields:
+            columns = ", ".join(["id", *(f'"{field}"' for field in fields)])
+            placeholders = ", ".join(["%s"] * (len(fields) + 1))
+            assignments = ", ".join(
+                f'"{field}" = EXCLUDED."{field}"' for field in fields
+            )
+            sql = (
+                f"INSERT INTO {self._table} ({columns}) VALUES ({placeholders}) "
+                f"ON CONFLICT (id) DO UPDATE SET {assignments}, "
+                "updated_at = now(), version = bravo_shadow.condominio.version + 1"
+            )
+            params = ("singleton", *(item[field] for field in fields))
+        else:
+            sql = (
+                f"INSERT INTO {self._table} (id) VALUES (%s) "
+                "ON CONFLICT (id) DO NOTHING"
+            )
+            params = ("singleton",)
+        self._execute_audited(sql, params, event, audit_sink)
+
     def replace(self, item_id: str, item: dict[str, str]) -> None:
         fields = [field for field in self._fields if field in item]
         if not fields:
