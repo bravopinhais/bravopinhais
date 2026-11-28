@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Request, status
 
 from app.core.authorization import AuthenticatedPrincipal, require_capability_dependency
+from app.core.read_audit import audit_read
 from .schemas import Fornecedor, FornecedorInput
 from .service import FornecedoresService
 
@@ -16,7 +17,9 @@ def list_suppliers(
     request: Request,
     actor: AuthenticatedPrincipal = Depends(require_capability_dependency("fornecedores:read")),
 ) -> list[Fornecedor]:
-    return get_service(request).list()
+    service = get_service(request)
+    audit_read(request, service, actor, "fornecedores:list", "fornecedor")
+    return service.list()
 
 
 @router.post("", response_model=Fornecedor, status_code=status.HTTP_201_CREATED)
