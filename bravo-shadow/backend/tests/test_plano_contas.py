@@ -111,6 +111,29 @@ def test_delete_allowed_only_after_reference_check_returns_false():
     assert service.list() == []
 
 
+
+def test_audited_storage_rejects_mutations_without_authenticated_actor():
+    service = build_service()
+    created = service.create(PlanoContaInput(**payload()))
+    service.audit_sink = object()
+
+    operations = [
+        lambda: service.create(PlanoContaInput(**payload(codigo="2.1"))),
+        lambda: service.update(
+            created.id,
+            PlanoContaInput(**payload(nome="Alteração sem ator")),
+            created.version,
+        ),
+        lambda: service.delete(created.id),
+    ]
+    for operation in operations:
+        with pytest.raises(HTTPException) as error:
+            operation()
+        assert error.value.status_code == 403
+
+    assert service.list() == [created]
+
+
 def test_invalid_type_is_rejected():
     with pytest.raises(ValidationError):
         PlanoContaInput(**payload(tipo="Transferência"))
