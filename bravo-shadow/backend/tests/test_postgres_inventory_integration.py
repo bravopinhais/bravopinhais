@@ -49,10 +49,14 @@ def postgres_inventory_database():
         pytest.skip("PostgreSQL real não configurado; integração opt-in.")
 
     _guard_test_database(DATABASE_URL)
-    ddl = Path(__file__).resolve().parents[2] / "docs" / "sql-piloto-financeiro.sql"
+    migration_dir = Path(__file__).resolve().parents[2] / "supabase" / "migrations"
+    migrations = sorted(migration_dir.glob("*.sql"))
+    if len(migrations) != 6:
+        raise RuntimeError(f"Esperadas 6 migrations versionadas; encontradas {len(migrations)}.")
 
-    # Os papéis padrão só são preparados dentro do banco local descartável,
-    # para que os REVOKE do rascunho SQL possam ser avaliados.
+    # Os papéis padrão e o schema são preparados somente no banco local
+    # descartável. Reaplicar todas as migrations recria também audit_events,
+    # removida pelo DROP SCHEMA, para testar o contrato real de auditoria.
     with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
         for role in ("anon", "authenticated", "service_role"):
             exists = connection.execute(
@@ -61,7 +65,8 @@ def postgres_inventory_database():
             if exists is None:
                 connection.execute(f'CREATE ROLE "{role}" NOLOGIN')
         connection.execute("DROP SCHEMA IF EXISTS bravo_shadow CASCADE")
-        connection.execute(ddl.read_text(encoding="utf-8"), prepare=False)
+        for migration in migrations:
+            connection.execute(migration.read_text(encoding="utf-8"), prepare=False)
 
     try:
         yield DATABASE_URL
