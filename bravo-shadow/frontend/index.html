@@ -46,11 +46,11 @@
   <header class="topbar"><div class="crumb">Bravo <span aria-hidden="true">/</span> <strong id="breadcrumb">Dashboard</strong></div><div class="top-actions"><div id="bravo-auth-root" class="api-toolbar" style="margin:0;gap:8px" aria-label="Autenticação do ambiente Shadow"><span class="api-status" role="status">Autenticação não configurada</span></div><div class="env"><span class="dot"></span> AMBIENTE SOMBRA</div><div class="avatar" aria-label="Ambiente de desenvolvimento">BS</div></div></header>
   <div class="content">
     <div class="page-head"><div><div class="eyebrow">Plataforma integrada de gestão</div><h1 id="page-title" tabindex="-1">Visão geral</h1><p id="page-subtitle">Uma nova fundação para o Bravo, preservando sua identidade e preparando a próxima evolução.</p></div><div class="version">BUILD <b>0.1.0 · SHADOW</b></div></div>
-    <section class="notice" aria-label="Aviso do ambiente"><div class="notice-icon">✦</div><div><strong>Ambiente de desenvolvimento — dados reais ainda não conectados</strong><p>Esta interface é a primeira estrutura navegável da versão sombra. Os indicadores e módulos ainda não executam operações de negócio. O ambiente permanece isolado do banco de produção.</p></div></section>
+    <section class="notice" aria-label="Aviso do ambiente"><div class="notice-icon">✦</div><div><strong>Ambiente de desenvolvimento — dados reais ainda não conectados</strong><p>A interface Shadow já contém módulos conectados à API e outros ainda em preparação. A disponibilidade depende de uma API Shadow própria, autenticação Google e permissões válidas. Nenhum dado de produção é utilizado.</p></div></section>
     <div id="view" aria-live="polite" aria-atomic="true">
       <section class="panel dashboard-gate" aria-labelledby="dashboard-api-title">
         <div class="dashboard-gate-head"><div><div class="eyebrow">Dashboard · API protegida</div><h2 id="dashboard-api-title">Indicadores aguardando autenticação</h2></div><span class="tag">Sem dados fictícios</span></div>
-        <p>O resumo do Dashboard já existe na API sombra em <code>/api/v1/dashboard/resumo</code> e exige a capacidade <strong>dashboard:read</strong>. A interface ainda não recebe o ID token da autenticação Google para enviar no cabeçalho Bearer.</p>
+        <p>O Dashboard consulta <code>GET /api/v1/dashboard/resumo</code> por meio do cliente autenticado do Bravo Shadow. A consulta exige <strong>dashboard:read</strong>; sem API Shadow configurada, sessão válida ou capacidade, os indicadores permanecem indisponíveis.</p>
         <div class="metrics dashboard-metrics" aria-label="Indicadores indisponíveis">
           <article class="metric"><div class="metric-label">Títulos a receber</div><div class="metric-value">—</div><div class="metric-foot">Aguardando sessão autorizada</div></article>
           <article class="metric"><div class="metric-label">Títulos a pagar</div><div class="metric-value">—</div><div class="metric-foot">Aguardando sessão autorizada</div></article>
@@ -77,7 +77,7 @@
         <button class="module-card" data-module="configuracoes"><span class="card-icon">⚙</span><strong>Configurações</strong><small>Módulos, preferências e administração</small></button>
       </div>
       <div class="section-head"><h2>Fundação da nova arquitetura</h2><span>Visão técnica</span></div>
-      <div class="panel"><strong style="font-size:13px">Frontend unificado → API FastAPI → serviços de domínio → camada de persistência</strong><p>A conexão dos indicadores será concluída junto da integração segura da sessão Google no navegador e da aprovação da matriz de permissões. Até lá, os dados permanecem indisponíveis na interface.</p></div>
+      <div class="panel"><strong style="font-size:13px">Frontend unificado → API FastAPI → serviços de domínio → camada de persistência</strong><p>A camada visual, a API FastAPI e a persistência PostgreSQL são componentes separados. O login e os indicadores só funcionam quando a API Shadow estiver hospedada e configurada na mesma origem HTTPS da interface, com permissões internas válidas.</p></div>
     </div>
     <footer class="footer"><span>BRAVO SHADOW · Ambiente de evolução independente</span><span>Original preservado · Sem acesso à produção</span></footer>
   </div>
