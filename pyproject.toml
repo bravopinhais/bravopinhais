@@ -1,0 +1,3 @@
+[tool.vercel]
+# Entry point explícito: o app exportado está no main.py da raiz.
+entrypoint = "main:app"
