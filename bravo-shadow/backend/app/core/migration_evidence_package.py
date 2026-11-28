@@ -151,7 +151,7 @@ def read_evidence_package(
 
     _exact_keys(parsed, _TOP_LEVEL, "package_fields_invalid")
     version = parsed["packageFormatVersion"]
-    if isinstance(version, bool) or version != PACKAGE_FORMAT_VERSION:
+    if isinstance(version, bool) or not isinstance(version, int) or version != PACKAGE_FORMAT_VERSION:
         raise EvidencePackageError("package_version_unsupported")
     if parsed["packageType"] != PACKAGE_TYPE:
         raise EvidencePackageError("package_type_unsupported")
