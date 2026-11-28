@@ -103,6 +103,15 @@ class PostgresReviewLedgerStore:
 
         with PostgresUnitOfWork(self._connection_factory) as uow:
             connection = uow.connection
+            # Serialize snapshot preparation without granting UPDATE on the
+            # immutable batch table (SELECT ... FOR UPDATE would require it).
+            cursor = self._run(
+                connection,
+                "SELECT pg_catalog.pg_advisory_xact_lock(%s)",
+                (self._APPEND_LOCK_KEY,),
+            )
+            self._close_cursor(cursor)
+
             cursor = self._run(
                 connection,
                 """
@@ -121,7 +130,6 @@ class PostgresReviewLedgerStore:
                 SELECT manifest_hash
                 FROM bravo_shadow.migration_review_batches
                 WHERE batch_key = %s
-                FOR UPDATE
                 """,
                 (register.batch_id,),
             )
