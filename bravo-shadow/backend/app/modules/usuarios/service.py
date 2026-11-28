@@ -85,7 +85,7 @@ class UsuariosService:
             id=f"usr_shadow_{uuid4().hex}",
             **data.model_dump(), perfil="Operador", status="Ativo",
         )
-        if actor is not None:
+        if actor is not None and self.audit_sink is not None:
             if not isinstance(actor, AuthenticatedPrincipal) or actor.account_status != "Ativo" or actor.profile != "Admin" or not actor.subject.strip():
                 raise HTTPException(status_code=403, detail="Somente Admin autenticado pode criar usuários.")
             operation = getattr(self.repository, "add_audited", None)
