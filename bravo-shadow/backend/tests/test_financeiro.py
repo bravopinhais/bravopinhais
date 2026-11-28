@@ -15,10 +15,18 @@ from app.core.repositories import InMemoryCollectionRepository
 class _TestAuditSink:
     """Auditoria efêmera de teste; não representa persistência PostgreSQL."""
 
-    def __init__(self):
+    def __init__(self, *, fail=False):
         self.events = []
+        self.fail = fail
+
+    def append(self, event):
+        if self.fail:
+            raise RuntimeError("audit storage unavailable")
+        self.events.append(event)
 
     def append_in_transaction(self, connection, event):
+        if self.fail:
+            raise RuntimeError("audit storage unavailable")
         self.events.append(event)
 
 
@@ -283,3 +291,26 @@ def test_plan_account_reference_uses_repository_optimized_checker():
     assert service.has_plan_account_reference("pc_other") is False
     assert calls == ["pc_fast", "pc_other"]
     del service.repository.has_plan_account_reference
+
+
+def test_financial_list_read_is_audited_without_financial_payload():
+    service = app.state.services.financeiro
+    service.audit_sink.events.clear()
+    response = client.get("/api/v1/financeiro")
+    assert response.status_code == 200
+    assert len(service.audit_sink.events) == 1
+    event = service.audit_sink.events[0]
+    assert event.actor_subject == "google-test-subject"
+    assert event.action == "financeiro:list"
+    assert event.entity_type == "financeiro"
+    assert event.entity_id is None
+    assert event.outcome == "success"
+    assert event.request_id
+
+
+def test_financial_list_fails_closed_when_audit_storage_is_unavailable():
+    service = app.state.services.financeiro
+    service.audit_sink = _TestAuditSink(fail=True)
+    response = client.get("/api/v1/financeiro")
+    assert response.status_code == 503
+    assert "audit storage unavailable" not in response.text
