@@ -109,4 +109,14 @@ Não executar `supabase link`, `db push`, `--remote` ou qualquer comando contra 
 
 ## 8. Estado atual
 
-Esta especificação é apenas documentação. Nenhuma policy foi criada, nenhum grant foi aplicado, nenhuma role foi criada e nenhum teste PostgreSQL foi executado. O SQL continua rascunho; o banco permanece desconectado.
+Esta especificação continua sendo apenas documentação. Nenhuma policy foi criada e nenhum grant foi concedido à aplicação. O banco permanece desconectado e não houve importação de dados.
+
+**Homologação PostgreSQL descartável do vínculo Google:** concluída com sucesso na execução CI `46147967637`, commit `94fefd65ef49464e3b72e407acb393b09c2fea09`. Os testes cobrem:
+- FK para conta Bravo existente;
+- rejeição de issuer, subject, e-mail verificado e ator administrativo inválidos;
+- unicidade de uma identidade por conta e de uma conta por identidade Google;
+- concorrência de duas conexões tentando registrar o mesmo issuer/subject;
+- RLS habilitada e forçada;
+- ausência de privilégios SELECT/INSERT/UPDATE/DELETE para `anon`, `authenticated` e `service_role`.
+
+**Limite da evidência:** os testes de privilégio consultam `has_table_privilege` e metadados do catálogo; ainda não executam sessões autenticadas separadamente como cada role nem validam o comportamento de policies runtime. A matriz completa descrita nesta especificação continua pendente. O vínculo Google ainda não é consumido pelo fluxo de autenticação, que permanece baseado no e-mail verificado e no cadastro interno ativo.
