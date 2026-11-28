@@ -236,8 +236,12 @@ def test_postgres_cadastral_update_never_writes_profile_or_status():
 
     updated = repository.update_cadastral("usr_1", nome="Nome atualizado")
 
-    sql, params = connection.calls[0]
-    normalized_sql = " ".join(sql.lower().split())
+    lock_sql, lock_params = connection.calls[0]
+    update_sql, params = connection.calls[1]
+    normalized_lock = " ".join(lock_sql.lower().split())
+    normalized_sql = " ".join(update_sql.lower().split())
+    assert normalized_lock == "lock table bravo_shadow.usuarios in share row exclusive mode"
+    assert lock_params == ()
     assert "set nome = %s" in normalized_sql
     assert "perfil =" not in normalized_sql
     assert "status =" not in normalized_sql
