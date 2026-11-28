@@ -216,3 +216,71 @@ def read_evidence_package(
         pending_decision_count=register.pending_count,
         issue_codes=(),
     )
+
+
+def _identity_payload(identity: SourceIdentity) -> dict[str, str]:
+    if not isinstance(identity, SourceIdentity):
+        raise EvidencePackageError("identity_type_invalid")
+    return {
+        "sourceSystem": identity.source_system,
+        "sourceCollection": identity.source_collection,
+        "legacyId": identity.legacy_id,
+    }
+
+
+def serialize_evidence_package(
+    source_envelope: dict[str, Any],
+    candidates: tuple[DryRunCandidate, ...],
+    *,
+    source_envelope_raw_sha256: str,
+    already_known_sources: tuple[SourceIdentity, ...] = (),
+    manifest_context: dict[str, str],
+) -> bytes:
+    """Create canonical package bytes and validate the complete round trip.
+
+    The caller supplies the digest of the original envelope bytes. This
+    serializer records that provenance claim but cannot independently verify
+    it unless those original bytes are retained by the caller.
+    """
+    if not isinstance(source_envelope, dict):
+        raise EvidencePackageError("source_envelope_type_invalid")
+    _sha256(source_envelope_raw_sha256, "source_envelope_raw_hash_invalid")
+    if not isinstance(candidates, tuple) or any(
+        not isinstance(item, DryRunCandidate) for item in candidates
+    ):
+        raise EvidencePackageError("candidate_inventory_invalid")
+    if not isinstance(already_known_sources, tuple):
+        raise EvidencePackageError("known_identity_inventory_invalid")
+    if not isinstance(manifest_context, dict):
+        raise EvidencePackageError("manifest_context_invalid")
+    _exact_keys(manifest_context, _CONTEXT_FIELDS, "manifest_context_invalid")
+
+    serialized_candidates: list[dict[str, Any]] = []
+    for item in candidates:
+        mapping = item.existing_mapping
+        serialized_candidates.append({
+            "identity": _identity_payload(item.identity),
+            "sourceRecordHash": item.source_record_hash,
+            "destinationIdExists": item.destination_id_exists,
+            "existingMapping": None if mapping is None else {
+                "sourceRecordHash": mapping.source_record_hash,
+                "destinationId": mapping.destination_id,
+            },
+            "references": [_identity_payload(reference) for reference in item.references],
+        })
+
+    payload = {
+        "packageFormatVersion": PACKAGE_FORMAT_VERSION,
+        "packageType": PACKAGE_TYPE,
+        "sourceEnvelope": source_envelope,
+        "sourceEnvelopeRawSha256": source_envelope_raw_sha256,
+        "candidates": serialized_candidates,
+        "alreadyKnownSources": [
+            _identity_payload(identity) for identity in already_known_sources
+        ],
+        "manifestContext": manifest_context,
+    }
+    payload["packageSha256"] = hashlib.sha256(_canonical(payload)).hexdigest()
+    raw = _canonical(payload)
+    read_evidence_package(raw)
+    return raw
