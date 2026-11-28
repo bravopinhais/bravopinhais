@@ -270,6 +270,39 @@ class PostgresDocumentosRepository(_CatalogRepository):
         if not changed:
             raise HTTPException(status_code=404, detail="Documento não encontrado.")
 
+    def add_audited(self, item_id: str, item: Documento, event, audit_sink) -> None:
+        try:
+            self._execute_audited(
+                f"INSERT INTO {self._table} "
+                "(id, pasta, categoria_id, titulo, nome_arquivo, arquivo_compactado_gzip) "
+                "VALUES (%s, %s, %s, %s, %s, %s)",
+                (item_id, *self._values(item)), event, audit_sink,
+            )
+        except Exception as exc:
+            if self._sqlstate(exc) == "23503":
+                raise HTTPException(status_code=409, detail="A categoria informada não existe.") from exc
+            raise
+
+    def replace_audited(self, item_id: str, item: Documento, event, audit_sink) -> None:
+        try:
+            self._execute_audited(
+                f"UPDATE {self._table} SET pasta = %s, categoria_id = %s, "
+                "titulo = %s, nome_arquivo = %s, arquivo_compactado_gzip = %s, "
+                "updated_at = now(), version = version + 1 WHERE id = %s",
+                (*self._values(item), item_id), event, audit_sink,
+                missing_detail="Documento não encontrado.",
+            )
+        except Exception as exc:
+            if self._sqlstate(exc) == "23503":
+                raise HTTPException(status_code=409, detail="A categoria informada não existe.") from exc
+            raise
+
+    def delete_audited(self, item_id: str, event, audit_sink) -> None:
+        self._execute_audited(
+            f"DELETE FROM {self._table} WHERE id = %s", (item_id,),
+            event, audit_sink, missing_detail="Documento não encontrado.",
+        )
+
     def delete(self, item_id: str) -> None:
         self._delete(
             self._table, item_id, "Documento não encontrado.",
