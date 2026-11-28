@@ -5,6 +5,7 @@ from typing import Any
 
 from fastapi import HTTPException
 
+from app.core.audit import AuditEvent
 from app.core.postgres import PostgresUnitOfWork
 from app.modules.condominio.schemas import Condominio
 from app.modules.conselheiros.schemas import Conselheiro
@@ -13,6 +14,23 @@ from app.modules.conselheiros.schemas import Conselheiro
 class _GovernanceRepository:
     def __init__(self, connection_factory: Callable[[], Any]) -> None:
         self._uow = PostgresUnitOfWork(connection_factory)
+
+    def _execute_audited(self, sql: str, params: tuple[Any, ...], event: AuditEvent, audit_sink, *, missing_detail: str | None = None) -> None:
+        append = getattr(audit_sink, "append_in_transaction", None)
+        if not callable(append):
+            raise HTTPException(status_code=503, detail="Auditoria transacional indisponível.")
+        with self._uow as uow:
+            connection = uow.connection
+            if connection is None:
+                raise RuntimeError("A conexão PostgreSQL não foi aberta.")
+            cursor = connection.cursor()
+            try:
+                cursor.execute(sql, params)
+                if missing_detail is not None and cursor.rowcount == 0:
+                    raise HTTPException(status_code=404, detail=missing_detail)
+                append(connection, event)
+            finally:
+                cursor.close()
 
     def _query(self, sql: str, params: tuple[Any, ...] = (), *, fetch: str = "none"):
         with self._uow as uow:
@@ -114,6 +132,28 @@ class PostgresConselheirosRepository(_GovernanceRepository):
         )
         if not changed:
             raise HTTPException(status_code=404, detail="Conselheiro não encontrado.")
+
+    def add_audited(self, item_id: str, item: Conselheiro, event: AuditEvent, audit_sink) -> None:
+        self._execute_audited(
+            f"INSERT INTO {self._table} (id, nome, cargo, \"BlocoAp\", telefone) "
+            "VALUES (%s, %s, %s, %s, %s)",
+            (item_id, item.nome, item.cargo, item.BlocoAp, item.telefone),
+            event, audit_sink,
+        )
+
+    def replace_audited(self, item_id: str, item: Conselheiro, event: AuditEvent, audit_sink) -> None:
+        self._execute_audited(
+            f"UPDATE {self._table} SET nome = %s, cargo = %s, \"BlocoAp\" = %s, "
+            "telefone = %s, updated_at = now(), version = version + 1 WHERE id = %s",
+            (item.nome, item.cargo, item.BlocoAp, item.telefone, item_id),
+            event, audit_sink, missing_detail="Conselheiro não encontrado.",
+        )
+
+    def delete_audited(self, item_id: str, event: AuditEvent, audit_sink) -> None:
+        self._execute_audited(
+            f"DELETE FROM {self._table} WHERE id = %s", (item_id,),
+            event, audit_sink, missing_detail="Conselheiro não encontrado.",
+        )
 
     def delete(self, item_id: str) -> None:
         changed = self._query(f"DELETE FROM {self._table} WHERE id = %s", (item_id,))
