@@ -30,23 +30,22 @@ def test_all_formas_monetarias_routes_require_authentication():
     assert client.delete("/api/v1/formas-monetarias/1").status_code == 401
 
 
-def test_admin_is_denied_all_formas_monetarias_actions_until_matrix_approval():
+
+def test_admin_has_full_formas_monetarias_access():
     client = build_client("Admin")
-    assert client.get("/api/v1/formas-monetarias").status_code == 403
-    assert client.post("/api/v1/formas-monetarias", json={"nome": "Boleto"}).status_code == 403
-    assert client.put("/api/v1/formas-monetarias/1", json={"nome": "PIX"}).status_code == 403
-    assert client.delete("/api/v1/formas-monetarias/1").status_code == 403
+    assert client.get("/api/v1/formas-monetarias").status_code == 200
+    created = client.post("/api/v1/formas-monetarias", json={"nome": "Boleto"})
+    assert created.status_code == 201
+    item_id = created.json()["id"]
+    assert client.put(f"/api/v1/formas-monetarias/{item_id}", json={"nome": "PIX"}).status_code == 200
+    assert client.delete(f"/api/v1/formas-monetarias/{item_id}").status_code == 204
 
-
-def test_operator_is_denied_all_formas_monetarias_actions_until_matrix_approval():
+def test_operator_has_read_only_formas_monetarias_access():
     client = build_client("Operador")
-    assert client.get("/api/v1/formas-monetarias").status_code == 403
+    assert client.get("/api/v1/formas-monetarias").status_code == 200
     assert client.post("/api/v1/formas-monetarias", json={"nome": "Boleto"}).status_code == 403
-    assert client.put("/api/v1/formas-monetarias/1", json={"nome": "PIX"}).status_code == 403
-    assert client.delete("/api/v1/formas-monetarias/1").status_code == 403
-
-
-@pytest.mark.parametrize("multa_pct", [0, 2, 2.01, 100])
+    assert client.put("/api/v1/formas-monetarias/missing", json={"nome": "PIX"}).status_code == 403
+    assert client.delete("/api/v1/formas-monetarias/missing").status_code == 403
 def test_forma_monetaria_accepts_multa_within_range(multa_pct):
     data = FormaMonetariaInput(nome="PIX", multaPct=multa_pct)
     assert data.multaPct == multa_pct

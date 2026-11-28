@@ -30,19 +30,17 @@ def test_all_empregados_routes_require_authentication():
         assert client.request(method, path, json=payload).status_code == 401
 
 
-def test_both_profiles_are_denied_until_capability_matrix_approval():
-    requests = [
-        ("GET", "/api/v1/empregados", None),
-        ("POST", "/api/v1/empregados", {"nome": "Maria Exemplo", "cargo": "Zeladora", "telefone": "41999990000", "contatoEmergenciaNome": "João", "contatoEmergenciaTel": "41988887777"}),
-        ("PUT", "/api/v1/empregados/id-teste", {"nome": "Maria Exemplo", "cargo": "Zeladora", "telefone": "41999990000", "contatoEmergenciaNome": "João", "contatoEmergenciaTel": "41988887777"}),
-        ("DELETE", "/api/v1/empregados/id-teste", None),
-    ]
+
+def test_both_profiles_have_approved_employee_crud_capabilities():
+    payload = {"nome": "Maria Exemplo", "cargo": "Zeladora", "telefone": "41999990000", "contatoEmergenciaNome": "João", "contatoEmergenciaTel": "41988887777"}
     for profile in ("Admin", "Operador"):
         client = build_client(profile)
-        for method, path, payload in requests:
-            assert client.request(method, path, json=payload).status_code == 403
-
-
+        assert client.get("/api/v1/empregados").status_code == 200
+        created = client.post("/api/v1/empregados", json=payload)
+        assert created.status_code == 201
+        item_id = created.json()["id"]
+        assert client.put(f"/api/v1/empregados/{item_id}", json=payload).status_code == 200
+        assert client.delete(f"/api/v1/empregados/{item_id}").status_code == 204
 def test_empregados_service_keeps_crud_and_validation_independent_from_http_auth():
     service = EmpregadosService()
     data = EmpregadoInput.model_validate({"nome": "Maria Exemplo", "cargo": "Zeladora", "telefone": "41999990000", "contatoEmergenciaNome": "João", "contatoEmergenciaTel": "41988887777"})

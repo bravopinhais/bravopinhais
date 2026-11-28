@@ -31,20 +31,17 @@ def test_all_resident_routes_require_authentication():
         assert client.request(method, path, json=payload).status_code == 401
 
 
-def test_both_profiles_are_denied_resident_actions_until_matrix_approval():
-    requests = [
-        ("GET", "/api/v1/moradores", None),
-        ("POST", "/api/v1/moradores", {"bloco": "1", "apartamento": "101", "nome": "Ana"}),
-        ("PUT", "/api/v1/moradores/id-teste", {"bloco": "1", "apartamento": "101", "nome": "Ana"}),
-        ("DELETE", "/api/v1/moradores/id-teste", None),
-        ("POST", "/api/v1/moradores/importar", {"moradores": []}),
-    ]
+
+def test_both_profiles_have_approved_resident_crud_capabilities():
+    payload = {"bloco": "1", "apartamento": "101", "nome": "Ana"}
     for profile in ("Admin", "Operador"):
         client = build_client(profile)
-        for method, path, payload in requests:
-            assert client.request(method, path, json=payload).status_code == 403
-
-
+        assert client.get("/api/v1/moradores").status_code == 200
+        created = client.post("/api/v1/moradores", json=payload)
+        assert created.status_code == 201
+        item_id = created.json()["id"]
+        assert client.put(f"/api/v1/moradores/{item_id}", json=payload).status_code == 200
+        assert client.delete(f"/api/v1/moradores/{item_id}").status_code == 204
 def test_resident_service_crud_filters_and_import():
     service = MoradoresService()
     data = MoradorInput(bloco="1", apartamento="101", nome="Ana Maria", email="ana@example.com", telefone="41999990000", cpf="123", petNome="Mimi", vagaGaragem="G12")

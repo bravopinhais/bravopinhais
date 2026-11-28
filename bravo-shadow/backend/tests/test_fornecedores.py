@@ -30,19 +30,17 @@ def test_all_fornecedores_routes_require_authentication():
         assert client.request(method, path, json=payload).status_code == 401
 
 
-def test_both_profiles_are_denied_until_capability_matrix_approval():
-    requests = [
-        ("GET", "/api/v1/fornecedores", None),
-        ("POST", "/api/v1/fornecedores", {"cnpj": "12.345.678/0001-90", "razaoSocial": "Fornecedor Exemplo"}),
-        ("PUT", "/api/v1/fornecedores/id-teste", {"cnpj": "12.345.678/0001-90", "razaoSocial": "Fornecedor Exemplo"}),
-        ("DELETE", "/api/v1/fornecedores/id-teste", None),
-    ]
+
+def test_both_profiles_have_approved_supplier_crud_capabilities():
+    payload = {"cnpj": "12.345.678/0001-90", "razaoSocial": "Fornecedor Exemplo"}
     for profile in ("Admin", "Operador"):
         client = build_client(profile)
-        for method, path, payload in requests:
-            assert client.request(method, path, json=payload).status_code == 403
-
-
+        assert client.get("/api/v1/fornecedores").status_code == 200
+        created = client.post("/api/v1/fornecedores", json=payload)
+        assert created.status_code == 201
+        item_id = created.json()["id"]
+        assert client.put(f"/api/v1/fornecedores/{item_id}", json=payload).status_code == 200
+        assert client.delete(f"/api/v1/fornecedores/{item_id}").status_code == 204
 def test_fornecedores_service_keeps_crud_and_validation_independent_from_http_auth():
     service = FornecedoresService()
     data = FornecedorInput.model_validate({"cnpj": "12.345.678/0001-90", "razaoSocial": "Fornecedor Exemplo"})

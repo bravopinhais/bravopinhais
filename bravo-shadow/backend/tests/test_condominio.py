@@ -23,13 +23,14 @@ def test_condominium_routes_require_authentication():
     assert client.put("/api/v1/condominio", json={"nome":"Residencial"}).status_code == 401
 
 
-def test_admin_and_operator_are_denied_until_capability_matrix_approval():
-    for profile in ("Admin", "Operador"):
-        client = build_client(profile)
-        assert client.get("/api/v1/condominio").status_code == 403
-        assert client.put("/api/v1/condominio", json={"nome":"Residencial"}).status_code == 403
 
-
+def test_condominium_read_is_available_to_both_and_update_is_admin_only():
+    admin = build_client("Admin")
+    operator = build_client("Operador")
+    assert admin.get("/api/v1/condominio").status_code == 200
+    assert operator.get("/api/v1/condominio").status_code == 200
+    assert admin.put("/api/v1/condominio", json={"nome": "Residencial"}).status_code == 200
+    assert operator.put("/api/v1/condominio", json={"nome": "Não autorizado"}).status_code == 403
 def test_condominium_patch_preserves_unedited_fields_and_trims_values():
     service = CondominioService()
     service.update(CondominioPatch(razaoSocial=" Condomínio Exemplo ", cidade=" Curitiba "))

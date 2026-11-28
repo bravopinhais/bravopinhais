@@ -36,20 +36,26 @@ def test_all_user_management_routes_require_authentication():
         assert client.request(method, path, json=payload).status_code == 401
 
 
-def test_both_profiles_are_denied_user_management_until_matrix_approval():
-    requests = [
-        ("GET", "/api/v1/usuarios", None),
-        ("GET", "/api/v1/usuarios/id-teste", None),
-        ("POST", "/api/v1/usuarios", {"email":"novo@example.com", "nome":"Pessoa", "cargo":"Conselho"}),
-        ("PUT", "/api/v1/usuarios/id-teste", {"nome":"Pessoa atualizada"}),
-        ("DELETE", "/api/v1/usuarios/id-teste", None),
-        ("POST", "/api/v1/usuarios/id-teste/desativar", None),
-    ]
-    for profile in ("Admin", "Operador"):
-        client = build_client(profile)
-        for method, path, payload in requests:
-            assert client.request(method, path, json=payload).status_code == 403
 
+def test_user_management_is_admin_only_under_the_approved_matrix():
+    admin = build_client("Admin")
+    operator = build_client("Operador")
+    assert admin.get("/api/v1/usuarios").status_code == 200
+    created = admin.post("/api/v1/usuarios", json={"email": "novo@example.com", "nome": "Pessoa", "cargo": "Conselho"})
+    assert created.status_code == 201
+    item_id = created.json()["id"]
+    assert admin.get(f"/api/v1/usuarios/{item_id}").status_code == 200
+    assert admin.put(f"/api/v1/usuarios/{item_id}", json={"nome": "Pessoa atualizada"}).status_code == 200
+    assert admin.delete(f"/api/v1/usuarios/{item_id}").status_code == 410
+    for method, path, payload in [
+        ("GET", "/api/v1/usuarios", None),
+        ("GET", f"/api/v1/usuarios/{item_id}", None),
+        ("POST", "/api/v1/usuarios", {"email": "outro@example.com", "nome": "Outra", "cargo": "Conselho"}),
+        ("PUT", f"/api/v1/usuarios/{item_id}", {"nome": "Não autorizado"}),
+        ("DELETE", f"/api/v1/usuarios/{item_id}", None),
+        ("POST", f"/api/v1/usuarios/{item_id}/desativar", None),
+    ]:
+        assert operator.request(method, path, json=payload).status_code == 403
 def test_user_service_crud_email_uniqueness_and_status():
     service = UsuariosService()
     data = UsuarioInput(email="  ADMIN@EXAMPLE.COM ", nome="Administrador", cargo="Síndico", perfil="Admin")
