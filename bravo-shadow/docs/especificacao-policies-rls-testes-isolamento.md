@@ -138,4 +138,10 @@ Foi identificado que o adaptador runtime ainda usa `SELECT ... FOR UPDATE` nas t
 
 A chave global é uma escolha conservadora de homologação, não uma decisão de desempenho definitiva. O grant EXECUTE da função de advisory lock deve ser verificado explicitamente no ambiente descartável; não presumir que os privilégios padrão permanecerão iguais após hardening.
 
-**Estado:** análise e diretriz documental apenas. O adaptador, o SQL rascunho, as roles e as policies não foram alterados nem executados.
+**Estado da implementação Shadow:** estratégia aplicada ao adaptador runtime. O método `append` adquire `pg_catalog.pg_advisory_xact_lock` com chave global fixa do subsistema antes das leituras de versão; os SELECTs de batches/decisions não usam `FOR UPDATE`. A chave global serializa todos os appends deste subsistema, escolha conservadora que reduz paralelismo em troca de simplicidade e ausência de colisões de hash.
+
+A restrição `UNIQUE (batch_key, decision_id, version)` e a chave primária de `event_id` permanecem como barreiras de integridade. A role runtime precisa de SELECT nas três tabelas, INSERT somente em events e EXECUTE na função de advisory lock; não precisa de UPDATE nas tabelas de snapshot.
+
+**Homologação CI:** execução `46151275182`, commit `21ddcd8ac757f9d9fdd437e34eb16b4297fcde4a`, concluída com sucesso. Passaram os testes unitários, smoke test Docker e integrações PostgreSQL descartável, incluindo append e load com role de teste separada, RLS forçada, SELECT/INSERT mínimos, ausência de UPDATE em batches/decisions e EXECUTE no advisory lock.
+
+**Limite da evidência:** a homologação usa PostgreSQL local descartável e uma role sintética com policies de teste. Isso não comprova ainda os grants, policies ou comportamento do projeto Supabase hospedado. O SQL de schema continua rascunho e nenhum banco externo foi conectado, alterado ou importado.
