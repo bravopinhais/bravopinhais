@@ -2,7 +2,7 @@
 
 Data da revisão: 2026-11-27  
 Branch-base revisada: `bravo-shadow`  
-HEAD revisado: `44ea258309806df3ac5b5fa06eb04fc938754127`
+HEAD revisado: `d82f5afaf96f16deb0f0fd30a0eb5e4e2e974458`
 
 ## Decisão de execução
 
@@ -17,21 +17,22 @@ O objetivo da próxima entrega é demonstrar, em um único pipeline, que a image
 | Frontend | Aplicação estática unificada, tema Bravo, navegação responsiva e telas de vários módulos | Nem todos os módulos têm fluxo completo conectado; módulos não migrados ainda exibem estrutura inicial |
 | API | FastAPI, rotas para os módulos e cliente HTTP comum | É necessário comprovar os fluxos integrados com o backend real e persistente |
 | Persistência | Driver Psycopg, adaptadores PostgreSQL e seleção explícita por configuração | O modo PostgreSQL conecta vários adaptadores; exige validar schema, permissões, RLS e CRUD em conjunto |
-| Banco | Seis migrations versionadas e script de homologação local | O pipeline atual não aplica as seis migrations antes da inspeção; aplicação real ainda não comprovada |
+| Banco | Seis migrations versionadas; CI agora aplica as seis migrations em PostgreSQL descartável e executa auditoria de catálogo após a aplicação | A execução ainda precisa ser observada em um workflow concluído; homologação local do desenvolvedor não foi realizada |
 | Autenticação | Validação server-side de identidade Google e módulo cliente | Bootstrap do frontend fica desligado sem API HTTPS Shadow validada e origem OAuth/CORS exatas |
-| CI | GitHub Actions constrói o Docker, faz smoke test HTTP e executa pytest com serviço PostgreSQL | O serviço PostgreSQL do job não recebe as migrations; a consulta de catálogo atual é somente leitura |
+| CI | GitHub Actions constrói o Docker, faz smoke test HTTP, aplica migrations em PostgreSQL descartável, audita o catálogo e executa pytest | É necessário acompanhar o resultado do workflow; execução em CI não comprova OAuth, frontend completo nem todos os CRUDs em produção |
 | Preview | GitHub Pages valida/publica arquivos estáticos | Não hospeda FastAPI, banco nem autenticação; não pode ser apresentado como sistema operacional completo |
 | Implantação | Dockerfile e blueprint Render preparados | Nenhum ambiente hospedado foi validado; não publicar nem conectar serviços remotos sem revisão e autorização separadas |
 
 ## Pacote único de trabalho — ordem obrigatória
 
 ### 1. Pipeline integrado de banco e aplicação
-- Construir a imagem do Bravo Shadow.
-- Subir PostgreSQL descartável e aguardar healthcheck.
-- Aplicar, em ordem, as seis migrations da branch, desde banco vazio.
-- Executar a auditoria de catálogo depois da aplicação, não antes.
-- Falhar o pipeline diante de tabela, FK, índice, CHECK, RLS, policy ou privilégio divergente.
-- Descartar o banco ao fim do job.
+- [x] Construir a imagem do Bravo Shadow no job de container.
+- [x] Subir PostgreSQL descartável e aguardar healthcheck no job de backend.
+- [x] Aplicar, em ordem, as seis migrations da branch, desde banco vazio.
+- [x] Executar a auditoria de catálogo depois da aplicação.
+- [x] Executar inspeção SQL de privilégios/RLS somente leitura.
+- [ ] Observar workflow concluído e corrigir eventuais falhas; a configuração do pipeline não equivale a execução bem-sucedida.
+- [ ] Confirmar descarte do banco ao fim do job pelo encerramento do runner efêmero.
 
 ### 2. Teste ponta a ponta da API
 - Iniciar a API com configuração exclusiva de teste.
@@ -79,4 +80,4 @@ Acelerar significa executar verificações complementares no mesmo pipeline e co
 
 ## Limites desta revisão
 
-Esta revisão foi estática, baseada nos arquivos da branch. Não executou Docker, PostgreSQL, migrations, pytest, OAuth ou deploy. Os itens acima são o plano de execução e os critérios de aceite, não resultados de testes já realizados.
+Esta revisão dos arquivos foi estática. O workflow foi atualizado para aplicar as seis migrations no PostgreSQL descartável do GitHub Actions antes da auditoria e também para disparar em pull requests que alterem migrations ou scripts de homologação. Não executei Docker, PostgreSQL, migrations, pytest, OAuth ou deploy nesta sessão. Os itens marcados como concluídos descrevem etapas configuradas no workflow, não resultados de uma execução já observada.
