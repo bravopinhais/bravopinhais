@@ -130,3 +130,30 @@ def test_cadastro_audit_failure_rolls_back_business_mutation(repository_type, it
     assert connection.rollbacks == 1
     assert connection.closes == 1
     assert connection.cursor_instance.closed is True
+
+@pytest.mark.parametrize("repository_type,item,item_id", _cases())
+@pytest.mark.parametrize("operation_name", ["replace_audited", "delete_audited"])
+def test_missing_cadastro_does_not_write_audit_or_commit(repository_type, item, item_id, operation_name):
+    connection = FakeConnection()
+    connection.cursor_instance.rowcount = 0
+    repository = repository_type(lambda: connection)
+    sink = RecordingAuditSink()
+    event = AuditEvent(
+        actor_subject="google-test-subject",
+        action=f"{repository_type.__name__}:{operation_name}",
+        entity_type="cadastro",
+        entity_id=item_id,
+        request_id="request-test",
+    )
+
+    operation = getattr(repository, operation_name)
+    with pytest.raises(Exception, match="não encontrado"):
+        if operation_name == "replace_audited":
+            operation(item_id, item, event, sink)
+        else:
+            operation(item_id, event, sink)
+
+    assert sink.events == []
+    assert connection.commits == 0
+    assert connection.rollbacks == 1
+    assert connection.closes == 1
