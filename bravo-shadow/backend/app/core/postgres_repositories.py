@@ -495,3 +495,59 @@ class PostgresFormasMonetariasRepository(_PostgresRepository):
         if not changed:
             from fastapi import HTTPException
             raise HTTPException(status_code=404, detail="Forma monetária não encontrada.")
+
+    def _audit_ready(self, audit_sink: Any):
+        append = getattr(audit_sink, "append_in_transaction", None)
+        if not callable(append):
+            raise HTTPException(status_code=503, detail="Auditoria transacional indisponível.")
+        return append
+
+    def add_audited(self, item, event: Any, audit_sink: Any) -> None:
+        append = self._audit_ready(audit_sink)
+        with self._uow as uow:
+            connection = uow.connection
+            if connection is None:
+                raise RuntimeError("Conexão PostgreSQL indisponível.")
+            cursor = connection.cursor()
+            try:
+                cursor.execute(
+                    f"INSERT INTO {self._table} (id, nome, multa_pct) VALUES (%s, %s, %s)",
+                    (item.id, item.nome, item.multaPct),
+                )
+                append(connection, event)
+            finally:
+                cursor.close()
+
+    def replace_audited(self, item_id: str, item, event: Any, audit_sink: Any) -> None:
+        append = self._audit_ready(audit_sink)
+        with self._uow as uow:
+            connection = uow.connection
+            if connection is None:
+                raise RuntimeError("Conexão PostgreSQL indisponível.")
+            cursor = connection.cursor()
+            try:
+                cursor.execute(
+                    f"UPDATE {self._table} SET nome = %s, multa_pct = %s, updated_at = now(), "
+                    "version = version + 1 WHERE id = %s",
+                    (item.nome, item.multaPct, item_id),
+                )
+                if cursor.rowcount != 1:
+                    raise HTTPException(status_code=404, detail="Forma monetária não encontrada.")
+                append(connection, event)
+            finally:
+                cursor.close()
+
+    def delete_audited(self, item_id: str, event: Any, audit_sink: Any) -> None:
+        append = self._audit_ready(audit_sink)
+        with self._uow as uow:
+            connection = uow.connection
+            if connection is None:
+                raise RuntimeError("Conexão PostgreSQL indisponível.")
+            cursor = connection.cursor()
+            try:
+                cursor.execute(f"DELETE FROM {self._table} WHERE id = %s", (item_id,))
+                if cursor.rowcount != 1:
+                    raise HTTPException(status_code=404, detail="Forma monetária não encontrada.")
+                append(connection, event)
+            finally:
+                cursor.close()
