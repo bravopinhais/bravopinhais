@@ -110,3 +110,17 @@ Na mesma branch, os catálogos auxiliares de categorias e motivos passaram a gra
 - Os métodos genéricos de escrita permanecem bloqueados no composition root; somente os métodos auditados são usados pelos serviços.
 
 Foram acrescentados testes de contrato de serviço, mesma conexão, rollback em falha de auditoria e exclusão de registro inexistente. A validação automatizada completa continua pendente; não considerar este módulo homologado até o CI confirmar.
+
+
+## Atualização técnica adicional — documentos
+
+O módulo Documentos também recebeu contratos de escrita auditada para criação, atualização e exclusão:
+
+- Cada operação de negócio e seu evento de auditoria são executados na mesma unidade de trabalho PostgreSQL.
+- Falha ao gravar auditoria reverte a operação documental.
+- As rotas passam a encaminhar principal Google ativo e request ID.
+- O vínculo opcional com categoria continua protegido por FK; categoria inexistente é conflito e não gera documento.
+- O serviço persistente falha de forma fechada se faltar ator, request ID, sink ou método auditado.
+- Os testes adicionados cobrem contrato de serviço e rollback de criação, atualização e exclusão em adaptador PostgreSQL controlado.
+
+Esta implementação ainda aguarda o workflow integrado. Não significa homologação, publicação ou autorização de importação.
