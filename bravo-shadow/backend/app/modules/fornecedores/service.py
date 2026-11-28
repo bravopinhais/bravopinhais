@@ -12,10 +12,11 @@ class FornecedoresService:
     def __init__(
         self,
         repository: CollectionRepository[Fornecedor, str] | None = None,
+        audit_sink=None,
     ) -> None:
         self.repository = repository if repository is not None else InMemoryCollectionRepository()
         self._items = getattr(self.repository, "_items", {})
-        self.audit_sink = None
+        self.audit_sink = audit_sink
 
     def _require_audited_write(self, actor: AuthenticatedPrincipal | None) -> None:
         if self.audit_sink is None:
