@@ -109,3 +109,9 @@ As rotas de criação e atualização cadastral agora encaminham ator interno e 
 ### Moradores, Fornecedores e Empregados — bloqueio preventivo de gravações
 
 As rotas passaram a encaminhar identidade interna e request ID aos serviços, e o composition root injeta o sink de auditoria. Como os repositórios PostgreSQL desses três módulos ainda não possuem operações de escrita auditadas no mesmo contrato transacional, as mutações no modo persistente agora falham fechadas com HTTP 503, em vez de gravar sem trilha de auditoria. Leituras continuam disponíveis; o modo memória isolado mantém seu comportamento de desenvolvimento. A implementação transacional de escrita e os testes integrados continuam pendentes. Nenhum dado real foi importado.
+
+### Moradores, Fornecedores e Empregados — auditoria transacional
+
+As mutações individuais de moradores, fornecedores e empregados passaram a usar contratos `add_audited`, `replace_audited` e `delete_audited` nos repositórios PostgreSQL. Cada operação executa a escrita de negócio e o append do evento de auditoria na mesma unidade de trabalho/conexão; falha no append provoca rollback. Os serviços exigem principal interno ativo quando o sink persistente está configurado e falham de forma fechada se o contrato auditado não estiver disponível. A atualização e a exclusão verificam a quantidade de linhas afetadas dentro da transação, sem depender de uma leitura prévia separada.
+
+A importação em lote de moradores permanece bloqueada no modo PostgreSQL até existir um contrato transacional próprio para o lote inteiro. Os testes de integração com PostgreSQL descartável e a execução CI deste commit ainda precisam ser observados; a implementação não equivale a homologação aprovada.
