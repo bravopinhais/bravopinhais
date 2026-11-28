@@ -151,7 +151,7 @@ def build_storage_services(
         has_financial_references=financeiro.has_plan_account_reference,
         audit_sink=audit_sink,
     )
-    formas_monetarias = FormasMonetariasService(repository=formas_repository)
+    formas_monetarias = FormasMonetariasService(repository=formas_repository, audit_sink=audit_sink)
 
     estoque = EstoqueService(repository=estoque_repository)
     categorias = CategoriasService(repository=categorias_repository)
@@ -174,7 +174,7 @@ def build_storage_services(
     moradores = MoradoresService(repository=moradores_repository)
     fornecedores = FornecedoresService(repository=fornecedores_repository)
     empregados = EmpregadosService(repository=empregados_repository)
-    contas_bancarias = ContasBancariasService(repository=contas_bancarias_repository)
+    contas_bancarias = ContasBancariasService(repository=contas_bancarias_repository, audit_sink=audit_sink)
     condominio = CondominioService(repository=condominio_repository)
     conselheiros = ConselheirosService(repository=conselheiros_repository)
     usuarios = UsuariosService(repository=usuarios_repository, audit_sink=audit_sink)
