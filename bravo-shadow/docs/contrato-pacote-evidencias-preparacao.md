@@ -24,7 +24,7 @@ Objeto JSON UTF-8 com exatamente estas chaves:
 - `packageFormatVersion`: inteiro JSON igual a `1` (booleano não é inteiro válido);
 - `packageType`: texto literal `bravo-migration-evidence`;
 - `sourceEnvelope`: objeto original do envelope, preservado sem coerção;
-- `sourceEnvelopeRawSha256`: SHA-256 hexadecimal minúsculo dos bytes originais do envelope, quando o pacote for produzido a partir de arquivo;
+- `sourceEnvelopeRawSha256`: SHA-256 hexadecimal minúsculo declarado dos bytes originais do envelope, quando o pacote for produzido a partir de arquivo. É metadado de proveniência, não verificável contra o objeto `sourceEnvelope` sem os bytes originais;
 - `candidates`: lista ordenada de candidatos tipados;
 - `alreadyKnownSources`: lista ordenada de identidades previamente conhecidas, explicitamente fornecidas como evidência;
 - `manifestContext`: exatamente `environment`, `importerVersion`, `mappingVersion` e `createdAt`;
@@ -58,11 +58,11 @@ As listas de candidatos e identidades conhecidas preservam a ordem recebida. Dup
 - Não aceitar caminhos, URLs, nomes de módulos, nomes de funções, pickles, objetos Python serializados, referências externas ou callbacks.
 - Não aceitar credenciais, tokens, cookies, segredos, strings de conexão ou dados pessoais reais.
 
-O hash do arquivo bruto do envelope e o `snapshotHash` interno são evidências distintas. O leitor existente deliberadamente não presume que sejam equivalentes. Também não se deve recalcular o `snapshotHash` a partir dos candidatos até que o contrato oficial do exportador defina formalmente o mesmo algoritmo e escopo.
+O hash do arquivo bruto do envelope, o `snapshotHash` interno e o hash do pacote são evidências distintas. O hash do pacote protege a integridade do campo `sourceEnvelopeRawSha256`, mas não prova que esse digest corresponde ao objeto `sourceEnvelope` embutido: para essa comprovação seria necessário incluir e conferir os bytes originais do envelope. O leitor valida o formato do digest declarado, sem afirmar que o verificou. O leitor existente deliberadamente não presume que o hash bruto e `snapshotHash` sejam equivalentes. Também não se deve recalcular o `snapshotHash` a partir dos candidatos até que o contrato oficial do exportador defina formalmente o mesmo algoritmo e escopo.
 
 ## 5. Reconstrução e verificações obrigatórias
 
-A rotina futura de leitura deve:
+A rotina de leitura deve:
 
 1. decodificar o pacote com UTF-8 estrito, rejeitar chaves JSON duplicadas, números não finitos e excesso de tamanho;
 2. validar o esquema externo e todos os subobjetos com igualdade exata de chaves;
@@ -71,7 +71,7 @@ A rotina futura de leitura deve:
 5. reconstruir `SourceIdentity`, `ExistingSourceMapping` e `DryRunCandidate` sem coerção;
 6. executar `run_migration_preflight` usando somente as identidades conhecidas incluídas no pacote;
 7. reconstruir `PreflightReport` com `build_preflight_report`;
-8. reconstruir `MigrationManifest` com o contexto versionado e conferir com `verify_manifest_against_batch`;
+8. reconstruir `MigrationManifest` com o contexto versionado e conferir a cadeia com `verify_manifest_against_batch`;
 9. reconstruir `DecisionRegister` com `build_decision_register` e conferir com `verify_decision_register_against_batch`;
 10. retornar um resultado de validação imutável, contendo hashes, contagens e códigos de erro — sem expor payloads de origem desnecessariamente.
 
@@ -87,7 +87,7 @@ A validação do pacote não importa nem instancia a fábrica de conexão de mig
 
 - versão externa desconhecida, campo ausente e campo extra;
 - chave JSON duplicada, UTF-8 inválido, JSON truncado, NaN/Infinity e arquivo acima do limite;
-- hash externo ou hash de arquivo divergente;
+- hash do pacote divergente; digest bruto declarado malformado; se os bytes originais forem incluídos numa revisão futura, digest bruto divergente;
 - identidade/candidato com tipo incorreto, hash malformado ou booleano no lugar de inteiro;
 - referência e mapeamento malformados;
 - candidato duplicado, faltante, inesperado ou de outro sistema de origem;
@@ -98,4 +98,4 @@ A validação do pacote não importa nem instancia a fábrica de conexão de mig
 
 ## 8. Gate para evolução
 
-A implementação do leitor só começa depois que os testes de reconstrução cobrirem toda a cadeia. A CLI manual continua bloqueada até existir pacote validado e um fluxo separado que exija ambiente Shadow descartável, apresente lote/hash/contagens para revisão e solicite confirmação explícita antes de qualquer conexão. Este contrato, isoladamente, não libera importação, não declara o banco pronto e não altera a versão principal.
+O leitor inicial já foi implementado em `backend/app/core/migration_evidence_package.py`; sua cobertura de testes ainda precisa ser ampliada para todos os casos desta especificação. A CLI manual continua bloqueada até existir pacote validado e um fluxo separado que exija ambiente Shadow descartável, apresente lote/hash/contagens para revisão e solicite confirmação explícita antes de qualquer conexão. Este contrato, isoladamente, não libera importação, não declara o banco pronto e não altera a versão principal.
