@@ -89,11 +89,12 @@ Além da matriz:
 
 O adaptador atual foi escrito para um contrato de schema no qual `initialize` insere batches e decisions. Com a matriz de privilégios acima, runtime não poderá chamar `initialize`.
 
-Antes de ligar o adaptador à API, separar claramente:
-- adaptador/serviço de preparação, executado com credencial de migration controlada;
-- adaptador de leitura e append de eventos, executado com credencial runtime.
+A separação foi implementada:
+- `PostgresReviewSnapshotInitializer` executa a preparação com connection factory própria;
+- `PostgresReviewRuntimeStore` expõe somente leitura e append, com connection factory independente;
+- a camada runtime não expõe `initialize` e não possui fallback para memória.
 
-Não reutilizar uma única connection factory privilegiada para ambos os contextos. Adicionar testes que confirmem que a camada runtime não expõe `initialize` e que falhas de privilégio são propagadas sem fallback para memória.
+Os testes de integração agora autenticam uma sessão PostgreSQL independente como role runtime de teste (LOGIN próprio), em vez de depender apenas de `SET ROLE` numa sessão administrativa. A validação continua restrita ao PostgreSQL descartável.
 
 ## 7. Portões de liberação
 
@@ -102,8 +103,8 @@ Não produzir DDL final até:
 - confirmar modelo real de roles no PostgreSQL/Supabase local;
 - confirmar como a role de migration será isolada;
 - ajustar o adaptador para separar preparação de runtime;
-- criar testes de integração com roles reais;
-- revisar SQL, policies e grants em conjunto.
+- revisar SQL, policies e grants em conjunto no ambiente local/Supabase antes de qualquer conexão externa;
+- confirmar separadamente a configuração de roles do projeto hospedado, sem executar alterações remotas nesta fase.
 
 Não executar `supabase link`, `db push`, `--remote` ou qualquer comando contra projeto hospedado. Nenhum dado legado deve ser lido ou importado nesta fase.
 
@@ -134,6 +135,6 @@ O uso de `SELECT ... FOR UPDATE` no caminho runtime foi removido porque exigiria
 - A role runtime precisa de SELECT nas três tabelas, INSERT somente em events e EXECUTE na função de advisory lock. Não precisa de UPDATE nas tabelas de snapshot.
 - Permanecem as barreiras `UNIQUE (batch_key, decision_id, version)` e `PRIMARY KEY (event_id)`.
 
-**Testes CI:** execução `46151275182`, commit `21ddcd8ac757f9d9fdd437e34eb16b4297fcde4a`, concluída com sucesso. Passaram testes unitários, smoke test Docker e integrações PostgreSQL descartável. A integração cria uma role sintética separada, força RLS, concede SELECT/INSERT mínimos, confirma ausência de UPDATE em batches/decisions e verifica EXECUTE no advisory lock; o append e o load funcionam com essa role. Também permanecem aprovados os testes concorrentes de mesma versão, gravações em decisões distintas, rollback e unicidade global de event_id.
+**Testes CI:** execução `46151431389`, commit `bbd60b02bd76ee6766ea6f8c975e80019ffbda0a`, concluída com sucesso. Passaram testes unitários, smoke test Docker e integrações PostgreSQL descartável. A integração cria uma role LOGIN sintética, abre conexões autenticadas independentemente como essa role, força RLS, concede SELECT/INSERT mínimos, confirma ausência de UPDATE em batches/decisions e verifica EXECUTE no advisory lock; append e load funcionam com a sessão runtime. Também permanecem aprovados os testes concorrentes de mesma versão, gravações em decisões distintas, rollback e unicidade global de event_id.
 
 **Limite da evidência:** a homologação usa PostgreSQL local descartável e role sintética com policies de teste. Não comprova os grants, policies ou comportamento de um projeto Supabase hospedado. O SQL de schema continua rascunho; nenhum banco externo foi conectado, alterado ou importado.
