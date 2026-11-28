@@ -30,6 +30,8 @@ class PlanoContasService:
         self, data: PlanoContaInput, *, actor: AuthenticatedPrincipal | None = None,
         request_id: str | None = None,
     ) -> PlanoConta:
+        if self.audit_sink is not None and actor is None:
+            raise HTTPException(status_code=403, detail="Identidade autenticada obrigatória para operações auditadas do Plano de Contas.")
         self._ensure_unique_code(data.codigo)
         item = PlanoConta(id=f"pc_shadow_{uuid4().hex}", **data.model_dump())
         if actor is None:
@@ -45,6 +47,8 @@ class PlanoContasService:
         self, item_id: str, data: PlanoContaInput, expected_version: int, *,
         actor: AuthenticatedPrincipal | None = None, request_id: str | None = None,
     ) -> PlanoConta:
+        if self.audit_sink is not None and actor is None:
+            raise HTTPException(status_code=403, detail="Identidade autenticada obrigatória para operações auditadas do Plano de Contas.")
         self._ensure_unique_code(data.codigo, excluding=item_id)
         item = PlanoConta(id=item_id, version=expected_version, **data.model_dump())
         if actor is not None:
@@ -72,6 +76,8 @@ class PlanoContasService:
         self, item_id: str, *, actor: AuthenticatedPrincipal | None = None,
         request_id: str | None = None,
     ) -> None:
+        if self.audit_sink is not None and actor is None:
+            raise HTTPException(status_code=403, detail="Identidade autenticada obrigatória para operações auditadas do Plano de Contas.")
         if not self.repository.exists(item_id):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Conta não encontrada.")
         if self._has_financial_references is None:
