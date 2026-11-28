@@ -27,6 +27,15 @@ _required = {
     "GOOGLE_CLIENT_ID": bool(os.getenv("GOOGLE_CLIENT_ID", "").strip()),
 }
 
+# Exportação direta exigida pela detecção estática do runtime FastAPI da Vercel.
+# A instância é substituída pela aplicação completa somente quando a configuração
+# segura estiver presente; sem ela, o bloco abaixo mantém a API bloqueada.
+app = FastAPI(
+    title="Bravo Shadow — inicialização segura",
+    description="Aplicação isolada com inicialização fail-closed.",
+    version="0.1.0",
+)
+
 if all(_required.values()):
     # Import the complete API only after all production-like prerequisites exist.
     # This prevents Vercel from silently starting the in-memory test backend.
