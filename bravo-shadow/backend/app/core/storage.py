@@ -154,6 +154,7 @@ def build_storage_services(
         plano_repository = PostgresPlanoContasRepository(connection_factory)
         estoque_repository = PostgresEstoqueRepository(connection_factory)
         acertos_repository = PostgresAcertosEstoqueRepository(connection_factory)
+        movement_repository = acertos_repository
         categorias_repository = PostgresCategoriasRepository(connection_factory)
         motivos_repository = PostgresMotivosAcertoRepository(connection_factory)
         documentos_repository = PostgresDocumentosRepository(connection_factory)
@@ -175,7 +176,6 @@ def build_storage_services(
         documentos_repository = _WritesPendingAuditRepository(documentos_repository, "documentos")
         condominio_repository = _WritesPendingAuditRepository(condominio_repository, "condomínio")
         conselheiros_repository = _WritesPendingAuditRepository(conselheiros_repository, "conselheiros")
-        movement_repository = acertos_repository
     else:
         raise StorageConfigurationError(
             "BRAVO_STORAGE_BACKEND deve ser 'memory' ou 'postgres'."
