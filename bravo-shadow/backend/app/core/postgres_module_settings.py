@@ -10,7 +10,7 @@ class PostgresModuleSettingsRepository:
     _table = "bravo_shadow.module_settings"
 
     def __init__(self, connection_factory: Callable[[], Any]) -> None:
-        self._uow = PostgresUnitOfWork(connection_factory)
+        self._connection_factory = connection_factory
 
     @staticmethod
     def _close(cursor: Any, primary_error: BaseException | None = None) -> None:
@@ -24,7 +24,7 @@ class PostgresModuleSettingsRepository:
                 add_note(f"Falha secundária ao fechar cursor: {type(close_error).__name__}.")
 
     def list_states(self) -> dict[str, bool]:
-        with self._uow as uow:
+        with PostgresUnitOfWork(self._connection_factory) as uow:
             connection = uow.connection
             if connection is None:
                 raise RuntimeError("Conexão PostgreSQL indisponível.")
@@ -50,7 +50,7 @@ class PostgresModuleSettingsRepository:
         append = getattr(audit_sink, "append_in_transaction", None)
         if not callable(append):
             raise TypeError("O destino de auditoria transacional é obrigatório.")
-        with self._uow as uow:
+        with PostgresUnitOfWork(self._connection_factory) as uow:
             connection = uow.connection
             if connection is None:
                 raise RuntimeError("Conexão PostgreSQL indisponível.")

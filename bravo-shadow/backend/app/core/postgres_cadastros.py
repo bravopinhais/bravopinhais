@@ -15,10 +15,10 @@ from app.modules.moradores.schemas import Morador
 
 class _PostgresCadastroRepository:
     def __init__(self, connection_factory: Callable[[], Any]) -> None:
-        self._uow = PostgresUnitOfWork(connection_factory)
+        self._connection_factory = connection_factory
 
     def _query(self, sql: str, params: tuple[Any, ...] = (), *, fetch: str = "none"):
-        with self._uow as uow:
+        with PostgresUnitOfWork(self._connection_factory) as uow:
             connection = uow.connection
             if connection is None:
                 raise RuntimeError("A conexão PostgreSQL não foi aberta.")
@@ -41,7 +41,7 @@ class _PostgresCadastroRepository:
         append = getattr(audit_sink, "append_in_transaction", None)
         if not callable(append):
             raise HTTPException(status_code=503, detail="Auditoria transacional indisponível.")
-        with self._uow as uow:
+        with PostgresUnitOfWork(self._connection_factory) as uow:
             connection = uow.connection
             if connection is None:
                 raise RuntimeError("Conexão PostgreSQL indisponível.")
@@ -326,7 +326,7 @@ class PostgresContasBancariasRepository(_PostgresCadastroRepository):
 
     def add_audited(self, item: ContaBancaria, event: Any, audit_sink: Any) -> None:
         append = self._audit_ready(audit_sink)
-        with self._uow as uow:
+        with PostgresUnitOfWork(self._connection_factory) as uow:
             connection = uow.connection
             if connection is None:
                 raise RuntimeError("Conexão PostgreSQL indisponível.")
@@ -342,7 +342,7 @@ class PostgresContasBancariasRepository(_PostgresCadastroRepository):
 
     def replace_audited(self, item_id: str, item: ContaBancaria, event: Any, audit_sink: Any) -> None:
         append = self._audit_ready(audit_sink)
-        with self._uow as uow:
+        with PostgresUnitOfWork(self._connection_factory) as uow:
             connection = uow.connection
             if connection is None:
                 raise RuntimeError("Conexão PostgreSQL indisponível.")
@@ -361,7 +361,7 @@ class PostgresContasBancariasRepository(_PostgresCadastroRepository):
 
     def delete_audited(self, item_id: str, event: Any, audit_sink: Any) -> None:
         append = self._audit_ready(audit_sink)
-        with self._uow as uow:
+        with PostgresUnitOfWork(self._connection_factory) as uow:
             connection = uow.connection
             if connection is None:
                 raise RuntimeError("Conexão PostgreSQL indisponível.")

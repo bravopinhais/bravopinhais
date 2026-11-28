@@ -13,14 +13,14 @@ from app.modules.acertos_estoque.schemas import Acerto
 
 class _InventoryPostgresBase:
     def __init__(self, connection_factory: Callable[[], Any]) -> None:
-        self._uow = PostgresUnitOfWork(connection_factory)
+        self._connection_factory = connection_factory
 
     @staticmethod
     def _sqlstate(error: Exception) -> str | None:
         return getattr(error, "sqlstate", None) or getattr(error, "pgcode", None)
 
     def _query(self, sql: str, params: tuple[Any, ...] = (), *, fetch: str = "none"):
-        with self._uow as uow:
+        with PostgresUnitOfWork(self._connection_factory) as uow:
             connection = uow.connection
             if connection is None:
                 raise RuntimeError("A conexão PostgreSQL não foi aberta.")
@@ -99,7 +99,7 @@ class PostgresEstoqueRepository(_InventoryPostgresBase):
         append = getattr(audit_sink, "append_in_transaction", None)
         if not callable(append):
             raise HTTPException(status_code=503, detail="Auditoria transacional indisponível.")
-        with self._uow as uow:
+        with PostgresUnitOfWork(self._connection_factory) as uow:
             connection = uow.connection
             if connection is None:
                 raise RuntimeError("A conexão PostgreSQL não foi aberta.")
@@ -121,7 +121,7 @@ class PostgresEstoqueRepository(_InventoryPostgresBase):
         append = getattr(audit_sink, "append_in_transaction", None)
         if not callable(append):
             raise HTTPException(status_code=503, detail="Auditoria transacional indisponível.")
-        with self._uow as uow:
+        with PostgresUnitOfWork(self._connection_factory) as uow:
             connection = uow.connection
             if connection is None:
                 raise RuntimeError("A conexão PostgreSQL não foi aberta.")
@@ -163,7 +163,7 @@ class PostgresEstoqueRepository(_InventoryPostgresBase):
         if not callable(append):
             raise HTTPException(status_code=503, detail="Auditoria transacional indisponível.")
         try:
-            with self._uow as uow:
+            with PostgresUnitOfWork(self._connection_factory) as uow:
                 connection = uow.connection
                 if connection is None:
                     raise RuntimeError("A conexão PostgreSQL não foi aberta.")
@@ -183,7 +183,7 @@ class PostgresEstoqueRepository(_InventoryPostgresBase):
     def replace(self, item_id: str, item: EstoqueItem) -> None:
         # Serializa edição cadastral com movimentos de estoque. Depois do primeiro
         # movimento, o saldo só pode mudar pelo fluxo transacional de acerto.
-        with self._uow as uow:
+        with PostgresUnitOfWork(self._connection_factory) as uow:
             connection = uow.connection
             if connection is None:
                 raise RuntimeError("A conexão PostgreSQL não foi aberta.")
@@ -303,7 +303,7 @@ class PostgresAcertosEstoqueRepository(_InventoryPostgresBase):
         if not callable(append):
             raise HTTPException(status_code=503, detail="Auditoria transacional indisponível.")
         try:
-            with self._uow as uow:
+            with PostgresUnitOfWork(self._connection_factory) as uow:
                 connection = uow.connection
                 if connection is None:
                     raise RuntimeError("A conexão PostgreSQL não foi aberta.")
@@ -351,7 +351,7 @@ class PostgresAcertosEstoqueRepository(_InventoryPostgresBase):
     ) -> Acerto:
         """Bloqueia o produto e grava saldo + histórico no mesmo commit."""
         try:
-            with self._uow as uow:
+            with PostgresUnitOfWork(self._connection_factory) as uow:
                 connection = uow.connection
                 if connection is None:
                     raise RuntimeError("A conexão PostgreSQL não foi aberta.")

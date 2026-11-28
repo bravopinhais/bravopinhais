@@ -13,14 +13,14 @@ from app.modules.motivos_acerto.schemas import MotivoAcerto
 
 class _CatalogRepository:
     def __init__(self, connection_factory: Callable[[], Any]) -> None:
-        self._uow = PostgresUnitOfWork(connection_factory)
+        self._connection_factory = connection_factory
 
     @staticmethod
     def _sqlstate(error: Exception) -> str | None:
         return getattr(error, "sqlstate", None) or getattr(error, "pgcode", None)
 
     def _query(self, sql: str, params: tuple[Any, ...] = (), *, fetch: str = "none"):
-        with self._uow as uow:
+        with PostgresUnitOfWork(self._connection_factory) as uow:
             connection = uow.connection
             if connection is None:
                 raise RuntimeError("A conexão PostgreSQL não foi aberta.")
@@ -42,7 +42,7 @@ class _CatalogRepository:
         append = getattr(audit_sink, "append_in_transaction", None)
         if not callable(append):
             raise HTTPException(status_code=503, detail="Auditoria transacional indisponível.")
-        with self._uow as uow:
+        with PostgresUnitOfWork(self._connection_factory) as uow:
             connection = uow.connection
             if connection is None:
                 raise RuntimeError("A conexão PostgreSQL não foi aberta.")

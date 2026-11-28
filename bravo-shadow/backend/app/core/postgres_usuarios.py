@@ -14,7 +14,7 @@ class PostgresUsuariosRepository:
     _columns = "id, email, nome, loja, cargo, perfil, status"
 
     def __init__(self, connection_factory: Callable[[], Any]) -> None:
-        self._uow = PostgresUnitOfWork(connection_factory)
+        self._connection_factory = connection_factory
 
     @staticmethod
     def _close_cursor(cursor: Any) -> None:
@@ -36,7 +36,7 @@ class PostgresUsuariosRepository:
 
     def _query(self, sql: str, params: tuple[Any, ...] = (), *, fetch: str = "none"):
         try:
-            with self._uow as uow:
+            with PostgresUnitOfWork(self._connection_factory) as uow:
                 connection = uow.connection
                 if connection is None:
                     raise RuntimeError("A conexão PostgreSQL não foi aberta.")
@@ -142,7 +142,7 @@ class PostgresUsuariosRepository:
             "updated_at = now(), version = version + 1 "
             f"WHERE id = %s RETURNING {self._columns}"
         )
-        with self._uow as uow:
+        with PostgresUnitOfWork(self._connection_factory) as uow:
             connection = uow.connection
             if connection is None:
                 raise RuntimeError("A conexão PostgreSQL não foi aberta.")
@@ -174,7 +174,7 @@ class PostgresUsuariosRepository:
             raise ValueError("Criação cadastral aceita somente Operador/Ativo.")
         if not callable(getattr(audit_sink, "append_in_transaction", None)):
             raise TypeError("audit_sink deve aceitar append_in_transaction.")
-        with self._uow as uow:
+        with PostgresUnitOfWork(self._connection_factory) as uow:
             connection = uow.connection
             if connection is None:
                 raise RuntimeError("A conexão PostgreSQL não foi aberta.")
@@ -209,7 +209,7 @@ class PostgresUsuariosRepository:
             f"UPDATE {self._table} SET {set_clause}, updated_at = now(), "
             f"version = version + 1 WHERE id = %s RETURNING {self._columns}"
         )
-        with self._uow as uow:
+        with PostgresUnitOfWork(self._connection_factory) as uow:
             connection = uow.connection
             if connection is None:
                 raise RuntimeError("A conexão PostgreSQL não foi aberta.")
@@ -258,7 +258,7 @@ class PostgresUsuariosRepository:
         if not callable(getattr(audit_sink, "append_in_transaction", None)):
             raise TypeError("audit_sink deve aceitar append_in_transaction.")
 
-        with self._uow as uow:
+        with PostgresUnitOfWork(self._connection_factory) as uow:
             connection = uow.connection
             if connection is None:
                 raise RuntimeError("A conexão PostgreSQL não foi aberta.")
@@ -338,7 +338,7 @@ class PostgresUsuariosRepository:
             raise TypeError("audit_sink deve aceitar append_in_transaction.")
 
         try:
-            with self._uow as uow:
+            with PostgresUnitOfWork(self._connection_factory) as uow:
                 connection = uow.connection
                 if connection is None:
                     raise RuntimeError("A conexão PostgreSQL não foi aberta.")
