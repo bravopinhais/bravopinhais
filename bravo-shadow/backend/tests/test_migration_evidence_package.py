@@ -158,3 +158,75 @@ def test_serializer_produces_canonical_package_that_round_trips():
     result = read_evidence_package(first)
     assert result.valid is True
     assert result.ready_count == 1
+
+
+def _rehash(payload):
+    payload.pop("packageSha256", None)
+    payload["packageSha256"] = hashlib.sha256(json.dumps(
+        payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")).hexdigest()
+    return payload
+
+
+@pytest.mark.parametrize(
+    ("mutate", "error_code"),
+    [
+        (lambda p: p["candidates"][0].update(sourceRecordHash="not-a-hash"),
+         "candidate_hash_invalid"),
+        (lambda p: p["candidates"][0].update(destinationIdExists=1),
+         "destination_id_exists_invalid"),
+        (lambda p: p["candidates"][0].update(references={}),
+         "references_invalid"),
+        (lambda p: p["candidates"][0]["identity"].update(legacyId=7),
+         "identity_invalid"),
+        (lambda p: p["candidates"][0].update(existingMapping={
+            "sourceRecordHash": "b" * 64, "destinationId": " "
+        }), "mapping_destination_invalid"),
+        (lambda p: p["manifestContext"].update(environment=" "),
+         "manifest_context_value_invalid"),
+    ],
+)
+def test_invalid_nested_fields_are_rejected(mutate, error_code):
+    payload = _package()
+    mutate(payload)
+    _rehash(payload)
+
+    with pytest.raises(EvidencePackageError, match=error_code):
+        read_evidence_package(_bytes(payload))
+
+
+def test_candidate_identity_not_in_source_inventory_is_rejected():
+    payload = _package()
+    payload["candidates"][0]["identity"]["legacyId"] = "unknown-record"
+    _rehash(payload)
+
+    with pytest.raises(EvidencePackageError, match="preflight_invalid"):
+        read_evidence_package(_bytes(payload))
+
+
+def test_duplicate_candidate_identity_is_rejected_by_preflight():
+    payload = _package()
+    payload["candidates"].append(dict(payload["candidates"][0]))
+    _rehash(payload)
+
+    with pytest.raises(EvidencePackageError, match="preflight_invalid"):
+        read_evidence_package(_bytes(payload))
+
+
+def test_invalid_utf8_and_non_finite_json_are_rejected():
+    with pytest.raises(EvidencePackageError, match="package_invalid_json"):
+        read_evidence_package(b"\\xff")
+
+    with pytest.raises(EvidencePackageError, match="json_non_finite_number"):
+        read_evidence_package(b'{"value":NaN}')
+
+
+def test_serializer_rejects_wrong_candidate_container_type():
+    with pytest.raises(EvidencePackageError, match="candidate_inventory_invalid"):
+        serialize_evidence_package(
+            _package()["sourceEnvelope"],
+            [],
+            source_envelope_raw_sha256=hashlib.sha256(b"x").hexdigest(),
+            manifest_context=_package()["manifestContext"],
+        )
