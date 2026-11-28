@@ -25,7 +25,7 @@ def test_every_declared_table_has_rls_and_client_grants_revoked():
         re.IGNORECASE,
     ))
 
-    assert len(tables) == 15
+    assert len(tables) == 16
     assert rls == tables
     assert revoked == tables
 
@@ -42,7 +42,7 @@ def test_draft_does_not_create_grants_or_permissive_policies():
 
     assert not re.search(r"\bgrant\s+", sql)
     assert not re.search(r"\bcreate\s+policy\s+", sql)
-    assert len(re.findall(r"alter table bravo_shadow\.\w+ enable row level security", sql)) == 15
+    assert len(re.findall(r"alter table bravo_shadow\.\w+ enable row level security", sql)) == 16
 
 
 def test_financial_and_inventory_integrity_constraints_are_present():
