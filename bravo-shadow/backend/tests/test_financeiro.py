@@ -124,26 +124,6 @@ def payload(**overrides):
     return data
 
 
-from app.modules.financeiro.schemas import FinanceiroInput
-
-client = TestClient(app)
-
-
-def setup_function() -> None:
-    app.state.services.financeiro._items.clear()
-
-
-def payload(**overrides):
-    data = {
-        "tipo": "Receber",
-        "planoContaId": "",
-        "historico": "Taxa condominial",
-        "valor": 350.75,
-    }
-    data.update(overrides)
-    return data
-
-
 def test_create_and_list_financial_title():
     response = client.post("/api/v1/financeiro", json=payload())
     assert response.status_code == 201
