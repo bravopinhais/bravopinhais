@@ -249,3 +249,55 @@ def test_user_update_rejects_email_already_owned_by_another_user_case_insensitiv
     assert error.value.status_code == 409
     assert service.get(first.id).email == "primeiro@example.com"
     assert service.get(second.id).email == "segundo@example.com"
+
+
+def test_persistent_user_cadastral_mutations_fail_closed_without_actor():
+    from app.core.repositories import InMemoryCollectionRepository
+    service = UsuariosService(repository=InMemoryCollectionRepository(), audit_sink=object())
+    data = UsuarioCadastroInput(email="novo@example.com", nome="Pessoa", cargo="Conselho")
+    with pytest.raises(HTTPException) as create_error:
+        service.create_cadastral(data)
+    assert create_error.value.status_code == 403
+    with pytest.raises(HTTPException) as update_error:
+        service.update_cadastral("missing", UsuarioDadosCadastraisUpdateInput(nome="Atualizado"))
+    assert update_error.value.status_code == 403
+    assert service.list() == []
+
+
+def test_user_cadastral_mutations_emit_audit_events_when_actor_is_present():
+    from app.core.repositories import InMemoryCollectionRepository
+
+    class Sink:
+        def __init__(self):
+            self.events = []
+        def append_in_transaction(self, connection, event):
+            assert connection is self
+            self.events.append(event)
+
+    class AuditedRepository(InMemoryCollectionRepository):
+        def add_audited(self, item, *, event, audit_sink):
+            self.add(item.id, item)
+            audit_sink.append_in_transaction(audit_sink, event)
+        def update_cadastral_audited(self, item_id, *, event, audit_sink, **payload):
+            current = self.get(item_id)
+            if current is None:
+                raise HTTPException(status_code=404, detail="Usuário não encontrado.")
+            updated = current.model_copy(update=payload)
+            self.replace(item_id, updated)
+            audit_sink.append_in_transaction(audit_sink, event)
+            return updated
+
+    sink = Sink()
+    service = UsuariosService(repository=AuditedRepository(), audit_sink=sink)
+    actor = AuthenticatedPrincipal("google-subject", "admin@example.com", "Admin", "Ativo")
+    created = service.create_cadastral(
+        UsuarioCadastroInput(email="novo@example.com", nome="Pessoa", cargo="Conselho"),
+        actor=actor, request_id="req-create",
+    )
+    updated = service.update_cadastral(
+        created.id, UsuarioDadosCadastraisUpdateInput(nome="Pessoa Atualizada"),
+        actor=actor, request_id="req-update",
+    )
+    assert updated.nome == "Pessoa Atualizada"
+    assert [event.action for event in sink.events] == ["usuarios:create", "usuarios:update_cadastral"]
+    assert [event.request_id for event in sink.events] == ["req-create", "req-update"]
