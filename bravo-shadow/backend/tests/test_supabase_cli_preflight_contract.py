@@ -16,7 +16,7 @@ def test_supabase_cli_project_config_is_local_only():
 
 def test_migration_filenames_match_cli_timestamp_convention():
     files = sorted(path.name for path in MIGRATIONS.glob("*.sql"))
-    assert len(files) == 6
+    assert len(files) == 7
     assert all(re.fullmatch(r"\d{14}_[a-z0-9_]+\.sql", name) for name in files)
     versions = [name[:14] for name in files]
     assert versions == sorted(versions)
