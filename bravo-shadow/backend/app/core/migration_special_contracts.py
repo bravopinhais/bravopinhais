@@ -236,6 +236,8 @@ def assess_special_contracts(
         reasons = list(contract.blockers)
         if source.records_total == 0:
             reasons.append("Coleção vazia: não comprova compatibilidade nem integridade.")
+        if source.invalid_records or source.records_missing_id or source.duplicate_ids:
+            reasons.append("Há registros inválidos, IDs ausentes ou IDs duplicados.")
         if missing:
             reasons.append("Campos obrigatórios ausentes.")
         if partial:
