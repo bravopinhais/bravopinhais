@@ -98,7 +98,8 @@ jobs:
           -o faulthandler_timeout=120
           --ignore=tests/test_postgres_inventory_integration.py
           --ignore=tests/test_migration_review_postgres_integration.py
-          --ignore=tests/test_usuarios_admin_postgres_integration.py\n          --ignore=tests/test_google_identity_postgres_integration.py
+          --ignore=tests/test_usuarios_admin_postgres_integration.py
+          --ignore=tests/test_google_identity_postgres_integration.py
 
   backend-postgres-integration:
     name: Backend / integrações PostgreSQL descartável
@@ -204,4 +205,5 @@ jobs:
           -o faulthandler_timeout=120
           tests/test_postgres_inventory_integration.py
           tests/test_migration_review_postgres_integration.py
-          tests/test_usuarios_admin_postgres_integration.py\n          tests/test_google_identity_postgres_integration.py
+          tests/test_usuarios_admin_postgres_integration.py
+          tests/test_google_identity_postgres_integration.py
