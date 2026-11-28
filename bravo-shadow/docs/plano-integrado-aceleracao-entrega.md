@@ -85,3 +85,8 @@ O smoke test do contêiner agora fornece valores sintéticos explícitos para `B
 ## Limites desta revisão
 
 Esta revisão dos arquivos foi estática. O workflow foi atualizado para aplicar as seis migrations no PostgreSQL descartável do GitHub Actions antes da auditoria e também para disparar em pull requests que alterem migrations ou scripts de homologação. Não executei Docker, PostgreSQL, migrations, pytest, OAuth ou deploy nesta sessão. Os itens marcados como concluídos descrevem etapas configuradas no workflow, não resultados de uma execução já observada.
+
+
+### Salvaguarda adicional — Financeiro
+
+A revisão do contrato identificou que as rotas financeiras de escrita ainda não unem mutação e auditoria em uma única transação. As rotas de inclusão, edição e exclusão foram fechadas preventivamente com resposta 503 após autenticação e autorização. A consulta permanece disponível. Próximo passo técnico: implementar operações auditadas atômicas no repositório PostgreSQL e no serviço, adicionar cobertura de concorrência/ETag e só então liberar a interface. Esta salvaguarda não executa migração, não conecta banco e não altera dados.
