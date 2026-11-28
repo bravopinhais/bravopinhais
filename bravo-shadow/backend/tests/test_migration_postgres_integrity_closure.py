@@ -43,7 +43,7 @@ def _columns(body: str) -> dict[str, str]:
     found: dict[str, str] = {}
     for line in body.splitlines():
         line = line.strip().rstrip(",")
-        if not line or line.upper().startswith(("CONSTRAINT ", "PRIMARY ", "UNIQUE ", "CHECK ", "FOREIGN ")):
+        if not line or line.upper().startswith(("CONSTRAINT ", "PRIMARY ", "UNIQUE ", "CHECK ", "FOREIGN ", "REFERENCES ", "ON DELETE ", "ON UPDATE ")):
             continue
         match = re.match(r'"([^"]+)"\s+(.+)$|([A-Za-z_][A-Za-z0-9_]*)\s+(.+)$', line)
         if match:
