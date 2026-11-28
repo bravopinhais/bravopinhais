@@ -14,7 +14,7 @@ def get_service(request: Request) -> FornecedoresService:
 @router.get("", response_model=list[Fornecedor])
 def list_suppliers(
     request: Request,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("fornecedores:read")),
+    actor: AuthenticatedPrincipal = Depends(require_capability_dependency("fornecedores:read")),
 ) -> list[Fornecedor]:
     return get_service(request).list()
 
@@ -23,9 +23,9 @@ def list_suppliers(
 def create_supplier(
     request: Request,
     data: FornecedorInput,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("fornecedores:create")),
+    actor: AuthenticatedPrincipal = Depends(require_capability_dependency("fornecedores:create")),
 ) -> Fornecedor:
-    return get_service(request).create(data)
+    return get_service(request).create(data, actor=actor, request_id=getattr(request.state, 'request_id', None))
 
 
 @router.put("/{item_id}", response_model=Fornecedor)
@@ -33,15 +33,15 @@ def update_supplier(
     request: Request,
     item_id: str,
     data: FornecedorInput,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("fornecedores:update")),
+    actor: AuthenticatedPrincipal = Depends(require_capability_dependency("fornecedores:update")),
 ) -> Fornecedor:
-    return get_service(request).update(item_id, data)
+    return get_service(request).update(item_id, data, actor=actor, request_id=getattr(request.state, 'request_id', None))
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_supplier(
     request: Request,
     item_id: str,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("fornecedores:delete")),
+    actor: AuthenticatedPrincipal = Depends(require_capability_dependency("fornecedores:delete")),
 ) -> None:
-    get_service(request).delete(item_id)
+    get_service(request).delete(item_id, actor=actor, request_id=getattr(request.state, 'request_id', None))
