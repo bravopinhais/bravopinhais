@@ -18,13 +18,13 @@ def test_versioned_migration_history_has_exact_order_and_unique_versions():
     assert len(versions) == len(set(versions))
 
 def test_migration_dependencies_are_ordered_before_foreign_key_consumers():
-    core = (MIGRATIONS / EXPECTED[0]).read_text()
-    batches = (MIGRATIONS / EXPECTED[2]).read_text()
-    execution = (MIGRATIONS / EXPECTED[3]).read_text()
+    core = (MIGRATIONS / EXPECTED[0]).read_text().lower()
+    batches = (MIGRATIONS / EXPECTED[2]).read_text().lower()
+    execution = (MIGRATIONS / EXPECTED[3]).read_text().lower()
     assert core.index("create schema if not exists bravo_shadow") < core.index("create table")
     assert batches.index("create table if not exists bravo_shadow.migration_batches") < batches.index("create table if not exists bravo_shadow.migration_source_records")
     assert execution.index("create table if not exists bravo_shadow.migration_executions") < execution.index("create table if not exists bravo_shadow.migration_apply_approvals")
-    assert "REFERENCES bravo_shadow.migration_batches" in execution
+    assert "references bravo_shadow.migration_batches" in execution
 
 def test_functional_baseline_contains_final_stock_shape_without_followup_alter():
     core = (MIGRATIONS / EXPECTED[0]).read_text()
