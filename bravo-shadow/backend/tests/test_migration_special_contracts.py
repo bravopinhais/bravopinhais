@@ -192,3 +192,32 @@ def test_special_contracts_flag_non_object_records_missing_and_duplicate_ids():
     assert stock.status == "review_required"
     assert any("registros inválidos, IDs ausentes ou IDs duplicados" in reason
                for reason in stock.review_reasons)
+
+
+def test_unified_assessment_reports_all_seven_catalogued_collections():
+    from app.core.migration_special_contracts import assess_all_collection_contracts
+
+    inventory = inspect_source_collections({
+        "financeiro": [_record(id="f1", tipo="Receber", historico="Taxa", valor=10)],
+        "documentos": [_record(
+            id="d1", pasta="Atas", titulo="Ata", nomeArquivo="ata.pdf",
+            arquivoCompactadoGzip="QUJD"
+        )],
+        "estoque": [_record(id="e1", item="Papel", quantidade=2)],
+        "acertos_estoque": [_record(
+            id="a1", data="28/11/2026", tipo="Entrada", produtoId="e1",
+            quantidade=2, motivo="Compra"
+        )],
+        "formas_monetarias": [_record(id="fm1", nome="Boleto", multaPct=2)],
+        "motivos_acerto_estoque": [_record(id="me1", nome="Compra")],
+        "categorias": [_record(id="c1", nome="Atas")],
+    })
+
+    report = assess_all_collection_contracts(inventory)
+
+    assert {item.key for item in report.assessments} == {
+        "financeiro", "documentos", "estoque", "acertos_estoque",
+        "formas_monetarias", "motivos_acerto_estoque", "categorias",
+    }
+    assert all(item.status == "review_required" for item in report.assessments)
+    assert len(report.unassessed_domains) == 2
