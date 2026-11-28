@@ -402,3 +402,21 @@ def assess_auxiliary_contracts(
             "Coleções auxiliares: avaliação estrutural preliminar; allowlists do pacote e validação semântica ainda pendentes.",
         ),
     )
+
+
+def assess_all_collection_contracts(
+    inventory: SourceInventory,
+    *,
+    source_to_target: Mapping[str, str] | None = None,
+) -> SpecialContractReport:
+    """Return one structural report for all currently catalogued collections.
+
+    This is still assessment-only. It does not validate arbitrary record values,
+    build package allowlists, or grant import readiness.
+    """
+    special = assess_special_contracts(inventory, source_to_target=source_to_target)
+    auxiliary = assess_auxiliary_contracts(inventory, source_to_target=source_to_target)
+    return SpecialContractReport(
+        assessments=special.assessments + auxiliary.assessments,
+        unassessed_domains=special.unassessed_domains + auxiliary.unassessed_domains,
+    )
