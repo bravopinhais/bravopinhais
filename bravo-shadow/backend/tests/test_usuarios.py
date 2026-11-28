@@ -301,3 +301,22 @@ def test_user_cadastral_mutations_emit_audit_events_when_actor_is_present():
     assert updated.nome == "Pessoa Atualizada"
     assert [event.action for event in sink.events] == ["usuarios:create", "usuarios:update_cadastral"]
     assert [event.request_id for event in sink.events] == ["req-create", "req-update"]
+
+
+def test_user_cadastral_mutations_require_admin_profile_even_with_active_identity():
+    from app.core.repositories import InMemoryCollectionRepository
+    service = UsuariosService(repository=InMemoryCollectionRepository(), audit_sink=object())
+    operator = AuthenticatedPrincipal("operator-subject", "op@example.com", "Operador", "Ativo")
+    with pytest.raises(HTTPException) as create_error:
+        service.create_cadastral(
+            UsuarioCadastroInput(email="novo@example.com", nome="Pessoa", cargo="Conselho"),
+            actor=operator,
+        )
+    assert create_error.value.status_code == 403
+    with pytest.raises(HTTPException) as update_error:
+        service.update_cadastral(
+            "missing", UsuarioDadosCadastraisUpdateInput(nome="Atualizado"),
+            actor=operator,
+        )
+    assert update_error.value.status_code == 403
+    assert service.list() == []
