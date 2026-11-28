@@ -56,3 +56,24 @@ def test_forma_monetaria_accepts_multa_within_range(multa_pct):
 def test_forma_monetaria_rejects_multa_outside_range_or_non_finite(multa_pct):
     with pytest.raises(ValidationError):
         FormaMonetariaInput(nome="PIX", multaPct=multa_pct)
+
+
+def test_postgres_style_audit_configuration_fails_closed_for_all_mutations():
+    from fastapi import HTTPException
+    from app.core.repositories import InMemoryCollectionRepository
+    from app.modules.formas_monetarias.service import FormasMonetariasService
+
+    service = FormasMonetariasService(
+        repository=InMemoryCollectionRepository(),
+        audit_sink=object(),
+    )
+    operations = [
+        lambda: service.create(FormaMonetariaInput(nome="PIX")),
+        lambda: service.update("missing", FormaMonetariaInput(nome="Boleto")),
+        lambda: service.delete("missing"),
+    ]
+    for operation in operations:
+        with pytest.raises(HTTPException) as error:
+            operation()
+        assert error.value.status_code == 503
+    assert service.list() == []
