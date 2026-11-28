@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Request, status
 
 from app.core.authorization import AuthenticatedPrincipal, require_capability_dependency
+from app.core.read_audit import audit_read
 
 from .schemas import FormaMonetaria, FormaMonetariaInput
 from .service import FormasMonetariasService
@@ -17,7 +18,9 @@ def list_forms(
     request: Request,
     _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("formas_monetarias:read")),
 ) -> list[FormaMonetaria]:
-    return get_service(request).list()
+    service = get_service(request)
+    audit_read(request, service, _principal, "formas_monetarias:list", "forma_monetaria")
+    return service.list()
 
 
 @router.post("", response_model=FormaMonetaria, status_code=status.HTTP_201_CREATED)
