@@ -27,6 +27,8 @@
 
 A forma inicial acima descreve apenas o valor padrão do código. Ela não é prova da forma de dados persistidos na nuvem nem substitui uma amostra sintética validada.
 
+**Achado adicional no `DEFAULT_DATA`:** as listas `conselheiros`, `formas_monetarias`, `contas_bancarias`, `moradores`, `fornecedores`, `empregados`, `categorias` e `logs` são inicializadas vazias (`[]`). Portanto, o código padrão não fornece nenhum campo ou tipo de registro para esses oito domínios. A classificação correta é `schema_unobserved_empty_default`; isso não significa que a coleção persistida esteja vazia. É proibido deduzir seu esquema apenas pela interface ou pelo nome da coleção.
+
 ## 2. Contratos especializados existentes
 
 Há contratos conservadores específicos para:
