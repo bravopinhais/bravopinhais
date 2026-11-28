@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 from concurrent.futures import ThreadPoolExecutor
+from decimal import Decimal
 from pathlib import Path
 from threading import Barrier
 from urllib.parse import urlparse
@@ -466,3 +467,47 @@ def test_real_postgres_rolls_back_balance_and_history_when_audit_insert_fails(
             connection.execute(
                 "DROP FUNCTION IF EXISTS bravo_shadow.reject_inventory_audit()"
             )
+
+
+
+def test_real_postgres_stock_crud_commits_each_audit_event(postgres_inventory_database):
+    database_url = postgres_inventory_database
+    product_id = f"stock-{uuid4().hex}"
+    repository = PostgresEstoqueRepository(lambda: psycopg.connect(database_url))
+    sink = _audit_sink(database_url)
+
+    item = EstoqueItem(
+        id=product_id, item="Produto sintético auditado",
+        quantidade=Decimal("2.500"), minimo=0, maximo=10,
+    )
+    create_event = AuditEvent(
+        actor_subject="synthetic-google-subject", action="estoque:create",
+        entity_type="estoque", entity_id=product_id, request_id=f"create-{product_id}",
+    )
+    repository.add_audited(product_id, item, create_event, sink)
+
+    updated = item.model_copy(update={"item": "Produto atualizado", "quantidade": Decimal("2.500")})
+    update_event = AuditEvent(
+        actor_subject="synthetic-google-subject", action="estoque:update",
+        entity_type="estoque", entity_id=product_id, request_id=f"update-{product_id}",
+    )
+    repository.replace_audited(product_id, updated, update_event, sink)
+
+    delete_event = AuditEvent(
+        actor_subject="synthetic-google-subject", action="estoque:delete",
+        entity_type="estoque", entity_id=product_id, request_id=f"delete-{product_id}",
+    )
+    repository.delete_audited(product_id, delete_event, sink)
+
+    with psycopg.connect(database_url) as connection:
+        product_count = connection.execute(
+            "SELECT count(*) FROM bravo_shadow.estoque WHERE id = %s",
+            (product_id,),
+        ).fetchone()[0]
+        audit_actions = connection.execute(
+            "SELECT action FROM bravo_shadow.audit_events WHERE entity_id = %s ORDER BY action",
+            (product_id,),
+        ).fetchall()
+
+    assert product_count == 0
+    assert audit_actions == [("estoque:create",), ("estoque:delete",), ("estoque:update",)]
