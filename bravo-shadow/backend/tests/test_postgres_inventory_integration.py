@@ -12,6 +12,11 @@ from uuid import uuid4
 import psycopg
 import pytest
 from fastapi import HTTPException
+from fastapi.testclient import TestClient
+
+from app.core.authentication import get_current_principal
+from app.core.authorization import AuthenticatedPrincipal
+from app.main import create_app
 
 from app.core.postgres_inventory import PostgresAcertosEstoqueRepository
 from app.core.audit import AuditEvent
@@ -516,3 +521,81 @@ def test_real_postgres_stock_crud_commits_each_audit_event(postgres_inventory_da
 
     assert product_count == 0
     assert audit_actions == [("estoque:create",), ("estoque:delete",), ("estoque:update",)]
+
+
+
+def test_http_api_persists_stock_and_movement_with_atomic_audit(postgres_inventory_database):
+    """Exercita HTTP -> autenticação/autorização -> serviços -> PostgreSQL real."""
+    database_url = postgres_inventory_database
+    application = create_app(
+        storage_backend="postgres",
+        postgres_connection_factory=lambda: psycopg.connect(database_url),
+    )
+    principal = AuthenticatedPrincipal(
+        subject="synthetic-google-subject",
+        email="admin@example.invalid",
+        profile="Admin",
+        account_status="Ativo",
+    )
+
+    async def authenticated_principal():
+        return principal
+
+    application.dependency_overrides[get_current_principal] = authenticated_principal
+    client = TestClient(application)
+
+    created = client.post(
+        "/api/v1/estoque",
+        json={
+            "item": "Produto HTTP sintético",
+            "quantidade": 12,
+            "minimo": 1,
+            "maximo": 30,
+            "unidade": "un",
+        },
+    )
+    assert created.status_code == 201, created.text
+    product = created.json()
+    product_id = product["id"]
+    assert product["quantidade"] == 12
+
+    listed = client.get("/api/v1/estoque")
+    assert listed.status_code == 200, listed.text
+    assert any(item["id"] == product_id for item in listed.json())
+
+    movement = client.post(
+        "/api/v1/acertos-estoque",
+        json={
+            "tipo": "Saída",
+            "produtoId": product_id,
+            "quantidade": 3,
+            "motivo": "Consumo de teste sintético",
+        },
+    )
+    assert movement.status_code == 201, movement.text
+    movement_id = movement.json()["id"]
+
+    refreshed = client.get("/api/v1/estoque")
+    assert refreshed.status_code == 200, refreshed.text
+    persisted_product = next(item for item in refreshed.json() if item["id"] == product_id)
+    assert persisted_product["quantidade"] == 9
+
+    history = client.get("/api/v1/acertos-estoque")
+    assert history.status_code == 200, history.text
+    assert any(item["id"] == movement_id for item in history.json())
+
+    with psycopg.connect(database_url) as connection:
+        audit_rows = connection.execute(
+            """
+            SELECT action, entity_type, entity_id, outcome
+            FROM bravo_shadow.audit_events
+            WHERE entity_id IN (%s, %s)
+            ORDER BY action
+            """,
+            (product_id, movement_id),
+        ).fetchall()
+
+    assert audit_rows == [
+        ("estoque:create", "estoque", product_id, "success"),
+        ("acertos_estoque:create", "acerto_estoque", movement_id, "success"),
+    ]
