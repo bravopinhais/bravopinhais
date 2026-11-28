@@ -52,7 +52,7 @@ Campos gravados: `id`, `data`, `tipo`, `produtoId`, `quantidade`, `motivo`.
 - O serviço de acertos atualiza a quantidade do produto e valida existência do produto.
 - Diferente do original, a API sombra rejeita saída superior ao saldo com HTTP 409, evitando saldo negativo. Esta é uma regra de segurança adicional explícita, não paridade exata.
 - A exclusão do histórico não reverte a quantidade, preservando a semântica observada no original; a futura regra recomendada é estorno compensatório, nunca apagar movimentação sem trilha.
-- Os serviços são temporários em memória. Não há persistência, concorrência transacional entre instâncias, frontend integrado ou conexão de produção.
+- Na etapa inicial, os serviços eram temporários em memória. A evolução da persistência PostgreSQL e da auditoria transacional está registrada na seção de atualização técnica abaixo; a homologação integrada ainda precisa ser concluída.
 
 ## Campos adicionais de rastreabilidade
 A API sombra também aceita `marca`, `linha`, `fabricante` e `dataCadastro`, conforme requisito anteriormente solicitado para identificar origem e classificação do produto. Esses campos são extensões novas; a data não é preenchida automaticamente nesta primeira versão.
