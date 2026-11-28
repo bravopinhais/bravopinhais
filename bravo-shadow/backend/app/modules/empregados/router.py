@@ -14,7 +14,7 @@ def get_service(request: Request) -> EmpregadosService:
 @router.get("", response_model=list[Empregado])
 def list_employees(
     request: Request,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("empregados:read")),
+    actor: AuthenticatedPrincipal = Depends(require_capability_dependency("empregados:read")),
 ) -> list[Empregado]:
     return get_service(request).list()
 
@@ -23,9 +23,9 @@ def list_employees(
 def create_employee(
     request: Request,
     data: EmpregadoInput,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("empregados:create")),
+    actor: AuthenticatedPrincipal = Depends(require_capability_dependency("empregados:create")),
 ) -> Empregado:
-    return get_service(request).create(data)
+    return get_service(request).create(data, actor=actor, request_id=getattr(request.state, 'request_id', None))
 
 
 @router.put("/{item_id}", response_model=Empregado)
@@ -33,15 +33,15 @@ def update_employee(
     request: Request,
     item_id: str,
     data: EmpregadoInput,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("empregados:update")),
+    actor: AuthenticatedPrincipal = Depends(require_capability_dependency("empregados:update")),
 ) -> Empregado:
-    return get_service(request).update(item_id, data)
+    return get_service(request).update(item_id, data, actor=actor, request_id=getattr(request.state, 'request_id', None))
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_employee(
     request: Request,
     item_id: str,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("empregados:delete")),
+    actor: AuthenticatedPrincipal = Depends(require_capability_dependency("empregados:delete")),
 ) -> None:
-    get_service(request).delete(item_id)
+    get_service(request).delete(item_id, actor=actor, request_id=getattr(request.state, 'request_id', None))
