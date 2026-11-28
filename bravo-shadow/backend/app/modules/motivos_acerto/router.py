@@ -27,15 +27,15 @@ def list_reasons(
 def create_reason(
     data: MotivoAcertoInput,
     request: Request,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("motivos_estoque:create")),
+    principal: AuthenticatedPrincipal = Depends(require_capability_dependency("motivos_estoque:create")),
 ):
-    return get_service(request).create(data)
+    return get_service(request).create(data, actor=principal, request_id=getattr(request.state, "request_id", None))
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_reason(
     item_id: str,
     request: Request,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("motivos_estoque:delete")),
+    principal: AuthenticatedPrincipal = Depends(require_capability_dependency("motivos_estoque:delete")),
 ):
-    get_service(request).delete(item_id)
+    get_service(request).delete(item_id, actor=principal, request_id=getattr(request.state, "request_id", None))
