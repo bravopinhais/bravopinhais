@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, Request, status
 
 from app.core.authorization import AuthenticatedPrincipal, require_capability_dependency
+from app.core.audit import AuditEvent
+from fastapi import HTTPException
 from .schemas import Documento, DocumentoInput, DocumentoResumo
 from .service import DocumentosService
 
@@ -11,12 +13,43 @@ def get_service(request: Request) -> DocumentosService:
     return request.app.state.services.documentos
 
 
+def audit_document_read(
+    request: Request,
+    principal: AuthenticatedPrincipal,
+    action: str,
+    item_id: str | None = None,
+) -> None:
+    """Registra acesso a documentos sem incluir título, nome ou conteúdo."""
+    sink = getattr(get_service(request), "audit_sink", None)
+    if sink is None:
+        return
+    event = AuditEvent(
+        actor_subject=principal.subject.strip(),
+        action=f"documentos:{action}",
+        entity_type="documento",
+        entity_id=item_id,
+        outcome="success",
+        request_id=getattr(request.state, "request_id", None),
+    )
+    try:
+        sink.append(event)
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Auditoria indisponível. A consulta ao documento não foi concluída.",
+        ) from exc
+
+
 @router.get(
     "",
     response_model=list[DocumentoResumo],
     dependencies=[Depends(require_capability_dependency("documentos:read"))],
 )
-def list_documents(request: Request):
+def list_documents(
+    request: Request,
+    principal: AuthenticatedPrincipal = Depends(require_capability_dependency("documentos:read")),
+):
+    audit_document_read(request, principal, "list")
     return get_service(request).list_metadata()
 
 
@@ -25,7 +58,12 @@ def list_documents(request: Request):
     response_model=Documento,
     dependencies=[Depends(require_capability_dependency("documentos:read"))],
 )
-def get_document(item_id: str, request: Request):
+def get_document(
+    item_id: str,
+    request: Request,
+    principal: AuthenticatedPrincipal = Depends(require_capability_dependency("documentos:read")),
+):
+    audit_document_read(request, principal, "read", item_id)
     return get_service(request).get(item_id)
 
 
