@@ -23,6 +23,6 @@ def get_condominium(
 def update_condominium(
     request: Request,
     data: CondominioPatch,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("condominio:update")),
+    principal: AuthenticatedPrincipal = Depends(require_capability_dependency("condominio:update")),
 ) -> Condominio:
-    return get_service(request).update(data)
+    return get_service(request).update(data, actor=principal, request_id=getattr(request.state, "request_id", None))
