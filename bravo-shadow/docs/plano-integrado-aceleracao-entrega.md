@@ -1,8 +1,8 @@
 # Plano integrado de aceleração — Bravo Shadow
 
-Data da revisão: 2026-11-27  
+Data da revisão: 2026-11-28  
 Branch-base revisada: `bravo-shadow`  
-HEAD revisado: `94d1de6bcbb4bf7d9e02bd81486002be7a933cb6`
+HEAD revisado: `e8bda48ac00e4bc92622c5b7226f8c4febc1a5a6`
 
 ## Decisão de execução
 
@@ -17,9 +17,9 @@ O objetivo da próxima entrega é demonstrar, em um único pipeline, que a image
 | Frontend | Aplicação estática unificada, tema Bravo, navegação responsiva e telas de vários módulos | Nem todos os módulos têm fluxo completo conectado; módulos não migrados ainda exibem estrutura inicial |
 | API | FastAPI, rotas para os módulos e cliente HTTP comum | É necessário comprovar os fluxos integrados com o backend real e persistente |
 | Persistência | Driver Psycopg, adaptadores PostgreSQL e seleção explícita por configuração | O modo PostgreSQL conecta vários adaptadores; exige validar schema, permissões, RLS e CRUD em conjunto |
-| Banco | Sete migrations versionadas; CI agora aplica as sete migrations em PostgreSQL descartável e executa auditoria de catálogo após a aplicação | A execução ainda precisa ser observada em um workflow concluído; homologação local do desenvolvedor não foi realizada |
+| Banco | Sete migrations versionadas; execução CI aplicou todas em PostgreSQL descartável, executou auditoria de catálogo e inspeção de privilégios/RLS | Ainda faltam testes ponta a ponta de CRUD e relações entre módulos; homologação local não foi realizada |
 | Autenticação | Validação server-side de identidade Google e módulo cliente | Bootstrap do frontend fica desligado sem API HTTPS Shadow validada e origem OAuth/CORS exatas |
-| CI | GitHub Actions constrói o Docker, faz smoke test HTTP, aplica migrations em PostgreSQL descartável, audita o catálogo e executa pytest | É necessário acompanhar o resultado do workflow; execução em CI não comprova OAuth, frontend completo nem todos os CRUDs em produção |
+| CI | Workflow integrado concluído com sucesso no commit `e8bda48`; Docker/smoke test, testes unitários, sete migrations, auditoria, inspeção RLS/grants e quatro suítes PostgreSQL passaram | CI não comprova OAuth real, frontend completo nem CRUD ponta a ponta de todos os módulos |
 | Preview | GitHub Pages valida/publica arquivos estáticos | Não hospeda FastAPI, banco nem autenticação; não pode ser apresentado como sistema operacional completo |
 | Implantação | Dockerfile e blueprint Render preparados | Nenhum ambiente hospedado foi validado; não publicar nem conectar serviços remotos sem revisão e autorização separadas |
 
@@ -31,8 +31,8 @@ O objetivo da próxima entrega é demonstrar, em um único pipeline, que a image
 - [x] Aplicar, em ordem, as sete migrations da branch, desde banco vazio.
 - [x] Executar a auditoria de catálogo depois da aplicação.
 - [x] Executar inspeção SQL de privilégios/RLS somente leitura.
-- [ ] Observar workflow concluído e corrigir eventuais falhas; a configuração do pipeline não equivale a execução bem-sucedida.
-- [ ] Confirmar descarte do banco ao fim do job pelo encerramento do runner efêmero.
+- [x] Observar workflow concluído com sucesso no commit `e8bda48ac00e4bc92622c5b7226f8c4febc1a5a6` (run `46161274052`).
+- [x] Confirmar encerramento dos containers PostgreSQL no fim do job (`Stop containers` concluído); o runner do GitHub Actions é efêmero.
 
 ### 2. Teste ponta a ponta da API
 - Iniciar a API com configuração exclusiva de teste.
@@ -84,7 +84,7 @@ O smoke test do contêiner agora fornece valores sintéticos explícitos para `B
 
 ## Limites desta revisão
 
-Esta revisão dos arquivos foi estática. O workflow foi atualizado para aplicar as sete migrations no PostgreSQL descartável do GitHub Actions antes da auditoria e também para disparar em pull requests que alterem migrations ou scripts de homologação. Não executei Docker, PostgreSQL, migrations, pytest, OAuth ou deploy nesta sessão. Os itens marcados como concluídos descrevem etapas configuradas no workflow, não resultados de uma execução já observada.
+Esta revisão documental foi atualizada após observar a execução real do workflow `46161274052`, no commit `e8bda48ac00e4bc92622c5b7226f8c4febc1a5a6`: os três jobs (`Backend / testes unitários`, `Docker / build de demonstração` e `Backend / integrações PostgreSQL descartável`) concluíram com sucesso. O job PostgreSQL confirmou aplicação das sete migrations, auditoria do catálogo, inspeção somente leitura de RLS/privilégios e execução das quatro suítes de integração. O passo `Stop containers` também concluiu com sucesso. Isso valida o pipeline automatizado nesse commit, mas não substitui testes ponta a ponta de CRUD por módulo, OAuth real, homologação visual/funcional ou deploy. Nenhuma conexão ou escrita no Bravo original foi realizada.
 
 
 ### Financeiro — integração de auditoria atômica
