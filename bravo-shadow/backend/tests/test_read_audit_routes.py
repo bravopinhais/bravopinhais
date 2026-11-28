@@ -96,3 +96,35 @@ def test_sensitive_read_routes_fail_closed_when_audit_sink_fails():
     detail = client.get("/api/v1/usuarios/id-inexistente")
     assert detail.status_code == 503
     assert "private audit backend detail" not in detail.text
+
+
+def test_financial_catalog_dashboard_and_report_reads_are_audited():
+    application, client = build_client()
+    services = application.state.services
+    services.plano_contas.audit_sink = ReadAuditSink()
+    services.formas_monetarias.audit_sink = ReadAuditSink()
+    services.financeiro.audit_sink = ReadAuditSink()
+
+    checks = [
+        ("/api/v1/plano-contas", services.plano_contas.audit_sink, "plano_contas:list", "plano_conta"),
+        ("/api/v1/formas-monetarias", services.formas_monetarias.audit_sink, "formas_monetarias:list", "forma_monetaria"),
+        ("/api/v1/dashboard/resumo", services.financeiro.audit_sink, "dashboard:summary", "dashboard"),
+        ("/api/v1/relatorios/dre", services.financeiro.audit_sink, "relatorios:dre", "relatorio"),
+    ]
+    for path, sink, action, entity_type in checks:
+        response = client.get(path)
+        assert response.status_code == 200
+        event = sink.events[-1]
+        assert (event.action, event.entity_type, event.entity_id) == (action, entity_type, None)
+        assert event.actor_subject == "google-test-subject"
+        assert event.request_id
+
+
+def test_dashboard_and_report_fail_closed_when_financial_audit_is_unavailable():
+    application, client = build_client()
+    application.state.services.financeiro.audit_sink = ReadAuditSink(fail=True)
+
+    for path in ("/api/v1/dashboard/resumo", "/api/v1/relatorios/dre"):
+        response = client.get(path)
+        assert response.status_code == 503
+        assert "private audit backend detail" not in response.text
