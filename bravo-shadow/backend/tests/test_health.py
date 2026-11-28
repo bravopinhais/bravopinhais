@@ -69,7 +69,7 @@ def test_frontend_exposes_first_api_integrated_module() -> None:
     assert response.status_code == 200
     assert 'id="forma-form"' in response.text
     assert '"/formas-monetarias"' in response.text
-    assert "Carregando dados da API" in response.text
+    assert "Aguardando autenticação Google e API HTTPS Shadow" in response.text
 
 
 
