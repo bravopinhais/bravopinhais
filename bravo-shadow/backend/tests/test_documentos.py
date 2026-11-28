@@ -255,3 +255,48 @@ def test_document_service_requires_actor_and_uses_audited_contract():
     assert [event.request_id for event in sink.events] == [
         "req_doc_create", "req_doc_update", "req_doc_delete",
     ]
+
+
+class ReadAuditSink:
+    def __init__(self, *, fail=False):
+        self.events = []
+        self.fail = fail
+
+    def append(self, event):
+        if self.fail:
+            raise RuntimeError("private audit backend detail")
+        self.events.append(event)
+
+
+def test_document_list_and_detail_reads_are_audited_without_document_content():
+    sink = ReadAuditSink()
+    app.state.services.documentos.audit_sink = sink
+    created = client.post("/api/v1/documentos", json=payload())
+    assert created.status_code == 201
+    sink.events.clear()
+
+    listed = client.get("/api/v1/documentos")
+    detail = client.get("/api/v1/documentos/" + created.json()["id"])
+
+    assert listed.status_code == 200
+    assert detail.status_code == 200
+    assert [(event.action, event.entity_type, event.entity_id) for event in sink.events] == [
+        ("documentos:list", "documento", None),
+        ("documentos:read", "documento", created.json()["id"]),
+    ]
+    assert all(event.actor_subject == "google-test-subject" for event in sink.events)
+    assert all(event.request_id for event in sink.events)
+    assert all(not hasattr(event, "email") for event in sink.events)
+    assert all(not hasattr(event, "payload") for event in sink.events)
+
+
+def test_document_reads_fail_closed_when_audit_storage_is_unavailable():
+    app.state.services.documentos.audit_sink = ReadAuditSink(fail=True)
+
+    listed = client.get("/api/v1/documentos")
+    detail = client.get("/api/v1/documentos/inexistente")
+
+    assert listed.status_code == 503
+    assert detail.status_code == 503
+    assert "private audit backend detail" not in listed.text
+    assert "private audit backend detail" not in detail.text
