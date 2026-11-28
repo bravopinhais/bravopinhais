@@ -147,8 +147,8 @@ jobs:
 
           root = Path("..")
           migrations = sorted((root / "supabase" / "migrations").glob("*.sql"))
-          if len(migrations) != 6:
-              raise SystemExit(f"Esperadas 6 migrations; encontradas {len(migrations)}.")
+          if len(migrations) != 7:
+              raise SystemExit(f"Esperadas 7 migrations; encontradas {len(migrations)}.")
 
           with psycopg.connect(
               os.environ["BRAVO_SHADOW_TEST_DATABASE_URL"],
@@ -171,7 +171,7 @@ jobs:
               print(f"Auditando catálogo: {audit.name}")
               connection.execute(audit.read_text(encoding="utf-8"), prepare=False)
 
-          print("Seis migrations aplicadas e auditoria do catálogo concluída.")
+          print("Sete migrations aplicadas e auditoria do catálogo concluída.")
           PY
 
       - name: Executar inspeção SQL somente leitura no PostgreSQL descartável
