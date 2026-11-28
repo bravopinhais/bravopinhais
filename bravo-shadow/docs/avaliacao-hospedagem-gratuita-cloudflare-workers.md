@@ -46,3 +46,14 @@ A prova verifica o ID token Google no servidor usando a chave pública correspon
 A prova só será aprovada quando houver execução local reproduzível, endpoint HTTPS respondendo, validação Google no servidor, bloqueio de usuários não cadastrados/inativos, CORS restrito, testes automatizados passando e confirmação de que nenhuma dependência exige plano pago.
 
 Até lá, o login do preview continua identificado como pendente e o sistema original permanece intocado.
+
+
+## Compatibilidade com o frontend atual — verificação adicional
+
+O bootstrap do frontend (`frontend/js/bravo-bootstrap.js`) exige que `apiBase` tenha exatamente a mesma origem HTTPS da página. Portanto, um Worker publicado em um endereço separado `*.workers.dev` não pode ser conectado diretamente pela configuração atual, mesmo que o CORS do Worker esteja correto.
+
+Há duas arquiteturas possíveis para avaliação futura:
+- manter o frontend no GitHub Pages e criar uma rota/proxy HTTPS na mesma origem para encaminhar `/api/*` ao backend; ou
+- aprovar uma alteração explícita no bootstrap para API em origem HTTPS separada, mantendo allowlist CORS exata e validação de destino.
+
+Nenhuma dessas opções está implementada ou autorizada. A segunda alternativa não resolve, por si só, a ausência dos módulos FastAPI no Worker. A prova de autenticação permanece isolada e não deve ser conectada ao frontend como se fosse a API completa.
