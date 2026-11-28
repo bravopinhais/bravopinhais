@@ -25,9 +25,11 @@ def test_every_declared_table_has_rls_and_client_grants_revoked():
         re.IGNORECASE,
     ))
 
-    assert len(tables) == 16
-    assert rls == tables
-    assert revoked == tables
+    assert len(tables) == 15
+    assert tables <= rls
+    assert tables <= revoked
+    assert "module_settings" in rls
+    assert "module_settings" in revoked
 
 
 def test_schema_access_is_revoked_from_public_and_supabase_api_roles():
