@@ -349,3 +349,42 @@ def test_stock_audit_failure_rolls_back_create():
     assert connection.commits == 0
     assert connection.rollbacks == 1
     assert connection.closed == 1
+
+
+def test_stock_service_rejects_mutation_without_authenticated_actor_when_audited():
+    from app.modules.estoque.schemas import EstoqueInput
+    from app.modules.estoque.service import EstoqueService
+    from app.core.repositories import InMemoryCollectionRepository
+
+    service = EstoqueService(
+        repository=InMemoryCollectionRepository(),
+        audit_sink=object(),
+    )
+
+    with pytest.raises(HTTPException) as error:
+        service.create(EstoqueInput(item="Produto sem ator"))
+
+    assert error.value.status_code == 403
+    assert service.list() == []
+
+
+def test_adjustment_service_rejects_mutation_without_authenticated_actor_when_audited():
+    from app.modules.acertos_estoque.schemas import AcertoInput
+    from app.modules.acertos_estoque.service import AcertosEstoqueService
+    from app.core.repositories import InMemoryCollectionRepository
+    from app.modules.estoque.service import EstoqueService
+
+    service = AcertosEstoqueService(
+        repository=InMemoryCollectionRepository(),
+        inventory_service=EstoqueService(),
+        movement_repository=object(),
+        audit_sink=object(),
+    )
+
+    with pytest.raises(HTTPException) as error:
+        service.create(AcertoInput(
+            tipo="Entrada", produtoId="est_1", quantidade=1, motivo="Teste",
+        ))
+
+    assert error.value.status_code == 403
+    assert service.list() == []
