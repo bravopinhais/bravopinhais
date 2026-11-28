@@ -66,6 +66,32 @@ Consequentemente, não se deve aplicar esses quatro contratos parcialmente espec
 
 O hash do arquivo bruto do envelope, o `snapshotHash` interno e o hash do pacote são evidências distintas. O hash do pacote protege a integridade do campo `sourceEnvelopeRawSha256`, mas não prova que esse digest corresponde ao objeto `sourceEnvelope` embutido: para essa comprovação seria necessário incluir e conferir os bytes originais do envelope. O leitor valida o formato do digest declarado, sem afirmar que o verificou. O leitor existente deliberadamente não presume que o hash bruto e `snapshotHash` sejam equivalentes. Também não se deve recalcular o `snapshotHash` a partir dos candidatos até que o contrato oficial do exportador defina formalmente o mesmo algoritmo e escopo.
 
+
+### Matriz de cobertura do inventário — revisão 2026-11-28
+
+Esta matriz separa evidência estática de contrato pronto para aceitação. “Campos observados” não significa allowlist executável; nenhum dos itens abaixo, isoladamente, libera importação.
+
+| Coleção/objeto legado | Campos observados no código/auditoria | Situação para o pacote |
+|---|---|---|
+| `condominio` (objeto singleton) | nome, CNPJ, razão social, endereço, bairro, cidade, UF, CEP, telefone, e-mail, identificadores Copel por bloco/áreas comuns, gás e Sanepar | Contrato singleton separado; localizar origem e cardinalidade manualmente. Ausência, null e vazio devem permanecer distintos. |
+| `conselheiros` | id, nome, cargo, BlocoAp, telefone | Auditoria de formulário disponível; allowlist e regras de referência ainda não implementadas. |
+| `usuarios` | id, usuario/login legado, nome, e-mail, cargo, loja, perfil, status, primeiroAcesso e senhaHash legado | Bloqueio especial obrigatório: excluir senhaHash, credenciais e campos de autenticação antigos; preservar apenas perfil operacional aprovado. Google/e-mail validado permanece o único fluxo de identidade. |
+| `plano_contas` | id, codigo, nome, tipo | Auditoria disponível; validar referências de Financeiro e regras adicionais da API Shadow antes de aceitar. |
+| `financeiro` | id, tipo, planoContaId opcional, historico, valor | Contrato especializado existente; revisão obrigatória de precisão decimal e referências órfãs. |
+| `formas_monetarias` | id, nome, multaPct | Auditoria disponível; allowlist ainda não integrado ao leitor do pacote. |
+| `contas_bancarias` | id, banco, saldo | Auditoria disponível; saldo é valor manual, não saldo conciliado. |
+| `moradores` | id, bloco, apartamento, nome, email, telefone, cpf, petNome, vagaGaragem | Auditoria disponível; dados pessoais exigem minimização, autorização e revisão. Importador CSV legado não é parser XLSX/CSV robusto. |
+| `fornecedores` | id, cnpj, razaoSocial | Auditoria disponível; CNPJ é texto no legado e não há validação matemática observada. |
+| `empregados` | id, nome, cargo, empresa, endereco, telefone, contatoEmergenciaNome, contatoEmergenciaTel | Auditoria disponível; contato de emergência é dado pessoal e requer tratamento restrito. |
+| `categorias` | id, nome | Auditoria disponível; documentos guardam pasta por texto, não por ID; nomes órfãos exigem revisão. |
+| `estoque` | id, item, quantidade, minimo, maximo, etiqueta, fotoNome, fotoCompactadaGzip | Contrato especializado existente; campos marca/linha/fabricante/dataCadastro são extensões Shadow, não campos legados confirmados. Codec de foto deve ser verificado. |
+| `acertos_estoque` | id, data, tipo, produtoId, quantidade, motivo | Contrato especializado existente; motivo é texto, produtoId exige resolução exata; datas e divergências de saldo exigem revisão. |
+| `motivos_acerto_estoque` | id, nome | Auditoria disponível; não presumir motivoId nos acertos, pois o legado observado grava motivo textual. |
+| `documentos` | id, pasta, titulo, nomeArquivo, arquivoCompactadoGzip | Contrato especializado existente; conteúdo Base64/deflate requer validação de codec e hash dos bytes descompactados. |
+| `logs` | Estrutura e finalidade ainda não inventariadas | Não aceitar no pacote; classificação e contrato pendentes. |
+
+**Regra operacional decorrente:** somente `financeiro`, `documentos`, `estoque` e `acertos_estoque` possuem contratos especializados de avaliação de formato; mesmo esses permanecem em revisão e não constituem allowlist de pacote. `condominio` exige localizador singleton manual. Para as demais coleções, a auditoria descreve campos de formulário, mas não há ainda validador estrito ligado ao leitor. A coleção `logs` permanece sem classificação. Até que cada domínio tenha esquema estrito, política de dados pessoais/credenciais, referência e testes negativos próprios, qualquer pacote que contenha essas coleções deve ser tratado como não apto para importação. Campos extras nunca podem ser descartados silenciosamente.
+
 ## 5. Reconstrução e verificações obrigatórias
 
 A rotina de leitura deve:
