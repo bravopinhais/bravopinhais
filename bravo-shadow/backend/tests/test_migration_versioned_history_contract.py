@@ -9,6 +9,7 @@ EXPECTED = [
     "20261127000400_bravo_shadow_migration_execution.sql",
     "20261127000500_bravo_shadow_migration_review.sql",
     "20261127000600_bravo_shadow_pre_import_approval.sql",
+    "20261128000700_bravo_shadow_google_identities.sql",
 ]
 
 def test_versioned_migration_history_has_exact_order_and_unique_versions():
