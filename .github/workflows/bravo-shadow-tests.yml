@@ -5,6 +5,8 @@ on:
     branches:
       - bravo-shadow
     paths:
+      - "bravo-shadow/README.md"
+      - "bravo-shadow/docs/plano-integrado-aceleracao-entrega.md"
       - "bravo-shadow/backend/**"
       - "bravo-shadow/frontend/**"
       - "bravo-shadow/Dockerfile"
