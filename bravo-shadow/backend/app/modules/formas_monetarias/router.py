@@ -24,9 +24,9 @@ def list_forms(
 def create_form(
     data: FormaMonetariaInput,
     request: Request,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("formas_monetarias:create")),
+    principal: AuthenticatedPrincipal = Depends(require_capability_dependency("formas_monetarias:create")),
 ) -> FormaMonetaria:
-    return get_service(request).create(data)
+    return get_service(request).create(data, actor=principal, request_id=getattr(request.state, "request_id", None))
 
 
 @router.put("/{item_id}", response_model=FormaMonetaria)
@@ -34,15 +34,15 @@ def update_form(
     item_id: str,
     data: FormaMonetariaInput,
     request: Request,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("formas_monetarias:update")),
+    principal: AuthenticatedPrincipal = Depends(require_capability_dependency("formas_monetarias:update")),
 ) -> FormaMonetaria:
-    return get_service(request).update(item_id, data)
+    return get_service(request).update(item_id, data, actor=principal, request_id=getattr(request.state, "request_id", None))
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_form(
     item_id: str,
     request: Request,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("formas_monetarias:delete")),
+    principal: AuthenticatedPrincipal = Depends(require_capability_dependency("formas_monetarias:delete")),
 ) -> None:
-    get_service(request).delete(item_id)
+    get_service(request).delete(item_id, actor=principal, request_id=getattr(request.state, "request_id", None))
