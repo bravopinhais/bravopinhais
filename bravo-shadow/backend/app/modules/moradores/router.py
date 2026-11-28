@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Request, status
 
 from app.core.authorization import AuthenticatedPrincipal, require_capability_dependency
+from app.core.audit import AuditEvent
 from .schemas import Morador, MoradorInput, MoradorImportBatch, MoradorResumo
 from .service import MoradoresService
 
@@ -11,6 +12,34 @@ def get_service(request: Request) -> MoradoresService:
     return request.app.state.services.moradores
 
 
+def audit_resident_read(
+    request: Request,
+    actor: AuthenticatedPrincipal,
+    action: str,
+    item_id: str | None = None,
+) -> None:
+    """Registra consultas a dados pessoais sem armazenar filtros ou conteúdo."""
+    sink = getattr(get_service(request), "audit_sink", None)
+    if sink is None:
+        return
+    event = AuditEvent(
+        actor_subject=actor.subject.strip(),
+        action=f"moradores:{action}",
+        entity_type="morador",
+        entity_id=item_id,
+        outcome="success",
+        request_id=getattr(request.state, "request_id", None),
+    )
+    try:
+        sink.append(event)
+    except Exception as exc:
+        # Não expor dados pessoais quando a auditoria persistente está indisponível.
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Auditoria indisponível. A consulta não foi concluída.",
+        ) from exc
+
+
 @router.get("", response_model=list[MoradorResumo])
 def list_residents(
     request: Request,
@@ -18,6 +47,7 @@ def list_residents(
     busca: str | None = None,
     actor: AuthenticatedPrincipal = Depends(require_capability_dependency("moradores:read")),
 ) -> list[MoradorResumo]:
+    audit_resident_read(request, actor, "list")
     return [MoradorResumo(id=item.id, bloco=item.bloco, apartamento=item.apartamento, nome=item.nome) for item in get_service(request).list(bloco=bloco, busca=busca)]
 
 
@@ -27,6 +57,7 @@ def get_resident(
     item_id: str,
     actor: AuthenticatedPrincipal = Depends(require_capability_dependency("moradores:read")),
 ) -> Morador:
+    audit_resident_read(request, actor, "read", item_id)
     return get_service(request).get(item_id)
 
 
