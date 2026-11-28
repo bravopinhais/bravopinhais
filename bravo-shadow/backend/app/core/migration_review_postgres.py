@@ -26,10 +26,14 @@ class PostgresReviewLedgerStore:
     """Durable review ledger with explicit snapshot initialization.
 
     initialize is the only operation that creates the batch and decision
-    snapshot. load never creates data. append locks one decision row, checks
-    the persisted manifest and version, and inserts one immutable event
-    in the same transaction.
+    snapshot. load never creates data. append takes a transaction-scoped
+    advisory lock, checks the persisted manifest and version, and inserts
+    one immutable event in the same transaction.
     """
+
+    # Conservative global lock for this subsystem. It serializes appends but
+    # avoids UPDATE privileges on immutable snapshot tables and hash collisions.
+    _APPEND_LOCK_KEY = 0x425241564F534844  # "BRAVOSHD" as a signed-safe bigint
 
     def __init__(self, connection_factory: Callable[[], Any]) -> None:
         self._connection_factory = connection_factory
@@ -168,9 +172,19 @@ class PostgresReviewLedgerStore:
         rationale: str,
         reviewed_at: str,
     ) -> ReviewLedger:
-        """Append under a batch lock, then decision lock, with optimistic versioning."""
+        """Append under a transaction-scoped subsystem lock with optimistic versioning."""
         with PostgresUnitOfWork(self._connection_factory) as uow:
             connection = uow.connection
+
+            # The transaction-level lock is released automatically by PostgreSQL
+            # on commit/rollback. Runtime needs EXECUTE on this built-in function,
+            # but no UPDATE privilege on immutable batch/decision tables.
+            cursor = self._run(
+                connection,
+                "SELECT pg_catalog.pg_advisory_xact_lock(%s)",
+                (self._APPEND_LOCK_KEY,),
+            )
+            self._close_cursor(cursor)
 
             cursor = self._run(
                 connection,
@@ -178,7 +192,6 @@ class PostgresReviewLedgerStore:
                 SELECT manifest_hash
                 FROM bravo_shadow.migration_review_batches
                 WHERE batch_key = %s
-                FOR UPDATE
                 """,
                 (register.batch_id,),
             )
@@ -193,7 +206,6 @@ class PostgresReviewLedgerStore:
                 SELECT batch_key, manifest_hash
                 FROM bravo_shadow.migration_review_decisions
                 WHERE batch_key = %s AND decision_id = %s
-                FOR UPDATE
                 """,
                 (register.batch_id, decision_id),
             )
