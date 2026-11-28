@@ -31,14 +31,11 @@ def test_all_formas_monetarias_routes_require_authentication():
 
 
 
-def test_admin_has_full_formas_monetarias_access():
+def test_admin_has_read_and_write_capabilities_but_mutations_fail_closed_without_audit():
     client = build_client("Admin")
     assert client.get("/api/v1/formas-monetarias").status_code == 200
-    created = client.post("/api/v1/formas-monetarias", json={"nome": "Boleto"})
-    assert created.status_code == 201
-    item_id = created.json()["id"]
-    assert client.put(f"/api/v1/formas-monetarias/{item_id}", json={"nome": "PIX"}).status_code == 200
-    assert client.delete(f"/api/v1/formas-monetarias/{item_id}").status_code == 204
+    assert client.post("/api/v1/formas-monetarias", json={"nome": "Boleto"}).status_code == 503
+    assert client.get("/api/v1/formas-monetarias").json() == []
 
 def test_operator_has_read_only_formas_monetarias_access():
     client = build_client("Operador")
