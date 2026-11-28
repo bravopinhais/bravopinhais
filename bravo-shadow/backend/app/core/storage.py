@@ -171,9 +171,9 @@ def build_storage_services(
     motivos_acerto.set_reference_checker(acertos_estoque.has_reason_reference)
     estoque.set_movement_reference_checker(acertos_estoque.has_product_reference)
 
-    moradores = MoradoresService(repository=moradores_repository)
-    fornecedores = FornecedoresService(repository=fornecedores_repository)
-    empregados = EmpregadosService(repository=empregados_repository)
+    moradores = MoradoresService(repository=moradores_repository, audit_sink=audit_sink)
+    fornecedores = FornecedoresService(repository=fornecedores_repository, audit_sink=audit_sink)
+    empregados = EmpregadosService(repository=empregados_repository, audit_sink=audit_sink)
     contas_bancarias = ContasBancariasService(repository=contas_bancarias_repository, audit_sink=audit_sink)
     condominio = CondominioService(repository=condominio_repository)
     conselheiros = ConselheirosService(repository=conselheiros_repository)
