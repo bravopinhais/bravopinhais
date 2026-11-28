@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 
 from app.core.authorization import AuthenticatedPrincipal, require_capability_dependency
+from app.core.read_audit import audit_read
 from .schemas import Usuario, UsuarioCadastroInput, UsuarioDadosCadastraisUpdateInput
 from .service import UsuariosService
 
@@ -16,7 +17,9 @@ def list_users(
     request: Request,
     _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("usuarios:read")),
 ) -> list[Usuario]:
-    return get_service(request).list()
+    service = get_service(request)
+    audit_read(request, service, _principal, "usuarios:list", "usuario")
+    return service.list()
 
 
 @router.get("/{item_id}", response_model=Usuario)
@@ -25,7 +28,9 @@ def get_user(
     item_id: str,
     _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("usuarios:read")),
 ) -> Usuario:
-    return get_service(request).get(item_id)
+    service = get_service(request)
+    audit_read(request, service, _principal, "usuarios:read", "usuario", item_id)
+    return service.get(item_id)
 
 
 @router.post("", response_model=Usuario, status_code=status.HTTP_201_CREATED)
