@@ -1,83 +1,72 @@
 # Supabase local — Bravo Shadow
 
-Este diretório documenta a preparação do banco isolado. Nenhum projeto remoto deve ser vinculado nesta fase.
+Este diretório contém a configuração local e seis migrations versionadas do Bravo Shadow. O projeto está configurado para uso local e não possui vínculo remoto declarado.
 
-## Estado atual
+## Estado confirmado no repositório
 
-- Não há `config.toml` ou `config.jsonc` versionado ainda.
-- O DDL de referência está em `../docs/sql-piloto-financeiro.sql`; ele é um rascunho, não uma migration.
-- Nenhum banco foi iniciado ou alterado.
-- Não existe seed com dados do condomínio.
-- Não instalar nem configurar credenciais de produção.
-- O backend tem driver Psycopg e fábrica por `BRAVO_DATABASE_URL`, mas o modo padrão continua `memory`. O modo `postgres` conecta todos os adaptadores dos módulos, não apenas o piloto financeiro. Não habilitar PostgreSQL antes dos critérios de aceite abaixo.
-- O SQL habilita RLS sem policies. A role customizada da API precisa de políticas explícitas; não basta conceder GRANTs SQL. A solução de autorização no banco ainda precisa ser projetada e testada.
+- Configuração: `config.toml`, com `project_id = "bravo-shadow-local"`.
+- Migrations: seis arquivos versionados em `supabase/migrations/`, cobrindo schema funcional, auditoria, lotes, execução/aprovação, revisão e aprovação pré-importação.
+- Script operacional: `scripts/homologar-local.sh`, que exige branch `bravo-shadow`, configuração local exata, ausência de vínculo/variáveis remotas, Docker ativo e Supabase CLI. Executa `supabase start`, `supabase db reset --local` e `supabase migration list --local`.
+- Driver PostgreSQL: Psycopg 3 está nas dependências do backend.
+- Nenhuma aplicação das migrations em banco real foi comprovada nesta revisão.
+- Nenhuma importação de dados reais está autorizada.
 
-## Versão e preparação local
+## Como executar a homologação local
 
-Use Supabase CLI **3.4.0 ou superior**. A partir da versão 3.4.0, `supabase init` cria `supabase/config.jsonc` em vez de `config.toml`. A CLI v3 executa comandos de banco na stack local por padrão; não use a opção `--remote`.
-
-Na raiz do repositório, entre no diretório `bravo-shadow/` e confira os comandos disponíveis antes de executar:
+Na raiz do repositório:
 
 ```bash
+cd bravo-shadow
 supabase --version
-supabase --help
-supabase init
+docker info
+bash scripts/homologar-local.sh
 ```
 
-Revise o arquivo de configuração gerado. Confirme que não há `project_id`, referência remota, URL externa ou segredo de produção. Não execute `supabase link`.
+O script encerra com erro se a branch, configuração ou ambiente não corresponderem às condições locais. Ele não instala ferramentas e não tenta corrigir ou remover vínculos remotos automaticamente.
 
-Valide a configuração local com:
+Depois da execução, conferir o histórico local:
 
 ```bash
-supabase config validate
+supabase migration list --local
 ```
 
-## Criar a migration oficial
+A execução do script deve ocorrer somente em máquina de desenvolvimento com Docker e Supabase CLI instalados. Não executar em diretório com dados úteis ou em ambiente compartilhado.
 
-A migration deve ser criada pela CLI — não crie manualmente o arquivo timestampado:
+## Bloqueio de segurança que ainda precisa ser resolvido
 
-```bash
-supabase migration new bravo_pilot_financeiro
-```
+As migrations atuais revogam privilégios de `PUBLIC`, `anon`, `authenticated` e `service_role` em objetos sensíveis. Várias tabelas habilitam RLS e permanecem sem policies/grants de runtime. Isso é deliberadamente fechado, mas significa que **a API não pode ser considerada pronta para usar PostgreSQL até existir uma role privada mínima, policies explícitas e grants testados**.
 
-Copie o conteúdo revisado de `../docs/sql-piloto-financeiro.sql` para o arquivo timestampado criado em `supabase/migrations/`. Revise o SQL e o diff antes de iniciar o banco.
+A próxima migration de segurança precisa:
+1. Criar/definir uma role de runtime dedicada, sem superuser, sem ownership das tabelas e sem `BYPASSRLS`.
+2. Definir policies e grants por tabela e operação, seguindo a matriz de capacidades da API.
+3. Manter auditoria e aprovações append-only; a role de runtime não recebe UPDATE/DELETE nessas tabelas.
+4. Preservar `acertos_estoque` como histórico imutável conforme o contrato funcional.
+5. Testar acesso permitido e negado com a role real de runtime, não com owner ou superuser.
+6. Garantir que nenhum segredo, URL ou credencial do Bravo original seja usado.
 
-## Iniciar e validar somente a stack local
+Não conceder acesso amplo ao schema, não expor `bravo_shadow` pela Data API e não usar `service_role` como atalho.
 
-```bash
-supabase start
-supabase status
-supabase db reset
-supabase migration list
-```
+## Critérios de aceite integrados
 
-O `db reset` sem `--remote` recria a base local e reaplica as migrations. Confirme no output que os serviços e as portas são locais antes de executar comandos de banco. Não use `--remote`, `--linked` ou URL de banco hospedado.
+1. As seis migrations aplicam desde um PostgreSQL local vazio, na ordem versionada.
+2. A auditoria do catálogo é executada **depois** das migrations e confirma tabelas, FKs, índices, CHECKs, tipos, RLS, policies e privilégios.
+3. A API inicia com a role privada e executa CRUD persistente para todos os módulos habilitados.
+4. Transações de negócio, rollback, concorrência otimista, auditoria e proveniência são verificadas em conjunto.
+5. Reiniciar a API não perde registros sintéticos.
+6. A suíte inclui cenários de negação de acesso e não depende de privilégios de owner.
+7. Todos os testes usam exclusivamente banco descartável local/CI.
 
-## Critérios de aceite do primeiro lote
-
-1. A migration aplica desde banco vazio sem erro.
-2. As tabelas existem exclusivamente no schema privado `bravo_shadow`.
-3. `financeiro.plano_conta_id` referencia `plano_contas.id` com `ON DELETE RESTRICT`.
-4. `valor` aceita precisão `numeric(14,2)` e rejeita mais de duas casas.
-5. RLS está habilitado e não há policies permissivas nem grants a `anon`/`authenticated`.
-6. A API não tem credenciais nem driver configurados para banco remoto.
-7. Testes de integração usam somente a instância local descartável.
-8. O modo `postgres` do backend conecta adaptadores para os 14 módulos com repositório próprio; portanto, o teste completo exige permissões mínimas em todas as 15 tabelas do schema. Não limitar os GRANTs às três tabelas financeiras enquanto esse modo ligar todos os adaptadores.
-9. Definir a identidade da role da API e políticas RLS explícitas. O SQL atual habilita RLS sem policies e revoga os grants das roles padrão; uma role comum sem política também ficará bloqueada. Não conceder `BYPASSRLS` como atalho, nem usar o superusuário padrão como credencial permanente.
-10. A tabela `acertos_estoque` deve permitir à API somente SELECT e INSERT; não conceder UPDATE/DELETE para manter o histórico imutável. Demais permissões devem refletir o CRUD realmente usado por cada módulo.
-11. CRUD de todos os módulos habilitados no modo PostgreSQL funciona após reiniciar a API e os dados persistem, respeitando as políticas e permissões definidas.
-
-Só depois desses critérios deve ser ativado `BRAVO_STORAGE_BACKEND=postgres` na sombra. Não conceder acesso amplo ao schema nem expor `bravo_shadow` pela Data API.
-
-## Comandos proibidos nesta fase
+## Comandos proibidos
 
 - `supabase link`
 - `supabase db push`
 - `supabase db reset --remote`
-- Qualquer comando com `--remote`, `--linked` ou URL hospedada.
+- Qualquer comando com `--remote`, `--linked` ou URL de banco hospedado.
 
-A promoção para staging/produção exige etapa separada, revisão de segurança, backup, plano de rollback e aprovação explícita.
+A branch Shadow permanece separada. Homologação local não autoriza publicação, conexão a banco hospedado, importação real nem promoção ao Bravo original.
 
-## Limitação deste ambiente de trabalho
+## Pipeline CI existente e lacuna
 
-O ambiente remoto usado para editar o repositório não tem Supabase CLI nem Docker disponíveis. Portanto, não é possível gerar a migration com a CLI, iniciar a stack ou validar SQL neste ambiente. Esses comandos precisam ser executados em uma máquina de desenvolvimento com Docker e Supabase CLI instalados. Até lá, o rascunho SQL permanece apenas documentação e o backend deve continuar em memória.
+O workflow `.github/workflows/bravo-shadow-tests.yml` já constrói o Docker, executa smoke test HTTP e roda a suíte Python com um serviço PostgreSQL descartável. Na versão revisada, o job de PostgreSQL executa uma consulta de catálogo somente leitura, mas **não aplica as seis migrations antes da auditoria**. Portanto, o CI atual não é ainda uma homologação ponta a ponta do schema. A correção prioritária é incluir aplicação das migrations e teste de API no mesmo job integrado, e só então executar a suíte completa.
+
+Consulte `docs/plano-integrado-aceleracao-entrega.md` para a sequência consolidada, os bloqueios e os critérios de conclusão.
