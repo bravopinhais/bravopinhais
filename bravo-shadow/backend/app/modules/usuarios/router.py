@@ -32,9 +32,9 @@ def get_user(
 def create_user(
     request: Request,
     data: UsuarioCadastroInput,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("usuarios:create")),
+    principal: AuthenticatedPrincipal = Depends(require_capability_dependency("usuarios:create")),
 ) -> Usuario:
-    return get_service(request).create_cadastral(data)
+    return get_service(request).create_cadastral(data, actor=principal, request_id=getattr(request.state, "request_id", None))
 
 
 @router.put("/{item_id}", response_model=Usuario)
@@ -42,9 +42,9 @@ def update_user(
     request: Request,
     item_id: str,
     data: UsuarioDadosCadastraisUpdateInput,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("usuarios:update")),
+    principal: AuthenticatedPrincipal = Depends(require_capability_dependency("usuarios:update")),
 ) -> Usuario:
-    return get_service(request).update_cadastral(item_id, data)
+    return get_service(request).update_cadastral(item_id, data, actor=principal, request_id=getattr(request.state, "request_id", None))
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
