@@ -3,6 +3,8 @@ from uuid import uuid4
 
 from fastapi import HTTPException
 
+from app.core.audit import AuditEvent
+from app.core.authorization import AuthenticatedPrincipal
 from app.core.repositories import CollectionRepository, InMemoryCollectionRepository
 from app.modules.estoque.service import EstoqueService, estoque_service
 from app.modules.motivos_acerto.service import MotivosAcertoService
@@ -18,6 +20,7 @@ class AcertosEstoqueService:
         inventory_service: EstoqueService | None = None,
         reason_service: MotivosAcertoService | None = None,
         movement_repository=None,
+        audit_sink=None,
     ) -> None:
         self.repository = repository if repository is not None else InMemoryCollectionRepository()
         self._items = getattr(self.repository, "_items", {})
@@ -26,6 +29,7 @@ class AcertosEstoqueService:
         )
         self.reason_service = reason_service
         self.movement_repository = movement_repository
+        self.audit_sink = audit_sink
 
     def list(self) -> list[Acerto]:
         return self.repository.list()
@@ -42,7 +46,14 @@ class AcertosEstoqueService:
             return checker(lambda item: item.motivoId == reason_id)
         return any(item.motivoId == reason_id for item in self.repository.list())
 
-    def create(self, data: AcertoInput) -> Acerto:
+    def create(self, data: AcertoInput, *, actor: AuthenticatedPrincipal | None = None, request_id: str | None = None) -> Acerto:
+        if self.audit_sink is not None and (
+            not isinstance(actor, AuthenticatedPrincipal)
+            or actor.account_status != "Ativo"
+            or not isinstance(actor.subject, str)
+            or not actor.subject.strip()
+        ):
+            raise HTTPException(status_code=403, detail="Identidade autenticada obrigatória para acertos de estoque auditados.")
         product = self.inventory_service.get(data.produtoId)
         reason_name = data.motivo
         if data.motivoId:
@@ -71,6 +82,25 @@ class AcertosEstoqueService:
         if self.movement_repository is not None:
             # O adaptador persistente relê o saldo com FOR UPDATE e grava
             # saldo + histórico em uma única transação PostgreSQL.
+            if self.audit_sink is not None:
+                operation = getattr(self.movement_repository, "register_movement_audited", None)
+                if not callable(operation) or not callable(getattr(self.audit_sink, "append_in_transaction", None)):
+                    raise HTTPException(status_code=503, detail="Persistência e auditoria transacional indisponíveis.")
+                event = AuditEvent(
+                    actor_subject=actor.subject.strip(),
+                    action="acertos_estoque:create",
+                    entity_type="acerto_estoque",
+                    entity_id=item.id,
+                    outcome="success",
+                    request_id=request_id,
+                )
+                return operation(
+                    product_id=product.id,
+                    movement=item,
+                    delta=data.quantidade if data.tipo == "Entrada" else -data.quantidade,
+                    event=event,
+                    audit_sink=self.audit_sink,
+                )
             return self.movement_repository.register_movement(
                 product_id=product.id,
                 movement=item,
