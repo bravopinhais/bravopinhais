@@ -12,6 +12,7 @@ class FakePostgresState:
     def __init__(self):
         self.plan_accounts = {}
         self.financial_titles = {}
+        self.audit_events = []
 
 
 class FakeCursor:
@@ -25,6 +26,11 @@ class FakeCursor:
         self.connection.statements.append((sql, params))
         self.rows = []
         self.rowcount = 0
+
+        if sql.lstrip().startswith("INSERT INTO bravo_shadow.audit_events"):
+            state.audit_events.append(params)
+            self.rowcount = 1
+            return
 
         if sql.startswith("SELECT id, codigo, nome, tipo, version FROM bravo_shadow.plano_contas"):
             if "WHERE id = %s" in sql:
