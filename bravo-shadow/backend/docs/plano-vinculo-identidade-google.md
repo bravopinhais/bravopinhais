@@ -2,6 +2,8 @@
 
 **Estado: proposta técnica; não implementada e não autorizada para ativação.**
 
+**Atualização de revisão: 2026-11-28.** A matriz de capacidades citada abaixo foi conferida com o código atual; o vínculo persistente por `sub` continua pendente.
+
 ## Objetivo
 
 Evoluir da descoberta inicial por e-mail verificado para uma identidade persistente baseada no claim Google `sub`, sem permitir que uma conta Google diferente assuma um cadastro existente por coincidência de e-mail.
@@ -16,7 +18,7 @@ Este plano não altera a autenticação atual, não cria rotas, não aplica migr
 - O `sub` validado é usado no principal e na auditoria, mas não está persistido no cadastro.
 - O repositório PostgreSQL de usuários ainda não tem contrato de vínculo Google.
 - A autenticação não está conectada ao navegador; o contrato de sessão continua sendo apenas especificação.
-- A matriz de capacidades permanece vazia para Admin e Operador.
+- A matriz de capacidades já está implementada em `app/core/authorization.py`: Admin recebe as capacidades catalogadas e Operador recebe o conjunto operacional explicitamente definido. A matriz foi aprovada pelo responsável do Bravo em 2026-11-27; isso não autoriza, por si só, ativar o vínculo persistente por `sub`.
 
 ## Modelo de identidade proposto
 
