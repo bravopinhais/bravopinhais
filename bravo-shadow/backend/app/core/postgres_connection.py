@@ -38,3 +38,49 @@ def create_postgres_connection_factory(
         )
 
     return connect_once
+
+
+def create_migration_postgres_connection_factory(
+    database_url: str | None = None,
+) -> Callable[[], Any]:
+    """Cria conexão exclusiva de preparação, sem fallback para a URL runtime.
+
+    A credencial deve existir somente no ambiente controlado de preparação.
+    Esta função não é importada nem chamada pelo startup da API.
+    """
+    conninfo = (
+        database_url
+        if database_url is not None
+        else os.getenv("BRAVO_MIGRATION_DATABASE_URL", "")
+    ).strip()
+    if not conninfo:
+        raise ValueError(
+            "BRAVO_MIGRATION_DATABASE_URL é obrigatória para preparação controlada."
+        )
+    if not conninfo.startswith(("postgresql://", "postgres://")):
+        raise ValueError(
+            "BRAVO_MIGRATION_DATABASE_URL deve usar uma URL PostgreSQL (postgresql://)."
+        )
+
+    runtime_conninfo = os.getenv("BRAVO_DATABASE_URL", "").strip()
+    if runtime_conninfo and conninfo == runtime_conninfo:
+        raise ValueError(
+            "A credencial de preparação deve ser diferente da credencial runtime."
+        )
+
+    try:
+        from psycopg import connect
+    except ImportError as exc:
+        raise RuntimeError(
+            "O driver Psycopg não está instalado. Instale backend/requirements.txt."
+        ) from exc
+
+    def connect_once():
+        return connect(
+            conninfo,
+            connect_timeout=5,
+            application_name="bravo-shadow-migration-preparation",
+        )
+
+    return connect_once
+
