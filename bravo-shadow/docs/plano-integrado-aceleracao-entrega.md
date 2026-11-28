@@ -104,3 +104,8 @@ Os dois módulos passaram a receber o sink de auditoria no composition root e a 
 ### Usuários — auditoria das alterações cadastrais
 
 As rotas de criação e atualização cadastral agora encaminham ator interno e request ID. No modo PostgreSQL, ambas exigem perfil Admin ativo e métodos dedicados do repositório; criação de usuário comum (Operador/Ativo) e atualização apenas de nome/loja/cargo são gravadas junto com o evento de auditoria na mesma transação. O repositório não aceita perfil/status no payload cadastral, não permite exclusão física e preserva o fluxo administrativo privilegiado separado. Falta validar os novos contratos no CI e no PostgreSQL descartável; não há autorização de importação ou mudança de produção implícita.
+
+
+### Moradores, Fornecedores e Empregados — bloqueio preventivo de gravações
+
+As rotas passaram a encaminhar identidade interna e request ID aos serviços, e o composition root injeta o sink de auditoria. Como os repositórios PostgreSQL desses três módulos ainda não possuem operações de escrita auditadas no mesmo contrato transacional, as mutações no modo persistente agora falham fechadas com HTTP 503, em vez de gravar sem trilha de auditoria. Leituras continuam disponíveis; o modo memória isolado mantém seu comportamento de desenvolvimento. A implementação transacional de escrita e os testes integrados continuam pendentes. Nenhum dado real foi importado.
