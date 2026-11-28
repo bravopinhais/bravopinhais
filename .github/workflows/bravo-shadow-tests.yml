@@ -8,6 +8,8 @@ on:
       - "bravo-shadow/backend/**"
       - "bravo-shadow/frontend/**"
       - "bravo-shadow/Dockerfile"
+      - "main.py"
+      - "requirements.txt"
       - "bravo-shadow/.dockerignore"
       - "bravo-shadow/docs/verificar-privilegios-rls-somente-leitura.sql"
       - "bravo-shadow/supabase/**"
