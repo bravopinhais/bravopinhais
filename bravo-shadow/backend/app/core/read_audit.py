@@ -13,9 +13,16 @@ def audit_read(
     entity_type: str,
     entity_id: str | None = None,
 ) -> None:
-    """Registra metadados mínimos; bloqueia leitura se sink persistente falhar."""
+    """Registra metadados mínimos; PostgreSQL nunca lê sem auditoria disponível."""
     sink = getattr(service, "audit_sink", None)
     if sink is None:
+        if getattr(request.app.state, "storage_backend", None) == "postgres":
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="Auditoria indisponível. A consulta não foi concluída.",
+            )
+        # O modo memória é exclusivo de testes/demonstração e não promete
+        # histórico durável. O ambiente PostgreSQL exige sink persistente.
         return
     event = AuditEvent(
         actor_subject=actor.subject.strip(),
