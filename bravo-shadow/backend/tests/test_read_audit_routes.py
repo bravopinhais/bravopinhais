@@ -128,3 +128,43 @@ def test_dashboard_and_report_fail_closed_when_financial_audit_is_unavailable():
         response = client.get(path)
         assert response.status_code == 503
         assert "private audit backend detail" not in response.text
+
+
+def test_postgres_sensitive_reads_fail_closed_when_audit_sink_is_missing():
+    application, client = build_client()
+    # Simula uma configuração PostgreSQL com auditoria ausente: nenhuma rota
+    # sensível pode tratar a ausência como se a leitura estivesse auditada.
+    application.state.storage_backend = "postgres"
+    services = application.state.services
+    for service in (
+        services.fornecedores,
+        services.empregados,
+        services.contas_bancarias,
+        services.conselheiros,
+        services.usuarios,
+        services.plano_contas,
+        services.formas_monetarias,
+        services.financeiro,
+        services.moradores,
+        services.documentos,
+    ):
+        service.audit_sink = None
+
+    paths = (
+        "/api/v1/fornecedores",
+        "/api/v1/empregados",
+        "/api/v1/contas-bancarias",
+        "/api/v1/conselheiros",
+        "/api/v1/usuarios",
+        "/api/v1/plano-contas",
+        "/api/v1/formas-monetarias",
+        "/api/v1/dashboard/resumo",
+        "/api/v1/relatorios/dre",
+        "/api/v1/financeiro",
+        "/api/v1/moradores",
+        "/api/v1/documentos",
+    )
+    for path in paths:
+        response = client.get(path)
+        assert response.status_code == 503, path
+        assert "Auditoria indisponível" in response.json()["detail"]
