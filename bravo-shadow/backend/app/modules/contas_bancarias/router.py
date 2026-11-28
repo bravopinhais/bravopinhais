@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Request, status
 
 from app.core.authorization import AuthenticatedPrincipal, require_capability_dependency
+from app.core.read_audit import audit_read
 
 from .schemas import ContaBancaria, ContaBancariaInput
 from .service import ContasBancariasService
@@ -18,8 +19,13 @@ def get_service(request: Request) -> ContasBancariasService:
 
 
 @router.get("", response_model=list[ContaBancaria], dependencies=[read_access])
-def list_accounts(request: Request) -> list[ContaBancaria]:
-    return get_service(request).list()
+def list_accounts(
+    request: Request,
+    principal: AuthenticatedPrincipal = Depends(require_capability_dependency("contas_bancarias:read")),
+) -> list[ContaBancaria]:
+    service = get_service(request)
+    audit_read(request, service, principal, "contas_bancarias:list", "conta_bancaria")
+    return service.list()
 
 
 @router.post("", response_model=ContaBancaria, status_code=status.HTTP_201_CREATED)
