@@ -120,3 +120,63 @@ def test_empty_condominio_patch_still_returns_not_found_for_missing_record():
     assert error.value.status_code == 404
     assert len(connection.calls) == 1
     assert connection.commits == 1
+
+
+from app.core.audit import AuditEvent
+
+
+class GovernanceAuditSink:
+    def __init__(self, *, fail=False):
+        self.fail = fail
+        self.events = []
+        self.connection = None
+
+    def append_in_transaction(self, connection, event):
+        self.connection = connection
+        if self.fail:
+            raise RuntimeError("audit insert failed")
+        self.events.append(event)
+
+
+@pytest.mark.parametrize("operation", ["add", "replace", "delete"])
+def test_council_mutation_and_audit_share_transaction(operation):
+    connection = Connection()
+    sink = GovernanceAuditSink()
+    repository = PostgresConselheirosRepository(factory(connection))
+    item = Conselheiro(id="cons_1", nome="Ana", cargo="Síndica", BlocoAp="A-101", telefone="41999990000")
+    event = AuditEvent(actor_subject="google-subject", action="conselheiros:test", entity_type="conselheiro", entity_id="cons_1", request_id="req_test")
+
+    if operation == "add":
+        repository.add_audited(item.id, item, event, sink)
+    elif operation == "replace":
+        repository.replace_audited(item.id, item, event, sink)
+    else:
+        repository.delete_audited(item.id, event, sink)
+
+    assert len(connection.calls) == 1
+    assert "bravo_shadow.conselheiros" in connection.calls[0][0]
+    assert sink.connection is connection
+    assert sink.events == [event]
+    assert connection.commits == 1
+    assert connection.rollbacks == 0
+
+
+@pytest.mark.parametrize("operation", ["add", "replace", "delete"])
+def test_council_audit_failure_rolls_back_mutation(operation):
+    import pytest
+
+    connection = Connection()
+    sink = GovernanceAuditSink(fail=True)
+    repository = PostgresConselheirosRepository(factory(connection))
+    item = Conselheiro(id="cons_1", nome="Ana", cargo="Síndica", BlocoAp="A-101", telefone="41999990000")
+
+    with pytest.raises(RuntimeError, match="audit insert failed"):
+        if operation == "add":
+            repository.add_audited(item.id, item, object(), sink)
+        elif operation == "replace":
+            repository.replace_audited(item.id, item, object(), sink)
+        else:
+            repository.delete_audited(item.id, object(), sink)
+
+    assert connection.commits == 0
+    assert connection.rollbacks == 1
