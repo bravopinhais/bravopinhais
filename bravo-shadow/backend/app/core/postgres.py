@@ -87,6 +87,31 @@ class PostgresUnitOfWork:
                     connection.commit()
                     commit_succeeded = True
                 except BaseException as commit_error:
+                    sqlstate = getattr(commit_error, "sqlstate", None)
+                    server_confirmed_abort = (
+                        isinstance(sqlstate, str)
+                        and (
+                            sqlstate.startswith("23")
+                            or sqlstate.startswith("40")
+                            or sqlstate.startswith("P0")
+                        )
+                    )
+                    if server_confirmed_abort:
+                        # O servidor respondeu com uma rejeição transacional
+                        # explícita (integridade, rollback/serialização ou
+                        # exceção PL/pgSQL). Não houve commit confirmado; a
+                        # operação pode ser tentada novamente após corrigir a
+                        # causa, sem classificar o resultado como desconhecido.
+                        primary_error = commit_error
+                        try:
+                            connection.rollback()
+                        except BaseException as rollback_error:
+                            self._note_cleanup_failure(
+                                primary_error, "rollback após rejeição do servidor",
+                                rollback_error
+                            )
+                        raise
+
                     outcome_error = CommitOutcomeUnknown(
                         "postgres_commit_outcome_unknown"
                     )
