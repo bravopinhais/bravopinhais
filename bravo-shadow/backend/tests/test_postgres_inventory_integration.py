@@ -51,8 +51,8 @@ def postgres_inventory_database():
     _guard_test_database(DATABASE_URL)
     migration_dir = Path(__file__).resolve().parents[2] / "supabase" / "migrations"
     migrations = sorted(migration_dir.glob("*.sql"))
-    if len(migrations) != 6:
-        raise RuntimeError(f"Esperadas 6 migrations versionadas; encontradas {len(migrations)}.")
+    if len(migrations) != 7:
+        raise RuntimeError(f"Esperadas 7 migrations versionadas; encontradas {len(migrations)}.")
 
     # Os papéis padrão e o schema são preparados somente no banco local
     # descartável. Reaplicar todas as migrations recria também audit_events,
