@@ -221,8 +221,13 @@ def assess_source_compatibility(
             unexpected_source_fields=unexpected,
         ))
 
-    mapped_sources.update(name for name in mapping if name in source_by_name and name not in mapped_sources)
-    mapped_targets.update(name for name in mapping.values() if name in target_by_name and name not in mapped_targets)
+    valid_pairs = {
+        (source_name, target_name)
+        for source_name, target_name in mapping.items()
+        if source_name in source_by_name and target_name in target_by_name
+    }
+    mapped_sources.update(source_name for source_name, _ in valid_pairs)
+    mapped_targets.update(target_name for _, target_name in valid_pairs)
     return CompatibilityReport(
         assessments=tuple(assessments),
         unmapped_source_collections=tuple(sorted(set(source_by_name) - mapped_sources)),
