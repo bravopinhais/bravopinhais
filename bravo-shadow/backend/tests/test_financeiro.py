@@ -170,7 +170,15 @@ def test_delete_title():
 
 def test_plan_account_reference_checker():
     service = app.state.services.financeiro
-    service.create(FinanceiroInput(**payload(planoContaId="pc_linked")))
+    service.create(
+        FinanceiroInput(**payload(planoContaId="pc_linked")),
+        actor=AuthenticatedPrincipal(
+            subject="google-test-subject",
+            email="teste@example.com",
+            profile="Admin",
+            account_status="Ativo",
+        ),
+    )
     assert service.has_plan_account_reference("pc_linked") is True
     assert service.has_plan_account_reference("pc_unused") is False
 
