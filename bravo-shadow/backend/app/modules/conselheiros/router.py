@@ -24,9 +24,9 @@ def list_council(
 def create_council_member(
     request: Request,
     data: ConselheiroInput,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("conselheiros:create")),
+    principal: AuthenticatedPrincipal = Depends(require_capability_dependency("conselheiros:create")),
 ) -> Conselheiro:
-    return get_service(request).create(data)
+    return get_service(request).create(data, actor=principal, request_id=getattr(request.state, "request_id", None))
 
 
 @router.put("/{item_id}", response_model=Conselheiro)
@@ -34,15 +34,15 @@ def update_council_member(
     request: Request,
     item_id: str,
     data: ConselheiroInput,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("conselheiros:update")),
+    principal: AuthenticatedPrincipal = Depends(require_capability_dependency("conselheiros:update")),
 ) -> Conselheiro:
-    return get_service(request).update(item_id, data)
+    return get_service(request).update(item_id, data, actor=principal, request_id=getattr(request.state, "request_id", None))
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_council_member(
     request: Request,
     item_id: str,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("conselheiros:delete")),
+    principal: AuthenticatedPrincipal = Depends(require_capability_dependency("conselheiros:delete")),
 ) -> None:
-    get_service(request).delete(item_id)
+    get_service(request).delete(item_id, actor=principal, request_id=getattr(request.state, "request_id", None))
