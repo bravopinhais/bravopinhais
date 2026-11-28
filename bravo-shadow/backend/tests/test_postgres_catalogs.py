@@ -155,3 +155,77 @@ def test_postgres_storage_wires_all_persistent_catalog_repositories_without_conn
     assert isinstance(services.categorias.repository, PostgresCategoriasRepository)
     assert isinstance(services.documentos.repository, PostgresDocumentosRepository)
     assert isinstance(services.motivos_acerto.repository, PostgresMotivosAcertoRepository)
+
+
+class AuditSink:
+    def __init__(self, *, fail=False):
+        self.events = []
+        self.fail = fail
+        self.connection = None
+
+    def append_in_transaction(self, connection, event):
+        self.connection = connection
+        if self.fail:
+            raise RuntimeError("audit insert failed")
+        self.events.append(event)
+
+
+@pytest.mark.parametrize(
+    ("repository_type", "item", "item_id", "table"),
+    [
+        (PostgresCategoriasRepository, Categoria(id="cat_1", nome="Financeiro"), "cat_1", "categorias"),
+        (PostgresMotivosAcertoRepository, MotivoAcerto(id="mot_1", nome="Quebra"), "mot_1", "motivos_acerto"),
+    ],
+)
+def test_catalog_create_audit_uses_same_transaction(repository_type, item, item_id, table):
+    connection = Connection()
+    sink = AuditSink()
+    repository = repository_type(factory(connection))
+    event = object()
+
+    repository.add_audited(item_id, item, event, sink)
+
+    assert table in connection.calls[0][0]
+    assert sink.connection is connection
+    assert sink.events == [event]
+    assert connection.commits == 1
+    assert connection.rollbacks == 0
+
+
+@pytest.mark.parametrize(
+    ("repository_type", "item_id", "table"),
+    [
+        (PostgresCategoriasRepository, "cat_1", "categorias"),
+        (PostgresMotivosAcertoRepository, "mot_1", "motivos_acerto"),
+    ],
+)
+def test_catalog_audit_failure_rolls_back_delete(repository_type, item_id, table):
+    connection = Connection()
+    sink = AuditSink(fail=True)
+    repository = repository_type(factory(connection))
+
+    with pytest.raises(RuntimeError, match="audit insert failed"):
+        repository.delete_audited(item_id, object(), sink)
+
+    assert table in connection.calls[0][0]
+    assert sink.connection is connection
+    assert connection.commits == 0
+    assert connection.rollbacks == 1
+
+
+@pytest.mark.parametrize(
+    ("repository_type", "item_id"),
+    [(PostgresCategoriasRepository, "cat_missing"), (PostgresMotivosAcertoRepository, "mot_missing")],
+)
+def test_catalog_audited_delete_missing_row_does_not_write_audit(repository_type, item_id):
+    connection = Connection(rowcount=0)
+    sink = AuditSink()
+    repository = repository_type(factory(connection))
+
+    with pytest.raises(HTTPException) as error:
+        repository.delete_audited(item_id, object(), sink)
+
+    assert error.value.status_code == 404
+    assert sink.events == []
+    assert connection.commits == 0
+    assert connection.rollbacks == 1
