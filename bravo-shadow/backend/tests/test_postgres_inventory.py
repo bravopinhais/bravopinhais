@@ -388,3 +388,46 @@ def test_adjustment_service_rejects_mutation_without_authenticated_actor_when_au
 
     assert error.value.status_code == 403
     assert service.list() == []
+
+
+@pytest.mark.parametrize("operation", ["replace", "delete"])
+def test_stock_update_and_delete_roll_back_when_audit_fails(operation):
+    from app.core.audit import AuditEvent
+
+    connection = Connection(stock_row=(5,), movement_row=None)
+    repository = PostgresEstoqueRepository(factory(connection))
+    sink = RecordingAuditSink(fail=True)
+    event = AuditEvent(
+        actor_subject="google-subject", action=f"estoque:{operation}",
+        entity_type="estoque", entity_id="est_1",
+    )
+    item = EstoqueItem(id="est_1", item="Produto atualizado", quantidade=5)
+
+    with pytest.raises(RuntimeError, match="audit insert failed"):
+        if operation == "replace":
+            repository.replace_audited("est_1", item, event, sink)
+        else:
+            repository.delete_audited("est_1", event, sink)
+
+    assert sink.connection is connection
+    assert connection.commits == 0
+    assert connection.rollbacks == 1
+    assert connection.closed == 1
+
+
+def test_persistent_stock_repository_refuses_writes_without_audit_sink():
+    from app.core.authorization import AuthenticatedPrincipal
+    from app.modules.estoque.schemas import EstoqueInput
+    from app.modules.estoque.service import EstoqueService
+
+    repository = PostgresEstoqueRepository(lambda: (_ for _ in ()).throw(AssertionError("não deve abrir conexão")))
+    service = EstoqueService(repository=repository)
+    actor = AuthenticatedPrincipal(
+        subject="google-subject", email="admin@example.test",
+        profile="Admin", account_status="Ativo",
+    )
+
+    with pytest.raises(HTTPException) as error:
+        service.create(EstoqueInput(item="Produto"), actor=actor)
+
+    assert error.value.status_code == 503
