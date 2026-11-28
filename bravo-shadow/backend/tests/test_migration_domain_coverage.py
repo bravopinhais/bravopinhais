@@ -16,7 +16,7 @@ def test_coverage_register_accounts_for_all_sixteen_legacy_domains_once():
 def test_domains_without_field_allowlists_remain_explicitly_blocked():
     lookup = domain_coverage_by_key()
     blocked = {
-        "conselheiros", "usuarios", "formas_monetarias", "contas_bancarias",
+        "conselheiros", "formas_monetarias", "contas_bancarias",
         "moradores", "fornecedores", "empregados", "categorias", "logs",
     }
     assert all(lookup[key].status == "blocked_no_field_allowlist" for key in blocked)
@@ -26,5 +26,6 @@ def test_contract_presence_does_not_claim_import_readiness():
     lookup = domain_coverage_by_key()
     assert lookup["condominio"].status == "manual_source_locator_required"
     assert lookup["financeiro"].status == "review_only"
+    assert lookup["usuarios"].status == "review_only"
     assert lookup["plano_contas"].status == "review_only"
     assert lookup["documentos"].status == "review_only"
