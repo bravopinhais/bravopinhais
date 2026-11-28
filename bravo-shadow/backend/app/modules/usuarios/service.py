@@ -86,8 +86,8 @@ class UsuariosService:
             **data.model_dump(), perfil="Operador", status="Ativo",
         )
         if actor is not None:
-            if not isinstance(actor, AuthenticatedPrincipal) or actor.account_status != "Ativo" or not actor.subject.strip():
-                raise HTTPException(status_code=403, detail="Ator administrativo inválido.")
+            if not isinstance(actor, AuthenticatedPrincipal) or actor.account_status != "Ativo" or actor.profile != "Admin" or not actor.subject.strip():
+                raise HTTPException(status_code=403, detail="Somente Admin autenticado pode criar usuários.")
             operation = getattr(self.repository, "add_audited", None)
             if not callable(operation) or not callable(getattr(self.audit_sink, "append_in_transaction", None)):
                 raise HTTPException(status_code=503, detail="Criação auditada de usuários indisponível.")
@@ -112,8 +112,8 @@ class UsuariosService:
             operation = getattr(self.repository, "update_cadastral", None)
             if callable(operation):
                 if actor is not None:
-                    if not isinstance(actor, AuthenticatedPrincipal) or actor.account_status != "Ativo" or not actor.subject.strip():
-                        raise HTTPException(status_code=403, detail="Ator administrativo inválido.")
+                    if not isinstance(actor, AuthenticatedPrincipal) or actor.account_status != "Ativo" or actor.profile != "Admin" or not actor.subject.strip():
+                        raise HTTPException(status_code=403, detail="Somente Admin autenticado pode atualizar usuários.")
                     audited = getattr(self.repository, "update_cadastral_audited", None)
                     if not callable(audited) or not callable(getattr(self.audit_sink, "append_in_transaction", None)):
                         raise HTTPException(status_code=503, detail="Atualização cadastral auditada indisponível.")
