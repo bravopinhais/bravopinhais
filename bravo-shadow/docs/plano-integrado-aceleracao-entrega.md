@@ -17,7 +17,7 @@ O objetivo da próxima entrega é demonstrar, em um único pipeline, que a image
 | Frontend | Aplicação estática unificada, tema Bravo, navegação responsiva e telas de vários módulos | Nem todos os módulos têm fluxo completo conectado; módulos não migrados ainda exibem estrutura inicial |
 | API | FastAPI, rotas para os módulos e cliente HTTP comum | É necessário comprovar os fluxos integrados com o backend real e persistente |
 | Persistência | Driver Psycopg, adaptadores PostgreSQL e seleção explícita por configuração | O modo PostgreSQL conecta vários adaptadores; exige validar schema, permissões, RLS e CRUD em conjunto |
-| Banco | Seis migrations versionadas; CI agora aplica as seis migrations em PostgreSQL descartável e executa auditoria de catálogo após a aplicação | A execução ainda precisa ser observada em um workflow concluído; homologação local do desenvolvedor não foi realizada |
+| Banco | Sete migrations versionadas; CI agora aplica as sete migrations em PostgreSQL descartável e executa auditoria de catálogo após a aplicação | A execução ainda precisa ser observada em um workflow concluído; homologação local do desenvolvedor não foi realizada |
 | Autenticação | Validação server-side de identidade Google e módulo cliente | Bootstrap do frontend fica desligado sem API HTTPS Shadow validada e origem OAuth/CORS exatas |
 | CI | GitHub Actions constrói o Docker, faz smoke test HTTP, aplica migrations em PostgreSQL descartável, audita o catálogo e executa pytest | É necessário acompanhar o resultado do workflow; execução em CI não comprova OAuth, frontend completo nem todos os CRUDs em produção |
 | Preview | GitHub Pages valida/publica arquivos estáticos | Não hospeda FastAPI, banco nem autenticação; não pode ser apresentado como sistema operacional completo |
@@ -28,7 +28,7 @@ O objetivo da próxima entrega é demonstrar, em um único pipeline, que a image
 ### 1. Pipeline integrado de banco e aplicação
 - [x] Construir a imagem do Bravo Shadow no job de container.
 - [x] Subir PostgreSQL descartável e aguardar healthcheck no job de backend.
-- [x] Aplicar, em ordem, as seis migrations da branch, desde banco vazio.
+- [x] Aplicar, em ordem, as sete migrations da branch, desde banco vazio.
 - [x] Executar a auditoria de catálogo depois da aplicação.
 - [x] Executar inspeção SQL de privilégios/RLS somente leitura.
 - [ ] Observar workflow concluído e corrigir eventuais falhas; a configuração do pipeline não equivale a execução bem-sucedida.
@@ -64,7 +64,7 @@ O objetivo da próxima entrega é demonstrar, em um único pipeline, que a image
 ## Critérios objetivos de conclusão
 
 - [ ] Build Docker e smoke test passam.
-- [ ] Seis migrations aplicam do zero em PostgreSQL descartável.
+- [ ] Sete migrations aplicam do zero em PostgreSQL descartável.
 - [ ] Auditoria do catálogo passa após as migrations.
 - [ ] CRUD integrado e persistência passam para os módulos declarados como habilitados.
 - [ ] Relações, transações, rollback e auditoria passam.
@@ -84,7 +84,7 @@ O smoke test do contêiner agora fornece valores sintéticos explícitos para `B
 
 ## Limites desta revisão
 
-Esta revisão dos arquivos foi estática. O workflow foi atualizado para aplicar as seis migrations no PostgreSQL descartável do GitHub Actions antes da auditoria e também para disparar em pull requests que alterem migrations ou scripts de homologação. Não executei Docker, PostgreSQL, migrations, pytest, OAuth ou deploy nesta sessão. Os itens marcados como concluídos descrevem etapas configuradas no workflow, não resultados de uma execução já observada.
+Esta revisão dos arquivos foi estática. O workflow foi atualizado para aplicar as sete migrations no PostgreSQL descartável do GitHub Actions antes da auditoria e também para disparar em pull requests que alterem migrations ou scripts de homologação. Não executei Docker, PostgreSQL, migrations, pytest, OAuth ou deploy nesta sessão. Os itens marcados como concluídos descrevem etapas configuradas no workflow, não resultados de uma execução já observada.
 
 
 ### Financeiro — integração de auditoria atômica
