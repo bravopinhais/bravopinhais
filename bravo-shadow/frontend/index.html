@@ -71,6 +71,7 @@
     <button data-module="relatorios"><span class="ico">▥</span>Relatórios & DRE</button>
     <button data-module="usuarios"><span class="ico">♙</span>Gestão de Usuários</button>
     <button data-module="configuracoes"><span class="ico">⚙</span>Configurações</button>
+    <button data-module="direitos_autorais"><span class="ico">§</span>Contratos e Direitos Autorais</button>
   </nav>
   <div class="side-foot"><b>Ambiente isolado</b><br>Sem conexão com dados de produção.<br>Bravo Shadow · versão de arquitetura 0.1</div>
 </aside>
@@ -111,7 +112,7 @@
       <div class="section-head"><h2>Fundação da nova arquitetura</h2><span>Visão técnica</span></div>
       <div class="panel"><strong style="font-size:13px">Frontend unificado → API FastAPI → serviços de domínio → camada de persistência</strong><p>A camada visual, a API FastAPI e a persistência PostgreSQL são componentes separados. O login e os indicadores só funcionam quando a API Shadow estiver hospedada e configurada na mesma origem HTTPS da interface, com permissões internas válidas.</p></div>
     </div>
-    <footer class="footer"><span>BRAVO SHADOW · Ambiente de evolução independente</span><span>© 2026 Guardiões do Bravo. Todos os direitos reservados.</span><span>Original preservado · Sem acesso à produção</span></footer>
+    <footer class="footer"><span>BRAVO SHADOW · Ambiente de evolução independente</span><button class="action-btn" type="button" data-module="direitos_autorais">Contratos e Direitos Autorais</button><span>© 2026 Guardiões do Bravo. Todos os direitos reservados.</span><span>Original preservado · Sem acesso à produção</span></footer>
   </div>
 </main>
 </div>
@@ -133,7 +134,8 @@ compras_consumo:{name:"Compras x Consumo",title:"Compras x Consumo",desc:"Análi
 documentos:{name:"Gestão de Documentos",title:"Gestão de Documentos",desc:"Arquivos, pastas, visualização e download."},
 relatorios:{name:"Relatórios & DRE",title:"Central de Relatórios & DRE",desc:"Relatórios gerenciais e demonstrativo de resultados."},
 usuarios:{name:"Gestão de Usuários",title:"Gestão de Usuários",desc:"Perfis e administração de acesso. Autenticação será integrada após auditoria."},
-configuracoes:{name:"Configurações",title:"Configurações",desc:"Ativação de módulos, preferências administrativas e auditoria."}
+configuracoes:{name:"Configurações",title:"Configurações",desc:"Ativação de módulos, preferências administrativas e auditoria."},
+direitos_autorais:{name:"Contratos e Direitos Autorais",title:"Contratos e Direitos Autorais",desc:"Titularidade declarada, licença gratuita do condomínio e condições de uso do software."}
 };
 const IS_STATIC_PREVIEW=location.hostname.endsWith("github.io");
 if(IS_STATIC_PREVIEW){const env=document.querySelector(".env");if(env)env.innerHTML='<span class="dot"></span> PREVIEW ESTÁTICO · GITHUB PAGES';}
@@ -2091,6 +2093,33 @@ function documentosView(){
  if(documentosApiClient){void documentosLoad(documentosApiClient);void documentosLoadCategories(documentosApiClient);}
 }
 
+function direitosAutoraisView(){
+ const view=document.getElementById("view");
+ view.innerHTML=`<section class="panel" aria-labelledby="rights-title">
+  <div class="api-toolbar"><div><div class="eyebrow">Transparência e propriedade intelectual</div><strong id="rights-title" style="font-size:18px">Contratos e Direitos Autorais</strong><div class="api-status">Documento informativo · versão preliminar</div></div><span class="tag">Consulta interna</span></div>
+  <div class="notice"><div class="notice-icon">§</div><div><strong>Identificação do software</strong><p>Sistema de Gestão de Condomínio · projeto identificado como Guardiões do Bravo.</p></div></div>
+  <div class="section-head"><h2>Titular declarado</h2><span>Identificação do desenvolvedor</span></div>
+  <div class="metric"><div class="metric-label">Pessoa física · titularidade declarada</div><div class="metric-value" style="font-size:20px">Alan Agostinho Reis</div><div class="metric-foot">A titularidade jurídica depende da comprovação de autoria, da origem do código e dos direitos de terceiros.</div></div>
+  <div class="section-head"><h2>Condições de utilização pelo condomínio</h2><span>Resumo da licença proposta</span></div>
+  <div class="panel" style="background:var(--s2);box-shadow:none">
+   <ul style="margin:0;padding-left:19px;color:var(--soft);font-size:12px;line-height:1.9">
+    <li>Licença de uso gratuita, não exclusiva e por prazo indeterminado, mediante formalização válida.</li>
+    <li>A licença proposta permanece mesmo após mudanças de síndico, conselheiros ou administradora.</li>
+    <li>A gratuidade concedida a este condomínio não impede o titular de comercializar licenças para outros condomínios.</li>
+    <li>Os dados do condomínio permanecem sob os direitos do próprio condomínio e dos respectivos titulares.</li>
+    <li>A licença não transfere automaticamente a propriedade intelectual do programa.</li>
+   </ul>
+  </div>
+  <div class="section-head"><h2>Documentos e situação</h2><span>Transparência jurídica</span></div>
+  <div class="panel" style="background:var(--s2);box-shadow:none">
+   <p style="margin:0 0 10px"><strong>Minuta de licença:</strong> em preparação para revisão jurídica e assinatura pelas partes competentes.</p>
+   <p style="margin:0 0 10px"><strong>Registro no INPI:</strong> não declarado como concluído. O pedido deverá ser realizado após consolidação da versão registrável e verificação da titularidade.</p>
+   <p style="margin:0"><strong>Contrato assinado:</strong> ainda não disponibilizado nesta área.</p>
+  </div>
+  <div class="notice" style="margin-top:16px"><div class="notice-icon">ⓘ</div><div><strong>Importante</strong><p>Esta página é informativa e não substitui o contrato assinado, o registro no INPI ou a orientação jurídica. As condições de licença só produzirão os efeitos pretendidos após a formalização adequada. Dados pessoais adicionais do titular não são publicados nesta tela.</p></div></div>
+ </section>`;
+}
+
 function openModule(id){
  const item=modules[id];if(!item)return;
  if(bravoCurrentUser&&!canReadBravoModule(id)){
@@ -2125,6 +2154,7 @@ function openModule(id){
  if(id==="documentos"){location.hash=id;documentosView();return}
  if(id==="relatorios"){location.hash=id;relatoriosView();if(relatoriosApiClient)void loadDre(relatoriosApiClient);return}
  if(id==="configuracoes"){location.hash=id;configuracoesView();return}
+ if(id==="direitos_autorais"){location.hash=id;direitosAutoraisView();return}
  view.innerHTML='<section class="panel module-view"><div><div class="big-icon">◇</div><span class="eyebrow">Módulo mapeado · Bravo Shadow</span><h2>'+item.title+'</h2><p>'+item.desc+'</p><span class="tag">Estrutura visual inicial · Funcionalidade ainda não migrada</span></div></section>';
  location.hash=id;
 }
