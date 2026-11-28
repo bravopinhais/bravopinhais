@@ -34,8 +34,9 @@ from fastapi.testclient import TestClient
 
 from app.modules.contas_bancarias.schemas import ContaBancariaInput
 
-from app.main import app, create_app
+from app.main import create_app
 
+app = create_app(storage_backend="memory")
 client = TestClient(app)
 
 
@@ -67,7 +68,7 @@ def test_bank_name_is_required():
 
 
 def test_bank_accounts_are_isolated_between_app_instances():
-    first_app, second_app = create_app(), create_app()
+    first_app, second_app = create_app(storage_backend="memory"), create_app(storage_backend="memory")
     configure_test_auth(first_app)
     configure_test_auth(second_app)
     first, second = TestClient(first_app), TestClient(second_app)
