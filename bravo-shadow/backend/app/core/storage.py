@@ -190,14 +190,14 @@ def build_storage_services(
     formas_monetarias = FormasMonetariasService(repository=formas_repository, audit_sink=audit_sink)
 
     estoque = EstoqueService(repository=estoque_repository, audit_sink=audit_sink)
-    categorias = CategoriasService(repository=categorias_repository)
+    categorias = CategoriasService(repository=categorias_repository, audit_sink=audit_sink)
     documentos = DocumentosService(
         repository=documentos_repository,
         category_service=categorias,
     )
     categorias.set_reference_checker(documentos.has_category_reference)
 
-    motivos_acerto = MotivosAcertoService(repository=motivos_repository)
+    motivos_acerto = MotivosAcertoService(repository=motivos_repository, audit_sink=audit_sink)
     acertos_estoque = AcertosEstoqueService(
         repository=acertos_repository,
         inventory_service=estoque,
