@@ -41,7 +41,7 @@ def payload(**overrides):
         "pasta": "Financeiro",
         "titulo": "Ata de reunião",
         "nomeArquivo": "ata.pdf",
-        "arquivoCompactadoGzip": "H4sIAAAAAAAC/1MNcHHTNdQz4TJUMFDIT8risrGxs+NKzUsBsVVVXf3duADzKswnIwAAAA==",
+        "arquivoCompactadoGzip": "H4sIAAAAAAAC/1MNcHHTNdQz4TJUMFDIT8risrFR0A+pLEhV0HdOLEnMyU9XsLPjSs1LAcmpqrr6u3EBAARwAM8zAAAA",
     }
     data.update(overrides)
     return data
@@ -52,7 +52,9 @@ def test_document_crud_preserves_file_payload_and_original_name():
     assert created.status_code == 201
     item = created.json()
     assert item["nomeArquivo"] == "ata.pdf"
-    assert item["arquivoCompactadoGzip"] == "H4sIAAAAAAAC/1MNcHHTNdQz4TJUMFDIT8risrGxs+NKzUsBsVVVXf3duADzKswnIwAAAA=="
+    detail = client.get("/api/v1/documentos/" + item["id"])
+    assert detail.status_code == 200
+    assert detail.json()["arquivoCompactadoGzip"] == "H4sIAAAAAAAC/1MNcHHTNdQz4TJUMFDIT8risrFR0A+pLEhV0HdOLEnMyU9XsLPjSs1LAcmpqrr6u3EBAARwAM8zAAAA"
     assert client.get("/api/v1/documentos/" + item["id"]).status_code == 200
     changed = client.put(
         "/api/v1/documentos/" + item["id"],
@@ -117,7 +119,7 @@ def test_document_rejects_unknown_category():
 
 
 def test_document_metadata_is_trimmed_and_compressed_content_is_preserved():
-    compressed_payload = "  H4sIAAAAAAAC/1MNcHHTNdQz4TJUMFDIT8risrGxs+NKzUsBsVVVXf3duADzKswnIwAAAA==  "
+    compressed_payload = "H4sIAAAAAAAC/1MNcHHTNdQz4TJUMFDIT8risrFR0A+pLEhV0HdOLEnMyU9XsLPjSs1LAcmpqrr6u3EBAARwAM8zAAAA"
     response = client.post(
         "/api/v1/documentos",
         json=payload(
@@ -134,7 +136,9 @@ def test_document_metadata_is_trimmed_and_compressed_content_is_preserved():
     assert item["categoriaId"] is None
     assert item["titulo"] == "Ata de reunião"
     assert item["nomeArquivo"] == "ata final.pdf"
-    assert item["arquivoCompactadoGzip"] == compressed_payload
+    detail = client.get("/api/v1/documentos/" + item["id"])
+    assert detail.status_code == 200
+    assert detail.json()["arquivoCompactadoGzip"] == compressed_payload
 
 
 def test_document_required_metadata_rejects_whitespace_only():
