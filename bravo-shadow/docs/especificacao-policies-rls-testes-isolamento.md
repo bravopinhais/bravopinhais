@@ -97,6 +97,15 @@ A separação foi implementada:
 
 O procedimento operacional pretendido é: credencial migrator armazenada apenas no ambiente controlado de preparação; execução manual e auditável do inicializador fora do processo web; revogação/rotação após a preparação quando aplicável. A credencial migrator não deve existir nas variáveis de ambiente do runtime, no frontend, em logs ou em artefatos. Ainda não há job de preparação nem secret configurado: isso permanece desenho, não implantação.
 
+**Separação de configuração implementada na Shadow:**
+- `create_postgres_connection_factory()` continua lendo somente `BRAVO_DATABASE_URL` e identifica a conexão como `bravo-shadow-api`.
+- `create_migration_postgres_connection_factory()` lê somente `BRAVO_MIGRATION_DATABASE_URL`; não usa a URL runtime como fallback.
+- A fábrica de preparação rejeita a reutilização literal da URL runtime quando ela está definida e identifica a conexão como `bravo-shadow-migration-preparation`.
+- Ambas são lazy: criar a fábrica não abre conexão; a conexão só ocorre quando a função retornada é chamada.
+- O startup de `app.main` continua importando e usando apenas a fábrica runtime. A fábrica migrator não está ligada a rotas, startup, Docker ou workflow.
+
+**Limite operacional mantido:** ainda não existe um comando/CLI de preparação que carregue e valide um `DecisionRegister` e invoque o inicializador. Portanto, não definir `BRAVO_MIGRATION_DATABASE_URL` em hospedagem, não executar a preparação e não considerar o fluxo pronto para uso. O próximo passo é criar um entrypoint manual isolado, com validação de branch/ambiente e entrada de manifesto revisada, antes de qualquer credencial ser fornecida.
+
 Os testes de integração autenticam sessões independentes com LOGIN próprio para runtime e migrator. A validação continua restrita ao PostgreSQL descartável.
 
 ## 7. Portões de liberação
