@@ -3,7 +3,10 @@ import json
 
 import pytest
 
+from app.core.migration_identity import SourceIdentity
+from app.core.migration_plan import DryRunCandidate
 from app.core.migration_evidence_package import (
+    serialize_evidence_package,
     EvidencePackageError,
     read_evidence_package,
 )
