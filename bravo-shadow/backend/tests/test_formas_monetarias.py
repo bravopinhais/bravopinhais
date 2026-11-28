@@ -75,5 +75,5 @@ def test_postgres_style_audit_configuration_fails_closed_for_all_mutations():
     for operation in operations:
         with pytest.raises(HTTPException) as error:
             operation()
-        assert error.value.status_code == 503
+        assert error.value.status_code == 403
     assert service.list() == []
