@@ -35,6 +35,26 @@ class _CatalogRepository:
             finally:
                 cursor.close()
 
+    def _execute_audited(
+        self, sql: str, params: tuple[Any, ...], event, audit_sink,
+        *, missing_detail: str | None = None,
+    ) -> None:
+        append = getattr(audit_sink, "append_in_transaction", None)
+        if not callable(append):
+            raise HTTPException(status_code=503, detail="Auditoria transacional indisponível.")
+        with self._uow as uow:
+            connection = uow.connection
+            if connection is None:
+                raise RuntimeError("A conexão PostgreSQL não foi aberta.")
+            cursor = connection.cursor()
+            try:
+                cursor.execute(sql, params)
+                if missing_detail is not None and cursor.rowcount == 0:
+                    raise HTTPException(status_code=404, detail=missing_detail)
+                append(connection, event)
+            finally:
+                cursor.close()
+
     def _delete(self, table: str, item_id: str, missing_detail: str, reference_detail: str) -> None:
         try:
             changed = self._query(f"DELETE FROM {table} WHERE id = %s", (item_id,))
@@ -84,6 +104,23 @@ class PostgresCategoriasRepository(_CatalogRepository):
         if not changed:
             raise HTTPException(status_code=404, detail="Pasta não encontrada.")
 
+    def add_audited(self, item_id: str, item: Categoria, event, audit_sink) -> None:
+        self._execute_audited(
+            f"INSERT INTO {self._table} (id, nome) VALUES (%s, %s)",
+            (item_id, item.nome), event, audit_sink,
+        )
+
+    def delete_audited(self, item_id: str, event, audit_sink) -> None:
+        try:
+            self._execute_audited(
+                f"DELETE FROM {self._table} WHERE id = %s", (item_id,),
+                event, audit_sink, missing_detail="Pasta não encontrada.",
+            )
+        except Exception as exc:
+            if self._sqlstate(exc) == "23503":
+                raise HTTPException(status_code=409, detail="Não é possível excluir uma categoria vinculada a documentos.") from exc
+            raise
+
     def delete(self, item_id: str) -> None:
         self._delete(
             self._table, item_id, "Pasta não encontrada.",
@@ -128,6 +165,23 @@ class PostgresMotivosAcertoRepository(_CatalogRepository):
         )
         if not changed:
             raise HTTPException(status_code=404, detail="Motivo não encontrado.")
+
+    def add_audited(self, item_id: str, item: MotivoAcerto, event, audit_sink) -> None:
+        self._execute_audited(
+            f"INSERT INTO {self._table} (id, nome) VALUES (%s, %s)",
+            (item_id, item.nome), event, audit_sink,
+        )
+
+    def delete_audited(self, item_id: str, event, audit_sink) -> None:
+        try:
+            self._execute_audited(
+                f"DELETE FROM {self._table} WHERE id = %s", (item_id,),
+                event, audit_sink, missing_detail="Motivo não encontrado.",
+            )
+        except Exception as exc:
+            if self._sqlstate(exc) == "23503":
+                raise HTTPException(status_code=409, detail="Não é possível excluir um motivo utilizado em acertos de estoque.") from exc
+            raise
 
     def delete(self, item_id: str) -> None:
         self._delete(
