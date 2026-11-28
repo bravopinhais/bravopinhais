@@ -60,12 +60,15 @@ def postgres_database():
             if existing_role is None:
                 connection.execute(f'CREATE ROLE "{role}" NOLOGIN')
         connection.execute("DROP SCHEMA IF EXISTS bravo_shadow CASCADE")
+        connection.execute("DROP ROLE IF EXISTS bravo_shadow_runtime_test")
+        connection.execute("CREATE ROLE bravo_shadow_runtime_test NOLOGIN")
         connection.execute(schema_sql.read_text(encoding="utf-8"), prepare=False)
 
     yield DATABASE_URL
 
     with psycopg.connect(DATABASE_URL, autocommit=True) as connection:
         connection.execute("DROP SCHEMA IF EXISTS bravo_shadow CASCADE")
+        connection.execute("DROP ROLE IF EXISTS bravo_shadow_runtime_test")
 
 
 def _register():
@@ -345,3 +348,71 @@ def test_parallel_cross_batch_duplicate_event_id_has_one_database_winner(postgre
     assert len(persisted) == 1
     assert persisted[0][0] in {first_register.batch_id, second_register.batch_id}
     assert len(store.load(first_register).events) + len(store.load(second_register).events) == 1
+
+
+def test_runtime_append_works_without_update_on_snapshot_tables(postgres_database):
+    register = _register()
+    admin_store = PostgresReviewLedgerStore(lambda: psycopg.connect(postgres_database))
+    admin_store.initialize(register)
+
+    with psycopg.connect(postgres_database, autocommit=True) as connection:
+        connection.execute("""
+            GRANT USAGE ON SCHEMA bravo_shadow TO bravo_shadow_runtime_test
+        """)
+        connection.execute("""
+            GRANT SELECT ON
+                bravo_shadow.migration_review_batches,
+                bravo_shadow.migration_review_decisions,
+                bravo_shadow.migration_review_events
+            TO bravo_shadow_runtime_test
+        """)
+        connection.execute("""
+            GRANT INSERT ON bravo_shadow.migration_review_events
+            TO bravo_shadow_runtime_test
+        """)
+        for table in (
+            "migration_review_batches",
+            "migration_review_decisions",
+            "migration_review_events",
+        ):
+            connection.execute(
+                f'ALTER TABLE bravo_shadow.{table} FORCE ROW LEVEL SECURITY'
+            )
+            connection.execute(
+                f'CREATE POLICY runtime_select ON bravo_shadow.{table} '
+                'FOR SELECT TO bravo_shadow_runtime_test USING (true)'
+            )
+        connection.execute("""
+            CREATE POLICY runtime_insert ON bravo_shadow.migration_review_events
+            FOR INSERT TO bravo_shadow_runtime_test WITH CHECK (true)
+        """)
+        privileges = connection.execute("""
+            SELECT
+                has_table_privilege(
+                    'bravo_shadow_runtime_test',
+                    'bravo_shadow.migration_review_batches', 'UPDATE'
+                ),
+                has_table_privilege(
+                    'bravo_shadow_runtime_test',
+                    'bravo_shadow.migration_review_decisions', 'UPDATE'
+                ),
+                has_function_privilege(
+                    'bravo_shadow_runtime_test',
+                    'pg_catalog.pg_advisory_xact_lock(bigint)', 'EXECUTE'
+                )
+        """).fetchone()
+        assert privileges == (False, False, True)
+
+    def runtime_connection():
+        connection = psycopg.connect(postgres_database)
+        connection.execute('SET ROLE bravo_shadow_runtime_test')
+        return connection
+
+    runtime_store = PostgresReviewLedgerStore(runtime_connection)
+    decision_id = register.pending[0].decision_id
+    result = runtime_store.append(
+        register,
+        **_event_args(decision_id, f"runtime-role-{uuid4()}"),
+    )
+    assert len(result.history_for(decision_id)) == 1
+    assert len(runtime_store.load(register).history_for(decision_id)) == 1
