@@ -124,24 +124,16 @@ Esta especificação continua sendo apenas documentação. Nenhuma policy foi cr
 
 ## 9. Concorrência do append sem privilégio UPDATE
 
-Foi identificado que o adaptador runtime ainda usa `SELECT ... FOR UPDATE` nas tabelas de batches e decisions. Esse bloqueio exige privilégio UPDATE além de SELECT no PostgreSQL, portanto conflita com a matriz mínima definida nesta especificação.
+O uso de `SELECT ... FOR UPDATE` no caminho runtime foi removido porque exigiria privilégio UPDATE nas tabelas imutáveis de batches/decisions.
 
-**Diretriz de desenho para a próxima revisão (ainda não implementada):**
-- Remover bloqueios de linha `FOR UPDATE` do caminho runtime.
-- Avaliar um bloqueio consultivo transacional PostgreSQL, adquirido antes da leitura da versão corrente e mantido até commit/rollback.
-- Para a primeira implementação, preferir uma chave global fixa do subsistema de revisão: reduz a concorrência entre decisões, mas evita colisões de hash e simplifica a prova de exclusão mútua. A otimização para bloqueios por decisão fica para depois de homologação.
-- Manter `UNIQUE (batch_key, decision_id, version)` como última barreira de integridade, além de `PRIMARY KEY (event_id)`.
-- Manter o teste de duas conexões concorrentes na mesma decisão/versão: exatamente uma grava e a outra recebe `stale_review_version`.
-- Acrescentar teste de integração executando append com uma role runtime real, sem UPDATE nas tabelas de batches/decisions, verificando também a permissão necessária para chamar a função de advisory lock.
-- Confirmar que o bloqueio é transacional e liberado tanto no commit quanto no rollback.
-- Se a constraint de versão detectar disputa inesperada, tratar a violação específica de unicidade como conflito de versão, sem mascarar violações de outras constraints.
+**Implementação Shadow atual:**
+- `append` adquire `pg_catalog.pg_advisory_xact_lock` com uma chave global fixa do subsistema antes de consultar lote, decisão e versão.
+- O bloqueio é transacional e é liberado automaticamente no commit ou rollback.
+- A chave global serializa todos os appends deste subsistema. É uma escolha conservadora de homologação: reduz paralelismo, mas evita colisões de hash e simplifica a prova de exclusão mútua.
+- Os SELECTs de batches/decisions não usam `FOR UPDATE`.
+- A role runtime precisa de SELECT nas três tabelas, INSERT somente em events e EXECUTE na função de advisory lock. Não precisa de UPDATE nas tabelas de snapshot.
+- Permanecem as barreiras `UNIQUE (batch_key, decision_id, version)` e `PRIMARY KEY (event_id)`.
 
-A chave global é uma escolha conservadora de homologação, não uma decisão de desempenho definitiva. O grant EXECUTE da função de advisory lock deve ser verificado explicitamente no ambiente descartável; não presumir que os privilégios padrão permanecerão iguais após hardening.
+**Testes CI:** execução `46151275182`, commit `21ddcd8ac757f9d9fdd437e34eb16b4297fcde4a`, concluída com sucesso. Passaram testes unitários, smoke test Docker e integrações PostgreSQL descartável. A integração cria uma role sintética separada, força RLS, concede SELECT/INSERT mínimos, confirma ausência de UPDATE em batches/decisions e verifica EXECUTE no advisory lock; o append e o load funcionam com essa role. Também permanecem aprovados os testes concorrentes de mesma versão, gravações em decisões distintas, rollback e unicidade global de event_id.
 
-**Estado da implementação Shadow:** estratégia aplicada ao adaptador runtime. O método `append` adquire `pg_catalog.pg_advisory_xact_lock` com chave global fixa do subsistema antes das leituras de versão; os SELECTs de batches/decisions não usam `FOR UPDATE`. A chave global serializa todos os appends deste subsistema, escolha conservadora que reduz paralelismo em troca de simplicidade e ausência de colisões de hash.
-
-A restrição `UNIQUE (batch_key, decision_id, version)` e a chave primária de `event_id` permanecem como barreiras de integridade. A role runtime precisa de SELECT nas três tabelas, INSERT somente em events e EXECUTE na função de advisory lock; não precisa de UPDATE nas tabelas de snapshot.
-
-**Homologação CI:** execução `46151275182`, commit `21ddcd8ac757f9d9fdd437e34eb16b4297fcde4a`, concluída com sucesso. Passaram os testes unitários, smoke test Docker e integrações PostgreSQL descartável, incluindo append e load com role de teste separada, RLS forçada, SELECT/INSERT mínimos, ausência de UPDATE em batches/decisions e EXECUTE no advisory lock.
-
-**Limite da evidência:** a homologação usa PostgreSQL local descartável e uma role sintética com policies de teste. Isso não comprova ainda os grants, policies ou comportamento do projeto Supabase hospedado. O SQL de schema continua rascunho e nenhum banco externo foi conectado, alterado ou importado.
+**Limite da evidência:** a homologação usa PostgreSQL local descartável e role sintética com policies de teste. Não comprova os grants, policies ou comportamento de um projeto Supabase hospedado. O SQL de schema continua rascunho; nenhum banco externo foi conectado, alterado ou importado.
