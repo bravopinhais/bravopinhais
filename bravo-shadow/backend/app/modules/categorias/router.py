@@ -24,15 +24,15 @@ def list_categories(
 def create_category(
     data: CategoriaInput,
     request: Request,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("categorias:create")),
+    principal: AuthenticatedPrincipal = Depends(require_capability_dependency("categorias:create")),
 ):
-    return get_service(request).create(data)
+    return get_service(request).create(data, actor=principal, request_id=getattr(request.state, "request_id", None))
 
 
 @router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_category(
     item_id: str,
     request: Request,
-    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("categorias:delete")),
+    principal: AuthenticatedPrincipal = Depends(require_capability_dependency("categorias:delete")),
 ):
-    get_service(request).delete(item_id)
+    get_service(request).delete(item_id, actor=principal, request_id=getattr(request.state, "request_id", None))
