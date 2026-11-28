@@ -106,9 +106,8 @@ class ConfiguracoesService:
             raise HTTPException(status_code=503, detail="Auditoria persistente indisponível.")
         enabled = action == "ativar_todos"
         changes = {
-            key: (True if enabled else False)
+            key: (True if enabled or key == "configuracoes" else False)
             for key, _, _ in MODULES
-            if enabled or key != "configuracoes"
         }
         events = [
             AuditEvent(
