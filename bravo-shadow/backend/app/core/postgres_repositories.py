@@ -357,6 +357,92 @@ class PostgresFinanceiroRepository(_PostgresRepository):
         return row is not None
 
 
+    def add_audited(self, item: FinanceiroTitulo, event: Any, audit_sink: Any) -> None:
+        append = getattr(audit_sink, "append_in_transaction", None)
+        if not callable(append):
+            raise HTTPException(status_code=503, detail="Auditoria transacional indisponível.")
+        with self._uow as uow:
+            connection = uow.connection
+            if connection is None:
+                raise RuntimeError("Conexão PostgreSQL indisponível.")
+            cursor = connection.cursor()
+            inserted = False
+            try:
+                cursor.execute(
+                    f"INSERT INTO {self._table} (id, tipo, plano_conta_id, historico, valor) VALUES (%s, %s, %s, %s, %s)",
+                    (item.id, item.tipo, item.planoContaId or None, item.historico, item.valor),
+                )
+                inserted = True
+                append(connection, event)
+            except BaseException as exc:
+                try:
+                    cursor.close()
+                except BaseException:
+                    pass
+                if not inserted and self._sqlstate(exc) == "23503":
+                    raise HTTPException(status_code=409, detail="A conta do Plano de Contas informada não existe.") from exc
+                if not inserted and self._sqlstate(exc) == "23505":
+                    raise HTTPException(status_code=409, detail="Registro financeiro já existente.") from exc
+                raise
+            else:
+                cursor.close()
+
+    def replace_if_version_audited(self, item: FinanceiroTitulo, expected_version: int, event: Any, audit_sink: Any) -> int:
+        append = getattr(audit_sink, "append_in_transaction", None)
+        if not callable(append):
+            raise HTTPException(status_code=503, detail="Auditoria transacional indisponível.")
+        with self._uow as uow:
+            connection = uow.connection
+            if connection is None:
+                raise RuntimeError("Conexão PostgreSQL indisponível.")
+            cursor = connection.cursor()
+            updated = False
+            try:
+                cursor.execute(
+                    f"UPDATE {self._table} SET tipo = %s, plano_conta_id = %s, historico = %s, valor = %s, updated_at = now(), version = version + 1 WHERE id = %s AND version = %s",
+                    (item.tipo, item.planoContaId or None, item.historico, item.valor, item.id, expected_version),
+                )
+                updated = cursor.rowcount == 1
+                if not updated:
+                    cursor.execute(f"SELECT version FROM {self._table} WHERE id = %s", (item.id,))
+                    if cursor.fetchone() is None:
+                        raise HTTPException(status_code=404, detail="Título não encontrado.")
+                    raise HTTPException(status_code=409, detail="O título foi alterado por outra operação. Recarregue os dados antes de tentar novamente.")
+                append(connection, event)
+            except BaseException:
+                try:
+                    cursor.close()
+                except BaseException:
+                    pass
+                raise
+            else:
+                cursor.close()
+        return expected_version + 1
+
+    def delete_audited(self, item_id: str, event: Any, audit_sink: Any) -> None:
+        append = getattr(audit_sink, "append_in_transaction", None)
+        if not callable(append):
+            raise HTTPException(status_code=503, detail="Auditoria transacional indisponível.")
+        with self._uow as uow:
+            connection = uow.connection
+            if connection is None:
+                raise RuntimeError("Conexão PostgreSQL indisponível.")
+            cursor = connection.cursor()
+            try:
+                cursor.execute(f"DELETE FROM {self._table} WHERE id = %s", (item_id,))
+                if cursor.rowcount != 1:
+                    raise HTTPException(status_code=404, detail="Título não encontrado.")
+                append(connection, event)
+            except BaseException:
+                try:
+                    cursor.close()
+                except BaseException:
+                    pass
+                raise
+            else:
+                cursor.close()
+
+
 class PostgresFormasMonetariasRepository(_PostgresRepository):
     """Adaptador PostgreSQL para formas monetárias; mantém o contrato legado."""
 
