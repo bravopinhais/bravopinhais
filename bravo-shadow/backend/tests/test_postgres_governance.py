@@ -93,8 +93,8 @@ def test_postgres_storage_wires_governance_repositories_without_connecting():
 
     services = build_storage_services("postgres", connection_factory=unexpected_connection)
 
-    assert isinstance(services.condominio.repository, PostgresCondominioRepository)
-    assert isinstance(services.conselheiros.repository, PostgresConselheirosRepository)
+    assert isinstance(services.condominio.repository._repository, PostgresCondominioRepository)
+    assert isinstance(services.conselheiros.repository._repository, PostgresConselheirosRepository)
 
 
 
