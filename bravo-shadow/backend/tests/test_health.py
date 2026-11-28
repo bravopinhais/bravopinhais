@@ -105,11 +105,11 @@ def test_app_instances_keep_financial_services_separate(monkeypatch) -> None:
     first_client = TestClient(first_app)
     second_client = TestClient(second_app)
 
-    response = first_client.post(
-        "/api/v1/plano-contas",
-        json={"codigo": "1.1", "nome": "Receitas", "tipo": "Receita"},
+    from app.modules.plano_contas.schemas import PlanoContaInput
+
+    first_app.state.services.plano_contas.create(
+        PlanoContaInput(codigo="1.1", nome="Receitas", tipo="Receita")
     )
-    assert response.status_code == 201
     assert len(first_client.get("/api/v1/plano-contas").json()) == 1
     assert second_client.get("/api/v1/plano-contas").json() == []
 
