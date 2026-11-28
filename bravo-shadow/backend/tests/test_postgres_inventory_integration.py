@@ -13,6 +13,8 @@ import pytest
 from fastapi import HTTPException
 
 from app.core.postgres_inventory import PostgresAcertosEstoqueRepository
+from app.core.audit import AuditEvent
+from app.core.postgres_audit import PostgresAuditSink
 from app.modules.acertos_estoque.schemas import Acerto
 from app.core.postgres_inventory import PostgresEstoqueRepository
 from app.modules.estoque.schemas import EstoqueItem
@@ -69,6 +71,21 @@ def postgres_inventory_database():
 
 def _repository(database_url: str) -> PostgresAcertosEstoqueRepository:
     return PostgresAcertosEstoqueRepository(lambda: psycopg.connect(database_url))
+
+
+def _audit_sink(database_url: str) -> PostgresAuditSink:
+    return PostgresAuditSink(lambda: psycopg.connect(database_url))
+
+
+def _audit_event(movement: Acerto) -> AuditEvent:
+    return AuditEvent(
+        actor_subject="synthetic-google-subject",
+        action="acertos_estoque:create",
+        entity_type="acerto_estoque",
+        entity_id=movement.id,
+        outcome="success",
+        request_id=f"request-{movement.id}",
+    )
 
 
 def _insert_product(database_url: str, product_id: str, quantity: int) -> None:
@@ -167,10 +184,12 @@ def test_real_postgres_serializes_concurrent_stock_exits_without_negative_balanc
         movement = _movement(product_id, f"movement-{uuid4().hex}", 4)
         barrier.wait(timeout=10)
         try:
-            _repository(database_url).register_movement(
+            _repository(database_url).register_movement_audited(
                 product_id=product_id,
                 movement=movement,
                 delta=-4,
+                event=_audit_event(movement),
+                audit_sink=_audit_sink(database_url),
             )
             return "committed"
         except HTTPException as error:
@@ -197,9 +216,15 @@ def test_real_postgres_serializes_concurrent_stock_exits_without_negative_balanc
             """,
             (product_id,),
         ).fetchone()
+        audit_count = connection.execute(
+            "SELECT count(*) FROM bravo_shadow.audit_events WHERE entity_type = 'acerto_estoque' AND entity_id IN "
+            "(SELECT id FROM bravo_shadow.acertos_estoque WHERE produto_id = %s)",
+            (product_id,),
+        ).fetchone()[0]
 
     assert balance == 1
     assert history == (1, 4)
+    assert audit_count == 1
 
 
 
@@ -375,3 +400,69 @@ def test_real_postgres_restricts_deletion_of_referenced_parent(
 
     assert parent_count == 1
     assert child_count == 1
+
+
+
+def test_real_postgres_rolls_back_balance_and_history_when_audit_insert_fails(
+    postgres_inventory_database,
+):
+    database_url = postgres_inventory_database
+    product_id = f"stock-{uuid4().hex}"
+    _insert_product(database_url, product_id, 9)
+    trigger_name = f"reject_audit_{uuid4().hex[:12]}"
+
+    with psycopg.connect(database_url, autocommit=True) as connection:
+        connection.execute(
+            """
+            CREATE FUNCTION bravo_shadow.reject_inventory_audit() RETURNS trigger
+            LANGUAGE plpgsql AS $$
+            BEGIN
+                RAISE EXCEPTION 'forced inventory audit failure';
+            END;
+            $$
+            """
+        )
+        connection.execute(
+            f'''
+            CREATE TRIGGER "{trigger_name}"
+            BEFORE INSERT ON bravo_shadow.audit_events
+            FOR EACH ROW EXECUTE FUNCTION bravo_shadow.reject_inventory_audit()
+            '''
+        )
+
+    movement = _movement(product_id, f"movement-{uuid4().hex}", 4)
+    try:
+        with pytest.raises(psycopg.Error, match="forced inventory audit failure"):
+            _repository(database_url).register_movement_audited(
+                product_id=product_id,
+                movement=movement,
+                delta=-4,
+                event=_audit_event(movement),
+                audit_sink=_audit_sink(database_url),
+            )
+
+        with psycopg.connect(database_url) as connection:
+            balance = connection.execute(
+                "SELECT quantidade FROM bravo_shadow.estoque WHERE id = %s",
+                (product_id,),
+            ).fetchone()[0]
+            history_count = connection.execute(
+                "SELECT count(*) FROM bravo_shadow.acertos_estoque WHERE produto_id = %s",
+                (product_id,),
+            ).fetchone()[0]
+            audit_count = connection.execute(
+                "SELECT count(*) FROM bravo_shadow.audit_events WHERE entity_id = %s",
+                (movement.id,),
+            ).fetchone()[0]
+
+        assert balance == 9
+        assert history_count == 0
+        assert audit_count == 0
+    finally:
+        with psycopg.connect(database_url, autocommit=True) as connection:
+            connection.execute(
+                f'DROP TRIGGER IF EXISTS "{trigger_name}" ON bravo_shadow.audit_events'
+            )
+            connection.execute(
+                "DROP FUNCTION IF EXISTS bravo_shadow.reject_inventory_audit()"
+            )
