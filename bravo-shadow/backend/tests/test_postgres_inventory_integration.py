@@ -596,6 +596,6 @@ def test_http_api_persists_stock_and_movement_with_atomic_audit(postgres_invento
         ).fetchall()
 
     assert audit_rows == [
-        ("estoque:create", "estoque", product_id, "success"),
         ("acertos_estoque:create", "acerto_estoque", movement_id, "success"),
+        ("estoque:create", "estoque", product_id, "success"),
     ]
