@@ -41,7 +41,7 @@ def payload(**overrides):
         "pasta": "Financeiro",
         "titulo": "Ata de reunião",
         "nomeArquivo": "ata.pdf",
-        "arquivoCompactadoGzip": "H4sIAAAAA",
+        "arquivoCompactadoGzip": "H4sIAAAAAAAC/1MNcHHTNdQz4TJUMFDIT8risrGxs+NKzUsBsVVVXf3duADzKswnIwAAAA==",
     }
     data.update(overrides)
     return data
@@ -52,7 +52,7 @@ def test_document_crud_preserves_file_payload_and_original_name():
     assert created.status_code == 201
     item = created.json()
     assert item["nomeArquivo"] == "ata.pdf"
-    assert item["arquivoCompactadoGzip"] == "H4sIAAAAA"
+    assert item["arquivoCompactadoGzip"] == "H4sIAAAAAAAC/1MNcHHTNdQz4TJUMFDIT8risrGxs+NKzUsBsVVVXf3duADzKswnIwAAAA=="
     assert client.get("/api/v1/documentos/" + item["id"]).status_code == 200
     changed = client.put(
         "/api/v1/documentos/" + item["id"],
@@ -117,7 +117,7 @@ def test_document_rejects_unknown_category():
 
 
 def test_document_metadata_is_trimmed_and_compressed_content_is_preserved():
-    compressed_payload = "  H4sIAAAAA==  "
+    compressed_payload = "  H4sIAAAAAAAC/1MNcHHTNdQz4TJUMFDIT8risrGxs+NKzUsBsVVVXf3duADzKswnIwAAAA====  "
     response = client.post(
         "/api/v1/documentos",
         json=payload(
