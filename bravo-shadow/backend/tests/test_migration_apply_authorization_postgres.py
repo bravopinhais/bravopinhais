@@ -31,6 +31,8 @@ class Cursor:
 
 
 class Connection:
+    autocommit = False
+
     def __init__(self):
         self.calls = []
         self.closed_cursors = 0
