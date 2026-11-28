@@ -92,9 +92,12 @@ O adaptador atual foi escrito para um contrato de schema no qual `initialize` in
 A separação foi implementada:
 - `PostgresReviewSnapshotInitializer` executa a preparação com connection factory própria;
 - `PostgresReviewRuntimeStore` expõe somente leitura e append, com connection factory independente;
-- a camada runtime não expõe `initialize` e não possui fallback para memória.
+- a camada runtime não expõe `initialize` e não possui fallback para memória;
+- a preparação usa advisory lock transacional e não usa mais `SELECT ... FOR UPDATE`, evitando exigir UPDATE na tabela imutável de batches.
 
-Os testes de integração agora autenticam uma sessão PostgreSQL independente como role runtime de teste (LOGIN próprio), em vez de depender apenas de `SET ROLE` numa sessão administrativa. A validação continua restrita ao PostgreSQL descartável.
+O procedimento operacional pretendido é: credencial migrator armazenada apenas no ambiente controlado de preparação; execução manual e auditável do inicializador fora do processo web; revogação/rotação após a preparação quando aplicável. A credencial migrator não deve existir nas variáveis de ambiente do runtime, no frontend, em logs ou em artefatos. Ainda não há job de preparação nem secret configurado: isso permanece desenho, não implantação.
+
+Os testes de integração autenticam sessões independentes com LOGIN próprio para runtime e migrator. A validação continua restrita ao PostgreSQL descartável.
 
 ## 7. Portões de liberação
 
@@ -137,4 +140,6 @@ O uso de `SELECT ... FOR UPDATE` no caminho runtime foi removido porque exigiria
 
 **Testes CI:** execução `46152084098`, commit `809ed5e7e329e068c21d34ac430440cec2b6d97d`, concluída com sucesso. Passaram testes unitários, smoke test Docker e integrações PostgreSQL descartável. A integração autentica conexões independentes como a role runtime e como `anon`, `authenticated` e `service_role` sintéticas. Confirma que as três roles de cliente não conseguem ler nem inserir no ledger; runtime consegue executar load/append com SELECT/INSERT mínimos, mas não consegue UPDATE/DELETE, inserir snapshots ou executar DDL. RLS é forçada nas três tabelas e o runtime não recebe UPDATE nos snapshots. Também permanecem aprovados os testes concorrentes de mesma versão, gravações em decisões distintas, rollback e unicidade global de event_id.
 
-**Limite da evidência:** a homologação usa PostgreSQL local descartável, credenciais e policies sintéticas. Não comprova os grants, policies ou comportamento de um projeto Supabase hospedado. A credencial de preparação/migration ainda precisa de um procedimento operacional separado e de teste próprio de isolamento. O SQL de schema continua rascunho; nenhum banco externo foi conectado, alterado ou importado.
+**Homologação migrator:** a integração agora autentica uma sessão independente como `bravo_shadow_migrator_test`. A role consegue SELECT e INSERT apenas nas tabelas de snapshot, consegue ler events para validar o ledger, mas não recebe UPDATE/DELETE, INSERT em events, DDL ou membership na role runtime. A inicialização do snapshot funciona sem UPDATE, usando advisory lock transacional. O teste também verifica que a facade runtime não expõe `initialize` e a facade de preparação não expõe `append`.
+
+**Limite da evidência:** a homologação usa PostgreSQL local descartável, credenciais e policies sintéticas. Não comprova os grants, policies ou comportamento de um projeto Supabase hospedado. O procedimento operacional de emissão, armazenamento, uso e revogação da credencial migrator ainda não está implantado; não há job nem secret configurado. O SQL de schema continua rascunho; nenhum banco externo foi conectado, alterado ou importado.
