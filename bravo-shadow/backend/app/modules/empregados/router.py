@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, Request, status
 
 from app.core.authorization import AuthenticatedPrincipal, require_capability_dependency
+from app.core.read_audit import audit_read
 from .schemas import Empregado, EmpregadoInput
 from .service import EmpregadosService
 
@@ -16,7 +17,9 @@ def list_employees(
     request: Request,
     actor: AuthenticatedPrincipal = Depends(require_capability_dependency("empregados:read")),
 ) -> list[Empregado]:
-    return get_service(request).list()
+    service = get_service(request)
+    audit_read(request, service, actor, "empregados:list", "empregado")
+    return service.list()
 
 
 @router.post("", response_model=Empregado, status_code=status.HTTP_201_CREATED)
