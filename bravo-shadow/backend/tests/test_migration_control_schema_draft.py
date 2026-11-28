@@ -134,7 +134,7 @@ def test_recovery_decision_does_not_reopen_or_authorize_same_batch():
     sql = _sql().lower()
 
     assert "o evento não muda status nem reabre o lote" in sql
-    assert "um novo apply sempre exige novo lote/manifesto aprovado" in sql
+    assert "novo apply sempre exige novo lote/manifesto aprovado" in sql
 
 
 
