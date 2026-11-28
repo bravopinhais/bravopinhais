@@ -86,9 +86,9 @@ class PostgresCondominioRepository(_GovernanceRepository):
                 f'"{field}" = EXCLUDED."{field}"' for field in fields
             )
             sql = (
-                f"INSERT INTO {self._table} ({columns}) VALUES ({placeholders}) "
+                f"INSERT INTO {self._table} AS target ({columns}) VALUES ({placeholders}) "
                 f"ON CONFLICT (id) DO UPDATE SET {assignments}, "
-                "updated_at = now(), version = bravo_shadow.condominio.version + 1"
+                "updated_at = now(), version = target.version + 1"
             )
             params = ("singleton", *(item[field] for field in fields))
         else:
