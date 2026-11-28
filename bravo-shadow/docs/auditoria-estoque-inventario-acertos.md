@@ -96,3 +96,17 @@ A persistência PostgreSQL do Estoque e dos Acertos foi ampliada com operações
 ### Estado de homologação
 
 O código e os testes foram adicionados à branch `bravo-shadow`. A homologação depende da conclusão do workflow automatizado com PostgreSQL descartável e da análise de qualquer falha. Até a confirmação do CI, esta etapa permanece **pendente de homologação**. Não houve implantação, conexão com banco de produção, importação de dados reais nem alteração da branch `main`.
+
+
+## Atualização técnica adicional — categorias e motivos de estoque
+
+Na mesma branch, os catálogos auxiliares de categorias e motivos passaram a gravar criação/exclusão e evento de auditoria na mesma transação PostgreSQL.
+
+- As rotas encaminham o principal Google ativo e o request ID gerado pelo servidor.
+- Os serviços persistentes recusam operações sem identidade ativa, request ID ou contrato de auditoria.
+- Os repositórios executam INSERT/DELETE e INSERT em `audit_events` na mesma unidade de trabalho.
+- Falha na auditoria reverte a alteração do catálogo.
+- Exclusão continua protegida por referências de documentos e movimentações; a FK do banco fecha também a condição de corrida entre a checagem e o DELETE.
+- Os métodos genéricos de escrita permanecem bloqueados no composition root; somente os métodos auditados são usados pelos serviços.
+
+Foram acrescentados testes de contrato de serviço, mesma conexão, rollback em falha de auditoria e exclusão de registro inexistente. A validação automatizada completa continua pendente; não considerar este módulo homologado até o CI confirmar.
