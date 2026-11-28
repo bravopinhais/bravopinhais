@@ -95,6 +95,8 @@ class EstoqueService:
             self.repository.delete(item_id)
 
     def _require_actor_if_audited(self, actor: AuthenticatedPrincipal | None) -> None:
+        if self.audit_sink is None and callable(getattr(self.repository, "add_audited", None)):
+            raise HTTPException(status_code=503, detail="O repositório persistente exige auditoria transacional configurada.")
         if self.audit_sink is not None and (
             not isinstance(actor, AuthenticatedPrincipal)
             or actor.account_status != "Ativo"
