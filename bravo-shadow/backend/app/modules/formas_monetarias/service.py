@@ -41,7 +41,7 @@ class FormasMonetariasService:
             )
         item = FormaMonetaria(id=item_id, **data.model_dump())
         if actor is not None:
-            self._audited("formas_monetarias:update", item_id, actor, request_id, "replace_audited", item, item_id)
+            self._audited("formas_monetarias:update", item_id, actor, request_id, "replace_audited", item_id, item)
         else:
             self.repository.replace(item_id, item)
         return item
