@@ -10,6 +10,9 @@ on:
       - "bravo-shadow/Dockerfile"
       - "bravo-shadow/.dockerignore"
       - "bravo-shadow/docs/verificar-privilegios-rls-somente-leitura.sql"
+      - "bravo-shadow/supabase/**"
+      - "bravo-shadow/scripts/homologar-local.sh"
+      - "bravo-shadow/scripts/validar-catalogo-local.sql"
       - ".github/workflows/bravo-shadow-tests.yml"
   pull_request:
     paths:
@@ -90,6 +93,45 @@ jobs:
 
       - name: Instalar dependências
         run: python -m pip install -r requirements.txt
+
+      - name: Aplicar migrations e auditar schema no PostgreSQL descartável
+        env:
+          BRAVO_SHADOW_TEST_DATABASE_URL: postgresql://bravo_test:bravo_test@127.0.0.1:5432/bravo_shadow_test
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          import psycopg
+
+          root = Path("..")
+          migrations = sorted((root / "supabase" / "migrations").glob("*.sql"))
+          if len(migrations) != 6:
+              raise SystemExit(f"Esperadas 6 migrations; encontradas {len(migrations)}.")
+
+          with psycopg.connect(
+              os.environ["BRAVO_SHADOW_TEST_DATABASE_URL"],
+              autocommit=True,
+          ) as connection:
+              for role in ("anon", "authenticated", "service_role"):
+                  exists = connection.execute(
+                      "SELECT 1 FROM pg_roles WHERE rolname = %s", (role,)
+                  ).fetchone()
+                  if exists is None:
+                      connection.execute(f'CREATE ROLE "{role}" NOLOGIN')
+
+              for migration in migrations:
+                  print(f"Aplicando {migration.name}")
+                  connection.execute(
+                      migration.read_text(encoding="utf-8"), prepare=False
+                  )
+
+              audit = root / "scripts" / "validar-catalogo-local.sql"
+              print(f"Auditando catálogo: {audit.name}")
+              connection.execute(audit.read_text(encoding="utf-8"), prepare=False)
+
+          print("Seis migrations aplicadas e auditoria do catálogo concluída.")
+          PY
 
       - name: Executar inspeção SQL somente leitura no PostgreSQL descartável
         env:
