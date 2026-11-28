@@ -22,16 +22,16 @@ def list_accounts(request: Request) -> list[ContaBancaria]:
     return get_service(request).list()
 
 
-@router.post("", response_model=ContaBancaria, status_code=status.HTTP_201_CREATED, dependencies=[create_access])
+@router.post("", response_model=ContaBancaria, status_code=status.HTTP_201_CREATED)
 def create_account(request: Request, data: ContaBancariaInput, principal: AuthenticatedPrincipal = Depends(require_capability_dependency("contas_bancarias:create"))) -> ContaBancaria:
     return get_service(request).create(data, actor=principal, request_id=getattr(request.state, "request_id", None))
 
 
-@router.put("/{item_id}", response_model=ContaBancaria, dependencies=[update_access])
+@router.put("/{item_id}", response_model=ContaBancaria)
 def update_account(request: Request, item_id: str, data: ContaBancariaInput, principal: AuthenticatedPrincipal = Depends(require_capability_dependency("contas_bancarias:update"))) -> ContaBancaria:
     return get_service(request).update(item_id, data, actor=principal, request_id=getattr(request.state, "request_id", None))
 
 
-@router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[delete_access])
+@router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_account(request: Request, item_id: str, principal: AuthenticatedPrincipal = Depends(require_capability_dependency("contas_bancarias:delete"))) -> None:
     get_service(request).delete(item_id, actor=principal, request_id=getattr(request.state, "request_id", None))
