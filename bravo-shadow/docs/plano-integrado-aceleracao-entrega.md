@@ -99,3 +99,8 @@ A execução automatizada identificou dois problemas de coleta Python independen
 ### Formas Monetárias e Contas Bancárias — auditoria transacional integrada
 
 Os dois módulos passaram a receber o sink de auditoria no composition root e a encaminhar identidade interna ativa e request ID pelas rotas. Os serviços emitem eventos específicos para criação, edição e exclusão; os repositórios PostgreSQL executam cada mutação e o INSERT em `audit_events` na mesma unidade de trabalho, sem commit intermediário. Se a mutação ou o INSERT de auditoria falhar, a transação é revertida. O modo de memória segue disponível para testes isolados. Foram incluídos testes do contrato de serviço para as três operações e do bloqueio quando não há ator autenticado. A integração de código está concluída; ainda depende de CI e homologação PostgreSQL descartável antes de ser considerada validada. Esses dois cadastros não têm controle de concorrência por versão exposto no contrato HTTP nesta etapa.
+
+
+### Usuários — auditoria das alterações cadastrais
+
+As rotas de criação e atualização cadastral agora encaminham ator interno e request ID. No modo PostgreSQL, ambas exigem perfil Admin ativo e métodos dedicados do repositório; criação de usuário comum (Operador/Ativo) e atualização apenas de nome/loja/cargo são gravadas junto com o evento de auditoria na mesma transação. O repositório não aceita perfil/status no payload cadastral, não permite exclusão física e preserva o fluxo administrativo privilegiado separado. Falta validar os novos contratos no CI e no PostgreSQL descartável; não há autorização de importação ou mudança de produção implícita.
