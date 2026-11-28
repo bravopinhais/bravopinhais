@@ -13,6 +13,8 @@ from app.main import app, create_app
 
 @pytest.fixture(autouse=True)
 def allow_test_admin(monkeypatch):
+    previous_audit_sink = app.state.services.documentos.audit_sink
+    app.state.services.documentos.audit_sink = None
     monkeypatch.setattr(
         authorization,
         "ROLE_CAPABILITIES",
@@ -26,6 +28,7 @@ def allow_test_admin(monkeypatch):
     app.dependency_overrides[get_current_principal] = authenticated_admin
     yield
     app.dependency_overrides.clear()
+    app.state.services.documentos.audit_sink = previous_audit_sink
 
 
 client = TestClient(app)
