@@ -148,10 +148,13 @@ class PostgresUsuariosRepository:
                 raise RuntimeError("A conexão PostgreSQL não foi aberta.")
             cursor = connection.cursor()
             try:
-                # O próprio UPDATE adquire ROW EXCLUSIVE e bloqueia a linha.
-                # Esse lock conflita com SHARE ROW EXCLUSIVE das operações
-                # administrativas, serializando mudanças no mesmo usuário sem
-                # bloquear desnecessariamente alterações cadastrais de terceiros.
+                # Serializa alterações cadastrais e administrativas no mesmo
+                # protocolo de lock. O bloqueio é mantido até o COMMIT para
+                # impedir que uma edição cadastral concorrente restaure perfil
+                # ou status observados antes de uma mudança administrativa.
+                cursor.execute(
+                    f"LOCK TABLE {self._table} IN SHARE ROW EXCLUSIVE MODE"
+                )
                 cursor.execute(sql, params)
                 row = cursor.fetchone()
                 if row is None:
@@ -212,8 +215,11 @@ class PostgresUsuariosRepository:
                 raise RuntimeError("A conexão PostgreSQL não foi aberta.")
             cursor = connection.cursor()
             try:
-                # O UPDATE mantém o bloqueio de linha até o COMMIT e seu
-                # ROW EXCLUSIVE conflita com o lock administrativo da tabela.
+                # Usa o mesmo lock de tabela da operação administrativa para
+                # impedir lost update entre cadastro, perfil e status.
+                cursor.execute(
+                    f"LOCK TABLE {self._table} IN SHARE ROW EXCLUSIVE MODE"
+                )
                 cursor.execute(sql, params)
                 row = cursor.fetchone()
                 if row is None:
