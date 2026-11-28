@@ -120,3 +120,22 @@ Esta especificação continua sendo apenas documentação. Nenhuma policy foi cr
 - ausência de privilégios SELECT/INSERT/UPDATE/DELETE para `anon`, `authenticated` e `service_role`.
 
 **Limite da evidência:** os testes de privilégio consultam `has_table_privilege` e metadados do catálogo; ainda não executam sessões autenticadas separadamente como cada role nem validam o comportamento de policies runtime. A matriz completa descrita nesta especificação continua pendente. O vínculo Google ainda não é consumido pelo fluxo de autenticação, que permanece baseado no e-mail verificado e no cadastro interno ativo.
+
+
+## 9. Concorrência do append sem privilégio UPDATE
+
+Foi identificado que o adaptador runtime ainda usa `SELECT ... FOR UPDATE` nas tabelas de batches e decisions. Esse bloqueio exige privilégio UPDATE além de SELECT no PostgreSQL, portanto conflita com a matriz mínima definida nesta especificação.
+
+**Diretriz de desenho para a próxima revisão (ainda não implementada):**
+- Remover bloqueios de linha `FOR UPDATE` do caminho runtime.
+- Avaliar um bloqueio consultivo transacional PostgreSQL, adquirido antes da leitura da versão corrente e mantido até commit/rollback.
+- Para a primeira implementação, preferir uma chave global fixa do subsistema de revisão: reduz a concorrência entre decisões, mas evita colisões de hash e simplifica a prova de exclusão mútua. A otimização para bloqueios por decisão fica para depois de homologação.
+- Manter `UNIQUE (batch_key, decision_id, version)` como última barreira de integridade, além de `PRIMARY KEY (event_id)`.
+- Manter o teste de duas conexões concorrentes na mesma decisão/versão: exatamente uma grava e a outra recebe `stale_review_version`.
+- Acrescentar teste de integração executando append com uma role runtime real, sem UPDATE nas tabelas de batches/decisions, verificando também a permissão necessária para chamar a função de advisory lock.
+- Confirmar que o bloqueio é transacional e liberado tanto no commit quanto no rollback.
+- Se a constraint de versão detectar disputa inesperada, tratar a violação específica de unicidade como conflito de versão, sem mascarar violações de outras constraints.
+
+A chave global é uma escolha conservadora de homologação, não uma decisão de desempenho definitiva. O grant EXECUTE da função de advisory lock deve ser verificado explicitamente no ambiente descartável; não presumir que os privilégios padrão permanecerão iguais após hardening.
+
+**Estado:** análise e diretriz documental בלבד. O adaptador, o SQL rascunho, as roles e as policies não foram alterados nem executados.
