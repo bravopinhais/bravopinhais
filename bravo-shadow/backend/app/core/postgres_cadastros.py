@@ -254,3 +254,60 @@ class PostgresContasBancariasRepository(_PostgresCadastroRepository):
         changed = self._query(f"DELETE FROM {self._table} WHERE id = %s", (item_id,))
         if not changed:
             raise self._missing("Conta bancária não encontrada.")
+
+    @staticmethod
+    def _audit_ready(audit_sink: Any):
+        append = getattr(audit_sink, "append_in_transaction", None)
+        if not callable(append):
+            raise HTTPException(status_code=503, detail="Auditoria transacional indisponível.")
+        return append
+
+    def add_audited(self, item: ContaBancaria, event: Any, audit_sink: Any) -> None:
+        append = self._audit_ready(audit_sink)
+        with self._uow as uow:
+            connection = uow.connection
+            if connection is None:
+                raise RuntimeError("Conexão PostgreSQL indisponível.")
+            cursor = connection.cursor()
+            try:
+                cursor.execute(
+                    f"INSERT INTO {self._table} (id, banco, saldo) VALUES (%s, %s, %s)",
+                    (item.id, item.banco, item.saldo),
+                )
+                append(connection, event)
+            finally:
+                cursor.close()
+
+    def replace_audited(self, item_id: str, item: ContaBancaria, event: Any, audit_sink: Any) -> None:
+        append = self._audit_ready(audit_sink)
+        with self._uow as uow:
+            connection = uow.connection
+            if connection is None:
+                raise RuntimeError("Conexão PostgreSQL indisponível.")
+            cursor = connection.cursor()
+            try:
+                cursor.execute(
+                    f"UPDATE {self._table} SET banco = %s, saldo = %s, updated_at = now(), "
+                    "version = version + 1 WHERE id = %s",
+                    (item.banco, item.saldo, item_id),
+                )
+                if cursor.rowcount != 1:
+                    raise self._missing("Conta bancária não encontrada.")
+                append(connection, event)
+            finally:
+                cursor.close()
+
+    def delete_audited(self, item_id: str, event: Any, audit_sink: Any) -> None:
+        append = self._audit_ready(audit_sink)
+        with self._uow as uow:
+            connection = uow.connection
+            if connection is None:
+                raise RuntimeError("Conexão PostgreSQL indisponível.")
+            cursor = connection.cursor()
+            try:
+                cursor.execute(f"DELETE FROM {self._table} WHERE id = %s", (item_id,))
+                if cursor.rowcount != 1:
+                    raise self._missing("Conta bancária não encontrada.")
+                append(connection, event)
+            finally:
+                cursor.close()
