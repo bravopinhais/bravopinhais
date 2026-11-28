@@ -156,8 +156,10 @@ class FakeConnection:
         self.rollbacks = 0
         self.closed = 0
         self.cursors_closed = 0
+        self.cursors_created = 0
 
     def cursor(self):
+        self.cursors_created += 1
         return FakeCursor(self)
 
     def commit(self):
@@ -266,7 +268,7 @@ def test_postgres_routes_create_read_update_and_enforce_references(postgres_api)
     assert state.plan_accounts == {}
     assert connections
     assert all(connection.closed == 1 for connection in connections)
-    assert all(connection.cursors_closed == len(connection.statements) for connection in connections)
+    assert all(connection.cursors_closed == connection.cursors_created for connection in connections)
 
 
 def test_postgres_routes_reject_duplicate_account_code(postgres_api):
