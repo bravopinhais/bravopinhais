@@ -8,22 +8,19 @@ from .service import FinanceiroService
 
 router = APIRouter(prefix="/api/v1/financeiro", tags=["Financeiro"])
 
-read_access = Depends(require_capability_dependency("financeiro:read"))
-create_access = Depends(require_capability_dependency("financeiro:create"))
-update_access = Depends(require_capability_dependency("financeiro:update"))
-delete_access = Depends(require_capability_dependency("financeiro:delete"))
-
-
 def get_service(request: Request) -> FinanceiroService:
     return request.app.state.services.financeiro
 
 
-@router.get("", response_model=list[FinanceiroTitulo], dependencies=[read_access])
-def list_titles(request: Request) -> list[FinanceiroTitulo]:
+@router.get("", response_model=list[FinanceiroTitulo])
+def list_titles(
+    request: Request,
+    _principal: AuthenticatedPrincipal = Depends(require_capability_dependency("financeiro:read")),
+) -> list[FinanceiroTitulo]:
     return get_service(request).list()
 
 
-@router.post("", response_model=FinanceiroTitulo, status_code=status.HTTP_201_CREATED, dependencies=[create_access])
+@router.post("", response_model=FinanceiroTitulo, status_code=status.HTTP_201_CREATED)
 def create_title(
     data: FinanceiroInput,
     request: Request,
@@ -37,7 +34,7 @@ def create_title(
     return item
 
 
-@router.put("/{item_id}", response_model=FinanceiroTitulo, dependencies=[update_access])
+@router.put("/{item_id}", response_model=FinanceiroTitulo)
 def update_title(
     item_id: str,
     data: FinanceiroInput,
@@ -55,7 +52,7 @@ def update_title(
     return item
 
 
-@router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT, dependencies=[delete_access])
+@router.delete("/{item_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_title(
     item_id: str,
     request: Request,
