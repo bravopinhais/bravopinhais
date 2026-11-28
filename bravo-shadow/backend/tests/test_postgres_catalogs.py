@@ -229,3 +229,51 @@ def test_catalog_audited_delete_missing_row_does_not_write_audit(repository_type
     assert sink.events == []
     assert connection.commits == 0
     assert connection.rollbacks == 1
+
+
+@pytest.mark.parametrize("operation", ["add", "replace", "delete"])
+def test_document_mutation_and_audit_share_transaction(operation):
+    connection = Connection()
+    sink = AuditSink()
+    repository = PostgresDocumentosRepository(factory(connection))
+    document = Documento(
+        id="doc_1", pasta="Financeiro", categoriaId=None,
+        titulo="Ata", nomeArquivo="ata.pdf", arquivoCompactadoGzip="gzip-data",
+    )
+    event = object()
+
+    if operation == "add":
+        repository.add_audited(document.id, document, event, sink)
+    elif operation == "replace":
+        repository.replace_audited(document.id, document, event, sink)
+    else:
+        repository.delete_audited(document.id, event, sink)
+
+    assert len(connection.calls) == 1
+    assert "bravo_shadow.documentos" in connection.calls[0][0]
+    assert sink.connection is connection
+    assert sink.events == [event]
+    assert connection.commits == 1
+    assert connection.rollbacks == 0
+
+
+@pytest.mark.parametrize("operation", ["add", "replace", "delete"])
+def test_document_audit_failure_rolls_back_mutation(operation):
+    connection = Connection()
+    sink = AuditSink(fail=True)
+    repository = PostgresDocumentosRepository(factory(connection))
+    document = Documento(
+        id="doc_1", pasta="Financeiro", categoriaId=None,
+        titulo="Ata", nomeArquivo="ata.pdf", arquivoCompactadoGzip="gzip-data",
+    )
+
+    with pytest.raises(RuntimeError, match="audit insert failed"):
+        if operation == "add":
+            repository.add_audited(document.id, document, object(), sink)
+        elif operation == "replace":
+            repository.replace_audited(document.id, document, object(), sink)
+        else:
+            repository.delete_audited(document.id, object(), sink)
+
+    assert connection.commits == 0
+    assert connection.rollbacks == 1
