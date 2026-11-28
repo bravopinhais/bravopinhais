@@ -47,6 +47,12 @@ class AcertosEstoqueService:
         return any(item.motivoId == reason_id for item in self.repository.list())
 
     def create(self, data: AcertoInput, *, actor: AuthenticatedPrincipal | None = None, request_id: str | None = None) -> Acerto:
+        if (
+            self.movement_repository is not None
+            and callable(getattr(self.movement_repository, "register_movement_audited", None))
+            and self.audit_sink is None
+        ):
+            raise HTTPException(status_code=503, detail="O repositório persistente exige auditoria transacional configurada.")
         if self.audit_sink is not None and (
             not isinstance(actor, AuthenticatedPrincipal)
             or actor.account_status != "Ativo"
