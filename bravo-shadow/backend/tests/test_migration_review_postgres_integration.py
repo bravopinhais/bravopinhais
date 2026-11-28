@@ -353,6 +353,69 @@ def test_parallel_cross_batch_duplicate_event_id_has_one_database_winner(postgre
     assert len(store.load(first_register).events) + len(store.load(second_register).events) == 1
 
 
+def test_client_roles_are_denied_and_runtime_cannot_mutate_snapshots_or_ddl(postgres_database):
+    register = _register()
+    admin_store = PostgresReviewLedgerStore(lambda: psycopg.connect(postgres_database))
+    admin_store.initialize(register)
+
+    client_roles = ("anon", "authenticated", "service_role")
+    with psycopg.connect(postgres_database, autocommit=True) as connection:
+        for role in client_roles:
+            connection.execute(
+                f'ALTER ROLE "{role}" LOGIN PASSWORD %s',
+                (f"{role}-shadow-test-only",),
+            )
+
+    admin_conninfo = psycopg.conninfo.conninfo_to_dict(postgres_database)
+    admin_conninfo["dbname"] = "bravo_shadow_test"
+
+    for role in client_roles:
+        conninfo = dict(admin_conninfo)
+        conninfo["user"] = role
+        conninfo["password"] = f"{role}-shadow-test-only"
+        with psycopg.connect(**conninfo) as connection:
+            assert connection.execute(
+                "SELECT session_user, current_user"
+            ).fetchone() == (role, role)
+            with pytest.raises(psycopg.errors.InsufficientPrivilege):
+                connection.execute(
+                    "SELECT * FROM bravo_shadow.migration_review_batches"
+                )
+            with pytest.raises(psycopg.errors.InsufficientPrivilege):
+                connection.execute(
+                    "INSERT INTO bravo_shadow.migration_review_events "
+                    "(event_id, batch_key, decision_id, manifest_hash, version, "
+                    "reviewer_id, choice, rationale, reviewed_at) "
+                    "VALUES ('denied', 'batch', 'decision', 'hash', 1, "
+                    "'actor', 'keep_blocked', 'test', now())"
+                )
+
+    runtime_conninfo = dict(admin_conninfo)
+    runtime_conninfo["user"] = "bravo_shadow_runtime_test"
+    runtime_conninfo["password"] = "bravo-shadow-test-only"
+    with psycopg.connect(**runtime_conninfo) as runtime:
+        assert runtime.execute(
+            "SELECT session_user, current_user"
+        ).fetchone() == (
+            "bravo_shadow_runtime_test",
+            "bravo_shadow_runtime_test",
+        )
+        for sql in (
+            "UPDATE bravo_shadow.migration_review_batches "
+            "SET manifest_hash = manifest_hash",
+            "DELETE FROM bravo_shadow.migration_review_decisions",
+            "INSERT INTO bravo_shadow.migration_review_batches "
+            "(batch_key, manifest_hash) VALUES ('forbidden', 'hash')",
+            "INSERT INTO bravo_shadow.migration_review_decisions "
+            "(decision_id, batch_key, manifest_hash, decision_kind, "
+            "decision_status, requires_human, automatic_action) "
+            "VALUES ('forbidden', 'forbidden', 'hash', 'kind', 'pending', true, 'none')",
+            "CREATE TABLE bravo_shadow.runtime_ddl_must_fail (id integer)",
+        ):
+            with pytest.raises(psycopg.errors.InsufficientPrivilege):
+                runtime.execute(sql)
+
+
 def test_runtime_append_works_without_update_on_snapshot_tables(postgres_database):
     register = _register()
     admin_store = PostgresReviewLedgerStore(lambda: psycopg.connect(postgres_database))
