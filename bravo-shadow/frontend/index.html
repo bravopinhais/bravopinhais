@@ -72,6 +72,7 @@
     <button data-module="usuarios"><span class="ico">♙</span>Gestão de Usuários</button>
     <button data-module="configuracoes"><span class="ico">⚙</span>Configurações</button>
     <button data-module="direitos_autorais"><span class="ico">§</span>Contratos e Direitos Autorais</button>
+    <button data-module="privacidade"><span class="ico">⛨</span>Privacidade e LGPD</button>
   </nav>
   <div class="side-foot"><b>Ambiente isolado</b><br>Sem conexão com dados de produção.<br>Bravo Shadow · versão de arquitetura 0.1</div>
 </aside>
@@ -112,7 +113,7 @@
       <div class="section-head"><h2>Fundação da nova arquitetura</h2><span>Visão técnica</span></div>
       <div class="panel"><strong style="font-size:13px">Frontend unificado → API FastAPI → serviços de domínio → camada de persistência</strong><p>A camada visual, a API FastAPI e a persistência PostgreSQL são componentes separados. O login e os indicadores só funcionam quando a API Shadow estiver hospedada e configurada na mesma origem HTTPS da interface, com permissões internas válidas.</p></div>
     </div>
-    <footer class="footer"><span>BRAVO SHADOW · Ambiente de evolução independente</span><button class="action-btn" type="button" data-module="direitos_autorais">Contratos e Direitos Autorais</button><span>© 2026 Guardiões do Bravo. Todos os direitos reservados.</span><span>Original preservado · Sem acesso à produção</span></footer>
+    <footer class="footer"><span>BRAVO SHADOW · Ambiente de evolução independente</span><button class="action-btn" type="button" data-module="direitos_autorais">Contratos e Direitos Autorais</button><button class="action-btn" type="button" data-module="privacidade">Privacidade e LGPD</button><span>© 2026 Guardiões do Bravo. Todos os direitos reservados.</span><span>Original preservado · Sem acesso à produção</span></footer>
   </div>
 </main>
 </div>
@@ -135,7 +136,8 @@ documentos:{name:"Gestão de Documentos",title:"Gestão de Documentos",desc:"Arq
 relatorios:{name:"Relatórios & DRE",title:"Central de Relatórios & DRE",desc:"Relatórios gerenciais e demonstrativo de resultados."},
 usuarios:{name:"Gestão de Usuários",title:"Gestão de Usuários",desc:"Perfis e administração de acesso. Autenticação será integrada após auditoria."},
 configuracoes:{name:"Configurações",title:"Configurações",desc:"Ativação de módulos, preferências administrativas e auditoria."},
-direitos_autorais:{name:"Contratos e Direitos Autorais",title:"Contratos e Direitos Autorais",desc:"Titularidade declarada, licença gratuita do condomínio e condições de uso do software."}
+direitos_autorais:{name:"Contratos e Direitos Autorais",title:"Contratos e Direitos Autorais",desc:"Titularidade declarada, licença gratuita do condomínio e condições de uso do software."},
+privacidade:{name:"Privacidade e LGPD",title:"Privacidade e Proteção de Dados",desc:"Aviso de privacidade, tratamento de dados pessoais e direitos dos titulares."}
 };
 const IS_STATIC_PREVIEW=location.hostname.endsWith("github.io");
 if(IS_STATIC_PREVIEW){const env=document.querySelector(".env");if(env)env.innerHTML='<span class="dot"></span> PREVIEW ESTÁTICO · GITHUB PAGES';}
@@ -2120,6 +2122,29 @@ function direitosAutoraisView(){
  </section>`;
 }
 
+function privacidadeView(){
+ const view=document.getElementById("view");
+ view.innerHTML=`<section class="panel" aria-labelledby="lgpd-title">
+  <div class="api-toolbar"><div><div class="eyebrow">Transparência e proteção de dados</div><strong id="lgpd-title" style="font-size:18px">Privacidade e LGPD</strong><div class="api-status">Aviso preliminar · requer validação pelo condomínio</div></div><span class="tag">Lei nº 13.709/2018</span></div>
+  <div class="notice"><div class="notice-icon">⛨</div><div><strong>Seu direito à privacidade importa</strong><p>Esta página explica, em linguagem simples, como o Sistema de Gestão de Condomínio poderá tratar dados pessoais durante sua utilização. A versão definitiva deverá refletir as práticas reais do condomínio, da hospedagem e dos fornecedores integrados.</p></div></div>
+  <div class="section-head"><h2>Quem decide sobre o tratamento?</h2></div>
+  <div class="panel" style="background:var(--s2);box-shadow:none"><p>Em regra, o condomínio, por meio de seus representantes legítimos, define as finalidades e os meios essenciais do tratamento dos dados usados na administração condominial e poderá atuar como controlador. O fornecedor do software ou da hospedagem poderá atuar como operador quando tratar dados em nome do condomínio e conforme suas instruções. Os papéis devem ser confirmados conforme cada operação e contrato.</p><p><strong>Controlador do condomínio:</strong> [NOME E CNPJ DO CONDOMÍNIO A PREENCHER]</p><p><strong>Canal de privacidade/encarregado:</strong> [CONTATO OFICIAL A DEFINIR PELO CONTROLADOR]</p></div>
+  <div class="section-head"><h2>Quais dados podem ser tratados?</h2></div>
+  <ul style="padding-left:20px;color:var(--soft);font-size:12px;line-height:1.9"><li>Identificação e contato de moradores, proprietários, conselheiros e usuários.</li><li>Unidade, vínculo com o condomínio e informações necessárias à administração.</li><li>Dados de fornecedores e empregados, inclusive contatos profissionais e de emergência quando necessários.</li><li>Registros financeiros, cobranças, pagamentos, despesas e comprovantes relacionados ao condomínio.</li><li>Dados de acesso, perfil, permissões, autenticação e registros técnicos de segurança.</li><li>Documentos e arquivos inseridos pelos usuários, que podem conter dados pessoais.</li></ul>
+  <div class="section-head"><h2>Para quais finalidades?</h2></div>
+  <ul style="padding-left:20px;color:var(--soft);font-size:12px;line-height:1.9"><li>Executar rotinas administrativas, financeiras e operacionais do condomínio.</li><li>Controlar estoque, compras, documentos, usuários e prestação de contas.</li><li>Autenticar usuários e aplicar permissões de acesso.</li><li>Manter segurança, auditoria, prevenção a fraude e rastreabilidade.</li><li>Cumprir obrigações legais/regulatórias e exercer direitos, quando aplicável.</li></ul>
+  <div class="section-head"><h2>Bases legais, compartilhamento e retenção</h2></div>
+  <div class="panel" style="background:var(--s2);box-shadow:none"><p>As bases legais serão definidas pelo controlador para cada finalidade, conforme o contexto — por exemplo, cumprimento de obrigação legal ou regulatória, execução de contrato, exercício regular de direitos ou legítimo interesse quando cabível e após avaliação adequada. O uso do sistema não significa que todos os tratamentos dependam de consentimento.</p><p>Os dados poderão ser tratados por fornecedores de hospedagem, infraestrutura, autenticação e suporte estritamente necessários à operação, mediante avaliação e instrumentos apropriados. A lista real de fornecedores, localização/transferências internacionais e prazos de retenção deverá ser publicada após configuração da operação.</p><p><strong>Retenção:</strong> os prazos serão definidos conforme finalidade, obrigações legais, necessidades administrativas e hipóteses de conservação permitidas em lei. Não há prazo único de eliminação automática anunciado nesta versão.</p></div>
+  <div class="section-head"><h2>Seus direitos</h2></div>
+  <p>Nos termos da LGPD, o titular pode solicitar, conforme aplicável, confirmação do tratamento, acesso, correção, anonimização, bloqueio ou eliminação de dados excessivos ou tratados irregularmente, portabilidade nos termos da regulamentação, informação sobre compartilhamentos e revisão de decisões automatizadas nas hipóteses legais.</p>
+  <p>As solicitações devem ser encaminhadas ao controlador do condomínio pelo canal oficial de privacidade que será informado nesta página. O atendimento poderá exigir confirmação segura da identidade e observar obrigações legais de conservação e outras exceções previstas em lei.</p>
+  <div class="section-head"><h2>Segurança e incidentes</h2></div>
+  <p>O sistema deverá adotar controles proporcionais, como autenticação, permissões por perfil, proteção de credenciais, registros de auditoria, cópias de segurança e medidas de prevenção a acesso indevido. As medidas efetivamente implantadas e o procedimento de resposta a incidentes deverão ser documentados pelo controlador e pelos fornecedores envolvidos.</p>
+  <div class="notice" style="margin-top:16px"><div class="notice-icon">ⓘ</div><div><strong>Esta política ainda não é a versão final</strong><p>Os campos de controlador, contato, fornecedores, hospedagem, transferências e retenção estão pendentes de confirmação. Esta tela não certifica conformidade integral com a LGPD nem substitui contratos de tratamento, avaliação de riscos ou orientação jurídica. Não inserir dados reais até concluir a configuração e a validação dessas informações.</p></div></div>
+  <p style="margin-top:16px;font-size:11px;color:var(--muted)">Referência legal: Lei nº 13.709/2018 (LGPD), especialmente arts. 6º, 7º, 18 e 19. Texto informativo sujeito a revisão.</p>
+ </section>`;
+}
+
 function openModule(id){
  const item=modules[id];if(!item)return;
  if(bravoCurrentUser&&!canReadBravoModule(id)){
@@ -2155,6 +2180,7 @@ function openModule(id){
  if(id==="relatorios"){location.hash=id;relatoriosView();if(relatoriosApiClient)void loadDre(relatoriosApiClient);return}
  if(id==="configuracoes"){location.hash=id;configuracoesView();return}
  if(id==="direitos_autorais"){location.hash=id;direitosAutoraisView();return}
+ if(id==="privacidade"){location.hash=id;privacidadeView();return}
  view.innerHTML='<section class="panel module-view"><div><div class="big-icon">◇</div><span class="eyebrow">Módulo mapeado · Bravo Shadow</span><h2>'+item.title+'</h2><p>'+item.desc+'</p><span class="tag">Estrutura visual inicial · Funcionalidade ainda não migrada</span></div></section>';
  location.hash=id;
 }
