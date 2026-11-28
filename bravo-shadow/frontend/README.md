@@ -613,3 +613,8 @@ A tela de dados institucionais agora consulta `GET /api/v1/condominio` com a ses
 A resposta da API é validada antes de preencher os campos. Não são inseridos valores fictícios nem acessados dados do ambiente de produção. Erros de autenticação/autorização são apresentados separadamente; as consultas pendentes são canceladas e o estado institucional é limpo no encerramento da sessão. O conselho continua com sua integração independente e suas próprias capacidades.
 
 **Limitações:** o endpoint singleton ainda não expõe versão/ETag ou controle de concorrência; não há trilha de auditoria de negócio específica para a atualização institucional, nem validação formal de CNPJ/CEP/telefone. A interface não inventa essas regras nem oferece histórico de alterações. A integração é estática e depende da API HTTPS Shadow isolada, da autenticação Google configurada e da persistência PostgreSQL explicitamente provisionada. Não houve teste automatizado, migração, deploy ou acesso à produção.
+
+
+## Financeiro — bloqueio preventivo de mutações sem auditoria (27/11/2026)
+
+A consulta de títulos permanece disponível mediante `financeiro:read`. As rotas de inclusão, edição e exclusão exigem as respectivas capacidades, mas respondem temporariamente com `503` porque o serviço e o repositório PostgreSQL ainda não registram o evento de auditoria na mesma transação da alteração financeira. A proteção vale também para chamadas diretas à API; não depende de os botões estarem desabilitados no navegador. Nenhuma gravação financeira é considerada pronta até existir operação auditada atômica, controle de versão e tratamento de integridade referencial. Não há baixa, pagamento, vencimento ou conciliação no contrato atual.
