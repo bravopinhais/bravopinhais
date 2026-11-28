@@ -272,11 +272,10 @@ class ReadAuditSink:
 
 
 def test_document_list_and_detail_reads_are_audited_without_document_content():
-    sink = ReadAuditSink()
-    app.state.services.documentos.audit_sink = sink
     created = client.post("/api/v1/documentos", json=payload())
     assert created.status_code == 201
-    sink.events.clear()
+    sink = ReadAuditSink()
+    app.state.services.documentos.audit_sink = sink
 
     listed = client.get("/api/v1/documentos")
     detail = client.get("/api/v1/documentos/" + created.json()["id"])
