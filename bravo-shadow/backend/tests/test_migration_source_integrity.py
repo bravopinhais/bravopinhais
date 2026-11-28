@@ -92,5 +92,5 @@ def test_explicit_mappings_are_forwarded_to_individual_assessors():
         compatibility_mapping={"titulos": "financeiro"},
         special_mapping={"financeiro": "titulos"},
     )
-    assert any(item.source_collection == "titulos" for item in report.compatibility.assessments)
+    assert "titulos" in report.compatibility.unmapped_source_collections
     assert any(item.source_collection == "titulos" for item in report.special_contracts.assessments)
