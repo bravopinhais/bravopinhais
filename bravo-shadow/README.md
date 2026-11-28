@@ -19,7 +19,7 @@ Versão paralela do Bravo, criada para evolução arquitetural gradual e homolog
 
 ## Estado atual
 
-A branch contém frontend, API FastAPI, rotas dos módulos, adaptadores PostgreSQL, driver Psycopg, autenticação Google server-side, seis migrations versionadas, Dockerfile e workflows de CI. O backend usa memória por padrão; a integração Google do frontend permanece desligada sem uma API Shadow HTTPS validada. As migrations ainda não foram comprovadamente aplicadas em PostgreSQL real neste ciclo. Consulte `docs/plano-integrado-aceleracao-entrega.md` para o diagnóstico consolidado e os critérios de aceite.
+A branch contém frontend, API FastAPI, rotas dos módulos, adaptadores PostgreSQL, driver Psycopg, autenticação Google server-side, sete migrations versionadas, Dockerfile e workflows de CI. O backend usa memória por padrão; a integração Google do frontend permanece desligada sem uma API Shadow HTTPS validada. As migrations ainda não foram comprovadamente aplicadas em PostgreSQL real neste ciclo. Consulte `docs/plano-integrado-aceleracao-entrega.md` para o diagnóstico consolidado e os critérios de aceite.
 
 ## Preview visual
 
